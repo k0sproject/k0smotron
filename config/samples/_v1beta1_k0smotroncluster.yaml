@@ -1,0 +1,12 @@
+apiVersion: k0smotron.k0sproject.io/v1beta1
+kind: K0smotronCluster
+metadata:
+  labels:
+    app.kubernetes.io/name: k0smotroncluster
+    app.kubernetes.io/instance: k0smotroncluster-sample
+    app.kubernetes.io/part-of: k0smotron
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: k0smotron
+  name: k0smotroncluster-sample
+spec:
+  # TODO(user): Add fields here
