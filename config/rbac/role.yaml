@@ -6,7 +6,43 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - k0smotron.k0sproject.io
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - k0smotron.io
   resources:
   - k0smotronclusters
   verbs:
@@ -18,13 +54,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - k0smotron.k0sproject.io
+  - k0smotron.io
   resources:
   - k0smotronclusters/finalizers
   verbs:
   - update
 - apiGroups:
-  - k0smotron.k0sproject.io
+  - k0smotron.io
   resources:
   - k0smotronclusters/status
   verbs:

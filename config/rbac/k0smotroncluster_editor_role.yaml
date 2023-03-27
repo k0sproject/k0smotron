@@ -12,7 +12,7 @@ metadata:
   name: k0smotroncluster-editor-role
 rules:
 - apiGroups:
-  - k0smotron.k0sproject.io
+  - k0smotron.io
   resources:
   - k0smotronclusters
   verbs:
@@ -24,7 +24,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - k0smotron.k0sproject.io
+  - k0smotron.io
   resources:
   - k0smotronclusters/status
   verbs:

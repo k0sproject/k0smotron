@@ -5,13 +5,15 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
-  name: k0smotronclusters.k0smotron.k0sproject.io
+  name: k0smotronclusters.k0smotron.io
 spec:
-  group: k0smotron.k0sproject.io
+  group: k0smotron.io
   names:
     kind: K0smotronCluster
     listKind: K0smotronClusterList
     plural: k0smotronclusters
+    shortNames:
+    - kmc
     singular: k0smotroncluster
   scope: Namespaced
   versions:
@@ -35,14 +37,27 @@ spec:
           spec:
             description: K0smotronClusterSpec defines the desired state of K0smotronCluster
             properties:
-              namespace:
+              k0sImage:
+                default: k0sproject/k0s
+                description: K0sImage defines the k0s image to be deployed. If empty
+                  k0smotron will pick it automatically. Must not include the image
+                  tag.
+                type: string
+              k0sVersion:
                 description: K0sVersion defines the k0s version to be deployed. If
                   empty k0smotron will pick it automatically.
                 type: string
             type: object
           status:
             description: K0smotronClusterStatus defines the observed state of K0smotronCluster
+            properties:
+              reconciliationStatus:
+                type: string
+            required:
+            - reconciliationStatus
             type: object
+        required:
+        - status
         type: object
     served: true
     storage: true

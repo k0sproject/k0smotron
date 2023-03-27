@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,19 +27,24 @@ import (
 
 // K0smotronClusterSpec defines the desired state of K0smotronCluster
 type K0smotronClusterSpec struct {
+	// K0sImage defines the k0s image to be deployed. If empty k0smotron
+	// will pick it automatically. Must not include the image tag.
+	//+kubebuilder:default=k0sproject/k0s
+	K0sImage string `json:"k0sImage,omitempty"`
 	// K0sVersion defines the k0s version to be deployed. If empty k0smotron
 	// will pick it automatically.
-	K0sVersion string `json:"namespace,omitempty"`
+	//+kubebuilder:validation:Optional
+	K0sVersion string `json:"k0sVersion,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
 type K0smotronClusterStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	ReconciliationStatus string `json:"reconciliationStatus"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:shortName=kmc
 
 // K0smotronCluster is the Schema for the k0smotronclusters API
 type K0smotronCluster struct {
@@ -45,7 +52,7 @@ type K0smotronCluster struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   K0smotronClusterSpec   `json:"spec,omitempty"`
-	Status K0smotronClusterStatus `json:"status,omitempty"`
+	Status K0smotronClusterStatus `json:"status"`
 }
 
 //+kubebuilder:object:root=true
@@ -59,4 +66,16 @@ type K0smotronClusterList struct {
 
 func init() {
 	SchemeBuilder.Register(&K0smotronCluster{}, &K0smotronClusterList{})
+}
+
+func (kmc *K0smotronCluster) GetDeploymentName() string {
+	return fmt.Sprintf("kmc-%s", kmc.Name)
+}
+
+func (kmc *K0smotronCluster) GetConfigMapName() string {
+	return fmt.Sprintf("kmc-%s-config", kmc.Name)
+}
+
+func (kmc *K0smotronCluster) GetNodePortName() string {
+	return fmt.Sprintf("kmc-%s-nodeport", kmc.Name)
 }

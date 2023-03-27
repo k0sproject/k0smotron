@@ -4,18 +4,18 @@ metadata:
   labels:
     control-plane: controller-manager
     app.kubernetes.io/name: namespace
-    app.kubernetes.io/instance: system
+    app.kubernetes.io/instance: k0smotron
     app.kubernetes.io/component: manager
     app.kubernetes.io/created-by: k0smotron
     app.kubernetes.io/part-of: k0smotron
     app.kubernetes.io/managed-by: kustomize
-  name: system
+  name: k0smotron
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller-manager
-  namespace: system
+  namespace: k0smotron
   labels:
     control-plane: controller-manager
     app.kubernetes.io/name: deployment
@@ -70,7 +70,8 @@ spec:
         - /manager
         args:
         - --leader-elect
-        image: controller:latest
+        image: k0s/k0smotron
+        imagePullPolicy: Never
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

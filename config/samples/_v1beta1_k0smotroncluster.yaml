@@ -1,4 +1,4 @@
-apiVersion: k0smotron.k0sproject.io/v1beta1
+apiVersion: k0smotron.io/v1beta1
 kind: K0smotronCluster
 metadata:
   labels:

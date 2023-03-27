@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	k0smotronk0sprojectiov1beta1 "github.com/k0sproject/k0smotron/api/v1beta1"
+	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
@@ -44,7 +44,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(k0smotronk0sprojectiov1beta1.AddToScheme(scheme))
+	utilruntime.Must(k0smotronv1beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -71,7 +71,7 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "639dd9c3.k0smotron.k0sproject.io",
+		LeaderElectionID:       "639dd9c3.k0smotron.io",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

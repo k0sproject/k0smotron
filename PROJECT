@@ -2,7 +2,7 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: k0smotron.k0sproject.io
+domain: k0smotron.io
 layout:
 - go.kubebuilder.io/v4-alpha
 projectName: k0smotron
@@ -12,7 +12,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: k0smotron.k0sproject.io
+  domain: k0smotron.io
   kind: K0smotronCluster
   path: github.com/k0sproject/k0smotron/api/v1beta1
   version: v1beta1
