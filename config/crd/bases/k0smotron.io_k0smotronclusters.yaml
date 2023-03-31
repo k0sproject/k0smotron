@@ -37,6 +37,10 @@ spec:
           spec:
             description: K0smotronClusterSpec defines the desired state of K0smotronCluster
             properties:
+              apiPort:
+                description: APIPort defines the kubernetes API port. If empty k0smotron
+                  will pick it automatically.
+                type: integer
               k0sImage:
                 default: k0sproject/k0s
                 description: K0sImage defines the k0s image to be deployed. If empty
@@ -47,6 +51,10 @@ spec:
                 description: K0sVersion defines the k0s version to be deployed. If
                   empty k0smotron will pick it automatically.
                 type: string
+              konnectivityPort:
+                description: KonnectivityPort defines the konnectivity port. If empty
+                  k0smotron will pick it automatically.
+                type: integer
             type: object
           status:
             description: K0smotronClusterStatus defines the observed state of K0smotronCluster

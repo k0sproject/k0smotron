@@ -35,6 +35,14 @@ type K0smotronClusterSpec struct {
 	// will pick it automatically.
 	//+kubebuilder:validation:Optional
 	K0sVersion string `json:"k0sVersion,omitempty"`
+	// APIPort defines the kubernetes API port. If empty k0smotron
+	// will pick it automatically.
+	//+kubebuilder:validation:Optional
+	APIPort int `json:"apiPort,omitempty"`
+	// KonnectivityPort defines the konnectivity port. If empty k0smotron
+	// will pick it automatically.
+	//+kubebuilder:validation:Optional
+	KonnectivityPort int `json:"konnectivityPort,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
