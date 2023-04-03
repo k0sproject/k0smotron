@@ -35,6 +35,12 @@ import (
 	km "github.com/k0sproject/k0smotron/api/v1beta1"
 )
 
+const (
+	defaultK0SVersion       = "v1.26.2-k0s.1"
+	defaultAPIPort          = 30443
+	defaultKonnectivityPort = 30132
+)
+
 // K0smotronClusterReconciler reconciles a K0smotronCluster object
 type K0smotronClusterReconciler struct {
 	client.Client
@@ -67,6 +73,13 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if kmc.Spec.APIPort == 0 {
+		kmc.Spec.APIPort = defaultAPIPort
+	}
+	if kmc.Spec.KonnectivityPort == 0 {
+		kmc.Spec.APIPort = defaultKonnectivityPort
 	}
 
 	logger.Info("Reconciling")
@@ -204,16 +217,16 @@ func (r *K0smotronClusterReconciler) generateService(kmc *km.K0smotronCluster) v
 			Selector: map[string]string{"app": "k0smotron"},
 			Ports: []v1.ServicePort{
 				{
-					Port:       30443,
-					TargetPort: intstr.FromInt(30443),
+					Port:       int32(kmc.Spec.APIPort),
+					TargetPort: intstr.FromInt(kmc.Spec.APIPort),
 					Name:       "api",
-					NodePort:   30443,
+					NodePort:   int32(kmc.Spec.APIPort),
 				},
 				{
-					Port:       30132,
-					TargetPort: intstr.FromInt(30132),
+					Port:       int32(kmc.Spec.KonnectivityPort),
+					TargetPort: intstr.FromInt(kmc.Spec.KonnectivityPort),
 					Name:       "konnectivity",
-					NodePort:   30132,
+					NodePort:   int32(kmc.Spec.KonnectivityPort),
 				},
 			},
 		},
@@ -236,16 +249,16 @@ func (r *K0smotronClusterReconciler) generateCM(kmc *km.K0smotronCluster) v1.Con
 			Namespace: kmc.Namespace,
 		},
 		Data: map[string]string{
-			"k0s.yaml": `apiVersion: k0s.k0sproject.io/v1beta1
+			"k0s.yaml": fmt.Sprintf(`apiVersion: k0s.k0sproject.io/v1beta1
 kind: ClusterConfig
 metadata:
   name: k0s
 spec:
   api:
-    port: 30443
+    port: %d
     externalAddress: 172.17.0.3
   konnectivity:
-    agentPort: 30132`,
+    agentPort: %d`, kmc.Spec.APIPort, kmc.Spec.KonnectivityPort), // TODO: do it as a template or something like this
 		},
 	}
 
@@ -256,7 +269,7 @@ spec:
 func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster) apps.Deployment {
 	k0sVersion := kmc.Spec.K0sVersion
 	if k0sVersion == "" {
-		k0sVersion = "v1.26.2-k0s.1"
+		k0sVersion = defaultK0SVersion
 	}
 
 	dep := apps.Deployment{
@@ -284,12 +297,12 @@ func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster
 							{
 								Name:          "api",
 								Protocol:      v1.ProtocolTCP,
-								ContainerPort: 6443,
+								ContainerPort: int32(kmc.Spec.APIPort),
 							},
 							{
 								Name:          "konnectivity",
 								Protocol:      v1.ProtocolTCP,
-								ContainerPort: 8132,
+								ContainerPort: int32(kmc.Spec.KonnectivityPort),
 							},
 						},
 						VolumeMounts: []v1.VolumeMount{{
