@@ -28,11 +28,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	km "github.com/k0sproject/k0smotron/api/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/exec"
 )
 
 const (
@@ -44,7 +47,9 @@ const (
 // K0smotronClusterReconciler reconciles a K0smotronCluster object
 type K0smotronClusterReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme     *runtime.Scheme
+	ClientSet  *kubernetes.Clientset
+	RESTConfig *rest.Config
 }
 
 //+kubebuilder:rbac:groups=k0smotron.io,resources=k0smotronclusters,verbs=get;list;watch;create;update;patch;delete
@@ -98,6 +103,11 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info("Reconciling deployment")
 	if err := r.reconcileDeployment(ctx, req, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling deployment")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	}
+
+	if err := r.reconcileKubeConfigSecret(ctx, kmc.Namespace); err != nil {
+		r.updateStatus(ctx, kmc, "Failed reconciling secret")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
@@ -328,4 +338,36 @@ func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster
 
 	ctrl.SetControllerReference(kmc, &dep, r.Scheme)
 	return dep
+}
+
+func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, namespace string) error {
+	pods, err := r.ClientSet.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app=k0smotron",
+		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running"),
+	})
+	if err != nil {
+		return err
+	}
+
+	output, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pods.Items[0].Name, pods.Items[0].Namespace, "k0s kubeconfig admin")
+	if err != nil {
+		return err
+	}
+
+	secret := v1.Secret{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "k0smotron",
+			Namespace: pods.Items[0].Namespace,
+			Labels:    map[string]string{"app": "k0smotron"},
+		},
+		StringData: map[string]string{"kubeconfig": output},
+	}
+
+	err = r.Update(ctx, &secret)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
