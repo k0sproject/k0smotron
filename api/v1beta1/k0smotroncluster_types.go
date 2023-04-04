@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"fmt"
 
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,6 +44,10 @@ type K0smotronClusterSpec struct {
 	// will pick it automatically.
 	//+kubebuilder:validation:Optional
 	KonnectivityPort int `json:"konnectivityPort,omitempty"`
+	// Persistence defines the persistence configuration. If empty k0smotron
+	// will use emptyDir as a volume.
+	//+kubebuilder:validation:Optional
+	Persistence PersistenceSpec `json:"persistence,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
@@ -72,6 +77,18 @@ type K0smotronClusterList struct {
 	Items           []K0smotronCluster `json:"items"`
 }
 
+type PersistenceSpec struct {
+	//+kubebuilder:validation:Enum:emptyDir;hostPath;pvc
+	//+kubebuilder:default:=emptyDir
+	Type string `json:"type"`
+	// PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.
+	//+kubebuilder:validation:Optional
+	PersistentVolumeClaim v1.PersistentVolumeClaim `json:"persistentVolumeClaim,omitempty"`
+	// HostPath defines the host path configuration. Will be used as is in case of .spec.persistence.type is hostPath.
+	//+kubebuilder:validation:Optional
+	HostPath string `json:"hostPath,omitempty"`
+}
+
 func init() {
 	SchemeBuilder.Register(&K0smotronCluster{}, &K0smotronClusterList{})
 }
@@ -86,4 +103,8 @@ func (kmc *K0smotronCluster) GetConfigMapName() string {
 
 func (kmc *K0smotronCluster) GetNodePortName() string {
 	return fmt.Sprintf("kmc-%s-nodeport", kmc.Name)
+}
+
+func (kmc *K0smotronCluster) GetVolumeName() string {
+	return fmt.Sprintf("kmc-%s", kmc.Name)
 }
