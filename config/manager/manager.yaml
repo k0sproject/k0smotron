@@ -70,7 +70,7 @@ spec:
         - /manager
         args:
         - --leader-elect
-        image: k0s/k0smotron
+        image: controller
         imagePullPolicy: IfNotPresent
         name: manager
         securityContext:
