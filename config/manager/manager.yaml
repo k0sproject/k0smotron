@@ -71,7 +71,7 @@ spec:
         args:
         - --leader-elect
         image: k0s/k0smotron
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
