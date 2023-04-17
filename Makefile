@@ -75,6 +75,9 @@ run: manifests generate fmt vet ## Run a controller from your host.
 docker-build: test ## Build docker image with the manager.
 	docker build -t ${IMG} .
 
+k0smotron-image-bundle.tar: docker-build
+	docker save ${IMG} -o k0smotron-image-bundle.tar
+
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
