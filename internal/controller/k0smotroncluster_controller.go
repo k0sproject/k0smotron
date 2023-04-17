@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
@@ -343,7 +344,7 @@ func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster
 func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, namespace string) error {
 	pods, err := r.ClientSet.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "app=k0smotron",
-		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running"),
+		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
 	})
 	if err != nil {
 		return err
