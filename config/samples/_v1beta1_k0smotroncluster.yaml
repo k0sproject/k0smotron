@@ -8,5 +8,4 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: k0smotron
   name: k0smotroncluster-sample
-spec:
-  # TODO(user): Add fields here
+spec: null

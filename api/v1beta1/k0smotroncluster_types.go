@@ -64,7 +64,7 @@ type K0smotronCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   K0smotronClusterSpec   `json:"spec,omitempty"`
+	Spec   K0smotronClusterSpec   `json:"spec"`
 	Status K0smotronClusterStatus `json:"status,omitempty"`
 }
 
