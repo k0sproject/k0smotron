@@ -101,13 +101,19 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	logger.Info("Reconciling PVC")
+	if err := r.reconcilePVC(ctx, req, kmc); err != nil {
+		r.updateStatus(ctx, kmc, "Failed reconciling PVC")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	}
+
 	logger.Info("Reconciling deployment")
 	if err := r.reconcileDeployment(ctx, req, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling deployment")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	if err := r.reconcileKubeConfigSecret(ctx, kmc.Namespace); err != nil {
+	if err := r.reconcileKubeConfigSecret(ctx, req, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling secret")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
@@ -188,7 +194,7 @@ func (r *K0smotronClusterReconciler) reconcileDeployment(ctx context.Context, re
 	}, &foundDep)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			logger.Error(err, "Unable to get Configmap. Aborting reconciliation")
+			logger.Error(err, "Unable to get Deployment. Aborting reconciliation")
 			return err
 		}
 		dep := r.generateDeployment(&kmc)
@@ -337,12 +343,52 @@ func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster
 							}}}},
 				}}}}
 
+	switch kmc.Spec.Persistence.Type {
+	case "emptyDir":
+		dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: kmc.GetVolumeName(),
+			VolumeSource: v1.VolumeSource{
+				EmptyDir: &v1.EmptyDirVolumeSource{},
+			},
+		})
+		dep.Spec.Template.Spec.Containers[0].VolumeMounts = append(dep.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+			Name:      kmc.GetVolumeName(),
+			MountPath: "/var/lib/k0s",
+		})
+	case "hostPath":
+		dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: kmc.GetVolumeName(),
+			VolumeSource: v1.VolumeSource{
+				HostPath: &v1.HostPathVolumeSource{
+					Path: kmc.Spec.Persistence.HostPath,
+				},
+			},
+		})
+		dep.Spec.Template.Spec.Containers[0].VolumeMounts = append(dep.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+			Name:      kmc.GetVolumeName(),
+			MountPath: "/var/lib/k0s",
+		})
+	case "pvc":
+		dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: kmc.GetVolumeName(),
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: kmc.GetVolumeName(),
+				},
+			},
+		})
+		dep.Spec.Template.Spec.Containers[0].VolumeMounts = append(dep.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+			Name:      kmc.GetVolumeName(),
+			MountPath: "/var/lib/k0s",
+		})
+	}
+
 	ctrl.SetControllerReference(kmc, &dep, r.Scheme)
 	return dep
 }
 
-func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, namespace string) error {
-	pods, err := r.ClientSet.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
+	pods, err := r.ClientSet.CoreV1().Pods(kmc.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "app=k0smotron",
 		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
 	})
@@ -371,4 +417,55 @@ func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Conte
 	}
 
 	return nil
+}
+
+func (r *K0smotronClusterReconciler) reconcilePVC(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
+	logger := log.FromContext(ctx)
+	if kmc.Spec.Persistence.Type != "pvc" {
+		return nil
+	}
+
+	var foundPVC v1.PersistentVolumeClaim
+	err := r.Get(ctx, client.ObjectKey{
+		Namespace: kmc.Namespace,
+		Name:      kmc.GetVolumeName(),
+	}, &foundPVC)
+
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			logger.Error(err, "Unable to get PVC. Aborting reconciliation")
+			return err
+		}
+		pvc := r.generatePVC(&kmc, kmc.GetVolumeName())
+		err = r.Create(ctx, &pvc)
+		if err != nil {
+			return err
+		}
+	}
+
+	expectedPVC := r.generatePVC(&kmc, kmc.GetVolumeName())
+	if reflect.DeepEqual(foundPVC.Spec, expectedPVC.Spec) {
+		return nil
+	}
+	err = r.Update(ctx, &expectedPVC)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *K0smotronClusterReconciler) generatePVC(kmc *km.K0smotronCluster, name string) v1.PersistentVolumeClaim {
+	return v1.PersistentVolumeClaim{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "PersistentVolumeClaim",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: kmc.Namespace,
+			Labels:    map[string]string{"app": "k0smotron"},
+		},
+		Spec: kmc.Spec.Persistence.PersistentVolumeClaim.Spec,
+	}
 }
