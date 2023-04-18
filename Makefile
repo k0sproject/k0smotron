@@ -1,8 +1,11 @@
-
+include inttest/Makefile.variables
 # Image URL to use all building/pushing image targets
 IMG ?= k0s/k0smotron:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.26.0
+
+# GO_TEST_DIRS is a list of directories to run go test on, excluding inttests
+GO_TEST_DIRS ?= ./api/... ./cmd/... ./internal/...
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -56,7 +59,7 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $(GO_TEST_DIRS) -coverprofile cover.out
 
 ##@ Build
 
@@ -176,3 +179,11 @@ docs-serve-dev:
 	  -v "$(CURDIR):/k0s:ro" \
 	  -p '$(DOCS_DEV_PORT):8000' \
 	  k0sdocs.docker-image.serve-dev
+
+.PHONY: $(smoketests)
+$(smoketests): release k0smotron-image-bundle.tar
+	$(MAKE) -C inttest $@
+
+.PHONY: smoketest
+smoketests: $(smoketests)
+

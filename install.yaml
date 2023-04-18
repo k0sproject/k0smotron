@@ -812,7 +812,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: quay.io/k0sproject/k0smotron:v0.0.1-rc1
+        image: k0s/k0smotron:latest
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
