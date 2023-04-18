@@ -1,33 +1,17 @@
 # k0smotron
-An operator to deploy k0s clusters on top of k0s.
 
-## Instalation
-Currently k0smotron isn't hosted anywhere.
-The image must be built and copied manually to the nodes where it will be
-executed or uploaded to a registry.
+The Kubernetes control plane manager. Deploy and run Kubernetes control planes on any existing cluster.
 
-To do it manually do:
+## Installation
 
 ```
-make kustomize
-make docker-build
-
-# Copy the image to the nodes
-docker save k0s/k0smotron -o k0smotron.tgz
-for node in <node 1> [node n]... ; do
-scp k0smotron.tgz <target-node>:/tmp/k0smotron.tgz
-k0s ctr images import /tmp/k0smotron.tgz
-done
-
-# Create the necessary objects in the kubernetes API
-for i in config/crd config/rbac config/manager; do
-bin/kustomize build $i | docker exec -i TestKubeRouterHairpinSuite-controller0  k0s kc apply -n k0smotron -f-
-done
+kubectl apply -f https://raw.githubusercontent.com/k0sproject/k0smotron/main/install.yaml
 ```
 
-## Testing
+## Creating a cluster
 
-Once everything is deployed, you can deploy a k0smotron cluster in your desired namespace by running:
+To create a cluster, you need to create a `K0smotronCluster` resource. The `spec` field is used for optional settings, so you can just pass `null` as the value.
+
 ```
 cat <<EOF | kubectl apply -n <namespace> -f-
 apiVersion: k0smotron.io/v1beta1
@@ -38,7 +22,9 @@ spec: null
 EOF
 ```
 
-## At the moment there isn't a way to gather one, you may obtain one by running 
+## Creating cluster join tokens
+
+At the moment there isn't an automated way to gather one, you may obtain one by running 
 
 ```
 kubectl exec -n <K0smotronCluster namespace> <K0smotron pod> k0s token create --role=worker
