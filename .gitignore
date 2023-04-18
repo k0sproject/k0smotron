@@ -8,6 +8,7 @@
 bin
 testbin/*
 Dockerfile.cross
+k0smotron-image-bundle.tar
 
 # Test binary, build with `go test -c`
 *.test
