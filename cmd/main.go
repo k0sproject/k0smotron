@@ -23,6 +23,7 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -91,9 +92,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	restConfig, err := rest.InClusterConfig()
+	restConfig, err := loadRestConfig()
 	if err != nil {
-		setupLog.Error(err, "unable to get in cluster config")
+		setupLog.Error(err, "unable to get cluster config")
 		os.Exit(1)
 	}
 	clientSet, err := kubernetes.NewForConfig(restConfig)
@@ -127,4 +128,12 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+// loadRestConfig loads the rest config from the KUBECONFIG env var or from the in-cluster config
+func loadRestConfig() (*rest.Config, error) {
+	if os.Getenv("KUBECONFIG") != "" {
+		return clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
+	}
+	return rest.InClusterConfig()
 }

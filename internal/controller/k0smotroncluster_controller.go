@@ -19,14 +19,11 @@ package controller
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
@@ -44,6 +41,11 @@ const (
 	defaultAPIPort          = 30443
 	defaultKonnectivityPort = 30132
 )
+
+var patchOpts []client.PatchOption = []client.PatchOption{
+	client.FieldOwner("k0smotron-operator"),
+	client.ForceOwnership,
+}
 
 // K0smotronClusterReconciler reconciles a K0smotronCluster object
 type K0smotronClusterReconciler struct {
@@ -113,7 +115,7 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	if err := r.reconcileKubeConfigSecret(ctx, req, kmc); err != nil {
+	if err := r.reconcileKubeConfigSecret(ctx, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling secret")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
@@ -133,84 +135,26 @@ func (r *K0smotronClusterReconciler) updateStatus(ctx context.Context, kmc km.K0
 func (r *K0smotronClusterReconciler) reconcileCM(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling configmap")
-	var foundCM v1.ConfigMap
-	err := r.Get(ctx, client.ObjectKey{
-		Namespace: kmc.Namespace,
-		Name:      kmc.GetConfigMapName(),
-	}, &foundCM)
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			logger.Error(err, "Unable to get Configmap. Aborting reconciliation")
-			return err
-		}
-		cm := r.generateCM(&kmc)
-		return r.Create(ctx, &cm)
-	}
 
-	expectedCM := r.generateCM(&kmc)
-	if reflect.DeepEqual(foundCM.Data, expectedCM.Data) {
-		return nil
-	}
+	cm := r.generateCM(&kmc)
 
-	logger.Info("Reconciling configmap")
-	return r.Update(ctx, &expectedCM)
+	return r.Client.Patch(ctx, &cm, client.Apply, patchOpts...)
 }
 
 func (r *K0smotronClusterReconciler) reconcileServices(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
 	logger := log.FromContext(ctx)
 	// Depending on ingress configuration create nodePort service.
 	logger.Info("Reconciling services")
-	var foundSvc v1.Service
-	err := r.Get(ctx, client.ObjectKey{
-		Namespace: kmc.Namespace,
-		Name:      kmc.GetNodePortName(),
-	}, &foundSvc)
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			logger.Error(err, "Unable to get service. Aborting reconciliation")
-			return err
-		}
-		svc := r.generateService(&kmc)
-		return r.Create(ctx, &svc)
-	}
-
-	expectedSvc := r.generateService(&kmc)
-	if reflect.DeepEqual(foundSvc.Spec, expectedSvc.Spec) {
-		return nil
-	}
-
-	logger.Info("Reconciling service")
-	return r.Update(ctx, &expectedSvc)
+	svc := r.generateService(&kmc)
+	return r.Client.Patch(ctx, &svc, client.Apply, patchOpts...)
 }
 
 func (r *K0smotronClusterReconciler) reconcileDeployment(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
 	logger := log.FromContext(ctx)
-	// TODO Name cannot be hardcoded
-	logger.Info("Reconciling %s/%s deployment")
-	var foundDep apps.Deployment
-	err := r.Get(ctx, client.ObjectKey{
-		Namespace: kmc.Namespace,
-		Name:      kmc.GetDeploymentName(),
-	}, &foundDep)
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			logger.Error(err, "Unable to get Deployment. Aborting reconciliation")
-			return err
-		}
-		dep := r.generateDeployment(&kmc)
-		err = r.Create(ctx, &dep)
-		if err != nil {
-			return err
-		}
-	}
-	dep := r.generateDeployment(&kmc)
-	// deploymentConfigs are quite smart so it's safe to issue updates even if there aren't any changes
-	err = r.Update(ctx, &dep)
-	if err != nil {
-		return err
-	}
+	logger.Info("Reconciling deployment")
+	deploy := r.generateDeployment(&kmc)
 
-	return nil
+	return r.Client.Patch(ctx, &deploy, client.Apply, patchOpts...)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -224,6 +168,10 @@ func (r *K0smotronClusterReconciler) generateService(kmc *km.K0smotronCluster) v
 	// TODO Ports cannot be hardcoded
 	// TODO Allow multiple service types
 	svc := v1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Service",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kmc.GetNodePortName(),
 			Namespace: kmc.Namespace,
@@ -261,6 +209,10 @@ func (r *K0smotronClusterReconciler) generateCM(kmc *km.K0smotronCluster) v1.Con
 	// github.com/k0sproject/k0s/pkg/apis/k0s.k0sproject.io/v1beta1.ClusterConfig
 	// and then unmarshalled into json to make modification of fields reliable
 	cm := v1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kmc.GetConfigMapName(),
 			Namespace: kmc.Namespace,
@@ -290,6 +242,10 @@ func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster
 	}
 
 	dep := apps.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kmc.GetDeploymentName(),
 			Namespace: kmc.Namespace,
@@ -387,76 +343,85 @@ func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster
 	return dep
 }
 
-func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
-	pods, err := r.ClientSet.CoreV1().Pods(kmc.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: "app=k0smotron",
-		FieldSelector: fields.ParseSelectorOrDie("status.phase=Running").String(),
-	})
+func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc km.K0smotronCluster) error {
+	logger := log.FromContext(ctx)
+	pod, err := r.findDeploymentPod(ctx, kmc.GetDeploymentName(), kmc.Namespace)
+
 	if err != nil {
 		return err
 	}
 
-	output, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pods.Items[0].Name, pods.Items[0].Namespace, "k0s kubeconfig admin")
+	output, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, kmc.Namespace, "k0s kubeconfig admin")
 	if err != nil {
 		return err
 	}
+
+	logger.Info("Kubeconfig generated, creating the secret")
 
 	secret := v1.Secret{
-		TypeMeta: metav1.TypeMeta{},
+		// The dynamic r.Client needs TypeMeta to be set
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "k0smotron",
-			Namespace: pods.Items[0].Namespace,
+			Name:      kmc.GetAdminConfigSecretName(),
+			Namespace: kmc.Namespace,
 			Labels:    map[string]string{"app": "k0smotron"},
 		},
 		StringData: map[string]string{"kubeconfig": output},
 	}
 
-	err = r.Update(ctx, &secret)
-	if err != nil {
+	if err = ctrl.SetControllerReference(&kmc, &secret, r.Scheme); err != nil {
 		return err
 	}
 
-	return nil
+	return r.Client.Patch(ctx, &secret, client.Apply, patchOpts...)
+}
+
+// FindDeploymentPod returns a first running pod from a deployment
+func (r *K0smotronClusterReconciler) findDeploymentPod(ctx context.Context, deploymentName string, namespace string) (*v1.Pod, error) {
+	dep, err := r.ClientSet.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	selector := metav1.FormatLabelSelector(dep.Spec.Selector)
+	pods, err := r.ClientSet.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(pods.Items) < 1 {
+		return nil, fmt.Errorf("did not find matching pods for deployment %s", deploymentName)
+	}
+	// Find a running pod
+	var runningPod *v1.Pod
+	for _, p := range pods.Items {
+		if p.Status.Phase == v1.PodRunning {
+			runningPod = &p
+			break
+		}
+	}
+	if runningPod == nil {
+		return nil, fmt.Errorf("did not find running pods for deployment %s", deploymentName)
+	}
+	return runningPod, nil
 }
 
 func (r *K0smotronClusterReconciler) reconcilePVC(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
-	logger := log.FromContext(ctx)
+
 	if kmc.Spec.Persistence.Type != "pvc" {
 		return nil
 	}
 
-	var foundPVC v1.PersistentVolumeClaim
-	err := r.Get(ctx, client.ObjectKey{
-		Namespace: kmc.Namespace,
-		Name:      kmc.GetVolumeName(),
-	}, &foundPVC)
+	pvc := r.generatePVC(&kmc, kmc.GetVolumeName())
 
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			logger.Error(err, "Unable to get PVC. Aborting reconciliation")
-			return err
-		}
-		pvc := r.generatePVC(&kmc, kmc.GetVolumeName())
-		err = r.Create(ctx, &pvc)
-		if err != nil {
-			return err
-		}
-	}
-
-	expectedPVC := r.generatePVC(&kmc, kmc.GetVolumeName())
-	if reflect.DeepEqual(foundPVC.Spec, expectedPVC.Spec) {
-		return nil
-	}
-	err = r.Update(ctx, &expectedPVC)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.Client.Patch(ctx, &pvc, client.Apply, patchOpts...)
 }
 
 func (r *K0smotronClusterReconciler) generatePVC(kmc *km.K0smotronCluster, name string) v1.PersistentVolumeClaim {
-	return v1.PersistentVolumeClaim{
+	pvc := v1.PersistentVolumeClaim{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "PersistentVolumeClaim",
@@ -468,4 +433,8 @@ func (r *K0smotronClusterReconciler) generatePVC(kmc *km.K0smotronCluster, name 
 		},
 		Spec: kmc.Spec.Persistence.PersistentVolumeClaim.Spec,
 	}
+
+	ctrl.SetControllerReference(kmc, &pvc, r.Scheme)
+
+	return pvc
 }

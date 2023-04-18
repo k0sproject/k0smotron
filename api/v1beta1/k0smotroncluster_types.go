@@ -65,7 +65,7 @@ type K0smotronCluster struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   K0smotronClusterSpec   `json:"spec,omitempty"`
-	Status K0smotronClusterStatus `json:"status"`
+	Status K0smotronClusterStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -95,6 +95,10 @@ func init() {
 
 func (kmc *K0smotronCluster) GetDeploymentName() string {
 	return fmt.Sprintf("kmc-%s", kmc.Name)
+}
+
+func (kmc *K0smotronCluster) GetAdminConfigSecretName() string {
+	return fmt.Sprintf("kmc-admin-kubeconfig-%s", kmc.Name)
 }
 
 func (kmc *K0smotronCluster) GetConfigMapName() string {
