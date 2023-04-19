@@ -36,14 +36,13 @@ type K0smotronClusterSpec struct {
 	// will pick it automatically.
 	//+kubebuilder:validation:Optional
 	K0sVersion string `json:"k0sVersion,omitempty"`
-	// APIPort defines the kubernetes API port. If empty k0smotron
-	// will pick it automatically.
+	// ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
+	// Will be detected automatically for service type LoadBalancer.
 	//+kubebuilder:validation:Optional
-	APIPort int `json:"apiPort,omitempty"`
-	// KonnectivityPort defines the konnectivity port. If empty k0smotron
-	// will pick it automatically.
+	ExternalAddress string `json:"externalAddress,omitempty"`
+	// Service defines the service configuration.
 	//+kubebuilder:validation:Optional
-	KonnectivityPort int `json:"konnectivityPort,omitempty"`
+	Service ServiceSpec `json:"service,omitempty"`
 	// Persistence defines the persistence configuration. If empty k0smotron
 	// will use emptyDir as a volume.
 	//+kubebuilder:validation:Optional
@@ -66,6 +65,20 @@ type K0smotronCluster struct {
 
 	Spec   K0smotronClusterSpec   `json:"spec,omitempty"`
 	Status K0smotronClusterStatus `json:"status,omitempty"`
+}
+
+type ServiceSpec struct {
+	//+kubebuilder:validation:Enum:NodePort;LoadBalancer
+	//+kubebuilder:default:=NodePort
+	Type v1.ServiceType `json:"type"`
+	// APIPort defines the kubernetes API port. If empty k0smotron
+	// will pick it automatically.
+	//+kubebuilder:validation:Optional
+	APIPort int `json:"apiPort,omitempty"`
+	// KonnectivityPort defines the konnectivity port. If empty k0smotron
+	// will pick it automatically.
+	//+kubebuilder:validation:Optional
+	KonnectivityPort int `json:"konnectivityPort,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -103,6 +116,10 @@ func (kmc *K0smotronCluster) GetAdminConfigSecretName() string {
 
 func (kmc *K0smotronCluster) GetConfigMapName() string {
 	return fmt.Sprintf("kmc-%s-config", kmc.Name)
+}
+
+func (kmc *K0smotronCluster) GetLoadBalancerName() string {
+	return fmt.Sprintf("kmc-%s-lb", kmc.Name)
 }
 
 func (kmc *K0smotronCluster) GetNodePortName() string {

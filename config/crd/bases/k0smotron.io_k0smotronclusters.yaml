@@ -37,10 +37,10 @@ spec:
           spec:
             description: K0smotronClusterSpec defines the desired state of K0smotronCluster
             properties:
-              apiPort:
-                description: APIPort defines the kubernetes API port. If empty k0smotron
-                  will pick it automatically.
-                type: integer
+              externalAddress:
+                description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
+                  Will be detected automatically for service type LoadBalancer.
+                type: string
               k0sImage:
                 default: k0sproject/k0s
                 description: K0sImage defines the k0s image to be deployed. If empty
@@ -51,10 +51,6 @@ spec:
                 description: K0sVersion defines the k0s version to be deployed. If
                   empty k0smotron will pick it automatically.
                 type: string
-              konnectivityPort:
-                description: KonnectivityPort defines the konnectivity port. If empty
-                  k0smotron will pick it automatically.
-                type: integer
               persistence:
                 description: Persistence defines the persistence configuration. If
                   empty k0smotron will use emptyDir as a volume.
@@ -390,6 +386,25 @@ spec:
                     type: object
                   type:
                     default: emptyDir
+                    type: string
+                required:
+                - type
+                type: object
+              service:
+                description: Service defines the service configuration.
+                properties:
+                  apiPort:
+                    description: APIPort defines the kubernetes API port. If empty
+                      k0smotron will pick it automatically.
+                    type: integer
+                  konnectivityPort:
+                    description: KonnectivityPort defines the konnectivity port. If
+                      empty k0smotron will pick it automatically.
+                    type: integer
+                  type:
+                    default: NodePort
+                    description: Service Type string describes ingress methods for
+                      a service
                     type: string
                 required:
                 - type
