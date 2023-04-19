@@ -5,17 +5,6 @@ The Kubernetes control plane manager. Deploy and run Kubernetes control planes o
 ## Installation
 
 ```
-make kustomize
-make docker-build
-
-# Copy the image to the nodes
-make k0smotron-image-bundle.tar
-for node in <node 1> [node n]... ; do
-scp k0smotron-image-bundle.tar <target-node>:/tmp/k0smotron-image-bundle.tar
-k0s ctr images import /tmp/k0smotron-image-bundle.tar
-done
-
-# Create the necessary objects in the kubernetes API
 kubectl apply -f https://raw.githubusercontent.com/k0sproject/k0smotron/main/install.yaml
 ```
 
