@@ -85,13 +85,6 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if kmc.Spec.Service.APIPort == 0 {
-		kmc.Spec.Service.APIPort = defaultAPIPort
-	}
-	if kmc.Spec.Service.KonnectivityPort == 0 {
-		kmc.Spec.Service.APIPort = defaultKonnectivityPort
-	}
-
 	logger.Info("Reconciling")
 
 	logger.Info("Reconciling services")

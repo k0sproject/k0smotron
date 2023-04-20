@@ -74,10 +74,12 @@ type ServiceSpec struct {
 	// APIPort defines the kubernetes API port. If empty k0smotron
 	// will pick it automatically.
 	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=30443
 	APIPort int `json:"apiPort,omitempty"`
 	// KonnectivityPort defines the konnectivity port. If empty k0smotron
 	// will pick it automatically.
 	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=30132
 	KonnectivityPort int `json:"konnectivityPort,omitempty"`
 }
 
