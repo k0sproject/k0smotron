@@ -26,8 +26,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	informerv1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -83,19 +85,14 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if kmc.Spec.APIPort == 0 {
-		kmc.Spec.APIPort = defaultAPIPort
+	if kmc.Spec.Service.APIPort == 0 {
+		kmc.Spec.Service.APIPort = defaultAPIPort
 	}
-	if kmc.Spec.KonnectivityPort == 0 {
-		kmc.Spec.APIPort = defaultKonnectivityPort
+	if kmc.Spec.Service.KonnectivityPort == 0 {
+		kmc.Spec.Service.APIPort = defaultKonnectivityPort
 	}
 
 	logger.Info("Reconciling")
-
-	if err := r.reconcileCM(ctx, req, kmc); err != nil {
-		r.updateStatus(ctx, kmc, "Failed reconciling configmap")
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
-	}
 
 	logger.Info("Reconciling services")
 	if err := r.reconcileServices(ctx, req, kmc); err != nil {
@@ -106,6 +103,11 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info("Reconciling PVC")
 	if err := r.reconcilePVC(ctx, req, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling PVC")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	}
+
+	if err := r.reconcileCM(ctx, req, kmc); err != nil {
+		r.updateStatus(ctx, kmc, "Failed reconciling configmap")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
@@ -136,6 +138,10 @@ func (r *K0smotronClusterReconciler) reconcileCM(ctx context.Context, req ctrl.R
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling configmap")
 
+	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer && kmc.Spec.ExternalAddress == "" {
+		return nil
+	}
+
 	cm := r.generateCM(&kmc)
 
 	return r.Client.Patch(ctx, &cm, client.Apply, patchOpts...)
@@ -146,6 +152,12 @@ func (r *K0smotronClusterReconciler) reconcileServices(ctx context.Context, req 
 	// Depending on ingress configuration create nodePort service.
 	logger.Info("Reconciling services")
 	svc := r.generateService(&kmc)
+	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer && kmc.Spec.ExternalAddress == "" {
+		err := r.watchLBServiceIP(ctx, kmc)
+		if err != nil {
+			return err
+		}
+	}
 	return r.Client.Patch(ctx, &svc, client.Apply, patchOpts...)
 }
 
@@ -165,33 +177,39 @@ func (r *K0smotronClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *K0smotronClusterReconciler) generateService(kmc *km.K0smotronCluster) v1.Service {
-	// TODO Ports cannot be hardcoded
-	// TODO Allow multiple service types
+	var name string
+	switch kmc.Spec.Service.Type {
+	case v1.ServiceTypeNodePort:
+		name = kmc.GetNodePortName()
+	case v1.ServiceTypeLoadBalancer:
+		name = kmc.GetLoadBalancerName()
+	}
+
 	svc := v1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Service",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmc.GetNodePortName(),
+			Name:      name,
 			Namespace: kmc.Namespace,
 			Labels:    map[string]string{"app": "k0smotron"},
 		},
 		Spec: v1.ServiceSpec{
-			Type:     v1.ServiceTypeNodePort,
+			Type:     kmc.Spec.Service.Type,
 			Selector: map[string]string{"app": "k0smotron"},
 			Ports: []v1.ServicePort{
 				{
-					Port:       int32(kmc.Spec.APIPort),
-					TargetPort: intstr.FromInt(kmc.Spec.APIPort),
+					Port:       int32(kmc.Spec.Service.APIPort),
+					TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
 					Name:       "api",
-					NodePort:   int32(kmc.Spec.APIPort),
+					NodePort:   int32(kmc.Spec.Service.APIPort),
 				},
 				{
-					Port:       int32(kmc.Spec.KonnectivityPort),
-					TargetPort: intstr.FromInt(kmc.Spec.KonnectivityPort),
+					Port:       int32(kmc.Spec.Service.KonnectivityPort),
+					TargetPort: intstr.FromInt(kmc.Spec.Service.KonnectivityPort),
 					Name:       "konnectivity",
-					NodePort:   int32(kmc.Spec.KonnectivityPort),
+					NodePort:   int32(kmc.Spec.Service.KonnectivityPort),
 				},
 			},
 		},
@@ -203,7 +221,6 @@ func (r *K0smotronClusterReconciler) generateService(kmc *km.K0smotronCluster) v
 }
 
 func (r *K0smotronClusterReconciler) generateCM(kmc *km.K0smotronCluster) v1.ConfigMap {
-	// TODO port cannot be hardcoded
 	// TODO externalAddress cannot be hardcoded
 	// TODO k0s.yaml should probably be a
 	// github.com/k0sproject/k0s/pkg/apis/k0s.k0sproject.io/v1beta1.ClusterConfig
@@ -224,10 +241,10 @@ metadata:
   name: k0s
 spec:
   api:
+    externalAddress: %s
     port: %d
-    externalAddress: 172.17.0.3
   konnectivity:
-    agentPort: %d`, kmc.Spec.APIPort, kmc.Spec.KonnectivityPort), // TODO: do it as a template or something like this
+    agentPort: %d`, kmc.Spec.ExternalAddress, kmc.Spec.Service.APIPort, kmc.Spec.Service.KonnectivityPort), // TODO: do it as a template or something like this
 		},
 	}
 
@@ -270,12 +287,12 @@ func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster
 							{
 								Name:          "api",
 								Protocol:      v1.ProtocolTCP,
-								ContainerPort: int32(kmc.Spec.APIPort),
+								ContainerPort: int32(kmc.Spec.Service.APIPort),
 							},
 							{
 								Name:          "konnectivity",
 								Protocol:      v1.ProtocolTCP,
-								ContainerPort: int32(kmc.Spec.KonnectivityPort),
+								ContainerPort: int32(kmc.Spec.Service.KonnectivityPort),
 							},
 						},
 						VolumeMounts: []v1.VolumeMount{{
@@ -437,4 +454,44 @@ func (r *K0smotronClusterReconciler) generatePVC(kmc *km.K0smotronCluster, name 
 	ctrl.SetControllerReference(kmc, &pvc, r.Scheme)
 
 	return pvc
+}
+
+func (r *K0smotronClusterReconciler) watchLBServiceIP(ctx context.Context, kmc km.K0smotronCluster) error {
+	var handler cache.ResourceEventHandlerFuncs
+	stopCh := make(chan struct{})
+	handler.UpdateFunc = func(old, new interface{}) {
+		newObj, ok := new.(*v1.Service)
+		if !ok {
+			return
+		}
+
+		var externalAddress string
+		if len(newObj.Status.LoadBalancer.Ingress) > 0 {
+			if newObj.Status.LoadBalancer.Ingress[0].Hostname != "" {
+				externalAddress = newObj.Status.LoadBalancer.Ingress[0].Hostname
+			}
+			if newObj.Status.LoadBalancer.Ingress[0].IP != "" {
+				externalAddress = newObj.Status.LoadBalancer.Ingress[0].IP
+			}
+
+			if externalAddress != "" {
+				kmc.Spec.ExternalAddress = externalAddress
+				err := r.Client.Update(ctx, &kmc)
+				if err != nil {
+					log.FromContext(ctx).Error(err, "failed to update K0smotronCluster")
+				}
+				stopCh <- struct{}{}
+			}
+		}
+	}
+
+	inf := informerv1.NewServiceInformer(r.ClientSet, kmc.Namespace, 100*time.Millisecond, nil)
+	_, err := inf.AddEventHandler(handler)
+	if err != nil {
+		return err
+	}
+
+	go inf.Run(stopCh)
+
+	return nil
 }
