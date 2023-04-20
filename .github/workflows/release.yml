@@ -61,14 +61,3 @@ jobs:
             ghcr.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
             quay.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
           push: true
-
-#      - name: Create install.yaml
-#        if: github.repository == 'k0sproject/k0smotron'
-#        run: |
-#          make release IMG=quay.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
-#          mkdir -p release
-#          cp install.yaml release/install.yaml
-#          git checkout gh-pages
-#          git add release/install.yaml && git update-index --refresh
-#          git diff-index --quiet HEAD -- || git commit -m "New install.yaml for version ${{ needs.release.outputs.image_tag }}"
-#          git push origin gh-pages
