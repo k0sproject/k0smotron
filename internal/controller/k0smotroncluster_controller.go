@@ -61,7 +61,10 @@ type K0smotronClusterReconciler struct {
 //+kubebuilder:rbac:groups=k0smotron.io,resources=k0smotronclusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=k0smotron.io,resources=k0smotronclusters/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list
+// +kubebuilder:rbac:groups=core,resources=pods/exec,verbs=create
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -83,13 +86,6 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	if kmc.Spec.Service.APIPort == 0 {
-		kmc.Spec.Service.APIPort = defaultAPIPort
-	}
-	if kmc.Spec.Service.KonnectivityPort == 0 {
-		kmc.Spec.Service.APIPort = defaultKonnectivityPort
 	}
 
 	logger.Info("Reconciling")

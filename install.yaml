@@ -50,6 +50,7 @@ spec:
             description: K0smotronClusterSpec defines the desired state of K0smotronCluster
             properties:
               apiPort:
+                default: 30443
                 description: APIPort defines the kubernetes API port. If empty k0smotron
                   will pick it automatically.
                 type: integer
@@ -64,6 +65,7 @@ spec:
                   empty k0smotron will pick it automatically.
                 type: string
               konnectivityPort:
+                default: 30132
                 description: KonnectivityPort defines the konnectivity port. If empty
                   k0smotron will pick it automatically.
                 type: integer
@@ -503,6 +505,31 @@ rules:
   - ""
   resources:
   - configmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - pods/exec
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - secrets
   verbs:
   - create
   - delete
