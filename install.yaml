@@ -49,11 +49,10 @@ spec:
           spec:
             description: K0smotronClusterSpec defines the desired state of K0smotronCluster
             properties:
-              apiPort:
-                default: 30443
-                description: APIPort defines the kubernetes API port. If empty k0smotron
-                  will pick it automatically.
-                type: integer
+              externalAddress:
+                description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
+                  Will be detected automatically for service type LoadBalancer.
+                type: string
               k0sImage:
                 default: k0sproject/k0s
                 description: K0sImage defines the k0s image to be deployed. If empty
@@ -64,11 +63,6 @@ spec:
                 description: K0sVersion defines the k0s version to be deployed. If
                   empty k0smotron will pick it automatically.
                 type: string
-              konnectivityPort:
-                default: 30132
-                description: KonnectivityPort defines the konnectivity port. If empty
-                  k0smotron will pick it automatically.
-                type: integer
               persistence:
                 description: Persistence defines the persistence configuration. If
                   empty k0smotron will use emptyDir as a volume.
@@ -408,6 +402,27 @@ spec:
                 required:
                 - type
                 type: object
+              service:
+                description: Service defines the service configuration.
+                properties:
+                  apiPort:
+                    default: 30443
+                    description: APIPort defines the kubernetes API port. If empty
+                      k0smotron will pick it automatically.
+                    type: integer
+                  konnectivityPort:
+                    default: 30132
+                    description: KonnectivityPort defines the konnectivity port. If
+                      empty k0smotron will pick it automatically.
+                    type: integer
+                  type:
+                    default: NodePort
+                    description: Service Type string describes ingress methods for
+                      a service
+                    type: string
+                required:
+                - type
+                type: object
             type: object
           status:
             description: K0smotronClusterStatus defines the observed state of K0smotronCluster
@@ -492,7 +507,7 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - deployments
+  - statefulsets
   verbs:
   - create
   - delete
@@ -505,6 +520,30 @@ rules:
   - ""
   resources:
   - configmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumes
   verbs:
   - create
   - delete

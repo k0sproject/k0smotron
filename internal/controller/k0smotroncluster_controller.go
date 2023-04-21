@@ -62,10 +62,12 @@ type K0smotronClusterReconciler struct {
 //+kubebuilder:rbac:groups=k0smotron.io,resources=k0smotronclusters/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=persistentvolumes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list
 // +kubebuilder:rbac:groups=core,resources=pods/exec,verbs=create
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -96,20 +98,14 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	logger.Info("Reconciling PVC")
-	if err := r.reconcilePVC(ctx, req, kmc); err != nil {
-		r.updateStatus(ctx, kmc, "Failed reconciling PVC")
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
-	}
-
 	if err := r.reconcileCM(ctx, req, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling configmap")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	logger.Info("Reconciling deployment")
-	if err := r.reconcileDeployment(ctx, req, kmc); err != nil {
-		r.updateStatus(ctx, kmc, "Failed reconciling deployment")
+	logger.Info("Reconciling statefulset")
+	if err := r.reconcileStatefulSet(ctx, req, kmc); err != nil {
+		r.updateStatus(ctx, kmc, "Failed reconciling statefulset")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
@@ -157,12 +153,12 @@ func (r *K0smotronClusterReconciler) reconcileServices(ctx context.Context, req 
 	return r.Client.Patch(ctx, &svc, client.Apply, patchOpts...)
 }
 
-func (r *K0smotronClusterReconciler) reconcileDeployment(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
+func (r *K0smotronClusterReconciler) reconcileStatefulSet(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
 	logger := log.FromContext(ctx)
-	logger.Info("Reconciling deployment")
-	deploy := r.generateDeployment(&kmc)
+	logger.Info("Reconciling statefulset")
+	statefulSet := r.generateStatefulSet(&kmc)
 
-	return r.Client.Patch(ctx, &deploy, client.Apply, patchOpts...)
+	return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -248,24 +244,23 @@ spec:
 	return cm
 }
 
-func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster) apps.Deployment {
+func (r *K0smotronClusterReconciler) generateStatefulSet(kmc *km.K0smotronCluster) apps.StatefulSet {
 	k0sVersion := kmc.Spec.K0sVersion
 	if k0sVersion == "" {
 		k0sVersion = defaultK0SVersion
 	}
 
-	dep := apps.Deployment{
+	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
-			Kind:       "Deployment",
+			Kind:       "StatefulSet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kmc.GetDeploymentName(),
 			Namespace: kmc.Namespace,
 			Labels:    map[string]string{"app": "k0smotron"},
 		},
-		Spec: apps.DeploymentSpec{
-			Strategy: apps.DeploymentStrategy{Type: apps.RecreateDeploymentStrategyType},
+		Spec: apps.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": "k0smotron"},
 			},
@@ -310,22 +305,23 @@ func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster
 									Path: "k0s.yaml",
 								}},
 							}}}},
-				}}}}
+				}},
+		}}
 
 	switch kmc.Spec.Persistence.Type {
 	case "emptyDir":
-		dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes, v1.Volume{
+		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
 			Name: kmc.GetVolumeName(),
 			VolumeSource: v1.VolumeSource{
 				EmptyDir: &v1.EmptyDirVolumeSource{},
 			},
 		})
-		dep.Spec.Template.Spec.Containers[0].VolumeMounts = append(dep.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.GetVolumeName(),
 			MountPath: "/var/lib/k0s",
 		})
 	case "hostPath":
-		dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes, v1.Volume{
+		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
 			Name: kmc.GetVolumeName(),
 			VolumeSource: v1.VolumeSource{
 				HostPath: &v1.HostPathVolumeSource{
@@ -333,27 +329,21 @@ func (r *K0smotronClusterReconciler) generateDeployment(kmc *km.K0smotronCluster
 				},
 			},
 		})
-		dep.Spec.Template.Spec.Containers[0].VolumeMounts = append(dep.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.GetVolumeName(),
 			MountPath: "/var/lib/k0s",
 		})
 	case "pvc":
-		dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes, v1.Volume{
-			Name: kmc.GetVolumeName(),
-			VolumeSource: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-					ClaimName: kmc.GetVolumeName(),
-				},
-			},
-		})
-		dep.Spec.Template.Spec.Containers[0].VolumeMounts = append(dep.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+		statefulSet.Spec.VolumeClaimTemplates = append(statefulSet.Spec.VolumeClaimTemplates, kmc.Spec.Persistence.PersistentVolumeClaim)
+
+		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.GetVolumeName(),
 			MountPath: "/var/lib/k0s",
 		})
 	}
 
-	ctrl.SetControllerReference(kmc, &dep, r.Scheme)
-	return dep
+	ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
+	return statefulSet
 }
 
 func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc km.K0smotronCluster) error {
@@ -420,36 +410,6 @@ func (r *K0smotronClusterReconciler) findDeploymentPod(ctx context.Context, depl
 		return nil, fmt.Errorf("did not find running pods for deployment %s", deploymentName)
 	}
 	return runningPod, nil
-}
-
-func (r *K0smotronClusterReconciler) reconcilePVC(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
-
-	if kmc.Spec.Persistence.Type != "pvc" {
-		return nil
-	}
-
-	pvc := r.generatePVC(&kmc, kmc.GetVolumeName())
-
-	return r.Client.Patch(ctx, &pvc, client.Apply, patchOpts...)
-}
-
-func (r *K0smotronClusterReconciler) generatePVC(kmc *km.K0smotronCluster, name string) v1.PersistentVolumeClaim {
-	pvc := v1.PersistentVolumeClaim{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "PersistentVolumeClaim",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: kmc.Namespace,
-			Labels:    map[string]string{"app": "k0smotron"},
-		},
-		Spec: kmc.Spec.Persistence.PersistentVolumeClaim.Spec,
-	}
-
-	ctrl.SetControllerReference(kmc, &pvc, r.Scheme)
-
-	return pvc
 }
 
 func (r *K0smotronClusterReconciler) watchLBServiceIP(ctx context.Context, kmc km.K0smotronCluster) error {
