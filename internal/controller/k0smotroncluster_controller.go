@@ -89,7 +89,6 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
 	logger.Info("Reconciling")
 
 	logger.Info("Reconciling services")
@@ -256,7 +255,7 @@ func (r *K0smotronClusterReconciler) generateStatefulSet(kmc *km.K0smotronCluste
 			Kind:       "StatefulSet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmc.GetDeploymentName(),
+			Name:      kmc.GetStatefulSetName(),
 			Namespace: kmc.Namespace,
 			Labels:    map[string]string{"app": "k0smotron"},
 		},
@@ -348,7 +347,7 @@ func (r *K0smotronClusterReconciler) generateStatefulSet(kmc *km.K0smotronCluste
 
 func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc km.K0smotronCluster) error {
 	logger := log.FromContext(ctx)
-	pod, err := r.findDeploymentPod(ctx, kmc.GetDeploymentName(), kmc.Namespace)
+	pod, err := r.findStatefulSetPod(ctx, kmc.GetStatefulSetName(), kmc.Namespace)
 
 	if err != nil {
 		return err
@@ -382,9 +381,9 @@ func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Conte
 	return r.Client.Patch(ctx, &secret, client.Apply, patchOpts...)
 }
 
-// FindDeploymentPod returns a first running pod from a deployment
-func (r *K0smotronClusterReconciler) findDeploymentPod(ctx context.Context, deploymentName string, namespace string) (*v1.Pod, error) {
-	dep, err := r.ClientSet.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
+// findStatefulSetPod returns a first running pod from a StatefulSet
+func (r *K0smotronClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
+	dep, err := r.ClientSet.AppsV1().StatefulSets(namespace).Get(ctx, statefulSet, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +395,7 @@ func (r *K0smotronClusterReconciler) findDeploymentPod(ctx context.Context, depl
 		return nil, err
 	}
 	if len(pods.Items) < 1 {
-		return nil, fmt.Errorf("did not find matching pods for deployment %s", deploymentName)
+		return nil, fmt.Errorf("did not find matching pods for statefulSet %s", statefulSet)
 	}
 	// Find a running pod
 	var runningPod *v1.Pod
@@ -407,7 +406,7 @@ func (r *K0smotronClusterReconciler) findDeploymentPod(ctx context.Context, depl
 		}
 	}
 	if runningPod == nil {
-		return nil, fmt.Errorf("did not find running pods for deployment %s", deploymentName)
+		return nil, fmt.Errorf("did not find running pods for statefulSet %s", statefulSet)
 	}
 	return runningPod, nil
 }
