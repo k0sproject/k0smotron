@@ -108,7 +108,7 @@ func init() {
 	SchemeBuilder.Register(&K0smotronCluster{}, &K0smotronClusterList{})
 }
 
-func (kmc *K0smotronCluster) GetDeploymentName() string {
+func (kmc *K0smotronCluster) GetStatefulSetName() string {
 	return fmt.Sprintf("kmc-%s", kmc.Name)
 }
 
