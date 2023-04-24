@@ -1,0 +1,92 @@
+name: Publish docs via GitHub Pages
+on:
+  push:
+    branches:
+      - main
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    name: Deploy docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout k0s
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --disable-pip-version-check -r docs/requirements_pip.txt
+          pip --version
+          pip install --disable-pip-version-check -r docs/requirements.txt
+          go install github.com/k0sproject/version/cmd/k0s_sort@v0.2.2
+
+      - name: Generate docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make -C docs docs
+
+      - name: git config
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      # This deploys the current docs into gh-pages/head on merges to main
+      # The old "main" gets deleted if it exists, head is more descriptive
+      - name: mike deploy head
+        if: contains(github.ref, 'refs/heads/main')
+        run: |
+          mike deploy --push head
+
+      # If a release has been published, deploy it as a new version
+      - name: mike deploy new version
+        if: >-
+          github.event_name == 'release' &&
+          github.event.action == 'published' &&
+          !github.event.release.draft &&
+          !github.event.release.prerelease
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          mike deploy --push "$VERSION"
+
+      - name: Update mike version aliases
+        if: github.repository == 'k0sproject/k0smotron'
+        id: set_versions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAGS=$(gh release list -L 1000 -R "$GITHUB_REPOSITORY" | grep "+k0s." | grep -v Draft | cut -f 1 | k0s_sort)
+          LATEST=$(echo "${TAGS}" | tail -1)
+          STABLE=$(echo "${TAGS}" | grep -v -- "-" | tail -1)
+          mike alias -u head main
+          mike alias -u "${STABLE}" stable
+          mike set-default --push stable
+          echo LATEST="$LATEST" >> $GITHUB_OUTPUT
+          echo STABLE="$STABLE" >> $GITHUB_OUTPUT
+
+      # Ensures the current branch is gh-pages,
+      # Creates / updates the "install.yaml" file with the corresponding versions
+      # Commits if the files were changed
+      # Finally pushes if there are unpushed commits
+      - name: Create install files
+        if: github.repository == 'k0sproject/k0smotron'
+        run: |
+          STABLE=${{ steps.set_versions.outputs.STABLE }}
+          make release IMG=quay.io/k0sproject/k0smotron:${STABLE}
+          cp install.yaml /tmp/install.yaml
+          git checkout gh-pages
+          cp /tmp/install.yaml install.yaml 
+          git add install.yaml && git update-index --refresh
+          git diff-index --quiet HEAD -- || git commit -m "Update install.yaml to ${STABLE}"
+          git push origin gh-pages

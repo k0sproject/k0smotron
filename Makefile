@@ -163,3 +163,16 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+
+.PHONY: docs
+docs:
+	$(MAKE) -C docs
+
+.PHONY: docs-serve-dev
+docs-serve-dev: DOCS_DEV_PORT ?= 8000
+docs-serve-dev:
+	$(MAKE) -C docs .docker-image.serve-dev.stamp
+	docker run --rm \
+	  -v "$(CURDIR):/k0s:ro" \
+	  -p '$(DOCS_DEV_PORT):8000' \
+	  k0sdocs.docker-image.serve-dev

@@ -1,0 +1,80 @@
+site_name: Documentation
+site_description: Documentation for k0smotron.
+site_author: Mirantis, Inc.
+site_url: https://docs.k0smotron.io
+docs_dir: docs/
+repo_name: GitHub
+repo_url: https://github.com/k0sproject/k0smotron
+copyright:
+  Copyright &copy; 2023 <a href="https://mirantis.com/">Mirantis Inc.</a>
+  - All rights reserved.
+edit_uri: ""
+nav:
+  - Overview: README.md
+
+theme:
+  name: "material"
+  highlightjs: true
+  language: "en"
+  custom_dir: docs/custom_theme
+  favicon: img/k0s_social.png
+  logo: img/k0s_social.png
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+  features:
+    - toc.autohide
+    - search.suggest
+    - search.highlight
+
+extra_css:
+  - stylesheets/extra.css
+plugins:
+  - search
+  - macros:
+      j2_variable_start_string: "{{{"
+      j2_variable_end_string: "}}}"
+  - exclude:
+      glob:
+        - "*.etag"
+        - Dockerfile.serve-dev
+        - k0smotron
+        - Makefile*
+        - requirements_pip.txt
+        - requirements.txt
+
+markdown_extensions:
+  - pymdownx.highlight: {}
+  - pymdownx.superfences: {}
+  - pymdownx.inlinehilite: {}
+  - mdx_truly_sane_lists: # https://github.com/mkdocs/mkdocs/issues/545#issuecomment-522196661
+      nested_indent: 2
+      truly_sane: true
+  - toc:
+      permalink: "#"
+      toc_depth: 3
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+extra:
+  k8s_version: !!python/object/apply:os.getenv ["KUBE_VERSION"]
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/k0sproject/k0smotron
+      name: k0smotron on GitHub
+    - icon: fontawesome/solid/link
+      link: https://k0smotron.io/
+      name: k0smotron Website
+  version:
+    provider: mike
+    default: stable
