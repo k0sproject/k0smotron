@@ -5,22 +5,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
-  name: k0smotronclusters.k0smotron.io
+  name: clusters.k0smotron.io
 spec:
   group: k0smotron.io
   names:
-    kind: K0smotronCluster
-    listKind: K0smotronClusterList
-    plural: k0smotronclusters
+    kind: Cluster
+    listKind: ClusterList
+    plural: clusters
     shortNames:
     - kmc
-    singular: k0smotroncluster
+    singular: cluster
   scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: K0smotronCluster is the Schema for the k0smotronclusters API
+        description: Cluster is the Schema for the k0smotronclusters API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -35,7 +35,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: K0smotronClusterSpec defines the desired state of K0smotronCluster
+            default:
+              service:
+                type: NodePort
+            description: ClusterSpec defines the desired state of K0smotronCluster
             properties:
               externalAddress:
                 description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
@@ -407,6 +410,9 @@ spec:
                     default: NodePort
                     description: Service Type string describes ingress methods for
                       a service
+                    enum:
+                    - NodePort
+                    - LoadBalancer
                     type: string
                 required:
                 - type
@@ -420,8 +426,6 @@ spec:
             required:
             - reconciliationStatus
             type: object
-        required:
-        - spec
         type: object
     served: true
     storage: true

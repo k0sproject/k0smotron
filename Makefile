@@ -1,6 +1,6 @@
 include inttest/Makefile.variables
 # Image URL to use all building/pushing image targets
-IMG ?= k0s/k0smotron:latest
+IMG ?= quay.io/k0sproject/k0smotron:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.26.0
 

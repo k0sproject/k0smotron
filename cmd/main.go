@@ -103,7 +103,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.K0smotronClusterReconciler{
+	if err = (&controller.ClusterReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		ClientSet:  clientSet,

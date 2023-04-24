@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func (r *K0smotronClusterReconciler) generateService(kmc *km.K0smotronCluster) v1.Service {
+func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 	var name string
 	switch kmc.Spec.Service.Type {
 	case v1.ServiceTypeNodePort:
@@ -75,7 +75,7 @@ func (r *K0smotronClusterReconciler) generateService(kmc *km.K0smotronCluster) v
 	return svc
 }
 
-func (r *K0smotronClusterReconciler) reconcileServices(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
+func (r *ClusterReconciler) reconcileServices(ctx context.Context, req ctrl.Request, kmc km.Cluster) error {
 	logger := log.FromContext(ctx)
 	// Depending on ingress configuration create nodePort service.
 	logger.Info("Reconciling services")
@@ -89,7 +89,7 @@ func (r *K0smotronClusterReconciler) reconcileServices(ctx context.Context, req 
 	return r.Client.Patch(ctx, &svc, client.Apply, patchOpts...)
 }
 
-func (r *K0smotronClusterReconciler) watchLBServiceIP(ctx context.Context, kmc km.K0smotronCluster) error {
+func (r *ClusterReconciler) watchLBServiceIP(ctx context.Context, kmc km.Cluster) error {
 	var handler cache.ResourceEventHandlerFuncs
 	stopCh := make(chan struct{})
 	handler.UpdateFunc = func(old, new interface{}) {
