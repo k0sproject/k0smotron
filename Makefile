@@ -187,3 +187,6 @@ $(smoketests): release k0smotron-image-bundle.tar
 .PHONY: smoketest
 smoketests: $(smoketests)
 
+.PHONY: clean
+clean:
+	-$(MAKE) -C inttest clean
