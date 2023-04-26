@@ -4,7 +4,7 @@ FOOTLOOSE_IMAGE ?= footloose-alpine
 K0SMOTRON_IMAGES_BUNDLE ?= $(realpath ../k0smotron-image-bundle.tar)
 K0SMOTRON_INSTALL_YAML ?= $(realpath ../install.yaml)
 K0S_USE_DEFAULT_K0S_BINARIES ?= true
-TIMEOUT ?= 3m
+TIMEOUT ?= 5m
 
 .PHONY: $(smoketests)
 include Makefile.variables
