@@ -190,3 +190,21 @@ smoketests: $(smoketests)
 .PHONY: clean
 clean:
 	-$(MAKE) -C inttest clean
+	rm -f hack/lint/.golangci-lint.stamp
+
+hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile
+	docker build \
+	  -t k0smotron.golangci-lint \
+	  --build-arg GOLANGCILINT_VERSION=1.52.2 \
+	  -f hack/lint/Dockerfile \
+	  .
+	touch -- '$@'
+
+.PHONY: lint
+lint: GOLANGCI_LINT_FLAGS ?= --verbose
+lint: hack/lint/.golangci-lint.stamp
+	docker run \
+	  --rm \
+	  -v "$(CURDIR):/go/src/github.com/k0sproject/k0smotron:ro" \
+	  -w /go/src/github.com/k0sproject/k0smotron \
+	  k0smotron.golangci-lint golangci-lint run $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS)
