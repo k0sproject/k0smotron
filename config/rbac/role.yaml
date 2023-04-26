@@ -93,7 +93,7 @@ rules:
 - apiGroups:
   - k0smotron.io
   resources:
-  - k0smotronclusters
+  - clusters
   verbs:
   - create
   - delete
@@ -105,13 +105,13 @@ rules:
 - apiGroups:
   - k0smotron.io
   resources:
-  - k0smotronclusters/finalizers
+  - clusters/finalizers
   verbs:
   - update
 - apiGroups:
   - k0smotron.io
   resources:
-  - k0smotronclusters/status
+  - clusters/status
   verbs:
   - get
   - patch

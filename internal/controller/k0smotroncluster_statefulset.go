@@ -30,7 +30,7 @@ import (
 )
 
 // findStatefulSetPod returns a first running pod from a StatefulSet
-func (r *K0smotronClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
+func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
 	dep, err := r.ClientSet.AppsV1().StatefulSets(namespace).Get(ctx, statefulSet, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (r *K0smotronClusterReconciler) findStatefulSetPod(ctx context.Context, sta
 	return runningPod, nil
 }
 
-func (r *K0smotronClusterReconciler) generateStatefulSet(kmc *km.K0smotronCluster) apps.StatefulSet {
+func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) apps.StatefulSet {
 	k0sVersion := kmc.Spec.K0sVersion
 	if k0sVersion == "" {
 		k0sVersion = defaultK0SVersion
@@ -161,7 +161,7 @@ func (r *K0smotronClusterReconciler) generateStatefulSet(kmc *km.K0smotronCluste
 	return statefulSet
 }
 
-func (r *K0smotronClusterReconciler) reconcileStatefulSet(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
+func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, req ctrl.Request, kmc km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling statefulset")
 	statefulSet := r.generateStatefulSet(&kmc)

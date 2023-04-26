@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func (r *K0smotronClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc km.K0smotronCluster) error {
+func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc km.Cluster) error {
 	logger := log.FromContext(ctx)
 	pod, err := r.findStatefulSetPod(ctx, kmc.GetStatefulSetName(), kmc.Namespace)
 

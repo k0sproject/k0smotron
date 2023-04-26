@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func (r *K0smotronClusterReconciler) generateCM(kmc *km.K0smotronCluster) v1.ConfigMap {
+func (r *ClusterReconciler) generateCM(kmc *km.Cluster) v1.ConfigMap {
 	// TODO externalAddress cannot be hardcoded
 	// TODO k0s.yaml should probably be a
 	// github.com/k0sproject/k0s/pkg/apis/k0s.k0sproject.io/v1beta1.ClusterConfig
@@ -60,7 +60,7 @@ spec:
 	return cm
 }
 
-func (r *K0smotronClusterReconciler) reconcileCM(ctx context.Context, req ctrl.Request, kmc km.K0smotronCluster) error {
+func (r *ClusterReconciler) reconcileCM(ctx context.Context, req ctrl.Request, kmc km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling configmap")
 

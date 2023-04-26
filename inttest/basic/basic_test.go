@@ -190,7 +190,7 @@ func (s *BasicSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.
 	kmc := []byte(fmt.Sprintf(`
 	{
 		"apiVersion": "k0smotron.io/v1beta1",
-		"kind": "K0smotronCluster",
+		"kind": "Cluster",
 		"metadata": {
 		  "name": "kmc-test",
 		  "namespace": "kmc-test"
@@ -204,7 +204,7 @@ func (s *BasicSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.
 	  }
 `, s.getNodeAddress(ctx, kc, s.WorkerNode(0))))
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/k0smotronclusters").Body(kmc).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
 }
 

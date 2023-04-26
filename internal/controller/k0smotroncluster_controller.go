@@ -42,17 +42,17 @@ var patchOpts []client.PatchOption = []client.PatchOption{
 	client.ForceOwnership,
 }
 
-// K0smotronClusterReconciler reconciles a K0smotronCluster object
-type K0smotronClusterReconciler struct {
+// ClusterReconciler reconciles a Cluster object
+type ClusterReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	ClientSet  *kubernetes.Clientset
 	RESTConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=k0smotron.io,resources=k0smotronclusters,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=k0smotron.io,resources=k0smotronclusters/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=k0smotron.io,resources=k0smotronclusters/finalizers,verbs=update
+//+kubebuilder:rbac:groups=k0smotron.io,resources=clusters,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=k0smotron.io,resources=clusters/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=k0smotron.io,resources=clusters/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=persistentvolumes,verbs=get;list;watch;create;update;patch;delete
@@ -65,18 +65,18 @@ type K0smotronClusterReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the K0smotronCluster object against the actual cluster state, and then
+// the Cluster object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
-func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var kmc km.K0smotronCluster
+	var kmc km.Cluster
 	if err := r.Get(ctx, req.NamespacedName, &kmc); err != nil {
-		logger.Error(err, "unable to fetch K0smotronCluster")
+		logger.Error(err, "unable to fetch Cluster")
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
@@ -84,7 +84,6 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info("Reconciling")
 
-	logger.Info("Reconciling services")
 	if err := r.reconcileServices(ctx, req, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling services")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
@@ -110,7 +109,7 @@ func (r *K0smotronClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-func (r *K0smotronClusterReconciler) updateStatus(ctx context.Context, kmc km.K0smotronCluster, status string) {
+func (r *ClusterReconciler) updateStatus(ctx context.Context, kmc km.Cluster, status string) {
 	logger := log.FromContext(ctx)
 	kmc.Status.ReconciliationStatus = status
 	if err := r.Status().Update(ctx, &kmc); err != nil {
@@ -119,8 +118,8 @@ func (r *K0smotronClusterReconciler) updateStatus(ctx context.Context, kmc km.K0
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *K0smotronClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&km.K0smotronCluster{}).
+		For(&km.Cluster{}).
 		Complete(r)
 }
