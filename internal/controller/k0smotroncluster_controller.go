@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	defaultK0SVersion       = "v1.26.2-k0s.1"
+	defaultK0SVersion       = "v1.26.3-k0s.0"
 	defaultAPIPort          = 30443
 	defaultKonnectivityPort = 30132
 )
