@@ -59,7 +59,7 @@ func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet 
 	return runningPod, nil
 }
 
-func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) apps.StatefulSet {
+func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
 	k0sVersion := kmc.Spec.K0sVersion
 	if k0sVersion == "" {
 		k0sVersion = defaultK0SVersion
@@ -157,14 +157,16 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) apps.StatefulSe
 		})
 	}
 
-	ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
-	return statefulSet
+	err := ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
+	return statefulSet, err
 }
 
-func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, req ctrl.Request, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling statefulset")
-	statefulSet := r.generateStatefulSet(&kmc)
-
+	statefulSet, err := r.generateStatefulSet(&kmc)
+	if err != nil {
+		return fmt.Errorf("failed to generate statefulset: %w", err)
+	}
 	return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 }
