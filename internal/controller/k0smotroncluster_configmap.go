@@ -60,7 +60,7 @@ spec:
 	return cm
 }
 
-func (r *ClusterReconciler) reconcileCM(ctx context.Context, req ctrl.Request, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling configmap")
 

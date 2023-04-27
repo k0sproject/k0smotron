@@ -84,18 +84,19 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	logger.Info("Reconciling")
 
-	if err := r.reconcileServices(ctx, req, kmc); err != nil {
+	logger.Info("Reconciling services")
+	if err := r.reconcileServices(ctx, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling services")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	if err := r.reconcileCM(ctx, req, kmc); err != nil {
+	if err := r.reconcileCM(ctx, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling configmap")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling statefulset")
-	if err := r.reconcileStatefulSet(ctx, req, kmc); err != nil {
+	if err := r.reconcileStatefulSet(ctx, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling statefulset")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}

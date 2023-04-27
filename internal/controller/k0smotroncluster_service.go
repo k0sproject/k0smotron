@@ -75,7 +75,7 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 	return svc
 }
 
-func (r *ClusterReconciler) reconcileServices(ctx context.Context, req ctrl.Request, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileServices(ctx context.Context, kmc km.Cluster) error {
 	logger := log.FromContext(ctx)
 	// Depending on ingress configuration create nodePort service.
 	logger.Info("Reconciling services")

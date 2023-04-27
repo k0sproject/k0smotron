@@ -10,6 +10,9 @@ testbin/*
 Dockerfile.cross
 k0smotron-image-bundle.tar
 
+# stamp files for docker images
+.*.stamp
+
 # Test binary, build with `go test -c`
 *.test
 

@@ -71,7 +71,7 @@ func (s *BasicSuite) TestK0sGetsUp() {
 
 	s.T().Log("Generating k0smotron join token")
 	pod := s.getPod(s.Context(), kc)
-	token := s.getJoinToken(s.Context(), kc, pod.Name)
+	token := s.getJoinToken(kc, pod.Name)
 
 	s.T().Log("joining worker to k0smotron cluster")
 	s.Require().NoError(s.RunWithToken(s.K0smotronNode(0), token))
@@ -84,7 +84,7 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	readyChan := make(chan struct{})
 	fw := s.getPortForwarder(cfg, stopChan, readyChan, pod)
 
-	go fw.ForwardPorts()
+	go s.forwardPorts(fw)
 	defer fw.Close()
 	defer close(stopChan)
 
@@ -217,7 +217,7 @@ func (s *BasicSuite) getPod(ctx context.Context, kc *kubernetes.Clientset) corev
 
 	return pods.Items[0]
 }
-func (s *BasicSuite) getJoinToken(ctx context.Context, kc *kubernetes.Clientset, podName string) string {
+func (s *BasicSuite) getJoinToken(kc *kubernetes.Clientset, podName string) string {
 	rc, err := s.GetKubeConfig(s.ControllerNode(0))
 	s.Require().NoError(err, "failed to acquire restConfig")
 	output, err := common.PodExecCmdOutput(kc, rc, podName, "kmc-test", "k0s token create --role=worker")
@@ -264,4 +264,8 @@ func (s *BasicSuite) getNodeAddress(ctx context.Context, kc *kubernetes.Clientse
 	}
 	s.FailNow("Node doesn't have an Address of type InternalIP")
 	return ""
+}
+
+func (s *BasicSuite) forwardPorts(fw *portforward.PortForwarder) {
+	s.Require().NoError(fw.ForwardPorts())
 }

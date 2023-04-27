@@ -1,0 +1,51 @@
+name: Go lint
+on:
+  push:
+    branches:
+      - main
+      - release-*
+    paths-ignore:
+      - 'docs/**'
+      - 'examples/**'
+      - '**.md'
+      - '**.svg'
+      - '.github/workflows/publish-docs.yml'
+      - 'mkdocs.yml'
+  pull_request:
+    branches:
+      - main
+      - release-*
+    paths-ignore:
+      - 'docs/**'
+      - 'examples/**'
+      - '**.md'
+      - '**.svg'
+      - '.github/workflows/publish-docs.yml'
+      - 'mkdocs.yml'
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Go caches
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-lint-go-caches-${{ hashFiles('go.sum') }}
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~/.cache/golangci-lint
+
+      - name: Check generated code to be consistent
+        run: make generate manifests release && git diff --exit-code
+
+      - name: Run linter
+        env:
+          GOLANGCI_LINT_FLAGS: --out-format=github-actions
+        run: |
+          make lint
