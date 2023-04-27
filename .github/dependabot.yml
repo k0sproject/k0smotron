@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    ignore:
+      # Kubernetes
+      - dependency-name: k8s.io/sample-controller
+      - dependency-name: k8s.io/api
+      - dependency-name: k8s.io/apimachinery
+      - dependency-name: k8s.io/client-go
+
+      #k0s
+      - dependency-name: github.com/k0sproject/k0s
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: pip
+    directory: /docs
+    schedule:
+      interval: daily
