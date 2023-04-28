@@ -198,6 +198,11 @@ smoketests: $(smoketests)
 clean:
 	-$(MAKE) -C inttest clean
 	rm -f hack/lint/.golangci-lint.stamp
+	rm -rf \
+	  $(generate_targets) \
+	  $(manifests_targets) \
+	  k0smotron-image-bundle.tar \
+	  $(LOCALBIN)
 
 hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile
 	docker build \
