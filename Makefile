@@ -1,6 +1,8 @@
 include Makefile.variables
 include inttest/Makefile.variables
 
+.DELETE_ON_ERROR:
+
 ## Location to install dependencies to
 LOCALBIN ?= $(shell pwd)/bin
 $(LOCALBIN):
