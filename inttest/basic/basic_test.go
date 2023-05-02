@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	"github.com/stretchr/testify/suite"
@@ -49,7 +50,7 @@ type BasicSuite struct {
 }
 
 func (s *BasicSuite) TestK0sGetsUp() {
-	s.T().Log("starting k0s")
+	s.logTS("starting k0s")
 	s.Require().NoError(s.InitController(0, "--disable-components=konnectivity-server,metrics-server"))
 	s.Require().NoError(s.RunWorkers())
 
@@ -61,22 +62,22 @@ func (s *BasicSuite) TestK0sGetsUp() {
 
 	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
 
-	s.T().Log("deploying k0smotron operator")
+	s.logTS("deploying k0smotron operator")
 	s.createFromYaml(s.Context(), os.Getenv("K0SMOTRON_INSTALL_YAML"), kc)
 	s.Require().NoError(common.WaitForDeployment(s.Context(), kc, "k0smotron-controller-manager", "k0smotron"))
 
-	s.T().Log("deploying k0smotron cluster")
+	s.logTS("deploying k0smotron cluster")
 	s.createK0smotronCluster(s.Context(), kc)
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
-	s.T().Log("Generating k0smotron join token")
+	s.logTS("Generating k0smotron join token")
 	pod := s.getPod(s.Context(), kc)
 	token := s.getJoinToken(kc, pod.Name)
 
-	s.T().Log("joining worker to k0smotron cluster")
+	s.logTS("joining worker to k0smotron cluster")
 	s.Require().NoError(s.RunWithToken(s.K0smotronNode(0), token))
 
-	s.T().Log("Starting portforward")
+	s.logTS("Starting portforward")
 	cfg, err := s.GetKubeConfig(s.ControllerNode(0))
 	s.Require().NoError(err)
 
@@ -88,10 +89,10 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	defer fw.Close()
 	defer close(stopChan)
 
-	s.T().Log("waiting for portforward to be ready")
+	s.logTS("waiting for portforward to be ready")
 	<-readyChan
 
-	s.T().Log("waiting for node to be ready")
+	s.logTS("waiting for node to be ready")
 	kmcKC := s.getKMCClientSet(kc)
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 
@@ -268,4 +269,8 @@ func (s *BasicSuite) getNodeAddress(ctx context.Context, kc *kubernetes.Clientse
 
 func (s *BasicSuite) forwardPorts(fw *portforward.PortForwarder) {
 	s.Require().NoError(fw.ForwardPorts())
+}
+
+func (s *BasicSuite) logTS(msg string) {
+	s.T().Logf("[%s] %s", time.Now().Format(time.RFC3339), msg)
 }
