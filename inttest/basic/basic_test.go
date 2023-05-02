@@ -92,8 +92,14 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.logTS("waiting for portforward to be ready")
 	<-readyChan
 
-	s.logTS("waiting for node to be ready")
 	kmcKC := s.getKMCClientSet(kc)
+
+	time.Sleep(90 * time.Second)
+	nodes, err := kmcKC.CoreV1().Nodes().List(s.Context(), metav1.ListOptions{})
+	s.Require().NoError(err)
+	s.logTS(fmt.Sprintf("Nodes: %v", nodes))
+
+	s.logTS("waiting for node to be ready")
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 
 }
