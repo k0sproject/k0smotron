@@ -66,6 +66,7 @@ jobs:
       matrix:
         smoke-suite:
           - check-basic
+          - check-hostpath
 
     steps:
       - name: Check out code into the Go module directory
