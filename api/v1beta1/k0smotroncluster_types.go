@@ -58,6 +58,13 @@ type ClusterSpec struct {
 	// Required for HA controlplane setup. Must be set if replicas > 1.
 	//+kubebuilder:validation:Optional
 	KineDataSourceURL string `json:"kineDataSourceURL,omitempty"`
+	// CNIPlugin defines the CNI plugin to be used.
+	// Possible values are KubeRouter and Calico. Uses KubeRouter by default.
+	// Cannot be modified after deploying the cluster.
+	//+kubebuilder:default=kuberouter
+	//+kubebuilder:validation:Enum:=kuberouter;calico;custom
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="cniPlugin is immutable"
+	CNIPlugin string `json:"cniPlugin,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
