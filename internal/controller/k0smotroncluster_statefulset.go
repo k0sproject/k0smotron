@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	km "github.com/k0sproject/k0smotron/api/v1beta1"
@@ -28,6 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+var ErrEmptyKineDataSourceURL = errors.New("kineDataSourceURL can't be empty if replicas > 1")
 
 // findStatefulSetPod returns a first running pod from a StatefulSet
 func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
@@ -65,6 +68,10 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		k0sVersion = defaultK0SVersion
 	}
 
+	if kmc.Spec.Replicas > 1 && kmc.Spec.KineDataSourceURL == "" {
+		return apps.StatefulSet{}, ErrEmptyKineDataSourceURL
+	}
+
 	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -79,6 +86,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": "k0smotron"},
 			},
+			Replicas: &kmc.Spec.Replicas,
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": "k0smotron"},

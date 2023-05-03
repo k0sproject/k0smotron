@@ -67,6 +67,7 @@ jobs:
         smoke-suite:
           - check-basic
           - check-hostpath
+          - check-ha-controller
 
     steps:
       - name: Check out code into the Go module directory

@@ -7,3 +7,4 @@ kubernetes_version=1.26.3
 smoketests := \
     check-basic \
     check-hostpath \
+    check-ha-controller \
