@@ -1,7 +1,9 @@
 # Build the manager binary
-FROM golang:1.20 as builder
+ARG BUILD_IMG
 ARG TARGETOS
 ARG TARGETARCH
+
+FROM ${BUILD_IMG} as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
