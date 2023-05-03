@@ -32,9 +32,7 @@ import (
 )
 
 const (
-	defaultK0SVersion       = "v1.26.3-k0s.0"
-	defaultAPIPort          = 30443
-	defaultKonnectivityPort = 30132
+	defaultK0SVersion = "v1.26.3-k0s.0"
 )
 
 var patchOpts []client.PatchOption = []client.PatchOption{
@@ -97,7 +95,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	logger.Info("Reconciling statefulset")
 	if err := r.reconcileStatefulSet(ctx, kmc); err != nil {
-		r.updateStatus(ctx, kmc, "Failed reconciling statefulset")
+		r.updateStatus(ctx, kmc, fmt.Sprintf("Failed reconciling statefulset, %+v", err))
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 

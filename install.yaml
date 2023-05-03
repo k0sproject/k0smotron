@@ -66,6 +66,10 @@ spec:
                 description: K0sVersion defines the k0s version to be deployed. If
                   empty k0smotron will pick it automatically.
                 type: string
+              kineDataSourceURL:
+                description: KineDataSourceURL defines the kine datasource URL. Required
+                  for HA controlplane setup. Must be set if replicas > 1.
+                type: string
               persistence:
                 description: Persistence defines the persistence configuration. If
                   empty k0smotron will use emptyDir as a volume.
@@ -405,6 +409,14 @@ spec:
                 required:
                 - type
                 type: object
+              replicas:
+                default: 1
+                description: Replicas is the desired number of replicas of the k0s
+                  control planes. If unspecified, defaults to 1. If the value is above
+                  1, k0smotron requires kine datasource URL to be set. Recommended
+                  value is 3.
+                format: int32
+                type: integer
               service:
                 description: Service defines the service configuration.
                 properties:

@@ -10,13 +10,14 @@ ARG TROUBLESHOOT_VERSION=v0.61.0
 # Apply our changes to the image
 COPY root/ /
 
-RUN apk add openrc openssh-server bash busybox-openrc coreutils curl inotify-tools
+RUN apk add openrc openssh-server bash busybox-openrc coreutils curl inotify-tools postgresql
 # enable syslog and sshd
 RUN rc-update add cgroups boot
 RUN rc-update add syslog boot
 RUN rc-update add machine-id boot
 RUN rc-update add sshd default
 RUN rc-update add local default
+RUN rc-update add postgresql default
 # Ensures that /usr/local/bin/k0s is seeded from /dist at startup
 RUN rc-update add k0s-seed default
 
@@ -31,6 +32,10 @@ RUN sed -i -e 's/^root:!:/root::/' /etc/shadow
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$TARGETARCH/kubectl \
   && chmod +x /usr/local/bin/kubectl
 ENV KUBECONFIG=/var/lib/k0s/pki/admin.conf
+ENV POSTGRES_PASSWORD=supersecretpassword
+
+RUN echo "listen_addresses = '0.0.0.0'" >> /etc/postgresql/postgresql.conf
+RUN echo "host    all             all             all            trust" >> /etc/postgresql/pg_hba.conf
 
 # Install latest k0s
 RUN curl -sSLf https://get.k0s.sh | K0S_VERSION=v1.26.3+k0s.0 sh

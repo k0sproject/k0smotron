@@ -17,8 +17,9 @@ limitations under the License.
 package controller
 
 import (
+	"bytes"
 	"context"
-	"fmt"
+	"text/template"
 
 	km "github.com/k0sproject/k0smotron/api/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -28,11 +29,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func (r *ClusterReconciler) generateCM(kmc *km.Cluster) v1.ConfigMap {
-	// TODO externalAddress cannot be hardcoded
+var configTmpl *template.Template
+
+func init() {
+	configTmpl = template.Must(template.New("k0s.yaml").Parse(clusterConfigTemplate))
+}
+
+func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 	// TODO k0s.yaml should probably be a
 	// github.com/k0sproject/k0s/pkg/apis/k0s.k0sproject.io/v1beta1.ClusterConfig
 	// and then unmarshalled into json to make modification of fields reliable
+
+	var clusterConfigBuf bytes.Buffer
+	err := configTmpl.Execute(&clusterConfigBuf, kmc.Spec)
+	if err != nil {
+		return v1.ConfigMap{}, err
+	}
+
 	cm := v1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -43,21 +56,12 @@ func (r *ClusterReconciler) generateCM(kmc *km.Cluster) v1.ConfigMap {
 			Namespace: kmc.Namespace,
 		},
 		Data: map[string]string{
-			"k0s.yaml": fmt.Sprintf(`apiVersion: k0s.k0sproject.io/v1beta1
-kind: ClusterConfig
-metadata:
-  name: k0s
-spec:
-  api:
-    externalAddress: %s
-    port: %d
-  konnectivity:
-    agentPort: %d`, kmc.Spec.ExternalAddress, kmc.Spec.Service.APIPort, kmc.Spec.Service.KonnectivityPort), // TODO: do it as a template or something like this
+			"k0s.yaml": clusterConfigBuf.String(),
 		},
 	}
 
 	_ = ctrl.SetControllerReference(kmc, &cm, r.Scheme)
-	return cm
+	return cm, nil
 }
 
 func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc km.Cluster) error {
@@ -68,7 +72,29 @@ func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc km.Cluster) err
 		return nil
 	}
 
-	cm := r.generateCM(&kmc)
+	cm, err := r.generateCM(&kmc)
+	if err != nil {
+		return err
+	}
 
 	return r.Client.Patch(ctx, &cm, client.Apply, patchOpts...)
 }
+
+const clusterConfigTemplate = `
+apiVersion: k0s.k0sproject.io/v1beta1
+kind: ClusterConfig
+metadata:
+  name: k0s
+spec:
+  api:
+    externalAddress: {{ .ExternalAddress }}
+    port: {{ .Service.APIPort }}
+  konnectivity:
+    agentPort: {{ .Service.KonnectivityPort }}
+  {{- if .KineDataSourceURL }}
+  storage:
+    type: kine
+    kine:
+      dataSource: {{ .KineDataSourceURL }}
+  {{- end }}
+`

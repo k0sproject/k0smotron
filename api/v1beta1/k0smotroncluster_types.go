@@ -28,6 +28,12 @@ import (
 
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
+	// Replicas is the desired number of replicas of the k0s control planes.
+	// If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
+	// Recommended value is 3.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=1
+	Replicas int32 `json:"replicas,omitempty"`
 	// K0sImage defines the k0s image to be deployed. If empty k0smotron
 	// will pick it automatically. Must not include the image tag.
 	//+kubebuilder:default=k0sproject/k0s
@@ -48,6 +54,10 @@ type ClusterSpec struct {
 	// will use emptyDir as a volume.
 	//+kubebuilder:validation:Optional
 	Persistence PersistenceSpec `json:"persistence,omitempty"`
+	// KineDataSourceURL defines the kine datasource URL.
+	// Required for HA controlplane setup. Must be set if replicas > 1.
+	//+kubebuilder:validation:Optional
+	KineDataSourceURL string `json:"kineDataSourceURL,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
