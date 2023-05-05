@@ -19,10 +19,6 @@ package hacontroller
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
 	"testing"
 
 	"github.com/k0sproject/k0s/inttest/common"
@@ -31,10 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 )
 
 type HAControllerSuite struct {
@@ -73,19 +66,13 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 
 	s.T().Log("Starting portforward")
 	pod := s.getPod(s.Context(), kc)
-	cfg, err := s.GetKubeConfig(s.ControllerNode(0))
+
+	fw, err := util.GetPortForwarder(rc, pod.Name, pod.Namespace)
 	s.Require().NoError(err)
-
-	stopChan := make(chan struct{})
-	readyChan := make(chan struct{})
-	fw := s.getPortForwarder(cfg, stopChan, readyChan, pod)
-
-	go s.forwardPorts(fw)
+	go fw.Start(s.Require().NoError)
 	defer fw.Close()
-	defer close(stopChan)
 
-	s.T().Log("waiting for portforward to be ready")
-	<-readyChan
+	<-fw.ReadyChan
 
 	s.T().Log("waiting for node to be ready")
 	kmcKC := s.getKMCClientSet(kc)
@@ -150,22 +137,6 @@ func (s *HAControllerSuite) getPod(ctx context.Context, kc *kubernetes.Clientset
 	return pods.Items[0]
 }
 
-func (s *HAControllerSuite) getPortForwarder(cfg *rest.Config, stopChan <-chan struct{}, readyChan chan struct{}, pod corev1.Pod) *portforward.PortForwarder {
-	transport, upgrader, err := spdy.RoundTripperFor(cfg)
-	s.Require().NoError(err, "failed to create round tripper")
-
-	url := &url.URL{
-		Scheme: "https",
-		Path:   fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", pod.Namespace, pod.Name),
-		Host:   cfg.Host,
-	}
-	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", url)
-
-	fw, err := portforward.New(dialer, []string{"30443"}, stopChan, readyChan, io.Discard, os.Stderr)
-	s.Require().NoError(err, "failed to create portforward")
-	return fw
-}
-
 func (s *HAControllerSuite) getKMCClientSet(kc *kubernetes.Clientset) *kubernetes.Clientset {
 	kubeConf, err := kc.CoreV1().Secrets("kmc-test").Get(s.Context(), "kmc-admin-kubeconfig-kmc-test", metav1.GetOptions{})
 	s.Require().NoError(err)
@@ -188,10 +159,6 @@ func (s *HAControllerSuite) getNodeAddress(ctx context.Context, kc *kubernetes.C
 	}
 	s.FailNow("Node doesn't have an Address of type InternalIP")
 	return ""
-}
-
-func (s *HAControllerSuite) forwardPorts(fw *portforward.PortForwarder) {
-	s.Require().NoError(fw.ForwardPorts())
 }
 
 func (s *HAControllerSuite) getIPAddress(nodeName string) string {

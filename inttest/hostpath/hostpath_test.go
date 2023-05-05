@@ -19,10 +19,6 @@ package hostpath
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
 	"testing"
 
 	"github.com/k0sproject/k0s/inttest/common"
@@ -31,10 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 )
 
 type HostPathSuite struct {
@@ -79,25 +72,12 @@ func (s *HostPathSuite) TestK0sGetsUp() {
 	s.Require().NoError(s.RunWithToken(s.K0smotronNode(0), token))
 
 	s.T().Log("Starting portforward")
-	pod := s.getPod(s.Context(), kc)
-	cfg, err := s.GetKubeConfig(s.ControllerNode(0))
+	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test")
 	s.Require().NoError(err)
-
-	stopChan := make(chan struct{})
-	readyChan := make(chan struct{})
-	fw := s.getPortForwarder(cfg, stopChan, readyChan, pod)
-
-	go func() {
-		fwErr := fw.ForwardPorts()
-		if err != nil {
-			s.T().Log("portforward error: ", fwErr)
-		}
-	}()
+	go fw.Start(s.Require().NoError)
 	defer fw.Close()
-	defer close(stopChan)
 
-	s.T().Log("waiting for portforward to be ready")
-	<-readyChan
+	<-fw.ReadyChan
 
 	s.T().Log("waiting for node to be ready")
 	kmcKC := s.getKMCClientSet(kc)
@@ -154,32 +134,6 @@ func (s *HostPathSuite) createK0smotronCluster(ctx context.Context, kc *kubernet
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
-}
-
-func (s *HostPathSuite) getPod(ctx context.Context, kc *kubernetes.Clientset) corev1.Pod {
-	pods, err := kc.CoreV1().Pods("kmc-test").List(
-		ctx,
-		metav1.ListOptions{FieldSelector: "status.phase=Running"})
-	s.Require().NoError(err, "failed to list kmc-test pods")
-	s.Require().Equal(1, len(pods.Items), "expected 1 kmc-test pod, got %d", len(pods.Items))
-
-	return pods.Items[0]
-}
-
-func (s *HostPathSuite) getPortForwarder(cfg *rest.Config, stopChan <-chan struct{}, readyChan chan struct{}, pod corev1.Pod) *portforward.PortForwarder {
-	transport, upgrader, err := spdy.RoundTripperFor(cfg)
-	s.Require().NoError(err, "failed to create round tripper")
-
-	url := &url.URL{
-		Scheme: "https",
-		Path:   fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", pod.Namespace, pod.Name),
-		Host:   cfg.Host,
-	}
-	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", url)
-
-	fw, err := portforward.New(dialer, []string{"30443"}, stopChan, readyChan, io.Discard, os.Stderr)
-	s.Require().NoError(err, "failed to create portforward")
-	return fw
 }
 
 func (s *HostPathSuite) getKMCClientSet(kc *kubernetes.Clientset) *kubernetes.Clientset {
