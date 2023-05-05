@@ -19,9 +19,11 @@ package util
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 
+	"github.com/k0sproject/k0s/inttest/common"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -114,4 +116,13 @@ func CreateResources(ctx context.Context, resources []*unstructured.Unstructured
 		}
 	}
 	return nil
+}
+
+func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namespace string) (string, error) {
+	output, err := common.PodExecCmdOutput(kc, rc, name, namespace, "k0s token create --role=worker")
+	if err != nil {
+		return "", fmt.Errorf("failed to get join token: %s", err)
+	}
+
+	return output, nil
 }

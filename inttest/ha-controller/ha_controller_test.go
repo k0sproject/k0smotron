@@ -65,13 +65,14 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
 	s.T().Log("Generating k0smotron join token")
-	pod := s.getPod(s.Context(), kc)
-	token := s.getJoinToken(kc, pod.Name)
+	token, err := util.GetJoinToken(kc, rc, "kmc-kmc-test-0", "kmc-test")
+	s.Require().NoError(err)
 
 	s.T().Log("joining worker to k0smotron cluster")
 	s.Require().NoError(s.RunWithToken(s.K0smotronNode(0), token))
 
 	s.T().Log("Starting portforward")
+	pod := s.getPod(s.Context(), kc)
 	cfg, err := s.GetKubeConfig(s.ControllerNode(0))
 	s.Require().NoError(err)
 
@@ -147,15 +148,6 @@ func (s *HAControllerSuite) getPod(ctx context.Context, kc *kubernetes.Clientset
 	s.Require().Equal(3, len(pods.Items), "expected 1 kmc-test pod, got %d", len(pods.Items))
 
 	return pods.Items[0]
-}
-
-func (s *HAControllerSuite) getJoinToken(kc *kubernetes.Clientset, podName string) string {
-	rc, err := s.GetKubeConfig(s.ControllerNode(0))
-	s.Require().NoError(err, "failed to acquire restConfig")
-	output, err := common.PodExecCmdOutput(kc, rc, podName, "kmc-test", "k0s token create --role=worker")
-
-	s.Require().NoError(err, "failed to get join token")
-	return output
 }
 
 func (s *HAControllerSuite) getPortForwarder(cfg *rest.Config, stopChan <-chan struct{}, readyChan chan struct{}, pod corev1.Pod) *portforward.PortForwarder {
