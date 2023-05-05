@@ -17,7 +17,6 @@ limitations under the License.
 package hacontroller
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -27,18 +26,12 @@ import (
 	"testing"
 
 	"github.com/k0sproject/k0s/inttest/common"
+	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/discovery/cached/memory"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
@@ -55,6 +48,8 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 
 	kc, err := s.KubeClient(s.ControllerNode(0))
 	s.Require().NoError(err)
+	rc, err := s.GetKubeConfig(s.ControllerNode(0))
+	s.Require().NoError(err)
 
 	err = s.WaitForNodeReady(s.WorkerNode(0), kc)
 	s.NoError(err)
@@ -62,7 +57,7 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
 
 	s.T().Log("deploying k0smotron operator")
-	s.createFromYaml(s.Context(), os.Getenv("K0SMOTRON_INSTALL_YAML"), kc)
+	s.Require().NoError(util.InstallK0smotronOperator(s.Context(), kc, rc))
 	s.Require().NoError(common.WaitForDeployment(s.Context(), kc, "k0smotron-controller-manager", "k0smotron"))
 
 	s.T().Log("deploying k0smotron cluster")
@@ -109,76 +104,6 @@ func TestHAControllerSuite(t *testing.T) {
 	suite.Run(t, &s)
 }
 
-func (s *HAControllerSuite) createFromYaml(ctx context.Context, path string, kc *kubernetes.Clientset) {
-	data, err := os.ReadFile(path)
-	s.Require().NoError(err)
-
-	resources, err := parseManifests(data)
-	s.Require().NoError(err)
-
-	s.createResources(ctx, resources, kc)
-}
-
-func (s *HAControllerSuite) createResources(ctx context.Context, resources []*unstructured.Unstructured, kc *kubernetes.Clientset) {
-	client := s.getDynamicClient()
-	mapper := s.getMapper(kc)
-	for _, res := range resources {
-
-		mapping, err := mapper.RESTMapping(
-			res.GroupVersionKind().GroupKind(),
-			res.GroupVersionKind().Version)
-		s.Require().NoError(err)
-
-		var drClient dynamic.ResourceInterface
-		if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-			drClient = client.Resource(mapping.Resource).Namespace(res.GetNamespace())
-		} else {
-			drClient = client.Resource(mapping.Resource)
-		}
-
-		_, err = drClient.Create(ctx, res, metav1.CreateOptions{})
-		s.Require().NoError(err)
-	}
-
-}
-
-func (s *HAControllerSuite) getMapper(kc *kubernetes.Clientset) *restmapper.DeferredDiscoveryRESTMapper {
-	disc := memory.NewMemCacheClient(discovery.NewDiscoveryClient(kc.RESTClient()))
-	return restmapper.NewDeferredDiscoveryRESTMapper(disc)
-}
-
-func (s *HAControllerSuite) getDynamicClient() *dynamic.DynamicClient {
-	kc, err := s.GetKubeConfig(s.ControllerNode(0))
-	s.Require().NoError(err)
-
-	client, err := dynamic.NewForConfig(kc)
-	s.Require().NoError(err)
-	return client
-}
-
-func parseManifests(data []byte) ([]*unstructured.Unstructured, error) {
-	var resources []*unstructured.Unstructured
-
-	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 4096)
-	var resource map[string]interface{}
-	for {
-		err := decoder.Decode(&resource)
-		if err == io.EOF {
-			return resources, nil
-		} else if err != nil {
-			return nil, err
-		}
-
-		item := &unstructured.Unstructured{
-			Object: resource,
-		}
-		if item.GetAPIVersion() != "" && item.GetKind() != "" {
-			resources = append(resources, item)
-			resource = nil
-		}
-	}
-}
-
 func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
 	// create K0smotron namespace
 	_, err := kc.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
@@ -223,6 +148,7 @@ func (s *HAControllerSuite) getPod(ctx context.Context, kc *kubernetes.Clientset
 
 	return pods.Items[0]
 }
+
 func (s *HAControllerSuite) getJoinToken(kc *kubernetes.Clientset, podName string) string {
 	rc, err := s.GetKubeConfig(s.ControllerNode(0))
 	s.Require().NoError(err, "failed to acquire restConfig")
