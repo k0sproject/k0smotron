@@ -98,6 +98,8 @@ func (s *BasicSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.
 		},
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
+	addr, err := util.GetNodeAddress(ctx, kc, s.WorkerNode(0))
+	s.Require().NoError(err)
 	kmc := []byte(fmt.Sprintf(`
 	{
 		"apiVersion": "k0smotron.io/v1beta1",
@@ -113,20 +115,8 @@ func (s *BasicSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.
 			}
 		}
 	  }
-`, s.getNodeAddress(ctx, kc, s.WorkerNode(0))))
+`, addr))
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
-}
-
-func (s *BasicSuite) getNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) string {
-	n, err := kc.CoreV1().Nodes().Get(ctx, node, metav1.GetOptions{})
-	s.Require().NoError(err, "Unable to get node")
-	for _, addr := range n.Status.Addresses {
-		if addr.Type == corev1.NodeInternalIP {
-			return addr.Address
-		}
-	}
-	s.FailNow("Node doesn't have an Address of type InternalIP")
-	return ""
 }

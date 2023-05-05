@@ -24,6 +24,7 @@ import (
 	"os"
 
 	"github.com/k0sproject/k0s/inttest/common"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -142,4 +143,19 @@ func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string,
 	}
 
 	return kubernetes.NewForConfig(kmcCfg)
+}
+
+func GetNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) (string, error) {
+	n, err := kc.CoreV1().Nodes().Get(ctx, node, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range n.Status.Addresses {
+		if addr.Type == corev1.NodeInternalIP {
+			return addr.Address, nil
+		}
+	}
+
+	return "", fmt.Errorf("Node doesn't have an Address of type InternalIP")
 }

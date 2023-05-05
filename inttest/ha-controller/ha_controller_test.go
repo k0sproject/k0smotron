@@ -104,6 +104,9 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 	controllerIP := s.getIPAddress(s.ControllerNode(0))
 	databaseDSN := fmt.Sprintf("postgres://postgres:supersecretpassword@%s:5432/kine?sslmode=disable", controllerIP)
 
+	addr, err := util.GetNodeAddress(ctx, kc, s.WorkerNode(0))
+	s.Require().NoError(err)
+
 	kmc := []byte(fmt.Sprintf(`
 	{
 		"apiVersion": "k0smotron.io/v1beta1",
@@ -121,7 +124,7 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 			"kineDataSourceURL": "%s"
 		}
 	  }
-`, s.getNodeAddress(ctx, kc, s.WorkerNode(0)), databaseDSN))
+`, addr, databaseDSN))
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
@@ -135,18 +138,6 @@ func (s *HAControllerSuite) getPod(ctx context.Context, kc *kubernetes.Clientset
 	s.Require().Equal(3, len(pods.Items), "expected 1 kmc-test pod, got %d", len(pods.Items))
 
 	return pods.Items[0]
-}
-
-func (s *HAControllerSuite) getNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) string {
-	n, err := kc.CoreV1().Nodes().Get(ctx, node, metav1.GetOptions{})
-	s.Require().NoError(err, "Unable to get node")
-	for _, addr := range n.Status.Addresses {
-		if addr.Type == corev1.NodeInternalIP {
-			return addr.Address
-		}
-	}
-	s.FailNow("Node doesn't have an Address of type InternalIP")
-	return ""
 }
 
 func (s *HAControllerSuite) getIPAddress(nodeName string) string {
