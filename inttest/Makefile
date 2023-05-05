@@ -17,7 +17,7 @@ footloose_alpine_build_cmdline := \
 	-f footloose-alpine/Dockerfile \
 	footloose-alpine
 
-.footloose-alpine.stamp:
+.footloose-alpine.stamp: Makefile.variables footloose-alpine/Dockerfile
 	docker build --build-arg TARGETARCH=$(ARCH) $(footloose_alpine_build_cmdline)
 	touch $@
 
