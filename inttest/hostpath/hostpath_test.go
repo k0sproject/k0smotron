@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type HostPathSuite struct {
@@ -80,7 +79,8 @@ func (s *HostPathSuite) TestK0sGetsUp() {
 	<-fw.ReadyChan
 
 	s.T().Log("waiting for node to be ready")
-	kmcKC := s.getKMCClientSet(kc)
+	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test")
+	s.Require().NoError(err)
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 
 	out, err := ssh.ExecWithOutput(s.Context(), "ls /tmp/kmc-test")
@@ -134,18 +134,6 @@ func (s *HostPathSuite) createK0smotronCluster(ctx context.Context, kc *kubernet
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
-}
-
-func (s *HostPathSuite) getKMCClientSet(kc *kubernetes.Clientset) *kubernetes.Clientset {
-	kubeConf, err := kc.CoreV1().Secrets("kmc-test").Get(s.Context(), "kmc-admin-kubeconfig-kmc-test", metav1.GetOptions{})
-	s.Require().NoError(err)
-
-	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["kubeconfig"]))
-	s.Require().NoError(err)
-
-	kmcKC, err := kubernetes.NewForConfig(kmcCfg)
-	s.Require().NoError(err)
-	return kmcKC
 }
 
 func (s *HostPathSuite) getNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) string {

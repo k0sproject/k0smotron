@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
@@ -125,4 +126,20 @@ func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namesp
 	}
 
 	return output, nil
+}
+
+// GetKMCClientSet returns a kubernetes clientset for the cluster given
+// the name and the namespace of the cluster.k0smotron.io
+func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*kubernetes.Clientset, error) {
+	kubeConf, err := kc.CoreV1().Secrets(namespace).Get(ctx, fmt.Sprintf("kmc-admin-kubeconfig-%s", name), metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["kubeconfig"]))
+	if err != nil {
+		return nil, err
+	}
+
+	return kubernetes.NewForConfig(kmcCfg)
 }

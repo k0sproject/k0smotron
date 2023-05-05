@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type HAControllerSuite struct {
@@ -75,7 +74,8 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 	<-fw.ReadyChan
 
 	s.T().Log("waiting for node to be ready")
-	kmcKC := s.getKMCClientSet(kc)
+	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test")
+	s.Require().NoError(err)
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 
 }
@@ -135,18 +135,6 @@ func (s *HAControllerSuite) getPod(ctx context.Context, kc *kubernetes.Clientset
 	s.Require().Equal(3, len(pods.Items), "expected 1 kmc-test pod, got %d", len(pods.Items))
 
 	return pods.Items[0]
-}
-
-func (s *HAControllerSuite) getKMCClientSet(kc *kubernetes.Clientset) *kubernetes.Clientset {
-	kubeConf, err := kc.CoreV1().Secrets("kmc-test").Get(s.Context(), "kmc-admin-kubeconfig-kmc-test", metav1.GetOptions{})
-	s.Require().NoError(err)
-
-	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["kubeconfig"]))
-	s.Require().NoError(err)
-
-	kmcKC, err := kubernetes.NewForConfig(kmcCfg)
-	s.Require().NoError(err)
-	return kmcKC
 }
 
 func (s *HAControllerSuite) getNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) string {
