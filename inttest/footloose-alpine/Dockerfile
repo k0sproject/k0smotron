@@ -38,4 +38,4 @@ RUN echo "listen_addresses = '0.0.0.0'" >> /etc/postgresql/postgresql.conf
 RUN echo "host    all             all             all            trust" >> /etc/postgresql/pg_hba.conf
 
 # Install latest k0s
-RUN curl -sSLf https://get.k0s.sh | K0S_VERSION=v1.26.3+k0s.0 sh
+RUN curl -sSLf https://get.k0s.sh | K0S_VERSION=v1.27.1+k0s.0 sh
