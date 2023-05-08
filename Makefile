@@ -96,7 +96,10 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker build \
+	  -t ${IMG} \
+	  --build-arg BUILD_IMG=golang:$(GO_VERSION) \
+	.
 
 k0smotron-image-bundle.tar: docker-build
 	docker save ${IMG} -o k0smotron-image-bundle.tar
@@ -195,10 +198,11 @@ clean:
 	  k0smotron-image-bundle.tar \
 	  $(LOCALBIN)
 
-hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile
+hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile Makefile.variables
 	docker build \
 	  -t k0smotron.golangci-lint \
-	  --build-arg GOLANGCILINT_VERSION=1.52.2 \
+	  --build-arg BUILD_IMG=golang:$(GO_VERSION) \
+	  --build-arg GOLANGCILINT_VERSION=$(GOLANGCILINT_VERSION) \
 	  -f hack/lint/Dockerfile \
 	  .
 	touch -- '$@'
