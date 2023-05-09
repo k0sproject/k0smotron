@@ -39,7 +39,11 @@ import (
 )
 
 func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
-	data, err := os.ReadFile(os.Getenv("K0SMOTRON_INSTALL_YAML"))
+	return CreateFromYAML(ctx, kc, rc, os.Getenv("K0SMOTRON_INSTALL_YAML"))
+}
+
+func CreateFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, filename string) error {
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}

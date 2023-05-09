@@ -48,6 +48,10 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 
 	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
 
+	s.T().Log("deploying postgres")
+	s.Require().NoError(util.CreateFromYAML(s.Context(), kc, rc, "postgresql.yaml"))
+	s.Require().NoError(common.WaitForDeployment(s.Context(), kc, "postgres", "default"))
+
 	s.T().Log("deploying k0smotron operator")
 	s.Require().NoError(util.InstallK0smotronOperator(s.Context(), kc, rc))
 	s.Require().NoError(common.WaitForDeployment(s.Context(), kc, "k0smotron-controller-manager", "k0smotron"))
@@ -101,9 +105,6 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 
-	controllerIP := s.getIPAddress(s.ControllerNode(0))
-	databaseDSN := fmt.Sprintf("postgres://postgres:supersecretpassword@%s:5432/kine?sslmode=disable", controllerIP)
-
 	addr, err := util.GetNodeAddress(ctx, kc, s.WorkerNode(0))
 	s.Require().NoError(err)
 
@@ -121,10 +122,10 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 			"service":{
 				"type": "NodePort"
 			},
-			"kineDataSourceURL": "%s"
+			"kineDataSourceURL": "postgres://postgres:postgres@postgres.default:5432/kine?sslmode=disable"
 		}
 	  }
-`, addr, databaseDSN))
+`, addr))
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
@@ -138,14 +139,4 @@ func (s *HAControllerSuite) getPod(ctx context.Context, kc *kubernetes.Clientset
 	s.Require().Equal(3, len(pods.Items), "expected 1 kmc-test pod, got %d", len(pods.Items))
 
 	return pods.Items[0]
-}
-
-func (s *HAControllerSuite) getIPAddress(nodeName string) string {
-	ssh, err := s.SSH(s.Context(), nodeName)
-	s.Require().NoError(err)
-	defer ssh.Disconnect()
-
-	ipAddress, err := ssh.ExecWithOutput(s.Context(), "hostname -i")
-	s.Require().NoError(err)
-	return ipAddress
 }
