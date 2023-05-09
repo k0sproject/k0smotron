@@ -57,7 +57,7 @@ help: ## Display this help.
 
 ### manifests
 manifests_targets += config/crd/bases/k0smotron.io_clusters.yaml
-config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN)
+config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN) api/v1beta1/k0smotroncluster_types.go
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 manifests: $(manifests_targets) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.

@@ -97,4 +97,6 @@ spec:
     kine:
       dataSource: {{ .KineDataSourceURL }}
   {{- end }}
+  network:
+    provider: {{ .CNIPlugin }}
 `

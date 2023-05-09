@@ -4,7 +4,7 @@
 # More info: https://book.kubebuilder.io/reference/project-config.html
 domain: k0smotron.io
 layout:
-- go.kubebuilder.io/v4-alpha
+- go/v4
 projectName: k0smotron
 repo: github.com/k0sproject/k0smotron
 resources:

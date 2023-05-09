@@ -51,6 +51,19 @@ spec:
                 type: NodePort
             description: ClusterSpec defines the desired state of K0smotronCluster
             properties:
+              cniPlugin:
+                default: kuberouter
+                description: CNIPlugin defines the CNI plugin to be used. Possible
+                  values are KubeRouter and Calico. Uses KubeRouter by default. Cannot
+                  be modified after deploying the cluster.
+                enum:
+                - kuberouter
+                - calico
+                - custom
+                type: string
+                x-kubernetes-validations:
+                - message: cniPlugin is immutable
+                  rule: self == oldSelf
               externalAddress:
                 description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
                   Will be detected automatically for service type LoadBalancer.
