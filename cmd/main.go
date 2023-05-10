@@ -34,8 +34,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/controller"
+	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
 	//+kubebuilder:scaffold:imports
 )
 

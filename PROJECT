@@ -5,6 +5,7 @@
 domain: k0smotron.io
 layout:
 - go/v4
+multigroup: true
 projectName: k0smotron
 repo: github.com/k0sproject/k0smotron
 resources:
@@ -14,6 +15,6 @@ resources:
   controller: true
   domain: k0smotron.io
   kind: K0smotronCluster
-  path: github.com/k0sproject/k0smotron/api/v1beta1
+  path: github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1
   version: v1beta1
 version: "3"
