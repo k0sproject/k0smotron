@@ -96,7 +96,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 						Name:            "controller",
 						Image:           fmt.Sprintf("%s:%s", kmc.Spec.K0sImage, k0sVersion),
 						ImagePullPolicy: v1.PullIfNotPresent,
-						Args:            []string{"k0s", "controller", "--config", "/etc/k0s/k0s.yaml"},
+						Args:            []string{"k0s", "controller", "--config", "/etc/k0s/k0s.yaml", "--enable-dynamic-config"},
 						Ports: []v1.ContainerPort{
 							{
 								Name:          "api",
