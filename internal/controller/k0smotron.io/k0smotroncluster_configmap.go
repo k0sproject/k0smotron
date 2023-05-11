@@ -38,6 +38,12 @@ func init() {
 }
 
 func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
+	// If LB type svc, force ports to 6443 and 8132
+	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer {
+		kmc.Spec.Service.APIPort = 6443
+		kmc.Spec.Service.KonnectivityPort = 8132
+	}
+
 	// TODO k0s.yaml should probably be a
 	// github.com/k0sproject/k0s/pkg/apis/k0s.k0sproject.io/v1beta1.ClusterConfig
 	// and then unmarshalled into json to make modification of fields reliable

@@ -64,7 +64,7 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().NoError(s.RunWithToken(s.K0smotronNode(0), token))
 
 	s.T().Log("Starting portforward")
-	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test")
+	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 30443)
 	s.Require().NoError(err)
 
 	go fw.Start(s.Require().NoError)
@@ -72,9 +72,12 @@ func (s *BasicSuite) TestK0sGetsUp() {
 
 	<-fw.ReadyChan
 
-	s.T().Log("waiting for node to be ready")
-	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test")
+	localPort, err := fw.LocalPort()
 	s.Require().NoError(err)
+	s.T().Log("waiting for node to be ready")
+	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", localPort)
+	s.Require().NoError(err)
+
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 }
 

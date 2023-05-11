@@ -56,6 +56,10 @@ help: ## Display this help.
 ##@ Development
 
 ### manifests
+manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_kzerosconfigs.yaml
+config/crd/bases/bootstrap.cluster.x-k8s.io_kzerosconfigs.yaml: $(CONTROLLER_GEN)
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+
 manifests_targets += config/crd/bases/k0smotron.io_clusters.yaml
 manifests_targets += config/crd/bases/k0smotron.io_jointokenrequests.yaml
 config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN) api/k0smotron.io/v1beta1/k0smotroncluster_types.go
@@ -70,13 +74,15 @@ api/k0smotron.io/v1beta1/zz_generated.deepcopy.go: $(CONTROLLER_GEN)
 
 generate: $(generate_targets) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 
+
+GO_PKGS=$(shell go list ./...)
 .PHONY: fmt
 fmt: ## Run go fmt against code.
-	go fmt ./...
+	go fmt $(GO_PKGS)
 
 .PHONY: vet
 vet: ## Run go vet against code.
-	go vet ./...
+	go vet $(GO_PKGS)
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
