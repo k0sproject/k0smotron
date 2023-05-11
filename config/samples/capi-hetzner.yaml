@@ -1,0 +1,82 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: capi-test
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.244.0.0/16
+    services:
+      cidrBlocks:
+        - 10.96.0.0/12
+  # controlPlaneRef:
+    # apiVersion: k0smotron.io/v1beta1
+    # kind: Cluster # This would somehow map to k0smotron
+    # name: test-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: HetznerCluster
+    name: capi-test
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HetznerCluster
+metadata:
+  name: capi-test
+spec:
+  controlPlaneLoadBalancer:
+    enabled: false
+  controlPlaneEndpoint: # This is the existing API endpoint
+    host: 157.90.146.123
+    port: 6443
+  controlPlaneRegions:
+    - fsn1
+  hetznerSecretRef:
+    name: hetzner
+    key:
+      hcloudToken: hcloud
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Machine
+metadata:
+  name: capi-test-0
+spec:
+  clusterName: capi-test
+  bootstrap:
+    configRef: # This triggers our controller to create cloud-init secret
+      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      kind: KZerosWorkerConfig
+      name: capi-test-0
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: HCloudMachine
+    name: capi-test-0
+  
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HCloudMachine
+metadata:
+  name: capi-test-0
+spec:
+  imageName: ubuntu-22.04
+  type: cx21
+  sshKeys:
+    - name: jnummelin@mirantis.com
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KZerosWorkerConfig
+metadata:
+  name: capi-test-0
+spec:
+  joinTokenSecretRef: # This has to be currently manually created
+    name: some-token-secret
+    key: token
+---
+# apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+# kind: CloudInitConfig
+# metadata:
+#   name: capi-test-0
+# spec:
+#   cloudInitTemplate:
+#     # 
+#   cloudInitSecretRef:

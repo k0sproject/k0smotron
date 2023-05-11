@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package k0smotron
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	km "github.com/k0sproject/k0smotron/api/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron/v1beta1"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

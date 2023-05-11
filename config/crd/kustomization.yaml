@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/k0smotron.io_clusters.yaml
+- bases/bootstrap.cluster.x-k8s.io_kzerosworkerconfigs.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

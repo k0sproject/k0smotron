@@ -56,6 +56,10 @@ help: ## Display this help.
 ##@ Development
 
 ### manifests
+manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_kzerosconfigs.yaml
+config/crd/bases/bootstrap.cluster.x-k8s.io_kzerosconfigs.yaml: $(CONTROLLER_GEN)
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+
 manifests_targets += config/crd/bases/k0smotron.io_clusters.yaml
 config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases

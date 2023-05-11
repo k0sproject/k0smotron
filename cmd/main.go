@@ -34,8 +34,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/controller"
+	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/controller/bootstrap"
+	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -48,6 +51,11 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(k0smotronv1beta1.AddToScheme(scheme))
+	utilruntime.Must(bootstrapv1beta1.AddToScheme(scheme))
+
+	// Register clustera-api types
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -113,6 +121,16 @@ func main() {
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
+
+	if err = (&bootstrap.Controller{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		ClientSet:  clientSet,
+		RESTConfig: restConfig,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
+		os.Exit(1)
+	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
