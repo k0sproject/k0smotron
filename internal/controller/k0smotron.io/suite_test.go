@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package k0smotronio
 
 import (
 	"path/filepath"
@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	k0smotronk0sprojectiov1beta1 "github.com/k0sproject/k0smotron/api/v1beta1"
+	k0smotronk0sprojectiov1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 

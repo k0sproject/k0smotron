@@ -57,14 +57,14 @@ help: ## Display this help.
 
 ### manifests
 manifests_targets += config/crd/bases/k0smotron.io_clusters.yaml
-config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN) api/v1beta1/k0smotroncluster_types.go
+config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN) api/k0smotron.io/v1beta1/k0smotroncluster_types.go
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 manifests: $(manifests_targets) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 
 ### generate
-generate_targets += api/v1beta1/zz_generated.deepcopy.go
-api/v1beta1/zz_generated.deepcopy.go: $(CONTROLLER_GEN)
+generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
+api/k0smotron.io/v1beta1/zz_generated.deepcopy.go: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 generate: $(generate_targets) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
