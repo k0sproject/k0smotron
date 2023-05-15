@@ -112,6 +112,16 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "K0smotronCluster")
 		os.Exit(1)
 	}
+
+	if err = (&controller.JoinTokenRequestReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		ClientSet:  clientSet,
+		RESTConfig: restConfig,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "JoinTokenRequest")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

@@ -8,3 +8,4 @@ smoketests := \
     check-basic \
     check-hostpath \
     check-ha-controller \
+    check-jointoken \

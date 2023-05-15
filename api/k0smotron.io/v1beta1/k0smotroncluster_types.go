@@ -128,8 +128,12 @@ func init() {
 	SchemeBuilder.Register(&Cluster{}, &ClusterList{})
 }
 
+func GetStatefulSetName(clusterName string) string {
+	return fmt.Sprintf("kmc-%s", clusterName)
+}
+
 func (kmc *Cluster) GetStatefulSetName() string {
-	return fmt.Sprintf("kmc-%s", kmc.Name)
+	return GetStatefulSetName(kmc.Name)
 }
 
 func (kmc *Cluster) GetAdminConfigSecretName() string {

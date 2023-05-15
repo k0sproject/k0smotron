@@ -68,6 +68,7 @@ jobs:
           - check-basic
           - check-hostpath
           - check-ha-controller
+          - check-jointoken
 
     steps:
       - name: Check out code into the Go module directory
