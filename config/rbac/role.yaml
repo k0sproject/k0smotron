@@ -33,7 +33,7 @@ rules:
 - apiGroups:
   - bootstrap.cluster.x-k8s.io
   resources:
-  - kzerosconfigs
+  - kzerosworkerconfigs
   verbs:
   - create
   - delete
@@ -45,7 +45,7 @@ rules:
 - apiGroups:
   - bootstrap.cluster.x-k8s.io
   resources:
-  - kzerosconfigs/status
+  - kzerosworkerconfigs/status
   verbs:
   - create
   - delete
@@ -59,11 +59,46 @@ rules:
   resources:
   - clusters
   - clusters/status
+  verbs:
+  - get
+  - list
+  - pacth
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
+  - clusters/status
   - machines
   - machines/status
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - k0smotroncontrolplanes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - k0smotroncontrolplanes/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - ""
@@ -146,6 +181,18 @@ rules:
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - k0smotron.io

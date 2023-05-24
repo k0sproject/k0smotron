@@ -1,7 +1,7 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: capi-test
+  name: cp-test
 spec:
   clusterNetwork:
     pods:
@@ -10,24 +10,38 @@ spec:
     services:
       cidrBlocks:
         - 10.96.0.0/12
-  # controlPlaneRef:
-    # apiVersion: k0smotron.io/v1beta1
-    # kind: Cluster # This would somehow map to k0smotron
-    # name: test-control-plane
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0smotronControlPlane # This would somehow map to k0smotron
+    name: cp-test
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: HetznerCluster
-    name: capi-test
+    name: cp-test
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlane # This would somehow map to k0smotron
+metadata:
+  name: cp-test
+spec:
+  persistence:
+    type: emptyDir
+  service:
+    type: LoadBalancer
+    apiPort: 6443
+    konnectivityPort: 8132
+    annotations:
+      load-balancer.hetzner.cloud/location: fsn1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: HetznerCluster
 metadata:
-  name: capi-test
+  name: cp-test
 spec:
   controlPlaneLoadBalancer:
     enabled: false
-  controlPlaneEndpoint: # This is the existing API endpoint
-    host: 157.90.146.123
+  controlPlaneEndpoint:
+    host: "1.2.3.4"
     port: 6443
   controlPlaneRegions:
     - fsn1
@@ -39,24 +53,24 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
 metadata:
-  name: capi-test-0
+  name: cp-test-0
 spec:
-  clusterName: capi-test
+  clusterName: cp-test
   bootstrap:
     configRef: # This triggers our controller to create cloud-init secret
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
       kind: KZerosWorkerConfig
-      name: capi-test-0
+      name: cp-test-0
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: HCloudMachine
-    name: capi-test-0
+    name: cp-test-0
   
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: HCloudMachine
 metadata:
-  name: capi-test-0
+  name: cp-test-0
 spec:
   imageName: ubuntu-22.04
   type: cx21
@@ -66,10 +80,7 @@ spec:
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KZerosWorkerConfig
 metadata:
-  name: capi-test-0
+  name: cp-test-0
 spec:
-  joinTokenSecretRef: # This has to be currently manually created
-    name: some-token-secret
-    key: token
+  
 ---
-

@@ -4,6 +4,7 @@
 resources:
 - bases/k0smotron.io_clusters.yaml
 - bases/bootstrap.cluster.x-k8s.io_kzerosworkerconfigs.yaml
+- bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

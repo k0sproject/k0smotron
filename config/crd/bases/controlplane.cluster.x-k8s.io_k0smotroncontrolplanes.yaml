@@ -4,22 +4,21 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.4
-  name: clusters.k0smotron.io
+  labels:
+    cluster.x-k8s.io/v1beta1: v1beta1
+  name: k0smotroncontrolplanes.controlplane.cluster.x-k8s.io
 spec:
-  group: k0smotron.io
+  group: controlplane.cluster.x-k8s.io
   names:
-    kind: Cluster
-    listKind: ClusterList
-    plural: clusters
-    shortNames:
-    - kmc
-    singular: cluster
+    kind: K0smotronControlPlane
+    listKind: K0smotronControlPlaneList
+    plural: k0smotroncontrolplanes
+    singular: k0smotroncontrolplane
   scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: Cluster is the Schema for the k0smotronclusters API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,9 +33,6 @@ spec:
           metadata:
             type: object
           spec:
-            default:
-              service:
-                type: NodePort
             description: ClusterSpec defines the desired state of K0smotronCluster
             properties:
               certificateRefs:
@@ -452,12 +448,21 @@ spec:
                 type: object
             type: object
           status:
-            description: K0smotronClusterStatus defines the observed state of K0smotronCluster
             properties:
-              reconciliationStatus:
-                type: string
+              controlPlaneReady:
+                type: boolean
+              externalManagedControlPlane:
+                type: boolean
+              initialized:
+                type: boolean
+              ready:
+                description: Ready denotes that the control plane is ready
+                type: boolean
             required:
-            - reconciliationStatus
+            - controlPlaneReady
+            - externalManagedControlPlane
+            - initialized
+            - ready
             type: object
         type: object
     served: true

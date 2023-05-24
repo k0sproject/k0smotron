@@ -131,6 +131,11 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 				}},
 		}}
 
+	// Mount certificates if they are provided
+	if kmc.Spec.CertificateRefs != nil && len(kmc.Spec.CertificateRefs) > 0 {
+		r.mountSecrets(kmc, &statefulSet)
+	}
+
 	switch kmc.Spec.Persistence.Type {
 	case "emptyDir":
 		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
@@ -168,6 +173,237 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 	err := ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
 	return statefulSet, err
 }
+
+// mountSecrets mounts the certificates as secrets to the controller and creates
+// an init container that copies the certificates to the correct location
+func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
+	projectedSecrets := []v1.VolumeProjection{}
+
+	for _, cert := range kmc.Spec.CertificateRefs {
+		switch cert.Type {
+		case "ca":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "ca.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "ca.key",
+						},
+					},
+				},
+			})
+
+		case "sa":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "sa.pub",
+						},
+						{
+							Key:  "tls.key",
+							Path: "sa.key",
+						},
+					},
+				},
+			})
+		case "proxy":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "front-proxy-ca.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "front-proxy-ca.key",
+						},
+					},
+				},
+			})
+
+		}
+	}
+	sfs.Spec.Template.Spec.Volumes = append(sfs.Spec.Template.Spec.Volumes, v1.Volume{
+		Name: "certs",
+		VolumeSource: v1.VolumeSource{
+			Projected: &v1.ProjectedVolumeSource{
+				Sources: projectedSecrets,
+			},
+		},
+	})
+
+	// We need to copy the certs from the projected volume to the /var/lib/k0s/pki directory
+	// Otherwise k0s will trip over the permissions and RO mounts
+	sfs.Spec.Template.Spec.InitContainers = append(sfs.Spec.Template.Spec.InitContainers, v1.Container{
+		Name:  "certs-init",
+		Image: "busybox",
+		Command: []string{
+			"sh",
+			"-c",
+			"mkdir -p /var/lib/k0s/pki && cp /certs-init/*.* /var/lib/k0s/pki/",
+		},
+		VolumeMounts: []v1.VolumeMount{
+			{
+				Name:      "certs",
+				MountPath: "/certs-init",
+			},
+			{
+				Name:      kmc.GetVolumeName(),
+				MountPath: "/var/lib/k0s",
+			},
+		},
+	})
+}
+
+// func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
+// 	certPermission := int32(0644)
+// 	keyPermission := int32(0640)
+// 	volumes := []v1.Volume{}
+// 	volumeMounts := []v1.VolumeMount{}
+// 	for _, cert := range kmc.Spec.CertificateRefs {
+// 		switch cert.Type {
+// 		case "ca":
+// 			volumes = append(volumes, v1.Volume{
+// 				Name: "ca-cert",
+// 				VolumeSource: v1.VolumeSource{
+// 					Secret: &v1.SecretVolumeSource{
+// 						SecretName: cert.Name,
+// 						Items: []v1.KeyToPath{
+// 							{
+// 								Key:  "tls.crt",
+// 								Path: "ca.crt",
+// 								Mode: &certPermission,
+// 							},
+// 						},
+// 					},
+// 				},
+// 			})
+// 			volumeMounts = append(volumeMounts, v1.VolumeMount{
+// 				Name:      "ca-cert",
+// 				MountPath: "/var/lib/k0s/pki/ca.crt",
+// 				SubPath:   "ca.crt",
+// 			})
+
+// 			volumes = append(volumes, v1.Volume{
+// 				Name: "ca-key",
+// 				VolumeSource: v1.VolumeSource{
+// 					Secret: &v1.SecretVolumeSource{
+// 						SecretName: cert.Name,
+// 						Items: []v1.KeyToPath{
+// 							{
+// 								Key:  "tls.key",
+// 								Path: "ca.key",
+// 								Mode: &keyPermission,
+// 							},
+// 						},
+// 					},
+// 				},
+// 			})
+// 			volumeMounts = append(volumeMounts, v1.VolumeMount{
+// 				Name:      "ca-key",
+// 				MountPath: "/var/lib/k0s/pki/ca.key",
+// 				SubPath:   "ca.key",
+// 			})
+
+// 		case "sa":
+// 			volumes = append(volumes, v1.Volume{
+// 				Name: "sa-pub",
+// 				VolumeSource: v1.VolumeSource{
+// 					Secret: &v1.SecretVolumeSource{
+// 						SecretName: cert.Name,
+// 						Items: []v1.KeyToPath{
+// 							{
+// 								Key:  "tls.crt",
+// 								Path: "sa.pub",
+// 								Mode: &certPermission,
+// 							},
+// 						},
+// 					},
+// 				},
+// 			})
+// 			volumeMounts = append(volumeMounts, v1.VolumeMount{
+// 				Name:      "sa-pub",
+// 				MountPath: "/var/lib/k0s/pki/sa.pub",
+// 				SubPath:   "sa.pub",
+// 			})
+
+// 			volumes = append(volumes, v1.Volume{
+// 				Name: "sa-key",
+// 				VolumeSource: v1.VolumeSource{
+// 					Secret: &v1.SecretVolumeSource{
+// 						SecretName: cert.Name,
+// 						Items: []v1.KeyToPath{
+// 							{
+// 								Key:  "tls.key",
+// 								Path: "sa.key",
+// 								Mode: &keyPermission,
+// 							},
+// 						},
+// 					},
+// 				},
+// 			})
+// 			volumeMounts = append(volumeMounts, v1.VolumeMount{
+// 				Name:      "sa-key",
+// 				MountPath: "/var/lib/k0s/pki/sa.key",
+// 				SubPath:   "sa.key",
+// 			})
+// 		case "proxy":
+// 			volumes = append(volumes, v1.Volume{
+// 				Name: "proxy-cert",
+// 				VolumeSource: v1.VolumeSource{
+// 					Secret: &v1.SecretVolumeSource{
+// 						SecretName: cert.Name,
+// 						Items: []v1.KeyToPath{
+// 							{
+// 								Key:  "tls.crt",
+// 								Path: "front-proxy-ca.crt",
+// 								Mode: &certPermission,
+// 							},
+// 						},
+// 					},
+// 				},
+// 			})
+// 			volumeMounts = append(volumeMounts, v1.VolumeMount{
+// 				Name:      "proxy-cert",
+// 				MountPath: "/var/lib/k0s/pki/front-proxy-ca.crt",
+// 				SubPath:   "front-proxy-ca.crt",
+// 			})
+
+// 			volumes = append(volumes, v1.Volume{
+// 				Name: "proxy-key",
+// 				VolumeSource: v1.VolumeSource{
+// 					Secret: &v1.SecretVolumeSource{
+// 						SecretName: cert.Name,
+// 						Items: []v1.KeyToPath{
+// 							{
+// 								Key:  "tls.key",
+// 								Path: "front-proxy-ca.key",
+// 								Mode: &keyPermission,
+// 							},
+// 						},
+// 					},
+// 				},
+// 			})
+// 			volumeMounts = append(volumeMounts, v1.VolumeMount{
+// 				Name:      "proxy-key",
+// 				MountPath: "/var/lib/k0s/pki/front-proxy-ca.key",
+// 				SubPath:   "front-proxy-ca.key",
+// 			})
+// 		}
+// 	}
+// 	sfs.Spec.Template.Spec.Volumes = append(sfs.Spec.Template.Spec.Volumes, volumes...)
+// 	sfs.Spec.Template.Spec.Containers[0].VolumeMounts = append(sfs.Spec.Template.Spec.Containers[0].VolumeMounts, volumeMounts...)
+// }
 
 func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc km.Cluster) error {
 	logger := log.FromContext(ctx)

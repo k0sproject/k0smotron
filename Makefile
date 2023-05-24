@@ -73,13 +73,15 @@ api/v1beta1/zz_generated.deepcopy.go: $(CONTROLLER_GEN)
 
 generate: $(generate_targets) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 
+
+GO_PKGS=$(shell go list ./... | grep -v /inttest/)
 .PHONY: fmt
 fmt: ## Run go fmt against code.
-	go fmt ./...
+	go fmt $(GO_PKGS)
 
 .PHONY: vet
 vet: ## Run go vet against code.
-	go vet ./...
+	go vet $(GO_PKGS)
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.

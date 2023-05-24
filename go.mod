@@ -98,6 +98,7 @@ require (
 	helm.sh/helm/v3 v3.11.1 // indirect
 	k8s.io/apiextensions-apiserver v0.26.4 // indirect
 	k8s.io/apiserver v0.26.4 // indirect
+	k8s.io/cluster-bootstrap v0.25.0 // indirect
 	k8s.io/component-base v0.26.4 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-aggregator v0.26.4 // indirect
