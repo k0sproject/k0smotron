@@ -39,7 +39,6 @@ func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 	// TODO k0s.yaml should probably be a
 	// github.com/k0sproject/k0s/pkg/apis/k0s.k0sproject.io/v1beta1.ClusterConfig
 	// and then unmarshalled into json to make modification of fields reliable
-
 	var clusterConfigBuf bytes.Buffer
 	err := configTmpl.Execute(&clusterConfigBuf, kmc.Spec)
 	if err != nil {
@@ -72,12 +71,42 @@ func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc km.Cluster) err
 		return nil
 	}
 
+	if kmc.Spec.Service.Type == v1.ServiceTypeNodePort && kmc.Spec.ExternalAddress == "" {
+		externalAddress, err := r.detectExternalAddress(ctx)
+		if err != nil {
+			return err
+		}
+		kmc.Spec.ExternalAddress = externalAddress
+	}
+
 	cm, err := r.generateCM(&kmc)
 	if err != nil {
 		return err
 	}
 
 	return r.Client.Patch(ctx, &cm, client.Apply, patchOpts...)
+}
+
+func (r *ClusterReconciler) detectExternalAddress(ctx context.Context) (string, error) {
+	var internalAddress string
+	nodes, err := r.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+	for _, node := range nodes.Items {
+		for _, addr := range node.Status.Addresses {
+			if internalAddress == "" && addr.Type == v1.NodeInternalIP {
+				internalAddress = addr.Address
+			}
+
+			if addr.Type == v1.NodeExternalDNS || addr.Type == v1.NodeExternalIP {
+				return addr.Address, nil
+			}
+		}
+	}
+
+	// Return internal address if no external address was found
+	return internalAddress, nil
 }
 
 const clusterConfigTemplate = `
