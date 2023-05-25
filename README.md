@@ -44,12 +44,12 @@ kubectl apply -f https://raw.githubusercontent.com/k0sproject/k0smotron/main/ins
 
 ## Creating a cluster
 
-To create a cluster, you need to create a `K0smotronCluster` resource. The `spec` field is used for optional settings, so you can just pass `null` as the value.
+To create a cluster, you need to create a `Cluster` resource. The `spec` field is used for optional settings, so you can just pass `null` as the value.
 
 ```
 cat <<EOF | kubectl apply -n <namespace> -f-
 apiVersion: k0smotron.io/v1beta1
-kind: K0smotronCluster
+kind: Cluster
 metadata:
   name: my-k0smotron
 spec: null
