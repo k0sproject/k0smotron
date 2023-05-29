@@ -15,6 +15,7 @@ nav:
   - Usage:
       - Creating a cluster: cluster.md
       - Configuration: configuration.md
+      - Join tokens: join-tokens.md
 
 theme:
   name: "material"
