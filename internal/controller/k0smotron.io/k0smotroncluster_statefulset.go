@@ -20,8 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,32 +34,7 @@ var ErrEmptyKineDataSourceURL = errors.New("kineDataSourceURL can't be empty if 
 
 // findStatefulSetPod returns a first running pod from a StatefulSet
 func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
-	dep, err := r.ClientSet.AppsV1().StatefulSets(namespace).Get(ctx, statefulSet, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	selector := metav1.FormatLabelSelector(dep.Spec.Selector)
-	pods, err := r.ClientSet.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(pods.Items) < 1 {
-		return nil, fmt.Errorf("did not find matching pods for statefulSet %s", statefulSet)
-	}
-	// Find a running pod
-	var runningPod *v1.Pod
-	for _, p := range pods.Items {
-		if p.Status.Phase == v1.PodRunning {
-			runningPod = &p
-			break
-		}
-	}
-	if runningPod == nil {
-		return nil, fmt.Errorf("did not find running pods for statefulSet %s", statefulSet)
-	}
-	return runningPod, nil
+	return util.FindStatefulSetPod(ctx, r.ClientSet, statefulSet, namespace)
 }
 
 func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
@@ -114,8 +89,14 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 							MountPath: "/etc/k0s",
 							ReadOnly:  true,
 						}},
-						ReadinessProbe: &v1.Probe{ProbeHandler: v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}}},
-						LivenessProbe:  &v1.Probe{ProbeHandler: v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}}},
+						ReadinessProbe: &v1.Probe{
+							InitialDelaySeconds: 5,
+							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+						},
+						LivenessProbe: &v1.Probe{
+							InitialDelaySeconds: 10,
+							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+						},
 					}},
 					Volumes: []v1.Volume{{
 						Name: "k0s-config",
