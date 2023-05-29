@@ -40,7 +40,6 @@ The `token` field contains the base64-encoded token that can be used to join a w
 You can limit the validity period by setting the `expiry` field in the `JoinTokenRequest` resource:
 
 ```yaml
-
 apiVersion: k0smotron.io/v1beta1
 kind: JoinTokenRequest
 metadata:
