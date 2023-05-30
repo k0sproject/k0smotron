@@ -11,6 +11,11 @@ copyright:
 edit_uri: ""
 nav:
   - Overview: README.md
+  - Installation: install.md
+  - Usage:
+      - Creating a cluster: cluster.md
+      - Configuration: configuration.md
+      - Join tokens: join-tokens.md
 
 theme:
   name: "material"
