@@ -11,11 +11,14 @@ copyright:
 edit_uri: ""
 nav:
   - Overview: README.md
+  - Project status: status.md
   - Installation: install.md
   - Usage:
       - Creating a cluster: cluster.md
       - Configuration: configuration.md
-      - Join tokens: join-tokens.md
+      - Join nodes: join-nodes.md
+      - HA control planes: ha.md
+  - FAQ: faq.md
 
 theme:
   name: "material"
@@ -71,7 +74,6 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
 
 extra:
-  k8s_version: !!python/object/apply:os.getenv ["KUBE_VERSION"]
   generator: false
   social:
     - icon: fontawesome/brands/github
