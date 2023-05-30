@@ -12,21 +12,27 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
+        <link rel="canonical" href="https://docs.k0smotron.io/head/ha/">
       
       
-      <link rel="icon" href="/head/img/k0s_social.png">
+        <link rel="prev" href="../join-nodes/">
+      
+      
+        <link rel="next" href="../faq/">
+      
+      <link rel="icon" href="../img/k0s_social.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
     
     
       
-        <title>Documentation</title>
+        <title>HA control planes - Documentation</title>
       
     
     
-      <link rel="stylesheet" href="/head/assets/stylesheets/main.85bb2934.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.85bb2934.min.css">
       
         
-        <link rel="stylesheet" href="/head/assets/stylesheets/palette.a6bdf11c.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.a6bdf11c.min.css">
       
       
 
@@ -42,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="/head/stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("/head",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMV1409T2T"></script>
@@ -79,6 +85,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#highly-available-controlplanes" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -90,7 +101,7 @@
             <div class="md-banner__inner md-grid md-typeset">
               
   You are not currently viewing the documentation for the current stable release of k0s.
-  <a href="..//head">
+  <a href="../..">
     <strong>Click here to go to the documentation of the current stable release.</strong>
   </a>
 
@@ -107,9 +118,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/head/." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href=".." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="/head/img/k0s_social.png" alt="logo">
+  <img src="../img/k0s_social.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -125,7 +136,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              HA control planes
             
           </span>
         </div>
@@ -232,9 +243,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/head/." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href=".." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="/head/img/k0s_social.png" alt="logo">
+  <img src="../img/k0s_social.png" alt="logo">
 
     </a>
     Documentation
@@ -262,7 +273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         Overview
       </a>
     </li>
@@ -277,7 +288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/status/" class="md-nav__link">
+      <a href="../status/" class="md-nav__link">
         Project status
       </a>
     </li>
@@ -292,7 +303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -305,14 +316,16 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
       
       
       
@@ -321,7 +334,7 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_4">
           <span class="md-nav__icon md-icon"></span>
           Usage
@@ -334,7 +347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/cluster/" class="md-nav__link">
+      <a href="../cluster/" class="md-nav__link">
         Creating a cluster
       </a>
     </li>
@@ -348,7 +361,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         Configuration
       </a>
     </li>
@@ -362,7 +375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/join-nodes/" class="md-nav__link">
+      <a href="../join-nodes/" class="md-nav__link">
         Join nodes
       </a>
     </li>
@@ -374,11 +387,52 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="/head/ha/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          HA control planes
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         HA control planes
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#using-postgres-operator" class="md-nav__link">
+    Using Postgres operator
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -398,7 +452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/faq/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -422,6 +476,23 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#using-postgres-operator" class="md-nav__link">
+    Using Postgres operator
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -433,8 +504,56 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+<h1 id="highly-available-controlplanes">Highly available controlplanes<a class="headerlink" href="#highly-available-controlplanes" title="Permanent link">#</a></h1>
+<p>As the nature of Kubernetes workloads, in this case the cluster control planes, is quite dynamic it poses a challenge to setup highly available Etcd cluster for the control plane. In k0smotron we're solving the challenge by "externalizing" the control plane data storage HA setup.</p>
+<p>The control planes managed by <code>k0smotron</code> are k0s control planes. As k0s comes with support for using SQL DBs as data store (via Kine) you can use HA databases instead of Etcd. This enables you to use e.g. Postgres operator, MySQL operator or cloud provider managed databases as the data store for the control planes.</p>
+<h2 id="using-postgres-operator">Using Postgres operator<a class="headerlink" href="#using-postgres-operator" title="Permanent link">#</a></h2>
+<p>In this example we show how to use <a href="https://postgres-operator.readthedocs.io/en/latest/">Postgres operator</a> to manage the control plane data store.</p>
+<p>Install the operator following the <a href="https://postgres-operator.readthedocs.io/en/latest/quickstart/">quicstart guide</a>.</p>
+<p>Create the database with a custom resource:
+<div class="highlight"><pre><span></span><code>apiVersion: &quot;acid.zalan.do/v1&quot;
+kind: postgresql
+metadata:
+  name: acid-minimal-cluster
+spec:
+  teamId: &quot;acid&quot;
+  volume:
+    size: 10Gi
+  numberOfInstances: 2
+  users:
+    # database owner
+    k0smotron:
+    - superuser
+    - createdb
+
+  databases:
+    kine: k0smotron
+  postgresql:
+    version: &quot;15&quot;
+</code></pre></div></p>
+<p>Once the database has been setup properly, you can instruct k0smotron to create a control plane using it:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
+<span class="s">apiVersion: k0smotron.io/v1beta1</span>
+<span class="s">kind: Cluster</span>
+<span class="s">metadata:</span>
+<span class="s">  name: k0smotron-test</span>
+<span class="s">spec:</span>
+<span class="s">  replicas: 3</span>
+<span class="s">  service:</span>
+<span class="s">    type: LoadBalancer</span>
+<span class="s">  kineDataSourceURL: postgres://k0smotron:&lt;passwd&gt;@acid-minimal-cluster.default:5432/kine?sslmode=disable</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p><strong>Note:</strong> We know the DB URL exposes the database password now in a plain Kubernetes resource. We're working on a solution to be able to refer it from a secret.</p>
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -485,10 +604,10 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "/head", "features": ["toc.autohide", "search.suggest", "search.highlight"], "search": "/head/assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
-      <script src="/head/assets/javascripts/bundle.b4d07000.min.js"></script>
+      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
       
     
   </body>

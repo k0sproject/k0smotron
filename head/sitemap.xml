@@ -16,12 +16,27 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://docs.k0smotron.io/head/faq/</loc>
+         <lastmod>2023-05-30</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/ha/</loc>
+         <lastmod>2023-05-30</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://docs.k0smotron.io/head/install/</loc>
          <lastmod>2023-05-30</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.k0smotron.io/head/join-tokens/</loc>
+         <loc>https://docs.k0smotron.io/head/join-nodes/</loc>
+         <lastmod>2023-05-30</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/status/</loc>
          <lastmod>2023-05-30</lastmod>
          <changefreq>daily</changefreq>
     </url>
