@@ -12,21 +12,27 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
+        <link rel="canonical" href="https://docs.k0smotron.io/head/configuration/">
       
       
-      <link rel="icon" href="/head/img/k0s_social.png">
+        <link rel="prev" href="../cluster/">
+      
+      
+        <link rel="next" href="../join-tokens/">
+      
+      <link rel="icon" href="../img/k0s_social.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
     
     
       
-        <title>Documentation</title>
+        <title>Configuration - Documentation</title>
       
     
     
-      <link rel="stylesheet" href="/head/assets/stylesheets/main.85bb2934.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.85bb2934.min.css">
       
         
-        <link rel="stylesheet" href="/head/assets/stylesheets/palette.a6bdf11c.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.a6bdf11c.min.css">
       
       
 
@@ -42,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="/head/stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("/head",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMV1409T2T"></script>
@@ -79,6 +85,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#configuration" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -90,7 +101,7 @@
             <div class="md-banner__inner md-grid md-typeset">
               
   You are not currently viewing the documentation for the current stable release of k0s.
-  <a href="..//head">
+  <a href="../..">
     <strong>Click here to go to the documentation of the current stable release.</strong>
   </a>
 
@@ -107,9 +118,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/head/." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href=".." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="/head/img/k0s_social.png" alt="logo">
+  <img src="../img/k0s_social.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -125,7 +136,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Configuration
             
           </span>
         </div>
@@ -232,9 +243,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/head/." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href=".." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="/head/img/k0s_social.png" alt="logo">
+  <img src="../img/k0s_social.png" alt="logo">
 
     </a>
     Documentation
@@ -262,7 +273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         Overview
       </a>
     </li>
@@ -277,7 +288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -290,14 +301,16 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
       
       
       
@@ -306,7 +319,7 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_3">
           <span class="md-nav__icon md-icon"></span>
           Usage
@@ -319,7 +332,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/cluster/" class="md-nav__link">
+      <a href="../cluster/" class="md-nav__link">
         Creating a cluster
       </a>
     </li>
@@ -331,11 +344,79 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="/head/configuration/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Configuration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Configuration
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-file-reference" class="md-nav__link">
+    Configuration file reference
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spec-key-detail" class="md-nav__link">
+    spec Key Detail
+  </a>
+  
+    <nav class="md-nav" aria-label="spec Key Detail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#specservice" class="md-nav__link">
+    spec.service
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specpersistence" class="md-nav__link">
+    spec.persistence
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -347,7 +428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/head/join-tokens/" class="md-nav__link">
+      <a href="../join-tokens/" class="md-nav__link">
         Join tokens
       </a>
     </li>
@@ -378,6 +459,50 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-file-reference" class="md-nav__link">
+    Configuration file reference
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spec-key-detail" class="md-nav__link">
+    spec Key Detail
+  </a>
+  
+    <nav class="md-nav" aria-label="spec Key Detail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#specservice" class="md-nav__link">
+    spec.service
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specpersistence" class="md-nav__link">
+    spec.persistence
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -389,8 +514,123 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+<h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">#</a></h1>
+<h2 id="configuration-file-reference">Configuration file reference<a class="headerlink" href="#configuration-file-reference" title="Permanent link">#</a></h2>
+<p>The default k0smotron configuration file is a YAML file that contains the following values:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">k0sImage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0sproject/k0s</span>
+<span class="w">  </span><span class="nt">K0sVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.1-k0s.0</span>
+<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NodePort</span>
+<span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30443</span>
+<span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30132</span>
+<span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
+<span class="w">  </span><span class="nt">cniPlugin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kuberouter</span>
+</code></pre></div>
+<h2 id="spec-key-detail"><code>spec</code> Key Detail<a class="headerlink" href="#spec-key-detail" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>replicas</code></td>
+<td>Replicas is the desired number of replicas of the k0s control planes. If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.</td>
+</tr>
+<tr>
+<td><code>k0sImage</code></td>
+<td>The k0s image to be deployed.</td>
+</tr>
+<tr>
+<td><code>K0sVersion</code></td>
+<td>The k0s version to be deployed.</td>
+</tr>
+<tr>
+<td><code>externalAddress</code></td>
+<td>ExternalAddress defines k0s external address. See <a href="https://docs.k0sproject.io/stable/configuration/#specapi">https://docs.k0sproject.io/stable/configuration/#specapi</a></td>
+</tr>
+<tr>
+<td><code>service</code></td>
+<td><code>Service</code> defines the service configuration.</td>
+</tr>
+<tr>
+<td><code>persistence</code></td>
+<td><code>Persistence</code> defines the persistence configuration.</td>
+</tr>
+<tr>
+<td><code>kineDataSourceURL</code></td>
+<td>Defines the kine datasource URL. Required for HA controlplane setup. Must be set if replicas &gt; 1.</td>
+</tr>
+<tr>
+<td><code>cniPlugin</code></td>
+<td>Defines the CNI plugin to be used. Possible values are KubeRouter and Calico. Uses KubeRouter by default. Cannot be modified after deploying the cluster.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="specservice"><code>spec.service</code><a class="headerlink" href="#specservice" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>Service type. Possible values: <code>NodePort</code>,<code>LoadBalancer</code></td>
+</tr>
+<tr>
+<td><code>apiPort</code></td>
+<td>Defines the kubernetes API port.</td>
+</tr>
+<tr>
+<td><code>konnectivityPort</code></td>
+<td>Defines the konnectivity port.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="specpersistence"><code>spec.persistence</code><a class="headerlink" href="#specpersistence" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>Persistence type. Possible values: <code>emptyDir</code>,<code>hostPath</code>,<code>pvc</code></td>
+</tr>
+<tr>
+<td><code>hostPath</code></td>
+<td>Defines the host path configuration. Will be used as is in case of <code>.spec.persistence.type</code> is <code>hostPath</code>.</td>
+</tr>
+<tr>
+<td><code>persistentVolumeClaim</code></td>
+<td>Defines the PVC configuration. Will be used as is in case of <code>.spec.persistence.type</code> is <code>pvc</code>.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -441,10 +681,10 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "/head", "features": ["toc.autohide", "search.suggest", "search.highlight"], "search": "/head/assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
-      <script src="/head/assets/javascripts/bundle.b4d07000.min.js"></script>
+      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
       
     
   </body>
