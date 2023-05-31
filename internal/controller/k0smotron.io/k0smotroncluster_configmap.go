@@ -31,6 +31,8 @@ import (
 
 var configTmpl *template.Template
 
+const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDER__"
+
 func init() {
 	configTmpl = template.Must(template.New("k0s.yaml").Parse(clusterConfigTemplate))
 }
@@ -55,7 +57,7 @@ func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 			Namespace: kmc.Namespace,
 		},
 		Data: map[string]string{
-			"k0s.yaml": clusterConfigBuf.String(),
+			"K0SMOTRON_K0S_YAML": clusterConfigBuf.String(),
 		},
 	}
 
@@ -77,6 +79,10 @@ func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc km.Cluster) err
 			return err
 		}
 		kmc.Spec.ExternalAddress = externalAddress
+	}
+
+	if kmc.Spec.KineDataSourceSecretName != "" {
+		kmc.Spec.KineDataSourceURL = kineDataSourceURLPlaceholder
 	}
 
 	cm, err := r.generateCM(&kmc)

@@ -66,9 +66,16 @@ spec:
                 description: K0sVersion defines the k0s version to be deployed. If
                   empty k0smotron will pick it automatically.
                 type: string
+              kineDataSourceSecretName:
+                description: KineDataSourceSecretName defines the name of kine datasource
+                  URL secret. KineDataSourceURL or KineDataSourceSecretName are required
+                  for HA controlplane setup and one of them must be set if replicas
+                  > 1.
+                type: string
               kineDataSourceURL:
-                description: KineDataSourceURL defines the kine datasource URL. Required
-                  for HA controlplane setup. Must be set if replicas > 1.
+                description: KineDataSourceURL defines the kine datasource URL. KineDataSourceURL
+                  or KineDataSourceSecretName are required for HA controlplane setup
+                  and one of them must be set if replicas > 1.
                 type: string
               persistence:
                 description: Persistence defines the persistence configuration. If

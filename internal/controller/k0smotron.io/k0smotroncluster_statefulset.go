@@ -32,6 +32,8 @@ import (
 
 var ErrEmptyKineDataSourceURL = errors.New("kineDataSourceURL can't be empty if replicas > 1")
 
+var entrypointDefaultMode = int32(0744)
+
 // findStatefulSetPod returns a first running pod from a StatefulSet
 func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
 	return util.FindStatefulSetPod(ctx, r.ClientSet, statefulSet, namespace)
@@ -43,7 +45,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		k0sVersion = defaultK0SVersion
 	}
 
-	if kmc.Spec.Replicas > 1 && kmc.Spec.KineDataSourceURL == "" {
+	if kmc.Spec.Replicas > 1 && (kmc.Spec.KineDataSourceURL == "" && kmc.Spec.KineDataSourceSecretName == "") {
 		return apps.StatefulSet{}, ErrEmptyKineDataSourceURL
 	}
 
@@ -67,11 +69,26 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 					Labels: map[string]string{"app": "k0smotron"},
 				},
 				Spec: v1.PodSpec{
+					Volumes: []v1.Volume{{
+						Name: kmc.GetEntrypointConfigMapName(),
+						VolumeSource: v1.VolumeSource{
+							ConfigMap: &v1.ConfigMapVolumeSource{
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: kmc.GetEntrypointConfigMapName(),
+								},
+								DefaultMode: &entrypointDefaultMode,
+								Items: []v1.KeyToPath{{
+									Key:  "k0smotron-entrypoint.sh",
+									Path: "k0smotron-entrypoint.sh",
+								}},
+							},
+						},
+					}},
 					Containers: []v1.Container{{
 						Name:            "controller",
 						Image:           fmt.Sprintf("%s:%s", kmc.Spec.K0sImage, k0sVersion),
 						ImagePullPolicy: v1.PullIfNotPresent,
-						Args:            []string{"k0s", "controller", "--config", "/etc/k0s/k0s.yaml", "--enable-dynamic-config"},
+						Args:            []string{"/k0smotron-entrypoint.sh"},
 						Ports: []v1.ContainerPort{
 							{
 								Name:          "api",
@@ -84,10 +101,12 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 								ContainerPort: int32(kmc.Spec.Service.KonnectivityPort),
 							},
 						},
-						VolumeMounts: []v1.VolumeMount{{
-							Name:      "k0s-config",
-							MountPath: "/etc/k0s",
-							ReadOnly:  true,
+						EnvFrom: []v1.EnvFromSource{{
+							ConfigMapRef: &v1.ConfigMapEnvSource{
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: kmc.GetConfigMapName(),
+								},
+							},
 						}},
 						ReadinessProbe: &v1.Probe{
 							InitialDelaySeconds: 5,
@@ -97,20 +116,24 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 							InitialDelaySeconds: 10,
 							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
 						},
+						VolumeMounts: []v1.VolumeMount{{
+							Name:      kmc.GetEntrypointConfigMapName(),
+							MountPath: "/k0smotron-entrypoint.sh",
+							SubPath:   "k0smotron-entrypoint.sh",
+						}},
 					}},
-					Volumes: []v1.Volume{{
-						Name: "k0s-config",
-						VolumeSource: v1.VolumeSource{
-							// TODO LocalObjectReference can't be hardcoded
-							ConfigMap: &v1.ConfigMapVolumeSource{
-								LocalObjectReference: v1.LocalObjectReference{Name: kmc.GetConfigMapName()},
-								Items: []v1.KeyToPath{{
-									Key:  "k0s.yaml",
-									Path: "k0s.yaml",
-								}},
-							}}}},
 				}},
 		}}
+
+	if kmc.Spec.KineDataSourceSecretName != "" {
+		statefulSet.Spec.Template.Spec.Containers[0].EnvFrom = append(statefulSet.Spec.Template.Spec.Containers[0].EnvFrom, v1.EnvFromSource{
+			SecretRef: &v1.SecretEnvSource{
+				LocalObjectReference: v1.LocalObjectReference{
+					Name: kmc.Spec.KineDataSourceSecretName,
+				},
+			},
+		})
+	}
 
 	switch kmc.Spec.Persistence.Type {
 	case "emptyDir":
