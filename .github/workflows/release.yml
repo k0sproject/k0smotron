@@ -55,8 +55,10 @@ jobs:
       - name: Build image and push to Docker Hub and GitHub image registry
         uses: docker/build-push-action@v4
         with:
+          build-args: |
+            BUILD_IMG=golang:1.20.4
           context: .
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
             quay.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
