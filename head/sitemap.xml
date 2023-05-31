@@ -2,42 +2,42 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.k0smotron.io/head/</loc>
-         <lastmod>2023-05-30</lastmod>
+         <lastmod>2023-05-31</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/cluster/</loc>
-         <lastmod>2023-05-30</lastmod>
+         <lastmod>2023-05-31</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/configuration/</loc>
-         <lastmod>2023-05-30</lastmod>
+         <lastmod>2023-05-31</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/faq/</loc>
-         <lastmod>2023-05-30</lastmod>
+         <lastmod>2023-05-31</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/ha/</loc>
-         <lastmod>2023-05-30</lastmod>
+         <lastmod>2023-05-31</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/install/</loc>
-         <lastmod>2023-05-30</lastmod>
+         <lastmod>2023-05-31</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/join-nodes/</loc>
-         <lastmod>2023-05-30</lastmod>
+         <lastmod>2023-05-31</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/status/</loc>
-         <lastmod>2023-05-30</lastmod>
+         <lastmod>2023-05-31</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
