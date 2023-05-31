@@ -41,10 +41,10 @@ spec:
                   the join token is requested.
                 properties:
                   name:
-                    description: Name of the cluster.
+                    description: Name of the resource.
                     type: string
                   namespace:
-                    description: Namespace of the cluster.
+                    description: Namespace of the resource.
                     type: string
                 required:
                 - name

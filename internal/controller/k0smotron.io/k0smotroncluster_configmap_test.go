@@ -40,7 +40,7 @@ func TestGenerateCM(t *testing.T) {
 		cm, err := r.generateCM(&kmc)
 		require.NoError(t, err)
 
-		conf := cm.Data["k0s.yaml"]
+		conf := cm.Data["K0SMOTRON_K0S_YAML"]
 		assert.True(t, strings.Contains(conf, "calico"), "The provider must be calico")
 		assert.False(t, strings.Contains(conf, "kuberouter"), "The provider must not be kuberouter")
 	})

@@ -55,9 +55,15 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	Persistence PersistenceSpec `json:"persistence,omitempty"`
 	// KineDataSourceURL defines the kine datasource URL.
-	// Required for HA controlplane setup. Must be set if replicas > 1.
+	// KineDataSourceURL or KineDataSourceSecretRef are required for HA controlplane setup
+	// and one of them must be set if replicas > 1.
 	//+kubebuilder:validation:Optional
 	KineDataSourceURL string `json:"kineDataSourceURL,omitempty"`
+	// KineDataSourceSecretRef defines the kine datasource URL secret.
+	// KineDataSourceURL or KineDataSourceSecretRef are required for HA controlplane setup
+	// and one of them must be set if replicas > 1.
+	//+kubebuilder:validation:Optional
+	KineDataSourceSecretRef *ResourceRef `json:"kineDataSourceSecretRef,omitempty"`
 	// CNIPlugin defines the CNI plugin to be used.
 	// Possible values are KubeRouter and Calico. Uses KubeRouter by default.
 	// Cannot be modified after deploying the cluster.
@@ -124,6 +130,13 @@ type PersistenceSpec struct {
 	HostPath string `json:"hostPath,omitempty"`
 }
 
+type ResourceRef struct {
+	// Name of the resource.
+	Name string `json:"name"`
+	// Namespace of the resource.
+	Namespace string `json:"namespace"`
+}
+
 func init() {
 	SchemeBuilder.Register(&Cluster{}, &ClusterList{})
 }
@@ -138,6 +151,10 @@ func (kmc *Cluster) GetStatefulSetName() string {
 
 func (kmc *Cluster) GetAdminConfigSecretName() string {
 	return fmt.Sprintf("kmc-admin-kubeconfig-%s", kmc.Name)
+}
+
+func (kmc *Cluster) GetEntrypointConfigMapName() string {
+	return fmt.Sprintf("kmc-entrypoint-%s-config", kmc.Name)
 }
 
 func (kmc *Cluster) GetConfigMapName() string {
