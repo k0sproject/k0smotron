@@ -57,6 +57,7 @@ help: ## Display this help.
 
 ### manifests
 manifests_targets += config/crd/bases/k0smotron.io_clusters.yaml
+manifests_targets += config/crd/bases/k0smotron.io_jointokenrequests.yaml
 config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN) api/k0smotron.io/v1beta1/k0smotroncluster_types.go
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
