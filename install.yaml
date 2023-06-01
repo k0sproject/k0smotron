@@ -965,7 +965,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: quay.io/k0sproject/k0smotron:v0.3.0
+        image: quay.io/k0sproject/k0smotron:v0.3.1
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
