@@ -49,4 +49,28 @@ spec:
 EOF
 ```
 
-**Note:** We know the DB URL exposes the database password now in a plain Kubernetes resource. We're working on a solution to be able to refer it from a secret.
+Another option is to use the reference to the secret containing the database credentials:
+
+```shell
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: database-credentials
+  namespace: k0smotron-test
+type: Opaque
+data:
+  K0SMOTRON_KINE_DATASOURCE_URL: <base64-encoded-datasource>
+---
+apiVersion: k0smotron.io/v1beta1
+kind: Cluster
+metadata:
+  name: k0smotron-test
+spec:
+  replicas: 3
+  service:
+    type: LoadBalancer
+  kineDataSourceSecretRef:
+    name: database-credentials
+EOF
+```

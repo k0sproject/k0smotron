@@ -72,6 +72,7 @@ jobs:
           - check-basic
           - check-hostpath
           - check-ha-controller
+          - check-ha-controller-secret
           - check-jointoken
 
     steps:

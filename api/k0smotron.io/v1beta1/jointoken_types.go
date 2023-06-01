@@ -26,7 +26,7 @@ import (
 // JoinTokenRequestSpec defines the desired state of K0smotronJoinTokenRequest
 type JoinTokenRequestSpec struct {
 	// ClusterRef is the reference to the cluster for which the join token is requested.
-	ClusterRef ClusterRef `json:"clusterRef"`
+	ClusterRef ResourceRef `json:"clusterRef"`
 	// Expiration time of the token. Format 1.5h, 2h45m or 300ms.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default="0s"
@@ -35,13 +35,6 @@ type JoinTokenRequestSpec struct {
 	//+kubebuilder:validation:Enum=worker;controller
 	//+kubebuilder:default=worker
 	Role string `json:"role,omitempty"`
-}
-
-type ClusterRef struct {
-	// Name of the cluster.
-	Name string `json:"name"`
-	// Namespace of the cluster.
-	Namespace string `json:"namespace"`
 }
 
 // JoinTokenRequestStatus defines the observed state of K0smotronJoinTokenRequest

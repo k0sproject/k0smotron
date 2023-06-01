@@ -78,9 +78,26 @@ spec:
                 description: K0sVersion defines the k0s version to be deployed. If
                   empty k0smotron will pick it automatically.
                 type: string
+              kineDataSourceSecretRef:
+                description: KineDataSourceSecretRef defines the kine datasource URL
+                  secret. KineDataSourceURL or KineDataSourceSecretRef are required
+                  for HA controlplane setup and one of them must be set if replicas
+                  > 1.
+                properties:
+                  name:
+                    description: Name of the resource.
+                    type: string
+                  namespace:
+                    description: Namespace of the resource.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               kineDataSourceURL:
-                description: KineDataSourceURL defines the kine datasource URL. Required
-                  for HA controlplane setup. Must be set if replicas > 1.
+                description: KineDataSourceURL defines the kine datasource URL. KineDataSourceURL
+                  or KineDataSourceSecretRef are required for HA controlplane setup
+                  and one of them must be set if replicas > 1.
                 type: string
               persistence:
                 description: Persistence defines the persistence configuration. If
@@ -528,10 +545,10 @@ spec:
                   the join token is requested.
                 properties:
                   name:
-                    description: Name of the cluster.
+                    description: Name of the resource.
                     type: string
                   namespace:
-                    description: Namespace of the cluster.
+                    description: Namespace of the resource.
                     type: string
                 required:
                 - name
@@ -655,6 +672,13 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
 - apiGroups:
   - ""
   resources:
