@@ -179,6 +179,15 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		})
 	}
 
+	for _, manifest := range kmc.Spec.Manifests {
+		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, manifest)
+
+		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+			Name:      manifest.Name,
+			MountPath: fmt.Sprintf("/var/lib/k0s/manifests/%s", manifest.Name),
+			ReadOnly:  true,
+		})
+	}
 	err := ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
 	return statefulSet, err
 }

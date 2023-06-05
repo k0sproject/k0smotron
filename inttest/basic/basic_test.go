@@ -78,6 +78,12 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().NoError(err)
 
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
+
+	s.T().Log("Verifying manifest is applied")
+	_, err = kmcKC.CoreV1().Namespaces().Get(s.Context(), "test-ns-secret", metav1.GetOptions{})
+	s.Require().NoError(err, "test-ns-secret namespace not found. Manifest not appllied?")
+	_, err = kmcKC.CoreV1().Namespaces().Get(s.Context(), "test-ns-cm", metav1.GetOptions{})
+	s.Require().NoError(err, "test-ns-cm namespace not found. Manifest not appllied?")
 }
 
 func TestBasicSuite(t *testing.T) {
@@ -100,6 +106,36 @@ func (s *BasicSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.
 		},
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
+
+	// create manifests
+	_, err = kc.CoreV1().Secrets("kmc-test").Create(ctx, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "manifest-secret",
+		},
+		Data: map[string][]byte{
+			"manifest.yaml": []byte(`---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns-secret
+`),
+		}}, metav1.CreateOptions{})
+	s.Require().NoError(err)
+
+	_, err = kc.CoreV1().ConfigMaps("kmc-test").Create(ctx, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "manifest-cm",
+		},
+		Data: map[string]string{
+			"manifest.yaml": `---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns-cm
+`,
+		}}, metav1.CreateOptions{})
+	s.Require().NoError(err)
+
 	kmc := []byte(`
 	{
 		"apiVersion": "k0smotron.io/v1beta1",
@@ -111,7 +147,17 @@ func (s *BasicSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.
 		"spec": {
 			"service":{
 				"type": "NodePort"
-			}
+			},
+			"manifests": [
+				{
+					"name": "secret",
+					"secret": { "secretName": "manifest-secret" }
+				},
+				{
+					"name": "configmap",
+					"configMap": { "name": "manifest-cm" }
+				}
+			]
 		}
 	  }
 `)

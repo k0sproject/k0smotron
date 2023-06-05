@@ -22,6 +22,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -127,6 +128,13 @@ func (in *ClusterSpec) DeepCopyInto(out *ClusterSpec) {
 		in, out := &in.CertificateRefs, &out.CertificateRefs
 		*out = make([]CertificateRef, len(*in))
 		copy(*out, *in)
+	}
+	if in.Manifests != nil {
+		in, out := &in.Manifests, &out.Manifests
+		*out = make([]v1.Volume, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 }
 
