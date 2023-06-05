@@ -63,7 +63,7 @@ jobs:
         env:
           VERSION: ${{ github.event.release.tag_name }}
         run: |
-          mike deploy --push "$VERSION"
+          K0SMOTRON_VERSION="$VERSION" mike deploy --push "$VERSION"
 
       - name: Update mike version aliases
         if: github.repository == 'k0sproject/k0smotron'
