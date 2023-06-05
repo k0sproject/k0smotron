@@ -39,7 +39,7 @@ Running on the edge often also means large number of clusters to manage. Do you 
 ## Installation
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/k0sproject/k0smotron/main/install.yaml
+kubectl apply -f https://docs.k0smotron.io/stable/install.yaml
 ```
 
 ## Creating a cluster
