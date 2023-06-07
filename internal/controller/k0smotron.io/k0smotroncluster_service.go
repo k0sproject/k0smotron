@@ -132,22 +132,31 @@ func (r *ClusterReconciler) reconcileServices(ctx context.Context, kmc km.Cluste
 		if err != nil {
 			return err
 		}
-		if len(nodes.Items) == 0 {
-			return fmt.Errorf("no nodes found")
-		}
-		// Get random node from list
-		node := nodes.Items[rand.Intn(len(nodes.Items))]
-		for _, addr := range node.Status.Addresses {
-			if addr.Type == v1.NodeExternalIP {
-				kmc.Spec.ExternalAddress = addr.Address
-				break
-			}
-			if addr.Type == v1.NodeInternalIP {
-				kmc.Spec.ExternalAddress = addr.Address
-				break
-			}
-		}
+		kmc.Spec.ExternalAddress = r.findNodeAddress(nodes)
 	}
 
 	return nil
+}
+
+// findNodeAddress returns a random node address preferring external address if one is found
+func (r *ClusterReconciler) findNodeAddress(nodes *v1.NodeList) string {
+	extAddr, intAddr := "", ""
+
+	// Get random node from list
+	node := nodes.Items[rand.Intn(len(nodes.Items))]
+
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == v1.NodeExternalIP {
+			extAddr = addr.Address
+			break
+		}
+		if addr.Type == v1.NodeInternalIP {
+			intAddr = addr.Address
+		}
+	}
+
+	if extAddr != "" {
+		return extAddr
+	}
+	return intAddr
 }
