@@ -160,14 +160,7 @@ func (c *Controller) waitExternalAddress(ctx context.Context, cluster *clusterv1
 		port := k0smoCluster.Spec.Service.APIPort
 		// Update the Clusters endpoint if needed
 		if cluster.Spec.ControlPlaneEndpoint.Host != host || cluster.Spec.ControlPlaneEndpoint.Port != int32(port) {
-			// cluster.Spec.ControlPlaneEndpoint.Host = host
-			// cluster.Spec.ControlPlaneEndpoint.Port = port
-			// if err := c.Client.Update(ctx, cluster); err != nil {
-			// 	log.Error(err, "Failed to update Cluster endpoint")
-			// 	return
-			// }
 
-			//capiutil.IsExternalManagedControlPlane()
 			// Get the infrastructure cluster object
 			infraCluster := &unstructured.Unstructured{}
 			infraCluster.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
@@ -205,53 +198,6 @@ func (c *Controller) waitExternalAddress(ctx context.Context, cluster *clusterv1
 	if err != nil {
 		return err
 	}
-
-	// for {
-	// 	// Get the k0smotron Cluster object
-	// 	k0smoCluster := &kapi.Cluster{}
-	// 	if err := c.Client.Get(ctx, capiutil.ObjectKey(cluster), k0smoCluster); err != nil {
-	// 		log.Error(err, "Failed to get k0smotron Cluster")
-	// 		return
-	// 	}
-
-	// 	// Get the external address of the control plane
-	// 	host := k0smoCluster.Spec.ExternalAddress
-	// 	port := int32(k0smoCluster.Spec.Service.APIPort)
-
-	// 	if host == "" {
-	// 		log.Info("Waiting for external address to be set")
-	// 		time.Sleep(2 * time.Second)
-	// 		continue
-	// 	}
-
-	// 	// Update the Clusters endpoint if needed
-	// 	if cluster.Spec.ControlPlaneEndpoint.Host != host || cluster.Spec.ControlPlaneEndpoint.Port != port {
-	// 		// cluster.Spec.ControlPlaneEndpoint.Host = host
-	// 		// cluster.Spec.ControlPlaneEndpoint.Port = port
-	// 		// if err := c.Client.Update(ctx, cluster); err != nil {
-	// 		// 	log.Error(err, "Failed to update Cluster endpoint")
-	// 		// 	return
-	// 		// }
-
-	// 		//capiutil.IsExternalManagedControlPlane()
-	// 		// Get the infrastructure cluster object
-	// 		infraCluster := &unstructured.Unstructured{}
-	// 		infraCluster.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
-	// 		if err := c.Client.Get(ctx, types.NamespacedName{Namespace: cluster.Namespace, Name: cluster.Spec.InfrastructureRef.Name}, infraCluster); err != nil {
-	// 			log.Error(err, "Failed to get infrastructure cluster")
-	// 			return
-	// 		}
-	// 		log.Info("Found infrastructure cluster")
-	// 		unstructured.SetNestedField(infraCluster.Object, host, "spec", "controlPlaneEndpoint", "host")
-	// 		unstructured.SetNestedField(infraCluster.Object, port, "spec", "controlPlaneEndpoint", "port")
-	// 		if err := c.Client.Update(ctx, infraCluster); err != nil {
-	// 			log.Error(err, "Failed to update infrastructure cluster")
-	// 			return
-	// 		}
-	// 		log.Info("Updated infrastructure cluster", "host", host, "port", port)
-	// 		return
-	// 	}
-	// }
 
 	return nil
 }

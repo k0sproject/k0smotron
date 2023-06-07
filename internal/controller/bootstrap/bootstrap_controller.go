@@ -249,20 +249,6 @@ func (r *Controller) getKZerosToken(ctx context.Context, scope *Scope) (string, 
 		return "", errors.Wrap(err, "failed to create join token")
 	}
 	return joinToken, nil
-
-	// secret := &corev1.Secret{}
-	// if scope.Config.Spec.JoinTokenSecretRef == nil || scope.Config.Spec.JoinTokenSecretRef.Name == "" || scope.Config.Spec.JoinTokenSecretRef.Key == "" {
-	// 	return "", errors.New("joinTokenSecretRef is not set properly")
-	// }
-	// tokenName := scope.Config.Spec.JoinTokenSecretRef.Name
-	// tokenKey := scope.Config.Spec.JoinTokenSecretRef.Key
-	// if err := r.Client.Get(ctx, types.NamespacedName{Namespace: scope.ConfigOwner.GetNamespace(), Name: tokenName}, secret); err != nil {
-	// 	return "", errors.Wrap(err, "failed to get token secret")
-	// }
-	// if token, ok := secret.Data[tokenKey]; ok {
-	// 	return string(token), nil
-	// }
-	// return "", errors.Errorf("token not found in secret %s/%s", scope.ConfigOwner.GetNamespace(), tokenName)
 }
 
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {
