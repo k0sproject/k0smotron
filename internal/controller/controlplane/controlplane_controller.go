@@ -105,27 +105,6 @@ func (c *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	// 	return ctrl.Result{}, nil
 	// }
 
-	// Initialize the patch helper.
-	// patchHelper, err := patch.NewHelper(kcp, c.Client)
-	// if err != nil {
-	// 	log.Error(err, "Failed to configure the patch helper")
-	// 	return ctrl.Result{Requeue: true}, nil
-	// }
-
-	// TODO(@jnummelin): Do we actually need to handle deletion? If not, we do not need finalizer either AFAIK
-	// // Add finalizer
-	// if !controllerutil.ContainsFinalizer(kcp, cpv1beta1.K0smotronControlPlaneFinalizer) {
-	// 	controllerutil.AddFinalizer(kcp, cpv1beta1.K0smotronControlPlaneFinalizer)
-	// 	if err := patchHelper.Patch(ctx, kcp); err != nil {
-	// 		log.Error(err, "Failed to add finalizer to K0smotronControlPlane")
-	// 		return ctrl.Result{}, err
-	// 	}
-	// }
-	// if !kcp.ObjectMeta.DeletionTimestamp.IsZero() {
-	// 	// Handle deletion reconciliation loop.
-	// 	return c.reconcileDelete(ctx, cluster, kcp)
-	// }
-
 	if err = c.ensureCertificates(ctx, cluster, kcp); err != nil {
 		log.Error(err, "Failed to ensure certificates")
 		return ctrl.Result{}, err
@@ -173,7 +152,6 @@ func (c *Controller) waitExternalAddress(ctx context.Context, cluster *clusterv1
 				"host": host,
 				"port": int64(port),
 			}
-			capiutil.IsExternalManagedControlPlane(infraCluster)
 			err = unstructured.SetNestedMap(infraCluster.Object, newEndpoint, "spec", "controlPlaneEndpoint")
 			if err != nil {
 				log.Error(err, "Failed to set controlPlaneEndpoint in infrastructure cluster")
