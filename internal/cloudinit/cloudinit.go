@@ -45,6 +45,7 @@ func (c *CloudInit) AsBytes() ([]byte, error) {
 	}
 	// Marshal the data
 	enc := yaml.NewEncoder(&b)
+	enc.SetIndent(2)
 	defer enc.Close()
 
 	err = enc.Encode(c)

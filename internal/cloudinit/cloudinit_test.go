@@ -16,7 +16,11 @@ limitations under the License.
 
 package cloudinit
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestCloudInit(t *testing.T) {
 	c := &CloudInit{
@@ -38,5 +42,12 @@ func TestCloudInit(t *testing.T) {
 	}
 
 	s := string(b)
-	t.Log(s)
+	assert.Equal(t, `#cloud-config
+write_files:
+  - path: /etc/hosts
+    content: foobar
+    permissions: "0644"
+runcmd:
+  - echo 'hello world'
+`, s)
 }
