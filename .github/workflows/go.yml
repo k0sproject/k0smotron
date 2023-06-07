@@ -85,6 +85,7 @@ jobs:
 
       - name: Create image bundle
         run: |
+          make release
           make k0smotron-image-bundle.tar
 
       - name: Run inttest

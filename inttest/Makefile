@@ -23,7 +23,7 @@ footloose_alpine_build_cmdline := \
 
 $(smoketests): K0S_PATH ?= $(realpath ../k0s)
 $(smoketests): TEST_PACKAGE ?= $(subst check-,,$@)
-$(smoketests): ../k0smotron-image-bundle.tar .footloose-alpine.stamp
+$(smoketests): ../k0smotron-image-bundle.tar ../install.yaml .footloose-alpine.stamp
 	FOOTLOOSE_IMAGE='$(FOOTLOOSE_IMAGE)' \
 	K0SMOTRON_IMAGES_BUNDLE='$(K0SMOTRON_IMAGES_BUNDLE)' \
 	K0SMOTRON_INSTALL_YAML='$(K0SMOTRON_INSTALL_YAML)' \
