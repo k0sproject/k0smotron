@@ -2,6 +2,8 @@
 
 k0smotron can act as a [Cluster API](https://cluster-api.sigs.k8s.io/) provider for both control planes and for `Machine` bootstrapping.
 
+**Note:** Cluster API providers in k0smotron are very experimental still. We're iterating fast on these but we'd definitely value your feedback how it behaves with various infrastructure providers.
+
 ## Control Plane provider
 
 When k0smotron acts as a [control plane provider](https://cluster-api.sigs.k8s.io/developer/architecture/controllers/control-plane.html) it will create and manage the cluster control plane within the management cluster, just as in the [standalone](cluster.md) case.
