@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29
-	github.com/onsi/ginkgo/v2 v2.9.7
+	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
 	github.com/stretchr/testify v1.8.4
 	k8s.io/api v0.27.2
@@ -43,7 +43,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	golang.org/x/crypto v0.8.0 // indirect
 	golang.org/x/sync v0.2.0 // indirect
-	golang.org/x/tools v0.9.1 // indirect
+	golang.org/x/tools v0.9.3 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 	helm.sh/helm/v3 v3.11.3 // indirect
 	k8s.io/kube-aggregator v0.27.1 // indirect
