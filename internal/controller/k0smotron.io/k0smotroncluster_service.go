@@ -53,15 +53,16 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 			})
 	case v1.ServiceTypeLoadBalancer:
 		name = kmc.GetLoadBalancerName()
+		// LB svc does not define the nodeport so it can be dynamically assigned
 		ports = append(ports,
 			v1.ServicePort{
-				Port:       int32(6443),
-				TargetPort: intstr.FromInt(6443),
+				Port:       int32(kmc.Spec.Service.APIPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
 				Name:       "api",
 			},
 			v1.ServicePort{
-				Port:       int32(8132),
-				TargetPort: intstr.FromInt(8132),
+				Port:       int32(kmc.Spec.Service.KonnectivityPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.KonnectivityPort),
 				Name:       "konnectivity",
 			})
 	}
