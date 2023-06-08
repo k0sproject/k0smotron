@@ -23,9 +23,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"k8s.io/client-go/tools/clientcmd"
 	"strings"
 	"time"
+
+	"k8s.io/client-go/tools/clientcmd"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -138,6 +139,11 @@ func (r *JoinTokenRequestReconciler) reconcileSecret(ctx context.Context, jtr km
 }
 
 func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, token string) (v1.Secret, error) {
+	labels := map[string]string{
+		clusterLabel:                 jtr.Spec.ClusterRef.Name,
+		"k0smotron.io/role":          jtr.Spec.Role,
+		"k0smotron.io/token-request": jtr.Name,
+	}
 	secret := v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
@@ -146,11 +152,7 @@ func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, to
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jtr.Name,
 			Namespace: jtr.Namespace,
-			Labels: map[string]string{
-				"k0smotron.io/cluster":       fmt.Sprintf("%s.%s", jtr.Spec.ClusterRef.Name, jtr.Spec.ClusterRef.Namespace),
-				"k0smotron.io/role":          jtr.Spec.Role,
-				"k0smotron.io/token-request": jtr.Name,
-			},
+			Labels:    labels,
 		},
 		StringData: map[string]string{
 			"token": token,

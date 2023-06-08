@@ -52,7 +52,7 @@ func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc k
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kmc.GetAdminConfigSecretName(),
 			Namespace: kmc.Namespace,
-			Labels:    map[string]string{"app": "k0smotron"},
+			Labels:    labelsForCluster(&kmc),
 		},
 		StringData: map[string]string{"value": output},
 	}

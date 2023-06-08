@@ -55,6 +55,7 @@ func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kmc.GetConfigMapName(),
 			Namespace: kmc.Namespace,
+			Labels:    labelsForCluster(kmc),
 		},
 		Data: map[string]string{
 			"K0SMOTRON_K0S_YAML": clusterConfigBuf.String(),

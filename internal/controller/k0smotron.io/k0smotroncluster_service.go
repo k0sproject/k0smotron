@@ -67,6 +67,8 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 			})
 	}
 
+	labels := labelsForCluster(kmc)
+
 	svc := v1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -75,12 +77,12 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Namespace:   kmc.Namespace,
-			Labels:      map[string]string{"app": "k0smotron"},
+			Labels:      labels,
 			Annotations: kmc.Spec.Service.Annotations,
 		},
 		Spec: v1.ServiceSpec{
 			Type:     kmc.Spec.Service.Type,
-			Selector: map[string]string{"app": "k0smotron"},
+			Selector: labels,
 			Ports:    ports,
 		},
 	}
