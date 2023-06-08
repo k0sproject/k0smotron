@@ -57,26 +57,26 @@ type Controller struct {
 }
 
 type Scope struct {
-	Config      *bootstrapv1.KZerosWorkerConfig
+	Config      *bootstrapv1.K0sWorkerConfig
 	ConfigOwner *bsutil.ConfigOwner
 	Cluster     *clusterv1.Cluster
 }
 
-// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=kzerosworkerconfigs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=kzerosworkerconfigs/status,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status;machines;machines/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=exp.cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets;events;configmaps,verbs=get;list;watch;create;update;patch;delete
 
 func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
-	log := log.FromContext(ctx).WithValues("kzerosconfig", req.NamespacedName)
-	log.Info("Reconciling KZerosConfig")
+	log := log.FromContext(ctx).WithValues("k0sconfig", req.NamespacedName)
+	log.Info("Reconciling K0sConfig")
 
 	// Lookup the config object
-	config := &bootstrapv1.KZerosWorkerConfig{}
+	config := &bootstrapv1.K0sWorkerConfig{}
 	if err := r.Get(ctx, req.NamespacedName, config); err != nil {
 		if apierrors.IsNotFound(err) {
-
+			log.Info("K0sConfig not found")
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "Failed to get config")
@@ -87,6 +87,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	configOwner, err := bsutil.GetConfigOwner(ctx, r.Client, config)
 	if apierrors.IsNotFound(errors.Cause(err)) {
 		// Could not find the owner yet, this is not an error and will rereconcile when the owner gets set.
+		log.Info("Owner not found yet, waiting until it is set")
 		return ctrl.Result{}, nil
 	}
 	if err != nil {
@@ -94,6 +95,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{}, err
 	}
 	if configOwner == nil {
+		log.Info("Owner is nil, waiting until it is set")
 		return ctrl.Result{}, nil
 	}
 
@@ -130,7 +132,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	log.Info("Finding the token secret")
 	// Get the token from a secret
-	token, err := r.getKZerosToken(ctx, scope)
+	token, err := r.getK0sToken(ctx, scope)
 	if err != nil {
 		log.Error(err, "Failed to get token")
 		return ctrl.Result{}, err
@@ -173,7 +175,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: bootstrapv1.GroupVersion.String(),
-					Kind:       "KZerosWorkerConfig",
+					Kind:       "K0sWorkerConfig",
 					Name:       scope.Config.Name,
 					UID:        scope.Config.UID,
 					Controller: pointer.Bool(true),
@@ -186,7 +188,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		Type: clusterv1.ClusterSecretType,
 	}
 
-	if err := r.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "kzeros-bootstrap"}); err != nil {
+	if err := r.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
 		return ctrl.Result{}, err
 	}
@@ -206,7 +208,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *Controller) getKZerosToken(ctx context.Context, scope *Scope) (string, error) {
+func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		return "", errors.New("control plane endpoint is not set")
 	}
@@ -244,7 +246,7 @@ func (r *Controller) getKZerosToken(ctx context.Context, scope *Scope) (string, 
 		return "", errors.Wrap(err, "failed to lookup CA certificates")
 	}
 	ca := certificates.GetByPurpose(secret.ClusterCA)
-	joinToken, err := kutil.CreateKzerosJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port))
+	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create join token")
 	}
@@ -253,6 +255,6 @@ func (r *Controller) getKZerosToken(ctx context.Context, scope *Scope) (string, 
 
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&bootstrapv1.KZerosWorkerConfig{}).
+		For(&bootstrapv1.K0sWorkerConfig{}).
 		Complete(r)
 }

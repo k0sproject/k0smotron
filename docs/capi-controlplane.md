@@ -35,8 +35,8 @@ spec:
     type: emptyDir
   service:
     type: LoadBalancer
-    apiPort: 6443
-    konnectivityPort: 8132
+    # apiPort: 6443
+    # konnectivityPort: 8132
     annotations:
       load-balancer.hetzner.cloud/location: fsn1
 ```

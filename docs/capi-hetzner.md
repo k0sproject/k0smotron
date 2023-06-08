@@ -73,6 +73,39 @@ spec:
     key:
       hcloudToken: hcloud
 ---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Machine
+metadata:
+  name: cp-test-0
+spec:
+  clusterName: cp-test
+  bootstrap:
+    configRef: # This triggers our controller to create cloud-init secret
+      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      kind: K0sWorkerConfig
+      name: cp-test-0
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: HCloudMachine
+    name: cp-test-0
+  
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HCloudMachine
+metadata:
+  name: cp-test-0
+spec:
+  imageName: ubuntu-22.04
+  type: cx21
+  sshKeys:
+    - name: your-ssh-key-name
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfig
+metadata:
+  name: cp-test-0
+spec:
+---
 apiVersion: v1
 kind: Secret
 data:
@@ -92,7 +125,7 @@ NAME                               PHASE         AGE     VERSION
 cluster.cluster.x-k8s.io/cp-test   Provisioned   3m51s   
 
 NAME                                 CLUSTER   NODENAME   PROVIDERID          PHASE         AGE     VERSION
-machine.cluster.x-k8s.io/cp-test-0   cp-test              hcloud://33406624   Provisioned   3m50s
+machine.cluster.x-k8s.io/cp-test-0   cp-test              hcloud://12345678   Provisioned   3m50s
 ```
 
 ## Accessing the workload cluster

@@ -33,7 +33,7 @@ rules:
 - apiGroups:
   - bootstrap.cluster.x-k8s.io
   resources:
-  - kzerosworkerconfigs
+  - k0sworkerconfigs
   verbs:
   - create
   - delete
@@ -45,7 +45,7 @@ rules:
 - apiGroups:
   - bootstrap.cluster.x-k8s.io
   resources:
-  - kzerosworkerconfigs/status
+  - k0sworkerconfigs/status
   verbs:
   - create
   - delete

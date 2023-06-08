@@ -30,7 +30,7 @@ func joinEncode(in io.Reader) (string, error) {
 	return base64.StdEncoding.EncodeToString(outBuf.Bytes()), nil
 }
 
-func CreateKzerosJoinToken(caCert []byte, token string, joinURL string) (string, error) {
+func CreateK0sJoinToken(caCert []byte, token string, joinURL string) (string, error) {
 	const k0sContextName = "k0s"
 	const userName = "kubelet-bootstrap"
 	kubeconfig, err := clientcmd.Write(clientcmdapi.Config{

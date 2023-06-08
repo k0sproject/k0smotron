@@ -6,14 +6,14 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.11.4
   labels:
     cluster.x-k8s.io/v1beta1: v1beta1
-  name: kzerosworkerconfigs.bootstrap.cluster.x-k8s.io
+  name: k0sworkerconfigs.bootstrap.cluster.x-k8s.io
 spec:
   group: bootstrap.cluster.x-k8s.io
   names:
-    kind: KZerosWorkerConfig
-    listKind: KZerosWorkerConfigList
-    plural: kzerosworkerconfigs
-    singular: kzerosworkerconfig
+    kind: K0sWorkerConfig
+    listKind: K0sWorkerConfigList
+    plural: k0sworkerconfigs
+    singular: k0sworkerconfig
   scope: Namespaced
   versions:
   - name: v1beta1

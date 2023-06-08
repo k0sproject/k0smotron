@@ -18,37 +18,36 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	// clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 func init() {
-	SchemeBuilder.Register(&KZerosWorkerConfig{}, &KZerosWorkerConfigList{})
+	SchemeBuilder.Register(&K0sWorkerConfig{}, &K0sWorkerConfigList{})
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
 
-type KZerosWorkerConfig struct {
+type K0sWorkerConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KZerosWorkerConfigSpec   `json:"spec,omitempty"`
-	Status KZerosWorkerConfigStatus `json:"status,omitempty"`
+	Spec   K0sWorkerConfigSpec   `json:"spec,omitempty"`
+	Status K0sWorkerConfigStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-type KZerosWorkerConfigList struct {
+type K0sWorkerConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []KZerosWorkerConfig `json:"items"`
+	Items           []K0sWorkerConfig `json:"items"`
 }
 
-type KZerosWorkerConfigSpec struct {
+type K0sWorkerConfigSpec struct {
 	// JoinTokenSecretRef is a reference to a secret that contains the join token
 	// +kubebuilder:validation:Required
 	JoinTokenSecretRef *JoinTokenSecretRef `json:"joinTokenSecretRef,omitempty"`
@@ -63,7 +62,7 @@ type JoinTokenSecretRef struct {
 	Key string `json:"key"`
 }
 
-type KZerosWorkerConfigStatus struct {
+type K0sWorkerConfigStatus struct {
 	// Ready indicates the Bootstrapdata field is ready to be consumed
 	Ready bool `json:"ready,omitempty"`
 

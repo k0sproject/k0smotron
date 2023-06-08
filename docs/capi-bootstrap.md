@@ -14,7 +14,7 @@ spec:
   bootstrap:
     configRef: # This triggers our controller to create cloud-init secret
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-      kind: KZerosWorkerConfig
+      kind: K0sWorkerConfig
       name: cp-test-0
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -27,7 +27,7 @@ Next we need to provide the configuration for the bootstrapping:
 
 ```yaml
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KZerosWorkerConfig
+kind: K0sWorkerConfig
 metadata:
   name: cp-test-0
 spec:
