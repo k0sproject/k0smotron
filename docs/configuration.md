@@ -12,7 +12,7 @@ metadata:
 spec:
   replicas: 1
   k0sImage: k0sproject/k0s
-  K0sVersion: v1.27.1-k0s.0
+  k0sVersion: v1.27.1-k0s.0
   service:
     type: NodePort
     apiPort: 30443
