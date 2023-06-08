@@ -74,6 +74,7 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
 
 extra:
+  k0smotron_version: !!python/object/apply:os.getenv ["K0SMOTRON_VERSION"]
   generator: false
   social:
     - icon: fontawesome/brands/github
