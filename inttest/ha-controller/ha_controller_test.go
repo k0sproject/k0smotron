@@ -18,7 +18,6 @@ package hacontroller
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/k0sproject/k0s/inttest/common"
@@ -105,10 +104,7 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 
-	addr, err := util.GetNodeAddress(ctx, kc, s.WorkerNode(0))
-	s.Require().NoError(err)
-
-	kmc := []byte(fmt.Sprintf(`
+	kmc := []byte(`
 	{
 		"apiVersion": "k0smotron.io/v1beta1",
 		"kind": "Cluster",
@@ -118,14 +114,13 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 		},
 		"spec": {
 		    "replicas": 3,
-			"externalAddress": "%s",
 			"service":{
 				"type": "NodePort"
 			},
 			"kineDataSourceURL": "postgres://postgres:postgres@postgres.default:5432/kine?sslmode=disable"
 		}
 	  }
-`, addr))
+`)
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())

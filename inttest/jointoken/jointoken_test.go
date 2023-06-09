@@ -18,14 +18,14 @@ package jointoken
 
 import (
 	"context"
-	"fmt"
+	"testing"
+
 	"github.com/k0sproject/k0s/inttest/common"
 	"github.com/k0sproject/k0s/pkg/kubernetes/watch"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"testing"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
 )
@@ -83,9 +83,7 @@ func (s *JoinTokenSuite) createK0smotronCluster(ctx context.Context, kc *kuberne
 		},
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
-	addr, err := util.GetNodeAddress(ctx, kc, s.WorkerNode(0))
-	s.Require().NoError(err)
-	kmc := []byte(fmt.Sprintf(`
+	kmc := []byte(`
 	{
 		"apiVersion": "k0smotron.io/v1beta1",
 		"kind": "Cluster",
@@ -94,13 +92,12 @@ func (s *JoinTokenSuite) createK0smotronCluster(ctx context.Context, kc *kuberne
 		  "namespace": "kmc-test"
 		},
 		"spec": {
-			"externalAddress": "%s",
 			"service":{
 				"type": "NodePort"
 			}
 		}
 	  }
-`, addr))
+`)
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
