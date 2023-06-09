@@ -57,6 +57,7 @@ K0smotron allows you to configure k0s via `spec.k0sConfig` field. If empty, will
 More info about the k0s config: https://docs.k0sproject.io/stable/configuration/ 
 
 **Note**: some fields will be overwritten by k0smotron. K0smotron will set the following fields:
+
 - `spec.k0sConfig.spec.api.externalAddress` will be set to the value of `spec.externalAddress` if `spec.externalAddress` is set. 
    If not, k0smotron will use load balancer IP or try to detect `externalAddress` out of nodes IP addresses. 
 - `spec.k0sConfig.spec.api.port` will be set to the value of `spec.service.apiPort`.
