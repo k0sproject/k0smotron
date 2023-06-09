@@ -23,6 +23,7 @@ import (
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -30,10 +31,19 @@ func TestGenerateCM(t *testing.T) {
 	r := ClusterReconciler{
 		Scheme: &runtime.Scheme{},
 	}
-	t.Run("CNIPlugin", func(t *testing.T) {
+	t.Run("config merge", func(t *testing.T) {
 		kmc := km.Cluster{
 			Spec: km.ClusterSpec{
-				CNIPlugin: "calico",
+				ExternalAddress: "my.external.address",
+				K0sConfig: &unstructured.Unstructured{Object: map[string]interface{}{
+					"apiVersion": "k0s.k0sproject.io/v1beta1",
+					"kind":       "ClusterConfig",
+					"spec": map[string]interface{}{
+						"network": map[string]interface{}{
+							"provider": "calico",
+						},
+					},
+				}},
 			},
 		}
 
@@ -41,6 +51,8 @@ func TestGenerateCM(t *testing.T) {
 		require.NoError(t, err)
 
 		conf := cm.Data["K0SMOTRON_K0S_YAML"]
+
+		assert.True(t, strings.Contains(conf, "my.external.address"), "The external address must be my.external.address")
 		assert.True(t, strings.Contains(conf, "calico"), "The provider must be calico")
 		assert.False(t, strings.Contains(conf, "kuberouter"), "The provider must not be kuberouter")
 	})

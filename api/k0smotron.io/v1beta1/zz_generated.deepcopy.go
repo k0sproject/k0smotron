@@ -119,6 +119,10 @@ func (in *ClusterSpec) DeepCopyInto(out *ClusterSpec) {
 	*out = *in
 	in.Service.DeepCopyInto(&out.Service)
 	in.Persistence.DeepCopyInto(&out.Persistence)
+	if in.K0sConfig != nil {
+		in, out := &in.K0sConfig, &out.K0sConfig
+		*out = (*in).DeepCopy()
+	}
 	if in.CertificateRefs != nil {
 		in, out := &in.CertificateRefs, &out.CertificateRefs
 		*out = make([]CertificateRef, len(*in))
