@@ -12,20 +12,20 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/ha/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-controlplane/">
       
       
-        <link rel="prev" href="../join-nodes/">
+        <link rel="prev" href="../cluster-api/">
       
       
-        <link rel="next" href="../cluster-api/">
+        <link rel="next" href="../capi-bootstrap/">
       
       <link rel="icon" href="../img/k0s_social.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
     
     
       
-        <title>HA control planes - Documentation</title>
+        <title>Control Plane - Documentation</title>
       
     
     
@@ -86,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#highly-available-controlplanes" class="md-skip">
+        <a href="#cluster-api-control-plane-provider" class="md-skip">
           Skip to content
         </a>
       
@@ -136,7 +136,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              HA control planes
+              Control Plane
             
           </span>
         </div>
@@ -359,16 +359,14 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
       
       
       
@@ -377,7 +375,7 @@ You are not currently viewing the documentation for the current stable release o
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
         <label class="md-nav__title" for="__nav_4_2">
           <span class="md-nav__icon md-icon"></span>
           Standalone
@@ -430,52 +428,11 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          HA control planes
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../ha/" class="md-nav__link">
         HA control planes
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#using-postgres-operator" class="md-nav__link">
-    Using Postgres operator
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -492,14 +449,16 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
       
       
       
@@ -508,7 +467,7 @@ You are not currently viewing the documentation for the current stable release o
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_4_3">
           <span class="md-nav__icon md-icon"></span>
           Cluster API
@@ -533,11 +492,21 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../capi-controlplane/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Control Plane
       </a>
+      
     </li>
   
 
@@ -667,21 +636,6 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#using-postgres-operator" class="md-nav__link">
-    Using Postgres operator
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -695,69 +649,43 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="highly-available-controlplanes">Highly available controlplanes<a class="headerlink" href="#highly-available-controlplanes" title="Permanent link">#</a></h1>
-<p>As the nature of Kubernetes workloads, in this case the cluster control planes, is quite dynamic it poses a challenge to setup highly available Etcd cluster for the control plane. In k0smotron we're solving the challenge by "externalizing" the control plane data storage HA setup.</p>
-<p>The control planes managed by <code>k0smotron</code> are k0s control planes. As k0s comes with support for using SQL DBs as data store (via Kine) you can use HA databases instead of Etcd. This enables you to use e.g. Postgres operator, MySQL operator or cloud provider managed databases as the data store for the control planes.</p>
-<h2 id="using-postgres-operator">Using Postgres operator<a class="headerlink" href="#using-postgres-operator" title="Permanent link">#</a></h2>
-<p>In this example we show how to use <a href="https://postgres-operator.readthedocs.io/en/latest/">Postgres operator</a> to manage the control plane data store.</p>
-<p>Install the operator following the <a href="https://postgres-operator.readthedocs.io/en/latest/quickstart/">quicstart guide</a>.</p>
-<p>Create the database with a custom resource:
-<div class="highlight"><pre><span></span><code>apiVersion: &quot;acid.zalan.do/v1&quot;
-kind: postgresql
-metadata:
-  name: acid-minimal-cluster
-spec:
-  teamId: &quot;acid&quot;
-  volume:
-    size: 10Gi
-  numberOfInstances: 2
-  users:
-    # database owner
-    k0smotron:
-    - superuser
-    - createdb
-
-  databases:
-    kine: k0smotron
-  postgresql:
-    version: &quot;15&quot;
+<h1 id="cluster-api-control-plane-provider">Cluster API - Control Plane provider<a class="headerlink" href="#cluster-api-control-plane-provider" title="Permanent link">#</a></h1>
+<p>k0smotron can act as a control plane provider via usage of <code>K0smotronControlPlane</code> CRDs.</p>
+<p>As per usual, you need to define a <code>Cluster</code> object given with a reference to control plane provider:
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.244.0.0/16</span>
+<span class="w">    </span><span class="nt">services</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.96.0.0/12</span>
+<span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
 </code></pre></div></p>
-<p>Once the database has been setup properly, you can instruct k0smotron to create a control plane using it:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: k0smotron.io/v1beta1</span>
-<span class="s">kind: Cluster</span>
-<span class="s">metadata:</span>
-<span class="s">  name: k0smotron-test</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 3</span>
-<span class="s">  service:</span>
-<span class="s">    type: LoadBalancer</span>
-<span class="s">  kineDataSourceURL: postgres://k0smotron:&lt;passwd&gt;@acid-minimal-cluster.default:5432/kine?sslmode=disable</span>
-<span class="s">EOF</span>
+<p>Next we need to provider the configuration for the actual <code>K0smotronControlPlane</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">k0sVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2-k0s.0</span>
+<span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
+<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
+<span class="w">    </span><span class="c1"># apiPort: 6443</span>
+<span class="w">    </span><span class="c1"># konnectivityPort: 8132</span>
+<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">load-balancer.hetzner.cloud/location</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span>
 </code></pre></div>
-<p>Another option is to use the reference to the secret containing the database credentials:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: v1</span>
-<span class="s">kind: Secret</span>
-<span class="s">metadata:</span>
-<span class="s">  name: database-credentials</span>
-<span class="s">  namespace: k0smotron-test</span>
-<span class="s">type: Opaque</span>
-<span class="s">data:</span>
-<span class="s">  K0SMOTRON_KINE_DATASOURCE_URL: &lt;base64-encoded-datasource&gt;</span>
-<span class="s">---</span>
-<span class="s">apiVersion: k0smotron.io/v1beta1</span>
-<span class="s">kind: Cluster</span>
-<span class="s">metadata:</span>
-<span class="s">  name: k0smotron-test</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 3</span>
-<span class="s">  service:</span>
-<span class="s">    type: LoadBalancer</span>
-<span class="s">  kineDataSourceSecretName: database-credentials</span>
-<span class="s">EOF</span>
-</code></pre></div>
-<p><strong>Note</strong>: The secret must be in the same namespace as the cluster and the key must be <code>K0SMOTRON_KINE_DATASOURCE_URL</code>.</p>
+<p>The <code>K0smotronControlPlane.spec</code> field is a direct mapping of the "standalone" k0smotron cluster <a href="../configuration/">configuration</a>.</p>
 
 
 

@@ -12,20 +12,20 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/ha/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-examples/">
       
       
-        <link rel="prev" href="../join-nodes/">
+        <link rel="prev" href="../capi-bootstrap/">
       
       
-        <link rel="next" href="../cluster-api/">
+        <link rel="next" href="../capi-hetzner/">
       
       <link rel="icon" href="../img/k0s_social.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
     
     
       
-        <title>HA control planes - Documentation</title>
+        <title>Overview - Documentation</title>
       
     
     
@@ -86,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#highly-available-controlplanes" class="md-skip">
+        <a href="#cluster-api-examples" class="md-skip">
           Skip to content
         </a>
       
@@ -136,7 +136,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              HA control planes
+              Overview
             
           </span>
         </div>
@@ -359,16 +359,14 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
       
       
       
@@ -377,7 +375,7 @@ You are not currently viewing the documentation for the current stable release o
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
         <label class="md-nav__title" for="__nav_4_2">
           <span class="md-nav__icon md-icon"></span>
           Standalone
@@ -430,52 +428,11 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          HA control planes
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../ha/" class="md-nav__link">
         HA control planes
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#using-postgres-operator" class="md-nav__link">
-    Using Postgres operator
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -492,14 +449,16 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
       
       
       
@@ -508,7 +467,7 @@ You are not currently viewing the documentation for the current stable release o
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_4_3">
           <span class="md-nav__icon md-icon"></span>
           Cluster API
@@ -561,14 +520,16 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_4" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_4" checked>
       
       
       
@@ -577,7 +538,7 @@ You are not currently viewing the documentation for the current stable release o
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_4_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_4_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_4_3_4">
           <span class="md-nav__icon md-icon"></span>
           Examples
@@ -588,11 +549,21 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../capi-examples/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Overview
       </a>
+      
     </li>
   
 
@@ -667,21 +638,6 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#using-postgres-operator" class="md-nav__link">
-    Using Postgres operator
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -695,69 +651,17 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="highly-available-controlplanes">Highly available controlplanes<a class="headerlink" href="#highly-available-controlplanes" title="Permanent link">#</a></h1>
-<p>As the nature of Kubernetes workloads, in this case the cluster control planes, is quite dynamic it poses a challenge to setup highly available Etcd cluster for the control plane. In k0smotron we're solving the challenge by "externalizing" the control plane data storage HA setup.</p>
-<p>The control planes managed by <code>k0smotron</code> are k0s control planes. As k0s comes with support for using SQL DBs as data store (via Kine) you can use HA databases instead of Etcd. This enables you to use e.g. Postgres operator, MySQL operator or cloud provider managed databases as the data store for the control planes.</p>
-<h2 id="using-postgres-operator">Using Postgres operator<a class="headerlink" href="#using-postgres-operator" title="Permanent link">#</a></h2>
-<p>In this example we show how to use <a href="https://postgres-operator.readthedocs.io/en/latest/">Postgres operator</a> to manage the control plane data store.</p>
-<p>Install the operator following the <a href="https://postgres-operator.readthedocs.io/en/latest/quickstart/">quicstart guide</a>.</p>
-<p>Create the database with a custom resource:
-<div class="highlight"><pre><span></span><code>apiVersion: &quot;acid.zalan.do/v1&quot;
-kind: postgresql
-metadata:
-  name: acid-minimal-cluster
-spec:
-  teamId: &quot;acid&quot;
-  volume:
-    size: 10Gi
-  numberOfInstances: 2
-  users:
-    # database owner
-    k0smotron:
-    - superuser
-    - createdb
-
-  databases:
-    kine: k0smotron
-  postgresql:
-    version: &quot;15&quot;
-</code></pre></div></p>
-<p>Once the database has been setup properly, you can instruct k0smotron to create a control plane using it:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: k0smotron.io/v1beta1</span>
-<span class="s">kind: Cluster</span>
-<span class="s">metadata:</span>
-<span class="s">  name: k0smotron-test</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 3</span>
-<span class="s">  service:</span>
-<span class="s">    type: LoadBalancer</span>
-<span class="s">  kineDataSourceURL: postgres://k0smotron:&lt;passwd&gt;@acid-minimal-cluster.default:5432/kine?sslmode=disable</span>
-<span class="s">EOF</span>
-</code></pre></div>
-<p>Another option is to use the reference to the secret containing the database credentials:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: v1</span>
-<span class="s">kind: Secret</span>
-<span class="s">metadata:</span>
-<span class="s">  name: database-credentials</span>
-<span class="s">  namespace: k0smotron-test</span>
-<span class="s">type: Opaque</span>
-<span class="s">data:</span>
-<span class="s">  K0SMOTRON_KINE_DATASOURCE_URL: &lt;base64-encoded-datasource&gt;</span>
-<span class="s">---</span>
-<span class="s">apiVersion: k0smotron.io/v1beta1</span>
-<span class="s">kind: Cluster</span>
-<span class="s">metadata:</span>
-<span class="s">  name: k0smotron-test</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 3</span>
-<span class="s">  service:</span>
-<span class="s">    type: LoadBalancer</span>
-<span class="s">  kineDataSourceSecretName: database-credentials</span>
-<span class="s">EOF</span>
-</code></pre></div>
-<p><strong>Note</strong>: The secret must be in the same namespace as the cluster and the key must be <code>K0SMOTRON_KINE_DATASOURCE_URL</code>.</p>
+<h1 id="cluster-api-examples">Cluster API - Examples<a class="headerlink" href="#cluster-api-examples" title="Permanent link">#</a></h1>
+<p>On these pages you'll find set of examples how to use k0smotron as a Cluster API provider for various cloud providers.</p>
+<h1 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h1>
+<p>All the examples assume following prerequisites.</p>
+<h2 id="management-cluster">Management cluster<a class="headerlink" href="#management-cluster" title="Permanent link">#</a></h2>
+<p>You need to have an existing cluster you'll use as the <a href="https://cluster-api.sigs.k8s.io/reference/glossary.html#management-cluster">management cluster</a>. Naturally we expect you point your <code>kubectl</code> or any other client tooling you use to use that cluster.</p>
+<p>If you do not yet have a management cluster in your hands remember that you can create one using <a href="https://docs.k0sproject.io/stable/install/">k0s</a> super easily.</p>
+<h2 id="k0smotron">k0smotron<a class="headerlink" href="#k0smotron" title="Permanent link">#</a></h2>
+<p>To install k0smotron on the management cluster follow the installation <a href="../install/">guide</a>.</p>
+<h2 id="clusterctl">clusterctl<a class="headerlink" href="#clusterctl" title="Permanent link">#</a></h2>
+<p>You need to have <code>clusterctl</code> <a href="https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl">installed</a>.</p>
 
 
 
