@@ -36,6 +36,8 @@ var ErrEmptyKineDataSourceURL = errors.New("kineDataSourceURL can't be empty if 
 
 var entrypointDefaultMode = int32(0744)
 
+const clusterLabel = "k0smotron.io/cluster"
+
 // findStatefulSetPod returns a first running pod from a StatefulSet
 func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
 	return util.FindStatefulSetPod(ctx, r.ClientSet, statefulSet, namespace)
@@ -51,6 +53,8 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		return apps.StatefulSet{}, ErrEmptyKineDataSourceURL
 	}
 
+	labels := labelsForCluster(kmc)
+
 	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -59,16 +63,16 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kmc.GetStatefulSetName(),
 			Namespace: kmc.Namespace,
-			Labels:    map[string]string{"app": "k0smotron"},
+			Labels:    labels,
 		},
 		Spec: apps.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": "k0smotron"},
+				MatchLabels: labels,
 			},
 			Replicas: &kmc.Spec.Replicas,
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": "k0smotron"},
+					Labels: labels,
 				},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{{
