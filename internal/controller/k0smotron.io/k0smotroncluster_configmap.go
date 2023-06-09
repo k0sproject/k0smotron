@@ -17,32 +17,54 @@ limitations under the License.
 package k0smotronio
 
 import (
-	"bytes"
 	"context"
-	"text/template"
+	"fmt"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/imdario/mergo"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-)
+	"sigs.k8s.io/yaml"
 
-var configTmpl *template.Template
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+)
 
 const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDER__"
 
-func init() {
-	configTmpl = template.Must(template.New("k0s.yaml").Parse(clusterConfigTemplate))
-}
-
+// generateCM merges provided config with k0smotron generated values and generates the k0s configmap
+// We use plain map[string]interface{} for the following reasons:
+//   - we want to support multiple versions of k0s config
+//   - some of the fields in the k0s config struct are not pointers, e.g. spec.api.address in string, so it will be
+//     marshalled as "address": "", which is not correct value for the k0s config
+//   - we can't use the k0s config default values, because some of them are calculated based on the cluster state (e.g. spec.api.address)
 func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
-	// TODO k0s.yaml should probably be a
-	// github.com/k0sproject/k0s/pkg/apis/k0s.k0sproject.io/v1beta1.ClusterConfig
-	// and then unmarshalled into json to make modification of fields reliable
-	var clusterConfigBuf bytes.Buffer
-	err := configTmpl.Execute(&clusterConfigBuf, kmc.Spec)
+	k0smotronValues := map[string]interface{}{"spec": nil}
+	unstructuredConfig := k0smotronValues
+
+	if kmc.Spec.K0sConfig == nil {
+		k0smotronValues["apiVersion"] = "k0s.k0sproject.io/v1beta1"
+		k0smotronValues["kind"] = "ClusterConfig"
+		k0smotronValues["spec"] = getV1Beta1Spec(kmc)
+	} else {
+		unstructuredConfig = kmc.Spec.K0sConfig.UnstructuredContent()
+
+		switch kmc.Spec.K0sConfig.GetAPIVersion() {
+		case "k0s.k0sproject.io/v1beta1":
+			k0smotronValues["spec"] = getV1Beta1Spec(kmc)
+		default:
+			// TODO: should we just use the v1beta1 in case the api version is not provided?
+			return v1.ConfigMap{}, fmt.Errorf("unsupported k0s config version: %s", kmc.Spec.K0sConfig.GetAPIVersion())
+		}
+	}
+
+	err := mergo.Merge(&unstructuredConfig, k0smotronValues, mergo.WithOverride)
+	if err != nil {
+		return v1.ConfigMap{}, err
+	}
+
+	b, err := yaml.Marshal(unstructuredConfig)
 	if err != nil {
 		return v1.ConfigMap{}, err
 	}
@@ -57,7 +79,7 @@ func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 			Namespace: kmc.Namespace,
 		},
 		Data: map[string]string{
-			"K0SMOTRON_K0S_YAML": clusterConfigBuf.String(),
+			"K0SMOTRON_K0S_YAML": string(b),
 		},
 	}
 
@@ -115,23 +137,23 @@ func (r *ClusterReconciler) detectExternalAddress(ctx context.Context) (string, 
 	return internalAddress, nil
 }
 
-const clusterConfigTemplate = `
-apiVersion: k0s.k0sproject.io/v1beta1
-kind: ClusterConfig
-metadata:
-  name: k0s
-spec:
-  api:
-    externalAddress: {{ .ExternalAddress }}
-    port: {{ .Service.APIPort }}
-  konnectivity:
-    agentPort: {{ .Service.KonnectivityPort }}
-  {{- if .KineDataSourceURL }}
-  storage:
-    type: kine
-    kine:
-      dataSource: {{ .KineDataSourceURL }}
-  {{- end }}
-  network:
-    provider: {{ .CNIPlugin }}
-`
+func getV1Beta1Spec(kmc *km.Cluster) map[string]interface{} {
+	v1beta1Spec := map[string]interface{}{
+		"api": map[string]interface{}{
+			"externalAddress": kmc.Spec.ExternalAddress,
+			"port":            kmc.Spec.Service.APIPort,
+		},
+		"konnectivity": map[string]interface{}{
+			"agentPort": kmc.Spec.Service.KonnectivityPort,
+		},
+	}
+	if kmc.Spec.KineDataSourceURL != "" {
+		v1beta1Spec["storage"] = map[string]interface{}{
+			"type": "kine",
+			"kine": map[string]interface{}{
+				"dataSource": kmc.Spec.KineDataSourceURL,
+			},
+		}
+	}
+	return v1beta1Spec
+}

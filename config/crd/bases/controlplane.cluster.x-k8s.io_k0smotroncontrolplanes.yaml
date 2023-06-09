@@ -51,23 +51,15 @@ spec:
                   - type
                   type: object
                 type: array
-              cniPlugin:
-                default: kuberouter
-                description: CNIPlugin defines the CNI plugin to be used. Possible
-                  values are KubeRouter and Calico. Uses KubeRouter by default. Cannot
-                  be modified after deploying the cluster.
-                enum:
-                - kuberouter
-                - calico
-                - custom
-                type: string
-                x-kubernetes-validations:
-                - message: cniPlugin is immutable
-                  rule: self == oldSelf
               externalAddress:
                 description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
                   Will be detected automatically for service type LoadBalancer.
                 type: string
+              k0sConfig:
+                description: k0sConfig defines the k0s configuration. Note, that some
+                  fields will be overwritten by k0smotron. If empty, will be used
+                  default configuration. @see https://docs.k0sproject.io/stable/configuration/
+                type: object
               k0sImage:
                 default: k0sproject/k0s
                 description: K0sImage defines the k0s image to be deployed. If empty

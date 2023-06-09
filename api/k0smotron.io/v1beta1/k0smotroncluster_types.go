@@ -21,6 +21,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -64,13 +65,10 @@ type ClusterSpec struct {
 	// and one of them must be set if replicas > 1.
 	//+kubebuilder:validation:Optional
 	KineDataSourceSecretName string `json:"kineDataSourceSecretName,omitempty"`
-	// CNIPlugin defines the CNI plugin to be used.
-	// Possible values are KubeRouter and Calico. Uses KubeRouter by default.
-	// Cannot be modified after deploying the cluster.
-	//+kubebuilder:default=kuberouter
-	//+kubebuilder:validation:Enum:=kuberouter;calico;custom
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="cniPlugin is immutable"
-	CNIPlugin string `json:"cniPlugin,omitempty"`
+	// k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
+	// If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
+	//+kubebuilder:validation:Optional
+	K0sConfig *unstructured.Unstructured `json:"k0sConfig,omitempty"`
 	// CertificateRefs defines the certificate references.
 	CertificateRefs []CertificateRef `json:"certificateRefs,omitempty"`
 }
