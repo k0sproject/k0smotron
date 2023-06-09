@@ -1,0 +1,1666 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: k0smotron
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: namespace
+    app.kubernetes.io/part-of: k0smotron
+    control-plane: controller-manager
+  name: k0smotron
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.4
+  name: clusters.k0smotron.io
+spec:
+  group: k0smotron.io
+  names:
+    kind: Cluster
+    listKind: ClusterList
+    plural: clusters
+    shortNames:
+    - kmc
+    singular: cluster
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: Cluster is the Schema for the k0smotronclusters API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            default:
+              service:
+                type: NodePort
+            description: ClusterSpec defines the desired state of K0smotronCluster
+            properties:
+              certificateRefs:
+                description: CertificateRefs defines the certificate references.
+                items:
+                  properties:
+                    name:
+                      type: string
+                    type:
+                      enum:
+                      - ca
+                      - sa
+                      - proxy
+                      type: string
+                  required:
+                  - type
+                  type: object
+                type: array
+              externalAddress:
+                description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
+                  Will be detected automatically for service type LoadBalancer.
+                type: string
+              k0sConfig:
+                description: k0sConfig defines the k0s configuration. Note, that some
+                  fields will be overwritten by k0smotron. If empty, will be used
+                  default configuration. @see https://docs.k0sproject.io/stable/configuration/
+                type: object
+              k0sImage:
+                default: k0sproject/k0s
+                description: K0sImage defines the k0s image to be deployed. If empty
+                  k0smotron will pick it automatically. Must not include the image
+                  tag.
+                type: string
+              k0sVersion:
+                description: K0sVersion defines the k0s version to be deployed. If
+                  empty k0smotron will pick it automatically.
+                type: string
+              kineDataSourceSecretName:
+                description: KineDataSourceSecretName defines the name of kine datasource
+                  URL secret. KineDataSourceURL or KineDataSourceSecretName are required
+                  for HA controlplane setup and one of them must be set if replicas
+                  > 1.
+                type: string
+              kineDataSourceURL:
+                description: KineDataSourceURL defines the kine datasource URL. KineDataSourceURL
+                  or KineDataSourceSecretName are required for HA controlplane setup
+                  and one of them must be set if replicas > 1.
+                type: string
+              persistence:
+                description: Persistence defines the persistence configuration. If
+                  empty k0smotron will use emptyDir as a volume.
+                properties:
+                  hostPath:
+                    description: HostPath defines the host path configuration. Will
+                      be used as is in case of .spec.persistence.type is hostPath.
+                    type: string
+                  persistentVolumeClaim:
+                    description: PersistentVolumeClaim defines the PVC configuration.
+                      Will be used as is in case of .spec.persistence.type is pvc.
+                    properties:
+                      apiVersion:
+                        description: 'APIVersion defines the versioned schema of this
+                          representation of an object. Servers should convert recognized
+                          schemas to the latest internal value, and may reject unrecognized
+                          values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                        type: string
+                      kind:
+                        description: 'Kind is a string value representing the REST
+                          resource this object represents. Servers may infer this
+                          from the endpoint the client submits requests to. Cannot
+                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      metadata:
+                        description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata'
+                        type: object
+                      spec:
+                        description: 'spec defines the desired characteristics of
+                          a volume requested by a pod author. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                        properties:
+                          accessModes:
+                            description: 'accessModes contains the desired access
+                              modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1'
+                            items:
+                              type: string
+                            type: array
+                          dataSource:
+                            description: 'dataSource field can be used to specify
+                              either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+                              * An existing PVC (PersistentVolumeClaim) If the provisioner
+                              or an external controller can support the specified
+                              data source, it will create a new volume based on the
+                              contents of the specified data source. When the AnyVolumeDataSource
+                              feature gate is enabled, dataSource contents will be
+                              copied to dataSourceRef, and dataSourceRef contents
+                              will be copied to dataSource when dataSourceRef.namespace
+                              is not specified. If the namespace is specified, then
+                              dataSourceRef will not be copied to dataSource.'
+                            properties:
+                              apiGroup:
+                                description: APIGroup is the group for the resource
+                                  being referenced. If APIGroup is not specified,
+                                  the specified Kind must be in the core API group.
+                                  For any other third-party types, APIGroup is required.
+                                type: string
+                              kind:
+                                description: Kind is the type of resource being referenced
+                                type: string
+                              name:
+                                description: Name is the name of resource being referenced
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                            x-kubernetes-map-type: atomic
+                          dataSourceRef:
+                            description: 'dataSourceRef specifies the object from
+                              which to populate the volume with data, if a non-empty
+                              volume is desired. This may be any object from a non-empty
+                              API group (non core object) or a PersistentVolumeClaim
+                              object. When this field is specified, volume binding
+                              will only succeed if the type of the specified object
+                              matches some installed volume populator or dynamic provisioner.
+                              This field will replace the functionality of the dataSource
+                              field and as such if both fields are non-empty, they
+                              must have the same value. For backwards compatibility,
+                              when namespace isn''t specified in dataSourceRef, both
+                              fields (dataSource and dataSourceRef) will be set to
+                              the same value automatically if one of them is empty
+                              and the other is non-empty. When namespace is specified
+                              in dataSourceRef, dataSource isn''t set to the same
+                              value and must be empty. There are three important differences
+                              between dataSource and dataSourceRef: * While dataSource
+                              only allows two specific types of objects, dataSourceRef
+                              allows any non-core object, as well as PersistentVolumeClaim
+                              objects. * While dataSource ignores disallowed values
+                              (dropping them), dataSourceRef preserves all values,
+                              and generates an error if a disallowed value is specified.
+                              * While dataSource only allows local objects, dataSourceRef
+                              allows objects in any namespaces. (Beta) Using this
+                              field requires the AnyVolumeDataSource feature gate
+                              to be enabled. (Alpha) Using the namespace field of
+                              dataSourceRef requires the CrossNamespaceVolumeDataSource
+                              feature gate to be enabled.'
+                            properties:
+                              apiGroup:
+                                description: APIGroup is the group for the resource
+                                  being referenced. If APIGroup is not specified,
+                                  the specified Kind must be in the core API group.
+                                  For any other third-party types, APIGroup is required.
+                                type: string
+                              kind:
+                                description: Kind is the type of resource being referenced
+                                type: string
+                              name:
+                                description: Name is the name of resource being referenced
+                                type: string
+                              namespace:
+                                description: Namespace is the namespace of resource
+                                  being referenced Note that when a namespace is specified,
+                                  a gateway.networking.k8s.io/ReferenceGrant object
+                                  is required in the referent namespace to allow that
+                                  namespace's owner to accept the reference. See the
+                                  ReferenceGrant documentation for details. (Alpha)
+                                  This field requires the CrossNamespaceVolumeDataSource
+                                  feature gate to be enabled.
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          resources:
+                            description: 'resources represents the minimum resources
+                              the volume should have. If RecoverVolumeExpansionFailure
+                              feature is enabled users are allowed to specify resource
+                              requirements that are lower than previous value but
+                              must still be higher than capacity recorded in the status
+                              field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources'
+                            properties:
+                              claims:
+                                description: "Claims lists the names of resources,
+                                  defined in spec.resourceClaims, that are used by
+                                  this container. \n This is an alpha field and requires
+                                  enabling the DynamicResourceAllocation feature gate.
+                                  \n This field is immutable. It can only be set for
+                                  containers."
+                                items:
+                                  description: ResourceClaim references one entry
+                                    in PodSpec.ResourceClaims.
+                                  properties:
+                                    name:
+                                      description: Name must match the name of one
+                                        entry in pod.spec.resourceClaims of the Pod
+                                        where this field is used. It makes that resource
+                                        available inside a container.
+                                      type: string
+                                  required:
+                                  - name
+                                  type: object
+                                type: array
+                                x-kubernetes-list-map-keys:
+                                - name
+                                x-kubernetes-list-type: map
+                              limits:
+                                additionalProperties:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                description: 'Limits describes the maximum amount
+                                  of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                                type: object
+                              requests:
+                                additionalProperties:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                description: 'Requests describes the minimum amount
+                                  of compute resources required. If Requests is omitted
+                                  for a container, it defaults to Limits if that is
+                                  explicitly specified, otherwise to an implementation-defined
+                                  value. Requests cannot exceed Limits. More info:
+                                  https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                                type: object
+                            type: object
+                          selector:
+                            description: selector is a label query over volumes to
+                              consider for binding.
+                            properties:
+                              matchExpressions:
+                                description: matchExpressions is a list of label selector
+                                  requirements. The requirements are ANDed.
+                                items:
+                                  description: A label selector requirement is a selector
+                                    that contains values, a key, and an operator that
+                                    relates the key and values.
+                                  properties:
+                                    key:
+                                      description: key is the label key that the selector
+                                        applies to.
+                                      type: string
+                                    operator:
+                                      description: operator represents a key's relationship
+                                        to a set of values. Valid operators are In,
+                                        NotIn, Exists and DoesNotExist.
+                                      type: string
+                                    values:
+                                      description: values is an array of string values.
+                                        If the operator is In or NotIn, the values
+                                        array must be non-empty. If the operator is
+                                        Exists or DoesNotExist, the values array must
+                                        be empty. This array is replaced during a
+                                        strategic merge patch.
+                                      items:
+                                        type: string
+                                      type: array
+                                  required:
+                                  - key
+                                  - operator
+                                  type: object
+                                type: array
+                              matchLabels:
+                                additionalProperties:
+                                  type: string
+                                description: matchLabels is a map of {key,value} pairs.
+                                  A single {key,value} in the matchLabels map is equivalent
+                                  to an element of matchExpressions, whose key field
+                                  is "key", the operator is "In", and the values array
+                                  contains only "value". The requirements are ANDed.
+                                type: object
+                            type: object
+                            x-kubernetes-map-type: atomic
+                          storageClassName:
+                            description: 'storageClassName is the name of the StorageClass
+                              required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1'
+                            type: string
+                          volumeMode:
+                            description: volumeMode defines what type of volume is
+                              required by the claim. Value of Filesystem is implied
+                              when not included in claim spec.
+                            type: string
+                          volumeName:
+                            description: volumeName is the binding reference to the
+                              PersistentVolume backing this claim.
+                            type: string
+                        type: object
+                      status:
+                        description: 'status represents the current information/status
+                          of a persistent volume claim. Read-only. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                        properties:
+                          accessModes:
+                            description: 'accessModes contains the actual access modes
+                              the volume backing the PVC has. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1'
+                            items:
+                              type: string
+                            type: array
+                          allocatedResources:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: allocatedResources is the storage resource
+                              within AllocatedResources tracks the capacity allocated
+                              to a PVC. It may be larger than the actual capacity
+                              when a volume expansion operation is requested. For
+                              storage quota, the larger value from allocatedResources
+                              and PVC.spec.resources is used. If allocatedResources
+                              is not set, PVC.spec.resources alone is used for quota
+                              calculation. If a volume expansion capacity request
+                              is lowered, allocatedResources is only lowered if there
+                              are no expansion operations in progress and if the actual
+                              volume capacity is equal or lower than the requested
+                              capacity. This is an alpha field and requires enabling
+                              RecoverVolumeExpansionFailure feature.
+                            type: object
+                          capacity:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: capacity represents the actual resources
+                              of the underlying volume.
+                            type: object
+                          conditions:
+                            description: conditions is the current Condition of persistent
+                              volume claim. If underlying persistent volume is being
+                              resized then the Condition will be set to 'ResizeStarted'.
+                            items:
+                              description: PersistentVolumeClaimCondition contains
+                                details about state of pvc
+                              properties:
+                                lastProbeTime:
+                                  description: lastProbeTime is the time we probed
+                                    the condition.
+                                  format: date-time
+                                  type: string
+                                lastTransitionTime:
+                                  description: lastTransitionTime is the time the
+                                    condition transitioned from one status to another.
+                                  format: date-time
+                                  type: string
+                                message:
+                                  description: message is the human-readable message
+                                    indicating details about last transition.
+                                  type: string
+                                reason:
+                                  description: reason is a unique, this should be
+                                    a short, machine understandable string that gives
+                                    the reason for condition's last transition. If
+                                    it reports "ResizeStarted" that means the underlying
+                                    persistent volume is being resized.
+                                  type: string
+                                status:
+                                  type: string
+                                type:
+                                  description: PersistentVolumeClaimConditionType
+                                    is a valid value of PersistentVolumeClaimCondition.Type
+                                  type: string
+                              required:
+                              - status
+                              - type
+                              type: object
+                            type: array
+                          phase:
+                            description: phase represents the current phase of PersistentVolumeClaim.
+                            type: string
+                          resizeStatus:
+                            description: resizeStatus stores status of resize operation.
+                              ResizeStatus is not set by default but when expansion
+                              is complete resizeStatus is set to empty string by resize
+                              controller or kubelet. This is an alpha field and requires
+                              enabling RecoverVolumeExpansionFailure feature.
+                            type: string
+                        type: object
+                    type: object
+                  type:
+                    default: emptyDir
+                    type: string
+                required:
+                - type
+                type: object
+              replicas:
+                default: 1
+                description: Replicas is the desired number of replicas of the k0s
+                  control planes. If unspecified, defaults to 1. If the value is above
+                  1, k0smotron requires kine datasource URL to be set. Recommended
+                  value is 3.
+                format: int32
+                type: integer
+              service:
+                description: Service defines the service configuration.
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations defines extra annotations to be added
+                      to the service.
+                    type: object
+                  apiPort:
+                    default: 30443
+                    description: APIPort defines the kubernetes API port. If empty
+                      k0smotron will pick it automatically.
+                    type: integer
+                  konnectivityPort:
+                    default: 30132
+                    description: KonnectivityPort defines the konnectivity port. If
+                      empty k0smotron will pick it automatically.
+                    type: integer
+                  type:
+                    default: NodePort
+                    description: Service Type string describes ingress methods for
+                      a service
+                    enum:
+                    - NodePort
+                    - LoadBalancer
+                    type: string
+                required:
+                - type
+                type: object
+            type: object
+          status:
+            description: K0smotronClusterStatus defines the observed state of K0smotronCluster
+            properties:
+              reconciliationStatus:
+                type: string
+            required:
+            - reconciliationStatus
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.4
+  name: jointokenrequests.k0smotron.io
+spec:
+  group: k0smotron.io
+  names:
+    kind: JoinTokenRequest
+    listKind: JoinTokenRequestList
+    plural: jointokenrequests
+    shortNames:
+    - jtr
+    singular: jointokenrequest
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: JoinTokenRequest is the Schema for the join token request API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: JoinTokenRequestSpec defines the desired state of K0smotronJoinTokenRequest
+            properties:
+              clusterRef:
+                description: ClusterRef is the reference to the cluster for which
+                  the join token is requested.
+                properties:
+                  name:
+                    description: Name of the cluster.
+                    type: string
+                  namespace:
+                    description: Namespace of the cluster.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              expiry:
+                default: 0s
+                description: Expiration time of the token. Format 1.5h, 2h45m or 300ms.
+                type: string
+              role:
+                default: worker
+                description: Role of the node for which the token is requested (worker
+                  or controller).
+                enum:
+                - worker
+                - controller
+                type: string
+            required:
+            - clusterRef
+            type: object
+          status:
+            description: JoinTokenRequestStatus defines the observed state of K0smotronJoinTokenRequest
+            properties:
+              reconciliationStatus:
+                type: string
+              tokenID:
+                type: string
+            required:
+            - reconciliationStatus
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.4
+  labels:
+    cluster.x-k8s.io/v1beta1: v1beta1
+  name: k0smotroncontrolplanes.controlplane.cluster.x-k8s.io
+spec:
+  group: controlplane.cluster.x-k8s.io
+  names:
+    kind: K0smotronControlPlane
+    listKind: K0smotronControlPlaneList
+    plural: k0smotroncontrolplanes
+    singular: k0smotroncontrolplane
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ClusterSpec defines the desired state of K0smotronCluster
+            properties:
+              certificateRefs:
+                description: CertificateRefs defines the certificate references.
+                items:
+                  properties:
+                    name:
+                      type: string
+                    type:
+                      enum:
+                      - ca
+                      - sa
+                      - proxy
+                      type: string
+                  required:
+                  - type
+                  type: object
+                type: array
+              externalAddress:
+                description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
+                  Will be detected automatically for service type LoadBalancer.
+                type: string
+              k0sConfig:
+                description: k0sConfig defines the k0s configuration. Note, that some
+                  fields will be overwritten by k0smotron. If empty, will be used
+                  default configuration. @see https://docs.k0sproject.io/stable/configuration/
+                type: object
+              k0sImage:
+                default: k0sproject/k0s
+                description: K0sImage defines the k0s image to be deployed. If empty
+                  k0smotron will pick it automatically. Must not include the image
+                  tag.
+                type: string
+              k0sVersion:
+                description: K0sVersion defines the k0s version to be deployed. If
+                  empty k0smotron will pick it automatically.
+                type: string
+              kineDataSourceSecretName:
+                description: KineDataSourceSecretName defines the name of kine datasource
+                  URL secret. KineDataSourceURL or KineDataSourceSecretName are required
+                  for HA controlplane setup and one of them must be set if replicas
+                  > 1.
+                type: string
+              kineDataSourceURL:
+                description: KineDataSourceURL defines the kine datasource URL. KineDataSourceURL
+                  or KineDataSourceSecretName are required for HA controlplane setup
+                  and one of them must be set if replicas > 1.
+                type: string
+              persistence:
+                description: Persistence defines the persistence configuration. If
+                  empty k0smotron will use emptyDir as a volume.
+                properties:
+                  hostPath:
+                    description: HostPath defines the host path configuration. Will
+                      be used as is in case of .spec.persistence.type is hostPath.
+                    type: string
+                  persistentVolumeClaim:
+                    description: PersistentVolumeClaim defines the PVC configuration.
+                      Will be used as is in case of .spec.persistence.type is pvc.
+                    properties:
+                      apiVersion:
+                        description: 'APIVersion defines the versioned schema of this
+                          representation of an object. Servers should convert recognized
+                          schemas to the latest internal value, and may reject unrecognized
+                          values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                        type: string
+                      kind:
+                        description: 'Kind is a string value representing the REST
+                          resource this object represents. Servers may infer this
+                          from the endpoint the client submits requests to. Cannot
+                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      metadata:
+                        description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata'
+                        type: object
+                      spec:
+                        description: 'spec defines the desired characteristics of
+                          a volume requested by a pod author. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                        properties:
+                          accessModes:
+                            description: 'accessModes contains the desired access
+                              modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1'
+                            items:
+                              type: string
+                            type: array
+                          dataSource:
+                            description: 'dataSource field can be used to specify
+                              either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+                              * An existing PVC (PersistentVolumeClaim) If the provisioner
+                              or an external controller can support the specified
+                              data source, it will create a new volume based on the
+                              contents of the specified data source. When the AnyVolumeDataSource
+                              feature gate is enabled, dataSource contents will be
+                              copied to dataSourceRef, and dataSourceRef contents
+                              will be copied to dataSource when dataSourceRef.namespace
+                              is not specified. If the namespace is specified, then
+                              dataSourceRef will not be copied to dataSource.'
+                            properties:
+                              apiGroup:
+                                description: APIGroup is the group for the resource
+                                  being referenced. If APIGroup is not specified,
+                                  the specified Kind must be in the core API group.
+                                  For any other third-party types, APIGroup is required.
+                                type: string
+                              kind:
+                                description: Kind is the type of resource being referenced
+                                type: string
+                              name:
+                                description: Name is the name of resource being referenced
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                            x-kubernetes-map-type: atomic
+                          dataSourceRef:
+                            description: 'dataSourceRef specifies the object from
+                              which to populate the volume with data, if a non-empty
+                              volume is desired. This may be any object from a non-empty
+                              API group (non core object) or a PersistentVolumeClaim
+                              object. When this field is specified, volume binding
+                              will only succeed if the type of the specified object
+                              matches some installed volume populator or dynamic provisioner.
+                              This field will replace the functionality of the dataSource
+                              field and as such if both fields are non-empty, they
+                              must have the same value. For backwards compatibility,
+                              when namespace isn''t specified in dataSourceRef, both
+                              fields (dataSource and dataSourceRef) will be set to
+                              the same value automatically if one of them is empty
+                              and the other is non-empty. When namespace is specified
+                              in dataSourceRef, dataSource isn''t set to the same
+                              value and must be empty. There are three important differences
+                              between dataSource and dataSourceRef: * While dataSource
+                              only allows two specific types of objects, dataSourceRef
+                              allows any non-core object, as well as PersistentVolumeClaim
+                              objects. * While dataSource ignores disallowed values
+                              (dropping them), dataSourceRef preserves all values,
+                              and generates an error if a disallowed value is specified.
+                              * While dataSource only allows local objects, dataSourceRef
+                              allows objects in any namespaces. (Beta) Using this
+                              field requires the AnyVolumeDataSource feature gate
+                              to be enabled. (Alpha) Using the namespace field of
+                              dataSourceRef requires the CrossNamespaceVolumeDataSource
+                              feature gate to be enabled.'
+                            properties:
+                              apiGroup:
+                                description: APIGroup is the group for the resource
+                                  being referenced. If APIGroup is not specified,
+                                  the specified Kind must be in the core API group.
+                                  For any other third-party types, APIGroup is required.
+                                type: string
+                              kind:
+                                description: Kind is the type of resource being referenced
+                                type: string
+                              name:
+                                description: Name is the name of resource being referenced
+                                type: string
+                              namespace:
+                                description: Namespace is the namespace of resource
+                                  being referenced Note that when a namespace is specified,
+                                  a gateway.networking.k8s.io/ReferenceGrant object
+                                  is required in the referent namespace to allow that
+                                  namespace's owner to accept the reference. See the
+                                  ReferenceGrant documentation for details. (Alpha)
+                                  This field requires the CrossNamespaceVolumeDataSource
+                                  feature gate to be enabled.
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          resources:
+                            description: 'resources represents the minimum resources
+                              the volume should have. If RecoverVolumeExpansionFailure
+                              feature is enabled users are allowed to specify resource
+                              requirements that are lower than previous value but
+                              must still be higher than capacity recorded in the status
+                              field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources'
+                            properties:
+                              claims:
+                                description: "Claims lists the names of resources,
+                                  defined in spec.resourceClaims, that are used by
+                                  this container. \n This is an alpha field and requires
+                                  enabling the DynamicResourceAllocation feature gate.
+                                  \n This field is immutable. It can only be set for
+                                  containers."
+                                items:
+                                  description: ResourceClaim references one entry
+                                    in PodSpec.ResourceClaims.
+                                  properties:
+                                    name:
+                                      description: Name must match the name of one
+                                        entry in pod.spec.resourceClaims of the Pod
+                                        where this field is used. It makes that resource
+                                        available inside a container.
+                                      type: string
+                                  required:
+                                  - name
+                                  type: object
+                                type: array
+                                x-kubernetes-list-map-keys:
+                                - name
+                                x-kubernetes-list-type: map
+                              limits:
+                                additionalProperties:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                description: 'Limits describes the maximum amount
+                                  of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                                type: object
+                              requests:
+                                additionalProperties:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                description: 'Requests describes the minimum amount
+                                  of compute resources required. If Requests is omitted
+                                  for a container, it defaults to Limits if that is
+                                  explicitly specified, otherwise to an implementation-defined
+                                  value. Requests cannot exceed Limits. More info:
+                                  https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                                type: object
+                            type: object
+                          selector:
+                            description: selector is a label query over volumes to
+                              consider for binding.
+                            properties:
+                              matchExpressions:
+                                description: matchExpressions is a list of label selector
+                                  requirements. The requirements are ANDed.
+                                items:
+                                  description: A label selector requirement is a selector
+                                    that contains values, a key, and an operator that
+                                    relates the key and values.
+                                  properties:
+                                    key:
+                                      description: key is the label key that the selector
+                                        applies to.
+                                      type: string
+                                    operator:
+                                      description: operator represents a key's relationship
+                                        to a set of values. Valid operators are In,
+                                        NotIn, Exists and DoesNotExist.
+                                      type: string
+                                    values:
+                                      description: values is an array of string values.
+                                        If the operator is In or NotIn, the values
+                                        array must be non-empty. If the operator is
+                                        Exists or DoesNotExist, the values array must
+                                        be empty. This array is replaced during a
+                                        strategic merge patch.
+                                      items:
+                                        type: string
+                                      type: array
+                                  required:
+                                  - key
+                                  - operator
+                                  type: object
+                                type: array
+                              matchLabels:
+                                additionalProperties:
+                                  type: string
+                                description: matchLabels is a map of {key,value} pairs.
+                                  A single {key,value} in the matchLabels map is equivalent
+                                  to an element of matchExpressions, whose key field
+                                  is "key", the operator is "In", and the values array
+                                  contains only "value". The requirements are ANDed.
+                                type: object
+                            type: object
+                            x-kubernetes-map-type: atomic
+                          storageClassName:
+                            description: 'storageClassName is the name of the StorageClass
+                              required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1'
+                            type: string
+                          volumeMode:
+                            description: volumeMode defines what type of volume is
+                              required by the claim. Value of Filesystem is implied
+                              when not included in claim spec.
+                            type: string
+                          volumeName:
+                            description: volumeName is the binding reference to the
+                              PersistentVolume backing this claim.
+                            type: string
+                        type: object
+                      status:
+                        description: 'status represents the current information/status
+                          of a persistent volume claim. Read-only. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                        properties:
+                          accessModes:
+                            description: 'accessModes contains the actual access modes
+                              the volume backing the PVC has. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1'
+                            items:
+                              type: string
+                            type: array
+                          allocatedResources:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: allocatedResources is the storage resource
+                              within AllocatedResources tracks the capacity allocated
+                              to a PVC. It may be larger than the actual capacity
+                              when a volume expansion operation is requested. For
+                              storage quota, the larger value from allocatedResources
+                              and PVC.spec.resources is used. If allocatedResources
+                              is not set, PVC.spec.resources alone is used for quota
+                              calculation. If a volume expansion capacity request
+                              is lowered, allocatedResources is only lowered if there
+                              are no expansion operations in progress and if the actual
+                              volume capacity is equal or lower than the requested
+                              capacity. This is an alpha field and requires enabling
+                              RecoverVolumeExpansionFailure feature.
+                            type: object
+                          capacity:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: capacity represents the actual resources
+                              of the underlying volume.
+                            type: object
+                          conditions:
+                            description: conditions is the current Condition of persistent
+                              volume claim. If underlying persistent volume is being
+                              resized then the Condition will be set to 'ResizeStarted'.
+                            items:
+                              description: PersistentVolumeClaimCondition contains
+                                details about state of pvc
+                              properties:
+                                lastProbeTime:
+                                  description: lastProbeTime is the time we probed
+                                    the condition.
+                                  format: date-time
+                                  type: string
+                                lastTransitionTime:
+                                  description: lastTransitionTime is the time the
+                                    condition transitioned from one status to another.
+                                  format: date-time
+                                  type: string
+                                message:
+                                  description: message is the human-readable message
+                                    indicating details about last transition.
+                                  type: string
+                                reason:
+                                  description: reason is a unique, this should be
+                                    a short, machine understandable string that gives
+                                    the reason for condition's last transition. If
+                                    it reports "ResizeStarted" that means the underlying
+                                    persistent volume is being resized.
+                                  type: string
+                                status:
+                                  type: string
+                                type:
+                                  description: PersistentVolumeClaimConditionType
+                                    is a valid value of PersistentVolumeClaimCondition.Type
+                                  type: string
+                              required:
+                              - status
+                              - type
+                              type: object
+                            type: array
+                          phase:
+                            description: phase represents the current phase of PersistentVolumeClaim.
+                            type: string
+                          resizeStatus:
+                            description: resizeStatus stores status of resize operation.
+                              ResizeStatus is not set by default but when expansion
+                              is complete resizeStatus is set to empty string by resize
+                              controller or kubelet. This is an alpha field and requires
+                              enabling RecoverVolumeExpansionFailure feature.
+                            type: string
+                        type: object
+                    type: object
+                  type:
+                    default: emptyDir
+                    type: string
+                required:
+                - type
+                type: object
+              replicas:
+                default: 1
+                description: Replicas is the desired number of replicas of the k0s
+                  control planes. If unspecified, defaults to 1. If the value is above
+                  1, k0smotron requires kine datasource URL to be set. Recommended
+                  value is 3.
+                format: int32
+                type: integer
+              service:
+                description: Service defines the service configuration.
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations defines extra annotations to be added
+                      to the service.
+                    type: object
+                  apiPort:
+                    default: 30443
+                    description: APIPort defines the kubernetes API port. If empty
+                      k0smotron will pick it automatically.
+                    type: integer
+                  konnectivityPort:
+                    default: 30132
+                    description: KonnectivityPort defines the konnectivity port. If
+                      empty k0smotron will pick it automatically.
+                    type: integer
+                  type:
+                    default: NodePort
+                    description: Service Type string describes ingress methods for
+                      a service
+                    enum:
+                    - NodePort
+                    - LoadBalancer
+                    type: string
+                required:
+                - type
+                type: object
+            type: object
+          status:
+            properties:
+              controlPlaneReady:
+                type: boolean
+              externalManagedControlPlane:
+                type: boolean
+              initialized:
+                type: boolean
+              ready:
+                description: Ready denotes that the control plane is ready
+                type: boolean
+            required:
+            - controlPlaneReady
+            - externalManagedControlPlane
+            - initialized
+            - ready
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.4
+  labels:
+    cluster.x-k8s.io/v1beta1: v1beta1
+  name: k0sworkerconfigs.bootstrap.cluster.x-k8s.io
+spec:
+  group: bootstrap.cluster.x-k8s.io
+  names:
+    kind: K0sWorkerConfig
+    listKind: K0sWorkerConfigList
+    plural: k0sworkerconfigs
+    singular: k0sworkerconfig
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              joinTokenSecretRef:
+                description: JoinTokenSecretRef is a reference to a secret that contains
+                  the join token
+                properties:
+                  key:
+                    description: Key is the key in the secret that contains the join
+                      token
+                    type: string
+                  name:
+                    description: Name is the name of the secret
+                    type: string
+                required:
+                - key
+                - name
+                type: object
+            type: object
+          status:
+            properties:
+              dataSecretName:
+                description: DataSecretName is the name of the secret that stores
+                  the bootstrap data script.
+                type: string
+              ready:
+                description: Ready indicates the Bootstrapdata field is ready to be
+                  consumed
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: controller-manager-sa
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: serviceaccount
+    app.kubernetes.io/part-of: k0smotron
+  name: k0smotron-controller-manager
+  namespace: k0smotron
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: leader-election-role
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: role
+    app.kubernetes.io/part-of: k0smotron
+  name: k0smotron-leader-election-role
+  namespace: k0smotron
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k0smotron-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - events
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - bootstrap.cluster.x-k8s.io
+  resources:
+  - k0sworkerconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - bootstrap.cluster.x-k8s.io
+  resources:
+  - k0sworkerconfigs/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
+  - clusters/status
+  verbs:
+  - get
+  - list
+  - pacth
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
+  - clusters/status
+  - machines
+  - machines/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - k0smotroncontrolplanes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - k0smotroncontrolplanes/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - pods/exec
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - exp.cluster.x-k8s.io
+  resources:
+  - machinepools
+  - machinepools/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - k0smotron.io
+  resources:
+  - clusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - k0smotron.io
+  resources:
+  - clusters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - k0smotron.io
+  resources:
+  - clusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - k0smotron.io
+  resources:
+  - jointokenrequests
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - k0smotron.io
+  resources:
+  - jointokenrequests/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - k0smotron.io
+  resources:
+  - jointokenrequests/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: kube-rbac-proxy
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: metrics-reader
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/part-of: k0smotron
+  name: k0smotron-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: kube-rbac-proxy
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: proxy-role
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/part-of: k0smotron
+  name: k0smotron-proxy-role
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: leader-election-rolebinding
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: rolebinding
+    app.kubernetes.io/part-of: k0smotron
+  name: k0smotron-leader-election-rolebinding
+  namespace: k0smotron
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: k0smotron-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: k0smotron-controller-manager
+  namespace: k0smotron
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: manager-rolebinding
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: clusterrolebinding
+    app.kubernetes.io/part-of: k0smotron
+  name: k0smotron-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: k0smotron-manager-role
+subjects:
+- kind: ServiceAccount
+  name: k0smotron-controller-manager
+  namespace: k0smotron
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: kube-rbac-proxy
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: proxy-rolebinding
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: clusterrolebinding
+    app.kubernetes.io/part-of: k0smotron
+  name: k0smotron-proxy-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: k0smotron-proxy-role
+subjects:
+- kind: ServiceAccount
+  name: k0smotron-controller-manager
+  namespace: k0smotron
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: kube-rbac-proxy
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: controller-manager-metrics-service
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: service
+    app.kubernetes.io/part-of: k0smotron
+    control-plane: controller-manager
+  name: k0smotron-controller-manager-metrics-service
+  namespace: k0smotron
+spec:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
+  selector:
+    control-plane: controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: controller-manager
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: deployment
+    app.kubernetes.io/part-of: k0smotron
+    control-plane: controller-manager
+  name: k0smotron-controller-manager
+  namespace: k0smotron
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - arm64
+                - ppc64le
+                - s390x
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+      containers:
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=0
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.1
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        command:
+        - /manager
+        image: quay.io/k0sproject/k0smotron:v0.4.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: k0smotron-controller-manager
+      terminationGracePeriodSeconds: 10
