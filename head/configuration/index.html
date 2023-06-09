@@ -471,6 +471,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#k0s-configuration" class="md-nav__link">
+    K0s configuration
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -734,6 +741,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#k0s-configuration" class="md-nav__link">
+    K0s configuration
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -766,7 +780,6 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30132</span>
 <span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
-<span class="w">  </span><span class="nt">cniPlugin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kuberouter</span>
 </code></pre></div>
 <h2 id="spec-key-detail"><code>spec</code> Key Detail<a class="headerlink" href="#spec-key-detail" title="Permanent link">#</a></h2>
 <table>
@@ -806,8 +819,8 @@ You are not currently viewing the documentation for the current stable release o
 <td>Defines the kine datasource URL. Required for HA controlplane setup. Must be set if replicas &gt; 1.</td>
 </tr>
 <tr>
-<td><code>cniPlugin</code></td>
-<td>Defines the CNI plugin to be used. Possible values are KubeRouter and Calico. Uses KubeRouter by default. Cannot be modified after deploying the cluster.</td>
+<td><code>k0sConfig</code></td>
+<td>Defines k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. More info: https://docs.k0sproject.io/stable/configuration/</td>
 </tr>
 </tbody>
 </table>
@@ -857,6 +870,16 @@ You are not currently viewing the documentation for the current stable release o
 </tr>
 </tbody>
 </table>
+<h2 id="k0s-configuration">K0s configuration<a class="headerlink" href="#k0s-configuration" title="Permanent link">#</a></h2>
+<p>K0smotron allows you to configure k0s via <code>spec.k0sConfig</code> field. If empty, will be used default configuration. 
+More info about the k0s config: https://docs.k0sproject.io/stable/configuration/ </p>
+<p><strong>Note</strong>: some fields will be overwritten by k0smotron. K0smotron will set the following fields:
+- <code>spec.k0sConfig.spec.api.externalAddress</code> will be set to the value of <code>spec.externalAddress</code> if <code>spec.externalAddress</code> is set. 
+   If not, k0smotron will use load balancer IP or try to detect <code>externalAddress</code> out of nodes IP addresses. 
+- <code>spec.k0sConfig.spec.api.port</code> will be set to the value of <code>spec.service.apiPort</code>.
+- <code>spec.k0sConfig.spec.konnectivity.port</code> will be set to the value of <code>spec.service.konnectivityPort</code>.
+- <code>spec.k0sConfig.spec.storage.kine.dataSource</code> will be set to the value of <code>spec.kineDataSourceURL</code> if <code>spec.kineDataSourceURL</code> is set. 
+  <code>spec.k0sConfig.spec.storage.type</code> will be set to <code>kine</code>.</p>
 
 
 
