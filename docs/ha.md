@@ -70,7 +70,7 @@ spec:
   replicas: 3
   service:
     type: LoadBalancer
-  KineDataSourceSecretName: database-credentials
+  kineDataSourceSecretName: database-credentials
 EOF
 ```
 
