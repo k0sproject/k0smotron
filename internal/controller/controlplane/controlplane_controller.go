@@ -115,6 +115,16 @@ func (c *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return res, err
 	}
 	err = c.waitExternalAddress(ctx, cluster, kcp)
+	if err != nil {
+		return res, err
+	}
+
+	// TODO: We need to have bit more detailed status and conditions handling
+	kcp.Status.Ready = true
+	kcp.Status.ExternalManagedControlPlane = true
+	kcp.Status.Inititalized = true
+	kcp.Status.ControlPlaneReady = true
+	err = c.Status().Update(ctx, kcp)
 
 	return res, err
 

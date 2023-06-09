@@ -128,12 +128,16 @@ func (r *ClusterReconciler) reconcileServices(ctx context.Context, kmc km.Cluste
 			return fmt.Errorf("failed to get loadbalancer address: %w", err)
 		}
 	} else if kmc.Spec.Service.Type == v1.ServiceTypeNodePort && kmc.Spec.ExternalAddress == "" {
+		logger.Info("finding nodeport address")
 		// Get a random node address as external address
 		nodes, err := r.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
 		kmc.Spec.ExternalAddress = r.findNodeAddress(nodes)
+		if err := r.Client.Update(ctx, &kmc); err != nil {
+			return err
+		}
 	}
 
 	return nil
