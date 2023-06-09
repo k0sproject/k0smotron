@@ -135,16 +135,19 @@ func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namesp
 
 // GetKMCClientSet returns a kubernetes clientset for the cluster given
 // the name and the namespace of the cluster.k0smotron.io
-func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*kubernetes.Clientset, error) {
-	kubeConf, err := kc.CoreV1().Secrets(namespace).Get(ctx, fmt.Sprintf("kmc-admin-kubeconfig-%s", name), metav1.GetOptions{})
+func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string, port int) (*kubernetes.Clientset, error) {
+	kubeConf, err := kc.CoreV1().Secrets(namespace).Get(ctx, fmt.Sprintf("%s-kubeconfig", name), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["kubeconfig"]))
+	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["value"]))
 	if err != nil {
 		return nil, err
 	}
+
+	// Override the host to point to the port forwarded API server
+	kmcCfg.Host = fmt.Sprintf("localhost:%d", port)
 
 	return kubernetes.NewForConfig(kmcCfg)
 }

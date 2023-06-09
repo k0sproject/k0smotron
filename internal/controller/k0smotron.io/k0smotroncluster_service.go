@@ -18,14 +18,15 @@ package k0smotronio
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"time"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	informerv1 "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -33,11 +34,37 @@ import (
 
 func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 	var name string
+	ports := []v1.ServicePort{}
 	switch kmc.Spec.Service.Type {
 	case v1.ServiceTypeNodePort:
 		name = kmc.GetNodePortName()
+		ports = append(ports,
+			v1.ServicePort{
+				Port:       int32(kmc.Spec.Service.APIPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
+				Name:       "api",
+				NodePort:   int32(kmc.Spec.Service.APIPort),
+			},
+			v1.ServicePort{
+				Port:       int32(kmc.Spec.Service.KonnectivityPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.KonnectivityPort),
+				Name:       "konnectivity",
+				NodePort:   int32(kmc.Spec.Service.KonnectivityPort),
+			})
 	case v1.ServiceTypeLoadBalancer:
 		name = kmc.GetLoadBalancerName()
+		// LB svc does not define the nodeport so it can be dynamically assigned
+		ports = append(ports,
+			v1.ServicePort{
+				Port:       int32(kmc.Spec.Service.APIPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
+				Name:       "api",
+			},
+			v1.ServicePort{
+				Port:       int32(kmc.Spec.Service.KonnectivityPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.KonnectivityPort),
+				Name:       "konnectivity",
+			})
 	}
 
 	svc := v1.Service{
@@ -46,27 +73,15 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 			Kind:       "Service",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: kmc.Namespace,
-			Labels:    map[string]string{"app": "k0smotron"},
+			Name:        name,
+			Namespace:   kmc.Namespace,
+			Labels:      map[string]string{"app": "k0smotron"},
+			Annotations: kmc.Spec.Service.Annotations,
 		},
 		Spec: v1.ServiceSpec{
 			Type:     kmc.Spec.Service.Type,
 			Selector: map[string]string{"app": "k0smotron"},
-			Ports: []v1.ServicePort{
-				{
-					Port:       int32(kmc.Spec.Service.APIPort),
-					TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
-					Name:       "api",
-					NodePort:   int32(kmc.Spec.Service.APIPort),
-				},
-				{
-					Port:       int32(kmc.Spec.Service.KonnectivityPort),
-					TargetPort: intstr.FromInt(kmc.Spec.Service.KonnectivityPort),
-					Name:       "konnectivity",
-					NodePort:   int32(kmc.Spec.Service.KonnectivityPort),
-				},
-			},
+			Ports:    ports,
 		},
 	}
 
@@ -80,51 +95,73 @@ func (r *ClusterReconciler) reconcileServices(ctx context.Context, kmc km.Cluste
 	// Depending on ingress configuration create nodePort service.
 	logger.Info("Reconciling services")
 	svc := r.generateService(&kmc)
+
+	if err := r.Client.Patch(ctx, &svc, client.Apply, patchOpts...); err != nil {
+		return err
+	}
+	// Wait for LB address to be available
+	logger.Info("Waiting for loadbalancer address")
 	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer && kmc.Spec.ExternalAddress == "" {
-		err := r.watchLBServiceIP(ctx, kmc)
+		err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+			err := r.Client.Get(ctx, client.ObjectKey{Name: svc.Name, Namespace: svc.Namespace}, &svc)
+			if err != nil {
+				return false, err
+			}
+			if len(svc.Status.LoadBalancer.Ingress) > 0 {
+				if svc.Status.LoadBalancer.Ingress[0].Hostname != "" {
+					kmc.Spec.ExternalAddress = svc.Status.LoadBalancer.Ingress[0].Hostname
+				}
+				if svc.Status.LoadBalancer.Ingress[0].IP != "" {
+					kmc.Spec.ExternalAddress = svc.Status.LoadBalancer.Ingress[0].IP
+				}
+				logger.Info("Loadbalancer address available, updating Cluster object", "address", kmc.Spec.ExternalAddress)
+
+				err := r.Client.Update(ctx, &kmc)
+				if err != nil {
+					return false, err
+				}
+				return true, nil
+			}
+			return false, nil
+		})
+		if err != nil {
+			return fmt.Errorf("failed to get loadbalancer address: %w", err)
+		}
+	} else if kmc.Spec.Service.Type == v1.ServiceTypeNodePort && kmc.Spec.ExternalAddress == "" {
+		logger.Info("finding nodeport address")
+		// Get a random node address as external address
+		nodes, err := r.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
-	}
-	return r.Client.Patch(ctx, &svc, client.Apply, patchOpts...)
-}
-
-func (r *ClusterReconciler) watchLBServiceIP(ctx context.Context, kmc km.Cluster) error {
-	var handler cache.ResourceEventHandlerFuncs
-	stopCh := make(chan struct{})
-	handler.UpdateFunc = func(old, new interface{}) {
-		newObj, ok := new.(*v1.Service)
-		if !ok {
-			return
-		}
-
-		var externalAddress string
-		if len(newObj.Status.LoadBalancer.Ingress) > 0 {
-			if newObj.Status.LoadBalancer.Ingress[0].Hostname != "" {
-				externalAddress = newObj.Status.LoadBalancer.Ingress[0].Hostname
-			}
-			if newObj.Status.LoadBalancer.Ingress[0].IP != "" {
-				externalAddress = newObj.Status.LoadBalancer.Ingress[0].IP
-			}
-
-			if externalAddress != "" {
-				kmc.Spec.ExternalAddress = externalAddress
-				err := r.Client.Update(ctx, &kmc)
-				if err != nil {
-					log.FromContext(ctx).Error(err, "failed to update K0smotronCluster")
-				}
-				stopCh <- struct{}{}
-			}
+		kmc.Spec.ExternalAddress = r.findNodeAddress(nodes)
+		if err := r.Client.Update(ctx, &kmc); err != nil {
+			return err
 		}
 	}
-
-	inf := informerv1.NewServiceInformer(r.ClientSet, kmc.Namespace, 100*time.Millisecond, nil)
-	_, err := inf.AddEventHandler(handler)
-	if err != nil {
-		return err
-	}
-
-	go inf.Run(stopCh)
 
 	return nil
+}
+
+// findNodeAddress returns a random node address preferring external address if one is found
+func (r *ClusterReconciler) findNodeAddress(nodes *v1.NodeList) string {
+	extAddr, intAddr := "", ""
+
+	// Get random node from list
+	node := nodes.Items[rand.Intn(len(nodes.Items))]
+
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == v1.NodeExternalIP {
+			extAddr = addr.Address
+			break
+		}
+		if addr.Type == v1.NodeInternalIP {
+			intAddr = addr.Address
+		}
+	}
+
+	if extAddr != "" {
+		return extAddr
+	}
+	return intAddr
 }

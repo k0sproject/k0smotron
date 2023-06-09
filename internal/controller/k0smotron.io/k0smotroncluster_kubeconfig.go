@@ -36,7 +36,7 @@ func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc k
 		return err
 	}
 
-	output, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, kmc.Namespace, "k0s kubeconfig admin")
+	output, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, kmc.Namespace, "k0s kubeconfig create admin --groups system:masters")
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc k
 			Namespace: kmc.Namespace,
 			Labels:    map[string]string{"app": "k0smotron"},
 		},
-		StringData: map[string]string{"kubeconfig": output},
+		StringData: map[string]string{"value": output},
 	}
 
 	if err = ctrl.SetControllerReference(&kmc, &secret, r.Scheme); err != nil {

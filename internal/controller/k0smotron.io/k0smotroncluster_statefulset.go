@@ -20,8 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,6 +136,10 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 			},
 		})
 	}
+	// Mount certificates if they are provided
+	if kmc.Spec.CertificateRefs != nil && len(kmc.Spec.CertificateRefs) > 0 {
+		r.mountSecrets(kmc, &statefulSet)
+	}
 
 	switch kmc.Spec.Persistence.Type {
 	case "emptyDir":
@@ -171,6 +177,97 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 
 	err := ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
 	return statefulSet, err
+}
+
+// mountSecrets mounts the certificates as secrets to the controller and creates
+// an init container that copies the certificates to the correct location
+func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
+	projectedSecrets := []v1.VolumeProjection{}
+
+	for _, cert := range kmc.Spec.CertificateRefs {
+		switch cert.Type {
+		case "ca":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "ca.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "ca.key",
+						},
+					},
+				},
+			})
+
+		case "sa":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "sa.pub",
+						},
+						{
+							Key:  "tls.key",
+							Path: "sa.key",
+						},
+					},
+				},
+			})
+		case "proxy":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "front-proxy-ca.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "front-proxy-ca.key",
+						},
+					},
+				},
+			})
+
+		}
+	}
+	sfs.Spec.Template.Spec.Volumes = append(sfs.Spec.Template.Spec.Volumes, v1.Volume{
+		Name: "certs",
+		VolumeSource: v1.VolumeSource{
+			Projected: &v1.ProjectedVolumeSource{
+				Sources: projectedSecrets,
+			},
+		},
+	})
+
+	// We need to copy the certs from the projected volume to the /var/lib/k0s/pki directory
+	// Otherwise k0s will trip over the permissions and RO mounts
+	sfs.Spec.Template.Spec.InitContainers = append(sfs.Spec.Template.Spec.InitContainers, v1.Container{
+		Name:  "certs-init",
+		Image: "busybox",
+		Command: []string{
+			"sh",
+			"-c",
+			"mkdir -p /var/lib/k0s/pki && cp /certs-init/*.* /var/lib/k0s/pki/",
+		},
+		VolumeMounts: []v1.VolumeMount{
+			{
+				Name:      "certs",
+				MountPath: "/certs-init",
+			},
+			{
+				Name:      kmc.GetVolumeName(),
+				MountPath: "/var/lib/k0s",
+			},
+		},
+	})
 }
 
 func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc km.Cluster) error {

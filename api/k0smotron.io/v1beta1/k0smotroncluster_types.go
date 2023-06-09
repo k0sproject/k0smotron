@@ -71,6 +71,8 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Enum:=kuberouter;calico;custom
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="cniPlugin is immutable"
 	CNIPlugin string `json:"cniPlugin,omitempty"`
+	// CertificateRefs defines the certificate references.
+	CertificateRefs []CertificateRef `json:"certificateRefs,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
@@ -107,6 +109,10 @@ type ServiceSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=30132
 	KonnectivityPort int `json:"konnectivityPort,omitempty"`
+
+	// Annotations defines extra annotations to be added to the service.
+	//+kubebuilder:validation:Optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -130,6 +136,13 @@ type PersistenceSpec struct {
 	HostPath string `json:"hostPath,omitempty"`
 }
 
+type CertificateRef struct {
+	//+kubebuilder:validation:Enum=ca;sa;proxy
+	Type string `json:"type"`
+	//+kubebuilder:validation:Optional
+	Name string `json:"name,omitempty"`
+}
+
 func init() {
 	SchemeBuilder.Register(&Cluster{}, &ClusterList{})
 }
@@ -143,7 +156,7 @@ func (kmc *Cluster) GetStatefulSetName() string {
 }
 
 func (kmc *Cluster) GetAdminConfigSecretName() string {
-	return fmt.Sprintf("kmc-admin-kubeconfig-%s", kmc.Name)
+	return fmt.Sprintf("%s-kubeconfig", kmc.Name)
 }
 
 func (kmc *Cluster) GetEntrypointConfigMapName() string {

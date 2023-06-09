@@ -14,10 +14,19 @@ nav:
   - Project status: status.md
   - Installation: install.md
   - Usage:
+    - Overview: usage-overview.md
+    - Standalone:
       - Creating a cluster: cluster.md
       - Configuration: configuration.md
       - Join nodes: join-nodes.md
       - HA control planes: ha.md
+    - Cluster API:
+      - Overview: cluster-api.md
+      - Control Plane: capi-controlplane.md
+      - Bootstrap: capi-bootstrap.md
+      - Examples:
+        - Overview: capi-examples.md
+        - Hetzner Cloud: capi-hetzner.md
   - FAQ: faq.md
 
 theme:

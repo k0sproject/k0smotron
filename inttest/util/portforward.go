@@ -35,7 +35,7 @@ type PortForwarder struct {
 }
 type ErrorHandler func(err error, msgAndArgs ...interface{})
 
-func GetPortForwarder(cfg *rest.Config, name string, namespace string) (*PortForwarder, error) {
+func GetPortForwarder(cfg *rest.Config, name string, namespace string, port int) (*PortForwarder, error) {
 	transport, upgrader, err := spdy.RoundTripperFor(cfg)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func GetPortForwarder(cfg *rest.Config, name string, namespace string) (*PortFor
 
 	stopChan := make(chan struct{})
 	readyChan := make(chan struct{})
-	fw, err := portforward.New(dialer, []string{"30443"}, stopChan, readyChan, io.Discard, os.Stderr)
+	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d", port)}, stopChan, readyChan, io.Discard, os.Stderr)
 	if err != nil {
 		return nil, err
 	}
@@ -73,4 +73,13 @@ func (pf *PortForwarder) Start(errorHandler ErrorHandler) {
 func (pf *PortForwarder) Close() {
 	close(pf.stopChan)
 	pf.fw.Close()
+}
+
+// Get the local port that is forwarded to the remote port
+func (pf *PortForwarder) LocalPort() (int, error) {
+	ports, err := pf.fw.GetPorts()
+	if err != nil {
+		return 0, err
+	}
+	return int(ports[0].Local), nil
 }

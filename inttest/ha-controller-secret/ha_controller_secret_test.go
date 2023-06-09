@@ -69,7 +69,7 @@ func (s *HAControllerSecretSuite) TestK0sGetsUp() {
 	s.T().Log("Starting portforward")
 	pod := s.getPod(s.Context(), kc)
 
-	fw, err := util.GetPortForwarder(rc, pod.Name, pod.Namespace)
+	fw, err := util.GetPortForwarder(rc, pod.Name, pod.Namespace, 30443)
 	s.Require().NoError(err)
 	go fw.Start(s.Require().NoError)
 	defer fw.Close()
@@ -77,7 +77,7 @@ func (s *HAControllerSecretSuite) TestK0sGetsUp() {
 	<-fw.ReadyChan
 
 	s.T().Log("waiting for node to be ready")
-	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test-secret", "kmc-test")
+	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test-secret", "kmc-test", 30443)
 	s.Require().NoError(err)
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 }
