@@ -18,7 +18,6 @@ package hostpath
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/k0sproject/k0s/inttest/common"
@@ -112,10 +111,7 @@ func (s *HostPathSuite) createK0smotronCluster(ctx context.Context, kc *kubernet
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 
-	addr, err := util.GetNodeAddress(ctx, kc, s.WorkerNode(0))
-	s.Require().NoError(err)
-
-	kmc := []byte(fmt.Sprintf(`
+	kmc := []byte(`
 	{
 		"apiVersion": "k0smotron.io/v1beta1",
 		"kind": "Cluster",
@@ -124,7 +120,6 @@ func (s *HostPathSuite) createK0smotronCluster(ctx context.Context, kc *kubernet
 		  "namespace": "kmc-test"
 		},
 		"spec": {
-			"externalAddress": "%s",
 			"service":{
 				"type": "NodePort"
 			},
@@ -134,7 +129,7 @@ func (s *HostPathSuite) createK0smotronCluster(ctx context.Context, kc *kubernet
 			}
 		}
 	  }
-`, addr))
+`)
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
