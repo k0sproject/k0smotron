@@ -41,10 +41,20 @@ func GetPortForwarder(cfg *rest.Config, name string, namespace string, port int)
 		return nil, err
 	}
 
+	// Check if cfg.Host is already a URL
+	u, err := url.Parse(cfg.Host)
+	var host string
+	if err != nil {
+		// Assume the cfg.Host is a plain host:port
+		host = cfg.Host
+	} else {
+		host = u.Host
+	}
+
 	url := &url.URL{
 		Scheme: "https",
 		Path:   fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", namespace, name),
-		Host:   cfg.Host,
+		Host:   host,
 	}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", url)
 
