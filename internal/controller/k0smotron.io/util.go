@@ -19,5 +19,13 @@ package k0smotronio
 import km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 
 func labelsForCluster(kmc *km.Cluster) map[string]string {
-	return map[string]string{"app": "k0smotron", "cluster": kmc.Name}
+	labels := map[string]string{"app": "k0smotron", "cluster": kmc.Name}
+	for k, v := range kmc.Labels {
+		labels[k] = v
+	}
+	return labels
+}
+
+func annotationsForCluster(kmc *km.Cluster) map[string]string {
+	return kmc.Annotations
 }

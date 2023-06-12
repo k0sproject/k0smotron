@@ -78,7 +78,7 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 			Name:        name,
 			Namespace:   kmc.Namespace,
 			Labels:      labels,
-			Annotations: kmc.Spec.Service.Annotations,
+			Annotations: annotationsForCluster(kmc),
 		},
 		Spec: v1.ServiceSpec{
 			Type:     kmc.Spec.Service.Type,
