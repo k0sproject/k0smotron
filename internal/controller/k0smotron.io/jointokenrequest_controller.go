@@ -144,15 +144,19 @@ func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, to
 		"k0smotron.io/role":          jtr.Spec.Role,
 		"k0smotron.io/token-request": jtr.Name,
 	}
+	for k, v := range jtr.Labels {
+		labels[k] = v
+	}
 	secret := v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      jtr.Name,
-			Namespace: jtr.Namespace,
-			Labels:    labels,
+			Name:        jtr.Name,
+			Namespace:   jtr.Namespace,
+			Labels:      labels,
+			Annotations: jtr.Annotations,
 		},
 		StringData: map[string]string{
 			"token": token,
