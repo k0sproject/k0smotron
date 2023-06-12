@@ -71,6 +71,16 @@ type ClusterSpec struct {
 	K0sConfig *unstructured.Unstructured `json:"k0sConfig,omitempty"`
 	// CertificateRefs defines the certificate references.
 	CertificateRefs []CertificateRef `json:"certificateRefs,omitempty"`
+	// Manifests allows to specify list of volumes with manifests to be
+	// deployed in the cluster. The volumes will be mounted
+	// in /var/lib/k0s/manifests/<manifests.name>, for this reason each
+	// manifest is a stack. K0smotron allows any kind of volume, but the
+	// recommendation is to use secrets and configmaps.
+	// For more information check:
+	// https://docs.k0sproject.io/stable/manifests/ and
+	// https://kubernetes.io/docs/concepts/storage/volumes
+	//+kubebuilder:validation:Optional
+	Manifests []v1.Volume `json:"manifests,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
