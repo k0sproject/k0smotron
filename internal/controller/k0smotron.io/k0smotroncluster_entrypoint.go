@@ -50,8 +50,10 @@ func (r *ClusterReconciler) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap,
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmc.GetEntrypointConfigMapName(),
-			Namespace: kmc.Namespace,
+			Name:        kmc.GetEntrypointConfigMapName(),
+			Namespace:   kmc.Namespace,
+			Labels:      labelsForCluster(kmc),
+			Annotations: annotationsForCluster(kmc),
 		},
 		Data: map[string]string{
 			"k0smotron-entrypoint.sh": entrypointBuf.String(),

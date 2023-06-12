@@ -61,9 +61,10 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 			Kind:       "StatefulSet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmc.GetStatefulSetName(),
-			Namespace: kmc.Namespace,
-			Labels:    labels,
+			Name:        kmc.GetStatefulSetName(),
+			Namespace:   kmc.Namespace,
+			Labels:      labels,
+			Annotations: annotationsForCluster(kmc),
 		},
 		Spec: apps.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
