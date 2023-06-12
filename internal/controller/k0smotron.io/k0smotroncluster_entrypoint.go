@@ -19,6 +19,7 @@ package k0smotronio
 import (
 	"bytes"
 	"context"
+	"strings"
 	"text/template"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -39,6 +40,7 @@ func (r *ClusterReconciler) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap,
 	var entrypointBuf bytes.Buffer
 	err := entrypointTmpl.Execute(&entrypointBuf, map[string]string{
 		"KineDataSourceURLPlaceholder": kineDataSourceURLPlaceholder,
+		"K0sControllerArgs":            r.getControllerFlags(kmc),
 	})
 	if err != nil {
 		return v1.ConfigMap{}, err
@@ -76,6 +78,29 @@ func (r *ClusterReconciler) reconcileEntrypointCM(ctx context.Context, kmc km.Cl
 	return r.Client.Patch(ctx, &cm, client.Apply, patchOpts...)
 }
 
+func (r *ClusterReconciler) getControllerFlags(kmc *km.Cluster) string {
+	overrideConfig := false
+	overrideDynamicCfg := false
+	flags := kmc.Spec.ControlPlaneFlags
+
+	for _, arg := range kmc.Spec.ControlPlaneFlags {
+		if strings.HasPrefix(arg, "--config=") || arg == "--config" {
+			overrideConfig = true
+		}
+		if strings.HasPrefix(arg, "--enable-dynamic-config=") || arg == "--enable-dynamic-config" {
+			overrideDynamicCfg = true
+		}
+	}
+	if !overrideConfig {
+		flags = append(flags, "--config=/etc/k0s/k0s.yaml")
+	}
+	if !overrideDynamicCfg {
+		flags = append(flags, "--enable-dynamic-config")
+	}
+
+	return strings.Join(flags, " ")
+}
+
 const entrypointTemplate = `
 #!/bin/sh
 
@@ -86,5 +111,5 @@ mkdir /etc/k0s && echo "$K0SMOTRON_K0S_YAML" > /etc/k0s/k0s.yaml
 sed -i "s {{ .KineDataSourceURLPlaceholder }} ${K0SMOTRON_KINE_DATASOURCE_URL} g" /etc/k0s/k0s.yaml
 
 # Run the k0s controller
-k0s controller --config /etc/k0s/k0s.yaml --enable-dynamic-config
+k0s controller {{ .K0sControllerArgs }}
 `
