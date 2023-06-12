@@ -420,8 +420,8 @@ k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f h1:2kWPakN3i/k81b0gvD5C5F
 k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f/go.mod h1:byini6yhqGC14c3ebc/QwanvYwhuMWF6yz2F8uwW8eg=
 k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5 h1:kmDqav+P+/5e1i9tFfHq1qcF3sOrDp+YEkVDAHu7Jwk=
 k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
-sigs.k8s.io/cluster-api v1.4.0-beta.2.0.20230602112453-75c29acbb784 h1:JNd+RWfApT8FQYYyMwwjkSqHgXh8yy2E12gTBtPiGkQ=
-sigs.k8s.io/cluster-api v1.4.0-beta.2.0.20230602112453-75c29acbb784/go.mod h1:VgMs4bjc3P0igCtHAbG9+jix2gyYtECQhKfNfRedStc=
+sigs.k8s.io/cluster-api v1.4.3 h1:QSeKr3qnWPtVp+EMQZQduKoi5WDwUhAtBRreEukkcy0=
+sigs.k8s.io/cluster-api v1.4.3/go.mod h1:/SeFds4NXJ+Gp2etqHyoNuO6yoxTfVq6Zmd2OGxd/qM=
 sigs.k8s.io/controller-runtime v0.15.0 h1:ML+5Adt3qZnMSYxZ7gAverBLNPSMQEibtzAgp0UPojU=
 sigs.k8s.io/controller-runtime v0.15.0/go.mod h1:7ngYvp1MLT+9GeZ+6lH3LOlcHkp/+tzA/fmHa4iq9kk=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
