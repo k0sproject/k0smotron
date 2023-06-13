@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
@@ -48,11 +49,9 @@ func TestCAPIDockerSuite(t *testing.T) {
 
 func (s *CAPIDockerSuite) SetupSuite() {
 	kubeConfigPath := os.Getenv("KUBECONFIG")
-	s.Require().NotEmpty(kubeConfigPath)
+	s.Require().NotEmpty(kubeConfigPath, "KUBECONFIG env var must be set and point to kind cluster")
 	// Get kube client from kubeconfig
 	restCfg, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	// t.Logf("restCfg.Host: %s", restCfg.Host)
-	// t.Logf("restCfg full:\n%+v", restCfg)
 	s.Require().NoError(err)
 	s.Require().NotNil(restCfg)
 	s.restConfig = restCfg
@@ -69,12 +68,6 @@ func (s *CAPIDockerSuite) SetupSuite() {
 }
 
 func (s *CAPIDockerSuite) TestCAPIDocker() {
-
-	// Dump the cluster yaml to a file
-	tmpDir := s.T().TempDir()
-	tmpFile := tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(tmpFile, []byte(dockerClusterYaml), 0644))
-
 	// Apply the child cluster objects
 	s.applyClusterObjects()
 	defer func() {
@@ -112,6 +105,9 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(context.TODO(), kmcKC, "docker-test-0", corev1.ConditionTrue))
+	node, err := kmcKC.CoreV1().Nodes().Get(context.TODO(), "docker-test-0", metav1.GetOptions{})
+	s.Require().NoError(err)
+	s.Require().Equal("v1.27.1+k0s", node.Status.NodeInfo.KubeletVersion)
 }
 
 func (s *CAPIDockerSuite) applyClusterObjects() {
@@ -193,6 +189,8 @@ metadata:
   name: docker-test-0
   namespace: default
 spec:
+  # version is deliberately different to be able to verify we actually pick it up :)
+  version: v1.27.1+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine

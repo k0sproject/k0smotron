@@ -41,15 +41,7 @@ func GetPortForwarder(cfg *rest.Config, name string, namespace string, port int)
 		return nil, err
 	}
 
-	// Check if cfg.Host is already a URL
-	u, err := url.Parse(cfg.Host)
-	var host string
-	if err != nil {
-		// Assume the cfg.Host is a plain host:port
-		host = cfg.Host
-	} else {
-		host = u.Host
-	}
+	host := getHost(cfg.Host)
 
 	url := &url.URL{
 		Scheme: "https",
@@ -92,4 +84,18 @@ func (pf *PortForwarder) LocalPort() (int, error) {
 		return 0, err
 	}
 	return int(ports[0].Local), nil
+}
+
+func getHost(input string) string {
+	u, err := url.Parse(input)
+	if err != nil {
+		// Assume the input is a plain host:port
+		// The url.Parse is bit ambiguous when it would actually spit out an error -\_('-')_/-
+		return input
+	}
+	if u.Host == "" {
+		return input
+	}
+
+	return u.Host
 }
