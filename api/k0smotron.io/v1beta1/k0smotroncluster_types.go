@@ -81,6 +81,12 @@ type ClusterSpec struct {
 	// https://kubernetes.io/docs/concepts/storage/volumes
 	//+kubebuilder:validation:Optional
 	Manifests []v1.Volume `json:"manifests,omitempty"`
+	// ControlPlaneFlags allows to configure additional flags for k0s
+	// control plane and to override existing ones. The default flags are
+	// kept unless they are overriden explicitly. Flags with arguments must
+	// be specified as a single string, e.g. --some-flag=argument
+	//+kubebuilder:validation:Optional
+	ControlPlaneFlags []string `json:"controllerPlaneFlags,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster

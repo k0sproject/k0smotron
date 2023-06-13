@@ -51,6 +51,14 @@ spec:
                   - type
                   type: object
                 type: array
+              controllerPlaneFlags:
+                description: ControlPlaneFlags allows to configure additional flags
+                  for k0s control plane and to override existing ones. The default
+                  flags are kept unless they are overriden explicitly. Flags with
+                  arguments must be specified as a single string, e.g. --some-flag=argument
+                items:
+                  type: string
+                type: array
               externalAddress:
                 description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
                   Will be detected automatically for service type LoadBalancer.
