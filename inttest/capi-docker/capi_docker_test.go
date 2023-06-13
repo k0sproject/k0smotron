@@ -40,6 +40,7 @@ type CAPIDockerSuite struct {
 	client           *kubernetes.Clientset
 	restConfig       *rest.Config
 	clusterYamlsPath string
+	ctx              context.Context
 }
 
 func TestCAPIDockerSuite(t *testing.T) {
@@ -65,9 +66,12 @@ func (s *CAPIDockerSuite) SetupSuite() {
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
 	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
+
+	s.ctx, _ = util.NewSuiteContext(s.T())
 }
 
 func (s *CAPIDockerSuite) TestCAPIDocker() {
+
 	// Apply the child cluster objects
 	s.applyClusterObjects()
 	defer func() {
@@ -85,7 +89,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 
 	// Wait for the cluster to be ready
 	// Wait to see the CP pods ready
-	s.Require().NoError(common.WaitForStatefulSet(context.TODO(), s.client, "kmc-docker-test", "default"))
+	s.Require().NoError(common.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test", "default"))
 
 	s.T().Log("Starting portforward")
 	fw, err := util.GetPortForwarder(s.restConfig, "kmc-docker-test-0", "default", 30443)
@@ -99,13 +103,13 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	localPort, err := fw.LocalPort()
 	s.Require().NoError(err)
 	s.T().Log("waiting to see admin kubeconfig secret")
-	s.Require().NoError(util.WaitForSecret(context.TODO(), s.client, "docker-test-kubeconfig", "default"))
-	kmcKC, err := util.GetKMCClientSet(context.TODO(), s.client, "docker-test", "default", localPort)
+	s.Require().NoError(util.WaitForSecret(s.ctx, s.client, "docker-test-kubeconfig", "default"))
+	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(context.TODO(), kmcKC, "docker-test-0", corev1.ConditionTrue))
-	node, err := kmcKC.CoreV1().Nodes().Get(context.TODO(), "docker-test-0", metav1.GetOptions{})
+	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))
+	node, err := kmcKC.CoreV1().Nodes().Get(s.ctx, "docker-test-0", metav1.GetOptions{})
 	s.Require().NoError(err)
 	s.Require().Equal("v1.27.1+k0s", node.Status.NodeInfo.KubeletVersion)
 }
