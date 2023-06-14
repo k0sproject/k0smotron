@@ -92,3 +92,66 @@ jobs:
       - name: Run inttest
         run: |
           make -C inttest ${{ matrix.smoke-suite }}
+  
+  capi-smokes:
+    name: Cluster API smoke tests
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        smoke-suite:
+          - check-capi-docker
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Create image bundle
+        run: |
+          make release
+          make k0smotron-image-bundle.tar
+
+      - name: Create kind network with IPv4 only
+        run: |
+          docker network create kind --opt com.docker.network.bridge.enable_ip_masquerade=true
+
+      
+      - name: Download kind
+        uses: supplypike/setup-bin@v3
+        with:
+          name: kind
+          version: v0.19.0
+          uri: https://github.com/kubernetes-sigs/kind/releases/download/v0.19.0/kind-linux-amd64
+          
+      - name: Setup KinD cluster
+        run: |
+          kind create cluster --config config/samples/capi/docker/kind.yaml
+
+      - name: Load k0smotron image to KinD and install k0smotron controllers
+        run: |
+          kind load image-archive k0smotron-image-bundle.tar
+          kubectl apply -f install.yaml
+      
+
+      - name: Download clusterctl
+        uses: supplypike/setup-bin@v3
+        with:
+          name: clusterctl
+          version: v1.4.3
+          uri: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.3/clusterctl-linux-amd64
+
+      - name: Install cluster api components
+        run: |
+          clusterctl init --infrastructure docker
+
+      - name: Run inttest for CAPI with docker provider
+        run: |
+          kind get kubeconfig > kind.conf
+          export KUBECONFIG=$(realpath kind.conf)
+          KEEP_AFTER_TEST=true make -C inttest check-capi-docker
+      

@@ -139,6 +139,13 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}
 
 	log.Info("Creating bootstrap data")
+	// Figure out version to download
+	var downloadCmd string
+	if config.Spec.Version != "" {
+		downloadCmd = fmt.Sprintf("curl -sSLf https://get.k0s.sh | K0S_VERSION=%s sh", config.Spec.Version)
+	} else {
+		downloadCmd = "curl -sSLf https://get.k0s.sh | sh"
+	}
 	// Create the bootstrap data
 	ci := &cloudinit.CloudInit{
 		Files: []cloudinit.File{
@@ -149,9 +156,11 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 			},
 		},
 		RunCmds: []string{
-			"curl -sSLf https://get.k0s.sh | sh",
+			downloadCmd,
 			"k0s install worker --token-file /etc/k0s.token",
 			"k0s start",
+			// https://cluster-api.sigs.k8s.io/developer/providers/bootstrap.html#sentinel-file
+			"mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete",
 		},
 	}
 

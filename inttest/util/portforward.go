@@ -41,10 +41,12 @@ func GetPortForwarder(cfg *rest.Config, name string, namespace string, port int)
 		return nil, err
 	}
 
+	host := getHost(cfg.Host)
+
 	url := &url.URL{
 		Scheme: "https",
 		Path:   fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", namespace, name),
-		Host:   cfg.Host,
+		Host:   host,
 	}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", url)
 
@@ -82,4 +84,18 @@ func (pf *PortForwarder) LocalPort() (int, error) {
 		return 0, err
 	}
 	return int(ports[0].Local), nil
+}
+
+func getHost(input string) string {
+	u, err := url.Parse(input)
+	if err != nil {
+		// Assume the input is a plain host:port
+		// The url.Parse is bit ambiguous when it would actually spit out an error -\_('-')_/-
+		return input
+	}
+	if u.Host == "" {
+		return input
+	}
+
+	return u.Host
 }

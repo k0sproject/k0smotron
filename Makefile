@@ -222,3 +222,19 @@ lint: hack/lint/.golangci-lint.stamp
 	  -v "$(CURDIR):/go/src/github.com/k0sproject/k0smotron:ro" \
 	  -w /go/src/github.com/k0sproject/k0smotron \
 	  k0smotron.golangci-lint golangci-lint run $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS)
+
+# KinD helpers
+.PHONY: kind-cluster
+kind-cluster:
+	docker create network kind --opt com.docker.network.bridge.enable_ip_masquerade=true || true
+	kind create cluster --name k0smotron --config config/samples/capi/docker/kind.yaml
+
+.PHONY: kind-deploy-capi
+	clusterctl init --infrastructure docker
+
+.PHONY: kind-deploy-k0smotron
+kind-deploy-k0smotron: release k0smotron-image-bundle.tar
+	kind load image-archive k0smotron-image-bundle.tar
+	kubectl apply -f install.yaml
+	kubectl rollout restart -n k0smotron deployment/k0smotron-controller-manager
+
