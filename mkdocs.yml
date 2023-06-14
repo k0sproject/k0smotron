@@ -30,6 +30,8 @@ nav:
         - Hetzner Cloud: capi-hetzner.md
         - Docker: capi-docker.md
   - FAQ: faq.md
+  - Reference:
+    - Custom resources: resource-reference.md
 
 theme:
   name: "material"

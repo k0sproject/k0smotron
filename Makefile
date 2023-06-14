@@ -12,6 +12,7 @@ $(LOCALBIN):
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
+CRDOC ?= $(LOCALBIN)/crdoc
 
 # Image URL to use all building/pushing image targets
 IMG ?= quay.io/k0sproject/k0smotron:latest
@@ -187,6 +188,13 @@ docs-serve-dev:
 	  -v "$(CURDIR):/k0s:ro" \
 	  -p '$(DOCS_DEV_PORT):8000' \
 	  k0sdocs.docker-image.serve-dev
+
+crdoc: $(CRDOC) ## Download controller-gen locally if necessary. If wrong version is installed, it will be overwritten.
+$(CRDOC): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install fybrik.io/crdoc@$(CRDOC_VERSION)
+
+docs-generate-reference: $(CRDOC)
+	$(CRDOC) --resources config/crd/bases/ --output docs/resource-reference.md
 
 .PHONY: $(smoketests)
 $(smoketests): release k0smotron-image-bundle.tar
