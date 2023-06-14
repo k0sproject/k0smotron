@@ -18,6 +18,7 @@ package capidocker
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -112,20 +113,41 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	node, err := kmcKC.CoreV1().Nodes().Get(s.ctx, "docker-test-0", metav1.GetOptions{})
 	s.Require().NoError(err)
 	s.Require().Equal("v1.27.1+k0s", node.Status.NodeInfo.KubeletVersion)
+	fooLabel, ok := node.Labels["k0sproject.io/foo"]
+	s.Require().True(ok)
+	s.Require().Equal("bar", fooLabel)
+
+	s.T().Log("verifying cloud-init extras")
+	preStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/pre-start")
+	s.Require().NoError(err)
+	s.Require().Equal("pre-start", preStartFile)
+	postStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/post-start")
+	s.Require().NoError(err)
+	s.Require().Equal("post-start", postStartFile)
+	extraFile, err := getDockerNodeFile("docker-test-0", "/tmp/test-file")
+	s.Require().NoError(err)
+	s.Require().Equal("test-file", extraFile)
 }
 
 func (s *CAPIDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
-	cmd := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath)
-	err := cmd.Run()
-	s.Require().NoError(err, "failed to apply cluster objects")
+	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIDockerSuite) deleteCluster() {
 	// Exec via kubectl
-	cmd := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath)
-	err := cmd.Run()
-	s.Require().NoError(err, "failed to delete cluster objects")
+	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
+}
+
+func getDockerNodeFile(nodeName string, path string) (string, error) {
+	output, err := exec.Command("docker", "exec", nodeName, "cat", path).Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get file %s from node %s: %w", path, nodeName, err)
+	}
+
+	return string(string(output)), nil
 }
 
 var dockerClusterYaml = `
@@ -195,6 +217,15 @@ metadata:
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
   version: v1.27.1+k0s.0
+  args:
+    - --labels=k0sproject.io/foo=bar
+  preStartCommands:
+    - echo -n "pre-start" > /tmp/pre-start
+  postStartCommands:
+    - echo -n "post-start" > /tmp/post-start
+  files:
+    - path: /tmp/test-file
+      content: test-file
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine

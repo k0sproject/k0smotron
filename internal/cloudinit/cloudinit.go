@@ -25,14 +25,14 @@ import (
 // Very basic type definitions to generate cloud-init yaml
 
 type CloudInit struct {
-	Files   []File   `yaml:"write_files"`
-	RunCmds []string `yaml:"runcmd"`
+	Files   []File   `yaml:"write_files,omitempty" json:"write_files,omitempty"`
+	RunCmds []string `yaml:"runcmd" json:"runcmd,omitempty"`
 }
 
 type File struct {
-	Path        string `yaml:"path"`
-	Content     string `yaml:"content"`
-	Permissions string `yaml:"permissions"`
+	Path        string `yaml:"path" json:"path,omitempty"`
+	Content     string `yaml:"content" json:"content,omitempty"`
+	Permissions string `yaml:"permissions" json:"permissions,omitempty"`
 }
 
 func (c *CloudInit) AsBytes() ([]byte, error) {

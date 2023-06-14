@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -58,6 +59,31 @@ type K0sWorkerConfigSpec struct {
 	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
 	// +kubebuilder:validation:Optional
 	Version string `json:"version,omitempty"`
+
+	// Files specifies extra files to be passed to user_data upon creation.
+	// +kubebuilder:validation:Optional
+	Files []cloudinit.File `json:"files,omitempty"`
+
+	// Args specifies extra arguments to be passed to k0s worker.
+	// See: https://docs.k0sproject.io/stable/advanced/worker-configuration/
+	Args []string `json:"args,omitempty"`
+
+	// PreStartCommands specifies commands to be run before starting k0s worker.
+	// +kubebuilder:validation:Optional
+	PreStartCommands []string `json:"preStartCommands,omitempty"`
+
+	// PostStartCommands specifies commands to be run after starting k0s worker.
+	// +kubebuilder:validation:Optional
+	PostStartCommands []string `json:"postStartCommands,omitempty"`
+
+	// PreInstallK0s specifies whether k0s binary is pre-installed on the node.
+	// +kubebuilder:validation:Optional
+	PreInstalledK0s bool `json:"preInstalledK0s,omitempty"`
+
+	// DownloadURL specifies the URL to download k0s binary from.
+	// If specified the version field is ignored and what ever version is downloaded from the URL is used.
+	// +kubebuilder:validation:Optional
+	DownloadURL string `json:"downloadURL,omitempty"`
 }
 
 type JoinTokenSecretRef struct {

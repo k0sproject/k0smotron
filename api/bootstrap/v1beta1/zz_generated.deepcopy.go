@@ -22,6 +22,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -106,6 +107,26 @@ func (in *K0sWorkerConfigSpec) DeepCopyInto(out *K0sWorkerConfigSpec) {
 		in, out := &in.JoinTokenSecretRef, &out.JoinTokenSecretRef
 		*out = new(JoinTokenSecretRef)
 		**out = **in
+	}
+	if in.Files != nil {
+		in, out := &in.Files, &out.Files
+		*out = make([]cloudinit.File, len(*in))
+		copy(*out, *in)
+	}
+	if in.Args != nil {
+		in, out := &in.Args, &out.Args
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.PreStartCommands != nil {
+		in, out := &in.PreStartCommands, &out.PreStartCommands
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.PostStartCommands != nil {
+		in, out := &in.PostStartCommands, &out.PostStartCommands
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 }
 
