@@ -189,10 +189,11 @@ docs-serve-dev:
 	  -p '$(DOCS_DEV_PORT):8000' \
 	  k0sdocs.docker-image.serve-dev
 
-crdoc: $(CRDOC) ## Download controller-gen locally if necessary. If wrong version is installed, it will be overwritten.
-$(CRDOC): $(LOCALBIN)
+crdoc: $(CRDOC) ## Download crdoc locally if necessary. If wrong version is installed, it will be overwritten.
+$(CRDOC): Makefile.variables | $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install fybrik.io/crdoc@$(CRDOC_VERSION)
 
+.PHONY: docs-generate-reference
 docs-generate-reference: $(CRDOC)
 	$(CRDOC) --resources config/crd/bases/ --output docs/resource-reference.md
 

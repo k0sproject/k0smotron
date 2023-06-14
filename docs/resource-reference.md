@@ -93,6 +93,13 @@ Resource Types:
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>downloadURL</b></td>
+        <td>string</td>
+        <td>
+          DownloadURL specifies the URL to download k0s binary from. If specified the version field is ignored and what ever version is downloaded from the URL is used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0sworkerconfigspecfilesindex">files</a></b></td>
         <td>[]object</td>
         <td>
@@ -330,6 +337,13 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>[]object</td>
         <td>
           CertificateRefs defines the certificate references.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>controllerPlaneFlags</b></td>
+        <td>[]string</td>
+        <td>
+          ControlPlaneFlags allows to configure additional flags for k0s control plane and to override existing ones. The default flags are kept unless they are overriden explicitly. Flags with arguments must be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4042,6 +4056,13 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>[]object</td>
         <td>
           CertificateRefs defines the certificate references.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>controllerPlaneFlags</b></td>
+        <td>[]string</td>
+        <td>
+          ControlPlaneFlags allows to configure additional flags for k0s control plane and to override existing ones. The default flags are kept unless they are overriden explicitly. Flags with arguments must be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
