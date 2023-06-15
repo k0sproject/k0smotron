@@ -1,0 +1,86 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: k0s-aws-test
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: [10.244.0.0/16]
+    services:
+      cidrBlocks: [10.96.0.0/12]
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0smotronControlPlane # This tells that k0smotron should create the controlplane
+    name: k0s-aws-test
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: k0s-aws-test
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlane # This is the config for the controlplane
+metadata:
+  name: k0s-aws-test
+spec:
+  k0sVersion: v1.27.2-k0s.0
+  persistence:
+    type: emptyDir
+  service:
+    type: LoadBalancer
+    apiPort: 6443
+    konnectivityPort: 8132
+    annotations:
+      load-balancer.hetzner.cloud/location: fsn1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: k0s-aws-test
+  namespace: default
+  annotations:
+    cluster.x-k8s.io/managed-by: external
+spec:
+  region: eu-north-1
+  sshKeyName: jnummelin
+  network:
+    vpc:
+      id: vpc-0d63a02338d7f4651
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Machine
+metadata:
+  name: k0s-aws-test-0
+  namespace: default
+spec:
+  clusterName: k0s-aws-test
+  bootstrap:
+    configRef: # This triggers our controller to create cloud-init secret
+      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      kind: K0sWorkerConfig
+      name: k0s-aws-test-0
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSMachine
+    name: k0s-aws-test-0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachine
+metadata:
+  name: k0s-aws-test-0
+  namespace: default
+spec:
+  ami:
+    # Ubuntu 22.04
+    id: ami-0989fb15ce71ba39e
+  instanceType: t3.large
+  iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+  sshKeyName: jnummelin
+  publicIP: true
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfig
+metadata:
+  name: k0s-aws-test-0
+spec:
+---
