@@ -12,20 +12,20 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-bootstrap/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-aws/">
       
       
-        <link rel="prev" href="../capi-controlplane/">
+        <link rel="prev" href="../capi-examples/">
       
       
-        <link rel="next" href="../capi-examples/">
+        <link rel="next" href="../capi-hetzner/">
       
       <link rel="icon" href="../img/k0s_social.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
     
     
       
-        <title>Bootstrap - Documentation</title>
+        <title>AWS - Documentation</title>
       
     
     
@@ -86,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cluster-api-bootstrap-provider" class="md-skip">
+        <a href="#cluster-api-aws" class="md-skip">
           Skip to content
         </a>
       
@@ -136,7 +136,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Bootstrap
+              AWS
             
           </span>
         </div>
@@ -506,21 +506,11 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../capi-bootstrap/" class="md-nav__link">
         Bootstrap
       </a>
-      
     </li>
   
 
@@ -530,14 +520,16 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_4" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_4" checked>
       
       
       
@@ -546,7 +538,7 @@ You are not currently viewing the documentation for the current stable release o
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_4_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_4_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_4_3_4">
           <span class="md-nav__icon md-icon"></span>
           Examples
@@ -571,11 +563,79 @@ You are not currently viewing the documentation for the current stable release o
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../capi-aws/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          AWS
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         AWS
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prepare-the-aws-infra-provider" class="md-nav__link">
+    Prepare the AWS infra provider
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-cluster" class="md-nav__link">
+    Creating a cluster
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accessing-the-workload-cluster" class="md-nav__link">
+    Accessing the workload cluster
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -650,6 +710,48 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prepare-the-aws-infra-provider" class="md-nav__link">
+    Prepare the AWS infra provider
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-cluster" class="md-nav__link">
+    Creating a cluster
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accessing-the-workload-cluster" class="md-nav__link">
+    Accessing the workload cluster
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -663,34 +765,124 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="cluster-api-bootstrap-provider">Cluster API - Bootstrap provider<a class="headerlink" href="#cluster-api-bootstrap-provider" title="Permanent link">#</a></h1>
-<p>k0smotron can act as a Cluster API Boostrap provider. As k0smotron itself will run the cluster control plane within the management cluster the bootstrap provider is (currently) focusing only on bootstrapping worker nodes.</p>
-<p>As with any other Cluster API provider you must create a <code>Machine</code> object with a reference to a bootstrap provider:</p>
+<h1 id="cluster-api-aws">Cluster API - AWS<a class="headerlink" href="#cluster-api-aws" title="Permanent link">#</a></h1>
+<p>In this guide, we show you how to use AWS for the worker plane with the k0smotron control plane.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
+<p>See the common <a href="../capi-examples/#prerequisites">prerequisites</a> for k0smotron.</p>
+<p>Also, you need to have an AWS account and your AWS CLI configured with your credentials.</p>
+<h3 id="prepare-the-aws-infra-provider">Prepare the AWS infra provider<a class="headerlink" href="#prepare-the-aws-infra-provider" title="Permanent link">#</a></h3>
+<p>Prior to initiating a cluster, the configuration of the infrastructure provider is necessary. Each provider comes with its own unique set of prerequisites.</p>
+<p>Follow the AWS Provider <a href="https://cluster-api-aws.sigs.k8s.io/getting-started.html#initialize-the-management-cluster">installation guide</a> for detailed steps.</p>
+<h2 id="creating-a-cluster">Creating a cluster<a class="headerlink" href="#creating-a-cluster" title="Permanent link">#</a></h2>
+<p>As soon as the bootstrap and control-plane controllers are up and running you can apply the cluster manifests with the specifications of the cluster you want to provision.</p>
+<div class="admonition note">
+<p class="admonition-title">k0smotron is currently only able to work with <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html">externally managed</a> cluster infrastructure.</p>
+<p>This is because in CAPA there is no way to disable it to provision all control plane related infrastructure (VPC, ELB, etc.).
+This also renders k0smotron unable to dynamically edit the <code>AWSCluster</code> API endpoint details. Make sure you VPC and subnets you are planning to use full fill the <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites">needed prerequisites</a>.</p>
+</div>
+<p>Here is an example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.244.0.0/16</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">services</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.96.0.0/12</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span><span class="w"> </span><span class="c1"># This tells that k0smotron should create the controlplane</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
+<span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSCluster</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span><span class="w"> </span><span class="c1"># This is the config for the controlplane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">k0sVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2-k0s.0</span>
+<span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
+<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
+<span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8132</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSCluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1</span>
+<span class="w">  </span><span class="nt">sshKeyName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jhennig-key</span>
+<span class="w">  </span><span class="nt">network</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vpc</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vpc-12345678901234567</span><span class="w"> </span><span class="c1"># default VPCs ID</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Machine</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test-0</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-0</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
+<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
+<span class="w">  </span><span class="nt">failureDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1a</span>
 <span class="w">  </span><span class="nt">bootstrap</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">configRef</span><span class="p">:</span><span class="w"> </span><span class="c1"># This triggers our controller to create cloud-init secret</span>
 <span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
 <span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
-<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test-0</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-0</span>
 <span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HCloudMachine</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test-0</span>
-</code></pre></div>
-<p>Next we need to provide the configuration for the bootstrapping:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSMachine</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-0</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSMachine</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-0</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ami</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Ubuntu 22.04</span>
+<span class="w">    </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0989fb15ce71ba39e</span>
+<span class="w">  </span><span class="nt">instanceType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.large</span>
+<span class="w">  </span><span class="nt">iamInstanceProfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nodes.cluster-api-provider-aws.sigs.k8s.io</span>
+<span class="w">  </span><span class="nt">cloudInit</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Makes CAPA use k0s bootstrap cloud-init directly and not via SSM</span>
+<span class="w">    </span><span class="c1"># Simplifies the VPC setup as we do not need custom SSM endpoints etc.</span>
+<span class="w">    </span><span class="nt">insecureSkipSecretsManager</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">subnet</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Make sure this matches the failureDomain in the Machine, i.e. you pick the subnet ID for the AZ</span>
+<span class="w">    </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subnet-099730c9ea2e42134</span>
+<span class="w">  </span><span class="nt">iamInstanceProfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nodes.cluster-api-provider-aws.sigs.k8s.io</span>
+<span class="w">  </span><span class="nt">sshKeyName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jhennig-key</span>
+
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test-0</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-0</span>
 <span class="nt">spec</span><span class="p">:</span>
+<span class="nn">---</span>
 </code></pre></div>
-<p>As k0s comes with all the needed bells and whistles to get k8s worker node up, we do not need to specify any details in this simple example.</p>
-<p>Check the <a href="../capi-examples/">examples</a> pages for more detailed examples how k0smotron can be used with various Cluster API infrastructure providers.</p>
+<p>Once you apply the manifests to the management cluster it'll take couple of minutes to provision everything. In the end you should see something like this:</p>
+<div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
+NAME<span class="w">                                    </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
+cluster.cluster.x-k8s.io/k0s-aws-test<span class="w">   </span>Provisioned<span class="w">   </span>46m<span class="w">   </span>
+
+NAME<span class="w">                                      </span>CLUSTER<span class="w">        </span>NODENAME<span class="w">   </span>PROVIDERID<span class="w">                                 </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
+machine.cluster.x-k8s.io/k0s-aws-test-0<span class="w">   </span>k0s-aws-test<span class="w">              </span>aws:///eu-central-1a/i-05f2de7da41dc542a<span class="w">   </span>Provisioned<span class="w">   </span>46m<span class="w">   </span>
+</code></pre></div>
+<h2 id="accessing-the-workload-cluster">Accessing the workload cluster<a class="headerlink" href="#accessing-the-workload-cluster" title="Permanent link">#</a></h2>
+<p>To access the workload (a.k.a child) cluster we can get the kubeconfig for it with <code>clusterctl get kubeconfig k0s-aws-test</code>. You can then save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a></p>
 
 
 
