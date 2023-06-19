@@ -28,6 +28,7 @@ nav:
         - Overview: capi-examples.md
         - AWS: capi-aws.md
         - Hetzner Cloud: capi-hetzner.md
+        - Docker: capi-docker.md
   - FAQ: faq.md
 
 theme:
