@@ -37,3 +37,5 @@ spec:
 As k0s comes with all the needed bells and whistles to get k8s worker node up, we do not need to specify any details in this simple example.
 
 Check the [examples](capi-examples.md) pages for more detailed examples how k0smotron can be used with various Cluster API infrastructure providers.
+
+For reference on what can be configured via `K0sWorkerConfig` see the [reference docs](resource-reference.md#bootstrapclusterx-k8siov1beta1).

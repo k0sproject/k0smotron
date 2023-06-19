@@ -20,7 +20,7 @@ As soon as the bootstrap and control-plane controllers are up and running you ca
 
 !!! note "k0smotron is currently only able to work with [externally managed](https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html) cluster infrastructure."
     This is because in CAPA there is no way to disable it to provision all control plane related infrastructure (VPC, ELB, etc.).
-    This also renders k0smotron unable to dynamically edit the `AWSCluster` API endpoint details. Make sure you VPC and subnets you are planning to use full fill the [needed prerequisites](https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites).
+    This also renders k0smotron unable to dynamically edit the `AWSCluster` API endpoint details. Make sure your VPC and subnets you are planning to use fullfill the [needed prerequisites](https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites).
 
 Here is an example:
 

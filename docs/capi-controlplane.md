@@ -41,4 +41,6 @@ spec:
       load-balancer.hetzner.cloud/location: fsn1
 ```
 
-The `K0smotronControlPlane.spec` field is a direct mapping of the "standalone" k0smotron cluster [configuration](configuration.md).
+Check the [examples](capi-examples.md) pages for more detailed examples how k0smotron can be used with various Cluster API infrastructure providers.
+
+For a full reference on `K0smotronControlPlane` configurability see the [reference docs](resource-reference.md#controlplaneclusterx-k8siov1beta1).
