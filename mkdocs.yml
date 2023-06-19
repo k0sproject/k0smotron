@@ -26,6 +26,7 @@ nav:
       - Bootstrap: capi-bootstrap.md
       - Examples:
         - Overview: capi-examples.md
+        - AWS: capi-aws.md
         - Hetzner Cloud: capi-hetzner.md
   - FAQ: faq.md
 
