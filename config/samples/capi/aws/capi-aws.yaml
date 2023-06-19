@@ -45,7 +45,7 @@ spec:
   sshKeyName: jnummelin
   network:
     vpc:
-      id: vpc-0d63a02338d7f4651
+      id: vpc-0d63a02338d7f4651 # default VPC
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
@@ -54,6 +54,7 @@ metadata:
   namespace: default
 spec:
   clusterName: k0s-aws-test
+  failureDomain: eu-north-1a
   bootstrap:
     configRef: # This triggers our controller to create cloud-init secret
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -76,7 +77,10 @@ spec:
   instanceType: t3.large
   iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
   sshKeyName: jnummelin
-  publicIP: true
+  cloudInit:
+    insecureSkipSecretsManager: true
+  subnet:
+    id: subnet-099730c9ea2e42134 # Make sure this matches the failureDomain in the Machine
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: K0sWorkerConfig

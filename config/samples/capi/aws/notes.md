@@ -28,5 +28,10 @@ My time ran out with subnets:
 "failed to create AWSMachine instance: failed to run machine \"k0s-aws-test-0\" with public IP, no public subnets available"
 ```
 
+*Note:* When using self managed infra, you must manually patch the `AWSCluster` status to ready:
+```
+kubectl patch AWSCluster k0s-aws-test --type=merge --subresource status --patch 'status: {ready: true}'
+```
+
 I believe when we have proper subnets etc. (maybe via Terraform) this should work.
 
