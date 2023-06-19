@@ -82,6 +82,7 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
 
 extra:
   k0smotron_version: !!python/object/apply:os.getenv ["K0SMOTRON_VERSION"]

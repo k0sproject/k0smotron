@@ -57,7 +57,8 @@ export AWS_B64ENCODED_CREDENTIALS=$(clusterawsadm bootstrap credentials encode-a
 ### Initialize the management cluster
 
 The initialization of Cluster API components requires the `clusterctl` to be installed:
-``` bash
+
+```shell
 curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.3/clusterctl-darwin-amd64 -o clusterctl
 chmod +x clusterctl
 sudo mv clusterctl /usr/local/bin
@@ -65,18 +66,22 @@ sudo mv clusterctl /usr/local/bin
 
 To initialize the management cluster with AWS infrastrcture provider you need to run:
 
-```
+```shell
 clusterctl init --core cluster-api --infrastructure aws
 ```
 
 For more details on AWS Kubernetes Cluster API Provider AWS see it's [docs](https://cluster-api-aws.sigs.k8s.io/).
 
-
 ## Creating a cluster
 
 As soon as the bootstrap and control-plane controllers are up and running you can apply the cluster manifests with the specifications of the cluster you want to provision.
 
-Here is an example: 
+
+!!! note "k0smotron is currently only able to work with [externally managed](https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html) cluster infrastructure."
+    This is because in CAPA there is no way to disable it to provision all control plane related infrastructure (VPC, ELB, etc.).
+    This also renders k0smotron unable to dynamically edit the `AWSCluster` API endpoint details. Make sure you VPC and subnets you are planning to use full fill the [needed prerequisites](https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites).
+
+Here is an example:
 
 ```yaml
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -120,6 +125,9 @@ metadata:
 spec:
   region: eu-central-1
   sshKeyName: jhennig-key
+  network:
+    vpc:
+      id: vpc-12345678901234567 # default VPCs ID
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
@@ -128,6 +136,7 @@ metadata:
   namespace: default
 spec:
   clusterName: k0s-aws-test
+  failureDomain: eu-central-1a
   bootstrap:
     configRef: # This triggers our controller to create cloud-init secret
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -135,20 +144,30 @@ spec:
       name: k0s-aws-test-0
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: AWSMachineTemplate
+    kind: AWSMachine
     name: k0s-aws-test-0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: AWSMachineTemplate
+kind: AWSMachine
 metadata:
   name: k0s-aws-test-0
   namespace: default
 spec:
-  template:
-    spec:
-      instanceType: t3.large
-      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
-      sshKeyName: jhennig-key
+  ami:
+    # Ubuntu 22.04
+    id: ami-0989fb15ce71ba39e
+  instanceType: t3.large
+  iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+  cloudInit:
+    # Makes CAPA use k0s bootstrap cloud-init directly and not via SSM
+    # Simplifies the VPC setup as we do not need custom SSM endpoints etc.
+    insecureSkipSecretsManager: true
+  subnet:
+    # Make sure this matches the failureDomain in the Machine, i.e. you pick the subnet ID for the AZ
+    id: subnet-099730c9ea2e42134
+  iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+  sshKeyName: jhennig-key
+    
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: K0sWorkerConfig
@@ -158,18 +177,15 @@ spec:
 ---
 ```
 
-In the case of `AWSCluster.spec.controlPlaneEndpoint` you can add any valid address. k0smotron will overwrite these are automatically once it gets the control plane up-and-running. You do need to specify some placeholder address as the `AWSCluster` object has those marked as mandatory fields.
-
 Once you apply the manifests to the management cluster it'll take couple of minutes to provision everything. In the end you should see something like this:
 
-
-```
+```shell
 % kubectl get cluster,machine
-NAME                                    PHASE         AGE     VERSION
-cluster.cluster.x-k8s.io/k0s-aws-test   Provisioned   4m14s   
+NAME                                    PHASE         AGE   VERSION
+cluster.cluster.x-k8s.io/k0s-aws-test   Provisioned   46m   
 
-NAME                                         CLUSTER        NODENAME   PROVIDERID          PHASE         AGE     VERSION
-machine.cluster.x-k8s.io/k0s-aws-test-0      k0s-aws-test                                  Provisioned   4m15s
+NAME                                      CLUSTER        NODENAME   PROVIDERID                                 PHASE         AGE   VERSION
+machine.cluster.x-k8s.io/k0s-aws-test-0   k0s-aws-test              aws:///eu-central-1a/i-05f2de7da41dc542a   Provisioned   46m   
 ```
 
 ## Accessing the workload cluster
