@@ -19,6 +19,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,7 +34,7 @@ import (
 	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
-	"sigs.k8s.io/cluster-api/util"
+
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/secret"
 
@@ -139,29 +140,31 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}
 
 	log.Info("Creating bootstrap data")
-	// Figure out version to download
-	var downloadCmd string
-	if config.Spec.Version != "" {
-		downloadCmd = fmt.Sprintf("curl -sSLf https://get.k0s.sh | K0S_VERSION=%s sh", config.Spec.Version)
-	} else {
-		downloadCmd = "curl -sSLf https://get.k0s.sh | sh"
-	}
+
 	// Create the bootstrap data
+	files := []cloudinit.File{
+		{
+			Path:        "/etc/k0s.token",
+			Permissions: "0644",
+			Content:     token,
+		},
+	}
+
+	files = append(files, config.Spec.Files...)
+	downloadCommands := createDownloadCommands(config)
+	installCmd := createInstallCmd(config)
+
+	commands := config.Spec.PreStartCommands
+	commands = append(commands, downloadCommands...)
+	commands = append(commands, installCmd, "k0s start")
+	commands = append(commands, config.Spec.PostStartCommands...)
+	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
+	// https://cluster-api.sigs.k8s.io/developer/providers/bootstrap.html#sentinel-file
+	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
+
 	ci := &cloudinit.CloudInit{
-		Files: []cloudinit.File{
-			{
-				Path:        "/etc/k0s.token",
-				Permissions: "0644",
-				Content:     token,
-			},
-		},
-		RunCmds: []string{
-			downloadCmd,
-			"k0s install worker --token-file /etc/k0s.token",
-			"k0s start",
-			// https://cluster-api.sigs.k8s.io/developer/providers/bootstrap.html#sentinel-file
-			"mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete",
-		},
+		Files:   files,
+		RunCmds: commands,
 	}
 
 	// Create the bootstrap data
@@ -251,7 +254,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	}
 
 	certificates := secret.NewCertificatesForWorker("")
-	if err := certificates.Lookup(ctx, r.Client, util.ObjectKey(scope.Cluster)); err != nil {
+	if err := certificates.Lookup(ctx, r.Client, capiutil.ObjectKey(scope.Cluster)); err != nil {
 		return "", errors.Wrap(err, "failed to lookup CA certificates")
 	}
 	ca := certificates.GetByPurpose(secret.ClusterCA)
@@ -260,6 +263,35 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		return "", errors.Wrap(err, "failed to create join token")
 	}
 	return joinToken, nil
+}
+
+func createInstallCmd(config *bootstrapv1.K0sWorkerConfig) string {
+	installCmd := []string{
+		"k0s install worker --token-file /etc/k0s.token"}
+	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
+		installCmd = append(installCmd, config.Spec.Args...)
+	}
+	return strings.Join(installCmd, " ")
+}
+
+func createDownloadCommands(config *bootstrapv1.K0sWorkerConfig) []string {
+	if config.Spec.PreInstalledK0s {
+		return nil
+	}
+
+	if config.Spec.DownloadURL != "" {
+		return []string{
+			fmt.Sprintf("curl -sSfL %s -o /usr/local/bin/k0s", config.Spec.DownloadURL),
+			"chmod +x /usr/local/bin/k0s",
+		}
+	}
+
+	// Figure out version to download if download URL is not set
+	if config.Spec.Version != "" {
+		return []string{fmt.Sprintf("curl -sSfL https://get.k0s.sh | K0S_VERSION=%s sh", config.Spec.Version)}
+	}
+
+	return []string{"curl -sSfL https://get.k0s.sh | sh"}
 }
 
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {
