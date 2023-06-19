@@ -21,6 +21,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://docs.k0smotron.io/head/capi-docker/</loc>
+         <lastmod>2023-06-19</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://docs.k0smotron.io/head/capi-examples/</loc>
          <lastmod>2023-06-19</lastmod>
          <changefreq>daily</changefreq>
