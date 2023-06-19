@@ -19,5 +19,3 @@ To install k0smotron on the management cluster follow the installation [guide](i
 ## clusterctl
 
 You need to have `clusterctl` [installed](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl).
-
-

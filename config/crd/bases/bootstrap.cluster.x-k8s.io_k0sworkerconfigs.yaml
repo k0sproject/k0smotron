@@ -34,6 +34,30 @@ spec:
             type: object
           spec:
             properties:
+              args:
+                description: 'Args specifies extra arguments to be passed to k0s worker.
+                  See: https://docs.k0sproject.io/stable/advanced/worker-configuration/'
+                items:
+                  type: string
+                type: array
+              downloadURL:
+                description: DownloadURL specifies the URL to download k0s binary
+                  from. If specified the version field is ignored and what ever version
+                  is downloaded from the URL is used.
+                type: string
+              files:
+                description: Files specifies extra files to be passed to user_data
+                  upon creation.
+                items:
+                  properties:
+                    content:
+                      type: string
+                    path:
+                      type: string
+                    permissions:
+                      type: string
+                  type: object
+                type: array
               joinTokenSecretRef:
                 description: JoinTokenSecretRef is a reference to a secret that contains
                   the join token. This should be only set in the case you want to
@@ -50,6 +74,22 @@ spec:
                 - key
                 - name
                 type: object
+              postStartCommands:
+                description: PostStartCommands specifies commands to be run after
+                  starting k0s worker.
+                items:
+                  type: string
+                type: array
+              preInstalledK0s:
+                description: PreInstallK0s specifies whether k0s binary is pre-installed
+                  on the node.
+                type: boolean
+              preStartCommands:
+                description: PreStartCommands specifies commands to be run before
+                  starting k0s worker.
+                items:
+                  type: string
+                type: array
               version:
                 description: 'Version is the version of k0s to use. In case this is
                   not set, the latest version is used. Make sure the version is compatible
