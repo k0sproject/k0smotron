@@ -438,40 +438,6 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuration-file-reference" class="md-nav__link">
-    Configuration file reference
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spec-key-detail" class="md-nav__link">
-    spec Key Detail
-  </a>
-  
-    <nav class="md-nav" aria-label="spec Key Detail">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#specservice" class="md-nav__link">
-    spec.service
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#specpersistence" class="md-nav__link">
-    spec.persistence
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#k0s-configuration" class="md-nav__link">
     K0s configuration
   </a>
@@ -709,6 +675,55 @@ You are not currently viewing the documentation for the current stable release o
   
 
     
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/" class="md-nav__link">
+        Custom resources
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -736,40 +751,6 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuration-file-reference" class="md-nav__link">
-    Configuration file reference
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#spec-key-detail" class="md-nav__link">
-    spec Key Detail
-  </a>
-  
-    <nav class="md-nav" aria-label="spec Key Detail">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#specservice" class="md-nav__link">
-    spec.service
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#specpersistence" class="md-nav__link">
-    spec.persistence
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#k0s-configuration" class="md-nav__link">
     K0s configuration
   </a>
@@ -792,8 +773,7 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">#</a></h1>
-<h2 id="configuration-file-reference">Configuration file reference<a class="headerlink" href="#configuration-file-reference" title="Permanent link">#</a></h2>
-<p>The default k0smotron configuration file is a YAML file that contains the following values:</p>
+<p>K0smotron managed control planes are managed using custom resource objects.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -809,98 +789,10 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
 </code></pre></div>
-<h2 id="spec-key-detail"><code>spec</code> Key Detail<a class="headerlink" href="#spec-key-detail" title="Permanent link">#</a></h2>
-<table>
-<thead>
-<tr>
-<th>Element</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>replicas</code></td>
-<td>Replicas is the desired number of replicas of the k0s control planes. If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.</td>
-</tr>
-<tr>
-<td><code>k0sImage</code></td>
-<td>The k0s image to be deployed.</td>
-</tr>
-<tr>
-<td><code>K0sVersion</code></td>
-<td>The k0s version to be deployed.</td>
-</tr>
-<tr>
-<td><code>externalAddress</code></td>
-<td>ExternalAddress defines k0s external address. See <a href="https://docs.k0sproject.io/stable/configuration/#specapi">https://docs.k0sproject.io/stable/configuration/#specapi</a></td>
-</tr>
-<tr>
-<td><code>service</code></td>
-<td><code>Service</code> defines the service configuration.</td>
-</tr>
-<tr>
-<td><code>persistence</code></td>
-<td><code>Persistence</code> defines the persistence configuration.</td>
-</tr>
-<tr>
-<td><code>kineDataSourceURL</code></td>
-<td>Defines the kine datasource URL. Required for HA controlplane setup. Must be set if replicas &gt; 1.</td>
-</tr>
-<tr>
-<td><code>k0sConfig</code></td>
-<td>Defines k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. More info: https://docs.k0sproject.io/stable/configuration/</td>
-</tr>
-</tbody>
-</table>
-<h3 id="specservice"><code>spec.service</code><a class="headerlink" href="#specservice" title="Permanent link">#</a></h3>
-<table>
-<thead>
-<tr>
-<th>Element</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>type</code></td>
-<td>Service type. Possible values: <code>NodePort</code>,<code>LoadBalancer</code></td>
-</tr>
-<tr>
-<td><code>apiPort</code></td>
-<td>Defines the kubernetes API port.</td>
-</tr>
-<tr>
-<td><code>konnectivityPort</code></td>
-<td>Defines the konnectivity port.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="specpersistence"><code>spec.persistence</code><a class="headerlink" href="#specpersistence" title="Permanent link">#</a></h3>
-<table>
-<thead>
-<tr>
-<th>Element</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>type</code></td>
-<td>Persistence type. Possible values: <code>emptyDir</code>,<code>hostPath</code>,<code>pvc</code></td>
-</tr>
-<tr>
-<td><code>hostPath</code></td>
-<td>Defines the host path configuration. Will be used as is in case of <code>.spec.persistence.type</code> is <code>hostPath</code>.</td>
-</tr>
-<tr>
-<td><code>persistentVolumeClaim</code></td>
-<td>Defines the PVC configuration. Will be used as is in case of <code>.spec.persistence.type</code> is <code>pvc</code>.</td>
-</tr>
-</tbody>
-</table>
+<p>For full reference of the fields check out the <a href="../resource-reference/#cluster">reference docs</a>.</p>
 <h2 id="k0s-configuration">K0s configuration<a class="headerlink" href="#k0s-configuration" title="Permanent link">#</a></h2>
-<p>K0smotron allows you to configure k0s via <code>spec.k0sConfig</code> field. If empty, will be used default configuration. 
-More info about the k0s config: https://docs.k0sproject.io/stable/configuration/ </p>
+<p>K0smotron allows you to configure k0s via <code>spec.k0sConfig</code> field. If empty, will be used default configuration.</p>
+<p>Refer to <a href="https://docs.k0sproject.io/stable/configuration/">k0s docs</a> for a reference on k0s configuration.</p>
 <p><strong>Note</strong>: some fields will be overwritten by k0smotron. K0smotron will set the following fields:</p>
 <ul>
 <li><code>spec.k0sConfig.spec.api.externalAddress</code> will be set to the value of <code>spec.externalAddress</code> if <code>spec.externalAddress</code> is set. 

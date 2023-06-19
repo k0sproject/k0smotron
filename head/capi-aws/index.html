@@ -704,6 +704,55 @@ You are not currently viewing the documentation for the current stable release o
   
 
     
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/" class="md-nav__link">
+        Custom resources
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -792,7 +841,7 @@ You are not currently viewing the documentation for the current stable release o
 <div class="admonition note">
 <p class="admonition-title">k0smotron is currently only able to work with <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html">externally managed</a> cluster infrastructure.</p>
 <p>This is because in CAPA there is no way to disable it to provision all control plane related infrastructure (VPC, ELB, etc.).
-This also renders k0smotron unable to dynamically edit the <code>AWSCluster</code> API endpoint details. Make sure you VPC and subnets you are planning to use full fill the <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites">needed prerequisites</a>.</p>
+This also renders k0smotron unable to dynamically edit the <code>AWSCluster</code> API endpoint details. Make sure your VPC and subnets you are planning to use fullfill the <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites">needed prerequisites</a>.</p>
 </div>
 <p>Here is an example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
