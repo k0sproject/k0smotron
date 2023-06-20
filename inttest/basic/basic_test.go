@@ -157,7 +157,12 @@ metadata:
 					"name": "configmap",
 					"configMap": { "name": "manifest-cm" }
 				}
-			]
+			],
+			"k0sConfig": {
+				"apiVersion": "k0s.k0sproject.io/v1beta1",
+				"kind": "ClusterConfig",
+				"spec": {}
+			}
 		}
 	  }
 `)

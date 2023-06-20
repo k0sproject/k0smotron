@@ -68,6 +68,7 @@ type ClusterSpec struct {
 	// k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 	// If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
 	//+kubebuilder:validation:Optional
+	//+kubebuilder:pruning:PreserveUnknownFields
 	K0sConfig *unstructured.Unstructured `json:"k0sConfig,omitempty"`
 	// CertificateRefs defines the certificate references.
 	CertificateRefs []CertificateRef `json:"certificateRefs,omitempty"`

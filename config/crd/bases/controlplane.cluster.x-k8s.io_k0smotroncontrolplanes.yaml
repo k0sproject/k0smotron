@@ -68,6 +68,7 @@ spec:
                   fields will be overwritten by k0smotron. If empty, will be used
                   default configuration. @see https://docs.k0sproject.io/stable/configuration/
                 type: object
+                x-kubernetes-preserve-unknown-fields: true
               k0sImage:
                 default: k0sproject/k0s
                 description: K0sImage defines the k0s image to be deployed. If empty
