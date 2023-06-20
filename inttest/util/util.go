@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
@@ -137,7 +139,12 @@ func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namesp
 // GetKMCClientSet returns a kubernetes clientset for the cluster given
 // the name and the namespace of the cluster.k0smotron.io
 func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string, port int) (*kubernetes.Clientset, error) {
-	kubeConf, err := kc.CoreV1().Secrets(namespace).Get(ctx, fmt.Sprintf("%s-kubeconfig", name), metav1.GetOptions{})
+	secretName := fmt.Sprintf("%s-kubeconfig", name)
+	// Wait first to see the secret exists
+	if err := WaitForSecret(ctx, kc, secretName, namespace); err != nil {
+		return nil, err
+	}
+	kubeConf, err := kc.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +176,10 @@ func GetNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) 
 }
 
 func WaitForSecret(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) error {
-	return common.Poll(ctx, func(ctx context.Context) (done bool, err error) {
+	// Use apimachinery wait directly as the k0s common polls bit too much and sometimes it results into client side throttling
+	// Since it's marked deprecated in a wrong way, there's no replacement for it yet, we'll disable the linter for now
+	// nolint:staticcheck
+	return wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		secret, err := kc.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 
 		if err != nil && !apierrors.IsNotFound(err) {
