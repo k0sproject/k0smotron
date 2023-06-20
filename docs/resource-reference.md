@@ -12,6 +12,8 @@ Resource Types:
 
 - [K0sWorkerConfig](#k0sworkerconfig)
 
+- [K0sWorkerConfigTemplate](#k0sworkerconfigtemplate)
+
 
 
 
@@ -250,6 +252,264 @@ JoinTokenSecretRef is a reference to a secret that contains the join token. This
           Ready indicates the Bootstrapdata field is ready to be consumed<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+## K0sWorkerConfigTemplate
+<sup><sup>[↩ Parent](#bootstrapclusterx-k8siov1beta1 )</sup></sup>
+
+
+
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>bootstrap.cluster.x-k8s.io/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>K0sWorkerConfigTemplate</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplate)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplate">template</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec.template
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespec)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>metadata</b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec.template.spec
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplate)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args specifies extra arguments to be passed to k0s worker. See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>downloadURL</b></td>
+        <td>string</td>
+        <td>
+          DownloadURL specifies the URL to download k0s binary from. If specified the version field is ignored and what ever version is downloaded from the URL is used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecfilesindex">files</a></b></td>
+        <td>[]object</td>
+        <td>
+          Files specifies extra files to be passed to user_data upon creation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecjointokensecretref">joinTokenSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          JoinTokenSecretRef is a reference to a secret that contains the join token. This should be only set in the case you want to use a pre-generated join token.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>postStartCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PostStartCommands specifies commands to be run after starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preInstalledK0s</b></td>
+        <td>boolean</td>
+        <td>
+          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preStartCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec.template.spec.files[index]
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespec)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>permissions</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec.template.spec.joinTokenSecretRef
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespec)</sup></sup>
+
+
+
+JoinTokenSecretRef is a reference to a secret that contains the join token. This should be only set in the case you want to use a pre-generated join token.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the secret that contains the join token<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
