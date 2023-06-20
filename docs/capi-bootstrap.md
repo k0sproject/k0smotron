@@ -40,7 +40,7 @@ Check the [examples](capi-examples.md) pages for more detailed examples how k0sm
 
 For reference on what can be configured via `K0sWorkerConfig` see the [reference docs](resource-reference.md#bootstrapclusterx-k8siov1beta1).
 
-## MachineDeployments, ..Sets etc.
+## MachineDeployments
 
 To use k0smotron as Bootstrap provider for `MachineDeployment`s and other such multi-machine controller you can use `K0sWorkerConfigTemplate` type:
 
