@@ -70,6 +70,10 @@ spec:
         - /manager
         args:
         - --leader-elect
+        env:
+          # Needed to make RemoteMachine provisioner to skip SSH key validation
+          - name: SSH_KNOWN_HOSTS
+            value: ""
         image: controller
         imagePullPolicy: IfNotPresent
         name: manager

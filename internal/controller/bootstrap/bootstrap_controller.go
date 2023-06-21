@@ -95,6 +95,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		log.Error(err, "Failed to get owner")
 		return ctrl.Result{}, err
 	}
+
 	if configOwner == nil {
 		log.Info("Owner is nil, waiting until it is set")
 		return ctrl.Result{}, nil
@@ -156,7 +157,11 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	commands := config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
-	commands = append(commands, installCmd, "k0s start")
+	startCmd, err := getStartCommand("worker") // The bootstrap controller only supports worker nodes currently
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	commands = append(commands, installCmd, startCmd)
 	commands = append(commands, config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
 	// https://cluster-api.sigs.k8s.io/developer/providers/bootstrap.html#sentinel-file
@@ -218,6 +223,22 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	log.Info("Reconciled succesfully")
 
 	return ctrl.Result{}, nil
+}
+
+const startCommandTemplate = `(command -v systemctl > /dev/null 2>&1 && systemctl start %s) || (command -v rc-service > /dev/null 2>&1 && rc-service %s start) || (echo "Not a supported init system"; false)`
+
+const ctrlService = "k0scontroller"
+const workerService = "k0sworker"
+
+func getStartCommand(role string) (string, error) {
+	switch role {
+	case "controller":
+		return fmt.Sprintf(startCommandTemplate, ctrlService, ctrlService), nil
+	case "worker":
+		return fmt.Sprintf(startCommandTemplate, workerService, workerService), nil
+	default:
+		return "", fmt.Errorf("unknown role %s", role)
+	}
 }
 
 func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
