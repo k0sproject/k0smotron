@@ -75,10 +75,11 @@ func (s *HAControllerSecretSuite) TestK0sGetsUp() {
 	defer fw.Close()
 
 	<-fw.ReadyChan
-
-	s.T().Log("waiting for node to be ready")
+	s.T().Log("portforward ready")
+	s.T().Log("getting child clientset")
 	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test-secret", "kmc-test", 30443)
 	s.Require().NoError(err)
+	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 }
 
