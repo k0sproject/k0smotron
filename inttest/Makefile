@@ -32,3 +32,5 @@ $(smoketests): ../k0smotron-image-bundle.tar ../install.yaml .footloose-alpine.s
 
 clean:
 	rm -rf .*.stamp
+
+check-monitoring: TIMEOUT=7m

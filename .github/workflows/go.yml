@@ -74,6 +74,7 @@ jobs:
           - check-ha-controller
           - check-ha-controller-secret
           - check-jointoken
+          - check-monitoring
 
     steps:
       - name: Check out code into the Go module directory
@@ -92,7 +93,7 @@ jobs:
       - name: Run inttest
         run: |
           make -C inttest ${{ matrix.smoke-suite }}
-  
+
   capi-smokes:
     name: Cluster API smoke tests
     needs: build
@@ -120,14 +121,14 @@ jobs:
         run: |
           docker network create kind --opt com.docker.network.bridge.enable_ip_masquerade=true
 
-      
+
       - name: Download kind
         uses: supplypike/setup-bin@v3
         with:
           name: kind
           version: v0.19.0
           uri: https://github.com/kubernetes-sigs/kind/releases/download/v0.19.0/kind-linux-amd64
-          
+
       - name: Setup KinD cluster
         run: |
           kind create cluster --config config/samples/capi/docker/kind.yaml
@@ -154,4 +155,3 @@ jobs:
           kind get kubeconfig > kind.conf
           export KUBECONFIG=$(realpath kind.conf)
           KEEP_AFTER_TEST=true make -C inttest check-capi-docker
-      

@@ -37,11 +37,12 @@ func PodExecCmdOutput(ctx context.Context, client kubernetes.Interface, config *
 	}
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(podName).Namespace(namespace).SubResource("exec")
 	option := &v1.PodExecOptions{
-		Command: cmd,
-		Stdin:   false,
-		Stdout:  true,
-		Stderr:  true,
-		TTY:     false,
+		Command:   cmd,
+		Stdin:     false,
+		Stdout:    true,
+		Stderr:    true,
+		TTY:       false,
+		Container: "controller",
 	}
 	req.VersionedParams(option, scheme.ParameterCodec)
 	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())

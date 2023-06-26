@@ -11,3 +11,4 @@ smoketests := \
     check-ha-controller-secret \
     check-jointoken \
     check-capi-docker \
+    check-monitoring \

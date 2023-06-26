@@ -100,6 +100,13 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	if kmc.Spec.EnableMonitoring {
+		if err := r.reconcileMonitoringCM(ctx, kmc); err != nil {
+			r.updateStatus(ctx, kmc, "Failed reconciling prometheus configmap")
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		}
+	}
+
 	logger.Info("Reconciling statefulset")
 	if err := r.reconcileStatefulSet(ctx, kmc); err != nil {
 		r.updateStatus(ctx, kmc, fmt.Sprintf("Failed reconciling statefulset, %+v", err))
