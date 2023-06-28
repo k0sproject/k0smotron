@@ -70,7 +70,9 @@ manifests: $(manifests_targets) ## Generate WebhookConfiguration, ClusterRole an
 
 ### generate
 generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
-api/k0smotron.io/v1beta1/zz_generated.deepcopy.go: $(CONTROLLER_GEN)
+generate_targets += api/bootstrap/v1beta1/zz_generated.deepcopy.go
+generate_targets += api/controlplane/v1beta1/zz_generated.deepcopy.go
+$(generate_targets): $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 generate: $(generate_targets) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.

@@ -179,6 +179,12 @@ kind: K0smotronControlPlane
 metadata:
   name: docker-test
 spec:
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerMachineTemplate
+      name: docker-machine-template-1
+      namespace: default
   k0sVersion: v1.27.2-k0s.0
   persistence:
     type: emptyDir
@@ -227,6 +233,15 @@ spec:
   files:
     - path: /tmp/test-file
       content: test-file
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-test-template-0
+  namespace: default
+spec:
+  template:
+    spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
