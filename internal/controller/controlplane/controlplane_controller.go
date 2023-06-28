@@ -222,7 +222,7 @@ func (c *Controller) reconcile(ctx context.Context, cluster *clusterv1.Cluster, 
 				},
 			},
 		},
-		Spec: kcp.Spec,
+		Spec: kcp.Spec.ClusterSpec,
 	}
 
 	if err := c.Client.Patch(ctx, &kcluster, client.Apply, &client.PatchOptions{
