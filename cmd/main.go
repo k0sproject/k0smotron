@@ -145,14 +145,33 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 		os.Exit(1)
 	}
+	if err = (&bootstrap.ControlPlaneController{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		ClientSet:  clientSet,
+		RESTConfig: restConfig,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
+		os.Exit(1)
+	}
 
-	if err = (&controlplane.Controller{
+	if err = (&controlplane.K0smotronController{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		ClientSet:  clientSet,
 		RESTConfig: restConfig,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "K0smotronControlPlane")
+		os.Exit(1)
+	}
+
+	if err = (&controlplane.K0sController{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		ClientSet:  clientSet,
+		RESTConfig: restConfig,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "K0sController")
 		os.Exit(1)
 	}
 
