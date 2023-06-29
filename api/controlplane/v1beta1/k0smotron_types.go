@@ -18,9 +18,7 @@ package v1beta1
 
 import (
 	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 const K0smotronControlPlaneFinalizer = "k0smotron.controlplane.cluster.x-k8s.io"
@@ -36,25 +34,9 @@ func init() {
 type K0smotronControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              K0smotronControlPlaneSpec `json:"spec,omitempty"`
+	Spec              kmapi.ClusterSpec `json:"spec,omitempty"`
 
 	Status K0smotronControlPlaneStatus `json:"status,omitempty"`
-}
-
-type K0smotronControlPlaneSpec struct {
-	kmapi.ClusterSpec `json:",inline"`
-	MachineTemplate   *K0smotronControlPlaneMachineTemplate `json:"machineTemplate,omitempty"`
-}
-
-type K0smotronControlPlaneMachineTemplate struct {
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	// +optional
-	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
-
-	// InfrastructureRef is a required reference to a custom resource
-	// offered by an infrastructure provider.
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
 }
 
 // +kubebuilder:object:root=true
