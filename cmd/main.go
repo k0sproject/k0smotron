@@ -146,7 +146,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controlplane.Controller{
+	if err = (&controlplane.K0smotronController{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		ClientSet:  clientSet,

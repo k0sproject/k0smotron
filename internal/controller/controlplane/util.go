@@ -12,11 +12,11 @@ package controlplane
 //	"strings"
 //)
 //
-//func (c *Controller) GenerateBootstapSecret() {
+//func (c *K0smotronController) GenerateBootstapSecret() {
 //
 //}
 //
-//func (c *Controller) GenerateMachine(ctx context.Context, name string, kcp *cpv1beta1.K0smotronControlPlane) (*unstructured.Unstructured, error) {
+//func (c *K0smotronController) GenerateMachine(ctx context.Context, name string, kcp *cpv1beta1.K0smotronControlPlane) (*unstructured.Unstructured, error) {
 //	unstructuredMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
 //	if err != nil {
 //		return nil, err
@@ -63,7 +63,7 @@ package controlplane
 //	return machine, nil
 //}
 //
-//func (c *Controller) getMachineTemplate(ctx context.Context, kcp *cpv1beta1.K0smotronControlPlane) (*unstructured.Unstructured, error) {
+//func (c *K0smotronController) getMachineTemplate(ctx context.Context, kcp *cpv1beta1.K0smotronControlPlane) (*unstructured.Unstructured, error) {
 //	infRef := kcp.Spec.MachineTemplate.InfrastructureRef
 //
 //	var machineTemplate unstructured.Unstructured

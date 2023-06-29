@@ -45,7 +45,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type Controller struct {
+type K0smotronController struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	ClientSet  *kubernetes.Clientset
@@ -63,7 +63,7 @@ type Scope struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;pacth
 
-func (c *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
+func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
 	log.Info("Reconciling K0smotronControlPlane")
@@ -131,7 +131,7 @@ func (c *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 }
 
 // watchExternalAddress watches the external address of the control plane and updates the status accordingly
-func (c *Controller) waitExternalAddress(ctx context.Context, cluster *clusterv1.Cluster, _ *cpv1beta1.K0smotronControlPlane) error {
+func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *clusterv1.Cluster, _ *cpv1beta1.K0smotronControlPlane) error {
 	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 	log.Info("Waiting for external address to be set")
 	err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 3*time.Minute, true, func(ctx context.Context) (done bool, err error) {
@@ -190,7 +190,7 @@ func (c *Controller) waitExternalAddress(ctx context.Context, cluster *clusterv1
 	return nil
 }
 
-func (c *Controller) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) (ctrl.Result, error) {
+func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) (ctrl.Result, error) {
 	kcp.Spec.CertificateRefs = []kapi.CertificateRef{
 		{
 			Type: string(secret.ClusterCA),
@@ -234,13 +234,13 @@ func (c *Controller) reconcile(ctx context.Context, cluster *clusterv1.Cluster, 
 	return ctrl.Result{}, nil
 }
 
-func (c *Controller) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) error {
+func (c *K0smotronController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
 	return certificates.LookupOrGenerate(ctx, c.Client, util.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0smotronControlPlane")))
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (c *Controller) SetupWithManager(mgr ctrl.Manager) error {
+func (c *K0smotronController) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cpv1beta1.K0smotronControlPlane{}).
 		Complete(c)
