@@ -175,15 +175,20 @@ spec:
     name: docker-test
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-kind: K0smotronControlPlane
+kind: K0sControlPlane
 metadata:
   name: docker-test
 spec:
-  k0sVersion: v1.27.2-k0s.0
-  persistence:
-    type: emptyDir
-  service:
-    type: NodePort
+  
+  k0sConfigSpec:
+    k0sVersion: v1.27.2-k0s.0
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerMachineTemplate
+      name: docker-machine-template
+      namespace: default
+  
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
@@ -198,7 +203,6 @@ metadata:
   name:  docker-test-0
   namespace: default
 spec:
-  version: "v1.27.1"
   clusterName: docker-test
   bootstrap:
     configRef:
@@ -227,6 +231,15 @@ spec:
   files:
     - path: /tmp/test-file
       content: test-file
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-test-template
+  namespace: default
+spec:
+  template:
+    spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
