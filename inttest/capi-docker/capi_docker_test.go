@@ -198,6 +198,7 @@ metadata:
   name:  docker-test-0
   namespace: default
 spec:
+  version: "v1.27.1"
   clusterName: docker-test
   bootstrap:
     configRef:

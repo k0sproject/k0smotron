@@ -132,6 +132,13 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 				}},
 		}}
 
+	if kmc.Spec.EnableMonitoring {
+		if kmc.Spec.Persistence.Type == "" {
+			kmc.Spec.Persistence.Type = "emptyDir"
+		}
+		r.addMonitoringStack(kmc, &statefulSet)
+	}
+
 	if kmc.Spec.KineDataSourceSecretName != "" {
 		statefulSet.Spec.Template.Spec.Containers[0].EnvFrom = append(statefulSet.Spec.Template.Spec.Containers[0].EnvFrom, v1.EnvFromSource{
 			SecretRef: &v1.SecretEnvSource{
@@ -279,6 +286,79 @@ func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet)
 			{
 				Name:      kmc.GetVolumeName(),
 				MountPath: "/var/lib/k0s",
+			},
+		},
+	})
+}
+
+func (r *ClusterReconciler) addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
+	nginxConfCMName := kmc.GetMonitoringConfigMapName() + "-nginx"
+	statefulSet.Spec.Template.Spec.Containers = append(statefulSet.Spec.Template.Spec.Containers, v1.Container{
+		Name:            "monitoring-agent",
+		Image:           "quay.io/k0sproject/prometheus:v2.44.0",
+		ImagePullPolicy: v1.PullIfNotPresent,
+		Command:         []string{"prometheus", "--config.file=/prometheus/prometheus.yml"},
+		Args:            []string{"--storage.tsdb.retention.size=200MB"},
+		Ports: []v1.ContainerPort{{
+			Name:          "prometheus",
+			Protocol:      v1.ProtocolTCP,
+			ContainerPort: int32(9090),
+		}},
+		VolumeMounts: []v1.VolumeMount{{
+			Name:      kmc.GetVolumeName(),
+			MountPath: "/var/lib/k0s",
+		}, {
+			Name:      kmc.GetMonitoringConfigMapName(),
+			MountPath: "/prometheus/prometheus.yml",
+			SubPath:   "prometheus.yml",
+		}},
+	}, v1.Container{
+		Name:            "monitoring-proxy",
+		Image:           "nginx:1.19.10",
+		ImagePullPolicy: v1.PullIfNotPresent,
+		Ports: []v1.ContainerPort{{
+			Name:          "nginx",
+			Protocol:      v1.ProtocolTCP,
+			ContainerPort: int32(8090),
+		}},
+		VolumeMounts: []v1.VolumeMount{{
+			Name:      nginxConfCMName,
+			MountPath: "/etc/nginx/nginx.conf",
+			SubPath:   "nginx.conf",
+		}},
+	})
+
+	statefulSet.Spec.Template.Annotations = map[string]string{
+		"prometheus.io/scrape": "true",
+		"prometheus.io/port":   "8090",
+		"prometheus.io/path":   "/metrics",
+	}
+	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
+		Name: kmc.GetMonitoringConfigMapName(),
+		VolumeSource: v1.VolumeSource{
+			ConfigMap: &v1.ConfigMapVolumeSource{
+				LocalObjectReference: v1.LocalObjectReference{
+					Name: kmc.GetMonitoringConfigMapName(),
+				},
+				DefaultMode: &entrypointDefaultMode,
+				Items: []v1.KeyToPath{{
+					Key:  "prometheus.yml",
+					Path: "prometheus.yml",
+				}},
+			},
+		},
+	}, v1.Volume{
+		Name: nginxConfCMName,
+		VolumeSource: v1.VolumeSource{
+			ConfigMap: &v1.ConfigMapVolumeSource{
+				LocalObjectReference: v1.LocalObjectReference{
+					Name: kmc.GetMonitoringConfigMapName(),
+				},
+				DefaultMode: &entrypointDefaultMode,
+				Items: []v1.KeyToPath{{
+					Key:  "nginx.conf",
+					Path: "nginx.conf",
+				}},
 			},
 		},
 	})

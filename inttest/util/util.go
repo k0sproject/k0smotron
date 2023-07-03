@@ -24,7 +24,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/k0sproject/k0s/inttest/common"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -39,6 +38,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/k0sproject/k0smotron/internal/exec"
 )
 
 func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
@@ -128,7 +129,7 @@ func CreateResources(ctx context.Context, resources []*unstructured.Unstructured
 }
 
 func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namespace string) (string, error) {
-	output, err := common.PodExecCmdOutput(kc, rc, name, namespace, "k0s token create --role=worker")
+	output, err := exec.PodExecCmdOutput(context.TODO(), kc, rc, name, namespace, "k0s token create --role=worker")
 	if err != nil {
 		return "", fmt.Errorf("failed to get join token: %s", err)
 	}

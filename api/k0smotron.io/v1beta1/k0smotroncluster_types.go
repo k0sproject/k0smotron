@@ -88,6 +88,10 @@ type ClusterSpec struct {
 	// be specified as a single string, e.g. --some-flag=argument
 	//+kubebuilder:validation:Optional
 	ControlPlaneFlags []string `json:"controllerPlaneFlags,omitempty"`
+	// EnableMonitoring enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
+	// them as usual kubernetes pod metrics.
+	//+kubebuilder:validation:Optional
+	EnableMonitoring bool `json:"enableMonitoring,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
@@ -176,6 +180,10 @@ func (kmc *Cluster) GetAdminConfigSecretName() string {
 
 func (kmc *Cluster) GetEntrypointConfigMapName() string {
 	return fmt.Sprintf("kmc-entrypoint-%s-config", kmc.Name)
+}
+
+func (kmc *Cluster) GetMonitoringConfigMapName() string {
+	return fmt.Sprintf("kmc-prometheus-%s-config", kmc.Name)
 }
 
 func (kmc *Cluster) GetConfigMapName() string {
