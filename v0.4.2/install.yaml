@@ -75,6 +75,11 @@ spec:
                 items:
                   type: string
                 type: array
+              enableMonitoring:
+                description: EnableMonitoring enables prometheus sidecar that scrapes
+                  metrics from the child cluster system components and expose them
+                  as usual kubernetes pod metrics.
+                type: boolean
               externalAddress:
                 description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
                   Will be detected automatically for service type LoadBalancer.
@@ -2205,6 +2210,11 @@ spec:
                 items:
                   type: string
                 type: array
+              enableMonitoring:
+                description: EnableMonitoring enables prometheus sidecar that scrapes
+                  metrics from the child cluster system components and expose them
+                  as usual kubernetes pod metrics.
+                type: boolean
               externalAddress:
                 description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
                   Will be detected automatically for service type LoadBalancer.
