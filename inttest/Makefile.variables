@@ -11,5 +11,6 @@ smoketests := \
     check-ha-controller-secret \
     check-jointoken \
     check-capi-docker \
+    check-capi-docker-controlplane \
     check-monitoring \
     check-capi-docker-machinedeployment \

@@ -18,26 +18,20 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/secret"
-
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type K0sController struct {
@@ -47,8 +41,8 @@ type K0sController struct {
 	RESTConfig *rest.Config
 }
 
-// +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=K0sControlPlanes/status,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=K0sControlPlanes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes/status,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;pacth
 
@@ -94,11 +88,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	// 	return ctrl.Result{}, nil
 	// }
 
-	if err = c.ensureCertificates(ctx, cluster, kcp); err != nil {
-		log.Error(err, "Failed to ensure certificates")
-		return ctrl.Result{}, err
-	}
-
 	res, err = c.reconcile(ctx, cluster, kcp)
 	if err != nil {
 		return res, err
@@ -116,38 +105,69 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 }
 
 func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
-	kcluster := kapi.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: kapi.GroupVersion.String(),
-			Kind:       "Cluster",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      kcp.Name,
-			Namespace: kcp.Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: cpv1beta1.GroupVersion.String(),
-					Kind:       "K0sControlPlane",
-					Name:       kcp.Name,
-					UID:        kcp.UID,
-				},
-			},
-		},
-		Spec: kcp.Spec,
-	}
+	//controllerConfig := cpv1beta1.K0sControllerConfig{
+	//	TypeMeta: metav1.TypeMeta{
+	//		APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+	//		Kind:       "K0sControllerConfig",
+	//	},
+	//	ObjectMeta: metav1.ObjectMeta{
+	//		Name:      kcp.Name,
+	//		Namespace: kcp.Namespace,
+	//		OwnerReferences: []metav1.OwnerReference{
+	//			{
+	//				APIVersion: cpv1beta1.GroupVersion.String(),
+	//				Kind:       "K0sControlPlane",
+	//				Name:       kcp.Name,
+	//				UID:        kcp.UID,
+	//			},
+	//		},
+	//	},
+	//	Spec: kcp.Spec.K0sConfigSpec,
+	//}
+	//
+	//if err := c.Client.Patch(ctx, &controllerConfig, client.Apply, &client.PatchOptions{
+	//	FieldManager: "k0smotron",
+	//}); err != nil {
+	//	return ctrl.Result{}, err
+	//}
 
-	if err := c.Client.Patch(ctx, &kcluster, client.Apply, &client.PatchOptions{
-		FieldManager: "k0smotron",
-	}); err != nil {
+	err := c.reconcileMachines(ctx, kcp)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (c *K0sController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
-	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
-	return certificates.LookupOrGenerate(ctx, c.Client, util.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")))
+func (c *K0sController) reconcileMachines(ctx context.Context, kcp *cpv1beta1.K0sControlPlane) error {
+	// TODO: delete machines that are not needed anymore (eg we scale down)
+	for i := 0; i < int(kcp.Spec.Replicas); i++ {
+		name := machineName(kcp.Name, i)
+
+		machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, kcp)
+		if err != nil {
+			return err
+		}
+
+		infraRef := corev1.ObjectReference{
+			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
+			Kind:       machineFromTemplate.GetKind(),
+			Name:       machineFromTemplate.GetName(),
+			Namespace:  kcp.Namespace,
+		}
+
+		//machine := c.generateMachine(ctx, name, kcp, infraRef)
+		err = c.createMachine(ctx, name, kcp, infraRef)
+		if err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+func machineName(base string, i int) string {
+	return fmt.Sprintf("%s-%d", base, i)
 }
 
 // SetupWithManager sets up the controller with the Manager.

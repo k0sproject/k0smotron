@@ -79,6 +79,30 @@ rules:
 - apiGroups:
   - controlplane.cluster.x-k8s.io
   resources:
+  - k0scontrolplanes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - k0scontrolplanes/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
   - k0smotroncontrolplanes
   verbs:
   - create
