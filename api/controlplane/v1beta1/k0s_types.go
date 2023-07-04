@@ -111,3 +111,24 @@ type K0sControlPlaneStatus struct {
 	Inititalized                bool `json:"initialized"`
 	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
 }
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+
+type K0sControllerConfig struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   K0sConfigSpec             `json:"spec,omitempty"`
+	Status K0sControllerConfigStatus `json:"status,omitempty"`
+}
+
+type K0sControllerConfigStatus struct {
+	// Ready indicates the Bootstrapdata field is ready to be consumed
+	Ready bool `json:"ready,omitempty"`
+
+	// DataSecretName is the name of the secret that stores the bootstrap data script.
+	// +optional
+	DataSecretName *string `json:"dataSecretName,omitempty"`
+}
