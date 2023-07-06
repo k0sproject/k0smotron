@@ -174,11 +174,21 @@ spec:
     kind: DockerCluster
     name: docker-test
 ---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-test-cp-template
+  namespace: default
+spec:
+  template:
+    spec: {}
+---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
 metadata:
   name: docker-test
 spec:
+  replicas: 3
   k0sConfigSpec: {}
   machineTemplate:
     infrastructureRef:
@@ -194,16 +204,6 @@ metadata:
   name: docker-test
   namespace: default
 spec:
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
-metadata:
-  name: docker-test-cp-template
-  namespace: default
-spec:
-  template:
-    spec: {}
-
 `
 
 // ---

@@ -2,7 +2,6 @@ package controlplane
 
 import (
 	"context"
-	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
@@ -28,7 +27,12 @@ func (c *K0sController) createMachine(ctx context.Context, name string, kcp *cpv
 }
 
 func (c *K0sController) generateMachine(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) *clusterv1.Machine {
+	v := "v1.27.1"
 	return &clusterv1.Machine{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: clusterv1.GroupVersion.String(),
+			Kind:       "Machine",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: kcp.Namespace,
@@ -47,12 +51,13 @@ func (c *K0sController) generateMachine(ctx context.Context, name string, kcp *c
 			},
 		},
 		Spec: clusterv1.MachineSpec{
+			Version:     &v,
 			ClusterName: kcp.Name,
 			Bootstrap: clusterv1.Bootstrap{
 				ConfigRef: &corev1.ObjectReference{
 					APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
 					Kind:       "K0sControllerConfig",
-					Name:       kcp.Name,
+					Name:       name,
 				},
 			},
 			InfrastructureRef: infraRef,
@@ -113,8 +118,6 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 		Name:       kcp.Name,
 		UID:        kcp.UID,
 	}})
-
-	fmt.Println("!!!!!!!!!!!!!!!!", unstructuredMachineTemplate.GetKind())
 
 	machine.SetAPIVersion(unstructuredMachineTemplate.GetAPIVersion())
 	machine.SetKind(strings.TrimSuffix(unstructuredMachineTemplate.GetKind(), clusterv1.TemplateSuffix))

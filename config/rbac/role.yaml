@@ -33,6 +33,30 @@ rules:
 - apiGroups:
   - bootstrap.cluster.x-k8s.io
   resources:
+  - k0scontrollerconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - bootstrap.cluster.x-k8s.io
+  resources:
+  - k0scontrollerconfigs/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - bootstrap.cluster.x-k8s.io
+  resources:
   - k0sworkerconfigs
   verbs:
   - create
@@ -73,8 +97,12 @@ rules:
   - machines
   - machines/status
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - controlplane.cluster.x-k8s.io
