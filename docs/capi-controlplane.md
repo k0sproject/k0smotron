@@ -22,7 +22,7 @@ spec:
     name: cp-test
 ```
 
-Next we need to provider the configuration for the actual `K0smotronControlPlane`:
+Next we need to provide the configuration for the actual `K0smotronControlPlane`:
 
 ```yaml
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
