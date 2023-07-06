@@ -17,10 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -41,7 +41,7 @@ type K0sControlPlane struct {
 }
 
 type K0sControlPlaneSpec struct {
-	K0sConfigSpec   K0sConfigSpec                   `json:"k0sConfigSpec"`
+	K0sConfigSpec   bootstrapv1.K0sConfigSpec       `json:"k0sConfigSpec"`
 	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate"`
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
@@ -52,13 +52,7 @@ type K0sControlPlaneSpec struct {
 	K0sVersion string `json:"k0sVersion,omitempty"`
 }
 
-type K0sConfigSpec struct {
-	// K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
-	// If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
-	//+kubebuilder:validation:Optional
-	//+kubebuilder:pruning:PreserveUnknownFields
-	K0s *unstructured.Unstructured `json:"k0s,omitempty"`
-
+type K0sBootstrapConfigSpec struct {
 	// Files specifies extra files to be passed to user_data upon creation.
 	// +kubebuilder:validation:Optional
 	Files []cloudinit.File `json:"files,omitempty"`
@@ -110,25 +104,4 @@ type K0sControlPlaneStatus struct {
 	ControlPlaneReady           bool `json:"controlPlaneReady"`
 	Inititalized                bool `json:"initialized"`
 	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
-}
-
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
-
-type K0sControllerConfig struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   K0sConfigSpec             `json:"spec,omitempty"`
-	Status K0sControllerConfigStatus `json:"status,omitempty"`
-}
-
-type K0sControllerConfigStatus struct {
-	// Ready indicates the Bootstrapdata field is ready to be consumed
-	Ready bool `json:"ready,omitempty"`
-
-	// DataSecretName is the name of the secret that stores the bootstrap data script.
-	// +optional
-	DataSecretName *string `json:"dataSecretName,omitempty"`
 }

@@ -19,7 +19,9 @@ package controlplane
 import (
 	"context"
 	"fmt"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -105,32 +107,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 }
 
 func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
-	//controllerConfig := cpv1beta1.K0sControllerConfig{
-	//	TypeMeta: metav1.TypeMeta{
-	//		APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
-	//		Kind:       "K0sControllerConfig",
-	//	},
-	//	ObjectMeta: metav1.ObjectMeta{
-	//		Name:      kcp.Name,
-	//		Namespace: kcp.Namespace,
-	//		OwnerReferences: []metav1.OwnerReference{
-	//			{
-	//				APIVersion: cpv1beta1.GroupVersion.String(),
-	//				Kind:       "K0sControlPlane",
-	//				Name:       kcp.Name,
-	//				UID:        kcp.UID,
-	//			},
-	//		},
-	//	},
-	//	Spec: kcp.Spec.K0sConfigSpec,
-	//}
-	//
-	//if err := c.Client.Patch(ctx, &controllerConfig, client.Apply, &client.PatchOptions{
-	//	FieldManager: "k0smotron",
-	//}); err != nil {
-	//	return ctrl.Result{}, err
-	//}
-
 	err := c.reconcileMachines(ctx, kcp)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -144,13 +120,18 @@ func (c *K0sController) reconcileMachines(ctx context.Context, kcp *cpv1beta1.K0
 	for i := 0; i < int(kcp.Spec.Replicas); i++ {
 		name := machineName(kcp.Name, i)
 
+		err := c.createBootstrapConfig(ctx, name, kcp)
+		if err != nil {
+			return fmt.Errorf("error creating bootstrap config: %w", err)
+		}
+
 		machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, kcp)
 		if err != nil {
-			return err
+			return fmt.Errorf("error creating machine from template: %w", err)
 		}
 
 		infraRef := corev1.ObjectReference{
-			APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha3",
+			APIVersion: machineFromTemplate.GetAPIVersion(),
 			Kind:       machineFromTemplate.GetKind(),
 			Name:       machineFromTemplate.GetName(),
 			Namespace:  kcp.Namespace,
@@ -159,10 +140,40 @@ func (c *K0sController) reconcileMachines(ctx context.Context, kcp *cpv1beta1.K0
 		//machine := c.generateMachine(ctx, name, kcp, infraRef)
 		err = c.createMachine(ctx, name, kcp, infraRef)
 		if err != nil {
-			return err
+			return fmt.Errorf("error creating machine: %w", err)
 		}
 
 	}
+	return nil
+}
+
+func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
+	controllerConfig := bootstrapv1.K0sControllerConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+			Kind:       "K0sControllerConfig",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: kcp.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: cpv1beta1.GroupVersion.String(),
+					Kind:       "K0sControlPlane",
+					Name:       kcp.Name,
+					UID:        kcp.UID,
+				},
+			},
+		},
+		Spec: kcp.Spec.K0sConfigSpec,
+	}
+
+	if err := c.Client.Patch(ctx, &controllerConfig, client.Apply, &client.PatchOptions{
+		FieldManager: "k0smotron",
+	}); err != nil {
+		return fmt.Errorf("error patching K0sControllerConfig: %w", err)
+	}
+
 	return nil
 }
 
