@@ -791,9 +791,9 @@ You are not currently viewing the documentation for the current stable release o
 </code></pre></div>
 <p>For full reference of the fields check out the <a href="../resource-reference/#cluster">reference docs</a>.</p>
 <h2 id="k0s-configuration">K0s configuration<a class="headerlink" href="#k0s-configuration" title="Permanent link">#</a></h2>
-<p>K0smotron allows you to configure k0s via <code>spec.k0sConfig</code> field. If empty, will be used default configuration.</p>
+<p>K0smotron allows you to configure k0s via <code>spec.k0sConfig</code> field. If empty, the default configuration will be used.</p>
 <p>Refer to <a href="https://docs.k0sproject.io/stable/configuration/">k0s docs</a> for a reference on k0s configuration.</p>
-<p><strong>Note</strong>: some fields will be overwritten by k0smotron. K0smotron will set the following fields:</p>
+<p><strong>Note</strong>: Some fields will be overwritten by k0smotron. K0smotron will set the following fields:</p>
 <ul>
 <li><code>spec.k0sConfig.spec.api.externalAddress</code> will be set to the value of <code>spec.externalAddress</code> if <code>spec.externalAddress</code> is set. 
    If not, k0smotron will use load balancer IP or try to detect <code>externalAddress</code> out of nodes IP addresses. </li>
