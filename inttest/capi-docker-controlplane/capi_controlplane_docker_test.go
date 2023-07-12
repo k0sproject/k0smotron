@@ -110,7 +110,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))
-	node, err := kmcKC.CoreV1().Nodes().Get(s.ctx, "docker-test-0", metav1.GetOptions{})
+	node, err := kmcKC.CoreV1().Nodes().Get(s.ctx, "docker-test-worker-0", metav1.GetOptions{})
 	s.Require().NoError(err)
 	s.Require().Equal("v1.27.1+k0s", node.Status.NodeInfo.KubeletVersion)
 	fooLabel, ok := node.Labels["k0sproject.io/foo"]
@@ -118,13 +118,13 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().Equal("bar", fooLabel)
 
 	s.T().Log("verifying cloud-init extras")
-	preStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/pre-start")
+	preStartFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/pre-start")
 	s.Require().NoError(err)
 	s.Require().Equal("pre-start", preStartFile)
-	postStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/post-start")
+	postStartFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/post-start")
 	s.Require().NoError(err)
 	s.Require().Equal("post-start", postStartFile)
-	extraFile, err := getDockerNodeFile("docker-test-0", "/tmp/test-file")
+	extraFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
 }
@@ -167,23 +167,35 @@ spec:
       - 10.128.0.0/12
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    kind: K0smotronControlPlane
+    kind: K0sControlPlane
     name: docker-test
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DockerCluster
     name: docker-test
 ---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-test-cp-template
+  namespace: default
+spec:
+  template:
+    spec: {}
+---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-kind: K0smotronControlPlane
+kind: K0sControlPlane
 metadata:
   name: docker-test
 spec:
-  k0sVersion: v1.27.2-k0s.0
-  persistence:
-    type: emptyDir
-  service:
-    type: NodePort
+  replicas: 1
+  k0sConfigSpec: {}
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerMachineTemplate
+      name: docker-test-cp-template
+      namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
@@ -195,43 +207,43 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
 metadata:
-  name:  docker-test-0
-  namespace: default
+ name:  docker-test-worker-0
+ namespace: default
 spec:
-  version: v1.27.1
-  clusterName: docker-test
-  bootstrap:
-    configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-      kind: K0sWorkerConfig
-      name: docker-test-0
-  infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerMachine
-    name: docker-test-0
+ version: v1.27.1
+ clusterName: docker-test
+ bootstrap:
+   configRef:
+     apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+     kind: K0sWorkerConfig
+     name: docker-test-worker-0
+ infrastructureRef:
+   apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+   kind: DockerMachine
+   name: docker-test-worker-0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: K0sWorkerConfig
 metadata:
-  name: docker-test-0
-  namespace: default
+ name: docker-test-worker-0
+ namespace: default
 spec:
-  # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.27.1+k0s.0
-  args:
-    - --labels=k0sproject.io/foo=bar
-  preStartCommands:
-    - echo -n "pre-start" > /tmp/pre-start
-  postStartCommands:
-    - echo -n "post-start" > /tmp/post-start
-  files:
-    - path: /tmp/test-file
-      content: test-file
+ # version is deliberately different to be able to verify we actually pick it up :)
+ version: v1.27.1+k0s.0
+ args:
+   - --labels=k0sproject.io/foo=bar
+ preStartCommands:
+   - echo -n "pre-start" > /tmp/pre-start
+ postStartCommands:
+   - echo -n "post-start" > /tmp/post-start
+ files:
+   - path: /tmp/test-file
+     content: test-file
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
 metadata:
-  name: docker-test-0
-  namespace: default
+ name: docker-test-worker-0
+ namespace: default
 spec:
 `
