@@ -19,6 +19,11 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	kutil "github.com/k0sproject/k0smotron/internal/util"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"sigs.k8s.io/yaml"
 	"strings"
 	"time"
 
@@ -30,14 +35,15 @@ import (
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
-	kutil "github.com/k0sproject/k0smotron/internal/util"
 	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/secret"
 
+	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -63,13 +69,13 @@ type ControlPlaneController struct {
 // +kubebuilder:rbac:groups=exp.cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets;events;configmaps,verbs=get;list;watch;create;update;patch;delete
 
-func (r *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
+func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig", req.NamespacedName)
 	log.Info("Reconciling K0sControllerConfig")
 
 	// Lookup the config object
 	config := &bootstrapv1.K0sControllerConfig{}
-	if err := r.Get(ctx, req.NamespacedName, config); err != nil {
+	if err := c.Get(ctx, req.NamespacedName, config); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("K0sControllerConfig not found")
 			return ctrl.Result{}, nil
@@ -79,7 +85,7 @@ func (r *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Look up the owner of this config if there is one
-	configOwner, err := bsutil.GetConfigOwner(ctx, r.Client, config)
+	configOwner, err := bsutil.GetConfigOwner(ctx, c.Client, config)
 	if apierrors.IsNotFound(errors.Cause(err)) {
 		// Could not find the owner yet, this is not an error and will rereconcile when the owner gets set.
 		log.Info("Owner not found yet, waiting until it is set")
@@ -97,7 +103,7 @@ func (r *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	log = log.WithValues("kind", configOwner.GetKind(), "version", configOwner.GetResourceVersion(), "name", configOwner.GetName())
 
 	// Lookup the cluster the config owner is associated with
-	cluster, err := capiutil.GetClusterByName(ctx, r.Client, configOwner.GetNamespace(), configOwner.ClusterName())
+	cluster, err := capiutil.GetClusterByName(ctx, c.Client, configOwner.GetNamespace(), configOwner.ClusterName())
 	if err != nil {
 		if errors.Cause(err) == capiutil.ErrNoCluster {
 			log.Info(fmt.Sprintf("%s does not belong to a cluster yet, waiting until it's part of a cluster", configOwner.GetKind()))
@@ -124,9 +130,8 @@ func (r *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	// TODO Check if the secret is already present etc. to bail out early
 
-	log.Info("Finding the token secret")
 	// Get the token from a secret
-	//token, err := r.getK0sToken(ctx, scope)
+	//token, err := c.getK0sToken(ctx, scope)
 	//if err != nil {
 	//	log.Error(err, "Failed to get token")
 	//	return ctrl.Result{}, err
@@ -135,15 +140,35 @@ func (r *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	log.Info("Creating bootstrap data")
 
 	// Create the bootstrap data
-	files := []cloudinit.File{
-		{
-			Path:        "/etc/k0s.token",
-			Permissions: "0644",
-			Content:     "asdf",
-		},
+	files, ca, err := c.createCerts(ctx, scope)
+	if err != nil {
+		log.Error(err, "Failed to create certs")
+		return ctrl.Result{}, err
 	}
 
+	// Create the token using the child cluster client
+	tokenID := kutil.RandomString(6)
+	tokenSecret := kutil.RandomString(16)
+	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
+	tokenFile, err := createToken(tokenID, tokenSecret, token)
+	if err != nil {
+		log.Error(err, "Failed to create token")
+		return ctrl.Result{}, err
+	}
+
+	err = c.createKubeconfig(ctx, scope, ca, token)
+	if err != nil {
+		log.Error(err, "Failed to create kubeconfig")
+		return ctrl.Result{}, err
+	}
+
+	files = append(files, cloudinit.File{
+		Path:        "/var/lib/k0s/manifests/k0smontron/token.yaml",
+		Permissions: "0644",
+		Content:     tokenFile,
+	})
 	files = append(files, config.Spec.Files...)
+
 	downloadCommands := createCPDownloadCommands(config)
 	installCmd := createCPInstallCmd(config)
 
@@ -193,7 +218,7 @@ func (r *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		Type: clusterv1.ClusterSecretType,
 	}
 
-	if err := r.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
+	if err := c.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
 		return ctrl.Result{}, err
 	}
@@ -203,7 +228,7 @@ func (r *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	// Set the status to ready
 	config.Status.Ready = true
 	config.Status.DataSecretName = pointer.String(bootstrapSecret.Name)
-	if err := r.Status().Update(ctx, config); err != nil {
+	if err := c.Status().Update(ctx, config); err != nil {
 		log.Error(err, "Failed to patch config status")
 		return ctrl.Result{}, err
 	}
@@ -213,20 +238,33 @@ func (r *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (r *ControlPlaneController) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
-	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
-		return "", errors.New("control plane endpoint is not set")
-	}
-	childClient, err := kutil.LoadChildClusterKubeClient(ctx, scope.Cluster, r.Client)
+func (c *ControlPlaneController) createCerts(ctx context.Context, scope *Scope) ([]cloudinit.File, *secret.Certificate, error) {
+	var files []cloudinit.File
+	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
+		CertificatesDir: "/var/lib/k0s/pki",
+	})
+	err := certificates.LookupOrGenerate(ctx, c.Client, util.ObjectKey(scope.Cluster), *metav1.NewControllerRef(scope.Cluster, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create child cluster client")
+		return nil, nil, err
+	}
+	ca := certificates.GetByPurpose(secret.ClusterCA)
+	for _, cert := range certificates.AsFiles() {
+		files = append(files, cloudinit.File{
+			Path:        cert.Path,
+			Permissions: "0644",
+			Content:     cert.Content,
+		})
 	}
 
-	// Create the token using the child cluster client
-	tokenID := kutil.RandomString(6)
-	tokenSecret := kutil.RandomString(16)
-	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
-	if err := childClient.Create(ctx, &corev1.Secret{
+	return files, ca, nil
+}
+
+func createToken(tokenID, tokenSecret, token string) (string, error) {
+	bootstrapToken := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("bootstrap-token-%s", tokenID),
 			Namespace: "kube-system",
@@ -242,26 +280,60 @@ func (r *ControlPlaneController) getK0sToken(ctx context.Context, scope *Scope) 
 			"usage-bootstrap-authentication":   "true",
 			"usage-bootstrap-api-worker-calls": "true",
 		},
-	}); err != nil {
-		return "", errors.Wrap(err, "failed to create token secret")
 	}
-
-	certificates := secret.NewCertificatesForWorker("")
-	if err := certificates.Lookup(ctx, r.Client, capiutil.ObjectKey(scope.Cluster)); err != nil {
-		return "", errors.Wrap(err, "failed to lookup CA certificates")
-	}
-	ca := certificates.GetByPurpose(secret.ClusterCA)
-	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port))
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create join token")
-	}
-	return joinToken, nil
+	b, err := yaml.Marshal(bootstrapToken)
+	return string(b), err
 }
 
-func (r *ControlPlaneController) SetupWithManager(mgr ctrl.Manager) error {
+func (c *ControlPlaneController) createKubconfigSecret(ctx context.Context, scope *Scope, ca *secret.Certificate, token string) error {
+	const k0sContextName = "k0s"
+	const userName = "kubelet-bootstrap"
+	kubeconfig, err := clientcmd.Write(clientcmdapi.Config{
+		Clusters: map[string]*clientcmdapi.Cluster{k0sContextName: {
+			Server:                   fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port),
+			CertificateAuthorityData: ca.KeyPair.Cert,
+		}},
+		Contexts: map[string]*clientcmdapi.Context{k0sContextName: {
+			Cluster:  k0sContextName,
+			AuthInfo: userName,
+		}},
+		CurrentContext: k0sContextName,
+		AuthInfos: map[string]*clientcmdapi.AuthInfo{userName: {
+			Token: token,
+		}},
+	})
+	kubeconfigSecret := corev1.Secret{
+		// The dynamic c.Client needs TypeMeta to be set
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      scope.Cluster.Name + "-kubeconfig",
+			Namespace: scope.Cluster.Namespace,
+		},
+		StringData: map[string]string{"value": string(kubeconfig)},
+	}
+
+	if err = ctrl.SetControllerReference(scope.Cluster, &kubeconfigSecret, c.Scheme); err != nil {
+		return err
+	}
+
+	return c.Client.Patch(ctx, &kubeconfigSecret, client.Apply, client.FieldOwner("k0smotron-operator"), client.ForceOwnership)
+}
+
+func (c *ControlPlaneController) createKubeconfig(ctx context.Context, scope *Scope, ca *secret.Certificate, token string) error {
+	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
+		return errors.New("control plane endpoint is not set")
+	}
+
+	return c.createKubconfigSecret(ctx, scope, ca, token)
+}
+
+func (c *ControlPlaneController) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&bootstrapv1.K0sControllerConfig{}).
-		Complete(r)
+		Complete(c)
 }
 
 func createCPDownloadCommands(config *bootstrapv1.K0sControllerConfig) []string {
@@ -286,7 +358,7 @@ func createCPDownloadCommands(config *bootstrapv1.K0sControllerConfig) []string 
 
 func createCPInstallCmd(config *bootstrapv1.K0sControllerConfig) string {
 	installCmd := []string{
-		"k0s install controller --token-file /etc/k0s.token"}
+		"k0s install controller"}
 	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
 		installCmd = append(installCmd, config.Spec.Args...)
 	}
