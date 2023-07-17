@@ -103,6 +103,7 @@ jobs:
       matrix:
         smoke-suite:
           - check-capi-docker
+          - check-capi-docker-machinedeployment
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
