@@ -69,6 +69,15 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 
 	labels := labelsForCluster(kmc)
 
+	// Copy both Cluster level annotations and Service annotations
+	annotations := map[string]string{}
+	for k, v := range annotationsForCluster(kmc) {
+		annotations[k] = v
+	}
+	for k, v := range kmc.Spec.Service.Annotations {
+		annotations[k] = v
+	}
+
 	svc := v1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -78,7 +87,7 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 			Name:        name,
 			Namespace:   kmc.Namespace,
 			Labels:      labels,
-			Annotations: annotationsForCluster(kmc),
+			Annotations: annotations,
 		},
 		Spec: v1.ServiceSpec{
 			Type:     kmc.Spec.Service.Type,
@@ -86,8 +95,6 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 			Ports:    ports,
 		},
 	}
-
-	_ = ctrl.SetControllerReference(kmc, &svc, r.Scheme)
 
 	return svc
 }
@@ -97,6 +104,8 @@ func (r *ClusterReconciler) reconcileServices(ctx context.Context, kmc km.Cluste
 	// Depending on ingress configuration create nodePort service.
 	logger.Info("Reconciling services")
 	svc := r.generateService(&kmc)
+
+	_ = ctrl.SetControllerReference(&kmc, &svc, r.Scheme)
 
 	if err := r.Client.Patch(ctx, &svc, client.Apply, patchOpts...); err != nil {
 		return err
