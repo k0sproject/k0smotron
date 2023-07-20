@@ -63,12 +63,17 @@ kind: AWSCluster
 metadata:
   name: k0s-aws-test
   namespace: default
+  annotations:
+    cluster.x-k8s.io/managed-by: k0smotron # This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.
 spec:
   region: eu-central-1
   sshKeyName: jhennig-key
   network:
     vpc:
       id: vpc-12345678901234567 # default VPCs ID
+    subnets:
+      - id: subnet-099730c9ea2e42134
+        availabilityZone: eu-central-1a
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
@@ -118,7 +123,9 @@ spec:
 ---
 ```
 
-Once you apply the manifests to the management cluster it'll take couple of minutes to provision everything. In the end you should see something like this:
+As we are using self-managed infrastructure we need to manually mark the infrastructure ready. This can be done with `kubectl patch AWSCluster k0s-aws-test --type=merge --subresource status --patch 'status: {ready: true}'`.
+
+Once you apply the manifests to the management cluster and mark the infrastructure ready it'll take couple of minutes to provision everything. In the end you should see something like this:
 
 ```shell
 % kubectl get cluster,machine
@@ -132,3 +139,7 @@ machine.cluster.x-k8s.io/k0s-aws-test-0   k0s-aws-test              aws:///eu-ce
 ## Accessing the workload cluster
 
 To access the workload (a.k.a child) cluster we can get the kubeconfig for it with `clusterctl get kubeconfig k0s-aws-test`. You can then save it to disk and/or import to your favorite tooling like [Lens](https://k8slens.dev)
+
+## Deleting the cluster
+
+When deleting the cluster, do **NOT** use `kubectl delete -f my-aws-cluster.yaml` as that'll easily result into dangling AWS resources. Instead only delete the top level `Cluster` object. Deleting the top level `Cluster` object will propagate the deletion of all child resources and with a proper ordering.
