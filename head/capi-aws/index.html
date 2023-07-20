@@ -632,6 +632,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#deleting-the-cluster" class="md-nav__link">
+    Deleting the cluster
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -813,6 +820,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#deleting-the-cluster" class="md-nav__link">
+    Deleting the cluster
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -882,12 +896,17 @@ This also renders k0smotron unable to dynamically edit the <code>AWSCluster</cod
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron</span><span class="w"> </span><span class="c1"># This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1</span>
 <span class="w">  </span><span class="nt">sshKeyName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jhennig-key</span>
 <span class="w">  </span><span class="nt">network</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">vpc</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vpc-12345678901234567</span><span class="w"> </span><span class="c1"># default VPCs ID</span>
+<span class="w">    </span><span class="nt">subnets</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subnet-099730c9ea2e42134</span>
+<span class="w">        </span><span class="nt">availabilityZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1a</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Machine</span>
@@ -936,7 +955,8 @@ This also renders k0smotron unable to dynamically edit the <code>AWSCluster</cod
 <span class="nt">spec</span><span class="p">:</span>
 <span class="nn">---</span>
 </code></pre></div>
-<p>Once you apply the manifests to the management cluster it'll take couple of minutes to provision everything. In the end you should see something like this:</p>
+<p>As we are using self-managed infrastructure we need to manually mark the infrastructure ready. This can be done with <code>kubectl patch AWSCluster k0s-aws-test --type=merge --subresource status --patch 'status: {ready: true}'</code>.</p>
+<p>Once you apply the manifests to the management cluster and mark the infrastructure ready it'll take couple of minutes to provision everything. In the end you should see something like this:</p>
 <div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
 NAME<span class="w">                                    </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
 cluster.cluster.x-k8s.io/k0s-aws-test<span class="w">   </span>Provisioned<span class="w">   </span>46m<span class="w">   </span>
@@ -946,6 +966,8 @@ machine.cluster.x-k8s.io/k0s-aws-test-0<span class="w">   </span>k0s-aws-test<sp
 </code></pre></div>
 <h2 id="accessing-the-workload-cluster">Accessing the workload cluster<a class="headerlink" href="#accessing-the-workload-cluster" title="Permanent link">#</a></h2>
 <p>To access the workload (a.k.a child) cluster we can get the kubeconfig for it with <code>clusterctl get kubeconfig k0s-aws-test</code>. You can then save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a></p>
+<h2 id="deleting-the-cluster">Deleting the cluster<a class="headerlink" href="#deleting-the-cluster" title="Permanent link">#</a></h2>
+<p>When deleting the cluster, do <strong>NOT</strong> use <code>kubectl delete -f my-aws-cluster.yaml</code> as that'll easily result into dangling AWS resources. Instead only delete the top level <code>Cluster</code> object. Deleting the top level <code>Cluster</code> object will propagate the deletion of all child resources and with a proper ordering.</p>
 
 
 
