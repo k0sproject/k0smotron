@@ -19,8 +19,10 @@ package k0smotronio
 import (
 	"testing"
 
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestClusterReconciler_findNodeAddress(t *testing.T) {
@@ -123,6 +125,91 @@ func TestClusterReconciler_findNodeAddress(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &ClusterReconciler{}
 			got := r.findNodeAddress(tt.nodes)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestClusterReconciler_serviceAnnotations(t *testing.T) {
+	tests := []struct {
+		name string
+		kmc  *km.Cluster
+		want map[string]string
+	}{
+		{
+			name: "when no annotations are set on either Cluster on svc",
+			kmc: &km.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: km.ClusterSpec{},
+			},
+			want: map[string]string{},
+		},
+		{
+			name: "when annotations are set on only Cluster",
+			kmc: &km.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Annotations: map[string]string{
+						"test": "test",
+					},
+				},
+				Spec: km.ClusterSpec{},
+			},
+			want: map[string]string{
+				"test": "test",
+			},
+		},
+		{
+			name: "when annotations are set on both Cluster and svc",
+			kmc: &km.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Annotations: map[string]string{
+						"test": "test",
+					},
+				},
+				Spec: km.ClusterSpec{
+					Service: km.ServiceSpec{
+						Annotations: map[string]string{
+							"foo": "bar",
+						},
+					},
+				},
+			},
+			want: map[string]string{
+				"test": "test",
+				"foo":  "bar",
+			},
+		},
+		{
+			name: "when same annotation is set on both Cluster and svc the svc annotation wins",
+			kmc: &km.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Annotations: map[string]string{
+						"test": "test",
+					},
+				},
+				Spec: km.ClusterSpec{
+					Service: km.ServiceSpec{
+						Annotations: map[string]string{
+							"test": "foobar",
+						},
+					},
+				},
+			},
+			want: map[string]string{
+				"test": "foobar",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ClusterReconciler{}
+			svc := r.generateService(tt.kmc)
+			got := svc.Annotations
 			assert.Equal(t, tt.want, got)
 		})
 	}
