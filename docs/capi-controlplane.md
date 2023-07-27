@@ -35,10 +35,8 @@ spec:
     type: emptyDir
   service:
     type: LoadBalancer
-    # apiPort: 6443
-    # konnectivityPort: 8132
-    annotations:
-      load-balancer.hetzner.cloud/location: fsn1
+    apiPort: 6443
+    konnectivityPort: 8132
 ```
 
 Check the [examples](capi-examples.md) pages for more detailed examples how k0smotron can be used with various Cluster API infrastructure providers.
