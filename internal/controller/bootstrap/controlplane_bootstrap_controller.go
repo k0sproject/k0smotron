@@ -130,13 +130,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	// TODO Check if the secret is already present etc. to bail out early
 
-	// Get the token from a secret
-	//token, err := c.getK0sToken(ctx, scope)
-	//if err != nil {
-	//	log.Error(err, "Failed to get token")
-	//	return ctrl.Result{}, err
-	//}
-
 	log.Info("Creating bootstrap data")
 
 	// Create the bootstrap data

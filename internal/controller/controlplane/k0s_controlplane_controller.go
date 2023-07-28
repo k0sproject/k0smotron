@@ -83,20 +83,10 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, nil
 	}
 
-	// TODO: This is in pretty much all CAPI controllers, but AFAIK we do not need this as we're running stuff on mothership
-	// if !cluster.Status.InfrastructureReady {
-	// 	log.Info("Waiting for Cluster Infrastructure to be ready")
-	// 	return ctrl.Result{}, nil
-	// }
-
 	res, err = c.reconcile(ctx, cluster, kcp)
 	if err != nil {
 		return res, err
 	}
-	//err = c.waitExternalAddress(ctx, cluster, kcp)
-	//if err != nil {
-	//	return res, err
-	//}
 
 	// TODO: We need to have bit more detailed status and conditions handling
 	kcp.Status.Ready = true
@@ -183,71 +173,6 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 func machineName(base string, i int) string {
 	return fmt.Sprintf("%s-%d", base, i)
 }
-
-// watchExternalAddress watches the external address of the control plane and updates the status accordingly
-//func (c *K0sController) waitExternalAddress(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
-//	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
-//	log.Info("Waiting for external address to be set")
-//	key := client.ObjectKey{
-//		Namespace: kcp.GetNamespace(),
-//		Name:      machineName(kcp.GetName(), 0),
-//	}
-//	err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 3*time.Minute, true, func(ctx context.Context) (done bool, err error) {
-//		machine := &clusterv1.Machine{}
-//		if err := c.Client.Get(ctx, key, machine); err != nil {
-//			log.Error(err, "Failed to get k0smotron Cluster")
-//			return false, err
-//		}
-//
-//		if machine.Spec.InfrastructureRef == nil {
-//			log.Info("Waiting for external address to be set")
-//			return false, nil
-//		}
-//		// Get the external address of the control plane
-//		host := k0smoCluster.Spec.ExternalAddress
-//		port := k0smoCluster.Spec.Service.APIPort
-//		// Update the Clusters endpoint if needed
-//		if cluster.Spec.ControlPlaneEndpoint.Host != host || cluster.Spec.ControlPlaneEndpoint.Port != int32(port) {
-//
-//			// Get the infrastructure cluster object
-//			infraCluster := &unstructured.Unstructured{}
-//			infraCluster.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
-//			if err := c.Client.Get(ctx, types.NamespacedName{Namespace: cluster.Namespace, Name: cluster.Spec.InfrastructureRef.Name}, infraCluster); err != nil {
-//				log.Error(err, "Failed to get infrastructure cluster")
-//				return false, err
-//			}
-//			log.Info("Found infrastructure cluster")
-//			newEndpoint := map[string]interface{}{
-//				"host": host,
-//				"port": int64(port),
-//			}
-//			err = unstructured.SetNestedMap(infraCluster.Object, newEndpoint, "spec", "controlPlaneEndpoint")
-//			if err != nil {
-//				log.Error(err, "Failed to set controlPlaneEndpoint in infrastructure cluster")
-//				return false, err
-//			}
-//			if err := c.Client.Update(ctx, infraCluster); err != nil {
-//				log.Error(err, "Failed to update infrastructure cluster")
-//				return false, err
-//			}
-//			log.Info("Updated infrastructure cluster", "host", host, "port", port)
-//			cluster.Spec.ControlPlaneEndpoint.Host = host
-//			cluster.Spec.ControlPlaneEndpoint.Port = int32(port)
-//			if err := c.Client.Update(ctx, cluster); err != nil {
-//				log.Error(err, "Failed to update Cluster endpoint")
-//				return false, err
-//			}
-//			return true, nil
-//		}
-//		return true, nil
-//	})
-//
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
 
 // SetupWithManager sets up the controller with the Manager.
 func (c *K0sController) SetupWithManager(mgr ctrl.Manager) error {
