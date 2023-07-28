@@ -102,7 +102,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	//s.Require().NoError(err)
 	s.T().Log("waiting to see admin kubeconfig secret")
 	kmcKC, err := GetKMCClientSet(s.ctx, s.client, "docker-test", "default")
-	//s.Require().NoError(err)
+	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))

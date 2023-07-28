@@ -17,16 +17,12 @@ import (
 func (c *K0sController) createMachine(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) error {
 	machine := c.generateMachine(ctx, name, kcp, infraRef)
 
-	if err := c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
+	return c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	})
 }
 
-func (c *K0sController) generateMachine(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) *clusterv1.Machine {
+func (c *K0sController) generateMachine(_ context.Context, name string, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) *clusterv1.Machine {
 	v := "v1.27.1"
 	return &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{

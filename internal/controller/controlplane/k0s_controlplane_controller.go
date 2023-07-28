@@ -99,7 +99,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 }
 
-func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
+func (c *K0sController) reconcile(ctx context.Context, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
 	err := c.reconcileMachines(ctx, kcp)
 	if err != nil {
 		return ctrl.Result{}, err
