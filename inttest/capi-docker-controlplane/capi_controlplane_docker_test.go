@@ -218,9 +218,51 @@ metadata:
   name: docker-test
   namespace: default
 spec:
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Machine
+metadata:
+  name:  docker-test-0
+  namespace: default
+spec:
+  version: v1.27.1
+  clusterName: docker-test
+  bootstrap:
+    configRef:
+      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      kind: K0sWorkerConfig
+      name: docker-test-0
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: DockerMachine
+    name: docker-test-0
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfig
+metadata:
+  name: docker-test-0
+  namespace: default
+spec:
+  # version is deliberately different to be able to verify we actually pick it up :)
+  version: v1.27.1+k0s.0
+  args:
+    - --labels=k0sproject.io/foo=bar
+  preStartCommands:
+    - echo -n "pre-start" > /tmp/pre-start
+  postStartCommands:
+    - echo -n "post-start" > /tmp/post-start
+  files:
+    - path: /tmp/test-file
+      content: test-file
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachine
+metadata:
+  name: docker-test-0
+  namespace: default
+spec:
 `
 
-//
 //---
 //apiVersion: cluster.x-k8s.io/v1beta1
 //kind: Machine
