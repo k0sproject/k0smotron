@@ -1,30 +1,36 @@
 # Cluster API - Docker
 
-In this guide we will show you how to use Docker infrastructure for the worker plane while using k0smotron control plane.
+This example demonstrates how k0smotron can be used with CAPD (Cluster API Provider Docker).
 
-Please note, the Docker CAPI provider should only be used for development purposes, it is not recommended to use it for production environments.
+Please note, CAPD should only be used for development purposes and not for production environments.
 
 ## Preparations
+
+Before starting this example, ensure that you have met the [general prerequisites](capi-examples.md#prerequisites). 
 
 To initialize the management cluster with Docker infrastrcture provider you can run:
 
 ```bash
-clusterctl init --infrastructure docker
+clusterctl init --core cluster-api --infrastructure docker
 ```
 
-This command also adds the kubeadm bootstrap and kubeadm control-plane providers by default.
-
-For more details on Docker Cluster API provider see it's [docs](https://github.com/kubernetes-sigs/cluster-api/tree/main/test/infrastructure/docker).
+For more details on Cluster API Provider Docker see it's [docs](https://github.com/kubernetes-sigs/cluster-api/tree/main/test/infrastructure/docker).
 
 ## Create the Docker Kind Network
 
-The Docker CAPI provider uses a network called `kind` by default for some of the components it deploys into the cluster i.e. HAProxy. Create the network as follows:
+The Cluster API Provider Docker (CAPD) utilizes a network named kind as the default network for certain components it deploys, such as HAProxy. To establish this network, perform the following step:
 
 ```bash
 docker network create kind --opt com.docker.network.bridge.enable_ip_masquerade=true
 ```
 
-## Creating a cluster
+By executing this command, you are creating a Docker network named 'kind' with IP masquerade enabled, which is necessary for the proper operation of certain CAPD-deployed components.
+
+## Creating a child cluster
+
+Once all the controllers are up and running, you can apply the cluster manifests containing the specifications of the cluster you want to provision.
+
+Here is an example:
 
 ```yaml
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -44,7 +50,7 @@ spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: K0smotronControlPlane
-    name: docker-test
+    name: docker-test-cp
     namespace: default
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -53,9 +59,9 @@ spec:
     namespace: default
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-kind: K0smotronControlPlane
+kind: K0smotronControlPlane # This is the config for the controlplane
 metadata:
-  name: docker-test
+  name: docker-test-cp
   namespace: default
 spec:
   k0sVersion: v1.27.2-k0s.0
@@ -69,52 +75,78 @@ kind: DockerCluster
 metadata:
   name: docker-test
   namespace: default
-spec:
+  annotations:
+    cluster.x-k8s.io/managed-by: k0smotron # This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.
+spec: {}
+  # More details of the DockerCluster can be set here
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
-kind: Machine
+kind: MachineDeployment
 metadata:
-  name:  docker-test-0
+  name:  docker-test-md
   namespace: default
 spec:
   clusterName: docker-test
-  bootstrap:
-    configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-      kind: K0sWorkerConfig
-      name: docker-test-0
-  infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerMachine
-    name: docker-test-0
----
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: K0sWorkerConfig
-metadata:
-  name: docker-test-0
-  namespace: default
-spec:
-  version: v1.27.2-k0s.0
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: docker-test
+      pool: worker-pool-1
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: docker-test
+        pool: worker-pool-1
+    spec:
+      clusterName: docker-test
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: K0sWorkerConfigTemplate
+          name: docker-test-machine-config
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: DockerMachineTemplate
+        name: docker-test-mt
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachine
+kind: DockerMachineTemplate
 metadata:
-  name: docker-test-0
+  name: docker-test-mt
   namespace: default
 spec:
+  template:
+    spec: {}
+  # More details of the DockerMachineTemplate can be set here
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: docker-test-machine-config
+spec:
+  template:
+    spec:
+      version: v1.27.2+k0s.0
+      # More details of the worker configuration can be set here
 ```
 
-Once you apply the manifests to the management cluster it'll take couple of minutes to provision everything. In the end you should see something like this:
+After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:
 
 ```bash
 % kubectl get cluster,machine
 NAME                                   PHASE         AGE     VERSION
 cluster.cluster.x-k8s.io/docker-test   Provisioned   3m51s   
 
-NAME                                     CLUSTER       NODENAME   PROVIDERID          PHASE         AGE     VERSION
-machine.cluster.x-k8s.io/docker-test-0   docker-test                                  Provisioned   3m50s
+NAME                                        CLUSTER       NODENAME   PROVIDERID          PHASE         AGE     VERSION
+machine.cluster.x-k8s.io/docker-test-md-0   docker-test                                  Provisioned   3m50s
 ```
+
+You can also check the status of the cluster deployment with `clusterctl describe cluster`.
 
 ## Accessing the workload cluster
 
-To access the workload (a.k.a child) cluster we can get the kubeconfig for it with `clusterctl get kubeconfig docker-test`. You can then save it to disk and/or import to your favorite tooling like [Lens](https://k8slens.dev)
+To access the child cluster we can get the kubeconfig for it with `clusterctl get kubeconfig docker-test`. You can then save it to disk and/or import to your favorite tooling like [Lens](https://k8slens.dev)
+
+## Deleting the cluster
+
+For cluster deletion, do **NOT** use `kubectl delete -f my-docker-cluster.yaml` as that can result in orphan resources. Instead, delete the top level `Cluster` object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.
