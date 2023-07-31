@@ -19,7 +19,6 @@ package bootstrap
 import (
 	"context"
 	"fmt"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -131,39 +130,51 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	// TODO Check if the secret is already present etc. to bail out early
 
 	log.Info("Creating bootstrap data")
+	var files []cloudinit.File
 
-	// Create the bootstrap data
-	files, ca, err := c.createCerts(ctx, scope)
-	if err != nil {
-		log.Error(err, "Failed to create certs")
-		return ctrl.Result{}, err
+	if strings.HasSuffix(config.Name, "-0") {
+
+		// Create the bootstrap data
+		certs, ca, err := c.getCerts(ctx, scope)
+		if err != nil {
+			log.Error(err, "Failed to create certs")
+			return ctrl.Result{}, err
+		}
+		files = append(files, certs...)
+
+		// Create the token using the child cluster client
+		tokenID := kutil.RandomString(6)
+		tokenSecret := kutil.RandomString(16)
+		token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
+		tokenFile, err := createToken(tokenID, tokenSecret)
+		if err != nil {
+			log.Error(err, "Failed to create token")
+			return ctrl.Result{}, err
+		}
+
+		err = c.createKubeconfig(ctx, scope, ca, token)
+		if err != nil {
+			log.Error(err, "Failed to create kubeconfig")
+			return ctrl.Result{}, err
+		}
+
+		files = append(files, cloudinit.File{
+			Path:        "/var/lib/k0s/manifests/k0smontron/token.yaml",
+			Permissions: "0644",
+			Content:     tokenFile,
+		})
+		files = append(files, config.Spec.Files...)
 	}
-
-	// Create the token using the child cluster client
-	tokenID := kutil.RandomString(6)
-	tokenSecret := kutil.RandomString(16)
-	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
-	tokenFile, err := createToken(tokenID, tokenSecret, token)
-	if err != nil {
-		log.Error(err, "Failed to create token")
-		return ctrl.Result{}, err
-	}
-
-	err = c.createKubeconfig(ctx, scope, ca, token)
-	if err != nil {
-		log.Error(err, "Failed to create kubeconfig")
-		return ctrl.Result{}, err
-	}
-
-	files = append(files, cloudinit.File{
-		Path:        "/var/lib/k0s/manifests/k0smontron/token.yaml",
-		Permissions: "0644",
-		Content:     tokenFile,
-	})
-	files = append(files, config.Spec.Files...)
 
 	downloadCommands := createCPDownloadCommands(config)
-	installCmd := createCPInstallCmd(config)
+	var installCmd string
+
+	if strings.HasSuffix(config.Name, "-0") {
+		installCmd = createCPInstallCmd(config)
+	} else {
+		tokenFile := "/tmp/join-token"
+		installCmd = createCPInstallCmdWithJoinToken(config, tokenFile)
+	}
 
 	commands := config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
@@ -231,12 +242,12 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (c *ControlPlaneController) createCerts(ctx context.Context, scope *Scope) ([]cloudinit.File, *secret.Certificate, error) {
+func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Scope) ([]cloudinit.File, *secret.Certificate, error) {
 	var files []cloudinit.File
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
-	err := certificates.LookupOrGenerate(ctx, c.Client, util.ObjectKey(scope.Cluster), *metav1.NewControllerRef(scope.Cluster, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")))
+	err := certificates.Lookup(ctx, c.Client, util.ObjectKey(scope.Cluster))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -252,7 +263,7 @@ func (c *ControlPlaneController) createCerts(ctx context.Context, scope *Scope) 
 	return files, ca, nil
 }
 
-func createToken(tokenID, tokenSecret, token string) (string, error) {
+func createToken(tokenID, tokenSecret string) (string, error) {
 	bootstrapToken := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -352,6 +363,16 @@ func createCPDownloadCommands(config *bootstrapv1.K0sControllerConfig) []string 
 func createCPInstallCmd(config *bootstrapv1.K0sControllerConfig) string {
 	installCmd := []string{
 		"k0s install controller"}
+	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
+		installCmd = append(installCmd, config.Spec.Args...)
+	}
+	return strings.Join(installCmd, " ")
+}
+
+func createCPInstallCmdWithJoinToken(config *bootstrapv1.K0sControllerConfig, tokenPath string) string {
+	installCmd := []string{
+		"k0s install controller"}
+	installCmd = append(installCmd, "--token-file", tokenPath)
 	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
 		installCmd = append(installCmd, config.Spec.Args...)
 	}

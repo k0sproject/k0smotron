@@ -28,8 +28,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -48,7 +51,6 @@ type K0sController struct {
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;pacth
 
 func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
-
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
 	log.Info("Reconciling K0sControlPlane")
 
@@ -81,6 +83,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	if annotations.IsPaused(cluster, kcp) {
 		log.Info("Reconciliation is paused for this object")
 		return ctrl.Result{}, nil
+	}
+
+	if err := c.ensureCertificates(ctx, cluster, kcp); err != nil {
+		log.Error(err, "Failed to ensure certificates")
+		return ctrl.Result{}, err
 	}
 
 	res, err = c.reconcile(ctx, cluster, kcp)
@@ -168,6 +175,13 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 	}
 
 	return nil
+}
+
+func (c *K0sController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
+		CertificatesDir: "/var/lib/k0s/pki",
+	})
+	return certificates.LookupOrGenerate(ctx, c.Client, util.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")))
 }
 
 func machineName(base string, i int) string {
