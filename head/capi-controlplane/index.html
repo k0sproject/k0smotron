@@ -757,10 +757,8 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
 <span class="w">  </span><span class="nt">service</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
-<span class="w">    </span><span class="c1"># apiPort: 6443</span>
-<span class="w">    </span><span class="c1"># konnectivityPort: 8132</span>
-<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">load-balancer.hetzner.cloud/location</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span>
+<span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8132</span>
 </code></pre></div>
 <p>Check the <a href="../capi-examples/">examples</a> pages for more detailed examples how k0smotron can be used with various Cluster API infrastructure providers.</p>
 <p>For a full reference on <code>K0smotronControlPlane</code> configurability see the <a href="../resource-reference/#controlplaneclusterx-k8siov1beta1">reference docs</a>.</p>
