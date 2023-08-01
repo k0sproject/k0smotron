@@ -203,7 +203,7 @@ kind: K0sControlPlane
 metadata:
   name: docker-test
 spec:
-  replicas: 1
+  replicas: 3
   k0sConfigSpec: {}
   machineTemplate:
     infrastructureRef:

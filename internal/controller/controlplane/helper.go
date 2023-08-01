@@ -2,6 +2,8 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
+	"github.com/Masterminds/semver"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
@@ -23,7 +25,8 @@ func (c *K0sController) createMachine(ctx context.Context, name string, kcp *cpv
 }
 
 func (c *K0sController) generateMachine(_ context.Context, name string, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) *clusterv1.Machine {
-	v := "v1.27.1"
+	ver := semver.MustParse(kcp.Spec.K0sVersion)
+	v := fmt.Sprintf("%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch())
 	return &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: clusterv1.GroupVersion.String(),
