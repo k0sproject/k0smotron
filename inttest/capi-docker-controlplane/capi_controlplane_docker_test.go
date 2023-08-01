@@ -123,6 +123,9 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	extraFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
+
+	output, err := exec.Command("docker", "ps").Output()
+	s.T().Log(output)
 }
 
 func (s *CAPIDockerSuite) applyClusterObjects() {
