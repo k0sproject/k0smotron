@@ -155,4 +155,4 @@ jobs:
         run: |
           kind get kubeconfig > kind.conf
           export KUBECONFIG=$(realpath kind.conf)
-          KEEP_AFTER_TEST=true make -C inttest check-capi-docker
+          KEEP_AFTER_TEST=true make -C inttest ${{ matrix.smoke-suite }}

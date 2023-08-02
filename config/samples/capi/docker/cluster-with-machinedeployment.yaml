@@ -57,6 +57,7 @@ spec:
         cluster.x-k8s.io/cluster-name: docker-md-test
         pool: worker-pool-1
     spec:
+      version: v1.27.2
       clusterName: docker-md-test
       bootstrap:
         configRef:
