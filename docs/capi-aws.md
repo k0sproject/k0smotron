@@ -110,21 +110,22 @@ metadata:
   namespace: default
 spec:
   template:
-    ami:
-      # Replace with your AMI ID
-      id: ami-0989fb15ce71ba39e # Ubuntu 22.04 in eu-central-1 
-    instanceType: t3.large
-    iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io # Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`
-    cloudInit:
-      # Makes CAPA use k0s bootstrap cloud-init directly and not via SSM
-      # Simplifies the VPC setup as we do not need custom SSM endpoints etc.
-      insecureSkipSecretsManager: true
-    subnet:
-      # Make sure this matches the failureDomain in the Machine, i.e. you pick the subnet ID for the AZ
-      id: subnet-099730c9ea2e42134
-    additionalSecurityGroups:
-      - id: sg-01ce46c31291e3447 # Needs to be belong to the subnet
-    sshKeyName: jhennig-key
+    spec:
+      ami:
+        # Replace with your AMI ID
+        id: ami-0989fb15ce71ba39e # Ubuntu 22.04 in eu-central-1 
+      instanceType: t3.large
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io # Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`
+      cloudInit:
+        # Makes CAPA use k0s bootstrap cloud-init directly and not via SSM
+        # Simplifies the VPC setup as we do not need custom SSM endpoints etc.
+        insecureSkipSecretsManager: true
+      subnet:
+        # Make sure this matches the failureDomain in the Machine, i.e. you pick the subnet ID for the AZ
+        id: subnet-099730c9ea2e42134
+      additionalSecurityGroups:
+        - id: sg-01ce46c31291e3447 # Needs to be belong to the subnet
+      sshKeyName: jhennig-key
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: K0sWorkerConfigTemplate
