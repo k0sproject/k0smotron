@@ -970,21 +970,22 @@ This also renders k0smotron unable to dynamically edit the <code>AWSCluster</cod
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">ami</span><span class="p">:</span>
-<span class="w">      </span><span class="c1"># Replace with your AMI ID</span>
-<span class="w">      </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0989fb15ce71ba39e</span><span class="w"> </span><span class="c1"># Ubuntu 22.04 in eu-central-1 </span>
-<span class="w">    </span><span class="nt">instanceType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.large</span>
-<span class="w">    </span><span class="nt">iamInstanceProfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nodes.cluster-api-provider-aws.sigs.k8s.io</span><span class="w"> </span><span class="c1"># Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`</span>
-<span class="w">    </span><span class="nt">cloudInit</span><span class="p">:</span>
-<span class="w">      </span><span class="c1"># Makes CAPA use k0s bootstrap cloud-init directly and not via SSM</span>
-<span class="w">      </span><span class="c1"># Simplifies the VPC setup as we do not need custom SSM endpoints etc.</span>
-<span class="w">      </span><span class="nt">insecureSkipSecretsManager</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">    </span><span class="nt">subnet</span><span class="p">:</span>
-<span class="w">      </span><span class="c1"># Make sure this matches the failureDomain in the Machine, i.e. you pick the subnet ID for the AZ</span>
-<span class="w">      </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subnet-099730c9ea2e42134</span>
-<span class="w">    </span><span class="nt">additionalSecurityGroups</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sg-01ce46c31291e3447</span><span class="w"> </span><span class="c1"># Needs to be belong to the subnet</span>
-<span class="w">    </span><span class="nt">sshKeyName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jhennig-key</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">ami</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Replace with your AMI ID</span>
+<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0989fb15ce71ba39e</span><span class="w"> </span><span class="c1"># Ubuntu 22.04 in eu-central-1 </span>
+<span class="w">      </span><span class="nt">instanceType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.large</span>
+<span class="w">      </span><span class="nt">iamInstanceProfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nodes.cluster-api-provider-aws.sigs.k8s.io</span><span class="w"> </span><span class="c1"># Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`</span>
+<span class="w">      </span><span class="nt">cloudInit</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Makes CAPA use k0s bootstrap cloud-init directly and not via SSM</span>
+<span class="w">        </span><span class="c1"># Simplifies the VPC setup as we do not need custom SSM endpoints etc.</span>
+<span class="w">        </span><span class="nt">insecureSkipSecretsManager</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">subnet</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Make sure this matches the failureDomain in the Machine, i.e. you pick the subnet ID for the AZ</span>
+<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subnet-099730c9ea2e42134</span>
+<span class="w">      </span><span class="nt">additionalSecurityGroups</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sg-01ce46c31291e3447</span><span class="w"> </span><span class="c1"># Needs to be belong to the subnet</span>
+<span class="w">      </span><span class="nt">sshKeyName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jhennig-key</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
