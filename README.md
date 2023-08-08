@@ -1,70 +1,76 @@
 # k0smotron
 
-The Kubernetes control plane manager. Deploy and run Kubernetes control planes powered by [k0s](https://k0sproject.io) on any existing cluster.
+An open source control plane manager for unified cluster management.
+
+k0smotron allows you to unify your Kubernetes cluster management for an efficient use of resources. It’s designed for [k0s](https://k0sproject.io/).
 
 ## Features
 
-### Kubernetes-in-Kubernetes
+### Control Plane-as-a-Service
 
-k0smotron allows you to easily create and manage the clusters in an existing Kubernetes cluster. This allows unparalled scalability and flexibility when you have to work with many clusters. It allows truly homogenous setup for all control planes and thus eases the maintenance burden.
+k0smotron streamlines k0s control plane creation and management within your management cluster, reducing traditional operational overhead (e.g  installation, configuration, upgrades or backups). k0smotron encapsulates the control plane service as a pods (and other Kubernetes constructs) and provides an intuitive approach to cluster lifecycle management through ClusterAPI integration.
 
-### True control and worker plane separation
+### Enhanced High Availability
 
-Using k0smotron the clusters controlplane and workerplane are truly separated. The controlplane, running on an existing cluster has no direct networking connection to the workerplane. This is similar patter nhow all the major cloud providers separate the control and worker planes on the managed clusters. 
+k0smotron allows you to leverage the power of SQL databases as a data store for your control planes through Kine. This flexibility means you can choose from a variety of data storage operators like Postgres, MySQL, or your cloud provider's managed databases. This offers a robust, high-availability solution, eliminating the dependency on Etcd and allows to leverage Kubernetes self-healing capabilities.
 
-### Bring your own workers
+### Bring Your Own Worker Nodes
 
-With k0smotron you can connect worker nodes from ANY infrastructure to your cluster control plane. 
+k0smotron prioritizes flexibility in the integration of worker nodes and allows easy connection or creation of nodes from any infrastructure. This ensures node isolation and flexible scaling, minimizing interference with the control plane. k0smotron operates with or without the ClusterAPI, offering you the freedom to select your preferred operational mode.
 
 ## How does it work
+The k0smotron controller manager is a service that will be installed into an existing Kubernetes cluster. 
+### Control Plane
+k0smotron will create and manage k0s control planes in the management cluster like a workload. It leverages the natural pattern of working with custom resources to manage the lifecycle of the k0s control planes. k0smotron automatically creates all the needed Kubernetes lower level resources, such as pods, configmaps, etc. 
+By running the control plane on a Kubernetes cluster we can enjoy and leverage the high availability and self-healing capabilities of Kubernetes.
 
-You install k0smotron operator into an existing Kubernetes cluster. k0smotron operator will create and manage k0s control planes in that cluster. It leverages the natural pattern of working with custom resources to manage the lifecycle of the k0s control planes. k0smotron will automatically create all the needed Kubernetes lower level constructs, such as pods, configmaps etc., to 
+### Worker Plane
+With k0s it's easy to install a Kubernetes Worker Node. The worker nodes will connect to the Control Plane with a Join Token, created by k0smotron. When it comes to clusters with dozens or hundreds of worker nodes you do not want to install k0s manually. For these cases you can leverage k0smotron as ClusterAPI Bootstrap Provider. 
 
-k0smotron is an Kubernetes operator designed to manage the lifecycle of k0s control planes in a Kubernetes (any distro) cluster. By running the control plane on a k8s cluster we can enjoy and leverage the high availability and auto-healing functionalities of the underlying cluster, a.k.a Mothership.
+### ClusterAPI
+k0smotron can be used with ClusterAPI as Bootstrap Provider. This allows to use k0s Control Planes, created by k0smotron, as `Control Plane` and k0s worker nodes or `MachineDeployment` in various clouds.
 
-TODO: Insert pic
+***Note:*** Currently, we only support creating the `Control Plane` in the Management Cluster. In the next versions of k0smotron we will add full cluster bootstrapping in public and private clouds with with ClusterAPI.
 
 ## Use cases
 
-### CI/CD
+### Development and CI/CD
 
-Often when running integration and end-to-end testing for your software running in Kubernetes you need somewhat temporary clusters in CI. Why not leverage the true flexibility and create those clusters on-demand using k0smotron. Creating a controlplane is as easy as creating a custom resource, so is the deletion of it. No more long living snowflake clusters for CI purposes.
+In the process of continuous integration and end-to-end testing, a temporary Kubernetes Cluster is needed. With k0smotron, these clusters can be created on demand in a declarative way and thus integrated into the existing CI process with ease. This avoids cluster sprawl and long-living snowflake clusters.
 
-### Edge
+### Edge Container Management
 
-Running Kubernetes on the network edge usually means running in low resource infrastructure. What this often means is that setting up the controlplane is either a challenge or a mission impossible. Running the controlplane on a existing cluster, on a separate dedicated infrastructure, removes that challenge and let's you focus on the real edge. 
+Kubernetes at the edge typically comes with the requirement of a low resource footprint. As a result, clusters with distributed roles are more challenging and a lot of single-node clusters are created. Managing the large number of clusters confronts us with almost impossible tasks. 
 
-Running on the edge often also means large number of clusters to manage. Do you really want to dedicate nodes for each cluster controlplane and manage all the infrastructure for those?
+Offloading the control plane means that the persistence layer of the cluster can run on dedicated hardware and workloads can be managed at the edge on devices dedicated to their purposes. With k0smotron worker nodes get ephemeral.
 
-## Installation
+### Multi-cloud Cluster LCM
 
-```
+A multi-cloud strategy is essential these days. But managed Kubernetes offerings are often different in versioning or even the built-in tooling.
+
+With k0smotron, you can run the control plane management cluster in a public or private cloud provider of your choice and the worker nodes in various clouds. With this you get a homogenized and unified cluster management, providing one flavor on all clouds and saving the costs for the highly available Control Plane in the cloud.
+
+## Getting Started
+Getting started with k0smotron is easy. Simply install the controller into an existing cluster:
+
+```bash
 kubectl apply -f https://docs.k0smotron.io/stable/install.yaml
 ```
 
 ## Creating a cluster
 
 To create a cluster, you need to create a `Cluster` resource. The `spec` field is used for optional settings, so you can just pass `null` as the value.
+For more information about the settings you can check the following [documention](https://docs.k0smotron.io/stable/resource-reference/#cluster).
 
-```
-cat <<EOF | kubectl apply -n <namespace> -f-
+``` bash
+kubectl apply -f - <<EOF
 apiVersion: k0smotron.io/v1beta1
 kind: Cluster
 metadata:
-  name: my-k0smotron
-spec: null
+name: my-k0smotron
+spec: {}
 EOF
 ```
-
-## Creating cluster join tokens
-
-At the moment there isn't an automated way to gather one, you may obtain one by running 
-
-```
-kubectl exec -n <K0smotronCluster namespace> <K0smotron pod> k0s token create --role=worker
-```
-
-With the token you can continue to setup the worker nodes on ANY infrastructure as usual with k0s. See https://docs.k0sproject.io/stable/k0s-multi-node/#4-add-workers-to-the-cluster
 
 ## Contributing
 
