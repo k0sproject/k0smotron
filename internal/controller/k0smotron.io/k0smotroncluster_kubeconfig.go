@@ -23,6 +23,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/exec"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -56,6 +57,7 @@ func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc k
 			Annotations: annotationsForCluster(&kmc),
 		},
 		StringData: map[string]string{"value": output},
+		Type:       clusterv1.ClusterSecretType,
 	}
 
 	if err = ctrl.SetControllerReference(&kmc, &secret, r.Scheme); err != nil {
