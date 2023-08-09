@@ -31,6 +31,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
@@ -128,6 +130,27 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 		return true, nil
 	})
 	s.Require().NoError(err)
+	// Check that the MD gets to ready state
+	s.T().Log("waiting for machinedeployment to be ready")
+	// nolint:staticcheck
+	s.Require().NoError(wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (done bool, err error) {
+		// Get the MachineDeployment
+		md := &clusterv1.MachineDeployment{}
+		err = s.client.RESTClient().
+			Get().
+			AbsPath("/apis/cluster.x-k8s.io/v1beta1").
+			Resource("machinedeployments").
+			Namespace("default").
+			Name("docker-md-test").
+			Do(ctx).Into(md)
+		if err != nil {
+			return false, err
+		}
+		if md.Status.ReadyReplicas != 2 {
+			return false, nil
+		}
+		return true, nil
+	}))
 }
 
 func (s *CAPIDockerSuite) applyClusterObjects() {
