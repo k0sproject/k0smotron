@@ -14,29 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package capidocker
+package capicontolplanedocker
 
 import (
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
+	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 	"github.com/k0sproject/k0smotron/inttest/util"
+
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/k0sproject/k0s/inttest/common"
-	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 )
 
-type CAPIDockerSuite struct {
+type CAPIControlPlaneDockerSuite struct {
 	suite.Suite
 	client           *kubernetes.Clientset
 	restConfig       *rest.Config
@@ -44,12 +47,12 @@ type CAPIDockerSuite struct {
 	ctx              context.Context
 }
 
-func TestCAPIDockerSuite(t *testing.T) {
-	s := CAPIDockerSuite{}
+func TestCAPIControlPlaneDockerSuite(t *testing.T) {
+	s := CAPIControlPlaneDockerSuite{}
 	suite.Run(t, &s)
 }
 
-func (s *CAPIDockerSuite) SetupSuite() {
+func (s *CAPIControlPlaneDockerSuite) SetupSuite() {
 	kubeConfigPath := os.Getenv("KUBECONFIG")
 	s.Require().NotEmpty(kubeConfigPath, "KUBECONFIG env var must be set and point to kind cluster")
 	// Get kube client from kubeconfig
@@ -71,7 +74,7 @@ func (s *CAPIDockerSuite) SetupSuite() {
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
 
-func (s *CAPIDockerSuite) TestCAPIDocker() {
+func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 
 	// Apply the child cluster objects
 	s.applyClusterObjects()
@@ -88,54 +91,65 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
-	// Wait for the cluster to be ready
-	// Wait to see the CP pods ready
-	s.Require().NoError(common.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test", "default"))
-
-	s.T().Log("Starting portforward")
-	fw, err := util.GetPortForwarder(s.restConfig, "kmc-docker-test-0", "default", 30443)
+	var localPort int
+	// nolint:staticcheck
+	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort("docker-test-lb")
+		return localPort > 0, nil
+	})
 	s.Require().NoError(err)
 
-	go fw.Start(s.Require().NoError)
-	defer fw.Close()
-
-	<-fw.ReadyChan
-
-	localPort, err := fw.LocalPort()
-	s.Require().NoError(err)
 	s.T().Log("waiting to see admin kubeconfig secret")
-	s.Require().NoError(util.WaitForSecret(s.ctx, s.client, "docker-test-kubeconfig", "default"))
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
 	s.Require().NoError(err)
 
-	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))
-	node, err := kmcKC.CoreV1().Nodes().Get(s.ctx, "docker-test-0", metav1.GetOptions{})
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		b, _ := s.client.RESTClient().
+			Get().
+			AbsPath("/healthz").
+			DoRaw(context.Background())
+
+		return string(b) == "ok", nil
+	})
 	s.Require().NoError(err)
-	s.Require().Equal("v1.27.1+k0s", node.Status.NodeInfo.KubeletVersion)
-	fooLabel, ok := node.Labels["k0sproject.io/foo"]
-	s.Require().True(ok)
-	s.Require().Equal("bar", fooLabel)
+
+	for i := 0; i < 3; i++ {
+		// nolint:staticcheck
+		err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+			nodeName := fmt.Sprintf("docker-test-%d", i)
+			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
+			if err != nil {
+				return false, nil
+			}
+
+			return strings.Contains(string(output), "Version:"), nil
+		})
+		s.Require().NoError(err)
+	}
+
+	s.T().Log("waiting for node to be ready")
+	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
 	s.T().Log("verifying cloud-init extras")
-	preStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/pre-start")
+	preStartFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/pre-start")
 	s.Require().NoError(err)
 	s.Require().Equal("pre-start", preStartFile)
-	postStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/post-start")
+	postStartFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/post-start")
 	s.Require().NoError(err)
 	s.Require().Equal("post-start", postStartFile)
-	extraFile, err := getDockerNodeFile("docker-test-0", "/tmp/test-file")
+	extraFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
 }
 
-func (s *CAPIDockerSuite) applyClusterObjects() {
+func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
-func (s *CAPIDockerSuite) deleteCluster() {
+func (s *CAPIControlPlaneDockerSuite) deleteCluster() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
@@ -148,6 +162,40 @@ func getDockerNodeFile(nodeName string, path string) (string, error) {
 	}
 
 	return string(string(output)), nil
+}
+
+func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*kubernetes.Clientset, error) {
+	secretName := fmt.Sprintf("%s-kubeconfig", name)
+	// Wait first to see the secret exists
+	if err := util.WaitForSecret(ctx, kc, secretName, namespace); err != nil {
+		return nil, err
+	}
+	kubeConf, err := kc.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["value"]))
+	if err != nil {
+		return nil, err
+	}
+
+	return kubernetes.NewForConfig(kmcCfg)
+}
+
+func getLBPort(name string) (int, error) {
+	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
+	}
+
+	var ports map[string][]map[string]string
+	err = json.Unmarshal(b, &ports)
+	if err != nil {
+		return 0, fmt.Errorf("failed to unmarshal inspect info from container %s: %w", name, err)
+	}
+
+	return strconv.Atoi(ports["6443/tcp"][0]["HostPort"])
 }
 
 var dockerClusterYaml = `
@@ -167,23 +215,44 @@ spec:
       - 10.128.0.0/12
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    kind: K0smotronControlPlane
+    kind: K0sControlPlane
     name: docker-test
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DockerCluster
     name: docker-test
 ---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-test-cp-template
+  namespace: default
+spec:
+  template:
+    spec: {}
+---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-kind: K0smotronControlPlane
+kind: K0sControlPlane
 metadata:
   name: docker-test
 spec:
-  k0sVersion: v1.27.2-k0s.0
-  persistence:
-    type: emptyDir
-  service:
-    type: NodePort
+  replicas: 3
+  k0sConfigSpec:
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerMachineTemplate
+      name: docker-test-cp-template
+      namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
@@ -195,7 +264,7 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
 metadata:
-  name:  docker-test-0
+  name:  docker-test-worker-0
   namespace: default
 spec:
   version: v1.27.1
@@ -204,16 +273,16 @@ spec:
     configRef:
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
       kind: K0sWorkerConfig
-      name: docker-test-0
+      name: docker-test-worker-0
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DockerMachine
-    name: docker-test-0
+    name: docker-test-worker-0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: K0sWorkerConfig
 metadata:
-  name: docker-test-0
+  name: docker-test-worker-0
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
@@ -231,7 +300,7 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
 metadata:
-  name: docker-test-0
+  name: docker-test-worker-0
   namespace: default
 spec:
 `
