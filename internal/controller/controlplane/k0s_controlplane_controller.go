@@ -21,17 +21,20 @@ import (
 	"fmt"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -115,8 +118,30 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 }
 
+func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster) error {
+	if cluster.Spec.ControlPlaneEndpoint.IsZero() {
+		return errors.New("control plane endpoint is not set")
+	}
+
+	secretName := secret.Name(cluster.Name, secret.Kubeconfig)
+	err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &corev1.Secret{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return kubeconfig.CreateSecret(ctx, c.Client, cluster)
+		}
+		return err
+	}
+
+	return nil
+}
+
 func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
-	err := c.reconcileMachines(ctx, cluster, kcp)
+	err := c.reconcileKubeconfig(ctx, cluster)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
+	}
+
+	err = c.reconcileMachines(ctx, cluster, kcp)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -126,32 +151,26 @@ func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluste
 
 func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
 	// TODO: Scale down machines if needed
-	//if kcp.Status.Replicas > kcp.Spec.Replicas {
-	//	for i := kcp.Spec.Replicas - 1; i < kcp.Status.Replicas; i++ {
-	//		name := machineName(kcp.Name, int(i))
-	//
-	//		if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
-	//			return fmt.Errorf("error deleting machine from template: %w", err)
-	//		}
-	//
-	//		if err := c.deleteMachineFromTemplate(ctx, name, kcp); err != nil {
-	//			return fmt.Errorf("error deleting machine from template: %w", err)
-	//		}
-	//
-	//		if err := c.deleteMachine(ctx, name, kcp); err != nil {
-	//			return fmt.Errorf("error deleting machine from template: %w", err)
-	//		}
-	//	}
-	//}
-
-	// TODO: delete machines that are not needed anymore (eg we scale down)
+	if kcp.Status.Replicas > kcp.Spec.Replicas {
+		return fmt.Errorf("downscaling is not supported yet")
+		//for i := kcp.Spec.Replicas; i < kcp.Status.Replicas; i++ {
+		//	name := machineName(kcp.Name, int(i))
+		//
+		//	if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
+		//		return fmt.Errorf("error deleting machine from template: %w", err)
+		//	}
+		//
+		//	if err := c.deleteMachineFromTemplate(ctx, name, kcp); err != nil {
+		//		return fmt.Errorf("error deleting machine from template: %w", err)
+		//	}
+		//
+		//	if err := c.deleteMachine(ctx, name, kcp); err != nil {
+		//		return fmt.Errorf("error deleting machine from template: %w", err)
+		//	}
+		//}
+	}
 	for i := 0; i < int(kcp.Spec.Replicas); i++ {
 		name := machineName(kcp.Name, i)
-
-		err := c.createBootstrapConfig(ctx, name, kcp)
-		if err != nil {
-			return fmt.Errorf("error creating bootstrap config: %w", err)
-		}
 
 		machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
 		if err != nil {
@@ -165,16 +184,21 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			Namespace:  kcp.Namespace,
 		}
 
-		err = c.createMachine(ctx, name, cluster, kcp, infraRef)
+		machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef)
 		if err != nil {
 			return fmt.Errorf("error creating machine: %w", err)
 		}
 
+		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machine)
+		if err != nil {
+			return fmt.Errorf("error creating bootstrap config: %w", err)
+		}
 	}
+
 	return nil
 }
 
-func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
+func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
 	controllerConfig := bootstrapv1.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
@@ -183,11 +207,17 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: kcp.Namespace,
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         machine.APIVersion,
+				Kind:               machine.Kind,
+				Name:               machine.GetName(),
+				UID:                machine.GetUID(),
+				BlockOwnerDeletion: pointer.Bool(true),
+				Controller:         pointer.Bool(true),
+			}},
 		},
 		Spec: kcp.Spec.K0sConfigSpec,
 	}
-
-	_ = ctrl.SetControllerReference(kcp, &controllerConfig, c.Scheme)
 
 	if err := c.Client.Patch(ctx, &controllerConfig, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
