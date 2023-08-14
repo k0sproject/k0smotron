@@ -527,6 +527,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cluster-autoscaling" class="md-nav__link">
+    Cluster autoscaling
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -771,6 +778,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cluster-autoscaling" class="md-nav__link">
+    Cluster autoscaling
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -793,6 +807,49 @@ You are not currently viewing the documentation for the current stable release o
 <p>When k0smotron acts as a <a href="https://cluster-api.sigs.k8s.io/developer/architecture/controllers/control-plane.html">control plane provider</a> it will create and manage the cluster control plane within the management cluster, just as in the <a href="../cluster/">standalone</a> case.</p>
 <h2 id="bootstrap-provider">Bootstrap provider<a class="headerlink" href="#bootstrap-provider" title="Permanent link">#</a></h2>
 <p>k0smotron can also act as a <a href="https://cluster-api.sigs.k8s.io/developer/architecture/controllers/bootstrap.html">bootstrap provider</a> for worker nodes you want to manage via Cluster API. When k0smotron detects a new node that needs to be added to the cluster it will automatically create a new <a href="">join token</a> needed for the node and creates the provisioning cloud-init script for the node. Once Cluster API controllers sees the node initialization script in place (in a secret) the <a href="https://cluster-api.sigs.k8s.io/developer/providers/machine-infrastructure.html">infrastructure provider</a> will create the needed resources (usually VMs in cloud provider infrastructure) with the k0smotron created cloud-init script.</p>
+<h2 id="cluster-autoscaling">Cluster autoscaling<a class="headerlink" href="#cluster-autoscaling" title="Permanent link">#</a></h2>
+<p><a href="https://github.com/kubernetes/autoscaler">Cluster Autoscaler</a> works with <a href="https://cluster-api.sigs.k8s.io/tasks/automated-machine-management/autoscaling">ClusterAPI</a>. You need to deploy an "instance" of autoscaler per child cluster in order for it to work properly. If you deploy autoscaler via Helm, here's some values to look out:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Why?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>autodiscovery.clusterName</code></td>
+<td>Select the child cluster you want to autoscale. E.g. <code>my-cluster</code></td>
+</tr>
+<tr>
+<td><code>cloudProvider</code></td>
+<td>Set to <code>clusterapi</code> to make autoscaler work with ClusterAPI</td>
+</tr>
+<tr>
+<td><code>clusterAPIKubeconfigSecret</code></td>
+<td>Set to the kubeconfig secret created by CAPI. E.g. <code>my-cluster-kubeconfig</code></td>
+</tr>
+<tr>
+<td><code>clusterAPIMode</code></td>
+<td>Set to <code>kubeconfig-incluster</code>. Essentially this tells that the child cluster API is accessed with the kubeconfig from the secret and management cluster via <code>incluster</code> kubeconfig</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">RBAC finetuning needed with Helm deployed autoscaler</p>
+<p>The Helm chart does not take into account the need for autoscaler to access the implementation specific resources in <code>infrastructure.cluster.x-k8s.io</code> group. To fix that you need to modify* the <code>ClusterRole</code> to include e.g.</p>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">verbs</span><span class="p">:</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span>
+<span class="w w-Error"> </span><span class="nt">apiGroups</span><span class="p">:</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
+<span class="w"> </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;*&#39;</span><span class="w"> </span><span class="c1"># You can of course limit this to your specific infrastructure types only, e.g. `AWSMachineDeployment` etc.</span>
+</code></pre></div>
+<p>*) Happy to get feedback whether there's a better workaround for this.</p>
+</div>
 
 
 
