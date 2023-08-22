@@ -2,7 +2,8 @@
 
 k0smotron can act as a control plane bootstrap provider via usage of `K0sControlPlane` CRDs.
 
-As per usual, you need to define a `Cluster` object given with a reference to control plane provider:
+When creating a Cluster with Cluster API you typically need to create a `Cluster` object. With k0smotron there needs to be a link to the control plane provider `K0sControlPlane`:
+
 ```yaml
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
@@ -59,6 +60,6 @@ spec:
     spec: {}
 ```
 
-With this config, k0smotron will create 3 machines based on the MachineTemplate configuration and install the k0s control plane on each.
+By applying this yaml, k0smotron will create 3 machines based on the `MachineTemplate` configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.
 
 For a full reference on `K0sControlPlane` configurability see the [reference docs](resource-reference.md#controlplaneclusterx-k8siov1beta1).

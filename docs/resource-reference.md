@@ -100,7 +100,7 @@ Resource Types:
         <td><b>downloadURL</b></td>
         <td>string</td>
         <td>
-          DownloadURL specifies the URL to download k0s binary from. If specified the version field is ignored and what ever version is downloaded from the URL is used.<br/>
+          DownloadURL specifies the URL from which to download the k0s binary. If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1061,7 +1061,7 @@ Resource Types:
         <td><b>downloadURL</b></td>
         <td>string</td>
         <td>
-          DownloadURL specifies the URL to download k0s binary from. If specified the version field is ignored and what ever version is downloaded from the URL is used.<br/>
+          DownloadURL specifies the URL from which to download the k0s binary. If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.<br/>
         </td>
         <td>false</td>
       </tr><tr>
