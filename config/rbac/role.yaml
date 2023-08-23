@@ -86,7 +86,7 @@ rules:
   verbs:
   - get
   - list
-  - pacth
+  - patch
   - update
   - watch
 - apiGroups:
