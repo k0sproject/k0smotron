@@ -258,7 +258,11 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		return "", errors.Wrap(err, "failed to lookup CA certificates")
 	}
 	ca := certificates.GetByPurpose(secret.ClusterCA)
-	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port))
+	if ca.KeyPair == nil {
+		return "", errors.New("failed to get CA certificate key pair")
+	}
+
+	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port), "kubelet-bootstrap")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create join token")
 	}

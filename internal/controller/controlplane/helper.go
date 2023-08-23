@@ -17,12 +17,12 @@ import (
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
 
-func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) error {
-	machine := c.generateMachine(ctx, name, kcp, infraRef)
+func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
+	machine := c.generateMachine(ctx, name, cluster, kcp, infraRef)
 
 	_ = ctrl.SetControllerReference(cluster, machine, c.Scheme)
 
-	return c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
+	return machine, c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
 	})
 }
@@ -43,7 +43,7 @@ func (c *K0sController) createMachine(ctx context.Context, name string, cluster 
 //	return c.Client.Delete(ctx, machine)
 //}
 
-func (c *K0sController) generateMachine(_ context.Context, name string, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) *clusterv1.Machine {
+func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) *clusterv1.Machine {
 	ver := semver.MustParse(kcp.Spec.K0sVersion)
 	v := fmt.Sprintf("%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch())
 	return &clusterv1.Machine{
@@ -62,7 +62,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, kcp *cpv
 		},
 		Spec: clusterv1.MachineSpec{
 			Version:     &v,
-			ClusterName: kcp.Name,
+			ClusterName: cluster.Name,
 			Bootstrap: clusterv1.Bootstrap{
 				ConfigRef: &corev1.ObjectReference{
 					APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
@@ -127,11 +127,13 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	machine.SetAnnotations(annotations)
 
 	labels := map[string]string{}
-	for key, value := range kcp.Labels {
-		labels[key] = value
+	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Labels {
+		labels[k] = v
 	}
 
 	labels[clusterv1.ClusterNameLabel] = kcp.Name
+	labels[clusterv1.MachineControlPlaneLabel] = ""
+	labels[clusterv1.MachineControlPlaneNameLabel] = kcp.Name
 	machine.SetLabels(labels)
 
 	machine.SetAPIVersion(unstructuredMachineTemplate.GetAPIVersion())

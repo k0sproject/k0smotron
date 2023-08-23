@@ -94,13 +94,13 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	var localPort int
 	// nolint:staticcheck
 	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-lb")
+		localPort, _ = getLBPort("docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting to see admin kubeconfig secret")
-	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
+	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
@@ -117,7 +117,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	for i := 0; i < 3; i++ {
 		// nolint:staticcheck
 		err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-			nodeName := fmt.Sprintf("docker-test-%d", i)
+			nodeName := fmt.Sprintf("docker-test-cluster-docker-test-%d", i)
 			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
 			if err != nil {
 				return false, nil
@@ -129,16 +129,16 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	}
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
+	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-cluster-docker-test-worker-0", corev1.ConditionTrue))
 
 	s.T().Log("verifying cloud-init extras")
-	preStartFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/pre-start")
+	preStartFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/pre-start")
 	s.Require().NoError(err)
 	s.Require().Equal("pre-start", preStartFile)
-	postStartFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/post-start")
+	postStartFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/post-start")
 	s.Require().NoError(err)
 	s.Require().Equal("post-start", postStartFile)
-	extraFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/test-file")
+	extraFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
 }
@@ -202,7 +202,7 @@ var dockerClusterYaml = `
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: docker-test
+  name: docker-test-cluster
   namespace: default
 spec:
   clusterNetwork:
@@ -268,7 +268,7 @@ metadata:
   namespace: default
 spec:
   version: v1.27.1
-  clusterName: docker-test
+  clusterName: docker-test-cluster
   bootstrap:
     configRef:
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
