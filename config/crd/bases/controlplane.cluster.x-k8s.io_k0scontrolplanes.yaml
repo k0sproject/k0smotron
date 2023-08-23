@@ -43,9 +43,9 @@ spec:
                       type: string
                     type: array
                   downloadURL:
-                    description: DownloadURL specifies the URL to download k0s binary
-                      from. If specified the version field is ignored and what ever
-                      version is downloaded from the URL is used.
+                    description: DownloadURL specifies the URL from which to download
+                      the k0s binary. If the version field is specified, it is ignored,
+                      and whatever version is downloaded from the URL is used.
                     type: string
                   files:
                     description: Files specifies extra files to be passed to user_data

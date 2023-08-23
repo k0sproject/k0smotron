@@ -169,8 +169,8 @@ type K0sConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	PreInstalledK0s bool `json:"preInstalledK0s,omitempty"`
 
-	// DownloadURL specifies the URL to download k0s binary from.
-	// If specified the version field is ignored and what ever version is downloaded from the URL is used.
+	// DownloadURL specifies the URL from which to download the k0s binary.
+	// If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
 	// +kubebuilder:validation:Optional
 	DownloadURL string `json:"downloadURL,omitempty"`
 }

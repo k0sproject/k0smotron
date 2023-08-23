@@ -10,12 +10,218 @@ Packages:
 
 Resource Types:
 
+- [K0sControllerConfig](#k0scontrollerconfig)
+
 - [K0sWorkerConfig](#k0sworkerconfig)
 
 - [K0sWorkerConfigTemplate](#k0sworkerconfigtemplate)
 
 
 
+
+## K0sControllerConfig
+<sup><sup>[↩ Parent](#bootstrapclusterx-k8siov1beta1 )</sup></sup>
+
+
+
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>bootstrap.cluster.x-k8s.io/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>K0sControllerConfig</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrollerconfigspec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrollerconfigstatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.spec
+<sup><sup>[↩ Parent](#k0scontrollerconfig)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args specifies extra arguments to be passed to k0s worker. See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>downloadURL</b></td>
+        <td>string</td>
+        <td>
+          DownloadURL specifies the URL from which to download the k0s binary. If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrollerconfigspecfilesindex">files</a></b></td>
+        <td>[]object</td>
+        <td>
+          Files specifies extra files to be passed to user_data upon creation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0s</b></td>
+        <td>object</td>
+        <td>
+          K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>postStartCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PostStartCommands specifies commands to be run after starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preInstalledK0s</b></td>
+        <td>boolean</td>
+        <td>
+          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preStartCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.spec.files[index]
+<sup><sup>[↩ Parent](#k0scontrollerconfigspec)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>permissions</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.status
+<sup><sup>[↩ Parent](#k0scontrollerconfig)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>dataSecretName</b></td>
+        <td>string</td>
+        <td>
+          DataSecretName is the name of the secret that stores the bootstrap data script.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>ready</b></td>
+        <td>boolean</td>
+        <td>
+          Ready indicates the Bootstrapdata field is ready to be consumed<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
 
 ## K0sWorkerConfig
 <sup><sup>[↩ Parent](#bootstrapclusterx-k8siov1beta1 )</sup></sup>
@@ -517,10 +723,626 @@ JoinTokenSecretRef is a reference to a secret that contains the join token. This
 
 Resource Types:
 
+- [K0sControllerConfig](#k0scontrollerconfig)
+
+- [K0sControlPlane](#k0scontrolplane)
+
 - [K0smotronControlPlane](#k0smotroncontrolplane)
 
 
 
+
+## K0sControllerConfig
+<sup><sup>[↩ Parent](#controlplaneclusterx-k8siov1beta1 )</sup></sup>
+
+
+
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>controlplane.cluster.x-k8s.io/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>K0sControllerConfig</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrollerconfigspec-1">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrollerconfigstatus-1">status</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.spec
+<sup><sup>[↩ Parent](#k0scontrollerconfig-1)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args specifies extra arguments to be passed to k0s worker. See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>downloadURL</b></td>
+        <td>string</td>
+        <td>
+          DownloadURL specifies the URL to download k0s binary from. If specified the version field is ignored and what ever version is downloaded from the URL is used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrollerconfigspecfilesindex-1">files</a></b></td>
+        <td>[]object</td>
+        <td>
+          Files specifies extra files to be passed to user_data upon creation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0s</b></td>
+        <td>object</td>
+        <td>
+          K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>postStartCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PostStartCommands specifies commands to be run after starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preInstalledK0s</b></td>
+        <td>boolean</td>
+        <td>
+          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preStartCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.spec.files[index]
+<sup><sup>[↩ Parent](#k0scontrollerconfigspec-1)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>permissions</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.status
+<sup><sup>[↩ Parent](#k0scontrollerconfig-1)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>dataSecretName</b></td>
+        <td>string</td>
+        <td>
+          DataSecretName is the name of the secret that stores the bootstrap data script.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>ready</b></td>
+        <td>boolean</td>
+        <td>
+          Ready indicates the Bootstrapdata field is ready to be consumed<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+## K0sControlPlane
+<sup><sup>[↩ Parent](#controlplaneclusterx-k8siov1beta1 )</sup></sup>
+
+
+
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>controlplane.cluster.x-k8s.io/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>K0sControlPlane</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanestatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec
+<sup><sup>[↩ Parent](#k0scontrolplane)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspec">k0sConfigSpec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplate">machineTemplate</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>k0sVersion</b></td>
+        <td>string</td>
+        <td>
+          K0sVersion defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 1<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec
+<sup><sup>[↩ Parent](#k0scontrolplanespec)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args specifies extra arguments to be passed to k0s worker. See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>downloadURL</b></td>
+        <td>string</td>
+        <td>
+          DownloadURL specifies the URL from which to download the k0s binary. If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecfilesindex">files</a></b></td>
+        <td>[]object</td>
+        <td>
+          Files specifies extra files to be passed to user_data upon creation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0s</b></td>
+        <td>object</td>
+        <td>
+          K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>postStartCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PostStartCommands specifies commands to be run after starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preInstalledK0s</b></td>
+        <td>boolean</td>
+        <td>
+          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preStartCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.files[index]
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspec)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>permissions</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate
+<sup><sup>[↩ Parent](#k0scontrolplanespec)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplateinfrastructureref">infrastructureRef</a></b></td>
+        <td>object</td>
+        <td>
+          InfrastructureRef is a required reference to a custom resource offered by an infrastructure provider.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatemetadata">metadata</a></b></td>
+        <td>object</td>
+        <td>
+          Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.infrastructureRef
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate)</sup></sup>
+
+
+
+InfrastructureRef is a required reference to a custom resource offered by an infrastructure provider.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>
+          API version of the referent.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>
+          If referring to a piece of an object instead of an entire object, this string should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2]. For example, if the object reference is to a container within a pod, this would take on a value like: "spec.containers{name}" (where "name" refers to the name of the container that triggered the event) or if no container name is specified "spec.containers[2]" (container with index 2 in this pod). This syntax is chosen only to have some well-defined way of referencing a part of an object. TODO: this design is not final and this field is subject to change in the future.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>resourceVersion</b></td>
+        <td>string</td>
+        <td>
+          Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>uid</b></td>
+        <td>string</td>
+        <td>
+          UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.metadata
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate)</sup></sup>
+
+
+
+Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: http://kubernetes.io/docs/user-guide/annotations<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: http://kubernetes.io/docs/user-guide/labels<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.status
+<sup><sup>[↩ Parent](#k0scontrolplane)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>controlPlaneReady</b></td>
+        <td>boolean</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>externalManagedControlPlane</b></td>
+        <td>boolean</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>initialized</b></td>
+        <td>boolean</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>ready</b></td>
+        <td>boolean</td>
+        <td>
+          Ready denotes that the control plane is ready<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
 
 ## K0smotronControlPlane
 <sup><sup>[↩ Parent](#controlplaneclusterx-k8siov1beta1 )</sup></sup>
@@ -604,6 +1426,13 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>[]string</td>
         <td>
           ControlPlaneFlags allows to configure additional flags for k0s control plane and to override existing ones. The default flags are kept unless they are overriden explicitly. Flags with arguments must be specified as a single string, e.g. --some-flag=argument<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>enableMonitoring</b></td>
+        <td>boolean</td>
+        <td>
+          EnableMonitoring enables prometheus sidecar that scrapes metrics from the child cluster system components and expose them as usual kubernetes pod metrics.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4323,6 +5152,13 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>[]string</td>
         <td>
           ControlPlaneFlags allows to configure additional flags for k0s control plane and to override existing ones. The default flags are kept unless they are overriden explicitly. Flags with arguments must be specified as a single string, e.g. --some-flag=argument<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>enableMonitoring</b></td>
+        <td>boolean</td>
+        <td>
+          EnableMonitoring enables prometheus sidecar that scrapes metrics from the child cluster system components and expose them as usual kubernetes pod metrics.<br/>
         </td>
         <td>false</td>
       </tr><tr>
