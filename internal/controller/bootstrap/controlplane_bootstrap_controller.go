@@ -18,11 +18,11 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -85,7 +85,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Look up the owner of this config if there is one
 	configOwner, err := bsutil.GetConfigOwner(ctx, c.Client, config)
-	if apierrors.IsNotFound(errors.Cause(err)) {
+	if apierrors.IsNotFound(err) {
 		// Could not find the owner yet, this is not an error and will rereconcile when the owner gets set.
 		log.Info("Owner not found yet, waiting until it is set")
 		return ctrl.Result{}, nil
@@ -104,12 +104,12 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	// Lookup the cluster the config owner is associated with
 	cluster, err := capiutil.GetClusterByName(ctx, c.Client, configOwner.GetNamespace(), configOwner.ClusterName())
 	if err != nil {
-		if errors.Cause(err) == capiutil.ErrNoCluster {
+		if errors.Is(err, capiutil.ErrNoCluster) {
 			log.Info(fmt.Sprintf("%s does not belong to a cluster yet, waiting until it's part of a cluster", configOwner.GetKind()))
 			return ctrl.Result{}, nil
 		}
 
-		if apierrors.IsNotFound(errors.Cause(err)) {
+		if apierrors.IsNotFound(err) {
 			log.Info("Cluster does not exist yet, waiting until it is created")
 			return ctrl.Result{}, nil
 		}
@@ -399,7 +399,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, conf
 	name := strings.Join(nameParts, "-")
 	machineImpl, err := c.getMachineImplementation(ctx, name, config)
 	if err != nil {
-		return "", errors.Wrap(err, "error getting machine implementation")
+		return "", fmt.Errorf("error getting machine implementation: %w", err)
 	}
 	addresses, found, err := unstructured.NestedSlice(machineImpl.UnstructuredContent(), "status", "addresses")
 	if err != nil {
@@ -437,7 +437,7 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, n
 	var machine clusterv1.Machine
 	err := c.Get(ctx, client.ObjectKey{Name: name, Namespace: config.Namespace}, &machine)
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting machine object")
+		return nil, fmt.Errorf("error getting machine object: %w", err)
 	}
 
 	infRef := machine.Spec.InfrastructureRef
@@ -451,7 +451,7 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, n
 
 	err = c.Get(ctx, key, machineImpl)
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting machine implementation object")
+		return nil, fmt.Errorf("error getting machine implementation object: %w", err)
 	}
 	return machineImpl, nil
 }

@@ -18,6 +18,7 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -31,7 +32,6 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
-	"github.com/pkg/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 
@@ -86,7 +86,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	// Look up the owner of this config if there is one
 	configOwner, err := bsutil.GetConfigOwner(ctx, r.Client, config)
-	if apierrors.IsNotFound(errors.Cause(err)) {
+	if apierrors.IsNotFound(err) {
 		// Could not find the owner yet, this is not an error and will rereconcile when the owner gets set.
 		log.Info("Owner not found yet, waiting until it is set")
 		return ctrl.Result{}, nil
@@ -105,12 +105,12 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	// Lookup the cluster the config owner is associated with
 	cluster, err := capiutil.GetClusterByName(ctx, r.Client, configOwner.GetNamespace(), configOwner.ClusterName())
 	if err != nil {
-		if errors.Cause(err) == capiutil.ErrNoCluster {
+		if errors.Is(err, capiutil.ErrNoCluster) {
 			log.Info(fmt.Sprintf("%s does not belong to a cluster yet, waiting until it's part of a cluster", configOwner.GetKind()))
 			return ctrl.Result{}, nil
 		}
 
-		if apierrors.IsNotFound(errors.Cause(err)) {
+		if apierrors.IsNotFound(err) {
 			log.Info("Cluster does not exist yet, waiting until it is created")
 			return ctrl.Result{}, nil
 		}
@@ -223,10 +223,11 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		return "", errors.New("control plane endpoint is not set")
+
 	}
 	childClient, err := kutil.LoadChildClusterKubeClient(ctx, scope.Cluster, r.Client)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create child cluster client")
+		return "", fmt.Errorf("failed to create child cluster client: %w", err)
 	}
 
 	// Create the token using the child cluster client
@@ -250,21 +251,22 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 			"usage-bootstrap-api-worker-calls": "true",
 		},
 	}); err != nil {
-		return "", errors.Wrap(err, "failed to create token secret")
+		return "", fmt.Errorf("failed to create token secret: %w", err)
 	}
 
 	certificates := secret.NewCertificatesForWorker("")
 	if err := certificates.Lookup(ctx, r.Client, capiutil.ObjectKey(scope.Cluster)); err != nil {
-		return "", errors.Wrap(err, "failed to lookup CA certificates")
+		return "", fmt.Errorf("failed to lookup CA certificates: %w", err)
 	}
 	ca := certificates.GetByPurpose(secret.ClusterCA)
 	if ca.KeyPair == nil {
 		return "", errors.New("failed to get CA certificate key pair")
+
 	}
 
 	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port), "kubelet-bootstrap")
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create join token")
+		return "", fmt.Errorf("failed to create join token: %w", err)
 	}
 	return joinToken, nil
 }
