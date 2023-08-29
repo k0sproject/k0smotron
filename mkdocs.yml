@@ -23,7 +23,8 @@ nav:
     - Cluster API:
       - Overview: cluster-api.md
       - Control Plane: capi-controlplane.md
-      - Bootstrap: capi-bootstrap.md
+      - Control Plane Bootstrap: capi-controlplane-bootstrap.md
+      - Worker Node Bootstrap: capi-bootstrap.md
       - Examples:
         - Overview: capi-examples.md
         - AWS: capi-aws.md
