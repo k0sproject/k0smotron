@@ -55,6 +55,11 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.createK0smotronCluster(s.Context(), kc)
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
+	pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), "kmc-kmc-test-0", metav1.GetOptions{})
+	s.Require().NoError(err)
+	s.Require().Equal("100m", pod.Spec.Containers[0].Resources.Requests.Cpu().String())
+	s.Require().Equal("100Mi", pod.Spec.Containers[0].Resources.Requests.Memory().String())
+
 	s.T().Log("Generating k0smotron join token")
 	token, err := util.GetJoinToken(kc, rc, "kmc-kmc-test-0", "kmc-test")
 	s.Require().NoError(err)
@@ -158,6 +163,12 @@ metadata:
 					"configMap": { "name": "manifest-cm" }
 				}
 			],
+			"resources": {
+				"requests": {
+					"cpu": "100m",
+					"memory": "100Mi"
+				}
+			},
 			"k0sConfig": {
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind": "ClusterConfig",
