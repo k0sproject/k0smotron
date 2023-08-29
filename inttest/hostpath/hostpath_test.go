@@ -126,6 +126,13 @@ func (s *HostPathSuite) createK0smotronCluster(ctx context.Context, kc *kubernet
 			"persistence": {
 				"type": "hostPath",
 				"hostPath": "/tmp/kmc-test"
+			},
+			"k0sConfig": {
+				"apiVersion": "k0s.k0sproject.io/v1beta1",
+				"kind": "ClusterConfig",
+				"spec": {
+					"telemetry": {"enabled": false}
+				}
 			}
 		}
 	  }

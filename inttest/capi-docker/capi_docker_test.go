@@ -184,6 +184,12 @@ spec:
     type: emptyDir
   service:
     type: NodePort
+  k0sConfig:
+    apiVersion: k0s.k0sproject.io/v1beta1
+    kind: ClusterConfig
+    spec:
+      telemetry:
+        enabled: false
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster

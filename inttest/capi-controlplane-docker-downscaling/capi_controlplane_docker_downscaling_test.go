@@ -258,6 +258,8 @@ spec:
         api:
           extraArgs:
             anonymous-auth: "true"
+        telemetry:
+          enabled: false
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -335,6 +337,8 @@ spec:
         api:
           extraArgs:
             anonymous-auth: "true"
+        telemetry:
+          enabled: false
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
