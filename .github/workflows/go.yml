@@ -105,6 +105,7 @@ jobs:
           - check-capi-docker
           - check-capi-docker-machinedeployment
           - check-capi-controlplane-docker
+          - check-capi-controlplane-docker-downscaling
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3

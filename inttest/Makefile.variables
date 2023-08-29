@@ -12,5 +12,6 @@ smoketests := \
     check-jointoken \
     check-capi-docker \
     check-capi-controlplane-docker \
+    check-capi-controlplane-docker-downscaling \
     check-monitoring \
     check-capi-docker-machinedeployment \

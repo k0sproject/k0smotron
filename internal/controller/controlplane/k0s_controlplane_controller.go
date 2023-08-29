@@ -152,22 +152,21 @@ func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluste
 func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
 	// TODO: Scale down machines if needed
 	if kcp.Status.Replicas > kcp.Spec.Replicas {
-		return fmt.Errorf("downscaling is not supported yet")
-		//for i := kcp.Spec.Replicas; i < kcp.Status.Replicas; i++ {
-		//	name := machineName(kcp.Name, int(i))
-		//
-		//	if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
-		//		return fmt.Errorf("error deleting machine from template: %w", err)
-		//	}
-		//
-		//	if err := c.deleteMachineFromTemplate(ctx, name, kcp); err != nil {
-		//		return fmt.Errorf("error deleting machine from template: %w", err)
-		//	}
-		//
-		//	if err := c.deleteMachine(ctx, name, kcp); err != nil {
-		//		return fmt.Errorf("error deleting machine from template: %w", err)
-		//	}
-		//}
+		for i := kcp.Spec.Replicas; i < kcp.Status.Replicas; i++ {
+			name := machineName(kcp.Name, int(i))
+
+			if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
+				return fmt.Errorf("error deleting machine from template: %w", err)
+			}
+
+			if err := c.deleteMachineFromTemplate(ctx, name, kcp); err != nil {
+				return fmt.Errorf("error deleting machine from template: %w", err)
+			}
+
+			if err := c.deleteMachine(ctx, name, kcp); err != nil {
+				return fmt.Errorf("error deleting machine from template: %w", err)
+			}
+		}
 	}
 	for i := 0; i < int(kcp.Spec.Replicas); i++ {
 		name := machineName(kcp.Name, i)
@@ -228,19 +227,19 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 	return nil
 }
 
-//func (c *K0sController) deleteBootstrapConfig(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
-//	controllerConfig := bootstrapv1.K0sControllerConfig{
-//		TypeMeta: metav1.TypeMeta{
-//			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
-//			Kind:       "K0sControllerConfig",
-//		},
-//		ObjectMeta: metav1.ObjectMeta{
-//			Name:      name,
-//			Namespace: kcp.Namespace,
-//		},
-//	}
-//	return c.Client.Delete(ctx, &controllerConfig)
-//}
+func (c *K0sController) deleteBootstrapConfig(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
+	controllerConfig := bootstrapv1.K0sControllerConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+			Kind:       "K0sControllerConfig",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: kcp.Namespace,
+		},
+	}
+	return c.Client.Delete(ctx, &controllerConfig)
+}
 
 func (c *K0sController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{

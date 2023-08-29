@@ -63,3 +63,19 @@ spec:
 By applying this yaml, k0smotron will create 3 machines based on the `MachineTemplate` configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.
 
 For a full reference on `K0sControlPlane` configurability see the [reference docs](resource-reference.md#controlplaneclusterx-k8siov1beta1).
+
+## Downscaling the control plane
+
+**WARNING: Downscaling is a dangerous operation and should only be done if you know what you are doing.**
+
+Kubernetes using etcd as its backing store. It's crucial to have a quorum of etcd nodes available at all times. Always run etcd as a cluster of **odd** members.
+    
+When downscaling the control plane, you need firstly to deregister the node from the etcd cluster. This can be done by running the following command on the node that will be removed:
+
+```bash
+k0s etcd leave
+``` 
+
+**NOTE:** k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have `k0smotron-test` cluster of 5 nodes and you downscale to 3 nodes, the nodes `k0smotron-test-3` and `k0smotron-test-4` will be removed. 
+
+After removing members from etcd cluster, you can simply edit the `K0sControlPlane` object and change the `spec.replicas` field to the desired number of replicas. k0smotron will then automatically scale down the control plane to the desired number of replicas.
