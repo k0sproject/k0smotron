@@ -27,21 +27,21 @@ func (c *K0sController) createMachine(ctx context.Context, name string, cluster 
 	})
 }
 
-//func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
-//	machine := &clusterv1.Machine{
-//
-//		TypeMeta: metav1.TypeMeta{
-//			APIVersion: clusterv1.GroupVersion.String(),
-//			Kind:       "Machine",
-//		},
-//		ObjectMeta: metav1.ObjectMeta{
-//			Name:      name,
-//			Namespace: kcp.Namespace,
-//		},
-//	}
-//
-//	return c.Client.Delete(ctx, machine)
-//}
+func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
+	machine := &clusterv1.Machine{
+
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: clusterv1.GroupVersion.String(),
+			Kind:       "Machine",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: kcp.Namespace,
+		},
+	}
+
+	return c.Client.Delete(ctx, machine)
+}
 
 func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) *clusterv1.Machine {
 	ver := semver.MustParse(kcp.Spec.K0sVersion)
@@ -90,14 +90,14 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 	return machineFromTemplate, nil
 }
 
-//func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
-//	machineFromTemplate, err := c.generateMachineFromTemplate(ctx, name, kcp)
-//	if err != nil {
-//		return err
-//	}
-//
-//	return c.Client.Delete(ctx, machineFromTemplate)
-//}
+func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
+	machineFromTemplate, err := c.generateMachineFromTemplate(ctx, name, kcp)
+	if err != nil {
+		return err
+	}
+
+	return c.Client.Delete(ctx, machineFromTemplate)
+}
 
 func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
 	unstructuredMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
