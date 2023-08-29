@@ -835,6 +835,21 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#downscaling-the-control-plane" class="md-nav__link">
+    Downscaling the control plane
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -904,6 +919,14 @@ You are not currently viewing the documentation for the current stable release o
 </code></pre></div>
 <p>By applying this yaml, k0smotron will create 3 machines based on the <code>MachineTemplate</code> configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.</p>
 <p>For a full reference on <code>K0sControlPlane</code> configurability see the <a href="../resource-reference/#controlplaneclusterx-k8siov1beta1">reference docs</a>.</p>
+<h2 id="downscaling-the-control-plane">Downscaling the control plane<a class="headerlink" href="#downscaling-the-control-plane" title="Permanent link">#</a></h2>
+<p><strong>WARNING: Downscaling is a dangerous operation and should only be done if you know what you are doing.</strong></p>
+<p>Kubernetes using etcd as its backing store. It's crucial to have a quorum of etcd nodes available at all times. Always run etcd as a cluster of <strong>odd</strong> members.</p>
+<p>When downscaling the control plane, you need firstly to deregister the node from the etcd cluster. This can be done by running the following command on the node that will be removed:</p>
+<div class="highlight"><pre><span></span><code>k0s<span class="w"> </span>etcd<span class="w"> </span>leave
+</code></pre></div>
+<p><strong>NOTE:</strong> k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have <code>k0smotron-test</code> cluster of 5 nodes and you downscale to 3 nodes, the nodes <code>k0smotron-test-3</code> and <code>k0smotron-test-4</code> will be removed. </p>
+<p>After removing members from etcd cluster, you can simply edit the <code>K0sControlPlane</code> object and change the <code>spec.replicas</code> field to the desired number of replicas. k0smotron will then automatically scale down the control plane to the desired number of replicas.</p>
 
 
 
