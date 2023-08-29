@@ -115,6 +115,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 								},
 							},
 						}},
+						Resources: kmc.Spec.Resources,
 						ReadinessProbe: &v1.Probe{
 							InitialDelaySeconds: 5,
 							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},

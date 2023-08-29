@@ -92,6 +92,9 @@ type ClusterSpec struct {
 	// them as usual kubernetes pod metrics.
 	//+kubebuilder:validation:Optional
 	EnableMonitoring bool `json:"enableMonitoring,omitempty"`
+
+	// Resources describes the compute resource requirements for the control plane pods.
+	Resources v1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
