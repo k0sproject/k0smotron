@@ -148,6 +148,8 @@ func (s *MonitoringSuite) createK0smotronCluster(ctx context.Context, kc *kubern
 
 const k0sConfig = `
 spec:
+    telemetry:
+      enabled: false
     extensions:
         helm:
           repositories:

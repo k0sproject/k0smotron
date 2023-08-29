@@ -132,9 +132,16 @@ func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx contex
 			"service":{
 				"type": "NodePort"
 			},
-			"kineDataSourceSecretName": "postgres-dsn"
+			"kineDataSourceSecretName": "postgres-dsn",
+			"k0sConfig": {
+				"apiVersion": "k0s.k0sproject.io/v1beta1",
+				"kind": "ClusterConfig",
+				"spec": {
+					"telemetry": {"enabled": false}
+				}
+			}
 		}
-	  }
+	}
 `)
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)

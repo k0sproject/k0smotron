@@ -161,7 +161,9 @@ metadata:
 			"k0sConfig": {
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind": "ClusterConfig",
-				"spec": {}
+				"spec": {
+					"telemetry": {"enabled": false}
+				}
 			}
 		}
 	  }
