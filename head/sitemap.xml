@@ -76,6 +76,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://docs.k0smotron.io/head/monitoring/</loc>
+         <lastmod>2023-08-30</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://docs.k0smotron.io/head/resource-reference/</loc>
          <lastmod>2023-08-30</lastmod>
          <changefreq>daily</changefreq>

@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/cluster/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/monitoring/">
       
       
-        <link rel="prev" href="../usage-overview/">
+        <link rel="prev" href="../ha/">
       
       
-        <link rel="next" href="../configuration/">
+        <link rel="next" href="../cluster-api/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Creating a cluster - Documentation</title>
+        <title>Monitoring - Documentation</title>
       
     
     
@@ -90,7 +90,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#creating-a-cluster" class="md-skip">
+        <a href="#control-plane-monitoring" class="md-skip">
           Skip to content
         </a>
       
@@ -141,7 +141,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Creating a cluster
+              Monitoring
             
           </span>
         </div>
@@ -428,18 +428,9 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../cluster/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -448,7 +439,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
     </li>
   
 
@@ -518,9 +508,18 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../monitoring/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -529,6 +528,7 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
     </li>
   
 
@@ -906,42 +906,21 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="creating-a-cluster">Creating a cluster<a class="headerlink" href="#creating-a-cluster" title="Permanent link">#</a></h1>
-<p>The following example creates a simple cluster named <code>k0smotron-test</code>:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: k0smotron.io/v1beta1</span>
-<span class="s">kind: Cluster</span>
-<span class="s">metadata:</span>
-<span class="s">  name: k0smotron-test</span>
-<span class="s">spec: null</span>
-<span class="s">EOF</span>
+<h1 id="control-plane-monitoring">Control Plane Monitoring<a class="headerlink" href="#control-plane-monitoring" title="Permanent link">#</a></h1>
+<p>K0smotron provides a mechanism to expose child cluster control plane metrics to a Prometheus instance running in the parent cluster. 
+This allows you to monitor the control plane components of the child cluster as the usual Kubernetes workload, using the same Prometheus instance that is used to monitor the parent cluster.</p>
+<p>To enable the monitoring for the k0smotron cluster you need to set <code>spec.enableMonitoring=true</code> in the <code>Cluster</code> resource:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enableMonitoring</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
-<p>This triggers k0smotron controllers to setup the control plane in pods. Once k0smotron is done you can get the admin access kubeconfig:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>k0smotron-test-kubeconfig<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.value}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>~/.kube/child.conf
-</code></pre></div>
-<p><strong>Warning</strong>: Depending on your configuration, the admin kubeconfig may not be pointing to the right address.
-If the kubeconfig doesn't work by default, you'll need to set the right value in <code>&lt;server URL&gt;</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-<span class="nt">clusters</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">cluster</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;server URL&gt;</span>
-<span class="w">    </span><span class="nt">certificate-authority-data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;redacted&gt;</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
-<span class="nt">contexts</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">context</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
-<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
-<span class="nt">current-context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Config</span>
-<span class="nt">preferences</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="nt">users</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
-<span class="w">  </span><span class="nt">user</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">client-certificate-data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;redacted&gt;</span>
-<span class="w">    </span><span class="nt">client-key-data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;redacted&gt;</span>
-</code></pre></div>
-<p>Once your control plane is ready you can start <a href="../join-nodes/">adding worker nodes</a> into the newly created control plane.</p>
+<p>This will add two sidecar containers to the control plane pods:
+- <code>monitoring-agent</code> - a container that will scrape the metrics from the control plane components.
+- <code>monitoring-proxy</code> - a container with a proxy that will expose the metrics scraped by the <code>monitoring-agent</code> to the parent cluster.</p>
+<p>All metrics contain the <code>k0smotron_cluster</code> label with the name of the cluster.</p>
 
 
 
