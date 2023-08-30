@@ -196,6 +196,51 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 			ReadOnly:  true,
 		})
 	}
+
+	// Create k0s telemetry config in the configmap and mount it to the controller pod
+	// If user disables k0s telemetry this will have not effect.
+	cm := &v1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("kmc-%s-telemetry-config", kmc.Name),
+			Namespace: kmc.Namespace,
+		},
+		Data: map[string]string{
+			"configmap.yaml": `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k0s-telemetry
+  namespace: kube-system
+data:
+  provider: "k0smotron"
+`,
+		},
+	}
+	if err := ctrl.SetControllerReference(kmc, cm, r.Scheme); err != nil {
+		return apps.StatefulSet{}, err
+	}
+	if err := r.Client.Patch(context.Background(), cm, client.Apply, patchOpts...); err != nil {
+		return apps.StatefulSet{}, err
+	}
+	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
+		Name: cm.Name,
+		VolumeSource: v1.VolumeSource{
+			ConfigMap: &v1.ConfigMapVolumeSource{
+				LocalObjectReference: v1.LocalObjectReference{Name: cm.Name},
+			},
+		},
+	})
+
+	statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+		Name:      cm.Name,
+		MountPath: "/var/lib/k0s/manifests/k0s-telemetry",
+		ReadOnly:  true,
+	})
+
 	err := ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
 	return statefulSet, err
 }

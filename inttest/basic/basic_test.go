@@ -89,6 +89,10 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().NoError(err, "test-ns-secret namespace not found. Manifest not appllied?")
 	_, err = kmcKC.CoreV1().Namespaces().Get(s.Context(), "test-ns-cm", metav1.GetOptions{})
 	s.Require().NoError(err, "test-ns-cm namespace not found. Manifest not appllied?")
+
+	cm, err := kmcKC.CoreV1().ConfigMaps("kube-system").Get(s.Context(), "k0s-telemetry", metav1.GetOptions{})
+	s.Require().NoError(err, "k0s-telemetry CM not found. Manifest not appllied?")
+	s.Require().Equal("k0smotron", cm.Data["provider"])
 }
 
 func TestBasicSuite(t *testing.T) {
