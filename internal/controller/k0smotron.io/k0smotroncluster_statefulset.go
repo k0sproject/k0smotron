@@ -32,8 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var ErrEmptyKineDataSourceURL = errors.New("kineDataSourceURL can't be empty if replicas > 1")
-
 var entrypointDefaultMode = int32(0744)
 
 const clusterLabel = "k0smotron.io/cluster"
@@ -50,7 +48,8 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 	}
 
 	if kmc.Spec.Replicas > 1 && (kmc.Spec.KineDataSourceURL == "" && kmc.Spec.KineDataSourceSecretName == "") {
-		return apps.StatefulSet{}, ErrEmptyKineDataSourceURL
+		return apps.StatefulSet{}, errors.New("kineDataSourceURL can't be empty if replicas > 1")
+
 	}
 
 	labels := labelsForCluster(kmc)
