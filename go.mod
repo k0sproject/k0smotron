@@ -112,6 +112,6 @@ require (
 )
 
 // Cluster API deps
-require sigs.k8s.io/cluster-api v1.5.0
+require sigs.k8s.io/cluster-api v1.5.1
 
 replace github.com/weaveworks/footloose => github.com/ncopa/footloose v0.0.0-20220210144732-fe970537b890
