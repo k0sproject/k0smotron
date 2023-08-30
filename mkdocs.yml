@@ -20,6 +20,7 @@ nav:
       - Configuration: configuration.md
       - Join nodes: join-nodes.md
       - HA control planes: ha.md
+      - Monitoring: monitoring.md
     - Cluster API:
       - Overview: cluster-api.md
       - Control Plane: capi-controlplane.md
