@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout k0smotron
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -41,7 +41,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Checkout k0s
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
 
         - name: Build docs dev container
           run: make -C docs .docker-image.serve-dev.stamp
