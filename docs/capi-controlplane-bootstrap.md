@@ -79,3 +79,37 @@ k0s etcd leave
 **NOTE:** k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have `k0smotron-test` cluster of 5 nodes and you downscale to 3 nodes, the nodes `k0smotron-test-3` and `k0smotron-test-4` will be removed. 
 
 After removing members from etcd cluster, you can simply edit the `K0sControlPlane` object and change the `spec.replicas` field to the desired number of replicas. k0smotron will then automatically scale down the control plane to the desired number of replicas.
+
+## Running workloads on the control plane
+
+By default, k0s and k0smotron don't run kubelet and any workloads on control plane nodes. But you can enable it by adding `--enable-worker` flag to the `spec.k0sConfigSpec.args` in the `K0sControlPlane` object. This will enable the kubelet on control plane nodes and allow you to run workloads on them.
+
+```yaml
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: docker-test
+spec:
+  replicas: 1
+  k0sConfigSpec:
+    args:
+      - --enable-worker
+      - --no-taints # disable default taints
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerMachineTemplate
+      name: docker-test-cp-template
+      namespace: default
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-test-cp-template
+  namespace: default
+spec:
+  template:
+    spec: {}
+```
+
+**Note:** Controller nodes running with `--enable-worker` are assigned `node-role.kubernetes.io/master:NoExecute` taint automatically. You can disable default taints using `--no-taints`  parameter.
