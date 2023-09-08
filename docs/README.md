@@ -2,6 +2,8 @@
 
 From pets to cattle: Streamline your Kubernetes control plane management with k0smotron
 
+Powered by [k0s](https://docs.k0sproject.io)
+
 ## Features
 
 ### Kubernetes-in-Kubernetes
@@ -18,7 +20,7 @@ With k0smotron you can connect worker nodes from ANY infrastructure to your clus
 
 ## How does it work
 
-You install k0smotron operator into an existing Kubernetes cluster. k0smotron operator will create and manage k0s control planes in that cluster. It leverages the natural pattern of working with custom resources to manage the lifecycle of the k0s control planes. k0smotron will automatically create all the needed Kubernetes lower level constructs, such as pods, configmaps etc., to 
+You install k0smotron operator into an existing Kubernetes cluster. k0smotron operator will create and manage [k0s](https://docs.k0sproject.io) control planes in that cluster. It leverages the natural pattern of working with custom resources to manage the lifecycle of the k0s control planes. k0smotron will automatically create all the needed Kubernetes lower level constructs, such as pods, configmaps etc., to run and manage the control planes.
 
 k0smotron is an Kubernetes operator designed to manage the lifecycle of k0s control planes in a Kubernetes (any distro) cluster. By running the control plane on a k8s cluster we can enjoy and leverage the high availability and auto-healing functionalities of the underlying cluster, a.k.a Mothership.
 
