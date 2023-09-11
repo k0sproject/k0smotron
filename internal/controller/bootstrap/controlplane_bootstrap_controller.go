@@ -173,7 +173,11 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		installCmd = createCPInstallCmdWithJoinToken(config, joinTokenFilePath)
 	}
 	if config.Spec.Tunneling.Enabled {
-		files = append(files, c.genTunnelingFiles(ctx, scope, config)...)
+		tunnelingFiles, err := c.genTunnelingFiles(ctx, scope, config)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("error generating tunneling files: %v", err)
+		}
+		files = append(files, tunnelingFiles...)
 	}
 	files = append(files, config.Spec.Files...)
 
@@ -304,7 +308,15 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	return files, err
 }
 
-func (c *ControlPlaneController) genTunnelingFiles(_ context.Context, _ *Scope, kcs *bootstrapv1.K0sControllerConfig) []cloudinit.File {
+func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *Scope, kcs *bootstrapv1.K0sControllerConfig) ([]cloudinit.File, error) {
+	secretName := scope.Cluster.Name + "-frp-token"
+	frpSecret := corev1.Secret{}
+	err := c.Client.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secretName}, &frpSecret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get frp secret: %w", err)
+	}
+	frpToken := string(frpSecret.Data["value"])
+
 	tunnelingResources := `
 ---
 apiVersion: v1
@@ -315,8 +327,10 @@ metadata:
 data:
   frpc.ini: |
     [common]
+    authentication_method = token
     server_addr = %s
     server_port = 31700
+    token = %s
     
     [kube-apiserver]
     type = tcp
@@ -359,8 +373,8 @@ spec:
 	return []cloudinit.File{{
 		Path:        "/var/lib/k0s/manifests/k0smotron-tunneling/manifest.yaml",
 		Permissions: "0644",
-		Content:     fmt.Sprintf(tunnelingResources, kcs.Spec.Tunneling.ServerAddress),
-	}}
+		Content:     fmt.Sprintf(tunnelingResources, kcs.Spec.Tunneling.ServerAddress, frpToken),
+	}}, nil
 }
 
 func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Scope) ([]cloudinit.File, *secret.Certificate, error) {

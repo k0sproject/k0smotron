@@ -20,8 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -258,7 +258,7 @@ func (c *K0sController) ensureCertificates(ctx context.Context, cluster *cluster
 	return certificates.LookupOrGenerate(ctx, c.Client, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")))
 }
 
-func (c *K0sController) reconcileTunneling(ctx context.Context, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+func (c *K0sController) reconcileTunneling(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
 	if !kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
 		return nil
 	}
@@ -271,9 +271,16 @@ func (c *K0sController) reconcileTunneling(ctx context.Context, _ *clusterv1.Clu
 		kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress = ip
 	}
 
+	frpToken, err := c.createFRPToken(ctx, cluster, kcp)
+	if err != nil {
+		return fmt.Errorf("error creating FRP token secret: %w", err)
+	}
+
 	frpsConfig := `
 [common]
 bind_port = 7000
+authentication_method = token
+token = ` + frpToken + `
 `
 	frpsCMName := kcp.GetName() + "-frps-config"
 	cm := corev1.ConfigMap{
@@ -291,7 +298,7 @@ bind_port = 7000
 	}
 
 	_ = ctrl.SetControllerReference(kcp, &cm, c.Scheme)
-	err := c.Client.Patch(ctx, &cm, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"})
+	err = c.Client.Patch(ctx, &cm, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"})
 	if err != nil {
 		return fmt.Errorf("error creating ConfigMap: %w", err)
 	}
@@ -411,6 +418,33 @@ func (c *K0sController) detectNodeIP(ctx context.Context, _ *cpv1beta1.K0sContro
 	}
 
 	return util.FindNodeAddress(nodes), nil
+}
+
+func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (string, error) {
+	frpToken := uuid.New().String()
+	frpSecret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cluster.Name + "-frp-token",
+			Namespace: cluster.Namespace,
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: cluster.Name,
+			},
+		},
+		Data: map[string][]byte{
+			"value": []byte(frpToken),
+		},
+		Type: clusterv1.ClusterSecretType,
+	}
+
+	_ = ctrl.SetControllerReference(kcp, frpSecret, c.Scheme)
+
+	return frpToken, c.Client.Patch(ctx, frpSecret, client.Apply, &client.PatchOptions{
+		FieldManager: "k0smotron",
+	})
 }
 
 func machineName(base string, i int) string {
