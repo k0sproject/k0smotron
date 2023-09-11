@@ -664,6 +664,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#running-workloads-on-the-control-plane" class="md-nav__link">
+    Running workloads on the control plane
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -943,6 +950,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#running-workloads-on-the-control-plane" class="md-nav__link">
+    Running workloads on the control plane
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1022,6 +1036,35 @@ You are not currently viewing the documentation for the current stable release o
 </code></pre></div>
 <p><strong>NOTE:</strong> k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have <code>k0smotron-test</code> cluster of 5 nodes and you downscale to 3 nodes, the nodes <code>k0smotron-test-3</code> and <code>k0smotron-test-4</code> will be removed. </p>
 <p>After removing members from etcd cluster, you can simply edit the <code>K0sControlPlane</code> object and change the <code>spec.replicas</code> field to the desired number of replicas. k0smotron will then automatically scale down the control plane to the desired number of replicas.</p>
+<h2 id="running-workloads-on-the-control-plane">Running workloads on the control plane<a class="headerlink" href="#running-workloads-on-the-control-plane" title="Permanent link">#</a></h2>
+<p>By default, k0s and k0smotron don't run kubelet and any workloads on control plane nodes. But you can enable it by adding <code>--enable-worker</code> flag to the <code>spec.k0sConfigSpec.args</code> in the <code>K0sControlPlane</code> object. This will enable the kubelet on control plane nodes and allow you to run workloads on them.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-worker</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--no-taints</span><span class="w"> </span><span class="c1"># disable default taints</span>
+<span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp-template</span>
+<span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp-template</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+</code></pre></div>
+<p><strong>Note:</strong> Controller nodes running with <code>--enable-worker</code> are assigned <code>node-role.kubernetes.io/master:NoExecute</code> taint automatically. You can disable default taints using <code>--no-taints</code>  parameter.</p>
 
 
 
