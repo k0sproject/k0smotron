@@ -3,6 +3,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
+	"k8s.io/utils/pointer"
 	"strings"
 
 	"github.com/Masterminds/semver"
@@ -74,14 +75,15 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 }
 
-func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
-	machineFromTemplate, err := c.generateMachineFromTemplate(ctx, name, kcp)
+func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
+	machineFromTemplate, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
 	if err != nil {
 		return nil, err
 	}
 
 	if err = c.Client.Patch(ctx, machineFromTemplate, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
+		Force:        pointer.Bool(true),
 	}); err != nil {
 		return nil, err
 	}
@@ -89,8 +91,8 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 	return machineFromTemplate, nil
 }
 
-func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
-	machineFromTemplate, err := c.generateMachineFromTemplate(ctx, name, kcp)
+func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+	machineFromTemplate, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
 	if err != nil {
 		return err
 	}
@@ -98,7 +100,7 @@ func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name stri
 	return c.Client.Delete(ctx, machineFromTemplate)
 }
 
-func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
+func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
 	unstructuredMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
 	if err != nil {
 		return nil, err
@@ -130,7 +132,7 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 		labels[k] = v
 	}
 
-	labels[clusterv1.ClusterNameLabel] = kcp.Name
+	labels[clusterv1.ClusterNameLabel] = cluster.GetName()
 	labels[clusterv1.MachineControlPlaneLabel] = ""
 	labels[clusterv1.MachineControlPlaneNameLabel] = kcp.Name
 	machine.SetLabels(labels)

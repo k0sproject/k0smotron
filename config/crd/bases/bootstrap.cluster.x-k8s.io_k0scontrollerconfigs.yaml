@@ -80,6 +80,19 @@ spec:
                 items:
                   type: string
                 type: array
+              tunneling:
+                description: Tunneling defines the tunneling configuration for the
+                  cluster.
+                properties:
+                  enabled:
+                    default: false
+                    description: Enabled specifies whether tunneling is enabled.
+                    type: boolean
+                  serverAddress:
+                    description: Server address of the tunneling server. If empty,
+                      k0smotron will try to detect worker node address for.
+                    type: string
+                type: object
               version:
                 description: 'Version is the version of k0s to use. In case this is
                   not set, the latest version is used. Make sure the version is compatible

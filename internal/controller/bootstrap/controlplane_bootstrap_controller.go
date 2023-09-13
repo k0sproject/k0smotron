@@ -63,6 +63,7 @@ const joinTokenFilePath = "/etc/k0s.token"
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status;machines;machines/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=exp.cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets;events;configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
 func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig", req.NamespacedName)
@@ -170,6 +171,9 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			return ctrl.Result{}, fmt.Errorf("error generating control plane join files: %v", err)
 		}
 		installCmd = createCPInstallCmdWithJoinToken(config, joinTokenFilePath)
+	}
+	if config.Spec.Tunneling.Enabled {
+		files = append(files, c.genTunnelingFiles(ctx, scope, config)...)
 	}
 	files = append(files, config.Spec.Files...)
 
@@ -298,6 +302,65 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	})
 
 	return files, err
+}
+
+func (c *ControlPlaneController) genTunnelingFiles(_ context.Context, _ *Scope, kcs *bootstrapv1.K0sControllerConfig) []cloudinit.File {
+	tunnelingResources := `
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frpc-config
+  namespace: kube-system
+data:
+  frpc.ini: |
+    [common]
+    server_addr = %s
+    server_port = 31700
+    
+    [kube-apiserver]
+    type = tcp
+    local_ip = 10.96.0.1
+    local_port = 443
+    remote_port = 6443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frpc
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frpc
+  template:
+    metadata:
+      labels:
+        app: frpc
+    spec:
+      containers:
+        - name: frpc
+          image: snowdreamtech/frpc:0.51.3
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: frpc-config
+              mountPath: /etc/frp/frpc.ini
+              subPath: frpc.ini
+      volumes:
+        - name: frpc-config
+          configMap:
+            name: frpc-config
+            items:
+              - key: frpc.ini
+                path: frpc.ini
+
+`
+	return []cloudinit.File{{
+		Path:        "/var/lib/k0s/manifests/k0smotron-tunneling/manifest.yaml",
+		Permissions: "0644",
+		Content:     fmt.Sprintf(tunnelingResources, kcs.Spec.Tunneling.ServerAddress),
+	}}
 }
 
 func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Scope) ([]cloudinit.File, *secret.Certificate, error) {
