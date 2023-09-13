@@ -391,13 +391,13 @@ token = ` + frpToken + `
 				Protocol:   corev1.ProtocolTCP,
 				Port:       7000,
 				TargetPort: intstr.FromInt(7000),
-				NodePort:   31700,
+				NodePort:   kcp.Spec.K0sConfigSpec.Tunneling.ServerNodePort,
 			}, {
 				Name:       "tunnel",
 				Protocol:   corev1.ProtocolTCP,
 				Port:       6443,
 				TargetPort: intstr.FromInt(6443),
-				NodePort:   31443,
+				NodePort:   kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort,
 			}},
 			Type: corev1.ServiceTypeNodePort,
 		},
@@ -421,6 +421,16 @@ func (c *K0sController) detectNodeIP(ctx context.Context, _ *cpv1beta1.K0sContro
 }
 
 func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (string, error) {
+	secretName := cluster.Name + "-frp-token"
+
+	var existingSecret corev1.Secret
+	err := c.Client.Get(ctx, client.ObjectKey{Name: secretName, Namespace: cluster.Namespace}, &existingSecret)
+	if err == nil {
+		return string(existingSecret.Data["value"]), nil
+	} else if !apierrors.IsNotFound(err) {
+		return "", err
+	}
+
 	frpToken := uuid.New().String()
 	frpSecret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -428,7 +438,7 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 			Kind:       "Secret",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cluster.Name + "-frp-token",
+			Name:      secretName,
 			Namespace: cluster.Namespace,
 			Labels: map[string]string{
 				clusterv1.ClusterNameLabel: cluster.Name,

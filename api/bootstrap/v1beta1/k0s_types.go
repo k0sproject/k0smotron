@@ -188,4 +188,14 @@ type TunnelingSpec struct {
 	// If empty, k0smotron will try to detect worker node address for.
 	//+kubebuilder:validation:Optional
 	ServerAddress string `json:"serverAddress,omitempty"`
+	// NodePort to publish for server port of the tunneling server.
+	// If empty, k0smotron will use the default one.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=31700
+	ServerNodePort int32 `json:"serverNodePort,omitempty"`
+	// NodePort to publish for tunneling port.
+	// If empty, k0smotron will use the default one.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=31443
+	TunnelingNodePort int32 `json:"tunnelingNodePort,omitempty"`
 }

@@ -137,10 +137,21 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	)
 
 	if config.Spec.K0s != nil {
-		//config.Spec.K0s.SetUnstructuredContent(map["spec"]interface{}{})
 		err = unstructured.SetNestedField(config.Spec.K0s.Object, scope.Cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error setting control plane endpoint: %v", err)
+		}
+
+		if config.Spec.Tunneling.ServerAddress != "" {
+			sans, _, err := unstructured.NestedSlice(config.Spec.K0s.Object, "spec", "api", "sans")
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("error getting sans from config: %v", err)
+			}
+			sans = append(sans, config.Spec.Tunneling.ServerAddress)
+			err = unstructured.SetNestedSlice(config.Spec.K0s.Object, sans, "spec", "api", "sans")
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("error setting sans to the config: %v", err)
+			}
 		}
 
 		k0sConfigBytes, err := config.Spec.K0s.MarshalJSON()
@@ -329,7 +340,7 @@ data:
     [common]
     authentication_method = token
     server_addr = %s
-    server_port = 31700
+    server_port = %d
     token = %s
     
     [kube-apiserver]
@@ -373,7 +384,7 @@ spec:
 	return []cloudinit.File{{
 		Path:        "/var/lib/k0s/manifests/k0smotron-tunneling/manifest.yaml",
 		Permissions: "0644",
-		Content:     fmt.Sprintf(tunnelingResources, kcs.Spec.Tunneling.ServerAddress, frpToken),
+		Content:     fmt.Sprintf(tunnelingResources, kcs.Spec.Tunneling.ServerAddress, kcs.Spec.Tunneling.ServerNodePort, frpToken),
 	}}, nil
 }
 

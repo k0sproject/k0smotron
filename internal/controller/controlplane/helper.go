@@ -3,7 +3,6 @@ package controlplane
 import (
 	"context"
 	"fmt"
-	"k8s.io/utils/pointer"
 	"strings"
 
 	"github.com/Masterminds/semver"
@@ -83,7 +82,6 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 
 	if err = c.Client.Patch(ctx, machineFromTemplate, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
-		Force:        pointer.Bool(true),
 	}); err != nil {
 		return nil, err
 	}
