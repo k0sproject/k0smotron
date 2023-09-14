@@ -1090,6 +1090,7 @@ You are not currently viewing the documentation for the current stable release o
 
 <h1 id="k0smotron-the-kubernetes-control-plane-manager">k0smotron - The Kubernetes control plane manager<a class="headerlink" href="#k0smotron-the-kubernetes-control-plane-manager" title="Permanent link">#</a></h1>
 <p>From pets to cattle: Streamline your Kubernetes control plane management with k0smotron</p>
+<p>Powered by <a href="https://docs.k0sproject.io">k0s</a></p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">#</a></h2>
 <h3 id="kubernetes-in-kubernetes">Kubernetes-in-Kubernetes<a class="headerlink" href="#kubernetes-in-kubernetes" title="Permanent link">#</a></h3>
 <p>k0smotron allows you to easily create and manage the clusters in an existing Kubernetes cluster. This allows unparalled scalability and flexibility when you have to work with many clusters. It allows truly homogenous setup for all control planes and thus eases the maintenance burden.</p>
@@ -1098,7 +1099,7 @@ You are not currently viewing the documentation for the current stable release o
 <h3 id="bring-your-own-workers">Bring your own workers<a class="headerlink" href="#bring-your-own-workers" title="Permanent link">#</a></h3>
 <p>With k0smotron you can connect worker nodes from ANY infrastructure to your cluster control plane. </p>
 <h2 id="how-does-it-work">How does it work<a class="headerlink" href="#how-does-it-work" title="Permanent link">#</a></h2>
-<p>You install k0smotron operator into an existing Kubernetes cluster. k0smotron operator will create and manage k0s control planes in that cluster. It leverages the natural pattern of working with custom resources to manage the lifecycle of the k0s control planes. k0smotron will automatically create all the needed Kubernetes lower level constructs, such as pods, configmaps etc., to </p>
+<p>You install k0smotron operator into an existing Kubernetes cluster. k0smotron operator will create and manage <a href="https://docs.k0sproject.io">k0s</a> control planes in that cluster. It leverages the natural pattern of working with custom resources to manage the lifecycle of the k0s control planes. k0smotron will automatically create all the needed Kubernetes lower level constructs, such as pods, configmaps etc., to run and manage the control planes.</p>
 <p>k0smotron is an Kubernetes operator designed to manage the lifecycle of k0s control planes in a Kubernetes (any distro) cluster. By running the control plane on a k8s cluster we can enjoy and leverage the high availability and auto-healing functionalities of the underlying cluster, a.k.a Mothership.</p>
 <p><img alt="" src="img/k0smotron.png" /></p>
 <h2 id="use-cases">Use cases<a class="headerlink" href="#use-cases" title="Permanent link">#</a></h2>
