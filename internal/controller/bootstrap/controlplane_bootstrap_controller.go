@@ -328,6 +328,19 @@ func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *S
 	}
 	frpToken := string(frpSecret.Data["value"])
 
+	var modeConfig string
+	if kcs.Spec.Tunneling.Mode == "proxy" {
+		modeConfig = fmt.Sprintf(`
+    type = tcpmux
+    custom_domains = %s
+    multiplexer = httpconnect
+`, scope.Cluster.Spec.ControlPlaneEndpoint.Host)
+	} else {
+		modeConfig = `
+    remote_port = 6443
+`
+	}
+
 	tunnelingResources := `
 ---
 apiVersion: v1
@@ -347,7 +360,7 @@ data:
     type = tcp
     local_ip = 10.96.0.1
     local_port = 443
-    remote_port = 6443
+    %s
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -384,7 +397,7 @@ spec:
 	return []cloudinit.File{{
 		Path:        "/var/lib/k0s/manifests/k0smotron-tunneling/manifest.yaml",
 		Permissions: "0644",
-		Content:     fmt.Sprintf(tunnelingResources, kcs.Spec.Tunneling.ServerAddress, kcs.Spec.Tunneling.ServerNodePort, frpToken),
+		Content:     fmt.Sprintf(tunnelingResources, kcs.Spec.Tunneling.ServerAddress, kcs.Spec.Tunneling.ServerNodePort, frpToken, modeConfig),
 	}}, nil
 }
 

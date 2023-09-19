@@ -88,6 +88,14 @@ spec:
                     default: false
                     description: Enabled specifies whether tunneling is enabled.
                     type: boolean
+                  mode:
+                    default: tunnel
+                    description: Mode describes tunneling mode. If empty, k0smotron
+                      will use the default one.
+                    enum:
+                    - tunnel
+                    - proxy
+                    type: string
                   serverAddress:
                     description: Server address of the tunneling server. If empty,
                       k0smotron will try to detect worker node address for.

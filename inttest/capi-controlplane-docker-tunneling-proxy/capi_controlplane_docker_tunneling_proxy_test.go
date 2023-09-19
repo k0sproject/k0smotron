@@ -18,10 +18,10 @@ package capicontolplanedockertunneling
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"io"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -139,36 +139,43 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.T().Log("checking connectivity to the child cluster via tunnel")
 
 	forwardedPort := 31443
-	cl := http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		resp, err := cl.Get("https://localhost:" + strconv.Itoa(forwardedPort) + "/healthz")
-		if err != nil {
-			return false, nil
-		}
-
-		defer resp.Body.Close()
-		respBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return false, err
-		}
-
-		return "ok" == string(respBytes), nil
-	})
-	s.Require().NoError(err)
-
-	tunneledKmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster-tunneled", "default", forwardedPort)
+	tunneledKmcKC, err := GetKMCClientSetWithProxy(s.ctx, s.client, "docker-test-cluster-proxied", "default", forwardedPort)
 	s.Require().NoError(err)
 
 	s.T().Log("check for node to be ready via tunnel")
+	_, err = tunneledKmcKC.RESTClient().
+		Get().
+		AbsPath("/healthz").
+		DoRaw(context.Background())
+	s.Require().NoError(err)
+
 	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, tunneledKmcKC, "docker-test-cluster-docker-test-worker-0", corev1.ConditionTrue))
 
 	s.Require().NoError(k0stestutil.WaitForDeployment(s.ctx, tunneledKmcKC, "frpc", "kube-system"))
+}
+
+func GetKMCClientSetWithProxy(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string, port int) (*kubernetes.Clientset, error) {
+	secretName := fmt.Sprintf("%s-kubeconfig", name)
+	// Wait first to see the secret exists
+	if err := util.WaitForSecret(ctx, kc, secretName, namespace); err != nil {
+		return nil, err
+	}
+	kubeConf, err := kc.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["value"]))
+	if err != nil {
+		return nil, err
+	}
+
+	// Override the host to point to the port forwarded API server
+	proxyURL, _ := url.Parse(fmt.Sprintf("http://localhost:%d", port))
+	kmcCfg.Proxy = http.ProxyURL(proxyURL)
+
+	return kubernetes.NewForConfig(kmcCfg)
 }
 
 func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
@@ -240,6 +247,7 @@ spec:
   k0sConfigSpec:
     tunneling:
       enabled: true
+      mode: proxy
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig

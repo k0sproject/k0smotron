@@ -128,7 +128,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 }
 
-func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster) error {
+func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
 	if cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		return errors.New("control plane endpoint is not set")
 	}
@@ -142,11 +142,53 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 		return err
 	}
 
+	if kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
+		if kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
+			secretName := secret.Name(cluster.Name+"-proxied", secret.Kubeconfig)
+			err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &corev1.Secret{})
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					kc, err := c.generateKubeconfig(ctx, cluster, fmt.Sprintf("https://%s", cluster.Spec.ControlPlaneEndpoint.String()))
+					if err != nil {
+						return err
+					}
+
+					for cn := range kc.Clusters {
+						kc.Clusters[cn].ProxyURL = fmt.Sprintf("http://%s:%d", kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort)
+					}
+
+					err = c.createKubeconfigSecret(ctx, kc, cluster, secretName)
+					if err != nil {
+						return err
+					}
+				}
+				return err
+			}
+		} else {
+			secretName := secret.Name(cluster.Name+"-tunneled", secret.Kubeconfig)
+			err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &corev1.Secret{})
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					kc, err := c.generateKubeconfig(ctx, cluster, fmt.Sprintf("https://%s:%d", kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))
+					if err != nil {
+						return err
+					}
+
+					err = c.createKubeconfigSecret(ctx, kc, cluster, secretName)
+					if err != nil {
+						return err
+					}
+				}
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
 func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
-	err := c.reconcileKubeconfig(ctx, cluster)
+	err := c.reconcileKubeconfig(ctx, cluster, kcp)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
 	}
@@ -276,12 +318,24 @@ func (c *K0sController) reconcileTunneling(ctx context.Context, cluster *cluster
 		return fmt.Errorf("error creating FRP token secret: %w", err)
 	}
 
-	frpsConfig := `
+	var frpsConfig string
+	if kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
+		frpsConfig = `
+[common]
+bind_port = 7000
+tcpmux_httpconnect_port = 6443
+authentication_method = token
+token = ` + frpToken + `
+`
+	} else {
+		frpsConfig = `
 [common]
 bind_port = 7000
 authentication_method = token
 token = ` + frpToken + `
 `
+	}
+
 	frpsCMName := kcp.GetName() + "-frps-config"
 	cm := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{

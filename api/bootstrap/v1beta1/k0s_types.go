@@ -198,4 +198,9 @@ type TunnelingSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=31443
 	TunnelingNodePort int32 `json:"tunnelingNodePort,omitempty"`
+	// Mode describes tunneling mode.
+	// If empty, k0smotron will use the default one.
+	//+kubebuilder:validation:Enum=tunnel;proxy
+	//+kubebuilder:default=tunnel
+	Mode string `json:"mode,omitempty"`
 }
