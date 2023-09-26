@@ -14,5 +14,7 @@ smoketests := \
     check-capi-controlplane-docker \
     check-capi-controlplane-docker-downscaling \
     check-capi-controlplane-docker-worker \
+    check-capi-controlplane-docker-tunneling \
+    check-capi-controlplane-docker-tunneling-proxy \
     check-monitoring \
     check-capi-docker-machinedeployment \

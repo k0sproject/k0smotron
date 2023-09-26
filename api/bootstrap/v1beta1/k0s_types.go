@@ -173,4 +173,34 @@ type K0sConfigSpec struct {
 	// If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
 	// +kubebuilder:validation:Optional
 	DownloadURL string `json:"downloadURL,omitempty"`
+
+	// Tunneling defines the tunneling configuration for the cluster.
+	//+kubebuilder:validation:Optional
+	Tunneling TunnelingSpec `json:"tunneling,omitempty"`
+}
+
+type TunnelingSpec struct {
+	// Enabled specifies whether tunneling is enabled.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=false
+	Enabled bool `json:"enabled,omitempty"`
+	// Server address of the tunneling server.
+	// If empty, k0smotron will try to detect worker node address for.
+	//+kubebuilder:validation:Optional
+	ServerAddress string `json:"serverAddress,omitempty"`
+	// NodePort to publish for server port of the tunneling server.
+	// If empty, k0smotron will use the default one.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=31700
+	ServerNodePort int32 `json:"serverNodePort,omitempty"`
+	// NodePort to publish for tunneling port.
+	// If empty, k0smotron will use the default one.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=31443
+	TunnelingNodePort int32 `json:"tunnelingNodePort,omitempty"`
+	// Mode describes tunneling mode.
+	// If empty, k0smotron will use the default one.
+	//+kubebuilder:validation:Enum=tunnel;proxy
+	//+kubebuilder:default=tunnel
+	Mode string `json:"mode,omitempty"`
 }

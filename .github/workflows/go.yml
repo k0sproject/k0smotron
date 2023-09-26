@@ -106,6 +106,8 @@ jobs:
           - check-capi-docker-machinedeployment
           - check-capi-controlplane-docker
           - check-capi-controlplane-docker-downscaling
+          - check-capi-controlplane-docker-tunneling
+          - check-capi-controlplane-docker-tunneling-proxy
           - check-capi-controlplane-docker-worker
     steps:
       - name: Check out code into the Go module directory
@@ -158,4 +160,5 @@ jobs:
         run: |
           kind get kubeconfig > kind.conf
           export KUBECONFIG=$(realpath kind.conf)
-          KEEP_AFTER_TEST=true make -C inttest ${{ matrix.smoke-suite }}
+          docker system prune -f
+          make -C inttest ${{ matrix.smoke-suite }}
