@@ -113,3 +113,30 @@ spec:
 ```
 
 **Note:** Controller nodes running with `--enable-worker` are assigned `node-role.kubernetes.io/master:NoExecute` taint automatically. You can disable default taints using `--no-taints`  parameter.
+
+## Client connection tunneling
+
+k0smotron supports client connection tunneling to the child cluster's control plane nodes. This is useful when you want to access the control plane nodes from a remote location.
+To enable tunneling, you need to set `spec.k0sConfigSpec.tunneling.enabled` to `true` in the `K0sControlPlane` object.
+
+```yaml
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: docker-test
+spec:
+  replicas: 1
+  k0sConfigSpec:
+    tunneling:
+      enabled: true
+      mode: tunnel # Tunneling mode: tunnel or proxy (default: tunnel)
+```
+
+K0smotron supports two tunneling modes: `tunnel` and `proxy`. You can set the tunneling mode using `spec.k0sConfigSpec.tunneling.mode` field. The default mode is `tunnel`.
+
+K0smotron will create a kubeconfig file for the tunneling client in the `K0sControlPlane` object's namespace. You can find the kubeconfig file in the `<cluster-name>-<mode>-kubeconfig` secret.
+You can use this kubeconfig file to access the control plane nodes from a remote location.
+
+**Note:** Parent cluster's worker nodes must be accessible from the child cluster's nodes. You can use `spec.k0sConfigSpec.tunneling.serverAddress` to set the address of the parent cluster's node or load balancer. If you don't set this field, k0smotron will use the random worker node's address as the default address.
+
+Currently, k0smotron supports only NodePort service type for tunneling. You can set the tunneling service port using `spec.k0sConfigSpec.tunneling.tunnelingNodePort` field. The default port is `31443`.
