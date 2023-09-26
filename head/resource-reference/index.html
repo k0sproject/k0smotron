@@ -1036,6 +1036,13 @@ You are not currently viewing the documentation for the current stable release o
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrollerconfigspectunneling">tunneling</a></b></td>
+        <td>object</td>
+        <td>
+          Tunneling defines the tunneling configuration for the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>version</b></td>
         <td>string</td>
         <td>
@@ -1075,6 +1082,67 @@ You are not currently viewing the documentation for the current stable release o
         <td>string</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0scontrollerconfigspectunneling">K0sControllerConfig.spec.tunneling<a class="headerlink" href="#k0scontrollerconfigspectunneling" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrollerconfigspec">↩ Parent</a></sup></sup></p>
+<p>Tunneling defines the tunneling configuration for the cluster.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled specifies whether tunneling is enabled.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>enum</td>
+        <td>
+          Mode describes tunneling mode. If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Enum</i>: tunnel, proxy<br/>
+            <i>Default</i>: tunnel<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serverAddress</b></td>
+        <td>string</td>
+        <td>
+          Server address of the tunneling server. If empty, k0smotron will try to detect worker node address for.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serverNodePort</b></td>
+        <td>integer</td>
+        <td>
+          NodePort to publish for server port of the tunneling server. If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 31700<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tunnelingNodePort</b></td>
+        <td>integer</td>
+        <td>
+          NodePort to publish for tunneling port. If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 31443<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1869,6 +1937,13 @@ You are not currently viewing the documentation for the current stable release o
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspectunneling">tunneling</a></b></td>
+        <td>object</td>
+        <td>
+          Tunneling defines the tunneling configuration for the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>version</b></td>
         <td>string</td>
         <td>
@@ -1908,6 +1983,67 @@ You are not currently viewing the documentation for the current stable release o
         <td>string</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0scontrolplanespeck0sconfigspectunneling">K0sControlPlane.spec.k0sConfigSpec.tunneling<a class="headerlink" href="#k0scontrolplanespeck0sconfigspectunneling" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrolplanespeck0sconfigspec">↩ Parent</a></sup></sup></p>
+<p>Tunneling defines the tunneling configuration for the cluster.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled specifies whether tunneling is enabled.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>enum</td>
+        <td>
+          Mode describes tunneling mode. If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Enum</i>: tunnel, proxy<br/>
+            <i>Default</i>: tunnel<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serverAddress</b></td>
+        <td>string</td>
+        <td>
+          Server address of the tunneling server. If empty, k0smotron will try to detect worker node address for.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serverNodePort</b></td>
+        <td>integer</td>
+        <td>
+          NodePort to publish for server port of the tunneling server. If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 31700<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tunnelingNodePort</b></td>
+        <td>integer</td>
+        <td>
+          NodePort to publish for tunneling port. If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 31443<br/>
         </td>
         <td>false</td>
       </tr></tbody>

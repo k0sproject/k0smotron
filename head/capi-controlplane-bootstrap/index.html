@@ -677,6 +677,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#client-connection-tunneling" class="md-nav__link">
+    Client connection tunneling
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -967,6 +974,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#client-connection-tunneling" class="md-nav__link">
+    Client connection tunneling
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1075,6 +1089,25 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 </code></pre></div>
 <p><strong>Note:</strong> Controller nodes running with <code>--enable-worker</code> are assigned <code>node-role.kubernetes.io/master:NoExecute</code> taint automatically. You can disable default taints using <code>--no-taints</code>  parameter.</p>
+<h2 id="client-connection-tunneling">Client connection tunneling<a class="headerlink" href="#client-connection-tunneling" title="Permanent link">#</a></h2>
+<p>k0smotron supports client connection tunneling to the child cluster's control plane nodes. This is useful when you want to access the control plane nodes from a remote location.
+To enable tunneling, you need to set <code>spec.k0sConfigSpec.tunneling.enabled</code> to <code>true</code> in the <code>K0sControlPlane</code> object.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">tunneling</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tunnel</span><span class="w"> </span><span class="c1"># Tunneling mode: tunnel or proxy (default: tunnel)</span>
+</code></pre></div>
+<p>K0smotron supports two tunneling modes: <code>tunnel</code> and <code>proxy</code>. You can set the tunneling mode using <code>spec.k0sConfigSpec.tunneling.mode</code> field. The default mode is <code>tunnel</code>.</p>
+<p>K0smotron will create a kubeconfig file for the tunneling client in the <code>K0sControlPlane</code> object's namespace. You can find the kubeconfig file in the <code>&lt;cluster-name&gt;-&lt;mode&gt;-kubeconfig</code> secret.
+You can use this kubeconfig file to access the control plane nodes from a remote location.</p>
+<p><strong>Note:</strong> Parent cluster's worker nodes must be accessible from the child cluster's nodes. You can use <code>spec.k0sConfigSpec.tunneling.serverAddress</code> to set the address of the parent cluster's node or load balancer. If you don't set this field, k0smotron will use the random worker node's address as the default address.</p>
+<p>Currently, k0smotron supports only NodePort service type for tunneling. You can set the tunneling service port using <code>spec.k0sConfigSpec.tunneling.tunnelingNodePort</code> field. The default port is <code>31443</code>.</p>
 
 
 
