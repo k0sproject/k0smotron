@@ -48,6 +48,26 @@ jobs:
         run: |
           make docker-build
 
+  generate-sbom:
+    name: "Build :: SBOM"
+    needs: [ build ]
+
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
+      - name: Generate SBOM
+        run: |
+          mkdir -p sbom && chmod 777 sbom
+          make sbom/spdx.json
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: spdx.json
+          path: sbom/spdx.json
+
   unittest:
     name: Unit test
     needs: build
