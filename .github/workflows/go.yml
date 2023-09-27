@@ -95,6 +95,7 @@ jobs:
           - check-ha-controller-secret
           - check-jointoken
           - check-monitoring
+          - check-capi-remote-machine
 
     steps:
       - name: Check out code into the Go module directory

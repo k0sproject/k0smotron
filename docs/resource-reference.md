@@ -4,6 +4,7 @@ Packages:
 
 - [bootstrap.cluster.x-k8s.io/v1beta1](#bootstrapclusterx-k8siov1beta1)
 - [controlplane.cluster.x-k8s.io/v1beta1](#controlplaneclusterx-k8siov1beta1)
+- [infrastructure.cluster.x-k8s.io/v1beta1](#infrastructureclusterx-k8siov1beta1)
 - [k0smotron.io/v1beta1](#k0smotroniov1beta1)
 
 # bootstrap.cluster.x-k8s.io/v1beta1
@@ -5277,6 +5278,342 @@ Service defines the service configuration.
           Ready denotes that the control plane is ready<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+# infrastructure.cluster.x-k8s.io/v1beta1
+
+Resource Types:
+
+- [RemoteCluster](#remotecluster)
+
+- [RemoteMachine](#remotemachine)
+
+
+
+
+## RemoteCluster
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+
+
+
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>RemoteCluster</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#remoteclusterspec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteClusterSpec defines the desired state of RemoteCluster<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remoteclusterstatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteClusterStatus defines the observed state of RemoteCluster<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteCluster.spec
+<sup><sup>[↩ Parent](#remotecluster)</sup></sup>
+
+
+
+RemoteClusterSpec defines the desired state of RemoteCluster
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remoteclusterspeccontrolplaneendpoint">controlPlaneEndpoint</a></b></td>
+        <td>object</td>
+        <td>
+          APIEndpoint represents a reachable Kubernetes API endpoint.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteCluster.spec.controlPlaneEndpoint
+<sup><sup>[↩ Parent](#remoteclusterspec)</sup></sup>
+
+
+
+APIEndpoint represents a reachable Kubernetes API endpoint.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>host</b></td>
+        <td>string</td>
+        <td>
+          The hostname on which the API server is serving.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>
+          The port on which the API server is serving.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteCluster.status
+<sup><sup>[↩ Parent](#remotecluster)</sup></sup>
+
+
+
+RemoteClusterStatus defines the observed state of RemoteCluster
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>ready</b></td>
+        <td>boolean</td>
+        <td>
+          Ready denotes that the remote cluster is ready to be used.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+## RemoteMachine
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+
+
+
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>RemoteMachine</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteMachineSpec defines the desired state of RemoteMachine<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinestatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteMachineStatus defines the observed state of RemoteMachine<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec
+<sup><sup>[↩ Parent](#remotemachine)</sup></sup>
+
+
+
+RemoteMachineSpec defines the desired state of RemoteMachine
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>address</b></td>
+        <td>string</td>
+        <td>
+          Address is the IP address or DNS name of the remote machine.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecsshkeyref">sshKeyRef</a></b></td>
+        <td>object</td>
+        <td>
+          SSHKeyRef is a reference to a secret that contains the SSH private key. The key must be placed on the secret using the key "value".<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>
+          Port is the SSH port of the remote machine.<br/>
+          <br/>
+            <i>Default</i>: 22<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>providerID</b></td>
+        <td>string</td>
+        <td>
+          ProviderID is the ID of the machine in the provider.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>string</td>
+        <td>
+          User is the user to use when connecting to the remote machine.<br/>
+          <br/>
+            <i>Default</i>: root<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.sshKeyRef
+<sup><sup>[↩ Parent](#remotemachinespec)</sup></sup>
+
+
+
+SSHKeyRef is a reference to a secret that contains the SSH private key. The key must be placed on the secret using the key "value".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.status
+<sup><sup>[↩ Parent](#remotemachine)</sup></sup>
+
+
+
+RemoteMachineStatus defines the observed state of RemoteMachine
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>failureMessage</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>failureReason</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>ready</b></td>
+        <td>boolean</td>
+        <td>
+          Ready denotes that the remote machine is ready to be used.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
