@@ -252,3 +252,35 @@ kind-deploy-k0smotron: release k0smotron-image-bundle.tar
 	kubectl apply -f install.yaml
 	kubectl rollout restart -n k0smotron deployment/k0smotron-controller-manager
 
+sbom/spdx.json: go.mod
+	mkdir -p -- '$(dir $@)'
+	docker run --rm \
+	  -v "$(CURDIR)/go.mod:/k0s/go.mod" \
+	  -v "$(CURDIR)/embedded-bins/staging/linux/bin:/k0s/bin" \
+	  -v "$(CURDIR)/syft.yaml:/tmp/syft.yaml" \
+	  -v "$(CURDIR)/sbom:/out" \
+	  --user $(BUILD_UID):$(BUILD_GID) \
+	  anchore/syft:v0.90.0 \
+	  /k0s -o spdx-json@2.2=/out/spdx.json -c /tmp/syft.yaml
+
+.PHONY: sign-sbom
+sign-sbom: sbom/spdx.json
+	docker run --rm \
+	  -v "$(CURDIR):/k0s" \
+	  -v "$(CURDIR)/sbom:/out" \
+	  -e COSIGN_PASSWORD="$(COSIGN_PASSWORD)" \
+	  gcr.io/projectsigstore/cosign:v2.2.0 \
+	  sign-blob \
+	  --key /k0s/cosign.key \
+	  --tlog-upload=false \
+	  /k0s/sbom/spdx.json --output-file /out/spdx.json.sig
+
+.PHONY: sign-pub-key
+sign-pub-key:
+	docker run --rm \
+	  -v "$(CURDIR):/k0s" \
+	  -v "$(CURDIR)/sbom:/out" \
+	  -e COSIGN_PASSWORD="$(COSIGN_PASSWORD)" \
+	  gcr.io/projectsigstore/cosign:v2.2.0 \
+	  public-key \
+	  --key /k0s/cosign.key --output-file /out/cosign.pub
