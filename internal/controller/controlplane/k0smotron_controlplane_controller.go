@@ -18,6 +18,7 @@ package controlplane
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,6 +37,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -108,17 +110,19 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	res, err = c.reconcile(ctx, cluster, kcp)
+	res, ready, err := c.reconcile(ctx, cluster, kcp)
 	if err != nil {
 		return res, err
 	}
-	err = c.waitExternalAddress(ctx, cluster, kcp)
-	if err != nil {
-		return res, err
+	if !ready {
+		err = c.waitExternalAddress(ctx, cluster, kcp)
+		if err != nil {
+			return res, err
+		}
 	}
 
 	// TODO: We need to have bit more detailed status and conditions handling
-	kcp.Status.Ready = true
+	kcp.Status.Ready = ready
 	kcp.Status.ExternalManagedControlPlane = true
 	kcp.Status.Inititalized = true
 	kcp.Status.ControlPlaneReady = true
@@ -188,7 +192,7 @@ func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *
 	return nil
 }
 
-func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) (ctrl.Result, error) {
+func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) (ctrl.Result, bool, error) {
 	kcp.Spec.CertificateRefs = []kapi.CertificateRef{
 		{
 			Type: string(secret.ClusterCA),
@@ -226,13 +230,30 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		Spec: kcp.Spec,
 	}
 
-	if err := c.Client.Patch(ctx, &kcluster, client.Apply, &client.PatchOptions{
-		FieldManager: "k0smotron",
-	}); err != nil {
-		return ctrl.Result{}, err
+	var foundCluster kapi.Cluster
+	err := c.Client.Get(ctx, types.NamespacedName{Name: kcluster.Name, Namespace: kcluster.Namespace}, &foundCluster)
+	if err != nil && apierrors.IsNotFound(err) {
+		if err := c.Client.Patch(ctx, &kcluster, client.Apply, &client.PatchOptions{
+			FieldManager: "k0smotron",
+		}); err != nil {
+			return ctrl.Result{}, false, err
+		}
+	} else if err == nil {
+		if kcp.Spec.ExternalAddress == "" {
+			kcp.Spec.ExternalAddress = foundCluster.Spec.ExternalAddress
+		}
+		if !reflect.DeepEqual(foundCluster.Spec, kcp.Spec) {
+			err := c.Client.Patch(ctx, &kcluster, client.Apply, &client.PatchOptions{
+				FieldManager: "k0smotron",
+			})
+
+			return ctrl.Result{}, false, err
+		}
+
+		return ctrl.Result{}, foundCluster.Status.Ready, nil
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, false, err
 }
 
 func (c *K0smotronController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) error {
@@ -244,5 +265,6 @@ func (c *K0smotronController) ensureCertificates(ctx context.Context, cluster *c
 func (c *K0smotronController) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cpv1beta1.K0smotronControlPlane{}).
+		Owns(&kapi.Cluster{}, builder.MatchEveryOwner).
 		Complete(c)
 }

@@ -20,12 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -416,5 +418,29 @@ func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc km.Clu
 	if err != nil {
 		return fmt.Errorf("failed to generate statefulset: %w", err)
 	}
-	return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+
+	foundStatefulSet, err := r.ClientSet.AppsV1().StatefulSets(statefulSet.Namespace).Get(ctx, statefulSet.Name, metav1.GetOptions{})
+	if err != nil && apierrors.IsNotFound(err) {
+		return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+	} else if err == nil {
+		if !isStatefulSetsEqual(&statefulSet, foundStatefulSet) {
+			return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		}
+
+		if foundStatefulSet.Status.ReadyReplicas == kmc.Spec.Replicas {
+			r.updateReadiness(ctx, kmc, true)
+		}
+
+		return nil
+	}
+
+	return err
+}
+
+func isStatefulSetsEqual(new, old *apps.StatefulSet) bool {
+	return *new.Spec.Replicas == *old.Spec.Replicas &&
+		new.Spec.Template.Spec.Containers[0].Image == old.Spec.Template.Spec.Containers[0].Image &&
+		reflect.DeepEqual(new.Spec.Selector, old.Spec.Selector) &&
+		reflect.DeepEqual(new.Spec.Template.Labels, old.Spec.Template.Labels) &&
+		reflect.DeepEqual(new.Spec.Template.Spec.Containers[0].VolumeMounts, old.Spec.Template.Spec.Containers[0].VolumeMounts)
 }

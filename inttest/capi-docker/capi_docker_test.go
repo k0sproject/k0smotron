@@ -19,9 +19,14 @@ package capidocker
 import (
 	"context"
 	"fmt"
+	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/scheme"
 	"os"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
@@ -92,6 +97,8 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	// Wait to see the CP pods ready
 	s.Require().NoError(common.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test", "default"))
 
+	s.checkControlPlaneStatus(s.ctx, s.restConfig)
+
 	s.T().Log("Starting portforward")
 	fw, err := util.GetPortForwarder(s.restConfig, "kmc-docker-test-0", "default", 30443)
 	s.Require().NoError(err)
@@ -105,6 +112,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().NoError(err)
 	s.T().Log("waiting to see admin kubeconfig secret")
 	s.Require().NoError(util.WaitForSecret(s.ctx, s.client, "docker-test-kubeconfig", "default"))
+
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
 	s.Require().NoError(err)
 
@@ -139,6 +147,33 @@ func (s *CAPIDockerSuite) deleteCluster() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
+}
+
+func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.Config) {
+
+	crdConfig := *rc
+	crdConfig.ContentConfig.GroupVersion = &controlplanev1beta1.GroupVersion
+	crdConfig.APIPath = "/apis"
+	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
+	crdConfig.UserAgent = rest.DefaultKubernetesUserAgent()
+	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
+	s.Require().NoError(err)
+
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		var kcp controlplanev1beta1.K0smotronControlPlane
+		err = crdRestClient.
+			Get().
+			Resource("k0smotroncontrolplanes").
+			Name("docker-test").
+			Namespace("default").
+			Do(ctx).
+			Into(&kcp)
+
+		return kcp.Status.Ready, nil
+	})
+
+	s.Require().NoError(err)
 }
 
 func getDockerNodeFile(nodeName string, path string) (string, error) {
