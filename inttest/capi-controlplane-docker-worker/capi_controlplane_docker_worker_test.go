@@ -136,7 +136,7 @@ func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
 
 func (s *CAPIControlPlaneDockerSuite) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.Command("kubectl", "delete", "cluster", "docker-test-cluster").CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
