@@ -19,7 +19,6 @@ package capicontolplanedockertunneling
 import (
 	"context"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/url"
 	"os"
@@ -28,6 +27,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 	"github.com/k0sproject/k0smotron/inttest/util"
@@ -245,6 +246,7 @@ metadata:
 spec:
   replicas: 1
   k0sConfigSpec:
+    version: v1.27.1+k0s.0
     tunneling:
       enabled: true
       mode: proxy

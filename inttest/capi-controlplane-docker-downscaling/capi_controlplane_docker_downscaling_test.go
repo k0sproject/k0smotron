@@ -249,6 +249,7 @@ metadata:
 spec:
   replicas: 3
   k0sConfigSpec:
+    version: v1.27.1+k0s.0
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig

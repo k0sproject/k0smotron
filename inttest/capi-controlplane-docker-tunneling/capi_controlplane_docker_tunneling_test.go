@@ -238,6 +238,7 @@ metadata:
 spec:
   replicas: 1
   k0sConfigSpec:
+    version: v1.27.1+k0s.0
     tunneling:
       enabled: true
     k0s:
