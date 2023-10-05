@@ -136,7 +136,7 @@ func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
 
 func (s *CAPIControlPlaneDockerSuite) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.Command("kubectl", "delete", "cluster", "docker-test-cluster").CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
@@ -195,6 +195,7 @@ metadata:
 spec:
   replicas: 1
   k0sConfigSpec:
+    version: v1.28.2+k0s.0
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig

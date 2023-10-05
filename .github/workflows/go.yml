@@ -84,7 +84,7 @@ jobs:
   smoketest:
     name: Smoke test
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-8core
     strategy:
       fail-fast: false
       matrix:
@@ -117,7 +117,7 @@ jobs:
   capi-smokes:
     name: Cluster API smoke tests
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-8core
     strategy:
       fail-fast: false
       matrix:
