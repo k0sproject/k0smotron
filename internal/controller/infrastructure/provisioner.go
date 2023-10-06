@@ -44,7 +44,7 @@ type Provisioner struct {
 // 2. Execute the bootstrap script
 // 3. Check sentinel file at /run/cluster-api/bootstrap-success.complete
 // 4. success
-func (p *Provisioner) Provision(ctx context.Context) error {
+func (p *Provisioner) Provision(_ context.Context) error {
 	// Parse the bootstrap data
 	cloudInit := &cloudinit.CloudInit{}
 	err := yaml.Unmarshal(p.bootstrapData, cloudInit)

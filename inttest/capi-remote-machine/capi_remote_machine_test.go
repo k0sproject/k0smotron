@@ -178,7 +178,9 @@ func (s *RemoteMachineSuite) getRemoteMachine(name string, namespace string) (*i
 func (s *RemoteMachineSuite) deleteCluster() {
 	response := s.client.RESTClient().Delete().AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/clusters/remote-test").Do(s.Context())
 	s.Require().NoError(response.Error())
-	s.client.CoreV1().Secrets("default").Delete(s.Context(), "footloose-key", metav1.DeleteOptions{})
+	if err := s.client.CoreV1().Secrets("default").Delete(s.Context(), "footloose-key", metav1.DeleteOptions{}); err != nil {
+		s.T().Logf("failed to delete footloose SSH key secret: %s", err.Error())
+	}
 }
 
 func (s *RemoteMachineSuite) createCluster() {
