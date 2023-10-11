@@ -2559,10 +2559,6 @@ spec:
                       For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/'
                     type: string
                 type: object
-              k0sVersion:
-                description: K0sVersion defines the k0s version to be deployed. If
-                  empty k0smotron will pick it automatically.
-                type: string
               machineTemplate:
                 properties:
                   infrastructureRef:
