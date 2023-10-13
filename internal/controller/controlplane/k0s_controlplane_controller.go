@@ -80,8 +80,8 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, nil
 	}
 
-	if kcp.Spec.K0sConfigSpec.Version == "" {
-		kcp.Spec.K0sConfigSpec.Version = defaultK0SVersion
+	if kcp.Spec.K0sVersion == "" {
+		kcp.Spec.K0sVersion = defaultK0SVersion
 	}
 
 	cluster, err := capiutil.GetOwnerCluster(ctx, c.Client, kcp.ObjectMeta)
