@@ -2559,6 +2559,10 @@ spec:
                       For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/'
                     type: string
                 type: object
+              k0sVersion:
+                description: K0sVersion defines the k0s version to be deployed. If
+                  empty k0smotron will pick it automatically.
+                type: string
               machineTemplate:
                 properties:
                   infrastructureRef:
@@ -4997,6 +5001,160 @@ spec:
     subresources:
       status: {}
 ---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.4
+  labels:
+    cluster.x-k8s.io/v1beta1: v1beta1
+  name: remoteclusters.infrastructure.cluster.x-k8s.io
+spec:
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    kind: RemoteCluster
+    listKind: RemoteClusterList
+    plural: remoteclusters
+    singular: remotecluster
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: RemoteClusterSpec defines the desired state of RemoteCluster
+            properties:
+              controlPlaneEndpoint:
+                description: APIEndpoint represents a reachable Kubernetes API endpoint.
+                properties:
+                  host:
+                    description: The hostname on which the API server is serving.
+                    type: string
+                  port:
+                    description: The port on which the API server is serving.
+                    format: int32
+                    type: integer
+                required:
+                - host
+                - port
+                type: object
+            required:
+            - controlPlaneEndpoint
+            type: object
+          status:
+            description: RemoteClusterStatus defines the observed state of RemoteCluster
+            properties:
+              ready:
+                default: false
+                description: Ready denotes that the remote cluster is ready to be
+                  used.
+                type: boolean
+            required:
+            - ready
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.4
+  labels:
+    cluster.x-k8s.io/v1beta1: v1beta1
+  name: remotemachines.infrastructure.cluster.x-k8s.io
+spec:
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    kind: RemoteMachine
+    listKind: RemoteMachineList
+    plural: remotemachines
+    singular: remotemachine
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: RemoteMachineSpec defines the desired state of RemoteMachine
+            properties:
+              address:
+                description: Address is the IP address or DNS name of the remote machine.
+                type: string
+              port:
+                default: 22
+                description: Port is the SSH port of the remote machine.
+                type: integer
+              providerID:
+                description: ProviderID is the ID of the machine in the provider.
+                type: string
+              sshKeyRef:
+                description: SSHKeyRef is a reference to a secret that contains the
+                  SSH private key. The key must be placed on the secret using the
+                  key "value".
+                properties:
+                  name:
+                    description: Name is the name of the secret.
+                    type: string
+                required:
+                - name
+                type: object
+              user:
+                default: root
+                description: User is the user to use when connecting to the remote
+                  machine.
+                type: string
+            required:
+            - address
+            - sshKeyRef
+            type: object
+          status:
+            description: RemoteMachineStatus defines the observed state of RemoteMachine
+            properties:
+              failureMessage:
+                type: string
+              failureReason:
+                type: string
+              ready:
+                description: Ready denotes that the remote machine is ready to be
+                  used.
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -5065,6 +5223,18 @@ rules:
   resources:
   - configmaps
   - events
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - create
@@ -5322,6 +5492,54 @@ rules:
   - update
   - watch
 - apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - remoteclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - remoteclusters/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - remotemachines
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - remotemachines/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - k0smotron.io
   resources:
   - clusters
@@ -5570,6 +5788,9 @@ spec:
         - --leader-elect
         command:
         - /manager
+        env:
+        - name: SSH_KNOWN_HOSTS
+          value: ""
         image: quay.io/k0sproject/k0smotron:v0.6.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
