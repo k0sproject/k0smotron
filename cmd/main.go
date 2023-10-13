@@ -36,9 +36,11 @@ import (
 
 	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	infrastructurev1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/bootstrap"
 	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
+	"github.com/k0sproject/k0smotron/internal/controller/infrastructure"
 	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -56,10 +58,11 @@ func init() {
 	utilruntime.Must(k0smotronv1beta1.AddToScheme(scheme))
 	utilruntime.Must(bootstrapv1beta1.AddToScheme(scheme))
 
-	// Register clustera-api types
+	// Register cluster-api types
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(controlplanev1beta1.AddToScheme(scheme))
+	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -172,6 +175,25 @@ func main() {
 		RESTConfig: restConfig,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "K0sController")
+		os.Exit(1)
+	}
+
+	if err = (&infrastructure.RemoteMachineController{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		ClientSet:  clientSet,
+		RESTConfig: restConfig,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "K0sController")
+		setupLog.Error(err, "unable to create controller", "controller", "RemoteMachine")
+		os.Exit(1)
+	}
+
+	if err = (&infrastructure.ClusterController{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
 		os.Exit(1)
 	}
 

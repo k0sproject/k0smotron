@@ -18,6 +18,7 @@ package cloudinit
 
 import (
 	"bytes"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
@@ -54,4 +55,8 @@ func (c *CloudInit) AsBytes() ([]byte, error) {
 	}
 
 	return b.Bytes(), nil
+}
+
+func (f File) PermissionsAsInt() (int, error) {
+	return strconv.Atoi(f.Permissions)
 }

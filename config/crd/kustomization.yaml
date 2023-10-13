@@ -10,6 +10,8 @@ resources:
 - bases/controlplane.cluster.x-k8s.io_k0scontrollerconfigs.yaml
 - bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
 - bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
+- bases/infrastructure.cluster.x-k8s.io_remoteclusters.yaml
+- bases/infrastructure.cluster.x-k8s.io_remotemachines.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

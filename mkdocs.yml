@@ -26,6 +26,7 @@ nav:
       - Control Plane: capi-controlplane.md
       - Control Plane Bootstrap: capi-controlplane-bootstrap.md
       - Worker Node Bootstrap: capi-bootstrap.md
+      - Remote Machine Provider: capi-remote.md
       - Examples:
         - Overview: capi-examples.md
         - AWS: capi-aws.md
