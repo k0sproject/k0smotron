@@ -428,6 +428,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cluster-api-provider" class="md-nav__link">
+    Cluster API provider
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -702,6 +709,26 @@ You are not currently viewing the documentation for the current stable release o
   
   
   
+    <li class="md-nav__item">
+      <a href="../capi-remote/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Remote Machine Provider
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
     
     
     
@@ -712,10 +739,10 @@ You are not currently viewing the documentation for the current stable release o
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_3_5" id="__nav_4_3_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3_6" id="__nav_4_3_6_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -726,8 +753,8 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_3_5">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3_6">
             <span class="md-nav__icon md-icon"></span>
             Examples
           </label>
@@ -951,6 +978,13 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cluster-api-provider" class="md-nav__link">
+    Cluster API provider
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -967,9 +1001,17 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="k0smotrong-usage">k0smotrong usage<a class="headerlink" href="#k0smotrong-usage" title="Permanent link">#</a></h1>
-<p>k0smotron can be use either as a "standalone" manager for Kubernetes control planes or as a Cluster API controlplane and bootstrap provider.</p>
+<p>k0smotron can be use either as a "standalone" manager for Kubernetes control planes or as a Cluster API provider for several ClusterAPI "roles".</p>
 <h2 id="standalone">Standalone<a class="headerlink" href="#standalone" title="Permanent link">#</a></h2>
 <p>In standalone mode k0smotron will manage ONLY the controlplanes running in the management cluster. To get started creating and managing control planes with k0smotron see <a href="../cluster/">cluster creation docs</a>.</p>
+<h2 id="cluster-api-provider">Cluster API provider<a class="headerlink" href="#cluster-api-provider" title="Permanent link">#</a></h2>
+<p>k0smotron can act as a ClusterAPI provider in several cases:</p>
+<ul>
+<li><a href="../capi-controlplane/">ControlPlane provider</a>: k0smotron manages the controlplane <em>within</em> the management cluster</li>
+<li><a href="../capi-controlplane-bootstrap/">Control plane Bootstrap provider</a>: k0smotron acts as a bootstrap provider for <code>Machine</code>s running the control plane</li>
+<li><a href="../capi-bootstrap/">Bootstrap provider</a>: k0smotron acts as the bootstrap (config) provider for worker machines</li>
+<li><a href="../capi-remote/">Remote machine provider</a>: k0smotron acts as a infrastructure provider, enabling configuring <code>Machine</code>s on existing infrastructure over SSH</li>
+</ul>
 
 
 
