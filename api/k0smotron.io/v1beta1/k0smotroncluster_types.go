@@ -100,6 +100,7 @@ type ClusterSpec struct {
 // K0smotronClusterStatus defines the observed state of K0smotronCluster
 type ClusterStatus struct {
 	ReconciliationStatus string `json:"reconciliationStatus"`
+	Ready                bool   `json:"ready,omitempty"`
 }
 
 //+kubebuilder:object:root=true

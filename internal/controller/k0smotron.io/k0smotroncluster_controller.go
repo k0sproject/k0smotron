@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	apps "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -124,8 +125,16 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 func (r *ClusterReconciler) updateStatus(ctx context.Context, kmc km.Cluster, status string) {
 	logger := log.FromContext(ctx)
 	kmc.Status.ReconciliationStatus = status
-	if err := r.Status().Update(ctx, &kmc); err != nil {
+	if err := r.Status().Patch(ctx, &kmc, client.Merge); err != nil {
 		logger.Error(err, fmt.Sprintf("Unable to update status: %s", status))
+	}
+}
+
+func (r *ClusterReconciler) updateReadiness(ctx context.Context, kmc km.Cluster, ready bool) {
+	logger := log.FromContext(ctx)
+	kmc.Status.Ready = ready
+	if err := r.Status().Patch(ctx, &kmc, client.Merge); err != nil {
+		logger.Error(err, fmt.Sprintf("Unable to update readiness: %v", ready))
 	}
 }
 
@@ -133,5 +142,6 @@ func (r *ClusterReconciler) updateStatus(ctx context.Context, kmc km.Cluster, st
 func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&km.Cluster{}).
+		Owns(&apps.StatefulSet{}).
 		Complete(r)
 }

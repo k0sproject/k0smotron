@@ -19,13 +19,20 @@ package basic
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/inttest/util"
+
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 )
 
 type BasicSuite struct {
@@ -59,6 +66,8 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().NoError(err)
 	s.Require().Equal("100m", pod.Spec.Containers[0].Resources.Requests.Cpu().String())
 	s.Require().Equal("100Mi", pod.Spec.Containers[0].Resources.Requests.Memory().String())
+
+	s.checkClusterStatus(s.Context(), rc)
 
 	s.T().Log("Generating k0smotron join token")
 	token, err := util.GetJoinToken(kc, rc, "kmc-kmc-test-0", "kmc-test")
@@ -105,6 +114,33 @@ func TestBasicSuite(t *testing.T) {
 		},
 	}
 	suite.Run(t, &s)
+}
+
+func (s *BasicSuite) checkClusterStatus(ctx context.Context, rc *rest.Config) {
+
+	crdConfig := *rc
+	crdConfig.ContentConfig.GroupVersion = &km.GroupVersion
+	crdConfig.APIPath = "/apis"
+	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
+	crdConfig.UserAgent = rest.DefaultKubernetesUserAgent()
+	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
+	s.Require().NoError(err)
+
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		var kmc km.Cluster
+		err = crdRestClient.
+			Get().
+			Resource("clusters").
+			Name("kmc-test").
+			Namespace("kmc-test").
+			Do(ctx).
+			Into(&kmc)
+
+		return kmc.Status.Ready, nil
+	})
+
+	s.Require().NoError(err)
 }
 
 func (s *BasicSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
