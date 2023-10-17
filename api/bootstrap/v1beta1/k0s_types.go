@@ -59,8 +59,7 @@ type K0sWorkerConfigSpec struct {
 	// Version is the version of k0s to use. In case this is not set, the latest version is used.
 	// Make sure the version is compatible with the k0s version running on the control plane.
 	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
-	// +kubebuilder:validation:Optional
-	Version string `json:"version,omitempty"`
+	Version string `json:"version"`
 
 	// Files specifies extra files to be passed to user_data upon creation.
 	// +kubebuilder:validation:Optional
@@ -115,7 +114,7 @@ type K0sControllerConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   K0sConfigSpec             `json:"spec,omitempty"`
+	Spec   K0sControllerConfigSpec   `json:"spec,omitempty"`
 	Status K0sControllerConfigStatus `json:"status,omitempty"`
 }
 
@@ -136,18 +135,21 @@ type K0sControllerConfigList struct {
 	Items           []K0sControllerConfig `json:"items"`
 }
 
+type K0sControllerConfigSpec struct {
+	// Version is the version of k0s to use. In case this is not set, the latest version is used.
+	// Make sure the version is compatible with the k0s version running on the control plane.
+	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
+	Version string `json:"version"`
+
+	*K0sConfigSpec `json:",inline"`
+}
+
 type K0sConfigSpec struct {
 	// K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 	// If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:pruning:PreserveUnknownFields
 	K0s *unstructured.Unstructured `json:"k0s,omitempty"`
-
-	// Version is the version of k0s to use. In case this is not set, the latest version is used.
-	// Make sure the version is compatible with the k0s version running on the control plane.
-	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
-	// +kubebuilder:validation:Optional
-	Version string `json:"version,omitempty"`
 
 	// Files specifies extra files to be passed to user_data upon creation.
 	// +kubebuilder:validation:Optional

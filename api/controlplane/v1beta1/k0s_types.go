@@ -48,8 +48,7 @@ type K0sControlPlaneSpec struct {
 	Replicas int32 `json:"replicas,omitempty"`
 	// K0sVersion defines the k0s version to be deployed. If empty k0smotron
 	// will pick it automatically.
-	//+kubebuilder:validation:Optional
-	K0sVersion string `json:"k0sVersion,omitempty"`
+	K0sVersion string `json:"k0sVersion"`
 }
 
 type K0sBootstrapConfigSpec struct {
