@@ -2106,6 +2106,8 @@ spec:
           status:
             description: K0smotronClusterStatus defines the observed state of K0smotronCluster
             properties:
+              ready:
+                type: boolean
               reconciliationStatus:
                 type: string
             required:
