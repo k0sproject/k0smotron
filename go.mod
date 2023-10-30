@@ -3,7 +3,7 @@ module github.com/k0sproject/k0smotron
 go 1.21
 
 require (
-	github.com/go-logr/logr v1.2.4
+	github.com/go-logr/logr v1.3.0
 	github.com/google/uuid v1.4.0
 	github.com/imdario/mergo v0.3.16
 	github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29
