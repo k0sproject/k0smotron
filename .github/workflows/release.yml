@@ -63,3 +63,45 @@ jobs:
             ghcr.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
             quay.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
           push: true
+
+      - name: Create install files
+        if: github.repository == 'k0sproject/k0smotron'
+        run: |
+          make bootstrap-components.yaml IMG=quay.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
+          make control-plane-components.yaml IMG=quay.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
+
+      - name: Upload Release Assets - metadata.yaml
+        id: upload-release-asset-images
+        uses: shogo82148/actions-upload-release-asset@v1.6.6
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./metadata.yaml
+          asset_name: metadata.yaml
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets - bootstrap-components.yaml
+        id: upload-release-asset-images
+        uses: shogo82148/actions-upload-release-asset@v1.6.6
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./bootstrap-components.yaml
+          asset_name: bootstrap-components.yaml
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets - control-plane-components.yaml
+        id: upload-release-asset-images
+        uses: shogo82148/actions-upload-release-asset@v1.6.6
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./control-plane-components.yaml
+          asset_name: control-plane-components.yaml
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets - infrastructure-components.yaml
+        id: upload-release-asset-images
+        uses: shogo82148/actions-upload-release-asset@v1.6.6
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./infrastructure-components.yaml
+          asset_name: infrastructure-components.yaml
+          asset_content_type: application/octet-stream

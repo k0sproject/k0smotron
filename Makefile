@@ -63,9 +63,14 @@ config/crd/bases/bootstrap.cluster.x-k8s.io_k0sconfigs.yaml: $(CONTROLLER_GEN)
 
 manifests_targets += config/crd/bases/k0smotron.io_clusters.yaml
 manifests_targets += config/crd/bases/k0smotron.io_jointokenrequests.yaml
+manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_k0sconfigs.yaml
+manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigs.yaml
+manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
 manifests_targets += config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrollerconfigs.yaml
 manifests_targets += config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
 manifests_targets += config/crd/bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
+manifests_targets += config/crd/bases/infrastructure.cluster.x-k8s.io_remoteclusters.yaml
+manifests_targets += config/crd/bases/infrastructure.cluster.x-k8s.io_remotemachines.yaml
 config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN) api/k0smotron.io/v1beta1/k0smotroncluster_types.go
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
@@ -78,7 +83,7 @@ generate_targets += api/controlplane/v1beta1/zz_generated.deepcopy.go
 $(generate_targets): $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-generate: $(generate_targets) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: $(generate_targets) clusterapi-manifests ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 
 
 GO_PKGS=$(shell go list ./...)
@@ -165,6 +170,26 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 release: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default > install.yaml
+	git checkout config/manager/kustomization.yaml
+
+clusterapi-manifests:
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/bootstrap/..." output:crd:artifacts:config=config/clusterapi/bootstrap/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/controlplane/..." output:crd:artifacts:config=config/clusterapi/controlplane/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/infrastructure/..." output:crd:artifacts:config=config/clusterapi/infrastructure/bases
+
+bootstrap-components.yaml: clusterapi-manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/clusterapi/bootstrap/ > bootstrap-components.yaml
+	git checkout config/manager/kustomization.yaml
+
+control-plane-components.yaml: clusterapi-manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/clusterapi/controlplane/ > control-plane-components.yaml
+	git checkout config/manager/kustomization.yaml
+
+infrastructure-components.yaml: clusterapi-manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/clusterapi/infrastructure/ > infrastructure-components.yaml
 	git checkout config/manager/kustomization.yaml
 ##@ Build Dependencies
 

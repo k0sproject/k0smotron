@@ -48,8 +48,20 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme             = runtime.NewScheme()
+	setupLog           = ctrl.Log.WithName("setup")
+	enabledControllers = map[string]bool{
+		bootstrapController:      true,
+		controlPlaneController:   true,
+		infrastructureController: true,
+	}
+)
+
+const (
+	allControllers           = "all"
+	bootstrapController      = "bootstrap"
+	controlPlaneController   = "control-plane"
+	infrastructureController = "infrastructure"
 )
 
 func init() {
@@ -70,16 +82,24 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var enabledController string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	opts := zap.Options{
 		Development: true,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
+
+	if enabledController != "" && enabledController != allControllers {
+		enabledControllers = map[string]bool{
+			enabledController: true,
+		}
+	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
@@ -139,62 +159,67 @@ func main() {
 	}
 	//+kubebuilder:scaffold:builder
 
-	if err = (&bootstrap.Controller{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		ClientSet:  clientSet,
-		RESTConfig: restConfig,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
-		os.Exit(1)
-	}
-	if err = (&bootstrap.ControlPlaneController{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		ClientSet:  clientSet,
-		RESTConfig: restConfig,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
-		os.Exit(1)
-	}
-
-	if err = (&controlplane.K0smotronController{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		ClientSet:  clientSet,
-		RESTConfig: restConfig,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "K0smotronControlPlane")
-		os.Exit(1)
+	if isControllerEnabled(bootstrapController) {
+		if err = (&bootstrap.Controller{
+			Client:     mgr.GetClient(),
+			Scheme:     mgr.GetScheme(),
+			ClientSet:  clientSet,
+			RESTConfig: restConfig,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
+			os.Exit(1)
+		}
+		if err = (&bootstrap.ControlPlaneController{
+			Client:     mgr.GetClient(),
+			Scheme:     mgr.GetScheme(),
+			ClientSet:  clientSet,
+			RESTConfig: restConfig,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
+			os.Exit(1)
+		}
 	}
 
-	if err = (&controlplane.K0sController{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		ClientSet:  clientSet,
-		RESTConfig: restConfig,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "K0sController")
-		os.Exit(1)
+	if isControllerEnabled(controlPlaneController) {
+		if err = (&controlplane.K0smotronController{
+			Client:     mgr.GetClient(),
+			Scheme:     mgr.GetScheme(),
+			ClientSet:  clientSet,
+			RESTConfig: restConfig,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "K0smotronControlPlane")
+			os.Exit(1)
+		}
+
+		if err = (&controlplane.K0sController{
+			Client:     mgr.GetClient(),
+			Scheme:     mgr.GetScheme(),
+			ClientSet:  clientSet,
+			RESTConfig: restConfig,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "K0sController")
+			os.Exit(1)
+		}
 	}
 
-	if err = (&infrastructure.RemoteMachineController{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		ClientSet:  clientSet,
-		RESTConfig: restConfig,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "K0sController")
-		setupLog.Error(err, "unable to create controller", "controller", "RemoteMachine")
-		os.Exit(1)
-	}
+	if isControllerEnabled(infrastructureController) {
+		if err = (&infrastructure.RemoteMachineController{
+			Client:     mgr.GetClient(),
+			Scheme:     mgr.GetScheme(),
+			ClientSet:  clientSet,
+			RESTConfig: restConfig,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "RemoteMachine")
+			os.Exit(1)
+		}
 
-	if err = (&infrastructure.ClusterController{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
-		os.Exit(1)
+		if err = (&infrastructure.ClusterController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
+			os.Exit(1)
+		}
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -219,4 +244,8 @@ func loadRestConfig() (*rest.Config, error) {
 		return clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 	}
 	return rest.InClusterConfig()
+}
+
+func isControllerEnabled(controllerName string) bool {
+	return enabledControllers[controllerName]
 }

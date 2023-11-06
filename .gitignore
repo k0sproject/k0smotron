@@ -1,5 +1,7 @@
 # Generated files
 install.yaml
+bootstrap-components.yaml
+control-plane-components.yaml
 
 # Binaries for programs and plugins
 *.exe
