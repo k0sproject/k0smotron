@@ -46,7 +46,7 @@ import (
 )
 
 const (
-	defaultK0SVersion = "v1.27.2-k0s.0"
+	defaultK0SVersion = "v1.27.2+k0s.0"
 )
 
 type K0sController struct {
@@ -267,7 +267,10 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 				Controller:         pointer.Bool(true),
 			}},
 		},
-		Spec: kcp.Spec.K0sConfigSpec,
+		Spec: bootstrapv1.K0sControllerConfigSpec{
+			Version:       kcp.Spec.K0sVersion,
+			K0sConfigSpec: &kcp.Spec.K0sConfigSpec,
+		},
 	}
 
 	if err := c.Client.Patch(ctx, &controllerConfig, client.Apply, &client.PatchOptions{

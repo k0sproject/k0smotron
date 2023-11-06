@@ -115,12 +115,6 @@ spec:
                         format: int32
                         type: integer
                     type: object
-                  version:
-                    description: 'Version is the version of k0s to use. In case this
-                      is not set, the latest version is used. Make sure the version
-                      is compatible with the k0s version running on the control plane.
-                      For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/'
-                    type: string
                 type: object
               k0sVersion:
                 description: K0sVersion defines the k0s version to be deployed. If
@@ -196,6 +190,7 @@ spec:
                 type: integer
             required:
             - k0sConfigSpec
+            - k0sVersion
             - machineTemplate
             type: object
           status:
