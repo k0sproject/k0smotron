@@ -328,6 +328,17 @@ You are not currently viewing the documentation for the current stable release o
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -337,6 +348,32 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#clusterctl" class="md-nav__link">
+    clusterctl
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -919,6 +956,21 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#clusterctl" class="md-nav__link">
+    clusterctl
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -938,6 +990,22 @@ You are not currently viewing the documentation for the current stable release o
 </code></pre></div>
 <p>This install the k0smotron controller manager, all the related CRD definitions and needed RBAC rules.</p>
 <p>Once the installation is completed you are ready to <a href="../cluster/">create your first control planes</a>.</p>
+<h2 id="clusterctl">clusterctl<a class="headerlink" href="#clusterctl" title="Permanent link">#</a></h2>
+<p>k0smotron is compatible with clusterctl and can act as bootstrap and control plane provider. To use k0smotron with clusterctl, you need to create a clusterctl configuration file. Here's an example:</p>
+<div class="highlight"><pre><span></span><code>providers:
+<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;k0smotron&quot;</span>
+<span class="w">    </span>url:<span class="w"> </span><span class="s2">&quot;https://github.com/k0sproject/k0smotron/releases/latest/bootstrap-components.yaml&quot;</span>
+<span class="w">    </span>type:<span class="w"> </span><span class="s2">&quot;BootstrapProvider&quot;</span>
+<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;k0smotron&quot;</span>
+<span class="w">    </span>url:<span class="w"> </span><span class="s2">&quot;https://github.com/k0sproject/k0smotron/releases/latest/control-plane-components.yaml&quot;</span>
+<span class="w">    </span>type:<span class="w"> </span><span class="s2">&quot;ControlPlaneProvider&quot;</span>
+<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;k0smotron&quot;</span>
+<span class="w">    </span>url:<span class="w"> </span><span class="s2">&quot;https://github.com/k0sproject/k0smotron/releases/latest/infrastructure-components.yaml&quot;</span>
+<span class="w">    </span>type:<span class="w"> </span><span class="s2">&quot;InfrastructureProvider&quot;</span>
+</code></pre></div>
+<p>Once you have the configuration file in place, you can use clusterctl to create a cluster:</p>
+<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--bootstrap<span class="w"> </span>k0smotron<span class="w"> </span>--control-plane<span class="w"> </span>k0smotron<span class="w"> </span>--config<span class="w"> </span>config.yaml
+</code></pre></div>
 
 
 
