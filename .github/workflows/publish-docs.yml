@@ -85,7 +85,12 @@ jobs:
       # Commits if the files were changed
       # Finally pushes if there are unpushed commits
       - name: Create install files
-        if: github.repository == 'k0sproject/k0smotron'
+        if: >-
+          github.repository == 'k0sproject/k0smotron' &&
+          github.event_name == 'release' &&
+          github.event.action == 'published' &&
+          !github.event.release.draft &&
+          !github.event.release.prerelease
         run: |
           STABLE=${{ steps.set_versions.outputs.STABLE }}
           make release IMG=quay.io/k0sproject/k0smotron:${STABLE}
