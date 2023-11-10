@@ -51,3 +51,15 @@ runcmd:
   - echo 'hello world'
 `, s)
 }
+
+func TestPermissions(t *testing.T) {
+	f := File{
+		Path:        "/etc/hosts",
+		Content:     "foobar",
+		Permissions: "0644",
+	}
+
+	perm, err := f.PermissionsAsInt()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(420), perm)
+}
