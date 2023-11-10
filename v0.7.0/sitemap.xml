@@ -2,102 +2,102 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/capi-aws/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/capi-bootstrap/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/capi-controlplane-bootstrap/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/capi-controlplane/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/capi-docker/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/capi-examples/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/capi-hetzner/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/capi-remote/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/cluster-api/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/cluster/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/configuration/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/faq/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/ha/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/install/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/join-nodes/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/monitoring/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/resource-reference/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/status/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/v0.7.0/usage-overview/</loc>
-         <lastmod>2023-10-13</lastmod>
+         <lastmod>2023-11-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
