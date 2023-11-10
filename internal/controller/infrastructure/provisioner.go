@@ -38,6 +38,13 @@ type Provisioner struct {
 	log           logr.Logger
 }
 
+const stopCommandTemplate = `(command -v systemctl > /dev/null 2>&1 && systemctl stop %s) || (command -v rc-service > /dev/null 2>&1 && rc-service %s stop) || (echo "Not a supported init system"; false)`
+
+const (
+	ctrlService   = "k0scontroller"
+	workerService = "k0sworker"
+)
+
 // Provision provisions a new machine
 // The provisioning process is as follows:
 // 1. Open SSH connection to the machine
@@ -52,7 +59,7 @@ func (p *Provisioner) Provision(_ context.Context) error {
 		return fmt.Errorf("failed to parse bootstrap data: %w", err)
 	}
 
-	authM, err := rig.ParseSSHPrivateKey([]byte(p.sshKey), rig.DefaultPasswordCallback)
+	authM, err := rig.ParseSSHPrivateKey([]byte(p.sshKey), nil)
 	if err != nil {
 		return fmt.Errorf("failed to parse ssh key: %w", err)
 	}
@@ -81,7 +88,6 @@ func (p *Provisioner) Provision(_ context.Context) error {
 
 	// Execute the bootstrap script commands
 	for _, cmd := range cloudInit.RunCmds {
-
 		output, err := connection.ExecOutput(cmd)
 		if err != nil {
 			p.log.Error(err, "failed to run command", "output", output)
@@ -93,6 +99,56 @@ func (p *Provisioner) Provision(_ context.Context) error {
 	fsys := connection.SudoFsys()
 	if _, err := fsys.Stat("/run/cluster-api/bootstrap-success.complete"); err != nil {
 		return errors.New("bootstrap sentinel file not found")
+	}
+
+	return nil
+}
+
+// Cleanup cleans up a machine
+// The provisioning process is as follows:
+// 1. Open SSH connection to the machine
+// 2. Stops k0s
+// 3. Removes node from etcd
+// 4. Runs k0s reset
+func (p *Provisioner) Cleanup(_ context.Context, mode RemoteMachineMode) error {
+	if mode == ModeNonK0s {
+		return nil
+	}
+
+	authM, err := rig.ParseSSHPrivateKey(p.sshKey, nil)
+	if err != nil {
+		return fmt.Errorf("failed to parse ssh key: %w", err)
+	}
+
+	connection := &rig.Connection{
+		SSH: &rig.SSH{
+			Address:     p.machine.Spec.Address,
+			Port:        p.machine.Spec.Port,
+			User:        p.machine.Spec.User,
+			AuthMethods: authM,
+		},
+	}
+
+	if err := connection.Connect(); err != nil {
+		p.log.Error(err, "failed to connect to host")
+	}
+
+	defer connection.Disconnect()
+
+	var cmds []string
+	if mode == ModeController {
+		cmds = append(cmds, "k0s etcd leave")
+		cmds = append(cmds, fmt.Sprintf(stopCommandTemplate, ctrlService, ctrlService))
+	} else {
+		cmds = append(cmds, fmt.Sprintf(stopCommandTemplate, workerService, workerService))
+	}
+	cmds = append(cmds, "k0s reset")
+
+	for _, cmd := range cmds {
+		output, err := connection.ExecOutput(cmd)
+		if err != nil {
+			p.log.Error(err, "failed to run command", "output", output)
+		}
 	}
 
 	return nil

@@ -29,21 +29,18 @@ import (
 	"text/template"
 
 	"github.com/k0sproject/k0s/inttest/common"
-
 	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
-	"golang.org/x/crypto/ssh"
-
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-
+	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type RemoteMachineSuite struct {
@@ -116,8 +113,6 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(workerSSH.Exec(s.Context(), "cat >>/root/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(s.publicKey)}))
 
 	s.Require().NoError(err)
-
-	s.createCluster()
 	defer func() {
 		keep := os.Getenv("KEEP_CLUSTER_AFTER_TEST")
 		if keep == "true" {
@@ -129,6 +124,8 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 		s.T().Log("Deleting cluster objects")
 		s.deleteCluster()
 	}()
+
+	s.createCluster()
 
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -160,6 +157,14 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().True(rm.Status.Ready)
 	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 	s.Require().Equal(expectedProviderID, rm.Spec.ProviderID)
+
+	s.T().Log("deleting node from cluster")
+	s.Require().NoError(s.deleteRemoteMachine("remote-test-0", "default"))
+
+	nodes, err := kmcKC.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	s.Require().NoError(err)
+	s.Require().Equal(corev1.ConditionFalse, nodes.Items[0].Status.Conditions[0].Status)
+
 }
 
 func (s *RemoteMachineSuite) getRemoteMachine(name string, namespace string) (*infra.RemoteMachine, error) {
@@ -173,6 +178,12 @@ func (s *RemoteMachineSuite) getRemoteMachine(name string, namespace string) (*i
 		return nil, err
 	}
 	return rm, nil
+}
+
+func (s *RemoteMachineSuite) deleteRemoteMachine(name string, namespace string) error {
+	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/%s/remotemachines/%s", namespace, name)
+	_, err := s.client.RESTClient().Delete().AbsPath(apiPath).DoRaw(s.Context())
+	return err
 }
 
 func (s *RemoteMachineSuite) deleteCluster() {

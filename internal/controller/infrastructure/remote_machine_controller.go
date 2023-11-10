@@ -19,7 +19,6 @@ package infrastructure
 import (
 	"context"
 	"fmt"
-
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -31,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/annotations"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -40,6 +40,16 @@ type RemoteMachineController struct {
 	ClientSet  *kubernetes.Clientset
 	RESTConfig *rest.Config
 }
+
+type RemoteMachineMode int
+
+const (
+	RemoteMachineFinalizer = "remotemachine.k0smotron.io/finalizer"
+
+	ModeController RemoteMachineMode = iota
+	ModeWorker
+	ModeNonK0s
+)
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=remotemachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=remotemachines/status,verbs=get;list;watch;create;update;patch;delete
@@ -71,44 +81,58 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	mode := ModeNonK0s
+	if machine.Spec.Bootstrap.ConfigRef != nil {
+		switch machine.Spec.Bootstrap.ConfigRef.Kind {
+		case "K0sWorkerConfig":
+			mode = ModeWorker
+		case "K0sControllerConfig":
+			mode = ModeController
+		default:
+			mode = ModeNonK0s
+		}
+	}
+
 	log = log.WithValues("machine", machine.Name)
 
-	defer func() {
-		// Always update the RemoteMachine status with the phase the state machine is in
-		if err := r.Status().Update(ctx, rm); err != nil {
-			log.Error(err, "Failed to update RemoteMachine status")
+	if rm.ObjectMeta.DeletionTimestamp.IsZero() {
+		defer func() {
+			// Always update the RemoteMachine status with the phase the state machine is in
+			if err := r.Status().Update(ctx, rm); err != nil {
+				log.Error(err, "Failed to update RemoteMachine status")
+			}
+		}()
+
+		// Fetch the Cluster
+		cluster, err := capiutil.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
+		if err != nil {
+			log.Info("RemoteMachine owner Machine is missing cluster label or cluster does not exist")
+			return ctrl.Result{Requeue: true}, err
 		}
-	}()
+		if cluster == nil {
+			log.Info(fmt.Sprintf("Cluster association broken for RemoteMachine %s/%s", rm.Namespace, rm.Name))
+			return ctrl.Result{Requeue: true}, nil
+		}
 
-	// Fetch the Cluster
-	cluster, err := capiutil.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
-	if err != nil {
-		log.Info("RemoteMachine owner Machine is missing cluster label or cluster does not exist")
-		return ctrl.Result{Requeue: true}, err
-	}
-	if cluster == nil {
-		log.Info(fmt.Sprintf("Cluster association broken for RemoteMachine %s/%s", rm.Namespace, rm.Name))
-		return ctrl.Result{Requeue: true}, nil
-	}
+		// Bail out early if surrounding objects are not ready
+		if cluster.Spec.Paused || annotations.IsPaused(cluster, rm) {
+			log.Info("Cluster is paused, skipping RemoteMachine reconciliation")
+		}
 
-	// Bail out early if surrounding objects are not ready
-	if cluster.Spec.Paused || annotations.IsPaused(cluster, rm) {
-		log.Info("Cluster is paused, skipping RemoteMachine reconciliation")
-	}
+		if !cluster.Status.InfrastructureReady {
+			log.Info("Cluster infrastructure is not ready yet")
+			return ctrl.Result{Requeue: true}, nil
+		}
 
-	if !cluster.Status.InfrastructureReady {
-		log.Info("Cluster infrastructure is not ready yet")
-		return ctrl.Result{Requeue: true}, nil
-	}
+		if rm.Spec.ProviderID != "" {
+			log.Info("RemoteMachine already has ProviderID, skipping reconciliation")
+			return ctrl.Result{}, nil
+		}
 
-	if rm.Spec.ProviderID != "" {
-		log.Info("RemoteMachine already has ProviderID, skipping reconciliation")
-		return ctrl.Result{}, nil
-	}
-
-	if machine.Spec.Bootstrap.DataSecretName == nil {
-		log.Info("Waiting for Bootstrap Controller to set bootstrap data")
-		return ctrl.Result{Requeue: true}, nil
+		if machine.Spec.Bootstrap.DataSecretName == nil {
+			log.Info("Waiting for Bootstrap Controller to set bootstrap data")
+			return ctrl.Result{Requeue: true}, nil
+		}
 	}
 
 	// Fetch the bootstrap data
@@ -130,6 +154,23 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		sshKey:        sshKey,
 		machine:       rm,
 		log:           log,
+	}
+
+	if !rm.ObjectMeta.DeletionTimestamp.IsZero() {
+		if controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
+			if err := p.Cleanup(ctx, mode); err != nil {
+				return ctrl.Result{}, err
+			}
+			controllerutil.RemoveFinalizer(rm, RemoteMachineFinalizer)
+			if err := r.Update(ctx, rm); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if !controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
+		controllerutil.AddFinalizer(rm, RemoteMachineFinalizer)
 	}
 
 	defer func() {
