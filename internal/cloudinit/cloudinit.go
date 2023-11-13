@@ -57,6 +57,7 @@ func (c *CloudInit) AsBytes() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (f File) PermissionsAsInt() (int, error) {
-	return strconv.Atoi(f.Permissions)
+func (f File) PermissionsAsInt() (int64, error) {
+
+	return strconv.ParseInt(f.Permissions, 8, 32)
 }

@@ -166,7 +166,7 @@ func (p *Provisioner) uploadFile(conn *rig.Connection, file cloudinit.File) erro
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	destFile, err := fsys.OpenFile(file.Path, rigfs.ModeCreate, rigfs.ModeReadWrite)
+	destFile, err := fsys.OpenFile(file.Path, rigfs.ModeCreate, rigfs.FileMode(perms))
 	if err != nil {
 		return fmt.Errorf("failed to open remote file for writing: %w", err)
 	}
@@ -175,5 +175,6 @@ func (p *Provisioner) uploadFile(conn *rig.Connection, file cloudinit.File) erro
 		return fmt.Errorf("failed to write to remote file: %w", err)
 	}
 
+	p.log.Info("uploaded file", "path", file.Path, "permissions", perms)
 	return nil
 }
