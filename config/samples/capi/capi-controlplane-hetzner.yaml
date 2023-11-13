@@ -24,7 +24,7 @@ kind: K0smotronControlPlane # This would somehow map to k0smotron
 metadata:
   name: cp-test
 spec:
-  k0sVersion: v1.27.2-k0s.0
+  version: v1.27.2
   persistence:
     type: emptyDir
   service:
@@ -66,7 +66,7 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: HCloudMachine
     name: cp-test-0
-  
+
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: HCloudMachine
@@ -83,7 +83,7 @@ kind: K0sWorkerConfig
 metadata:
   name: cp-test-0
 spec:
-  
+
 ---
 # You also need a Hetzner token secret
 # apiVersion: v1

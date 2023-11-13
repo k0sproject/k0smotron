@@ -25,6 +25,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+const (
+	K0sSuffixAnnotation = "k0smotron.io/k0s-suffix"
+)
+
 func init() {
 	SchemeBuilder.Register(&K0sWorkerConfig{}, &K0sWorkerConfigList{})
 	SchemeBuilder.Register(&K0sControllerConfig{}, &K0sControllerConfigList{})

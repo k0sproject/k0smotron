@@ -84,10 +84,6 @@ spec:
                   k0smotron will pick it automatically. Must not include the image
                   tag.
                 type: string
-              k0sVersion:
-                description: K0sVersion defines the k0s version to be deployed. If
-                  empty k0smotron will pick it automatically.
-                type: string
               kineDataSourceSecretName:
                 description: KineDataSourceSecretName defines the name of kine datasource
                   URL secret. KineDataSourceURL or KineDataSourceSecretName are required
@@ -2124,6 +2120,10 @@ spec:
                 required:
                 - type
                 type: object
+              version:
+                description: Version defines the k0s version to be deployed. If empty
+                  k0smotron will pick it automatically.
+                type: string
             type: object
           status:
             description: K0smotronClusterStatus defines the observed state of K0smotronCluster

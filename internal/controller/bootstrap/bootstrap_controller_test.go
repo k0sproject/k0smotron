@@ -82,7 +82,7 @@ func Test_createDownloadCommands(t *testing.T) {
 				},
 			},
 			want: []string{
-				"curl -sSfL https://get.k0s.sh | K0S_VERSION=v1.2.3 sh",
+				"curl -sSfL https://get.k0s.sh | K0S_VERSION=v1.2.3+k0s.0 sh",
 			},
 		},
 		{

@@ -27,6 +27,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+const (
+	K0sSuffixAnnotation = "k0smotron.io/k0s-suffix"
+)
+
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
 	// Replicas is the desired number of replicas of the k0s control planes.
@@ -39,10 +43,10 @@ type ClusterSpec struct {
 	// will pick it automatically. Must not include the image tag.
 	//+kubebuilder:default=k0sproject/k0s
 	K0sImage string `json:"k0sImage,omitempty"`
-	// K0sVersion defines the k0s version to be deployed. If empty k0smotron
+	// Version defines the k0s version to be deployed. If empty k0smotron
 	// will pick it automatically.
 	//+kubebuilder:validation:Optional
-	K0sVersion string `json:"k0sVersion,omitempty"`
+	Version string `json:"version,omitempty"`
 	// ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
 	// Will be detected automatically for service type LoadBalancer.
 	//+kubebuilder:validation:Optional

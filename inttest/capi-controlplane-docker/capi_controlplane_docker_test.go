@@ -237,7 +237,7 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  k0sVersion: v1.27.2+k0s.0
+  version: v1.27.2
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
@@ -289,7 +289,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.27.1+k0s.0
+  version: v1.27.1
   args:
     - --labels=k0sproject.io/foo=bar
   preStartCommands:

@@ -91,6 +91,13 @@ Resource Types:
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
@@ -144,13 +151,6 @@ Resource Types:
         <td>object</td>
         <td>
           Tunneling defines the tunneling configuration for the cluster.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -368,6 +368,13 @@ Tunneling defines the tunneling configuration for the cluster.
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
@@ -414,13 +421,6 @@ Tunneling defines the tunneling configuration for the cluster.
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -660,6 +660,13 @@ JoinTokenSecretRef is a reference to a secret that contains the join token. This
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
@@ -706,13 +713,6 @@ JoinTokenSecretRef is a reference to a secret that contains the join token. This
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1088,12 +1088,12 @@ Resource Types:
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>k0sVersion</b></td>
+        <td><b>version</b></td>
         <td>string</td>
         <td>
-          K0sVersion defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
+          Version defines the kubernetes version to be deployed<br/>
         </td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
         <td><b>replicas</b></td>
         <td>integer</td>
@@ -1178,13 +1178,6 @@ Resource Types:
         <td>object</td>
         <td>
           Tunneling defines the tunneling configuration for the cluster.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1606,13 +1599,6 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>k0sVersion</b></td>
-        <td>string</td>
-        <td>
-          K0sVersion defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>kineDataSourceSecretName</b></td>
         <td>string</td>
         <td>
@@ -1662,6 +1648,13 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>object</td>
         <td>
           Service defines the service configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5745,13 +5738,6 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>k0sVersion</b></td>
-        <td>string</td>
-        <td>
-          K0sVersion defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>kineDataSourceSecretName</b></td>
         <td>string</td>
         <td>
@@ -5801,6 +5787,13 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>object</td>
         <td>
           Service defines the service configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9396,6 +9389,13 @@ K0smotronClusterStatus defines the observed state of K0smotronCluster
           <br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>ready</b></td>
+        <td>boolean</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

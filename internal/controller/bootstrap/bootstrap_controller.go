@@ -50,6 +50,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	defaultK0sSuffix = "k0s.0"
+)
+
 type Controller struct {
 	client.Client
 	Scheme     *runtime.Scheme
@@ -315,7 +319,12 @@ func createDownloadCommands(config *bootstrapv1.K0sWorkerConfig) []string {
 
 	// Figure out version to download if download URL is not set
 	if config.Spec.Version != "" {
-		return []string{fmt.Sprintf("curl -sSfL https://get.k0s.sh | K0S_VERSION=%s sh", config.Spec.Version)}
+		k0sSuffix := config.Annotations[bootstrapv1.K0sSuffixAnnotation]
+		if k0sSuffix == "" {
+			k0sSuffix = defaultK0sSuffix
+		}
+		k0sVersion := fmt.Sprintf("%s+%s", config.Spec.Version, k0sSuffix)
+		return []string{fmt.Sprintf("curl -sSfL https://get.k0s.sh | K0S_VERSION=%s sh", k0sVersion)}
 	}
 
 	return []string{"curl -sSfL https://get.k0s.sh | sh"}

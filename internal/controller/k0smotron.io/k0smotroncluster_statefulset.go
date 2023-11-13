@@ -44,14 +44,19 @@ func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet 
 }
 
 func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
-	k0sVersion := kmc.Spec.K0sVersion
-	if k0sVersion == "" {
-		k0sVersion = defaultK0SVersion
+	if kmc.Spec.Version == "" {
+		kmc.Spec.Version = defaultK0SVersion
 	}
+
+	k0sSuffix := kmc.Annotations[km.K0sSuffixAnnotation]
+	if k0sSuffix == "" {
+		k0sSuffix = defaultK0SSuffix
+	}
+
+	k0sVersion := fmt.Sprintf("%s-%s", kmc.Spec.Version, k0sSuffix)
 
 	if kmc.Spec.Replicas > 1 && (kmc.Spec.KineDataSourceURL == "" && kmc.Spec.KineDataSourceSecretName == "") {
 		return apps.StatefulSet{}, errors.New("kineDataSourceURL can't be empty if replicas > 1")
-
 	}
 
 	labels := labelsForCluster(kmc)

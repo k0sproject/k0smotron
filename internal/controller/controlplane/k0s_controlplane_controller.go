@@ -46,7 +46,7 @@ import (
 )
 
 const (
-	defaultK0SVersion = "v1.27.2+k0s.0"
+	defaultK0sSuffix = "k0s.0"
 )
 
 type K0sController struct {
@@ -78,10 +78,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	if !kcp.ObjectMeta.DeletionTimestamp.IsZero() {
 		log.Info("K0sControlPlane is being deleted, no action needed")
 		return ctrl.Result{}, nil
-	}
-
-	if kcp.Spec.K0sVersion == "" {
-		kcp.Spec.K0sVersion = defaultK0SVersion
 	}
 
 	cluster, err := capiutil.GetOwnerCluster(ctx, c.Client, kcp.ObjectMeta)
@@ -250,6 +246,11 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 }
 
 func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+	k0sSuffix := kcp.Annotations[bootstrapv1.K0sSuffixAnnotation]
+	if k0sSuffix == "" {
+		k0sSuffix = defaultK0sSuffix
+	}
+	k0sVersion := fmt.Sprintf("%s+%s", kcp.Spec.Version, k0sSuffix)
 	controllerConfig := bootstrapv1.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
@@ -268,7 +269,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 			}},
 		},
 		Spec: bootstrapv1.K0sControllerConfigSpec{
-			Version:       kcp.Spec.K0sVersion,
+			Version:       k0sVersion,
 			K0sConfigSpec: &kcp.Spec.K0sConfigSpec,
 		},
 	}

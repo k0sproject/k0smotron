@@ -214,7 +214,7 @@ kind: K0smotronControlPlane
 metadata:
   name: docker-test
 spec:
-  k0sVersion: v1.27.2-k0s.0
+  version: v1.27.2
   persistence:
     type: pvc
     persistentVolumeClaim:
@@ -265,7 +265,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.27.1+k0s.0
+  version: v1.27.1
   args:
     - --labels=k0sproject.io/foo=bar
   preStartCommands:
