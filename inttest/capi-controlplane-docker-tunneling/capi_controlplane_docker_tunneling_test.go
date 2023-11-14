@@ -237,8 +237,8 @@ metadata:
   name: docker-test
 spec:
   replicas: 1
-  k0sVersion: v1.27.1+k0s.0
   k0sConfigSpec:
+    version: v1.27.1+k0s.0
     tunneling:
       enabled: true
     k0s:

@@ -237,8 +237,8 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  k0sVersion: v1.27.2+k0s.0
   k0sConfigSpec:
+    version: v1.27.2+k0s.0
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig

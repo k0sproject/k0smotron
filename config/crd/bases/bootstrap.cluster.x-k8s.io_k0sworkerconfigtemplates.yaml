@@ -103,8 +103,6 @@ spec:
                           control plane. For reference see the Kubernetes version
                           skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/'
                         type: string
-                    required:
-                    - version
                     type: object
                 type: object
             type: object
