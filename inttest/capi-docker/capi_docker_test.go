@@ -214,6 +214,7 @@ kind: K0smotronControlPlane
 metadata:
   name: docker-test
 spec:
+  k0sImage: ghcr.io/k0sproject/k0s
   k0sVersion: v1.27.2-k0s.0
   persistence:
     type: emptyDir
