@@ -23,6 +23,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
@@ -33,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -101,17 +101,13 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 	if !ownerRefFound {
-		jtr.OwnerReferences = append(jtr.OwnerReferences, metav1.OwnerReference{
-			APIVersion:         km.GroupVersion.String(),
-			Kind:               "Cluster",
-			Name:               jtr.Spec.ClusterRef.Name,
-			BlockOwnerDeletion: pointer.Bool(true),
-			Controller:         pointer.Bool(true),
-		})
-
-		if err := r.Client.Patch(ctx, &jtr, client.Apply, patchOpts...); err != nil {
+		var kcluster km.Cluster
+		err := r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterRef.Name, Namespace: jtr.Spec.ClusterRef.Namespace}, &kcluster)
+		if err != nil {
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
+
+		controllerutil.SetOwnerReference(&kcluster, &jtr, r.Scheme)
 	}
 
 	if jtr.Status.TokenID != "" {
