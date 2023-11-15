@@ -59,7 +59,7 @@ help: ## Display this help.
 ### manifests
 manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_k0sconfigs.yaml
 config/crd/bases/bootstrap.cluster.x-k8s.io_k0sconfigs.yaml: $(CONTROLLER_GEN)
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 manifests_targets += config/crd/bases/k0smotron.io_clusters.yaml
 manifests_targets += config/crd/bases/k0smotron.io_jointokenrequests.yaml

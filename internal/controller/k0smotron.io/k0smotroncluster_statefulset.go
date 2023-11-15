@@ -181,10 +181,16 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 			MountPath: "/var/lib/k0s",
 		})
 	case "pvc":
-		statefulSet.Spec.VolumeClaimTemplates = append(statefulSet.Spec.VolumeClaimTemplates, kmc.Spec.Persistence.PersistentVolumeClaim)
+		if kmc.Spec.Persistence.PersistentVolumeClaim == nil {
+			return apps.StatefulSet{}, fmt.Errorf("persistence type is pvc but no pvc is defined")
+		}
+		if kmc.Spec.Persistence.PersistentVolumeClaim.Name == "" {
+			kmc.Spec.Persistence.PersistentVolumeClaim.Name = kmc.GetVolumeName()
+		}
+		statefulSet.Spec.VolumeClaimTemplates = append(statefulSet.Spec.VolumeClaimTemplates, *kmc.Spec.Persistence.PersistentVolumeClaim)
 
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
-			Name:      kmc.GetVolumeName(),
+			Name:      kmc.Spec.Persistence.PersistentVolumeClaim.Name,
 			MountPath: "/var/lib/k0s",
 		})
 	}
