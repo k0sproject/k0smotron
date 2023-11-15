@@ -152,10 +152,48 @@ type PersistenceSpec struct {
 	Type string `json:"type"`
 	// PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.
 	//+kubebuilder:validation:Optional
-	PersistentVolumeClaim *v1.PersistentVolumeClaim `json:"persistentVolumeClaim,omitempty"`
+	PersistentVolumeClaim *PersistentVolumeClaim `json:"persistentVolumeClaim,omitempty"`
 	// HostPath defines the host path configuration. Will be used as is in case of .spec.persistence.type is hostPath.
 	//+kubebuilder:validation:Optional
 	HostPath string `json:"hostPath,omitempty"`
+}
+
+// PersistentVolumeClaim is a user's request for and claim to a persistent volume
+type PersistentVolumeClaim struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// spec defines the desired characteristics of a volume requested by a pod author.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+	// +optional
+	Spec v1.PersistentVolumeClaimSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+
+	// status represents the current information/status of a persistent volume claim.
+	// Read-only.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+	// +optional
+	Status v1.PersistentVolumeClaimStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+
+type ObjectMeta struct {
+	// +optional
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+
+	// +optional
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
+
+	// +optional
+	Labels map[string]string `json:"labels,omitempty" protobuf:"bytes,11,rep,name=labels"`
+
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,12,rep,name=annotations"`
+
+	// +optional
+	// +patchStrategy=merge
+	Finalizers []string `json:"finalizers,omitempty" patchStrategy:"merge" protobuf:"bytes,14,rep,name=finalizers"`
 }
 
 type CertificateRef struct {

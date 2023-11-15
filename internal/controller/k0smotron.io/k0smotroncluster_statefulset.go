@@ -185,7 +185,16 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		if kmc.Spec.Persistence.PersistentVolumeClaim.Name == "" {
 			kmc.Spec.Persistence.PersistentVolumeClaim.Name = kmc.GetVolumeName()
 		}
-		statefulSet.Spec.VolumeClaimTemplates = append(statefulSet.Spec.VolumeClaimTemplates, *kmc.Spec.Persistence.PersistentVolumeClaim)
+		statefulSet.Spec.VolumeClaimTemplates = append(statefulSet.Spec.VolumeClaimTemplates, v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        kmc.Spec.Persistence.PersistentVolumeClaim.Name,
+				Namespace:   kmc.Spec.Persistence.PersistentVolumeClaim.Namespace,
+				Labels:      kmc.Spec.Persistence.PersistentVolumeClaim.Labels,
+				Annotations: kmc.Spec.Persistence.PersistentVolumeClaim.Annotations,
+				Finalizers:  kmc.Spec.Persistence.PersistentVolumeClaim.Finalizers,
+			},
+			Spec: kmc.Spec.Persistence.PersistentVolumeClaim.Spec,
+		})
 
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.Spec.Persistence.PersistentVolumeClaim.Name,
