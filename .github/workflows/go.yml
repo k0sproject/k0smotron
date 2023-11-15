@@ -188,3 +188,16 @@ jobs:
           export KUBECONFIG=$(realpath kind.conf)
           docker system prune -f
           make -C inttest ${{ matrix.smoke-suite }}
+
+      - name: Get k0smotron logs
+        if: failure()
+        run: |
+          kubectl logs -n k0smotron deploy/k0smotron-controller-manager > /tmp/${{ matrix.smoke-suite }}-k0smotron.log
+
+      - name: Collect k0s logs and support bundle
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: smoketests-${{ matrix.smoke-suite }}-files
+          path: |
+            /tmp/${{ matrix.smoke-suite }}-k0smotron.log

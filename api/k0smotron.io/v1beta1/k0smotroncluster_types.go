@@ -153,7 +153,7 @@ type PersistenceSpec struct {
 	Type string `json:"type"`
 	// PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.
 	//+kubebuilder:validation:Optional
-	PersistentVolumeClaim v1.PersistentVolumeClaim `json:"persistentVolumeClaim,omitempty"`
+	PersistentVolumeClaim *v1.PersistentVolumeClaim `json:"persistentVolumeClaim,omitempty"`
 	// HostPath defines the host path configuration. Will be used as is in case of .spec.persistence.type is hostPath.
 	//+kubebuilder:validation:Optional
 	HostPath string `json:"hostPath,omitempty"`
