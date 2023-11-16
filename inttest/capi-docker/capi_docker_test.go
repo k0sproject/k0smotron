@@ -216,7 +216,14 @@ metadata:
 spec:
   k0sVersion: v1.27.2-k0s.0
   persistence:
-    type: emptyDir
+    type: pvc
+    persistentVolumeClaim:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Mi
   service:
     type: NodePort
   k0sConfig:
