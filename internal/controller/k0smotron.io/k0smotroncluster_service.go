@@ -37,7 +37,7 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 	ports := []v1.ServicePort{}
 	switch kmc.Spec.Service.Type {
 	case v1.ServiceTypeNodePort:
-		name = kmc.GetNodePortName()
+		name = kmc.GetNodePortServiceName()
 		ports = append(ports,
 			v1.ServicePort{
 				Port:       int32(kmc.Spec.Service.APIPort),
@@ -52,8 +52,27 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 				NodePort:   int32(kmc.Spec.Service.KonnectivityPort),
 			})
 	case v1.ServiceTypeLoadBalancer:
-		name = kmc.GetLoadBalancerName()
+		name = kmc.GetLoadBalancerServiceName()
 		// LB svc does not define the nodeport so it can be dynamically assigned
+		ports = append(ports,
+			v1.ServicePort{
+				Port:       int32(kmc.Spec.Service.APIPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
+				Name:       "api",
+			},
+			v1.ServicePort{
+				Port:       int32(kmc.Spec.Service.KonnectivityPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.KonnectivityPort),
+				Name:       "konnectivity",
+			})
+	case v1.ServiceTypeClusterIP:
+		// ClusterIP is the default
+		fallthrough
+	default:
+		// Default to ClusterIP
+		kmc.Spec.Service.Type = v1.ServiceTypeClusterIP
+		name = kmc.GetServiceName()
+
 		ports = append(ports,
 			v1.ServicePort{
 				Port:       int32(kmc.Spec.Service.APIPort),

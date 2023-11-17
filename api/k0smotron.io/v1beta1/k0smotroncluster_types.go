@@ -49,7 +49,7 @@ type ClusterSpec struct {
 	ExternalAddress string `json:"externalAddress,omitempty"`
 	// Service defines the service configuration.
 	//+kubebuilder:validation:Optional
-	//+kubebuilder:default={}
+	//+kubebuilder:default={"type":"ClusterIP","apiPort":30443,"konnectivityPort":30132}
 	Service ServiceSpec `json:"service,omitempty"`
 	// Persistence defines the persistence configuration. If empty k0smotron
 	// will use emptyDir as a volume.
@@ -97,7 +97,7 @@ type ClusterSpec struct {
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
 }
 
-// K0smotronClusterStatus defines the observed state of K0smotronCluster
+// ClusterStatus defines the observed state of K0smotronCluster
 type ClusterStatus struct {
 	ReconciliationStatus string `json:"reconciliationStatus"`
 	Ready                bool   `json:"ready,omitempty"`
@@ -119,8 +119,8 @@ type Cluster struct {
 }
 
 type ServiceSpec struct {
-	//+kubebuilder:validation:Enum=NodePort;LoadBalancer
-	//+kubebuilder:default=NodePort
+	//+kubebuilder:validation:Enum=ClusterIP;NodePort;LoadBalancer
+	//+kubebuilder:default=ClusterIP
 	Type v1.ServiceType `json:"type"`
 	// APIPort defines the kubernetes API port. If empty k0smotron
 	// will pick it automatically.
@@ -232,11 +232,15 @@ func (kmc *Cluster) GetConfigMapName() string {
 	return fmt.Sprintf("kmc-%s-config", kmc.Name)
 }
 
-func (kmc *Cluster) GetLoadBalancerName() string {
+func (kmc *Cluster) GetServiceName() string {
+	return fmt.Sprintf("kmc-%s", kmc.Name)
+}
+
+func (kmc *Cluster) GetLoadBalancerServiceName() string {
 	return fmt.Sprintf("kmc-%s-lb", kmc.Name)
 }
 
-func (kmc *Cluster) GetNodePortName() string {
+func (kmc *Cluster) GetNodePortServiceName() string {
 	return fmt.Sprintf("kmc-%s-nodeport", kmc.Name)
 }
 

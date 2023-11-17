@@ -2095,6 +2095,10 @@ spec:
                     type: object
                 type: object
               service:
+                default:
+                  apiPort: 30443
+                  konnectivityPort: 30132
+                  type: ClusterIP
                 description: Service defines the service configuration.
                 properties:
                   annotations:
@@ -2114,10 +2118,11 @@ spec:
                       empty k0smotron will pick it automatically.
                     type: integer
                   type:
-                    default: NodePort
+                    default: ClusterIP
                     description: Service Type string describes ingress methods for
                       a service
                     enum:
+                    - ClusterIP
                     - NodePort
                     - LoadBalancer
                     type: string
@@ -2126,7 +2131,7 @@ spec:
                 type: object
             type: object
           status:
-            description: K0smotronClusterStatus defines the observed state of K0smotronCluster
+            description: ClusterStatus defines the observed state of K0smotronCluster
             properties:
               ready:
                 type: boolean
