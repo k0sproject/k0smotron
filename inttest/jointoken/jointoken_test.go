@@ -142,7 +142,7 @@ func (s *JoinTokenSuite) WaitForSecret(ctx context.Context, clients kubernetes.I
 	return watch.FromClient[*corev1.SecretList, corev1.Secret](clients.CoreV1().Secrets(namespace)).
 		WithObjectName(name).
 		Until(ctx, func(secret *corev1.Secret) (done bool, err error) {
-			if secret.Data["token"] != nil {
+			if secret.Data["token"] != nil && secret.Labels["k0smotron.io/cluster-uid"] != "" {
 				return true, nil
 			}
 
