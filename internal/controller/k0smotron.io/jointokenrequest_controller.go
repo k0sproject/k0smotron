@@ -26,13 +26,13 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/client-go/tools/clientcmd"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -67,6 +67,14 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
+	var cluster km.Cluster
+	err := r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterRef.Name, Namespace: jtr.Spec.ClusterRef.Namespace}, &cluster)
+	if err != nil {
+		r.updateStatus(ctx, jtr, "Failed getting cluster")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	}
+	jtr.Status.ClusterUID = cluster.GetUID()
 
 	logger.Info("Reconciling")
 	pod, err := util.FindStatefulSetPod(ctx, r.ClientSet, km.GetStatefulSetName(jtr.Spec.ClusterRef.Name), jtr.Spec.ClusterRef.Namespace)
@@ -141,6 +149,7 @@ func (r *JoinTokenRequestReconciler) reconcileSecret(ctx context.Context, jtr km
 func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, token string) (v1.Secret, error) {
 	labels := map[string]string{
 		clusterLabel:                 jtr.Spec.ClusterRef.Name,
+		"k0smotron.io/cluster-uid":   string(jtr.Status.ClusterUID),
 		"k0smotron.io/role":          jtr.Spec.Role,
 		"k0smotron.io/token-request": jtr.Name,
 	}
