@@ -34,6 +34,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+var ErrPooledMachineNotFound = fmt.Errorf("free pooled machine not found")
+
 type RemoteMachineController struct {
 	client.Client
 	Scheme     *runtime.Scheme
@@ -53,6 +55,8 @@ const (
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=remotemachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=remotemachines/status,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=pooledremotemachines,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=pooledremotemachines/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status;machines;machines/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=exp.cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
@@ -102,6 +106,24 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 				log.Error(err, "Failed to update RemoteMachine status")
 			}
 		}()
+
+		if rm.Spec.Pool != "" {
+			err := r.reservePooledMachine(ctx, rm)
+			if err != nil {
+				log.Error(err, "Error reserving PooledMachine")
+				return ctrl.Result{Requeue: true}, err
+			}
+		} else {
+			if rm.Spec.Address == "" || rm.Spec.SSHKeyRef.Name == "" {
+				rm.Status.FailureReason = "MissingFields"
+				rm.Status.FailureMessage = "If pool is empty, following fields are required: address, sshKeyRef"
+				rm.Status.Ready = false
+				if err := r.Status().Update(ctx, rm); err != nil {
+					log.Error(err, "Failed to update RemoteMachine status")
+				}
+				return ctrl.Result{Requeue: true}, nil
+			}
+		}
 
 		// Fetch the Cluster
 		cluster, err := capiutil.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
@@ -161,6 +183,12 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 			if err := p.Cleanup(ctx, mode); err != nil {
 				return ctrl.Result{}, err
 			}
+			if rm.Spec.Pool != "" {
+				// Return the machine back to pool
+				if err := r.returnMachineToPool(ctx, rm); err != nil {
+					return ctrl.Result{}, err
+				}
+			}
 			controllerutil.RemoveFinalizer(rm, RemoteMachineFinalizer)
 			if err := r.Update(ctx, rm); err != nil {
 				return ctrl.Result{}, err
@@ -205,6 +233,86 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *infrastructure.RemoteMachine) error {
+	pooledMachineList := &infrastructure.PooledRemoteMachineList{}
+	if err := r.Client.List(ctx, pooledMachineList, client.InNamespace(rm.Namespace)); err != nil {
+		return fmt.Errorf("failed to list pooled machines: %w", err)
+	}
+
+	var (
+		firstFreePooledMachine *infrastructure.PooledRemoteMachine
+		foundPooledMachine     *infrastructure.PooledRemoteMachine
+	)
+	for _, pm := range pooledMachineList.Items {
+		if pm.Spec.Pool == rm.Spec.Pool {
+			if pm.Status.Reserved && pm.Status.MachineRef.Name == rm.GetName() {
+				foundPooledMachine = &pm
+				break
+			}
+
+			if !pm.Status.Reserved {
+				firstFreePooledMachine = &pm
+			}
+		}
+	}
+
+	if foundPooledMachine == nil && firstFreePooledMachine == nil {
+		return ErrPooledMachineNotFound
+	}
+
+	if foundPooledMachine == nil && firstFreePooledMachine != nil {
+		foundPooledMachine = firstFreePooledMachine
+		foundPooledMachine.Status.Reserved = true
+		foundPooledMachine.Status.MachineRef = infrastructure.RemoteMachineRef{
+			Name:      rm.GetName(),
+			Namespace: rm.GetNamespace(),
+		}
+
+		err := r.Status().Update(ctx, foundPooledMachine)
+		if err != nil {
+			return fmt.Errorf("failed to update pooled machine status: %w", err)
+		}
+	}
+
+	rm.Spec.Address = foundPooledMachine.Spec.Machine.Address
+	rm.Spec.Port = foundPooledMachine.Spec.Machine.Port
+	rm.Spec.User = foundPooledMachine.Spec.Machine.User
+	rm.Spec.SSHKeyRef = foundPooledMachine.Spec.Machine.SSHKeyRef
+
+	return nil
+}
+
+func (r *RemoteMachineController) returnMachineToPool(ctx context.Context, rm *infrastructure.RemoteMachine) error {
+	if rm.Spec.Pool == "" {
+		return nil
+	}
+
+	pool := rm.Spec.Pool
+	pooledMachines := &infrastructure.PooledRemoteMachineList{}
+	err := r.List(ctx, pooledMachines, &client.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list pooled machines: %w", err)
+	}
+	if len(pooledMachines.Items) == 0 {
+		return fmt.Errorf("no pooled machines found for pool %s", pool)
+	}
+
+	for _, pooledMachine := range pooledMachines.Items {
+		if pooledMachine.Status.Reserved &&
+			pooledMachine.Status.MachineRef.Name == rm.Name &&
+			pooledMachine.Status.MachineRef.Namespace == rm.Namespace {
+
+			pooledMachine.Status.Reserved = false
+			pooledMachine.Status.MachineRef = infrastructure.RemoteMachineRef{}
+			if err := r.Status().Update(ctx, &pooledMachine); err != nil {
+				return fmt.Errorf("failed to update pooled machine: %w", err)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("no pooled machine found for remote machine %s/%s", rm.Namespace, rm.Name)
 }
 
 func (r *RemoteMachineController) getSSHKey(ctx context.Context, rm *infrastructure.RemoteMachine) ([]byte, error) {

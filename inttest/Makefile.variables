@@ -19,3 +19,4 @@ smoketests := \
     check-monitoring \
     check-capi-docker-machinedeployment \
     check-capi-remote-machine \
+    check-capi-remote-machine-template \

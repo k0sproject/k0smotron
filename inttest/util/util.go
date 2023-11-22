@@ -110,7 +110,7 @@ func CreateResources(ctx context.Context, resources []*unstructured.Unstructured
 			res.GroupVersionKind().Version)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("getting mapping error: %w", err)
 		}
 
 		var drClient dynamic.ResourceInterface
@@ -122,7 +122,7 @@ func CreateResources(ctx context.Context, resources []*unstructured.Unstructured
 
 		_, err = drClient.Create(ctx, res, metav1.CreateOptions{})
 		if err != nil {
-			return err
+			return fmt.Errorf("creating %s/%s objects error: %w", res.GroupVersionKind(), res.GetName(), err)
 		}
 	}
 	return nil
