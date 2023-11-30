@@ -9,7 +9,7 @@ require (
 	github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29
 	github.com/k0sproject/rig v0.15.1
 	github.com/onsi/ginkgo/v2 v2.13.2
-	github.com/onsi/gomega v1.29.0
+	github.com/onsi/gomega v1.30.0
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.27.2
