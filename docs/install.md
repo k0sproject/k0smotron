@@ -12,7 +12,7 @@ Once the installation is completed you are ready to [create your first control p
 
 ## clusterctl
 
-k0smotron is compatible with clusterctl and can act as bootstrap and control plane provider. To use k0smotron with clusterctl, you need to create a clusterctl configuration file. Here's an example:
+k0smotron is compatible with clusterctl and can act as bootstrap, infrastructure, and control plane provider. To use k0smotron with clusterctl, you need to create a clusterctl configuration file. Here's an example:
 
 ```bash
 providers:
