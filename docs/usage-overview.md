@@ -1,4 +1,4 @@
-# k0smotrong usage
+# k0smotron usage
 
 k0smotron can be use either as a "standalone" manager for Kubernetes control planes or as a Cluster API provider for several ClusterAPI "roles".
 
