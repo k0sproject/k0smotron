@@ -25,8 +25,10 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 func init() {
-	SchemeBuilder.Register(&RemoteMachine{}, &RemoteMachineList{}, &RemoteCluster{}, &RemoteClusterList{})
+	SchemeBuilder.Register(&RemoteMachine{}, &RemoteMachineList{}, &RemoteCluster{}, &RemoteClusterList{}, &PooledRemoteMachine{}, &PooledRemoteMachineList{})
 }
+
+const PoolAnnotation = "remotemachines.k0smotron.io/pool"
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
@@ -99,6 +101,10 @@ type RemoteMachineSpec struct {
 	SSHKeyRef SecretRef `json:"sshKeyRef"`
 }
 
+func (r *RemoteMachine) GetPool() string {
+	return r.Annotations[PoolAnnotation]
+}
+
 // RemoteMachineStatus defines the observed state of RemoteMachine
 type RemoteMachineStatus struct {
 	// Ready denotes that the remote machine is ready to be used.
@@ -123,4 +129,32 @@ type RemoteMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []RemoteMachine `json:"items"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+type PooledRemoteMachine struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              RemoteMachineSpec         `json:"spec,omitempty"`
+	Status            PooledRemoteMachineStatus `json:"status,omitempty"`
+}
+
+type PooledRemoteMachineStatus struct {
+	Reserved   bool             `json:"reserved"`
+	MachineRef RemoteMachineRef `json:"machineRef"`
+}
+
+type RemoteMachineRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+// +kubebuilder:object:root=true
+
+type PooledRemoteMachineList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []PooledRemoteMachine `json:"items"`
 }

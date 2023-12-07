@@ -19,6 +19,8 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	"math/rand"
+
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -103,6 +105,18 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 		}()
 
+		// if pooled and no details yet set, reserve a machine from the pool
+		if rm.GetPool() != "" && rm.Spec.Address == "" {
+			log.Info("Reserving machine from pool")
+			err = r.reserveMachineFromPool(ctx, rm)
+			if err != nil {
+				log.Error(err, "Failed to reserve machine from pool")
+				return ctrl.Result{}, err
+			}
+			// requeue to get the updated machine
+			return ctrl.Result{Requeue: true}, nil
+		}
+
 		// Fetch the Cluster
 		cluster, err := capiutil.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 		if err != nil {
@@ -160,6 +174,10 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		if controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
 			if err := p.Cleanup(ctx, mode); err != nil {
 				return ctrl.Result{}, err
+			}
+			if rm.GetPool() != "" {
+				// Return the machine back to pool
+				r.returnMachineToPool(ctx, rm)
 			}
 			controllerutil.RemoveFinalizer(rm, RemoteMachineFinalizer)
 			if err := r.Update(ctx, rm); err != nil {
@@ -234,6 +252,72 @@ func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine 
 	}
 
 	return secret.Data["value"], nil
+}
+
+func (r *RemoteMachineController) reserveMachineFromPool(ctx context.Context, rm *infrastructure.RemoteMachine) error {
+	log := log.FromContext(ctx).WithValues("remotemachine", fmt.Sprintf("%s/%s", rm.Namespace, rm.Name))
+	pool := rm.GetPool()
+	log = log.WithValues("pool", pool)
+	// Find an un-reserved machine in the pool
+	pooledMachines := &infrastructure.PooledRemoteMachineList{}
+	err := r.List(ctx, pooledMachines, &client.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list pooled machines: %w", err)
+	}
+	if len(pooledMachines.Items) == 0 {
+		return fmt.Errorf("no pooled machines found for pool %s", pool)
+	}
+	log.Info("found %d pooled machines", len(pooledMachines.Items))
+	freePooledMachines := []infrastructure.PooledRemoteMachine{}
+	for _, pooledMachine := range pooledMachines.Items {
+		if !pooledMachine.Status.Reserved {
+			freePooledMachines = append(freePooledMachines, pooledMachine)
+		}
+	}
+	if len(freePooledMachines) == 0 {
+		return fmt.Errorf("no free pooled machines found for pool %s", pool)
+	}
+	// Pick random machine from the pool
+	pooledMachine := freePooledMachines[rand.Intn(len(freePooledMachines))]
+	// Mark the pooled machine as reserved
+	pooledMachine.Status.Reserved = true
+	pooledMachine.Status.MachineRef = infrastructure.RemoteMachineRef{
+		Name:      rm.Name,
+		Namespace: rm.Namespace,
+	}
+	if err := r.Status().Update(ctx, &pooledMachine); err != nil {
+		return fmt.Errorf("failed to update pooled machine: %w", err)
+	}
+	// Set the address and port on the remote machine
+	rm.Spec = pooledMachine.Spec
+	// Update the machine
+	if err := r.Update(ctx, rm); err != nil {
+		return fmt.Errorf("failed to update remote machine: %w", err)
+	}
+	return nil
+}
+
+func (r *RemoteMachineController) returnMachineToPool(ctx context.Context, rm *infrastructure.RemoteMachine) error {
+	pool := rm.GetPool()
+	pooledMachines := &infrastructure.PooledRemoteMachineList{}
+	err := r.List(ctx, pooledMachines, &client.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list pooled machines: %w", err)
+	}
+	if len(pooledMachines.Items) == 0 {
+		return fmt.Errorf("no pooled machines found for pool %s", pool)
+	}
+	for _, pooledMachine := range pooledMachines.Items {
+		if pooledMachine.Status.MachineRef.Name == rm.Name && pooledMachine.Status.MachineRef.Namespace == rm.Namespace {
+			pooledMachine.Status.Reserved = false
+			pooledMachine.Status.MachineRef = infrastructure.RemoteMachineRef{}
+			if err := r.Update(ctx, &pooledMachine); err != nil {
+				return fmt.Errorf("failed to update pooled machine: %w", err)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("no pooled machine found for remote machine %s/%s", rm.Namespace, rm.Name)
 }
 
 func (r *RemoteMachineController) SetupWithManager(mgr ctrl.Manager) error {

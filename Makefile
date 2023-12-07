@@ -71,6 +71,7 @@ manifests_targets += config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrolpl
 manifests_targets += config/crd/bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
 manifests_targets += config/crd/bases/infrastructure.cluster.x-k8s.io_remoteclusters.yaml
 manifests_targets += config/crd/bases/infrastructure.cluster.x-k8s.io_remotemachines.yaml
+manifests_targets += config/crd/bases/infrastructure.cluster.x-k8s.io_remotemachinetemplates.yaml
 config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN) api/k0smotron.io/v1beta1/k0smotroncluster_types.go
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
@@ -80,6 +81,7 @@ manifests: $(manifests_targets) ## Generate WebhookConfiguration, ClusterRole an
 generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
 generate_targets += api/bootstrap/v1beta1/zz_generated.deepcopy.go
 generate_targets += api/controlplane/v1beta1/zz_generated.deepcopy.go
+generate_targets += api/infrastructure/v1beta1/zz_generated.deepcopy.go
 $(generate_targets): $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 

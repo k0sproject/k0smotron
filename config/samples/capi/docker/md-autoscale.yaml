@@ -1,0 +1,96 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: docker-md-test
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+      - 10.128.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0smotronControlPlane
+    name: docker-md-test
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: DockerCluster
+    name: docker-md-test
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlane
+metadata:
+  name: docker-md-test
+spec:
+  k0sVersion: v1.27.2-k0s.0
+  persistence:
+    type: emptyDir
+  service:
+    type: NodePort
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerCluster
+metadata:
+  name: docker-md-test
+  namespace: default
+spec:
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: docker-md-test
+  namespace: default
+  annotations:
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "1"
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "3"
+spec:
+  replicas: 1
+  clusterName: docker-md-test
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: docker-md-test
+      pool: worker-pool-1
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: docker-md-test
+        pool: worker-pool-1
+    spec:
+      version: v1.27.2
+      clusterName: docker-md-test
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: K0sWorkerConfigTemplate
+          name: docker-md-test
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: DockerMachineTemplate
+        name: docker-md-test
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: docker-md-test
+  namespace: default
+spec:
+  template:
+    spec:
+      version: v1.27.2+k0s.0
+      args:
+        - --kubelet-extra-args="--max-pods=15"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-md-test
+  namespace: default
+spec:
+  template:
+    spec: {}
+
+---
