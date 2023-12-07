@@ -1033,6 +1033,13 @@ You are not currently viewing the documentation for the current stable release o
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
@@ -1086,13 +1093,6 @@ You are not currently viewing the documentation for the current stable release o
         <td>object</td>
         <td>
           Tunneling defines the tunneling configuration for the cluster.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1279,6 +1279,13 @@ You are not currently viewing the documentation for the current stable release o
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
@@ -1325,13 +1332,6 @@ You are not currently viewing the documentation for the current stable release o
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1500,7 +1500,7 @@ You are not currently viewing the documentation for the current stable release o
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>metadata</b></td>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatemetadata">metadata</a></b></td>
         <td>object</td>
         <td>
           <br/>
@@ -1509,6 +1509,55 @@ You are not currently viewing the documentation for the current stable release o
       </tr><tr>
         <td><b><a href="#k0sworkerconfigtemplatespectemplatespec">spec</a></b></td>
         <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0sworkerconfigtemplatespectemplatemetadata">K0sWorkerConfigTemplate.spec.template.metadata<a class="headerlink" href="#k0sworkerconfigtemplatespectemplatemetadata" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0sworkerconfigtemplatespectemplate">↩ Parent</a></sup></sup></p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
         <td>
           <br/>
         </td>
@@ -1528,6 +1577,13 @@ You are not currently viewing the documentation for the current stable release o
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
@@ -1574,13 +1630,6 @@ You are not currently viewing the documentation for the current stable release o
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1896,19 +1945,19 @@ You are not currently viewing the documentation for the current stable release o
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>k0sVersion</b></td>
+        <td>string</td>
+        <td>
+          K0sVersion defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b><a href="#k0scontrolplanespecmachinetemplate">machineTemplate</a></b></td>
         <td>object</td>
         <td>
           <br/>
         </td>
         <td>true</td>
-      </tr><tr>
-        <td><b>k0sVersion</b></td>
-        <td>string</td>
-        <td>
-          K0sVersion defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
-        </td>
-        <td>false</td>
       </tr><tr>
         <td><b>replicas</b></td>
         <td>integer</td>
@@ -1987,13 +2036,6 @@ You are not currently viewing the documentation for the current stable release o
         <td>object</td>
         <td>
           Tunneling defines the tunneling configuration for the cluster.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3348,7 +3390,7 @@ You are not currently viewing the documentation for the current stable release o
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>metadata</b></td>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatemetadata">metadata</a></b></td>
         <td>object</td>
         <td>
           May contain labels and annotations that will be copied into the PVC when creating it. No other fields are allowed and will be rejected during validation.<br/>
@@ -3627,6 +3669,56 @@ You are not currently viewing the documentation for the current stable release o
         <td>[]string</td>
         <td>
           values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatemetadata">K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.metadata<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatemetadata" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplate">↩ Parent</a></sup></sup></p>
+<p>May contain labels and annotations that will be copied into the PVC when creating it. No other fields are allowed and will be rejected during validation.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5089,7 +5181,7 @@ You are not currently viewing the documentation for the current stable release o
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>metadata</b></td>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimmetadata">metadata</a></b></td>
         <td>object</td>
         <td>
           Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
@@ -5107,6 +5199,56 @@ You are not currently viewing the documentation for the current stable release o
         <td>object</td>
         <td>
           status represents the current information/status of a persistent volume claim. Read-only. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0smotroncontrolplanespecpersistencepersistentvolumeclaimmetadata">K0smotronControlPlane.spec.persistence.persistentVolumeClaim.metadata<a class="headerlink" href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimmetadata" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaim">↩ Parent</a></sup></sup></p>
+<p>Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5583,8 +5725,8 @@ You are not currently viewing the documentation for the current stable release o
         <td>
           Service Type string describes ingress methods for a service<br/>
           <br/>
-            <i>Enum</i>: NodePort, LoadBalancer<br/>
-            <i>Default</i>: NodePort<br/>
+            <i>Enum</i>: ClusterIP, NodePort, LoadBalancer<br/>
+            <i>Default</i>: ClusterIP<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -5994,7 +6136,7 @@ You are not currently viewing the documentation for the current stable release o
         <td><b><a href="#clusterstatus">status</a></b></td>
         <td>object</td>
         <td>
-          K0smotronClusterStatus defines the observed state of K0smotronCluster<br/>
+          ClusterStatus defines the observed state of K0smotronCluster<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7036,7 +7178,7 @@ You are not currently viewing the documentation for the current stable release o
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>metadata</b></td>
+        <td><b><a href="#clusterspecmanifestsindexephemeralvolumeclaimtemplatemetadata">metadata</a></b></td>
         <td>object</td>
         <td>
           May contain labels and annotations that will be copied into the PVC when creating it. No other fields are allowed and will be rejected during validation.<br/>
@@ -7315,6 +7457,56 @@ You are not currently viewing the documentation for the current stable release o
         <td>[]string</td>
         <td>
           values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="clusterspecmanifestsindexephemeralvolumeclaimtemplatemetadata">Cluster.spec.manifests[index].ephemeral.volumeClaimTemplate.metadata<a class="headerlink" href="#clusterspecmanifestsindexephemeralvolumeclaimtemplatemetadata" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#clusterspecmanifestsindexephemeralvolumeclaimtemplate">↩ Parent</a></sup></sup></p>
+<p>May contain labels and annotations that will be copied into the PVC when creating it. No other fields are allowed and will be rejected during validation.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8777,7 +8969,7 @@ You are not currently viewing the documentation for the current stable release o
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>metadata</b></td>
+        <td><b><a href="#clusterspecpersistencepersistentvolumeclaimmetadata">metadata</a></b></td>
         <td>object</td>
         <td>
           Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
@@ -8795,6 +8987,56 @@ You are not currently viewing the documentation for the current stable release o
         <td>object</td>
         <td>
           status represents the current information/status of a persistent volume claim. Read-only. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="clusterspecpersistencepersistentvolumeclaimmetadata">Cluster.spec.persistence.persistentVolumeClaim.metadata<a class="headerlink" href="#clusterspecpersistencepersistentvolumeclaimmetadata" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#clusterspecpersistencepersistentvolumeclaim">↩ Parent</a></sup></sup></p>
+<p>Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9271,8 +9513,8 @@ You are not currently viewing the documentation for the current stable release o
         <td>
           Service Type string describes ingress methods for a service<br/>
           <br/>
-            <i>Enum</i>: NodePort, LoadBalancer<br/>
-            <i>Default</i>: NodePort<br/>
+            <i>Enum</i>: ClusterIP, NodePort, LoadBalancer<br/>
+            <i>Default</i>: ClusterIP<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -9305,7 +9547,7 @@ You are not currently viewing the documentation for the current stable release o
 
 <h3 id="clusterstatus">Cluster.status<a class="headerlink" href="#clusterstatus" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#cluster">↩ Parent</a></sup></sup></p>
-<p>K0smotronClusterStatus defines the observed state of K0smotronCluster</p>
+<p>ClusterStatus defines the observed state of K0smotronCluster</p>
 <table>
     <thead>
         <tr>
@@ -9322,6 +9564,13 @@ You are not currently viewing the documentation for the current stable release o
           <br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>ready</b></td>
+        <td>boolean</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
