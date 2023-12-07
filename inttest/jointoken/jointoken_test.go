@@ -92,9 +92,6 @@ func (s *JoinTokenSuite) createK0smotronCluster(ctx context.Context, kc *kuberne
 		  "namespace": "kmc-test"
 		},
 		"spec": {
-			"service":{
-				"type": "NodePort"
-			},
 			"k0sConfig": {
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind": "ClusterConfig",
