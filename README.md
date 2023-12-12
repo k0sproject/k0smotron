@@ -28,9 +28,7 @@ By running the control plane on a Kubernetes cluster we can enjoy and leverage t
 With k0s it's easy to install a Kubernetes Worker Node. The worker nodes will connect to the Control Plane with a Join Token, created by k0smotron. When it comes to clusters with dozens or hundreds of worker nodes you do not want to install k0s manually. For these cases you can leverage k0smotron as ClusterAPI Bootstrap Provider. 
 
 ### ClusterAPI
-k0smotron can be used with ClusterAPI as Bootstrap Provider. This allows to use k0s Control Planes, created by k0smotron, as `Control Plane` and k0s worker nodes or `MachineDeployment` in various clouds.
-
-***Note:*** Currently, we only support creating the `Control Plane` in the Management Cluster. In the next versions of k0smotron we will add full cluster bootstrapping in public and private clouds with with ClusterAPI.
+k0smotron can be used with ClusterAPI as Bootstrap, Control Plane, and Infrastructure Provider. This allows to use k0s Control Planes, created by k0smotron, as `Control Plane` and k0s worker nodes or `MachineDeployment` in various clouds.
 
 ## Use cases
 
