@@ -1020,7 +1020,7 @@ You are not currently viewing the documentation for the current stable release o
 <p>This install the k0smotron controller manager, all the related CRD definitions and needed RBAC rules.</p>
 <p>Once the installation is completed you are ready to <a href="../cluster/">create your first control planes</a>.</p>
 <h2 id="clusterctl">clusterctl<a class="headerlink" href="#clusterctl" title="Permanent link">#</a></h2>
-<p>k0smotron is compatible with clusterctl and can act as bootstrap and control plane provider. To use k0smotron with clusterctl, you need to create a clusterctl configuration file. Here's an example:</p>
+<p>k0smotron is compatible with clusterctl and can act as bootstrap, infrastructure, and control plane provider. To use k0smotron with clusterctl, you need to create a clusterctl configuration file. Here's an example:</p>
 <div class="highlight"><pre><span></span><code>providers:
 <span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;k0smotron&quot;</span>
 <span class="w">    </span>url:<span class="w"> </span><span class="s2">&quot;https://github.com/k0sproject/k0smotron/releases/latest/bootstrap-components.yaml&quot;</span>
