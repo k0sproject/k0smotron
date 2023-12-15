@@ -63,7 +63,7 @@ jobs:
           mkdir -p sbom && chmod 777 sbom
           make sbom/spdx.json
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: spdx.json
           path: sbom/spdx.json
@@ -200,7 +200,7 @@ jobs:
 
       - name: Collect k0s logs and support bundle
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: smoketests-${{ matrix.smoke-suite }}-files
           path: |
