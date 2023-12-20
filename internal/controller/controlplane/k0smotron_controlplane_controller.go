@@ -213,8 +213,8 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 			Kind:       "Cluster",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kcp.Name,
-			Namespace: kcp.Namespace,
+			Name:      cluster.Name,
+			Namespace: cluster.Namespace,
 			Labels: map[string]string{
 				clusterv1.ClusterNameLabel: cluster.Name,
 			},
