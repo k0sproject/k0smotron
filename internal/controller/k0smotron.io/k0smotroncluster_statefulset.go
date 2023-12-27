@@ -77,6 +77,28 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 					Labels: labels,
 				},
 				Spec: v1.PodSpec{
+					Affinity: &v1.Affinity{PodAntiAffinity: &v1.PodAntiAffinity{
+						PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
+							{
+								Weight: 100,
+								PodAffinityTerm: v1.PodAffinityTerm{
+									TopologyKey: "topology.kubernetes.io/zone",
+									LabelSelector: &metav1.LabelSelector{
+										MatchLabels: defaultClusterLabels(kmc),
+									},
+								},
+							},
+							{
+								Weight: 50,
+								PodAffinityTerm: v1.PodAffinityTerm{
+									TopologyKey: "kubernetes.io/hostname",
+									LabelSelector: &metav1.LabelSelector{
+										MatchLabels: defaultClusterLabels(kmc),
+									},
+								},
+							},
+						},
+					}},
 					Volumes: []v1.Volume{{
 						Name: kmc.GetEntrypointConfigMapName(),
 						VolumeSource: v1.VolumeSource{
