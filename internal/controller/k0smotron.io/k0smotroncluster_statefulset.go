@@ -54,85 +54,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 
 	}
 
-	labels := labelsForCluster(kmc)
-
-	statefulSet := apps.StatefulSet{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apps/v1",
-			Kind:       "StatefulSet",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetStatefulSetName(),
-			Namespace:   kmc.Namespace,
-			Labels:      labels,
-			Annotations: annotationsForCluster(kmc),
-		},
-		Spec: apps.StatefulSetSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
-			},
-			Replicas: &kmc.Spec.Replicas,
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
-				},
-				Spec: v1.PodSpec{
-					Volumes: []v1.Volume{{
-						Name: kmc.GetEntrypointConfigMapName(),
-						VolumeSource: v1.VolumeSource{
-							ConfigMap: &v1.ConfigMapVolumeSource{
-								LocalObjectReference: v1.LocalObjectReference{
-									Name: kmc.GetEntrypointConfigMapName(),
-								},
-								DefaultMode: &entrypointDefaultMode,
-								Items: []v1.KeyToPath{{
-									Key:  "k0smotron-entrypoint.sh",
-									Path: "k0smotron-entrypoint.sh",
-								}},
-							},
-						},
-					}},
-					Containers: []v1.Container{{
-						Name:            "controller",
-						Image:           fmt.Sprintf("%s:%s", kmc.Spec.K0sImage, k0sVersion),
-						ImagePullPolicy: v1.PullIfNotPresent,
-						Args:            []string{"/k0smotron-entrypoint.sh"},
-						Ports: []v1.ContainerPort{
-							{
-								Name:          "api",
-								Protocol:      v1.ProtocolTCP,
-								ContainerPort: int32(kmc.Spec.Service.APIPort),
-							},
-							{
-								Name:          "konnectivity",
-								Protocol:      v1.ProtocolTCP,
-								ContainerPort: int32(kmc.Spec.Service.KonnectivityPort),
-							},
-						},
-						EnvFrom: []v1.EnvFromSource{{
-							ConfigMapRef: &v1.ConfigMapEnvSource{
-								LocalObjectReference: v1.LocalObjectReference{
-									Name: kmc.GetConfigMapName(),
-								},
-							},
-						}},
-						Resources: kmc.Spec.Resources,
-						ReadinessProbe: &v1.Probe{
-							InitialDelaySeconds: 5,
-							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
-						},
-						LivenessProbe: &v1.Probe{
-							InitialDelaySeconds: 10,
-							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
-						},
-						VolumeMounts: []v1.VolumeMount{{
-							Name:      kmc.GetEntrypointConfigMapName(),
-							MountPath: "/k0smotron-entrypoint.sh",
-							SubPath:   "k0smotron-entrypoint.sh",
-						}},
-					}},
-				}},
-		}}
+	statefulSet := r.newStatefulSet(kmc)
 
 	if kmc.Spec.EnableMonitoring {
 		if kmc.Spec.Persistence.Type == "" {
@@ -260,6 +182,91 @@ data:
 
 	err := ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
 	return statefulSet, err
+}
+
+func (r *ClusterReconciler) newStatefulSet(kmc *km.Cluster) apps.StatefulSet {
+	labels := labelsForCluster(kmc)
+	spec := kmc.Spec.StatefulSetSpec.DeepCopy()
+
+	k0sVersion := kmc.Spec.K0sVersion
+	if k0sVersion == "" {
+		k0sVersion = defaultK0SVersion
+	}
+
+	statefulSet := apps.StatefulSet{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "StatefulSet",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        kmc.GetStatefulSetName(),
+			Namespace:   kmc.Namespace,
+			Labels:      labels,
+			Annotations: annotationsForCluster(kmc),
+		},
+		Spec: *spec,
+	}
+
+	statefulSet.Spec.Selector = &metav1.LabelSelector{
+		MatchLabels: labels,
+	}
+	statefulSet.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyAlways
+	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
+		Name: kmc.GetEntrypointConfigMapName(),
+		VolumeSource: v1.VolumeSource{
+			ConfigMap: &v1.ConfigMapVolumeSource{
+				LocalObjectReference: v1.LocalObjectReference{
+					Name: kmc.GetEntrypointConfigMapName(),
+				},
+				DefaultMode: &entrypointDefaultMode,
+				Items: []v1.KeyToPath{{
+					Key:  "k0smotron-entrypoint.sh",
+					Path: "k0smotron-entrypoint.sh",
+				}},
+			},
+		},
+	})
+	statefulSet.Spec.Template.Spec.Containers = []v1.Container{{
+		Name:            "controller",
+		Image:           fmt.Sprintf("%s:%s", kmc.Spec.K0sImage, k0sVersion),
+		ImagePullPolicy: v1.PullIfNotPresent,
+		Args:            []string{"/k0smotron-entrypoint.sh"},
+		Ports: []v1.ContainerPort{
+			{
+				Name:          "api",
+				Protocol:      v1.ProtocolTCP,
+				ContainerPort: int32(kmc.Spec.Service.APIPort),
+			},
+			{
+				Name:          "konnectivity",
+				Protocol:      v1.ProtocolTCP,
+				ContainerPort: int32(kmc.Spec.Service.KonnectivityPort),
+			},
+		},
+		EnvFrom: []v1.EnvFromSource{{
+			ConfigMapRef: &v1.ConfigMapEnvSource{
+				LocalObjectReference: v1.LocalObjectReference{
+					Name: kmc.GetConfigMapName(),
+				},
+			},
+		}},
+		Resources: kmc.Spec.Resources,
+		ReadinessProbe: &v1.Probe{
+			InitialDelaySeconds: 5,
+			ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+		},
+		LivenessProbe: &v1.Probe{
+			InitialDelaySeconds: 10,
+			ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+		},
+		VolumeMounts: []v1.VolumeMount{{
+			Name:      kmc.GetEntrypointConfigMapName(),
+			MountPath: "/k0smotron-entrypoint.sh",
+			SubPath:   "k0smotron-entrypoint.sh",
+		}},
+	}}
+
+	return statefulSet
 }
 
 // mountSecrets mounts the certificates as secrets to the controller and creates

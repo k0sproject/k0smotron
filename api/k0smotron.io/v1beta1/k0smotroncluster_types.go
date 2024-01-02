@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	"fmt"
+	apps "k8s.io/api/apps/v1"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,6 +96,8 @@ type ClusterSpec struct {
 
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+
+	*apps.StatefulSetSpec `json:",inline"`
 }
 
 // ClusterStatus defines the observed state of K0smotronCluster
