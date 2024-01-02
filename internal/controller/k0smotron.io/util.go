@@ -18,8 +18,15 @@ package k0smotronio
 
 import km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 
+func defaultClusterLabels(kmc *km.Cluster) map[string]string {
+	return map[string]string{
+		"app":     "k0smotron",
+		"cluster": kmc.Name,
+	}
+}
+
 func labelsForCluster(kmc *km.Cluster) map[string]string {
-	labels := map[string]string{"app": "k0smotron", "cluster": kmc.Name}
+	labels := defaultClusterLabels(kmc)
 	for k, v := range kmc.Labels {
 		labels[k] = v
 	}
