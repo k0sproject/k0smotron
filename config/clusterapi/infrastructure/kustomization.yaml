@@ -20,6 +20,8 @@ resources:
 - ../../manager
 - ./bases/infrastructure.cluster.x-k8s.io_remoteclusters.yaml
 - ./bases/infrastructure.cluster.x-k8s.io_remotemachines.yaml
+- ./bases/infrastructure.cluster.x-k8s.io_remotemachinetemplates.yaml
+- ./bases/infrastructure.cluster.x-k8s.io_pooledremotemachines.yaml
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
 #- ../webhook

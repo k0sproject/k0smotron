@@ -80,6 +80,7 @@ manifests: $(manifests_targets) ## Generate WebhookConfiguration, ClusterRole an
 generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
 generate_targets += api/bootstrap/v1beta1/zz_generated.deepcopy.go
 generate_targets += api/controlplane/v1beta1/zz_generated.deepcopy.go
+generate_targets += api/infrastructure/v1beta1/zz_generated.deepcopy.go
 $(generate_targets): $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 

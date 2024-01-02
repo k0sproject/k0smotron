@@ -25,7 +25,7 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 func init() {
-	SchemeBuilder.Register(&RemoteMachine{}, &RemoteMachineList{}, &RemoteCluster{}, &RemoteClusterList{})
+	SchemeBuilder.Register(&RemoteMachine{}, &RemoteMachineList{}, &RemoteCluster{}, &RemoteClusterList{}, &PooledRemoteMachine{}, &PooledRemoteMachineList{})
 }
 
 // +kubebuilder:object:root=true
@@ -75,10 +75,76 @@ type RemoteMachine struct {
 
 // RemoteMachineSpec defines the desired state of RemoteMachine
 type RemoteMachineSpec struct {
+	// Pool is the name of the pool where the machine belongs to.
+	// +kubebuilder:validation:Optional
+	Pool string `json:"pool,omitempty"`
+
 	// ProviderID is the ID of the machine in the provider.
 	// +kubebuilder:validation:Optional
 	ProviderID string `json:"providerID,omitempty"`
 
+	// Address is the IP address or DNS name of the remote machine.
+	// +kubebuilder:validation:Optional
+	Address string `json:"address,omitempty"`
+
+	// Port is the SSH port of the remote machine.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=22
+	Port int `json:"port,omitempty"`
+
+	// User is the user to use when connecting to the remote machine.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="root"
+	User string `json:"user,omitempty"`
+
+	// SSHKeyRef is a reference to a secret that contains the SSH private key.
+	// The key must be placed on the secret using the key "value".
+	// +kubebuilder:validation:Optional
+	SSHKeyRef SecretRef `json:"sshKeyRef,omitempty"`
+}
+
+// RemoteMachineStatus defines the observed state of RemoteMachine
+type RemoteMachineStatus struct {
+	// Ready denotes that the remote machine is ready to be used.
+	// +kubebuilder:validation:Optional
+	Ready bool `json:"ready,omitempty"`
+
+	FailureReason  string `json:"failureReason,omitempty"`
+	FailureMessage string `json:"failureMessage,omitempty"`
+}
+
+type SecretRef struct {
+	// Name is the name of the secret.
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+}
+
+// +kubebuilder:object:root=true
+
+type RemoteMachineList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []RemoteMachine `json:"items"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+
+type PooledRemoteMachine struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   PooledRemoteMachineSpec   `json:"spec,omitempty"`
+	Status PooledRemoteMachineStatus `json:"status,omitempty"`
+}
+
+type PooledRemoteMachineSpec struct {
+	Pool    string            `json:"pool"`
+	Machine PooledMachineSpec `json:"machine"`
+}
+
+type PooledMachineSpec struct {
 	// Address is the IP address or DNS name of the remote machine.
 	// +kubebuilder:validation:Required
 	Address string `json:"address"`
@@ -99,28 +165,20 @@ type RemoteMachineSpec struct {
 	SSHKeyRef SecretRef `json:"sshKeyRef"`
 }
 
-// RemoteMachineStatus defines the observed state of RemoteMachine
-type RemoteMachineStatus struct {
-	// Ready denotes that the remote machine is ready to be used.
-	// +kubebuilder:validation:Optional
-	Ready bool `json:"ready,omitempty"`
-
-	FailureReason  string `json:"failureReason,omitempty"`
-	FailureMessage string `json:"failureMessage,omitempty"`
-
-	// TODO Add conditions
+type PooledRemoteMachineStatus struct {
+	Reserved   bool             `json:"reserved"`
+	MachineRef RemoteMachineRef `json:"machineRef"`
 }
 
-type SecretRef struct {
-	// Name is the name of the secret.
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
+type RemoteMachineRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }
 
 // +kubebuilder:object:root=true
 
-type RemoteMachineList struct {
+type PooledRemoteMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []RemoteMachine `json:"items"`
+	Items           []PooledRemoteMachine `json:"items"`
 }

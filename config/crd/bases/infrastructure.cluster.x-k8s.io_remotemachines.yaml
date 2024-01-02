@@ -38,6 +38,10 @@ spec:
               address:
                 description: Address is the IP address or DNS name of the remote machine.
                 type: string
+              pool:
+                description: Pool is the name of the pool where the machine belongs
+                  to.
+                type: string
               port:
                 default: 22
                 description: Port is the SSH port of the remote machine.
@@ -61,9 +65,6 @@ spec:
                 description: User is the user to use when connecting to the remote
                   machine.
                 type: string
-            required:
-            - address
-            - sshKeyRef
             type: object
           status:
             description: RemoteMachineStatus defines the observed state of RemoteMachine

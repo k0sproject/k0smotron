@@ -188,14 +188,14 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 }
 
 func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
-	err := c.reconcileKubeconfig(ctx, cluster, kcp)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
-	}
-
-	err = c.reconcileMachines(ctx, cluster, kcp)
+	err := c.reconcileMachines(ctx, cluster, kcp)
 	if err != nil {
 		return ctrl.Result{}, err
+	}
+
+	err = c.reconcileKubeconfig(ctx, cluster, kcp)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
 	}
 
 	return ctrl.Result{}, nil
