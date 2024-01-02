@@ -1710,6 +1710,8 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>object</td>
         <td>
           Service defines the service configuration.<br/>
+          <br/>
+            <i>Default</i>: map[apiPort:30443 konnectivityPort:30132 type:ClusterIP]<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5443,12 +5445,250 @@ Service defines the service configuration.
 
 Resource Types:
 
+- [PooledRemoteMachine](#pooledremotemachine)
+
 - [RemoteCluster](#remotecluster)
 
 - [RemoteMachine](#remotemachine)
 
+- [RemoteMachineTemplate](#remotemachinetemplate)
 
 
+
+
+## PooledRemoteMachine
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+
+
+
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>PooledRemoteMachine</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#pooledremotemachinespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pooledremotemachinestatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### PooledRemoteMachine.spec
+<sup><sup>[↩ Parent](#pooledremotemachine)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pooledremotemachinespecmachine">machine</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>pool</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### PooledRemoteMachine.spec.machine
+<sup><sup>[↩ Parent](#pooledremotemachinespec)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>address</b></td>
+        <td>string</td>
+        <td>
+          Address is the IP address or DNS name of the remote machine.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#pooledremotemachinespecmachinesshkeyref">sshKeyRef</a></b></td>
+        <td>object</td>
+        <td>
+          SSHKeyRef is a reference to a secret that contains the SSH private key. The key must be placed on the secret using the key "value".<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>
+          Port is the SSH port of the remote machine.<br/>
+          <br/>
+            <i>Default</i>: 22<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>string</td>
+        <td>
+          User is the user to use when connecting to the remote machine.<br/>
+          <br/>
+            <i>Default</i>: root<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### PooledRemoteMachine.spec.machine.sshKeyRef
+<sup><sup>[↩ Parent](#pooledremotemachinespecmachine)</sup></sup>
+
+
+
+SSHKeyRef is a reference to a secret that contains the SSH private key. The key must be placed on the secret using the key "value".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### PooledRemoteMachine.status
+<sup><sup>[↩ Parent](#pooledremotemachine)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pooledremotemachinestatusmachineref">machineRef</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>reserved</b></td>
+        <td>boolean</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### PooledRemoteMachine.status.machineRef
+<sup><sup>[↩ Parent](#pooledremotemachinestatus)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
 
 ## RemoteCluster
 <sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
@@ -5671,14 +5911,14 @@ RemoteMachineSpec defines the desired state of RemoteMachine
         <td>
           Address is the IP address or DNS name of the remote machine.<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
-        <td><b><a href="#remotemachinespecsshkeyref">sshKeyRef</a></b></td>
-        <td>object</td>
+        <td><b>pool</b></td>
+        <td>string</td>
         <td>
-          SSHKeyRef is a reference to a secret that contains the SSH private key. The key must be placed on the secret using the key "value".<br/>
+          Pool is the name of the pool where the machine belongs to.<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>port</b></td>
         <td>integer</td>
@@ -5693,6 +5933,13 @@ RemoteMachineSpec defines the desired state of RemoteMachine
         <td>string</td>
         <td>
           ProviderID is the ID of the machine in the provider.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecsshkeyref">sshKeyRef</a></b></td>
+        <td>object</td>
+        <td>
+          SSHKeyRef is a reference to a secret that contains the SSH private key. The key must be placed on the secret using the key "value".<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5772,6 +6019,195 @@ RemoteMachineStatus defines the observed state of RemoteMachine
           Ready denotes that the remote machine is ready to be used.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+## RemoteMachineTemplate
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+
+
+
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>RemoteMachineTemplate</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec
+<sup><sup>[↩ Parent](#remotemachinetemplate)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remotemachinetemplatespectemplate">template</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template
+<sup><sup>[↩ Parent](#remotemachinetemplatespec)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatemetadata">metadata</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.metadata
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplate)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplate)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pool</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -5959,6 +6395,8 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>object</td>
         <td>
           Service defines the service configuration.<br/>
+          <br/>
+            <i>Default</i>: map[apiPort:30443 konnectivityPort:30132 type:ClusterIP]<br/>
         </td>
         <td>false</td>
       </tr></tbody>
