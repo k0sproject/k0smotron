@@ -99,6 +99,7 @@ spec:
         pool: worker-pool-1
     spec:
       clusterName: docker-test
+      version: v1.27.2 # Docker Provider requires a version to be set (see https://hub.docker.com/r/kindest/node/tags)
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1

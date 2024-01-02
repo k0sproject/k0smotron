@@ -165,7 +165,7 @@ func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.
 		err = crdRestClient.
 			Get().
 			Resource("k0smotroncontrolplanes").
-			Name("docker-test").
+			Name("docker-test-cp").
 			Namespace("default").
 			Do(ctx).
 			Into(&kcp)
@@ -203,7 +203,7 @@ spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: K0smotronControlPlane
-    name: docker-test
+    name: docker-test-cp
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DockerCluster
@@ -212,7 +212,7 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0smotronControlPlane
 metadata:
-  name: docker-test
+  name: docker-test-cp
 spec:
   k0sVersion: v1.27.2-k0s.0
   persistence:
