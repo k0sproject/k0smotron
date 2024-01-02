@@ -9,7 +9,9 @@ resources:
 - bases/bootstrap.cluster.x-k8s.io_k0scontrollerconfigs.yaml
 - bases/controlplane.cluster.x-k8s.io_k0scontrollerconfigs.yaml
 - bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
+- bases/controlplane.cluster.x-k8s.io_k0scontrolplanetemplates.yaml
 - bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
+- bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanetemplates.yaml
 - bases/infrastructure.cluster.x-k8s.io_remoteclusters.yaml
 - bases/infrastructure.cluster.x-k8s.io_remotemachines.yaml
 - bases/infrastructure.cluster.x-k8s.io_remotemachinetemplates.yaml

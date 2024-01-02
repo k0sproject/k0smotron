@@ -189,6 +189,8 @@ spec:
                 default: 1
                 format: int32
                 type: integer
+              version:
+                type: string
             required:
             - k0sConfigSpec
             - k0sVersion
