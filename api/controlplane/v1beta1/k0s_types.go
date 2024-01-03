@@ -46,11 +46,11 @@ type K0sControlPlaneSpec struct {
 	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate"`
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
-	Replicas int32  `json:"replicas,omitempty"`
-	Version  string `json:"version,omitempty"`
-	// K0sVersion defines the k0s version to be deployed. If empty k0smotron
-	// will pick it automatically.
-	K0sVersion string `json:"k0sVersion"`
+	Replicas int32 `json:"replicas,omitempty"`
+	//+kubebuilder:validation:Optional
+	Version string `json:"version,omitempty"`
+	//+kubebuilder:validation:Optional
+	K0sVersion string `json:"k0sVersion,omitempty"`
 }
 
 type K0sBootstrapConfigSpec struct {

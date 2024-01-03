@@ -17,12 +17,22 @@ limitations under the License.
 package capidockerclusterclass
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"fmt"
+	"github.com/k0sproject/k0s/inttest/common"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ssh"
 	"os"
 	"os/exec"
 	"strconv"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
@@ -37,47 +47,90 @@ import (
 )
 
 type CAPIDockerClusterClassSuite struct {
-	suite.Suite
+	common.FootlooseSuite
+
 	client                *kubernetes.Clientset
 	restConfig            *rest.Config
+	privateKey            []byte
+	publicKey             []byte
+	ctx                   context.Context
 	clusterYamlsPath      string
 	clusterClassYamlsPath string
-	ctx                   context.Context
-}
-
-func TestCAPIDockerClusterClassSuite(t *testing.T) {
-	s := CAPIDockerClusterClassSuite{}
-	suite.Run(t, &s)
 }
 
 func (s *CAPIDockerClusterClassSuite) SetupSuite() {
+	s.FootlooseSuite.SetupSuite()
+}
+
+//func TestCAPIDockerClusterClassSuite(t *testing.T) {
+//	s := CAPIDockerClusterClassSuite{}
+//	suite.Run(t, &s)
+//}
+
+func TestCAPIDockerClusterClassSuite(t *testing.T) {
 	kubeConfigPath := os.Getenv("KUBECONFIG")
-	s.Require().NotEmpty(kubeConfigPath, "KUBECONFIG env var must be set and point to kind cluster")
+	require.NotEmpty(t, kubeConfigPath, "KUBECONFIG env var must be set and point to kind cluster")
 	// Get kube client from kubeconfig
 	restCfg, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	s.Require().NoError(err)
-	s.Require().NotNil(restCfg)
-	s.restConfig = restCfg
+	require.NoError(t, err)
+	require.NotNil(t, restCfg)
 
 	// Get kube client from kubeconfig
 	kubeClient, err := kubernetes.NewForConfig(restCfg)
-	s.Require().NoError(err)
-	s.Require().NotNil(kubeClient)
-	s.client = kubeClient
+	require.NoError(t, err)
+	require.NotNil(t, kubeClient)
 
-	tmpDir := s.T().TempDir()
-	s.clusterClassYamlsPath = tmpDir + "/cluster-class.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, []byte(clusterClassYaml), 0644))
-	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0644))
+	// Create keypair to use with SSH
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
 
-	s.ctx, _ = util.NewSuiteContext(s.T())
+	// Convert the private key to PEM format
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	})
+
+	// Extract the public key from the private key
+	publicKey := &privateKey.PublicKey
+
+	// Convert the public key to the OpenSSH format
+	sshPublicKey, err := ssh.NewPublicKey(publicKey)
+	require.NoError(t, err)
+	sshPublicKeyBytes := ssh.MarshalAuthorizedKey(sshPublicKey)
+
+	tmpDir := t.TempDir()
+	t.Log("111cluster objects applied, waiting for cluster to be ready")
+	s := CAPIDockerClusterClassSuite{
+		FootlooseSuite: common.FootlooseSuite{
+			ControllerCount:      0,
+			WorkerCount:          0,
+			K0smotronWorkerCount: 1,
+			K0smotronNetworks:    []string{"kind"},
+		},
+		client:                kubeClient,
+		restConfig:            restCfg,
+		privateKey:            privateKeyPEM,
+		publicKey:             sshPublicKeyBytes,
+		clusterYamlsPath:      tmpDir + "/cluster.yaml",
+		clusterClassYamlsPath: tmpDir + "/cluster-class.yaml",
+	}
+
+	suite.Run(t, &s)
 }
 
 func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
+	s.ctx, _ = util.NewSuiteContext(s.T())
+
+	// Push public key to worker authorized_keys
+	workerSSH, err := s.SSH(s.ctx, s.K0smotronNode(0))
+	s.Require().NoError(err)
+	defer workerSSH.Disconnect()
+	s.T().Log("Pushing public key to worker")
+	s.Require().NoError(workerSSH.Exec(s.Context(), "cat >>/root/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(s.publicKey)}))
 
 	// Apply the child cluster objects
-	s.applyClusterObjects()
+	s.createCluster()
 	defer func() {
 		keep := os.Getenv("KEEP_AFTER_TEST")
 		if keep == "true" {
@@ -93,7 +146,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	var localPort int
 	// nolint:staticcheck
-	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		localPort, _ = getLBPort("docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
@@ -103,6 +156,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
+	s.T().Log("waiting for control-plane")
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
@@ -114,19 +168,48 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	})
 	s.Require().NoError(err)
 
+	s.T().Log("waiting for worker nodes")
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		nodes, _ := kmcKC.CoreV1().Nodes().List(s.ctx, metav1.ListOptions{})
-		return len(nodes.Items) == 2, nil
+		return len(nodes.Items) == 3, nil
 	})
 	s.Require().NoError(err)
-
 }
 
-func (s *CAPIDockerClusterClassSuite) applyClusterObjects() {
-	// Exec via kubectl
+func (s *CAPIDockerClusterClassSuite) createCluster() {
+
+	// Get worker IP
+	workerIP := s.getWorkerIP()
+	s.Require().NotEmpty(workerIP)
+
+	// Get SSH key
+	machines, err := s.InspectMachines([]string{s.K0smotronNode(0)})
+	s.Require().NoError(err)
+	s.Require().NotEmpty(machines)
+
+	// Parse the cluster yaml as template
+	t, err := template.New("cluster").Parse(clusterClassYaml)
+	s.Require().NoError(err)
+
+	// Execute the template to buffer
+	var clusterClassYaml bytes.Buffer
+
+	err = t.Execute(&clusterClassYaml, struct {
+		Address string
+		SSHKey  string
+	}{
+		Address: workerIP,
+		SSHKey:  base64.StdEncoding.EncodeToString(s.privateKey),
+	})
+	s.Require().NoError(err)
+	bytes := clusterClassYaml.Bytes()
+
+	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, bytes, 0644))
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
-	s.Require().NoError(err, "failed to apply cluster class objects: %s", string(out))
+	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
+
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0644))
 	out, err = exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
@@ -139,23 +222,15 @@ func (s *CAPIDockerClusterClassSuite) deleteCluster() {
 	s.Require().NoError(err, "failed to delete cluster class objects: %s", string(out))
 }
 
-func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*kubernetes.Clientset, error) {
-	secretName := fmt.Sprintf("%s-kubeconfig", name)
-	// Wait first to see the secret exists
-	if err := util.WaitForSecret(ctx, kc, secretName, namespace); err != nil {
-		return nil, err
-	}
-	kubeConf, err := kc.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
+func (s *CAPIDockerClusterClassSuite) getWorkerIP() string {
+	nodeName := s.K0smotronNode(0)
+	ssh, err := s.SSH(s.Context(), nodeName)
+	s.Require().NoError(err)
+	defer ssh.Disconnect()
 
-	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["value"]))
-	if err != nil {
-		return nil, err
-	}
-
-	return kubernetes.NewForConfig(kmcCfg)
+	ipAddress, err := ssh.ExecWithOutput(s.Context(), "hostname -i")
+	s.Require().NoError(err)
+	return ipAddress
 }
 
 func getLBPort(name string) (int, error) {
@@ -189,6 +264,9 @@ spec:
       - class: docker-test-default-worker
         name: md
         replicas: 1
+      - class: remotemachine-test-default-worker
+        name: rmd
+        replicas: 1
 `
 
 var clusterClassYaml = `
@@ -218,7 +296,6 @@ metadata:
 spec:
   template:
     spec:
-      k0sVersion: v1.27.2+k0s.0
       k0sConfigSpec:
         k0s:
           apiVersion: k0s.k0sproject.io/v1beta1
@@ -284,4 +361,51 @@ spec:
             kind: DockerMachineTemplate
             name: docker-test-machine-template
             namespace: default
+    - class: remotemachine-test-default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: K0sWorkerConfigTemplate
+            name: docker-test-worker-template
+            namespace: default
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: RemoteMachineTemplate
+            name: remote-test-machine-template
+            namespace: default
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteMachineTemplate
+metadata:
+  name: remote-test-machine-template
+  namespace: default
+spec:
+  template:
+    spec: 
+      pool: default
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: PooledRemoteMachine
+metadata:
+  name: remote-test-0
+  namespace: default
+spec:
+  pool: default
+  machine:
+    address: {{ .Address }}
+    port: 22
+    user: root
+    sshKeyRef:
+      name: footloose-key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name:  footloose-key
+  namespace: default
+data:
+   value: {{ .SSHKey }}
+type: Opaque
 `

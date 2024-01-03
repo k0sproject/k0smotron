@@ -33,7 +33,7 @@ type K0sControlPlaneTemplateResource struct {
 type K0sControlPlaneTemplateResourceSpec struct {
 	K0sConfigSpec   bootstrapv1.K0sConfigSpec       `json:"k0sConfigSpec"`
 	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate,omitempty"`
-	K0sVersion      string                          `json:"k0sVersion,omitempty"`
+	Version         string                          `json:"version,omitempty"`
 }
 
 // +kubebuilder:object:root=true

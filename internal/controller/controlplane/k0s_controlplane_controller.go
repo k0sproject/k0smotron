@@ -46,6 +46,7 @@ import (
 )
 
 const (
+	defaultK0sSuffix  = "k0s.0"
 	defaultK0SVersion = "v1.27.2+k0s.0"
 )
 
@@ -81,7 +82,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	}
 
 	if kcp.Spec.K0sVersion == "" {
-		kcp.Spec.K0sVersion = defaultK0SVersion
+		if kcp.Spec.Version != "" {
+			kcp.Spec.K0sVersion = fmt.Sprintf("%s+%s", kcp.Spec.Version, defaultK0sSuffix)
+		} else {
+			kcp.Spec.K0sVersion = defaultK0SVersion
+		}
 	}
 
 	cluster, err := capiutil.GetOwnerCluster(ctx, c.Client, kcp.ObjectMeta)
