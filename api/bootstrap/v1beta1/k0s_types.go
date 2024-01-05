@@ -56,10 +56,12 @@ type K0sWorkerConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	JoinTokenSecretRef *JoinTokenSecretRef `json:"joinTokenSecretRef,omitempty"`
 
-	// Version is the version of k0s to use. In case this is not set, the latest version is used.
+	// Version is the version of k0s to use. In case this is not set, k0smotron will use
+	// a version field of the Machine object. If it's empty, the latest version is used.
 	// Make sure the version is compatible with the k0s version running on the control plane.
 	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
-	Version string `json:"version"`
+	// +kubebuilder:validation:Optional
+	Version string `json:"version,omitempty"`
 
 	// Files specifies extra files to be passed to user_data upon creation.
 	// +kubebuilder:validation:Optional
@@ -136,10 +138,12 @@ type K0sControllerConfigList struct {
 }
 
 type K0sControllerConfigSpec struct {
-	// Version is the version of k0s to use. In case this is not set, the latest version is used.
+	// Version is the version of k0s to use. In case this is not set, k0smotron will use
+	// a version field of the Machine object. If it's empty, the latest version is used.
 	// Make sure the version is compatible with the k0s version running on the control plane.
 	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
-	Version string `json:"version"`
+	// +kubebuilder:validation:Optional
+	Version string `json:"version,omitempty"`
 
 	*K0sConfigSpec `json:",inline"`
 }

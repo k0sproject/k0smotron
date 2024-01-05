@@ -102,6 +102,14 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	log = log.WithValues("kind", configOwner.GetKind(), "version", configOwner.GetResourceVersion(), "name", configOwner.GetName())
 
+	machine := &clusterv1.Machine{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(configOwner.Object, machine); err != nil {
+		return ctrl.Result{}, fmt.Errorf("error converting %s to Machine: %w", configOwner.GetKind(), err)
+	}
+	if config.Spec.Version == "" && machine.Spec.Version != nil {
+		config.Spec.Version = fmt.Sprintf("%s+%s", *machine.Spec.Version, defaultK0sSuffix)
+	}
+
 	// Lookup the cluster the config owner is associated with
 	cluster, err := capiutil.GetClusterByName(ctx, c.Client, configOwner.GetNamespace(), configOwner.ClusterName())
 	if err != nil {
