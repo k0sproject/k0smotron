@@ -178,17 +178,17 @@ clusterapi-manifests:
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/controlplane/..." output:crd:artifacts:config=config/clusterapi/controlplane/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/infrastructure/..." output:crd:artifacts:config=config/clusterapi/infrastructure/bases
 
-bootstrap-components.yaml: clusterapi-manifests kustomize $(CONTROLLER_GEN)
+bootstrap-components.yaml: $(CONTROLLER_GEN) clusterapi-manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/clusterapi/bootstrap/ > bootstrap-components.yaml
 	git checkout config/manager/kustomization.yaml
 
-control-plane-components.yaml: clusterapi-manifests kustomize $(CONTROLLER_GEN)
+control-plane-components.yaml: $(CONTROLLER_GEN) clusterapi-manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/clusterapi/controlplane/ > control-plane-components.yaml
 	git checkout config/manager/kustomization.yaml
 
-infrastructure-components.yaml: clusterapi-manifests kustomize $(CONTROLLER_GEN)
+infrastructure-components.yaml: $(CONTROLLER_GEN) clusterapi-manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/clusterapi/infrastructure/ > infrastructure-components.yaml
 	git checkout config/manager/kustomization.yaml
