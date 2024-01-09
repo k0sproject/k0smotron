@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/imdario/mergo v0.3.16
 	github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29
-	github.com/k0sproject/rig v0.15.1
+	github.com/k0sproject/rig v0.17.1
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
 	github.com/stretchr/testify v1.8.4
@@ -66,6 +66,8 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/alessio/shellescape v1.4.2 // indirect
+	github.com/bodgit/ntlmssp v0.0.0-20231128222409-0a45a2447e7c // indirect
+	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/creasty/defaults v1.7.0 // indirect
 	github.com/davidmz/go-pageant v1.0.2 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
@@ -83,7 +85,7 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -93,11 +95,11 @@ require (
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/masterzen/simplexml v0.0.0-20190410153822-31eea3082786 // indirect
-	github.com/masterzen/winrm v0.0.0-20220917170901-b07f6cb0598d // indirect
+	github.com/masterzen/winrm v0.0.0-20231128182143-52a9e15d5730 // indirect
+	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -108,14 +110,15 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/tidwall/transform v0.0.0-20201103190739-32f242e2dbde // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
 	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
