@@ -96,8 +96,7 @@ jobs:
           make release IMG=quay.io/k0sproject/k0smotron:${STABLE}
           cp install.yaml /tmp/install.yaml
           git checkout gh-pages
-          cp /tmp/install.yaml stable/install.yaml 
           cp /tmp/install.yaml ${STABLE}/install.yaml 
-          git add ${STABLE}/install.yaml stable/install.yaml && git update-index --refresh
+          git add ${STABLE}/install.yaml && git update-index --refresh
           git diff-index --quiet HEAD -- || git commit -m "Update install.yaml to ${STABLE}"
           git push origin gh-pages
