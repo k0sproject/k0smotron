@@ -21,13 +21,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"os"
 	"path/filepath"
 
 	"github.com/go-logr/logr"
 	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	"github.com/k0sproject/rig"
-	"github.com/k0sproject/rig/pkg/rigfs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -162,11 +163,11 @@ func (p *Provisioner) uploadFile(conn *rig.Connection, file cloudinit.File) erro
 	if err != nil {
 		return fmt.Errorf("failed to parse permissions: %w", err)
 	}
-	if err := fsys.MkDirAll(dir, rigfs.FileMode(perms)); err != nil {
+	if err := fsys.MkDirAll(dir, fs.FileMode(perms)); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	destFile, err := fsys.OpenFile(file.Path, rigfs.ModeCreate, rigfs.FileMode(perms))
+	destFile, err := fsys.OpenFile(file.Path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fs.FileMode(perms))
 	if err != nil {
 		return fmt.Errorf("failed to open remote file for writing: %w", err)
 	}
