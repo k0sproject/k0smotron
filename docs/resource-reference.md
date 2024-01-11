@@ -150,7 +150,7 @@ Resource Types:
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+          Version is the version of k0s to use. In case this is not set, k0smotron will use a version field of the Machine object. If it's empty, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -420,7 +420,7 @@ Tunneling defines the tunneling configuration for the cluster.
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+          Version is the version of k0s to use. In case this is not set, k0smotron will use a version field of the Machine object. If it's empty, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -767,7 +767,7 @@ JoinTokenSecretRef is a reference to a secret that contains the join token. This
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+          Version is the version of k0s to use. In case this is not set, k0smotron will use a version field of the Machine object. If it's empty, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
