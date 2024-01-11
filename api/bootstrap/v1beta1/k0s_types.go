@@ -33,6 +33,7 @@ func init() {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=bootstrap-k0smotron"
 
 type K0sWorkerConfig struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -109,6 +110,7 @@ type K0sWorkerConfigStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=bootstrap-k0smotron"
 
 type K0sControllerConfig struct {
 	metav1.TypeMeta   `json:",inline"`

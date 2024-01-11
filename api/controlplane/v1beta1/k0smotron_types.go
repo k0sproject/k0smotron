@@ -30,6 +30,7 @@ func init() {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=control-plane-k0smotron"
 
 type K0smotronControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`

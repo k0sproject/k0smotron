@@ -31,6 +31,7 @@ func init() {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
 
 type RemoteCluster struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -64,6 +65,7 @@ type RemoteClusterList struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
 
 type RemoteMachine struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -130,6 +132,7 @@ type RemoteMachineList struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
 
 type PooledRemoteMachine struct {
 	metav1.TypeMeta   `json:",inline"`
