@@ -91,13 +91,6 @@ Resource Types:
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
@@ -151,6 +144,13 @@ Resource Types:
         <td>object</td>
         <td>
           Tunneling defines the tunneling configuration for the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -368,13 +368,6 @@ Tunneling defines the tunneling configuration for the cluster.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
@@ -421,6 +414,13 @@ Tunneling defines the tunneling configuration for the cluster.
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -715,13 +715,6 @@ JoinTokenSecretRef is a reference to a secret that contains the join token. This
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
@@ -768,6 +761,13 @@ JoinTokenSecretRef is a reference to a secret that contains the join token. This
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, the latest version is used. Make sure the version is compatible with the k0s version running on the control plane. For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
