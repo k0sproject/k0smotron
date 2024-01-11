@@ -36,7 +36,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21.1'
-          
+
       - name: Go caches
         uses: actions/cache@v3
         with:
@@ -47,7 +47,7 @@ jobs:
             ~/.cache/golangci-lint
 
       - name: Check generated code to be consistent
-        run: make generate manifests release && git diff --exit-code
+        run: make generate manifests clusterapi-manifests docs-generate-reference && git diff --exit-code
 
       - name: Run linter
         env:
