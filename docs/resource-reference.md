@@ -1147,13 +1147,6 @@ Resource Types:
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>k0sVersion</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>replicas</b></td>
         <td>integer</td>
         <td>
@@ -1167,7 +1160,7 @@ Resource Types:
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Version defines the k0s version to be deployed. Can be used direct k0s version (e.g. v1.27.1+k0s.0) or just the Kubernetes version (e.g. v1.27.1). If empty k0smotron will pick it automatically.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

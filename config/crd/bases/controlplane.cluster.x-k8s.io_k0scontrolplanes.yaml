@@ -117,8 +117,6 @@ spec:
                         type: integer
                     type: object
                 type: object
-              k0sVersion:
-                type: string
               machineTemplate:
                 properties:
                   infrastructureRef:
@@ -188,6 +186,9 @@ spec:
                 format: int32
                 type: integer
               version:
+                description: Version defines the k0s version to be deployed. Can be
+                  used direct k0s version (e.g. v1.27.1+k0s.0) or just the Kubernetes
+                  version (e.g. v1.27.1). If empty k0smotron will pick it automatically.
                 type: string
             required:
             - k0sConfigSpec
