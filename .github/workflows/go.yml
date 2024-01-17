@@ -129,6 +129,7 @@ jobs:
         smoke-suite:
           - check-capi-docker
           - check-capi-docker-clusterclass
+          - check-capi-docker-clusterclass-k0smotron
           - check-capi-docker-machinedeployment
           - check-capi-controlplane-docker
           - check-capi-controlplane-docker-downscaling

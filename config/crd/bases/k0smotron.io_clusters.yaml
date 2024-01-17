@@ -72,22 +72,18 @@ spec:
                 description: ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
                   Will be detected automatically for service type LoadBalancer.
                 type: string
+              image:
+                default: k0sproject/k0s
+                description: Image defines the k0s image to be deployed. If empty
+                  k0smotron will pick it automatically. Must not include the image
+                  tag.
+                type: string
               k0sConfig:
                 description: k0sConfig defines the k0s configuration. Note, that some
                   fields will be overwritten by k0smotron. If empty, will be used
                   default configuration. @see https://docs.k0sproject.io/stable/configuration/
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-              k0sImage:
-                default: k0sproject/k0s
-                description: K0sImage defines the k0s image to be deployed. If empty
-                  k0smotron will pick it automatically. Must not include the image
-                  tag.
-                type: string
-              k0sVersion:
-                description: K0sVersion defines the k0s version to be deployed. If
-                  empty k0smotron will pick it automatically.
-                type: string
               kineDataSourceSecretName:
                 description: KineDataSourceSecretName defines the name of kine datasource
                   URL secret. KineDataSourceURL or KineDataSourceSecretName are required
@@ -2179,6 +2175,10 @@ spec:
                 required:
                 - type
                 type: object
+              version:
+                description: Version defines the k0s version to be deployed. If empty
+                  k0smotron will pick it automatically.
+                type: string
             type: object
           status:
             description: ClusterStatus defines the observed state of K0smotronCluster

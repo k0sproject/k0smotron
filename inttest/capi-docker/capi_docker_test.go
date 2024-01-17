@@ -214,7 +214,7 @@ kind: K0smotronControlPlane
 metadata:
   name: docker-test-cp
 spec:
-  k0sVersion: v1.27.2-k0s.0
+  version: v1.27.2-k0s.0
   persistence:
     type: pvc
     persistentVolumeClaim:

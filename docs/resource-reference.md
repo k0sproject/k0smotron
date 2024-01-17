@@ -2165,26 +2165,19 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>k0sConfig</b></td>
-        <td>object</td>
-        <td>
-          k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>k0sImage</b></td>
+        <td><b>image</b></td>
         <td>string</td>
         <td>
-          K0sImage defines the k0s image to be deployed. If empty k0smotron will pick it automatically. Must not include the image tag.<br/>
+          Image defines the k0s image to be deployed. If empty k0smotron will pick it automatically. Must not include the image tag.<br/>
           <br/>
             <i>Default</i>: k0sproject/k0s<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>k0sVersion</b></td>
-        <td>string</td>
+        <td><b>k0sConfig</b></td>
+        <td>object</td>
         <td>
-          K0sVersion defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
+          k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2239,6 +2232,13 @@ ClusterSpec defines the desired state of K0smotronCluster
           Service defines the service configuration.<br/>
           <br/>
             <i>Default</i>: map[apiPort:30443 konnectivityPort:30132 type:ClusterIP]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6182,26 +6182,19 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>k0sConfig</b></td>
-        <td>object</td>
-        <td>
-          k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>k0sImage</b></td>
+        <td><b>image</b></td>
         <td>string</td>
         <td>
-          K0sImage defines the k0s image to be deployed. If empty k0smotron will pick it automatically. Must not include the image tag.<br/>
+          Image defines the k0s image to be deployed. If empty k0smotron will pick it automatically. Must not include the image tag.<br/>
           <br/>
             <i>Default</i>: k0sproject/k0s<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>k0sVersion</b></td>
-        <td>string</td>
+        <td><b>k0sConfig</b></td>
+        <td>object</td>
         <td>
-          K0sVersion defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
+          k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6256,6 +6249,13 @@ ClusterSpec defines the desired state of K0smotronCluster
           Service defines the service configuration.<br/>
           <br/>
             <i>Default</i>: map[apiPort:30443 konnectivityPort:30132 type:ClusterIP]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10825,26 +10825,19 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>k0sConfig</b></td>
-        <td>object</td>
-        <td>
-          k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>k0sImage</b></td>
+        <td><b>image</b></td>
         <td>string</td>
         <td>
-          K0sImage defines the k0s image to be deployed. If empty k0smotron will pick it automatically. Must not include the image tag.<br/>
+          Image defines the k0s image to be deployed. If empty k0smotron will pick it automatically. Must not include the image tag.<br/>
           <br/>
             <i>Default</i>: k0sproject/k0s<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>k0sVersion</b></td>
-        <td>string</td>
+        <td><b>k0sConfig</b></td>
+        <td>object</td>
         <td>
-          K0sVersion defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
+          k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron. If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10899,6 +10892,13 @@ ClusterSpec defines the desired state of K0smotronCluster
           Service defines the service configuration.<br/>
           <br/>
             <i>Default</i>: map[apiPort:30443 konnectivityPort:30132 type:ClusterIP]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version defines the k0s version to be deployed. If empty k0smotron will pick it automatically.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

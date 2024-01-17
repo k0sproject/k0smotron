@@ -70,6 +70,52 @@ spec:
 
 You can read more about ClusterClass in the [Cluster API documentation](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/).
 
+## K0smotronControlPlaneTemplate for ClusterClass
+
+`K0smotronControlPlane` is a custom resource that is used to create a control planes as pods in the managing cluster. It does not create any machines, but instead creates a pod that runs the k0s control plane.
+Here is the example of `ClusterClass` that uses `K0smotronControlPlaneTemplate`:
+
+```yaml
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: k0smotron-clusterclass
+spec:
+  controlPlane:
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: K0smotronControlPlaneTemplate
+      name: k0s-controlplane-template
+      namespace: default
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerClusterTemplate
+      name: docker-cluster-template
+      namespace: default
+  workers:
+    machineDeployments:
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: K0sWorkerConfigTemplate
+            name: k0s-worker-config-template
+            namespace: default
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: DockerMachineTemplate
+            name: worker-docker-machine-template
+            namespace: default
+---
+… # other objects omitted for brevity, see full example below
+```
+
+```yaml
+
 ## Full example
 
 ```yaml

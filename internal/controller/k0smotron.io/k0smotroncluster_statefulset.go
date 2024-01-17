@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
@@ -44,9 +45,13 @@ func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet 
 }
 
 func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
-	k0sVersion := kmc.Spec.K0sVersion
+	k0sVersion := kmc.Spec.Version
 	if k0sVersion == "" {
 		k0sVersion = defaultK0SVersion
+	} else {
+		if kmc.Spec.Image == defaultK0SImage && !strings.Contains(kmc.Spec.Version, "-k0s.") {
+			k0sVersion = fmt.Sprintf("%s-%s", kmc.Spec.Version, defaultK0SSuffix)
+		}
 	}
 
 	if kmc.Spec.Replicas > 1 && (kmc.Spec.KineDataSourceURL == "" && kmc.Spec.KineDataSourceSecretName == "") {
@@ -116,7 +121,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 					}},
 					Containers: []v1.Container{{
 						Name:            "controller",
-						Image:           fmt.Sprintf("%s:%s", kmc.Spec.K0sImage, k0sVersion),
+						Image:           fmt.Sprintf("%s:%s", kmc.Spec.Image, k0sVersion),
 						ImagePullPolicy: v1.PullIfNotPresent,
 						Args:            []string{"/k0smotron-entrypoint.sh"},
 						Ports: []v1.ContainerPort{
