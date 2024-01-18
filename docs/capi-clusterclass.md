@@ -1,6 +1,6 @@
 # ClusterClass
 
-K0smotron supports ClusterClass, a simple way to create many Cluster of a similar shape. 
+K0smotron supports ClusterClass, a simple way to create many clusters of a similar shape. 
 
 For instance, we will create a ClusterClass that will create a cluster running control plane and worker nodes on DockerMachines:
 
