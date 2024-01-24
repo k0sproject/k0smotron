@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/go-logr/logr v1.4.1
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/imdario/mergo v0.3.16
 	github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29
 	github.com/k0sproject/rig v0.17.4
