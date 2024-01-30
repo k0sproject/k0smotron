@@ -100,11 +100,25 @@ type RemoteMachineSpec struct {
 	// +kubebuilder:default="root"
 	User string `json:"user,omitempty"`
 
+	// +kubebuilder:validation:Optional
+	UseSudo bool `json:"useSudo,omitempty"`
+
 	// SSHKeyRef is a reference to a secret that contains the SSH private key.
 	// The key must be placed on the secret using the key "value".
 	// +kubebuilder:validation:Optional
 	SSHKeyRef SecretRef `json:"sshKeyRef,omitempty"`
 
+	// ProvisionJob describes the kubernetes Job to use to provision the machine.
+	ProvisionJob *ProvisionJob `json:"provisionJob,omitempty"`
+}
+
+type ProvisionJob struct {
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="ssh"
+	SSHCommand string `json:"sshCommand,omitempty"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="scp"
+	SCPCommand string `json:"scpCommand,omitempty"`
 	// JobTemplate is the job template to use to provision the machine.
 	JobTemplate *v1.JobTemplateSpec `json:"jobSpecTemplate,omitempty"`
 }

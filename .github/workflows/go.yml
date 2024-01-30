@@ -140,6 +140,7 @@ jobs:
           - check-capi-remote-machine-template
           - check-capi-remote-machine-template-update
           - check-capi-docker-machine-template-update
+          - check-capi-remote-machine-job-provision
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -173,7 +174,7 @@ jobs:
       - name: Load k0smotron image to KinD and install k0smotron controllers
         run: |
           kind load image-archive k0smotron-image-bundle.tar
-          kubectl apply -f install.yaml
+          kubectl create -f install.yaml
       
 
       - name: Download clusterctl

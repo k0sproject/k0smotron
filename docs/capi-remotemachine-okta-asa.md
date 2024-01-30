@@ -144,6 +144,8 @@ $ kubectl delete secret okta-asa-enrollment-token
 
 ## Create a RemoteMachine
 
+Now we can create a RemoteMachine that will run the pod to setup the machine.
+
 ```yaml
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -153,27 +155,31 @@ metadata:
   namespace: default
 spec:
   address: <server-name>
-  jobSpecTemplate:
-    spec:
-      containers:
-        - name: okta-asa
-          image: makhov/okta-asa-demo:latest
-          imagePullPolicy: Always
-          volumeMounts:
-            - name: config
-              mountPath: /etc/sft/sftd.yaml
-              subPath: sftd.yaml
-            - name: config
-              mountPath: /root/.config/ScaleFT/sft.conf
-              subPath: sft.conf
-            - name: sftd-lib
-              mountPath: /var/lib/sftd
-      volumes:
-        - name: config
-          configMap:
-            name: okta-asa-config
-        - name: sftd-lib
-          persistentVolumeClaim:
-            claimName: okta-asa-demo-pvc
-      restartPolicy: Never
+  useSudo: true
+  provisionJob:
+    sshCommand: "ssh"
+    scpCommand: "scp"
+    jobSpecTemplate:
+      spec:
+        containers:
+          - name: okta-asa
+            image: makhov/okta-asa-demo:latest
+            imagePullPolicy: Always
+            volumeMounts:
+              - name: config
+                mountPath: /etc/sft/sftd.yaml
+                subPath: sftd.yaml
+              - name: config
+                mountPath: /root/.config/ScaleFT/sft.conf
+                subPath: sft.conf
+              - name: sftd-lib
+                mountPath: /var/lib/sftd
+        volumes:
+          - name: config
+            configMap:
+              name: okta-asa-config
+          - name: sftd-lib
+            persistentVolumeClaim:
+              claimName: okta-asa-demo-pvc
+        restartPolicy: Never
 ```

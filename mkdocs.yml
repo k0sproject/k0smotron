@@ -34,6 +34,8 @@ nav:
         - OpenStack: capi-openstack.md
         - Docker: capi-docker.md
         - vSphere: capi-vsphere.md
+        - Remote Machine with Teleport: capi-remotemachine-teleport.md
+        - Remote Machine with Okta ASA: capi-remotemachine-okta-asa.md
     - Monitoring: monitoring.md
   - FAQ: faq.md
   - Troubleshooting: troubleshooting.md
