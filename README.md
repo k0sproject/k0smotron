@@ -53,7 +53,7 @@ With k0smotron, you can run the control plane management cluster in a public or 
 Getting started with k0smotron is easy. Simply install the controller into an existing cluster:
 
 ```bash
-kubectl apply -f https://docs.k0smotron.io/stable/install.yaml
+kubectl create -f https://docs.k0smotron.io/stable/install.yaml
 ```
 
 You can also install k0smotron ClusterAPI providers via `clusterctl`:

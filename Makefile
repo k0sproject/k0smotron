@@ -276,7 +276,7 @@ kind-cluster:
 .PHONY: kind-deploy-k0smotron
 kind-deploy-k0smotron: release k0smotron-image-bundle.tar
 	kind load image-archive k0smotron-image-bundle.tar
-	kubectl apply -f install.yaml
+	kubectl create -f install.yaml
 	kubectl rollout restart -n k0smotron deployment/k0smotron-controller-manager
 
 sbom/spdx.json: go.mod

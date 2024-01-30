@@ -1,6 +1,6 @@
 # Using Remote Machine with Okta ASA
 
-Okta Advanced Server Aceess (ASA) is a solution that enables secure access to SSH servers. This guide will walk you through the process of preparing your management cluster to use the Remote Machine provider with Okta ASA.
+Okta Advanced Server Access (ASA) is a solution that enables secure access to SSH servers. This guide will walk you through the process of preparing your management cluster to use the Remote Machine provider with Okta ASA.
 
 ## Prerequisites
 
@@ -142,7 +142,11 @@ $ kubectl delete pod okta-asa-demo-pod
 $ kubectl delete secret okta-asa-enrollment-token
 ```
 
+The enrolment process should be done only once. The runner will be available in the Okta ASA console and can be used for the RemoteMachine provider.
+
 ## Create a RemoteMachine
+
+Now we can create a RemoteMachine that will run the pod to setup the machine.
 
 ```yaml
 ---
@@ -153,27 +157,31 @@ metadata:
   namespace: default
 spec:
   address: <server-name>
-  jobSpecTemplate:
-    spec:
-      containers:
-        - name: okta-asa
-          image: makhov/okta-asa-demo:latest
-          imagePullPolicy: Always
-          volumeMounts:
-            - name: config
-              mountPath: /etc/sft/sftd.yaml
-              subPath: sftd.yaml
-            - name: config
-              mountPath: /root/.config/ScaleFT/sft.conf
-              subPath: sft.conf
-            - name: sftd-lib
-              mountPath: /var/lib/sftd
-      volumes:
-        - name: config
-          configMap:
-            name: okta-asa-config
-        - name: sftd-lib
-          persistentVolumeClaim:
-            claimName: okta-asa-demo-pvc
-      restartPolicy: Never
+  useSudo: true
+  provisionJob:
+    sshCommand: "ssh"
+    scpCommand: "scp"
+    jobSpecTemplate:
+      spec:
+        containers:
+          - name: okta-asa
+            image: makhov/okta-asa-demo:latest
+            imagePullPolicy: Always
+            volumeMounts:
+              - name: config
+                mountPath: /etc/sft/sftd.yaml
+                subPath: sftd.yaml
+              - name: config
+                mountPath: /root/.config/ScaleFT/sft.conf
+                subPath: sft.conf
+              - name: sftd-lib
+                mountPath: /var/lib/sftd
+        volumes:
+          - name: config
+            configMap:
+              name: okta-asa-config
+          - name: sftd-lib
+            persistentVolumeClaim:
+              claimName: okta-asa-demo-pvc
+        restartPolicy: Never
 ```

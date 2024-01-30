@@ -32,7 +32,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Provisioner struct {
+type SSHProvisioner struct {
 	bootstrapData []byte
 	machine       *api.RemoteMachine
 	sshKey        []byte
@@ -52,7 +52,7 @@ const (
 // 2. Execute the bootstrap script
 // 3. Check sentinel file at /run/cluster-api/bootstrap-success.complete
 // 4. success
-func (p *Provisioner) Provision(_ context.Context) error {
+func (p *SSHProvisioner) Provision(_ context.Context) error {
 	// Parse the bootstrap data
 	cloudInit := &cloudinit.CloudInit{}
 	err := yaml.Unmarshal(p.bootstrapData, cloudInit)
@@ -111,7 +111,7 @@ func (p *Provisioner) Provision(_ context.Context) error {
 // 2. Stops k0s
 // 3. Removes node from etcd
 // 4. Runs k0s reset
-func (p *Provisioner) Cleanup(_ context.Context, mode RemoteMachineMode) error {
+func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) error {
 	if mode == ModeNonK0s {
 		return nil
 	}
@@ -155,7 +155,7 @@ func (p *Provisioner) Cleanup(_ context.Context, mode RemoteMachineMode) error {
 	return nil
 }
 
-func (p *Provisioner) uploadFile(conn *rig.Connection, file cloudinit.File) error {
+func (p *SSHProvisioner) uploadFile(conn *rig.Connection, file cloudinit.File) error {
 	fsys := conn.SudoFsys()
 	// Ensure base dir exists for target
 	dir := filepath.Dir(file.Path)

@@ -42,3 +42,4 @@ check-capi-controlplane-docker-tunneling: TIMEOUT=10m
 check-capi-remote-machine: TIMEOUT=8m
 check-capi-remote-machine-template-update: TIMEOUT=10m
 check-capi-docker-machine-template-update: TIMEOUT=10m
+check-capi-remote-machine-job-provision: TIMEOUT=10m

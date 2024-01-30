@@ -20,9 +20,10 @@ smoketests := \
     check-capi-controlplane-docker-tunneling-proxy \
     check-monitoring \
     check-capi-docker-machinedeployment \
-    check-capi-remote-machine \
     check-capi-docker-clusterclass \
     check-capi-docker-clusterclass-k0smotron \
+    check-capi-remote-machine \
+    check-capi-remote-machine-job-provision \
     check-capi-remote-machine-template \
     check-capi-remote-machine-template-update \
     check-capi-docker-machine-template-update \

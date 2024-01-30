@@ -185,3 +185,33 @@ spec:
 More information about Teleport's Machine ID and how to set it up with Kubernetes can be found [here](https://goteleport.com/docs/machine-id/deployment/kubernetes/).
 Also, you can use [this example](https://github.com/k0sproject/k0smotron/blob/{{{ extra.k0smotron_version }}}/config/samples/capi/remotemachine/capi-remotemachine-teleport.yaml) as a reference.
 
+## Create a RemoteMachine
+
+Now we can create a RemoteMachine that will run the pod to setup the machine.
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteMachine
+metadata:
+  name: remote-test-0
+  namespace: default
+spec:
+  address: <server-name>
+  useSudo: false
+  provisionJob:
+    sshCommand: "tsh -i /identity-output/identity --proxy teleport.example.com:443 ssh"
+    scpCommand: "tsh -i /identity-output/identity --proxy teleport.example.com:443 scp"
+    jobSpecTemplate:
+      spec:
+        containers:
+          - name: teleport
+            image: public.ecr.aws/gravitational/teleport:14.3.3
+            volumeMounts:
+             - name: identity-output
+               mountPath: /identity-output
+        volumes:
+          - name: identity-output
+            secret:
+              secretName: identity-output
+        restartPolicy: Never
+```
