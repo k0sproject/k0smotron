@@ -693,6 +693,27 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../capi-clusterclass/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ClusterClass
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -707,10 +728,10 @@ You are not currently viewing the documentation for the current stable release o
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_4_3_6" id="__nav_4_3_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3_7" id="__nav_4_3_7_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -721,8 +742,8 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_3_6">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_3_7">
             <span class="md-nav__icon md-icon"></span>
             Examples
           </label>
@@ -1194,7 +1215,7 @@ This also renders k0smotron unable to dynamically edit the <code>AWSCluster</cod
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-cp</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">k0sVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2-k0s.0</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2-k0s.0</span>
 <span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
 <span class="w">  </span><span class="nt">service</span><span class="p">:</span>
@@ -1330,7 +1351,7 @@ Cluster/k0s-aws-test<span class="w">                                   </span>Tr
 <h2 id="accessing-the-workload-cluster">Accessing the workload cluster<a class="headerlink" href="#accessing-the-workload-cluster" title="Permanent link">#</a></h2>
 <p>To access the child cluster we can get the kubeconfig for it with <code>clusterctl get kubeconfig k0s-aws-test</code>. You can then save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a>.</p>
 <h2 id="deleting-the-cluster">Deleting the cluster<a class="headerlink" href="#deleting-the-cluster" title="Permanent link">#</a></h2>
-<p>For cluster deletion, do <strong>NOT</strong> use <code>kubectl delete -f my-aws-cluster.yaml</code> as that will result into orphan AWS resources. Instead, delete the top level <code>Cluster</code> object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.</p>
+<p>For cluster deletion, do <strong>NOT</strong> use <code>kubectl delete -f my-aws-cluster.yaml</code> as that will result in orphan AWS resources. Instead, delete the top level <code>Cluster</code> object. This approach ensures the proper sequence in deleting all child resources, effectively avoiding orphan resources.</p>
 
 
 
