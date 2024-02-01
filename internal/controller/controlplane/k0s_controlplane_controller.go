@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -40,12 +42,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"strings"
 )
 
 const (
+	defaultK0sSuffix  = "k0s.0"
 	defaultK0SVersion = "v1.27.2+k0s.0"
 )
 
@@ -80,8 +81,8 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, nil
 	}
 
-	if kcp.Spec.K0sVersion == "" {
-		kcp.Spec.K0sVersion = defaultK0SVersion
+	if !strings.Contains(kcp.Spec.Version, "+k0s.") {
+		kcp.Spec.Version = fmt.Sprintf("%s+%s", kcp.Spec.Version, defaultK0sSuffix)
 	}
 
 	cluster, err := capiutil.GetOwnerCluster(ctx, c.Client, kcp.ObjectMeta)
@@ -268,7 +269,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 			}},
 		},
 		Spec: bootstrapv1.K0sControllerConfigSpec{
-			Version:       kcp.Spec.K0sVersion,
+			Version:       kcp.Spec.Version,
 			K0sConfigSpec: &kcp.Spec.K0sConfigSpec,
 		},
 	}

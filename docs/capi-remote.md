@@ -41,7 +41,7 @@ metadata:
   name: remote-test
   namespace: default
 spec:
-  k0sVersion: v1.27.2-k0s.0
+  version: v1.27.2-k0s.0
   persistence:
     type: emptyDir
   service:
@@ -156,7 +156,7 @@ metadata:
   name: remote-test
 spec:
   replicas: 1
-  k0sVersion: v1.27.1+k0s.0
+  version: v1.27.1+k0s.0
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1

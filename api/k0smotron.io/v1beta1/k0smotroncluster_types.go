@@ -35,14 +35,14 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
 	Replicas int32 `json:"replicas,omitempty"`
-	// K0sImage defines the k0s image to be deployed. If empty k0smotron
+	// Image defines the k0s image to be deployed. If empty k0smotron
 	// will pick it automatically. Must not include the image tag.
 	//+kubebuilder:default=k0sproject/k0s
-	K0sImage string `json:"k0sImage,omitempty"`
-	// K0sVersion defines the k0s version to be deployed. If empty k0smotron
+	Image string `json:"image,omitempty"`
+	// Version defines the k0s version to be deployed. If empty k0smotron
 	// will pick it automatically.
 	//+kubebuilder:validation:Optional
-	K0sVersion string `json:"k0sVersion,omitempty"`
+	Version string `json:"version,omitempty"`
 	// ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
 	// Will be detected automatically for service type LoadBalancer.
 	//+kubebuilder:validation:Optional

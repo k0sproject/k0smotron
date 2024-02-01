@@ -128,6 +128,8 @@ jobs:
       matrix:
         smoke-suite:
           - check-capi-docker
+          - check-capi-docker-clusterclass
+          - check-capi-docker-clusterclass-k0smotron
           - check-capi-docker-machinedeployment
           - check-capi-controlplane-docker
           - check-capi-controlplane-docker-downscaling
@@ -182,6 +184,10 @@ jobs:
       - name: Install cluster api components
         run: |
           clusterctl init --infrastructure docker
+          kubectl patch -n capi-system deployment/capi-controller-manager -p \
+            '{"spec":{"template":{"spec":{"containers":[{"name":"manager","args":["--leader-elect", "--metrics-bind-addr=localhost:8080", "--feature-gates=ClusterTopology=true"]}]}}}}'
+          kubectl patch -n capd-system deployment/capd-controller-manager -p \
+            '{"spec":{"template":{"spec":{"containers":[{"name":"manager","args":["--leader-elect", "--metrics-bind-addr=localhost:8080", "--feature-gates=ClusterTopology=true"]}]}}}}'
 
       - name: Install PVC provider
         run: |

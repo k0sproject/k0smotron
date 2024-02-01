@@ -19,7 +19,9 @@ resources:
 - ../../rbac
 - ../../manager
 - ./bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
+- ./bases/controlplane.cluster.x-k8s.io_k0scontrolplanetemplates.yaml
 - ./bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
+- ./bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanetemplates.yaml
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
 #- ../webhook

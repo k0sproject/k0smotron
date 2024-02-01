@@ -48,7 +48,7 @@ kind: K0smotronControlPlane # This is the config for the controlplane
 metadata:
   name: k0s-aws-test-cp
 spec:
-  k0sVersion: v1.27.2-k0s.0
+  version: v1.27.2-k0s.0
   persistence:
     type: emptyDir
   service:
@@ -203,4 +203,4 @@ To access the child cluster we can get the kubeconfig for it with `clusterctl ge
 
 ## Deleting the cluster
 
-For cluster deletion, do **NOT** use `kubectl delete -f my-aws-cluster.yaml` as that will result into orphan AWS resources. Instead, delete the top level `Cluster` object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.
+For cluster deletion, do **NOT** use `kubectl delete -f my-aws-cluster.yaml` as that will result in orphan AWS resources. Instead, delete the top level `Cluster` object. This approach ensures the proper sequence in deleting all child resources, effectively avoiding orphan resources.

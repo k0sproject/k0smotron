@@ -9,8 +9,8 @@ metadata:
   name: k0smotron-test
 spec:
   replicas: 1
-  k0sImage: k0sproject/k0s
-  k0sVersion: v1.27.1-k0s.0
+  image: k0sproject/k0s
+  version: v1.27.1-k0s.0
   service:
     type: NodePort
     apiPort: 30443

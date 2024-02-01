@@ -33,7 +33,9 @@ import (
 )
 
 const (
+	defaultK0SImage   = "k0sproject/k0s"
 	defaultK0SVersion = "v1.27.2-k0s.0"
+	defaultK0SSuffix  = "k0s.0"
 )
 
 var patchOpts []client.PatchOption = []client.PatchOption{
