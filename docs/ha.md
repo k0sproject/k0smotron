@@ -8,7 +8,7 @@ The control planes managed by `k0smotron` are k0s control planes. As k0s comes w
 
 In this example we show how to use [Postgres operator](https://postgres-operator.readthedocs.io/en/latest/) to manage the control plane data store.
 
-Install the operator following the [quicstart guide](https://postgres-operator.readthedocs.io/en/latest/quickstart/).
+Install the operator following the [quickstart guide](https://postgres-operator.readthedocs.io/en/latest/quickstart/).
 
 Create the database with a custom resource:
 ```
