@@ -1064,7 +1064,7 @@ You are not currently viewing the documentation for the current stable release o
 <p>The control planes managed by <code>k0smotron</code> are k0s control planes. As k0s comes with support for using SQL DBs as data store (via Kine) you can use HA databases instead of Etcd. This enables you to use e.g. Postgres operator, MySQL operator or cloud provider managed databases as the data store for the control planes.</p>
 <h2 id="using-postgres-operator">Using Postgres operator<a class="headerlink" href="#using-postgres-operator" title="Permanent link">#</a></h2>
 <p>In this example we show how to use <a href="https://postgres-operator.readthedocs.io/en/latest/">Postgres operator</a> to manage the control plane data store.</p>
-<p>Install the operator following the <a href="https://postgres-operator.readthedocs.io/en/latest/quickstart/">quicstart guide</a>.</p>
+<p>Install the operator following the <a href="https://postgres-operator.readthedocs.io/en/latest/quickstart/">quickstart guide</a>.</p>
 <p>Create the database with a custom resource:
 <div class="highlight"><pre><span></span><code>apiVersion: &quot;acid.zalan.do/v1&quot;
 kind: postgresql
