@@ -19,7 +19,7 @@ import (
 func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
 	machine := c.generateMachine(ctx, name, cluster, kcp, infraRef)
 
-	_ = ctrl.SetControllerReference(cluster, machine, c.Scheme)
+	_ = ctrl.SetControllerReference(kcp, machine, c.Scheme)
 
 	return machine, c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
