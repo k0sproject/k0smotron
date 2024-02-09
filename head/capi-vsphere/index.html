@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-docker/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-vsphere/">
       
       
-        <link rel="prev" href="../capi-openstack/">
+        <link rel="prev" href="../capi-docker/">
       
       
-        <link rel="next" href="../capi-vsphere/">
+        <link rel="next" href="../faq/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Docker - Documentation</title>
+        <title>vSphere - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cluster-api-docker" class="md-skip">
+        <a href="#cluster-api-vmware" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Docker
+              vSphere
             
           </span>
         </div>
@@ -837,6 +837,27 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../capi-docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -853,7 +874,7 @@ You are not currently viewing the documentation for the current stable release o
           
   
   <span class="md-ellipsis">
-    Docker
+    vSphere
   </span>
   
 
@@ -864,7 +885,7 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    Docker
+    vSphere
   </span>
   
 
@@ -886,47 +907,113 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#setting-the-scene" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setting the scene
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#preparations" class="md-nav__link">
     <span class="md-ellipsis">
       Preparations
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Preparations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configure-clusterctl-on-the-local-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configure clusterctl on the local machine
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-cluster-api-in-the-management-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploy Cluster API in the management cluster
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-ipam-ip-pool-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      (Optional) IPAM IP pool creation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-the-docker-kind-network" class="md-nav__link">
+  <a href="#optional-metallb-as-load-balancer-solution-in-the-management-cluster" class="md-nav__link">
     <span class="md-ellipsis">
-      Create the Docker Kind Network
+      (Optional) MetalLB as Load Balancer solution in the management cluster
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#creating-a-child-cluster" class="md-nav__link">
+  <a href="#operating-child-clusters" class="md-nav__link">
     <span class="md-ellipsis">
-      Creating a child cluster
+      Operating child clusters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Operating child clusters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#generate-a-child-cluster-definition-using-the-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generate a child cluster definition using the template
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#accessing-the-workload-cluster" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-the-child-clusters" class="md-nav__link">
     <span class="md-ellipsis">
-      Accessing the workload cluster
+      Deploy the child clusters
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#deleting-the-cluster" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#observe-the-child-cluster-objects" class="md-nav__link">
     <span class="md-ellipsis">
-      Deleting the cluster
+      Observe the child cluster objects
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-the-child-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deleting the child cluster
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -934,27 +1021,6 @@ You are not currently viewing the documentation for the current stable release o
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../capi-vsphere/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    vSphere
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -1095,47 +1161,113 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#setting-the-scene" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setting the scene
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#preparations" class="md-nav__link">
     <span class="md-ellipsis">
       Preparations
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Preparations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configure-clusterctl-on-the-local-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configure clusterctl on the local machine
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-cluster-api-in-the-management-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploy Cluster API in the management cluster
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-ipam-ip-pool-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      (Optional) IPAM IP pool creation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-the-docker-kind-network" class="md-nav__link">
+  <a href="#optional-metallb-as-load-balancer-solution-in-the-management-cluster" class="md-nav__link">
     <span class="md-ellipsis">
-      Create the Docker Kind Network
+      (Optional) MetalLB as Load Balancer solution in the management cluster
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#creating-a-child-cluster" class="md-nav__link">
+  <a href="#operating-child-clusters" class="md-nav__link">
     <span class="md-ellipsis">
-      Creating a child cluster
+      Operating child clusters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Operating child clusters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#generate-a-child-cluster-definition-using-the-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generate a child cluster definition using the template
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#accessing-the-workload-cluster" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-the-child-clusters" class="md-nav__link">
     <span class="md-ellipsis">
-      Accessing the workload cluster
+      Deploy the child clusters
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#deleting-the-cluster" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#observe-the-child-cluster-objects" class="md-nav__link">
     <span class="md-ellipsis">
-      Deleting the cluster
+      Observe the child cluster objects
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-the-child-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deleting the child cluster
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1154,133 +1286,184 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="cluster-api-docker">Cluster API - Docker<a class="headerlink" href="#cluster-api-docker" title="Permanent link">#</a></h1>
-<p>This example demonstrates how k0smotron can be used with CAPD (Cluster API Provider Docker).</p>
-<p>Please note, CAPD should only be used for development purposes and not for production environments.</p>
+<h1 id="cluster-api-vmware">Cluster API - VMware<a class="headerlink" href="#cluster-api-vmware" title="Permanent link">#</a></h1>
+<p>This example demonstrates how k0smotron can be used with CAPV (Cluster API Provider vSphere).</p>
+<p><strong>Table of Contents</strong></p>
+<ul>
+<li><a href="#cluster-api---vmware">Cluster API - VMware</a><ul>
+<li><a href="#setting-the-scene">Setting the scene</a></li>
+<li><a href="#preparations">Preparations</a><ul>
+<li><a href="#configure-clusterctl-on-the-local-machine">Configure clusterctl on the local machine</a></li>
+<li><a href="#deploy-cluster-api-in-the-management-cluster">Deploy Cluster API in the management cluster</a></li>
+<li><a href="#optional-ipam-ip-pool-creation">(Optional) IPAM IP pool creation</a></li>
+</ul>
+</li>
+<li><a href="#optional-metallb-as-load-balancer-solution-in-the-management-cluster">(Optional) MetalLB as Load Balancer solution in the management cluster</a></li>
+<li><a href="#operating-child-clusters">Operating child clusters</a><ul>
+<li><a href="#generate-a-child-cluster-definition-using-the-template">Generate a child cluster definition using the template</a><ul>
+<li><a href="#control-plane-in-pods">Control plane in Pods</a></li>
+<li><a href="#control-plane-in-vms">Control plane in VMs</a></li>
+</ul>
+</li>
+<li><a href="#deploy-the-child-clusters">Deploy the child clusters</a></li>
+<li><a href="#observe-the-child-cluster-objects">Observe the child cluster objects</a></li>
+<li><a href="#deleting-the-child-cluster">Deleting the child cluster</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="setting-the-scene">Setting the scene<a class="headerlink" href="#setting-the-scene" title="Permanent link">#</a></h2>
+<p>To use Cluster API we will bring three environments:
+1. Local machine -- the machine from where some of the commands will be executed
+2. Management cluster -- Kubernetes cluster that will be used to control and manage child clusters
+3. Child cluster -- k0s cluster that will be spinned up with the help of k0smotron</p>
 <h2 id="preparations">Preparations<a class="headerlink" href="#preparations" title="Permanent link">#</a></h2>
-<p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>. </p>
-<p>To initialize the management cluster with Docker infrastrcture provider you can run:</p>
-<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--core<span class="w"> </span>cluster-api<span class="w"> </span>--infrastructure<span class="w"> </span>docker
-</code></pre></div>
-<p>For more details on Cluster API Provider Docker see it's <a href="https://github.com/kubernetes-sigs/cluster-api/tree/main/test/infrastructure/docker">docs</a>.</p>
-<h2 id="create-the-docker-kind-network">Create the Docker Kind Network<a class="headerlink" href="#create-the-docker-kind-network" title="Permanent link">#</a></h2>
-<p>The Cluster API Provider Docker (CAPD) utilizes a network named kind as the default network for certain components it deploys, such as HAProxy. To establish this network, perform the following step:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>network<span class="w"> </span>create<span class="w"> </span>kind<span class="w"> </span>--opt<span class="w"> </span>com.docker.network.bridge.enable_ip_masquerade<span class="o">=</span><span class="nb">true</span>
-</code></pre></div>
-<p>By executing this command, you are creating a Docker network named 'kind' with IP masquerade enabled, which is necessary for the proper operation of certain CAPD-deployed components.</p>
-<h2 id="creating-a-child-cluster">Creating a child cluster<a class="headerlink" href="#creating-a-child-cluster" title="Permanent link">#</a></h2>
-<p>Once all the controllers are up and running, you can apply the cluster manifests containing the specifications of the cluster you want to provision.</p>
-<p>Here is an example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.0.0/16</span>
-<span class="w">    </span><span class="nt">serviceDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.local</span>
-<span class="w">    </span><span class="nt">services</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.128.0.0/12</span>
-<span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
-<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerCluster</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span><span class="w"> </span><span class="c1"># This is the config for the controlplane</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2-k0s.0</span>
-<span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
-<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NodePort</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerCluster</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron</span><span class="w"> </span><span class="c1"># This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.</span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="w">  </span><span class="c1"># More details of the DockerCluster can be set here</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineDeployment</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">docker-test-md</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">      </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">        </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2</span><span class="w"> </span><span class="c1"># Docker Provider requires a version to be set (see https://hub.docker.com/r/kindest/node/tags)</span>
-<span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">configRef</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
-<span class="w">          </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
-<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-machine-config</span>
-<span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-mt</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-mt</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="w">  </span><span class="c1"># More details of the DockerMachineTemplate can be set here</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-machine-config</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">      </span><span class="c1"># More details of the worker configuration can be set here</span>
-</code></pre></div>
-<p>After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:</p>
-<div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
-NAME<span class="w">                                   </span>PHASE<span class="w">         </span>AGE<span class="w">     </span>VERSION
-cluster.cluster.x-k8s.io/docker-test<span class="w">   </span>Provisioned<span class="w">   </span>3m51s<span class="w">   </span>
+<p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>.</p>
+<h3 id="configure-clusterctl-on-the-local-machine">Configure clusterctl on the local machine<a class="headerlink" href="#configure-clusterctl-on-the-local-machine" title="Permanent link">#</a></h3>
+<ol>
+<li>Create the cluster-api configuration file in your development machine.
+<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>~/.cluster-api
+vim<span class="w"> </span>~/.cluster-api/clusterctl.yaml
+</code></pre></div></li>
+<li>Put values according to your environment in this file:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="c1">## -- Controller settings -- ##</span>
+<span class="nt">VSPHERE_USERNAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vi-admin@vsphere.local&quot;</span><span class="w">                    </span><span class="c1"># The username used to access the remote vSphere endpoint</span>
+<span class="nt">VSPHERE_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin!23&quot;</span><span class="w">                                  </span><span class="c1"># The password used to access the remote vSphere endpoint</span>
 
-NAME<span class="w">                                        </span>CLUSTER<span class="w">       </span>NODENAME<span class="w">   </span>PROVIDERID<span class="w">          </span>PHASE<span class="w">         </span>AGE<span class="w">     </span>VERSION
-machine.cluster.x-k8s.io/docker-test-md-0<span class="w">   </span>docker-test<span class="w">                                  </span>Provisioned<span class="w">   </span>3m50s
+<span class="c1">## -- Required workload cluster default settings -- ##</span>
+<span class="nt">VSPHERE_SERVER</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10.0.0.1&quot;</span><span class="w">                                    </span><span class="c1"># The vCenter server IP or FQDN</span>
+<span class="nt">VSPHERE_DATACENTER</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SDDC-Datacenter&quot;</span><span class="w">                         </span><span class="c1"># The vSphere datacenter to deploy the management cluster on</span>
+<span class="nt">VSPHERE_DATASTORE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DefaultDatastore&quot;</span><span class="w">                         </span><span class="c1"># The vSphere datastore to deploy the management cluster on</span>
+<span class="nt">VSPHERE_NETWORK</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VM</span><span class="nv"> </span><span class="s">Network&quot;</span><span class="w">                                 </span><span class="c1"># The VM network to deploy the management cluster on</span>
+<span class="nt">VSPHERE_RESOURCE_POOL</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*/Resources&quot;</span><span class="w">                          </span><span class="c1"># The vSphere resource pool for your VMs</span>
+<span class="nt">VSPHERE_FOLDER</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vm&quot;</span><span class="w">                                          </span><span class="c1"># The VM folder for your VMs. Set to &quot;&quot; to use the root vSphere folder</span>
+<span class="nt">VSPHERE_TEMPLATE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ubuntu-1804-kube-v1.17.3&quot;</span><span class="w">                  </span><span class="c1"># The VM template to use for your management cluster.</span>
+<span class="nt">CONTROL_PLANE_ENDPOINT_IP</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;192.168.9.230&quot;</span><span class="w">                    </span><span class="c1"># the IP that kube-vip is going to use as a control plane endpoint</span>
+<span class="nt">VIP_NETWORK_INTERFACE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ens192&quot;</span><span class="w">                               </span><span class="c1"># The interface that kube-vip should apply the IP to. Omit to tell kube-vip to autodetect the interface.</span>
+<span class="nt">VSPHERE_TLS_THUMBPRINT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="w">                                 </span><span class="c1"># sha1 thumbprint of the vcenter certificate: openssl x509 -sha1 -fingerprint -in ca.crt -noout</span>
+<span class="nt">EXP_CLUSTER_RESOURCE_SET</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w">                              </span><span class="c1"># This enables the ClusterResourceSet feature that we are using to deploy CSI</span>
+<span class="nt">VSPHERE_SSH_AUTHORIZED_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ssh-rsa</span><span class="nv"> </span><span class="s">AAAAB3N...&quot;</span><span class="w">              </span><span class="c1"># The public ssh authorized key on all machines in this cluster.</span>
+<span class="w">                                                              </span><span class="c1">#  Set to &quot;&quot; if you don&#39;t want to enable SSH, or are using another solution.</span>
+<span class="nt">VSPHERE_STORAGE_POLICY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w">                                    </span><span class="c1"># This is the vSphere storage policy. Set it to &quot;&quot; if you don&#39;t want to use a storage policy.</span>
+<span class="s">&quot;CPI_IMAGE_K8S_VERSION&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;v1.29.0&quot;</span><span class="w">                            </span><span class="c1"># The version of the vSphere CPI image to be used by the CPI workloads</span>
+<span class="w">                                                              </span><span class="c1">#  Keep this close to the minimum Kubernetes version of the cluster being created.</span>
+<span class="nt">CSI_INSECURE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
+<span class="nt">K0S_VERSION</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.29.1+k0s.1&quot;</span>
+<span class="nt">K0S_CP_VERSION</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.29.1-k0s.1&quot;</span>
+<span class="nt">NODE_IPAM_POOL_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ipam-ip-pool&quot;</span>
+<span class="nt">NODE_IPAM_POOL_API_GROUP</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ipam.cluster.x-k8s.io&quot;</span>
+<span class="nt">NODE_IPAM_POOL_KIND</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;InClusterIPPool&quot;</span>
+<span class="nt">NAMESERVER</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8.8.8.8&quot;</span>
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">incluster</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/kubernetes-sigs/cluster-api-ipam-provider-in-cluster/releases/latest/ipam-components.yaml</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IPAMProvider</span>
 </code></pre></div>
-<p>You can also check the status of the cluster deployment with <code>clusterctl describe cluster</code>.</p>
-<h2 id="accessing-the-workload-cluster">Accessing the workload cluster<a class="headerlink" href="#accessing-the-workload-cluster" title="Permanent link">#</a></h2>
-<p>To access the child cluster we can get the kubeconfig for it with <code>clusterctl get kubeconfig docker-test</code>. You can then save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a></p>
-<h2 id="deleting-the-cluster">Deleting the cluster<a class="headerlink" href="#deleting-the-cluster" title="Permanent link">#</a></h2>
-<p>For cluster deletion, do <strong>NOT</strong> use <code>kubectl delete -f my-docker-cluster.yaml</code> as that can result in orphan resources. Instead, delete the top level <code>Cluster</code> object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.</p>
+<h3 id="deploy-cluster-api-in-the-management-cluster">Deploy Cluster API in the management cluster<a class="headerlink" href="#deploy-cluster-api-in-the-management-cluster" title="Permanent link">#</a></h3>
+<p>From your local machine run the following command to initialize the management cluster with vSphere infrastructure provider and additional IPAM provider:</p>
+<div class="highlight"><pre><span></span><code>clusterctl init --infrastructure vsphere --ipam incluster
+</code></pre></div>
+<p><em>NOTE:</em> In order to initialize Cluster API on you Kubernetes management cluster, you need to have kubeconfig (or set context with <code>kubectl</code>) to the cluster.</p>
+<p><em>NOTE:</em> IPAM provider is optional here. If you're using network that has DHCP enabled, you can remove IPAM provider initialization.</p>
+<p>For more details on Cluster API Provider vSphere see it's <a href="https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/tree/main/docs">docs</a>.</p>
+<h3 id="optional-ipam-ip-pool-creation">(Optional) IPAM IP pool creation<a class="headerlink" href="#optional-ipam-ip-pool-creation" title="Permanent link">#</a></h3>
+<ol>
+<li>Define IP pool that will be used to assign IP addresses to a child cluster machines in <code>capi-ipam.yaml</code>:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ipam.cluster.x-k8s.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">InClusterIPPool</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ipam-ip-pool</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">subnet</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.117.0/24</span>
+<span class="w">  </span><span class="nt">gateway</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.117.1</span>
+<span class="w">  </span><span class="nt">start</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.117.152</span>
+<span class="w">  </span><span class="nt">end</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.117.180</span>
+</code></pre></div>
+<ol>
+<li>Deploy the IPAM configuration: 
+<div class="highlight"><pre><span></span><code>kubectl apply -f capi-ipam.yaml
+</code></pre></div></li>
+</ol>
+<h2 id="optional-metallb-as-load-balancer-solution-in-the-management-cluster">(Optional) MetalLB as Load Balancer solution in the management cluster<a class="headerlink" href="#optional-metallb-as-load-balancer-solution-in-the-management-cluster" title="Permanent link">#</a></h2>
+<p>You may require to deploy MetalLB if you don't have Load Balancer solution in your management cluster. 
+<em>NOTE:</em> Load Balancer service type will be used only for the scenario, when you put you k0s control plane in pods (see <a href="#control-plane-in-pods">Control plane in Pods</a> section)</p>
+<p>Classic vSphere does not have a built-in solution that can be leveraged on Kubernetes level to create LoadBalancer service type. In order to make it possible, one of the common solution is to use MetalLB (please find it's docs <a href="https://metallb.universe.tf/">here</a>)</p>
+<ol>
+<li>Configure MetalLB IP address pool which will be used to assing IP addresses from (please adapt it for your network):</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metallb.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IPAddressPool</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example-pool</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metallb-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">addresses</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.10.100-192.168.10.150</span>
+</code></pre></div>
+<ol>
+<li>Create MetalLB L2advertisement object:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metallb.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">L2Advertisement</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example-l2-adv</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metallb-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ipAddressPools</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example-pool</span>
+</code></pre></div>
+<h2 id="operating-child-clusters">Operating child clusters<a class="headerlink" href="#operating-child-clusters" title="Permanent link">#</a></h2>
+<p>Once all the controllers are up and running in the management cluster, you can apply the cluster manifests containing the specifications of the child cluster you want to provision.</p>
+<h3 id="generate-a-child-cluster-definition-using-the-template">Generate a child cluster definition using the template<a class="headerlink" href="#generate-a-child-cluster-definition-using-the-template" title="Permanent link">#</a></h3>
+<p>There are two options for child cluster control plane with k0smotron:</p>
+<h4 id="control-plane-in-pods">Control plane in Pods:<a class="headerlink" href="#control-plane-in-pods" title="Permanent link">#</a></h4>
+<p>If you want to have child cluster <a href="https://docs.k0smotron.io/stable/capi-controlplane/">control plane in a Pods</a>, use <a href="../capi-vsphere-tmpl-cp-in-pods.yaml">this template</a>: </p>
+<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>generate<span class="w"> </span>cluster<span class="w"> </span>my-cluster<span class="w"> </span>--control-plane-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--worker-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--from<span class="w"> </span>k0scluster-tmpl-cp-in-pods.yaml<span class="w"> </span>&gt;<span class="w"> </span>my-cluster.yaml
+</code></pre></div>
+<h4 id="control-plane-in-vms">Control plane in VMs:<a class="headerlink" href="#control-plane-in-vms" title="Permanent link">#</a></h4>
+<p>If you want to have child cluster <a href="https://docs.k0smotron.io/stable/capi-controlplane-bootstrap/">control plane in separate VMs</a>, use <a href="../capi-vsphere-tmpl-cp-in-pods.yaml">that template</a> (CP will consist of 3 controllers):</p>
+<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>generate<span class="w"> </span>cluster<span class="w"> </span>my-cluster<span class="w"> </span>--worker-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--from<span class="w"> </span>k0scluster-tmpl-cp-in-vms.yaml<span class="w"> </span>&gt;<span class="w"> </span>my-cluster.yaml<span class="w"> </span>
+</code></pre></div>
+<h3 id="deploy-the-child-clusters">Deploy the child clusters<a class="headerlink" href="#deploy-the-child-clusters" title="Permanent link">#</a></h3>
+<ol>
+<li>
+<p>Deploy the child cluster: <code>kubectl apply -f my-cluster.yaml</code>. You can check the deployment status in the management cluster.</p>
+</li>
+<li>
+<p>To obtain kubeconfig of the child cluster execute this command: <code>kubectl get secret my-cluster-kubeconfig -o jsonpath='{.data.value}' | base64 -d &gt; ~/.kube/child.conf</code></p>
+</li>
+</ol>
+<h3 id="observe-the-child-cluster-objects">Observe the child cluster objects<a class="headerlink" href="#observe-the-child-cluster-objects" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># kubectl get cluster,machine,kmc                                                                                                                   </span>
+
+NAME<span class="w">                                  </span>CLUSTERCLASS<span class="w">   </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
+cluster.cluster.x-k8s.io/my-cluster<span class="w">                  </span>Provisioned<span class="w">   </span>13h<span class="w">   </span>
+
+NAME<span class="w">                                                   </span>CLUSTER<span class="w">      </span>NODENAME<span class="w">                      </span>PROVIDERID<span class="w">                                       </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
+machine.cluster.x-k8s.io/my-cluster-0<span class="w">                  </span>my-cluster<span class="w">                                 </span>vsphere://4215e794-c281-5cde-8193-95df9521cf08<span class="w">   </span>Provisioned<span class="w">   </span>13h<span class="w">   </span>v1.29.1
+machine.cluster.x-k8s.io/my-cluster-1<span class="w">                  </span>my-cluster<span class="w">                                 </span>vsphere://4215efc3-303e-938d-3787-c4cc6143f722<span class="w">   </span>Provisioned<span class="w">   </span>13h<span class="w">   </span>v1.29.1
+machine.cluster.x-k8s.io/my-cluster-2<span class="w">                  </span>my-cluster<span class="w">                                 </span>vsphere://4215b207-1052-e130-54fe-fd124594ed2b<span class="w">   </span>Provisioned<span class="w">   </span>13h<span class="w">   </span>v1.29.1
+machine.cluster.x-k8s.io/my-cluster-md-0-vr6s6-ndl64<span class="w">   </span>my-cluster<span class="w">   </span>my-cluster-md-0-vr6s6-ndl64<span class="w">   </span>vsphere://4215eae5-3456-9bc5-4b56-b00dda520b7d<span class="w">   </span>Running<span class="w">       </span>13h<span class="w">   </span>v1.29.1+k0s.1
+</code></pre></div>
+<p>You can also check the status of the cluster deployment with <code>clusterctl</code>:
+<div class="highlight"><pre><span></span><code><span class="c1"># clusterctl describe cluster my-cluster</span>
+NAME<span class="w">                                                        </span>READY<span class="w">  </span>SEVERITY<span class="w">  </span>REASON<span class="w">  </span>SINCE<span class="w">  </span>MESSAGE<span class="w">                             </span>
+Cluster/my-cluster<span class="w">                                          </span>True<span class="w">                     </span>13h<span class="w">                                         </span>
+├─ClusterInfrastructure<span class="w"> </span>-<span class="w"> </span>VSphereCluster/my-cluster<span class="w">         </span>True<span class="w">                     </span>13h<span class="w">                                         </span>
+├─ControlPlane<span class="w"> </span>-<span class="w"> </span>K0sControlPlane/my-cluster<span class="w">                                                                                      </span>
+│<span class="w"> </span>└─3<span class="w"> </span>Machines...<span class="w">                                           </span>True<span class="w">                     </span>13h<span class="w">    </span>See<span class="w"> </span>my-cluster-0,<span class="w"> </span>my-cluster-1,<span class="w"> </span>...<span class="w">  </span>
+└─Workers<span class="w">                                                                                                                        </span>
+<span class="w">  </span>└─MachineDeployment/my-cluster-md-0<span class="w">                       </span>True<span class="w">                     </span>12h<span class="w">                                         </span>
+<span class="w">    </span>└─Machine/my-cluster-md-0-vr6s6-ndl64<span class="w">                   </span>True<span class="w">                     </span>12h<span class="w">                                         </span>
+<span class="w">      </span>└─BootstrapConfig<span class="w"> </span>-<span class="w"> </span>K0sWorkerConfig/my-cluster-htrzb<span class="w">                                                          </span>
+</code></pre></div></p>
+<h3 id="deleting-the-child-cluster">Deleting the child cluster<a class="headerlink" href="#deleting-the-child-cluster" title="Permanent link">#</a></h3>
+<p>For cluster deletion, do <strong>NOT</strong> use <code>kubectl delete -f my-cluster.yaml</code> as that can result in orphan resources. Instead, delete the top level <code>Cluster</code> object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.</p>
+<p>To do that, you can use the command <code>kubectl delete cluster my-cluster</code></p>
 
 
 
