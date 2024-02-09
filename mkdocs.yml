@@ -34,6 +34,7 @@ nav:
         - Hetzner Cloud: capi-hetzner.md
         - OpenStack: capi-openstack.md
         - Docker: capi-docker.md
+        - vSphere: capi-vsphere.md
   - FAQ: faq.md
   - Reference:
     - Custom resources: resource-reference.md
