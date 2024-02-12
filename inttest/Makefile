@@ -34,4 +34,5 @@ clean:
 	rm -rf .*.stamp
 
 check-monitoring: TIMEOUT=7m
+check-ha-controlplane: TIMEOUT=7m
 check-capi-controlplane-docker-tunneling: TIMEOUT=10m
