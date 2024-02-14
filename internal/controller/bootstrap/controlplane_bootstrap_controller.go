@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -178,14 +179,19 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, fmt.Errorf("control plane endpoint is not set")
 	}
 
-	if strings.HasSuffix(config.Name, "-0") {
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error collecting machines: %w", err)
+	}
+
+	if machines.Oldest().Name == config.Name {
 		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error generating initial control plane files: %v", err)
 		}
 		installCmd = createCPInstallCmd(config)
 	} else {
-		files, err = c.genControlPlaneJoinFiles(ctx, scope, config, files)
+		files, err = c.genControlPlaneJoinFiles(ctx, scope, files, machines.Oldest())
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error generating control plane join files: %v", err)
 		}
@@ -199,11 +205,14 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		files = append(files, tunnelingFiles...)
 	}
 	files = append(files, config.Spec.Files...)
+	files = append(files, genShutdownServiceFiles()...)
 
 	downloadCommands := createCPDownloadCommands(config)
 
 	commands := config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
+	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service || true)")
+	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && rc-update add k0sleave shutdown || true)")
 	commands = append(commands, installCmd, "k0s start")
 	commands = append(commands, config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
@@ -281,7 +290,7 @@ func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context
 	return files, nil
 }
 
-func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *Scope, config *bootstrapv1.K0sControllerConfig, files []cloudinit.File) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *Scope, files []cloudinit.File, firstControllerMachine *clusterv1.Machine) ([]cloudinit.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	_, ca, err := c.getCerts(ctx, scope)
@@ -308,7 +317,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		return nil, err
 	}
 
-	host, err := c.findFirstControllerIP(ctx, config)
+	host, err := c.findFirstControllerIP(ctx, firstControllerMachine)
 	if err != nil {
 		log.Error(err, "Failed to get controller IP")
 		return nil, err
@@ -484,7 +493,7 @@ func createCPDownloadCommands(config *bootstrapv1.K0sControllerConfig) []string 
 
 func createCPInstallCmd(config *bootstrapv1.K0sControllerConfig) string {
 	installCmd := []string{
-		"k0s install controller"}
+		"k0s install controller --force"}
 	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
 		installCmd = append(installCmd, config.Spec.Args...)
 	}
@@ -493,7 +502,7 @@ func createCPInstallCmd(config *bootstrapv1.K0sControllerConfig) string {
 
 func createCPInstallCmdWithJoinToken(config *bootstrapv1.K0sControllerConfig, tokenPath string) string {
 	installCmd := []string{
-		"k0s install controller"}
+		"k0s install controller --force"}
 	installCmd = append(installCmd, "--token-file", tokenPath)
 	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
 		installCmd = append(installCmd, config.Spec.Args...)
@@ -501,12 +510,9 @@ func createCPInstallCmdWithJoinToken(config *bootstrapv1.K0sControllerConfig, to
 	return strings.Join(installCmd, " ")
 }
 
-func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, config *bootstrapv1.K0sControllerConfig) (string, error) {
-	// Dirty first controller name generation
-	nameParts := strings.Split(config.Name, "-")
-	nameParts[len(nameParts)-1] = "0"
-	name := strings.Join(nameParts, "-")
-	machineImpl, err := c.getMachineImplementation(ctx, name, config)
+func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv1.Machine) (string, error) {
+	name := firstControllerMachine.Name
+	machineImpl, err := c.getMachineImplementation(ctx, firstControllerMachine)
 	if err != nil {
 		return "", fmt.Errorf("error getting machine implementation: %w", err)
 	}
@@ -542,13 +548,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, conf
 	return "", fmt.Errorf("no address found for machine %s", name)
 }
 
-func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, name string, config *bootstrapv1.K0sControllerConfig) (*unstructured.Unstructured, error) {
-	var machine clusterv1.Machine
-	err := c.Get(ctx, client.ObjectKey{Name: name, Namespace: config.Namespace}, &machine)
-	if err != nil {
-		return nil, fmt.Errorf("error getting machine object: %w", err)
-	}
-
+func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, machine *clusterv1.Machine) (*unstructured.Unstructured, error) {
 	infRef := machine.Spec.InfrastructureRef
 
 	machineImpl := new(unstructured.Unstructured)
@@ -558,9 +558,44 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, n
 
 	key := client.ObjectKey{Name: infRef.Name, Namespace: infRef.Namespace}
 
-	err = c.Get(ctx, key, machineImpl)
+	err := c.Get(ctx, key, machineImpl)
 	if err != nil {
 		return nil, fmt.Errorf("error getting machine implementation object: %w", err)
 	}
 	return machineImpl, nil
+}
+
+func genShutdownServiceFiles() []cloudinit.File {
+	return []cloudinit.File{
+		{
+			Path:        "/etc/systemd/system/k0sleave.service",
+			Permissions: "0644",
+			Content: `[Unit]
+Description=k0s etcd leave Service
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/bin/true
+ExecStop=/usr/local/bin/k0s etcd leave
+TimeoutStartSec=0
+TimeoutStopSec=180
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+`,
+		},
+		{
+			Path:        "/etc/init.d/k0sleave",
+			Permissions: "0644",
+			Content: `#!/sbin/openrc-run
+
+name="k0sleave"
+description=""
+command="/usr/local/bin/k0s"
+command_args="etcd leave"
+		`,
+		},
+	}
 }

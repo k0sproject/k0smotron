@@ -105,22 +105,24 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
 	s.Require().NoError(err)
 
+	var nodeIDs []string
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		b, _ := s.client.RESTClient().
-			Get().
-			AbsPath("/healthz").
-			DoRaw(context.Background())
+		var err error
+		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
 
-		return string(b) == "ok", nil
+		if err != nil {
+			return false, nil
+		}
+
+		return len(nodeIDs) == 3, nil
 	})
 	s.Require().NoError(err)
 
-	for i := 0; i < 3; i++ {
+	for _, id := range nodeIDs {
 		// nolint:staticcheck
 		err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-			nodeName := fmt.Sprintf("docker-test-%d", i)
-			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
+			output, err := exec.Command("docker", "exec", id, "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
@@ -146,24 +148,34 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 
 	s.T().Log("scaling down control plane")
 
-	_, err = exec.Command("docker", "exec", "docker-test-1", "k0s", "etcd", "leave").CombinedOutput()
-	s.Require().NoError(err)
+	for _, nodeID := range nodeIDs {
+		hostname, err := exec.Command("docker", "exec", nodeID, "hostname").CombinedOutput()
+		s.Require().NoError(err)
 
-	_, err = exec.Command("docker", "exec", "docker-test-2", "k0s", "etcd", "leave").CombinedOutput()
-	s.Require().NoError(err)
+		if strings.Contains(string(hostname), "docker-test-2") {
+			continue
+		}
+		out, err := exec.Command("docker", "exec", nodeID, "k0s", "etcd", "leave").CombinedOutput()
+		s.T().Log(string(out))
+		s.Require().NoError(err)
+	}
 
 	s.updateClusterObjects()
+
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-0", "k0s", "etcd", "member-list").CombinedOutput()
+		var err error
+		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
+
 		if err != nil {
 			return false, nil
 		}
 
-		return !strings.Contains(string(output), "docker-test-1"), nil
+		return len(nodeIDs) == 1, nil
 	})
 	s.Require().NoError(err)
 
+	s.T().Log("checking worker node")
 	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 }
 

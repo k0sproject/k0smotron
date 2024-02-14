@@ -143,7 +143,7 @@ func (p *Provisioner) Cleanup(_ context.Context, mode RemoteMachineMode) error {
 	} else {
 		cmds = append(cmds, fmt.Sprintf(stopCommandTemplate, workerService, workerService))
 	}
-	cmds = append(cmds, "k0s reset")
+	// cmds = append(cmds, "k0s reset")
 
 	for _, cmd := range cmds {
 		output, err := connection.ExecOutput(cmd)

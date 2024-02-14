@@ -181,7 +181,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	if !rm.ObjectMeta.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
 			if err := p.Cleanup(ctx, mode); err != nil {
-				return ctrl.Result{}, err
+				p.log.Error(err, "Failed to cleanup RemoteMachine")
 			}
 			if rm.Spec.Pool != "" {
 				// Return the machine back to pool

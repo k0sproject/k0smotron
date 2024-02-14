@@ -105,7 +105,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		b, _ := s.client.RESTClient().
+		b, _ := kmcKC.RESTClient().
 			Get().
 			AbsPath("/healthz").
 			DoRaw(context.Background())
@@ -114,11 +114,24 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	})
 	s.Require().NoError(err)
 
-	for i := 0; i < 3; i++ {
+	var nodeIDs []string
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		var err error
+		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-cluster-docker-test-")
+
+		if err != nil {
+			return false, nil
+		}
+
+		return len(nodeIDs) == 3, nil
+	})
+	s.Require().NoError(err)
+
+	for _, id := range nodeIDs {
 		// nolint:staticcheck
 		err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-			nodeName := fmt.Sprintf("docker-test-cluster-docker-test-%d", i)
-			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
+			output, err := exec.Command("docker", "exec", id, "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}

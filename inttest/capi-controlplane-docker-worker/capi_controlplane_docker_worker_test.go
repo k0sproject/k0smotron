@@ -26,16 +26,17 @@ import (
 	"testing"
 	"time"
 
-	k0stestutil "github.com/k0sproject/k0s/inttest/common"
-	"github.com/k0sproject/k0smotron/inttest/util"
-
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	k0stestutil "github.com/k0sproject/k0s/inttest/common"
+	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
 type CAPIControlPlaneDockerSuite struct {
@@ -104,7 +105,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDockerWorker() {
 
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		b, _ := s.client.RESTClient().
+		b, _ := kmcKC.RESTClient().
 			Get().
 			AbsPath("/healthz").
 			DoRaw(context.Background())
@@ -113,9 +114,18 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDockerWorker() {
 	})
 	s.Require().NoError(err)
 
+	var nodeName string
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "status").Output()
+		nodes, err := kmcKC.CoreV1().Nodes().List(s.ctx, metav1.ListOptions{})
+		s.Require().NoError(err)
+		if len(nodes.Items) == 0 {
+			return false, nil
+		}
+
+		nodeName = nodes.Items[0].Name
+
+		output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
@@ -125,7 +135,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDockerWorker() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-cluster-docker-test-0", corev1.ConditionTrue))
+	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, nodeName, corev1.ConditionTrue))
 }
 
 func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {

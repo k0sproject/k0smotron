@@ -116,9 +116,23 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	})
 	s.Require().NoError(err)
 
+	var nodeIDs []string
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "status").Output()
+		var err error
+		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-cluster-docker-test")
+		if err != nil {
+			return false, nil
+		}
+
+		return len(nodeIDs) > 0 && nodeIDs[0] != "", nil
+	})
+	s.Require().NoError(err)
+
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		output, err := exec.Command("docker", "exec", nodeIDs[0], "k0s", "status").Output()
+		fmt.Println(string(output), err)
 		if err != nil {
 			return false, nil
 		}

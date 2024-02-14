@@ -20,16 +20,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/google/uuid"
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/controller/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/pointer"
@@ -37,12 +37,16 @@ import (
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
+
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
 const (
@@ -123,6 +127,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	kcp.Status.Inititalized = true
 	kcp.Status.ControlPlaneReady = true
 	kcp.Status.Replicas = kcp.Spec.Replicas
+	kcp.Status.Version = kcp.Spec.Version
 	err = c.Status().Update(ctx, kcp)
 
 	return res, err
@@ -203,26 +208,26 @@ func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluste
 }
 
 func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
-	// TODO: Scale down machines if needed
-	if kcp.Status.Replicas > kcp.Spec.Replicas {
-		for i := kcp.Spec.Replicas; i < kcp.Status.Replicas; i++ {
-			name := machineName(kcp.Name, int(i))
-
-			if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
-				return fmt.Errorf("error deleting machine from template: %w", err)
-			}
-
-			if err := c.deleteMachineFromTemplate(ctx, name, cluster, kcp); err != nil {
-				return fmt.Errorf("error deleting machine from template: %w", err)
-			}
-
-			if err := c.deleteMachine(ctx, name, kcp); err != nil {
-				return fmt.Errorf("error deleting machine from template: %w", err)
-			}
-		}
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
+	if err != nil {
+		return fmt.Errorf("error collecting machines: %w", err)
 	}
-	for i := 0; i < int(kcp.Spec.Replicas); i++ {
-		name := machineName(kcp.Name, i)
+
+	currentReplicas := machines.Len()
+	desiredReplicas := kcp.Spec.Replicas
+	machinesToDelete := 0
+	if currentReplicas > int(desiredReplicas) {
+		machinesToDelete = currentReplicas - int(desiredReplicas)
+	}
+
+	if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
+		desiredReplicas += kcp.Spec.Replicas
+		machinesToDelete = int(kcp.Spec.Replicas)
+	}
+
+	for i := currentReplicas; i < int(desiredReplicas); i++ {
+		name := names.SimpleNameGenerator.GenerateName(fmt.Sprintf("%s-%d", kcp.Name, i))
+		//name := machineName(namePrefix, i)
 
 		machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
 		if err != nil {
@@ -247,6 +252,22 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
+	for i := 0; i < machinesToDelete; i++ {
+		name := machines.SortedByCreationTimestamp()[i].Name
+
+		if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
+			return fmt.Errorf("error deleting machine from template: %w", err)
+		}
+
+		if err := c.deleteMachineFromTemplate(ctx, name, cluster, kcp); err != nil {
+			return fmt.Errorf("error deleting machine from template: %w", err)
+		}
+
+		if err := c.deleteMachine(ctx, name, kcp); err != nil {
+			return fmt.Errorf("error deleting machine from template: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -264,7 +285,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 				Kind:               machine.Kind,
 				Name:               machine.GetName(),
 				UID:                machine.GetUID(),
-				BlockOwnerDeletion: pointer.Bool(true),
+				BlockOwnerDeletion: pointer.Bool(false),
 				Controller:         pointer.Bool(true),
 			}},
 		},
@@ -513,10 +534,6 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 	return frpToken, c.Client.Patch(ctx, frpSecret, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
 	})
-}
-
-func machineName(base string, i int) string {
-	return fmt.Sprintf("%s-%d", base, i)
 }
 
 // SetupWithManager sets up the controller with the Manager.
