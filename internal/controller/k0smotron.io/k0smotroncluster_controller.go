@@ -22,9 +22,13 @@ import (
 	"time"
 
 	apps "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -109,6 +113,26 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
+	if kmc.Spec.CertificateRefs == nil {
+		if err := r.ensureCertificates(ctx, &kmc); err != nil {
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		}
+		kmc.Spec.CertificateRefs = []km.CertificateRef{
+			{
+				Type: string(secret.ClusterCA),
+				Name: secret.Name(kmc.Name, secret.ClusterCA),
+			},
+			{
+				Type: string(secret.FrontProxyCA),
+				Name: secret.Name(kmc.Name, secret.FrontProxyCA),
+			},
+			{
+				Type: string(secret.ServiceAccount),
+				Name: secret.Name(kmc.Name, secret.ServiceAccount),
+			},
+		}
+	}
+
 	logger.Info("Reconciling statefulset")
 	if err := r.reconcileStatefulSet(ctx, kmc); err != nil {
 		r.updateStatus(ctx, kmc, fmt.Sprintf("Failed reconciling statefulset, %+v", err))
@@ -138,6 +162,11 @@ func (r *ClusterReconciler) updateReadiness(ctx context.Context, kmc km.Cluster,
 	if err := r.Status().Patch(ctx, &kmc, client.Merge); err != nil {
 		logger.Error(err, fmt.Sprintf("Unable to update readiness: %v", ready))
 	}
+}
+
+func (r *ClusterReconciler) ensureCertificates(ctx context.Context, kmc *km.Cluster) error {
+	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
+	return certificates.LookupOrGenerate(ctx, r.Client, util.ObjectKey(kmc), *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")))
 }
 
 // SetupWithManager sets up the controller with the Manager.
