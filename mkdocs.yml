@@ -36,7 +36,7 @@ nav:
         - Docker: capi-docker.md
         - vSphere: capi-vsphere.md
   - FAQ: faq.md
-  - FAQ: troubleshooting.md
+  - Troubleshooting: troubleshooting.md
   - Reference:
     - Custom resources: resource-reference.md
 
