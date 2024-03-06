@@ -35,6 +35,9 @@ nav:
         - OpenStack: capi-openstack.md
         - Docker: capi-docker.md
         - vSphere: capi-vsphere.md
+  - Update:
+     - Standalone: update/update-standalone.md
+     - Cluster API: update/update-cluster-pod.md
   - FAQ: faq.md
   - Reference:
     - Custom resources: resource-reference.md
