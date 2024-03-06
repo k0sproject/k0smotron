@@ -56,11 +56,6 @@ You may open pull request in [a draft mode](https://github.blog/2019-02-14-intro
 It will go through the automated testing, but the pull request will not be assigned for a review.
 Once a pull request is ready for review, transition it from the draft mode to notify the k0smotron team.
 
-### Conformance testing
-
-Once a pull request has been reviewed and all other tests have passed,
-a code owner runs an end-to-end conformance test against the pull request.
-
 ### Pre-requisites for merge
 
 In order for a pull request to be merged, the following conditions should exist:
