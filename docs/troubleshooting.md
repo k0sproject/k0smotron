@@ -1,5 +1,7 @@
 
-### I cannot join a worker node
+# Troubleshooting
+
+## I cannot join a worker node
 
 In [standalone](usage-overview.md#standalone) mode, check whether the join
 token has expired. If this is the case, attempt to create a new one using
@@ -14,11 +16,11 @@ compatible with a limited number of different versions. For more information,
 refer to the Kubernetes [Version Skew
 Policy](https://kubernetes.io/releases/version-skew-policy/).
 
-### MachineDeployment with Docker Provider does not function
+## MachineDeployment with Docker Provider does not function
 
 A [valid version](https://hub.docker.com/r/kindest/node/tags) of `spec.template.spec.version` is required for MachineDeployment.
 
-### Overcoming issues with Cluster API Capd k0smotron child cluster deployment
+## Overcoming issues with Cluster API Capd k0smotron child cluster deployment
 
 In [Cluster API](https://cluster-api.sigs.k8s.io/), check whether the
 MachineDeployment `spec.template.spec.version` field is present. If it is
