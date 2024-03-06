@@ -38,9 +38,9 @@ nav:
   - FAQ: faq.md
   - Troubleshooting: troubleshooting.md
   - Contributing:
-      - Overview: contribute-overview.md
-      - Workflow: contribute-workflow.md
-      - Testing: contribute-testing.md
+      - Overview: contributing/contribute-overview.md
+      - Workflow: contributing/contribute-workflow.md
+      - Testing: contributing/contribute-testing.md
   - Reference:
     - Custom resources: resource-reference.md
 

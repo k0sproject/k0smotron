@@ -16,6 +16,10 @@ To stay updated, you can subscribe to an issue to receive notifications about th
 
 k0smotron follows the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
 
+## Coding guidelines
+
+k0smotron follows the [Effective Go coding guidelines](https://go.dev/doc/effective_go).
+
 ## Follow k0smotron GitHub workflow
 
 In your contribution, adhere to [k0smotron GitHub workflow](contribute-workflow.md):
