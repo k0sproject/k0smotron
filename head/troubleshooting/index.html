@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/monitoring/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/troubleshooting/">
       
       
-        <link rel="prev" href="../ha/">
+        <link rel="prev" href="../faq/">
       
       
-        <link rel="next" href="../cluster-api/">
+        <link rel="next" href="../resource-reference/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Monitoring - Documentation</title>
+        <title>Troubleshooting - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#control-plane-monitoring" class="md-skip">
+        <a href="#troubleshooting" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Monitoring
+              Troubleshooting
             
           </span>
         </div>
@@ -339,19 +339,17 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
-    
   
   
-  
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -365,7 +363,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Usage
@@ -397,19 +395,17 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
         
           
           <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
@@ -423,7 +419,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             Standalone
@@ -518,19 +514,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../monitoring/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -539,7 +526,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
     </li>
   
 
@@ -922,10 +908,30 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../troubleshooting/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -934,6 +940,53 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#i-cannot-join-a-worker-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      I cannot join a worker node
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#machinedeployment-with-docker-provider-does-not-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      MachineDeployment with Docker Provider does not function
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overcoming-issues-with-cluster-api-capd-k0smotron-child-cluster-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overcoming issues with Cluster API Capd k0smotron child cluster deployment
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1021,6 +1074,41 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#i-cannot-join-a-worker-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      I cannot join a worker node
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#machinedeployment-with-docker-provider-does-not-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      MachineDeployment with Docker Provider does not function
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overcoming-issues-with-cluster-api-capd-k0smotron-child-cluster-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overcoming issues with Cluster API Capd k0smotron child cluster deployment
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1034,21 +1122,26 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="control-plane-monitoring">Control Plane Monitoring<a class="headerlink" href="#control-plane-monitoring" title="Permanent link">#</a></h1>
-<p>K0smotron provides a mechanism to expose child cluster control plane metrics to a Prometheus instance running in the parent cluster. 
-This allows you to monitor the control plane components of the child cluster as the usual Kubernetes workload, using the same Prometheus instance that is used to monitor the parent cluster.</p>
-<p>To enable the monitoring for the k0smotron cluster you need to set <code>spec.enableMonitoring=true</code> in the <code>Cluster</code> resource:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-test</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">enableMonitoring</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</code></pre></div>
-<p>This will add two sidecar containers to the control plane pods:
-- <code>monitoring-agent</code> - a container that will scrape the metrics from the control plane components.
-- <code>monitoring-proxy</code> - a container with a proxy that will expose the metrics scraped by the <code>monitoring-agent</code> to the parent cluster.</p>
-<p>All metrics contain the <code>k0smotron_cluster</code> label with the name of the cluster.</p>
+<h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h1>
+<h2 id="i-cannot-join-a-worker-node">I cannot join a worker node<a class="headerlink" href="#i-cannot-join-a-worker-node" title="Permanent link">#</a></h2>
+<p>In <a href="../usage-overview/#standalone">standalone</a> mode, check whether the join
+token has expired. If this is the case, attempt to create a new one using
+<a href="https://docs.k0smotron.io/stable/join-nodes/#join-tokens">JoinTokenRequest</a>.</p>
+<p>In <a href="../cluster-api/">Cluster API</a>, check the logs of your infrastructure
+provider controller.</p>
+<p>Also, check to see whether different versions were used in the initial cluster
+creation for the control plane and the worker nodes, as Kubernetes is
+compatible with a limited number of different versions. For more information,
+refer to the Kubernetes <a href="https://kubernetes.io/releases/version-skew-policy/">Version Skew
+Policy</a>.</p>
+<h2 id="machinedeployment-with-docker-provider-does-not-function">MachineDeployment with Docker Provider does not function<a class="headerlink" href="#machinedeployment-with-docker-provider-does-not-function" title="Permanent link">#</a></h2>
+<p>A <a href="https://hub.docker.com/r/kindest/node/tags">valid version</a> of <code>spec.template.spec.version</code> is required for MachineDeployment.</p>
+<h2 id="overcoming-issues-with-cluster-api-capd-k0smotron-child-cluster-deployment">Overcoming issues with Cluster API Capd k0smotron child cluster deployment<a class="headerlink" href="#overcoming-issues-with-cluster-api-capd-k0smotron-child-cluster-deployment" title="Permanent link">#</a></h2>
+<p>In <a href="https://cluster-api.sigs.k8s.io/">Cluster API</a>, check whether the
+MachineDeployment <code>spec.template.spec.version</code> field is present. If it is
+present, check that the version is supported by your infrastructure provider.
+Docker Provider relies on the version field for worker nodes, as it uses it to
+determine the docker image version for the node.</p>
 
 
 
