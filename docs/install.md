@@ -6,18 +6,21 @@ control plane.
 
 # Hardware requirements
 
-k0smotron does not require any special hardware aside from the one required for
-k0s. For details on k0s hardware requirements, see
-[k0s documentation](https://docs.k0sproject.io/stable/system-requirements/).
+k0smotron does not require any special hardware for workloads aside from
+the one required for k0s. For details on k0s hardware requirements for
+workloads, see [k0s documentation](https://docs.k0sproject.io/stable/system-requirements/).
 
 # Software prerequisites
 
 k0smotron requires the following software to be preinstalled:
 
-* Kubernetes cluster with `kubectl` installed locally. In this documentation
-  set, we use the [k0s Kubernetes distribution](https://docs.k0sproject.io/stable/install/).
-  For Cluster API integration, use a Cluster API
-  [management cluster](https://cluster-api.sigs.k8s.io/reference/glossary.html#management-cluster).
+* Kubernetes management cluster.
+  In this documentation set, we use the
+  [k0s Kubernetes distribution](https://docs.k0sproject.io/stable/install/)
+  as a management cluster.
+  For Cluster API integration, you can use a
+  [Cluster API cluster](https://cluster-api.sigs.k8s.io/reference/glossary.html#management-cluster).
+* `kubectl` installed locally.
 * For Cluster API integration, [clusterctl](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl)
   installed locally.
 * Optional. CSI provider for persistent storage in managed clusters.
