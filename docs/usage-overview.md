@@ -1,16 +1,44 @@
-# k0smotron usage
+# Usage
 
-k0smotron can be use either as a "standalone" manager for Kubernetes control planes or as a Cluster API provider for several ClusterAPI "roles".
+Users can use k0smotron in two distinct ways:
 
-## Standalone
+* **Standalone**
 
-In standalone mode k0smotron will manage ONLY the controlplanes running in the management cluster. To get started creating and managing control planes with k0smotron see [cluster creation docs](cluster.md).
+  In this mode, standalone k0smotron manages only k0s control planes running
+  in the management cluster offering streamlined control and monitoring capabilities
+  for k0s clusters. k0smotron.io/v1beta1.Cluster object
 
-## Cluster API provider
+* **Cluster API integration**
 
-k0smotron can act as a ClusterAPI provider in several cases:
+  Alternatively, users can opt for k0smotron integrated with Cluster API,
+  enabling k0smotron to manage Kubernetes clusters across various infrastructure
+  providers. This integration extends k0smotron management capabilities to a broader
+  range of Kubernetes deployments.
 
-- [ControlPlane provider](capi-controlplane.md): k0smotron manages the controlplane _within_ the management cluster
-- [Control plane Bootstrap provider](capi-controlplane-bootstrap.md): k0smotron acts as a bootstrap provider for `Machine`s running the control plane
-- [Bootstrap provider](capi-bootstrap.md): k0smotron acts as the bootstrap (config) provider for worker machines
-- [Remote machine provider](capi-remote.md): k0smotron acts as a infrastructure provider, enabling configuring `Machine`s on existing infrastructure over SSH
+  [comment]: # (k0smotron.io/v1beta1.Cluster)
+
+  Within the context of Cluster API, k0smotron can serve several roles:
+
+  * Control plane provider: k0smotron manages the control plane within the management cluster.
+    It orchestrates the creation, scaling, and management of the Kubernetes control plane
+    components, ensuring their proper functioning and high availability.
+
+    [comment]: # (controlplane.cluster.x-k8s.io/v1beta1.K0smotronControlPlane)
+
+  * Control plane bootstrap provider: k0smotron acts as a bootstrap provider for `Machine`
+    resources that run the control plane components. It handles the initialization and
+    configuration of these machines, ensuring they are properly set up to serve as part
+    of the cluster control plane.
+
+  * Bootstrap provider: k0smotron serves as the bootstrap provider for worker machines.
+    It manages provisioning and configuring worker nodes, ensuring they are ready
+    to run containerized workloads within the Kubernetes cluster.
+
+  * Remote machine provider: k0smotron acts as an infrastructure provider, enabling
+    the configuration of `Machine` resources on existing infrastructure over SSH.
+    This enables users to leverage their existing infrastructure resources while
+    still benefiting from the management capabilities provided by ClusterAPI and k0smotron.
+
+!!! tip See also
+
+    [k0smotron installation](install.md)
