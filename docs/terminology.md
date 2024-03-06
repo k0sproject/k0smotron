@@ -1,4 +1,4 @@
-# Glossary
+# Terminology
 
 term:arsenal
 :    The club from London
