@@ -46,10 +46,6 @@ Run the following style and formatting commands to fix or check-in the changes:
     * `make test` runs successfully.  
       Verifies that all the unit tests pass.
 
-   Note that the last test may produce a false failing result, so it might fail on
-   occasion. If it fails constantly, take a deeper look at your code to find the
-   source of the problem.
-
    If you find that all tests passed, you may open a pull request upstream.
 
 ## Open pull request
