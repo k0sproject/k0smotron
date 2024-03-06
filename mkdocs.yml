@@ -16,9 +16,9 @@ nav:
   - Usage:
     - Overview: usage-overview.md
     - Standalone:
-      - Creating a cluster: cluster.md
+      - Create a cluster: cluster.md
+      - Join a worker node: join-nodes.md
       - Configuration: configuration.md
-      - Join nodes: join-nodes.md
       - HA control planes: ha.md
       - Monitoring: monitoring.md
     - Cluster API:
@@ -59,6 +59,7 @@ theme:
     - toc.autohide
     - search.suggest
     - search.highlight
+    - content.code.copy
 
 extra_css:
   - stylesheets/extra.css
@@ -92,6 +93,7 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
   - admonition
+  - def_list
 
 extra:
   k0smotron_version: !!python/object/apply:os.getenv ["K0SMOTRON_VERSION"]

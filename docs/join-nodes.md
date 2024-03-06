@@ -26,11 +26,11 @@ worker.
          expiry: 1h
        ```
 
-      !!! note Token expiry configuration
+    !!! tip Token expiry configuration
 
-          The `expiry` field defines the expiration time of the token.
-          Refer to [API reference: JoinTokenRequest.spec](resource-reference.md#JoinTokenRequest.spec)
-          for the configuration details.
+        The `expiry` field defines the expiration time of the token.
+        Refer to [API reference: JoinTokenRequest.spec](resource-reference.md#JoinTokenRequest.spec)
+        for the configuration details.
 
        k0smotron processes the `JoinTokenRequest` resource and creates
        a `Secret` resource:
@@ -84,7 +84,7 @@ worker.
      kubectl delete jointokenrequest my-token
      ```
 
-!!! tip See also
+!!! note See also
 
     * [Configure join tokens](configuration/join-tokens.md)
     * [API reference: JoinTokenRequest.spec](resource-reference.md#JoinTokenRequest.spec)
