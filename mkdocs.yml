@@ -43,6 +43,9 @@ nav:
       - Testing: contributing/contribute-testing.md
   - Reference:
     - Custom resources: resource-reference.md
+    - Terminology: terminology.md
+
+
 
 theme:
   name: "material"
