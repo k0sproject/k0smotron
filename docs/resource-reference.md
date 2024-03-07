@@ -14778,6 +14778,13 @@ JoinTokenRequestStatus defines the observed state of K0smotronJoinTokenRequest
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>clusterUID</b></td>
+        <td>string</td>
+        <td>
+          UID is a type that holds unique ID values, including UUIDs.  Because we don't ONLY use UUIDs, this is an alias to string.  Being a type captures intent and helps make sure that UIDs and names do not get conflated.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>tokenID</b></td>
         <td>string</td>
         <td>
