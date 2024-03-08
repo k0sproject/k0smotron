@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.4
+    controller-gen.kubebuilder.io/version: v0.14.0
   labels:
     cluster.x-k8s.io/provider: bootstrap-k0smotron
     cluster.x-k8s.io/v1beta1: v1beta1
@@ -22,14 +22,19 @@ spec:
       openAPIV3Schema:
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -59,15 +64,16 @@ spec:
                   spec:
                     properties:
                       args:
-                        description: 'Args specifies extra arguments to be passed
-                          to k0s worker. See: https://docs.k0sproject.io/stable/advanced/worker-configuration/'
+                        description: |-
+                          Args specifies extra arguments to be passed to k0s worker.
+                          See: https://docs.k0sproject.io/stable/advanced/worker-configuration/
                         items:
                           type: string
                         type: array
                       downloadURL:
-                        description: DownloadURL specifies the URL to download k0s
-                          binary from. If specified the version field is ignored and
-                          what ever version is downloaded from the URL is used.
+                        description: |-
+                          DownloadURL specifies the URL to download k0s binary from.
+                          If specified the version field is ignored and what ever version is downloaded from the URL is used.
                         type: string
                       files:
                         description: Files specifies extra files to be passed to user_data
@@ -83,9 +89,9 @@ spec:
                           type: object
                         type: array
                       joinTokenSecretRef:
-                        description: JoinTokenSecretRef is a reference to a secret
-                          that contains the join token. This should be only set in
-                          the case you want to use a pre-generated join token.
+                        description: |-
+                          JoinTokenSecretRef is a reference to a secret that contains the join token.
+                          This should be only set in the case you want to use a pre-generated join token.
                         properties:
                           key:
                             description: Key is the key in the secret that contains
@@ -115,12 +121,11 @@ spec:
                           type: string
                         type: array
                       version:
-                        description: 'Version is the version of k0s to use. In case
-                          this is not set, k0smotron will use a version field of the
-                          Machine object. If it''s empty, the latest version is used.
-                          Make sure the version is compatible with the k0s version
-                          running on the control plane. For reference see the Kubernetes
-                          version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/'
+                        description: |-
+                          Version is the version of k0s to use. In case this is not set, k0smotron will use
+                          a version field of the Machine object. If it's empty, the latest version is used.
+                          Make sure the version is compatible with the k0s version running on the control plane.
+                          For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
                         type: string
                     type: object
                 type: object
