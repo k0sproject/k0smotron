@@ -7,23 +7,19 @@ section, you can start creating your Kubernetes control planes.
 
 1. Create the `Cluster` object:
 
-   ```yaml
-   apiVersion: k0smotron.io/v1beta1
-   kind: Cluster
-   metadata:
-     name: <cluster-name>
-   spec: null
-   ```
-
-2. Apply the `Cluster` object:
-
    ```shell
-   kubectl apply -f <cluster-object-file-name>.yaml
+   cat <<EOF | kubectl create -f-
+    apiVersion: k0smotron.io/v1beta1
+      kind: Cluster
+      metadata:
+        name: <cluster-name>
+      spec: null
    ```
 
-   This triggers k0smotron controllers to set up the control plane in pods.
+   This triggers the k0smotron controller manager to set up the control plane
+   in pods.
 
-3. Once k0smotron finishes setting up the cluster, obtain the admin access
+2. Once k0smotron finishes setting up the cluster, obtain the admin access
    kubeconfig:
 
    ```shell
