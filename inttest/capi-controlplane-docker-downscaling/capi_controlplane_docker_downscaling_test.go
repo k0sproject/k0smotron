@@ -151,12 +151,11 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	for _, nodeID := range nodeIDs {
 		hostname, err := exec.Command("docker", "exec", nodeID, "hostname").CombinedOutput()
 		s.Require().NoError(err)
-
+		s.T().Log("hostname: ", string(hostname))
 		if strings.Contains(string(hostname), "docker-test-2") {
 			continue
 		}
-		out, err := exec.Command("docker", "exec", nodeID, "k0s", "etcd", "leave").CombinedOutput()
-		s.T().Log(string(out))
+		_, err = exec.Command("docker", "exec", nodeID, "k0s", "etcd", "leave").CombinedOutput()
 		s.Require().NoError(err)
 	}
 

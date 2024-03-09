@@ -252,8 +252,9 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
+	sortedMachines := machines.SortedByCreationTimestamp()
 	for i := 0; i < machinesToDelete; i++ {
-		name := machines.SortedByCreationTimestamp()[i].Name
+		name := sortedMachines[i].Name
 
 		if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
 			return fmt.Errorf("error deleting machine from template: %w", err)
