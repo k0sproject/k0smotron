@@ -92,7 +92,7 @@ with the new names to create machines for the target k0smotron version. For exam
    kubectl apply -f ./path-to-file.yaml
 
    
-4. Remove the machines running the old k0smotron version:
+5. Remove the machines running the old k0smotron version:
 
    ```bash
    kubectl delete machine docker-test-0
