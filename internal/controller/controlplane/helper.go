@@ -9,8 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -141,18 +139,4 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	machine.SetKind(strings.TrimSuffix(unstructuredMachineTemplate.GetKind(), clusterv1.TemplateSuffix))
 
 	return machine, nil
-}
-
-func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name string, clientset *kubernetes.Clientset) error {
-	if clientset == nil {
-		return nil
-	}
-
-	return clientset.RESTClient().
-		Patch(types.MergePatchType).
-		Resource("controlnodes").
-		Name(name).
-		Body([]byte(`{"metadata":{"annotations":{"k0smotron.io/leave":"true"}}}`)).
-		Do(ctx).
-		Error()
 }

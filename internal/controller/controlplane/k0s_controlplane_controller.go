@@ -32,7 +32,6 @@ import (
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
@@ -254,31 +253,6 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	}
 
 	sortedMachines := machines.SortedByCreationTimestamp()
-
-	var clientset *kubernetes.Clientset
-	if machinesToDelete > 0 {
-		var kcSecret corev1.Secret
-		{
-		}
-		secretName := secret.Name(cluster.Name, secret.Kubeconfig)
-		err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &kcSecret)
-		if err != nil {
-			return err // TODO
-		}
-		config, err := clientcmd.NewClientConfigFromBytes(kcSecret.Data["value"])
-		if err != nil {
-			return err // TODO
-		}
-		restConfig, err := config.ClientConfig()
-		if err != nil {
-			return err // TODO
-		}
-		clientset, err = kubernetes.NewForConfig(restConfig)
-		if err != nil {
-			return err // TODO
-		}
-	}
-
 	for i := 0; i < machinesToDelete; i++ {
 		name := sortedMachines[i].Name
 
@@ -288,10 +262,6 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 		if err := c.deleteMachineFromTemplate(ctx, name, cluster, kcp); err != nil {
 			return fmt.Errorf("error deleting machine from template: %w", err)
-		}
-
-		if err := c.markChildControlNodeToLeave(ctx, name, clientset); err != nil {
-			return fmt.Errorf("error marking controlnode to leave: %w", err)
 		}
 
 		if err := c.deleteMachine(ctx, name, kcp); err != nil {
