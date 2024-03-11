@@ -1,15 +1,15 @@
-# Update Cluster API cluster
+# Update k0smotron in Cluster API integrated cluster
 
 To update k0smotron cluster deployed with Cluster API, you need to update
 the k0s version and machine names in the YAML configuration file.
 
 !!! warning "Data loss" 
 
-    The described example does not include persistence.
-    If you proceed with it, you will lose all your data during the update process.
-    To prevent data loss, you can update workers manually or use [k0s autopilot](https://docs.k0sproject.io/stable/autopilot/) instead.
+    The procedure below lacks persistence and should be applied only if the cluster data is 
+    insignificant. To prevent data loss, update workers manually or use
+    [k0s autopilot](https://docs.k0sproject.io/stable/autopilot/), which ensures data persistence.
 
-1. Localize configuration of deployed k0smotron cluster in your repository:
+1. Localize the configuration of deployed k0smotron cluster in your repository. For example:
 
     ```yaml 
     apiVersion: cluster.x-k8s.io/v1beta1
@@ -43,7 +43,7 @@ the k0s version and machine names in the YAML configuration file.
       version: v1.27.2-k0s.0
     ```
 
-2. Change all the k0s versions to [the latest one](https://docs.k0sproject.io/v1.29.2+k0s.0/releases/#k0s-release-and-support-model):
+2. Change all the k0s versions to [the target one](https://docs.k0sproject.io/v1.29.2+k0s.0/releases/#k0s-release-and-support-model). For example:
 
    ```yaml
    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -54,7 +54,8 @@ the k0s version and machine names in the YAML configuration file.
      version: v1.28.7-k0s.0 # new k0s version
    ```
 
-3. Replace old machines in your cluster with new ones. Next, update the names of the machines in the configuration:
+3. In the same configuration, replace the names of machines running the old k0smotron version
+with the new names to create machines for the target k0smotron version. For example:
 
    ```yaml
    ---
@@ -84,9 +85,15 @@ the k0s version and machine names in the YAML configuration file.
    spec:
      version: v1.28.7+k0s.0 # new version
    ```
-   
+ 
 4. Update the resources:
 
    ```bash
    kubectl apply -f ./path-to-file.yaml
+
+   
+4. Remove the machines running the old k0smotron version:
+
+   ```bash
+   kubectl delete machine docker-test-0
    ```
