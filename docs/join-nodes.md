@@ -85,5 +85,4 @@ and control plane, allowing the node to join the cluster as worker.
 
 !!! note See also
 
-    * [Configure join tokens](configuration/join-tokens.md)
-    * [API reference: JoinTokenRequest.spec](resource-reference.md#JoinTokenRequest.spec)
+    [API reference: JoinTokenRequest.spec](resource-reference.md#JoinTokenRequest.spec)
