@@ -20,7 +20,6 @@ nav:
       - Configuration: configuration.md
       - Join nodes: join-nodes.md
       - HA control planes: ha.md
-      - Monitoring: monitoring.md
     - Cluster API:
       - Overview: cluster-api.md
       - Control Plane: capi-controlplane.md
@@ -35,6 +34,7 @@ nav:
         - OpenStack: capi-openstack.md
         - Docker: capi-docker.md
         - vSphere: capi-vsphere.md
+    - Monitoring: monitoring.md
   - FAQ: faq.md
   - Reference:
     - Custom resources: resource-reference.md
