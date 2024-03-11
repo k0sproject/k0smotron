@@ -21,8 +21,15 @@ k0smotron requires the following software to be preinstalled:
   For Cluster API integration, you can use a
   [Cluster API cluster](https://cluster-api.sigs.k8s.io/reference/glossary.html#management-cluster).
 * `kubectl` installed locally.
-* For Cluster API integration, [clusterctl](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl)
-  installed locally.
+* For Cluster API integration:
+
+  * [clusterctl](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl)
+    installed locally.
+  * Configured Cloud provider. In this documentation set, we describe
+    configuration examples for the following providers: AWS, Docker,
+    Hetzner Cloud, OpenStack, vSphere. For setup instructions, refer to the
+    official documentation of the selected cloud provider.
+
 * Optional. CSI provider for persistent storage in managed clusters.
 * Optional. Load balancer provider for ensuring high availability of the
   control plane.
@@ -44,7 +51,8 @@ To install the full version of k0smotron:
 kubectl apply -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/install.yaml
 ```
 
-Before creating your first control planes, select the required use case described in
+Now, you can create your first control planes using k0smotron either as a
+standalone manager, or as a Cluster API provider. For use case details, see
 [k0smotron usage](usage-overview.md).
 
 # Per-module installation for Cluster API
