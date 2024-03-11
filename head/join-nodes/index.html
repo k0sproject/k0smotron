@@ -15,10 +15,10 @@
         <link rel="canonical" href="https://docs.k0smotron.io/head/join-nodes/">
       
       
-        <link rel="prev" href="../configuration/">
+        <link rel="prev" href="../cluster/">
       
       
-        <link rel="next" href="../ha/">
+        <link rel="next" href="../configuration/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Join nodes - Documentation</title>
+        <title>Join a worker node - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#join-worker-nodes" class="md-skip">
+        <a href="#join-a-worker-node" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Join nodes
+              Join a worker node
             
           </span>
         </div>
@@ -441,28 +441,7 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    Creating a cluster
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Configuration
+    Create a cluster
   </span>
   
 
@@ -488,73 +467,37 @@ You are not currently viewing the documentation for the current stable release o
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Join nodes
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
-    Join nodes
+    Join a worker node
   </span>
   
 
       </a>
       
-        
+    </li>
+  
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+              
+            
+              
+                
   
   
   
-    
   
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#join-tokens" class="md-nav__link">
-    <span class="md-ellipsis">
-      Join Tokens
-    </span>
-  </a>
+  <span class="md-ellipsis">
+    Configuration
+  </span>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#join-nodes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Join nodes
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#invalidating-tokens" class="md-nav__link">
-    <span class="md-ellipsis">
-      Invalidating tokens
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
+
+      </a>
     </li>
   
 
@@ -1078,41 +1021,6 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#join-tokens" class="md-nav__link">
-    <span class="md-ellipsis">
-      Join Tokens
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#join-nodes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Join nodes
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#invalidating-tokens" class="md-nav__link">
-    <span class="md-ellipsis">
-      Invalidating tokens
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1126,10 +1034,19 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="join-worker-nodes">Join worker nodes<a class="headerlink" href="#join-worker-nodes" title="Permanent link">#</a></h1>
-<p>Joining worker nodes is pretty much the exact same process as with <a href="https://docs.k0sproject.io/stable/k0s-multi-node/#4-add-workers-to-the-cluster">k0s</a> in general. You need a join token that enables mutual trust between the worker and controller(s) and which allows the node to join the cluster as worker.</p>
-<h2 id="join-tokens">Join Tokens<a class="headerlink" href="#join-tokens" title="Permanent link">#</a></h2>
-<p>To get a token, create a <code>JoinTokenRequest</code> resource:</p>
+<h1 id="join-a-worker-node">Join a worker node<a class="headerlink" href="#join-a-worker-node" title="Permanent link">#</a></h1>
+<p>Joining worker nodes to your control plane is similar to the process of
+<a href="https://docs.k0sproject.io/stable/k0s-multi-node/#4-add-workers-to-the-cluster">joining worker nodes with k0s</a>.
+You need to obtain a join token that establishes mutual trust between the worker node
+and control plane, allowing the node to join the cluster as worker.</p>
+<p><strong>To join a worker node to the cluster:</strong></p>
+<ol>
+<li>
+<p>Obtain a join token:</p>
+<ol>
+<li>
+<p>Create a <code>JoinTokenRequest</code> resource to generate a join token for the
+    worker node. For example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">JoinTokenRequest</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1139,8 +1056,16 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">  </span><span class="nt">clusterRef</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
 <span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">expiry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1h</span>
 </code></pre></div>
-<p>The <code>JoinTokenRequest</code> resource will be processed by the controller and a <code>Secret</code> will be created:</p>
+<div class="admonition tip token expiry configuration">
+<p class="admonition-title">Tip</p>
+<p>The <code>expiry</code> field defines the expiration time of the token.
+Refer to <a href="../resource-reference/#JoinTokenRequest.spec">API reference: JoinTokenRequest.spec</a>
+for the configuration details.</p>
+</div>
+<p>k0smotron processes the <code>JoinTokenRequest</code> resource and creates
+   a <code>Secret</code> resource:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1154,55 +1079,47 @@ You are not currently viewing the documentation for the current stable release o
 <span class="nt">data</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-token&gt;</span>
 </code></pre></div>
-<p>The <code>token</code> field contains the base64-encoded token that can be used to join a worker node to the cluster.</p>
-<p>To get the decoded token you can use:</p>
+<p>The <code>token</code> field contains the base64-encoded token that you can use
+  to join a worker node to the cluster.</p>
+</li>
+<li>
+<p>Retrieve the decoded join token from the generated <code>Secret</code>:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-token<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d
 </code></pre></div>
-<h2 id="join-nodes">Join nodes<a class="headerlink" href="#join-nodes" title="Permanent link">#</a></h2>
-<p>First you need to get the <code>k0s</code> binary on the node:</p>
+</li>
+</ol>
+</li>
+<li>
+<p>Install <code>k0s</code> on the worker node:</p>
+<ol>
+<li>
+<p>Ensure that the <code>k0s</code> binary is installed on the worker node:</p>
 <div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-sSLf<span class="w"> </span>https://get.k0s.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>sh
 </code></pre></div>
-<p>The download script accepts the following environment variables:</p>
-<table>
-<thead>
-<tr>
-<th style="text-align: left;">Variable</th>
-<th style="text-align: left;">Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><code>K0S_VERSION=v{{ no such element: dict object['k8s_version'] }}+k0s.0</code></td>
-<td style="text-align: left;">Select the version of k0s to be installed</td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>DEBUG=true</code></td>
-<td style="text-align: left;">Output commands and their arguments at execution.</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Note:</strong> Match the k0s version to the version of the control plane you've created.</p>
-<p>To join the worker, run k0s in the worker mode with the join token you created:</p>
+</li>
+<li>
+<p>Verify that the k0s version in the worker node matches the k0s version
+    installed on the control plane. If needed, you can adjust the k0s version
+    using the <code>K0S_VERSION</code> environment variable.</p>
+</li>
+</ol>
+</li>
+<li>
+<p>Join the worker node specifying the join token created earlier:</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>k0s<span class="w"> </span>install<span class="w"> </span>worker<span class="w"> </span>--token-file<span class="w"> </span>/path/to/token/file
+sudo<span class="w"> </span>k0s<span class="w"> </span>start
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>k0s<span class="w"> </span>start
-</code></pre></div>
-<h2 id="invalidating-tokens">Invalidating tokens<a class="headerlink" href="#invalidating-tokens" title="Permanent link">#</a></h2>
-<p>You can limit the validity period by setting the <code>expiry</code> field in the <code>JoinTokenRequest</code> resource:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">JoinTokenRequest</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-token</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
-<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="nt">expiry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1h</span>
-</code></pre></div>
-<p>To invalidate an issued token, delete the <code>JoinTokenRequest</code> resource:</p>
+</li>
+<li>
+<p>Delete the <code>JoinTokenRequest</code> resource to invalidate the issued token:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span>jointokenrequest<span class="w"> </span>my-token
 </code></pre></div>
+</li>
+</ol>
+<div class="admonition note see also">
+<p class="admonition-title">Note</p>
+<p><a href="../resource-reference/#JoinTokenRequest.spec">API reference: JoinTokenRequest.spec</a></p>
+</div>
 
 
 
@@ -1268,7 +1185,7 @@ You are not currently viewing the documentation for the current stable release o
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.c8d2eff1.min.js"></script>

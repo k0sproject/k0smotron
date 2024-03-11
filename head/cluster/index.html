@@ -18,7 +18,7 @@
         <link rel="prev" href="../usage-overview/">
       
       
-        <link rel="next" href="../configuration/">
+        <link rel="next" href="../join-nodes/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Creating a cluster - Documentation</title>
+        <title>Create a cluster - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#creating-a-cluster" class="md-skip">
+        <a href="#create-a-cluster" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Creating a cluster
+              Create a cluster
             
           </span>
         </div>
@@ -450,7 +450,7 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    Creating a cluster
+    Create a cluster
   </span>
   
 
@@ -468,11 +468,11 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../join-nodes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Configuration
+    Join a worker node
   </span>
   
 
@@ -489,11 +489,11 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../join-nodes/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Join nodes
+    Configuration
   </span>
   
 
@@ -1034,25 +1034,35 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="creating-a-cluster">Creating a cluster<a class="headerlink" href="#creating-a-cluster" title="Permanent link">#</a></h1>
-<p>The following example creates a simple cluster named <code>k0smotron-test</code>:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: k0smotron.io/v1beta1</span>
-<span class="s">kind: Cluster</span>
-<span class="s">metadata:</span>
-<span class="s">  name: k0smotron-test</span>
-<span class="s">spec: null</span>
-<span class="s">EOF</span>
+<h1 id="create-a-cluster">Create a cluster<a class="headerlink" href="#create-a-cluster" title="Permanent link">#</a></h1>
+<p>After you install k0smotron as described in the <a href="../install/">Installation</a>
+section, you can start creating your Kubernetes control planes.</p>
+<p><strong>To create a cluster:</strong></p>
+<ol>
+<li>
+<p>Create the <code>Cluster</code> object:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>&lt;&lt;EOF<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>-f-
+<span class="w"> </span>apiVersion:<span class="w"> </span>k0smotron.io/v1beta1
+<span class="w">   </span>kind:<span class="w"> </span>Cluster
+<span class="w">   </span>metadata:
+<span class="w">     </span>name:<span class="w"> </span>&lt;cluster-name&gt;
+<span class="w">   </span>spec:<span class="w"> </span>null
 </code></pre></div>
-<p>This triggers k0smotron controllers to setup the control plane in pods. Once k0smotron is done you can get the admin access kubeconfig:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>k0smotron-test-kubeconfig<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.value}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>~/.kube/child.conf
+<p>This triggers the k0smotron controller manager to set up the control plane
+ in pods.</p>
+</li>
+<li>
+<p>Once k0smotron finishes setting up the cluster, obtain the admin access
+   kubeconfig:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-kubeconfig<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.value}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>~/.kube/child.conf
 </code></pre></div>
-<p><strong>Warning</strong>: Depending on your configuration, the admin kubeconfig may not be pointing to the right address.
-If the kubeconfig doesn't work by default, you'll need to set the right value in <code>&lt;server URL&gt;</code>.</p>
+<p>Depending on your configuration, the admin kubeconfig may not be pointing
+ to the correct address. If the kubeconfig does not work by default,
+ set the correct value for <code>&lt;server-URL&gt;</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">clusters</span><span class="p">:</span>
 <span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">cluster</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;server URL&gt;</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;server-URL&gt;</span>
 <span class="w">    </span><span class="nt">certificate-authority-data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;redacted&gt;</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
 <span class="nt">contexts</span><span class="p">:</span>
@@ -1069,7 +1079,10 @@ If the kubeconfig doesn't work by default, you'll need to set the right value in
 <span class="w">    </span><span class="nt">client-certificate-data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;redacted&gt;</span>
 <span class="w">    </span><span class="nt">client-key-data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;redacted&gt;</span>
 </code></pre></div>
-<p>Once your control plane is ready you can start <a href="../join-nodes/">adding worker nodes</a> into the newly created control plane.</p>
+</li>
+</ol>
+<p>Once your control plane is ready, you can start <a href="../join-nodes/">joining worker nodes</a>
+into the newly created control plane.</p>
 
 
 
@@ -1135,7 +1148,7 @@ If the kubeconfig doesn't work by default, you'll need to set the right value in
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.c8d2eff1.min.js"></script>

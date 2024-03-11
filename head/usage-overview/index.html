@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#k0smotron-usage" class="md-skip">
+        <a href="#usage" class="md-skip">
           Skip to content
         </a>
       
@@ -388,17 +388,6 @@ You are not currently viewing the documentation for the current stable release o
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Overview
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -408,43 +397,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#standalone" class="md-nav__link">
-    <span class="md-ellipsis">
-      Standalone
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cluster-api-provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      Cluster API provider
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -497,7 +449,28 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    Creating a cluster
+    Create a cluster
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../join-nodes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Join a worker node
   </span>
   
 
@@ -519,27 +492,6 @@ You are not currently viewing the documentation for the current stable release o
   
   <span class="md-ellipsis">
     Configuration
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../join-nodes/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Join nodes
   </span>
   
 
@@ -1067,32 +1019,6 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#standalone" class="md-nav__link">
-    <span class="md-ellipsis">
-      Standalone
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cluster-api-provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      Cluster API provider
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1106,18 +1032,50 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="k0smotron-usage">k0smotron usage<a class="headerlink" href="#k0smotron-usage" title="Permanent link">#</a></h1>
-<p>k0smotron can be use either as a "standalone" manager for Kubernetes control planes or as a Cluster API provider for several ClusterAPI "roles".</p>
-<h2 id="standalone">Standalone<a class="headerlink" href="#standalone" title="Permanent link">#</a></h2>
-<p>In standalone mode k0smotron will manage ONLY the controlplanes running in the management cluster. To get started creating and managing control planes with k0smotron see <a href="../cluster/">cluster creation docs</a>.</p>
-<h2 id="cluster-api-provider">Cluster API provider<a class="headerlink" href="#cluster-api-provider" title="Permanent link">#</a></h2>
-<p>k0smotron can act as a ClusterAPI provider in several cases:</p>
+<h1 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">#</a></h1>
+<p>Users can use k0smotron in two distinct ways:</p>
+<dl>
+<dt><strong>Standalone</strong></dt>
+<dd>
+<p>In this mode, standalone k0smotron manages only k0s control planes
+running in the management cluster offering streamlined control and
+monitoring capabilities for k0s clusters.</p>
+</dd>
+<dt><strong>Cluster API integration</strong></dt>
+<dd>
+<p>Alternatively, users can opt for k0smotron integration with Cluster API,
+enabling k0smotron to manage Kubernetes clusters across various infrastructure
+providers. This integration extends k0smotron management capabilities to a broader
+range of Kubernetes deployments.</p>
+<p>Within the context of Cluster API, k0smotron can serve several roles:</p>
 <ul>
-<li><a href="../capi-controlplane/">ControlPlane provider</a>: k0smotron manages the controlplane <em>within</em> the management cluster</li>
-<li><a href="../capi-controlplane-bootstrap/">Control plane Bootstrap provider</a>: k0smotron acts as a bootstrap provider for <code>Machine</code>s running the control plane</li>
-<li><a href="../capi-bootstrap/">Bootstrap provider</a>: k0smotron acts as the bootstrap (config) provider for worker machines</li>
-<li><a href="../capi-remote/">Remote machine provider</a>: k0smotron acts as a infrastructure provider, enabling configuring <code>Machine</code>s on existing infrastructure over SSH</li>
+<li>Control plane provider: k0smotron manages the control plane within the management cluster.
+  It orchestrates the creation, scaling, and management of the Kubernetes control plane
+  components, ensuring their proper functioning and high availability.</li>
 </ul>
+<ul>
+<li>Control plane bootstrap provider: k0smotron acts as a bootstrap provider for <code>Machine</code>
+  resources that run the control plane components. It handles the initialization and
+  configuration of these machines, ensuring they are properly set up to serve as part
+  of the cluster control plane.</li>
+</ul>
+<ul>
+<li>Bootstrap provider: k0smotron serves as the bootstrap provider for worker machines.
+  It manages provisioning and configuring worker nodes, ensuring they are ready
+  to run containerized workloads within the Kubernetes cluster.</li>
+</ul>
+<ul>
+<li>Remote machine provider: k0smotron acts as an infrastructure provider, enabling
+  the configuration of <code>Machine</code> resources on existing infrastructure over SSH.
+  This enables users to leverage their existing infrastructure resources while
+  still benefiting from the management capabilities provided by ClusterAPI and k0smotron.</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">See also</p>
+<p><a href="../install/">k0smotron installation</a></p>
+</div>
 
 
 
@@ -1183,7 +1141,7 @@ You are not currently viewing the documentation for the current stable release o
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.c8d2eff1.min.js"></script>
