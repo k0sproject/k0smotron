@@ -1,16 +1,15 @@
-# Contributing to k0smotron
+# Contribute to k0smotron
 
-Thank you for taking the time to make a contribution.
-We are looking forward to working with you to make k0smotron better.
-
-The following document is a set of helpful guidelines and instructions for the contributors.
+Thank you for your interest in k0smotron.
+We look forward to working with you to grow and enhance the product.
 
 ## Report issue
 
-Before proceeding with the contribution, consider first discussing your change
-by [opening a GitHub issue in a k0smotron project](https://github.com/k0sproject/k0smotron/issues).
+Before making your k0mostron contribution, open a GitHub issue in
+[the k0smotron project](https://github.com/k0sproject/k0smotron/issues)
+to discuss your idea.
 
-To stay updated, you can subscribe to an issue to receive notifications about the latest comments.
+Subscribe to an issue to receive notifications and stay up to date.
 
 ## Code of conduct
 
@@ -22,32 +21,34 @@ k0smotron follows the [Effective Go coding guidelines](https://go.dev/doc/effect
 
 ## Follow k0smotron GitHub workflow
 
-In your contribution, adhere to [k0smotron GitHub workflow](contribute-workflow.md):
+Ensure that your contribution adheres to [the k0smotron GitHub workflow](contribute-workflow.md):
 
-- fork the project
-- configure remote repository
-- prepare feature branch
-- test your change
-- commit with a sign-off
-- push your change
-- open a pull request
+1. Fork the project.
+1. Configure remote repository.
+1. Prepare feature branch.
+1. Test your change.
+1. Commit with a sign-off.
+1. Push your change.
+1. Open a pull request.
 
 ## Test code
 
-All submitted PRs go through a set of tests and reviews. 
-Remember to run tests **before** submitting a PR.
-It saves your time on many possible review iterations and automated tests.
-The testing guidelines can be found in [testing guidelines](contribute-testing.md).
+All PRs submitted to the k0smotron project go through a series of tests and reviews.
+As such, remember to run your own tests before you submit a PR.
+This will reduce the number of review iterations and automated test runs.
+For detailed information, refer to the k0smotron [testing guidelines](contribute-testing.md).
 
 ## License
 
-By contributing, you agree that your contributions will be licensed as followed:
+In contributing to the k0smotron project, you agree that your submissions will be licensed as followed:
 
-- All content residing under the "docs/" directory of this repository is licensed under ["Creative Commons Attribution Share Alike 4.0 International" (CC-BY-SA-4.0)](../LICENSE).
-- Content outside the above-mentioned directories or restrictions above is available under the ["Apache License 2.0"](../../LICENSE).
+- All content residing under the `docs` directory is licensed under
+["Creative Commons Attribution Share Alike 4.0 International" (CC-BY-SA-4.0)](../LICENSE).
+- Content outside the above-mentioned directories or restrictions above is
+available under the ["Apache License 2.0"](../../LICENSE).
 
 ## Community
 
 Get the latest news on k0smotron from [k0sproject Twitter account](https://twitter.com/k0sproject).
-You can also read about updates and initiatives on [the official community blog](https://medium.com/k0sproject).
-Share your views with the community on the [discussion forum](https://forums.k8slens.dev/).
+You can also learn about k0smotron updates and initiatives on [the official k0s community blog](https://medium.com/k0sproject).
+Share your views on the [Lens Forums](https://forums.k8slens.dev/).

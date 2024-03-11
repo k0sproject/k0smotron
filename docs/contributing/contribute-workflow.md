@@ -1,13 +1,11 @@
 # k0smotron GitHub workflow
 
-You can contribute to [k0smotron GitHub repository](http://github.com/k0sproject/k0smotron)
-by creating pull requests.
-
+Create pull requests to contribute to [k0smotron GitHub repository](http://github.com/k0sproject/k0smotron).
 
 ## Fork the project
 
 1. Go to [k0smotron GitHub repository](http://github.com/k0sproject/k0smotron).
-2. On the top, right-hand side, click "Fork" and select your username for the fork destination.
+2. In the top right-hand corner, click "Fork" and select your username for the fork destination.
 
 ## Configure remote repository
 
@@ -46,7 +44,7 @@ by creating pull requests.
 
 ## Create and rebase feature branch
 
-1. Create a feature branch and switch to it:
+1. Create and switch to a feature branch:
 
    ```shell
    git checkout -b my_feature_branch
@@ -95,9 +93,8 @@ Fixes: https://github.com/k0sproject/k0smotron/issues/373
 Signed-off-by: Name Lastname <user@example.com>
 ```
 
-If you need to add some additional changes or tests use `commit --amend` command.
-
-When everything is ready, push your changes to your fork's repository:
+To add some additional changes or tests use `commit --amend` command.
+Push your changes to your fork's repository:
 
 ```shell
 git push --set-upstream my_fork my_feature_branch
@@ -105,22 +102,21 @@ git push --set-upstream my_fork my_feature_branch
 
 ## Open pull request
 
-Follow GitHub's documentation on how to [create a pull request from a fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
+Refer to the official GitHub documentation [Creating a pull request from a fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
 
 ### Wait for code review
 
-The k0smotron team will review your pull request.
+The k0smotron team will review your pull request and leave comments.
 Commit changes made in response to review comments should be added to the same branch on your fork.
 
-Keep the PRs small if possible to speed up the review process.
+Keep the PRs small to speed up the review process.
 
 ### Squash small commits
 
 Commits on your branch should represent meaningful milestones or units of work.
 Squash together small commits that contain typo fixes, rebases, review feedbacks,
 and so on.
-
-To do that, perform an [interactive rebase](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History).
+To do that, perform an interactive rebase.
 
 ### Push final changes
 
@@ -130,4 +126,4 @@ Once done, you can push the final commits to your branch:
 git push --force
 ```
 
-You can run multiple iteration of `rebase`/`push -f`, if needed.
+If necessary, you can run multiple iteration of `rebase`/`push -f`.

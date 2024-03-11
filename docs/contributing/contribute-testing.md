@@ -1,6 +1,6 @@
 # Testing guidelines
 
-k0smotron uses GitHub actions to run automated tests on all pull requests, before merging.
+k0smotron uses GitHub actions to run automated tests on all pull requests prior to merging.
 Pull request will not be reviewed before all tests are green,
 so to save time and prevent your Pull request from going stale,
 it is best to test it before submitting the pull request.
@@ -9,66 +9,61 @@ it is best to test it before submitting the pull request.
 
 Run the following style and formatting commands to fix or check-in the changes:
 
-1. Linting
-
-   k0smotron uses [`golangci-lint`](https://golangci-lint.run/) for style verification.
-   In the root directory of the repository run:
+1. Verify code style using [`golangci-lint`](https://golangci-lint.run/). In the root directory of the repository run:
 
    ```shell
    make lint
    ```
 
-   The build system installs `golangci-lint` automatically.
+   The build system automatically installs `golangci-lint`.
 
-2. Go fmt
+2. Format Go source code using the `go fmt` command:
 
-   Format Go source code.
 
    ```shell
    go fmt ./...
    ```
 
-3. Check documentation
+3. Check documentation.
 
-   The Dockerized setup is used to perform documentation tests locally.
+   The Dockerized setup is used to locally perform documentation tests.
    Run `make docs-serve-dev` to build documentation on http://localhost:8000.
 
    If your port `8000` is busy, run `make docs-serve-dev DOCS_DEV_PORT=9999`.
    The documentation page will be available on http://localhost:9999.
 
-4. Pre-submit flight checks
+4. Pre-submit flight checks.
 
-   In the repository root directory, make sure that:
+   In the repository root directory, ensure that the following commands are successfully run:
 
-    * `make build && git diff --exit-code` runs successfully.  
-      Verifies that the build is working and that the generated source code
-      matches the one that's checked into source control.
-    * `make test` runs successfully.  
-      Verifies that all the unit tests pass.
+    * `make build && git diff --exit-code`
+      This command verifies that the build is working
+      and that the generated source code matches the code checked into source control.
+    * `make test`
+      This command verifies that all the unit tests pass.
 
-   If you find that all tests passed, you may open a pull request upstream.
+   Once all tests have passed, you can open a pull request upstream.
 
 ## Open pull request
 
 ### Draft mode
 
-You may open pull request in [a draft mode](https://github.blog/2019-02-14-introducing-draft-pull-requests).
-It will go through the automated testing, but the pull request will not be assigned for a review.
-Once a pull request is ready for review, transition it from the draft mode to notify the k0smotron team.
+If you open a pull request in draft mode, it will only go through the automated testing.
+Once you decide the PR is ready for review, transition it out of draft mode to notify the k0smotron team.
 
 ### Pre-requisites for merge
 
 In order for a pull request to be merged, the following conditions should exist:
 
-1. The pull request has passed all the automated tests (style, build and conformance tests).
-2. Pull request commits have been signed with the `--signoff` option.
-3. Pull request was reviewed and approved by a code owner.
+1. Pull request passes all the automated tests (style, build and conformance tests).
+2. Pull request commits are signed with the `--signoff` option.
+3. Pull request is reviewed and approved by a code owner.
 4. Pull request is rebased against upstream main branch.
 
 ## Cleanup local workspace
 
 To clean up the local workspace, run `make clean`.
-It cleans up all the intermediate files and directories created during the k0smotron build.
+This removes all the intermediate files and directories created during the k0smotron build.
 You cannot use `git clean -X` or `rm -rf`, since the Go modules
 cache sets all of its subdirectories to read-only.
 If you encounter problems during a deletion process,
