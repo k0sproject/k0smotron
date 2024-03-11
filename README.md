@@ -80,7 +80,7 @@ See [docs](https://docs.k0smotron.io/stable/usage-overview/) for further example
 
 ## Documentation
 
-We invite you to contribute to the growth and enhancement of k0smotron. To learn how you can leave your mark on the project, please read our [Contribution Guidelines.](https://docs.k0smotron.io/stable).
+Explore the comprehensive [documentation](https://docs.k0smotron.io/stable) for in-depth insights into k0smotron's capabilities, configurations, and usage scenarios.
 
 ## Contributing
 
