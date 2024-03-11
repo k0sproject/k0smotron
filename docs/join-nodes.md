@@ -1,12 +1,11 @@
 # Join a worker node
 
 Joining worker nodes to your control plane is similar to the process of
-[joining worker nodes with k0s](https://docs.k0sproject.io/stable/k0s-multi-node/#4-add-workers-to-the-cluster)
-in general. You need to a join token that establishes mutual trust between
-the worker node and control plane, allowing the node to join the cluster as
-worker.
+[joining worker nodes with k0s](https://docs.k0sproject.io/stable/k0s-multi-node/#4-add-workers-to-the-cluster).
+You need to obtain a join token that establishes mutual trust between the worker node
+and control plane, allowing the node to join the cluster as worker.
 
-**To join a worker node to your cluster:**
+**To join a worker node to the cluster:**
 
 1. Obtain a join token:
 
