@@ -25,7 +25,7 @@ k0smotron requires the following software to be preinstalled:
 
   * [clusterctl](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl)
     installed locally.
-  * Configured Cloud provider. In this documentation set, we describe
+  * Configured cloud provider. In this documentation set, we describe
     configuration examples for the following providers: AWS, Docker,
     Hetzner Cloud, OpenStack, vSphere. For setup instructions, refer to the
     official documentation of the selected cloud provider.
