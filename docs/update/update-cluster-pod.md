@@ -43,7 +43,7 @@ the k0s version and machine names in the YAML configuration file.
       version: v1.27.2-k0s.0
     ```
 
-2. Change all the k0s versions to the latest one:
+2. Change all the k0s versions to [the latest one](https://docs.k0sproject.io/v1.29.2+k0s.0/releases/#k0s-release-and-support-model):
 
    ```yaml
    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -85,4 +85,8 @@ the k0s version and machine names in the YAML configuration file.
      version: v1.28.7+k0s.0 # new version
    ```
    
-4. Run the `kubectl apply -f ./path-to-file.yaml` command to update the resources.
+4. Update the resources:
+
+   ```bash
+   kubectl apply -f ./path-to-file.yaml
+   ```
