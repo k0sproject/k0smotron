@@ -232,6 +232,17 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
+	machine.Status.Addresses = []clusterv1.MachineAddress{
+		{
+			Type:    clusterv1.MachineExternalIP,
+			Address: rm.Spec.Address,
+		},
+	}
+	if err := r.Status().Patch(ctx, machine, client.Merge); err != nil {
+		log.Error(err, "Failed to update Machine")
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
