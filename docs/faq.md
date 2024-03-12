@@ -50,11 +50,10 @@ providers as GKE and AKS, including:
 
 ## What is the relation of k0smotron to Cluster API?
 
-k0smotron is a fully compliant [Cluster API](https://cluster-api.sigs.k8s.io/)
-provider for [k0s](https://k0sproject.io/) that can be used with any Cluster
-API compatible tooling. In addition, k0smotron is a Cluster API infrastructure
-provider with which you can use SSH connections to provision clusters on remote
-machines.
+k0smotron is a fully compliant Cluster API provider for k0s that can be used
+with any Cluster API compatible tooling. In addition, k0smotron is
+a Cluster API infrastructure provider with which you can use SSH connections to
+provision clusters on remote machines.
 
 ## What do we mean by "from pets to cattle"?
 
