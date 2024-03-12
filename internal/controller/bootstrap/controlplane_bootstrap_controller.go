@@ -568,16 +568,28 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, m
 func genShutdownServiceFiles() []cloudinit.File {
 	return []cloudinit.File{
 		{
+			Path:        "/etc/bin/k0sleave.sh",
+			Permissions: "0777",
+			Content: `#!/bin/sh
+
+HOSTNAME=$(hostname)
+IS_LEAVING=$(/usr/local/bin/k0s kc get controlnodes $HOSTNAME -o jsonpath='{.metadata.annotations.k0smotron\.io/leave}')
+
+if [ $IS_LEAVING = "true" ]; then
+        /usr/local/bin/k0s etcd leave
+fi
+`,
+		}, {
 			Path:        "/etc/systemd/system/k0sleave.service",
 			Permissions: "0644",
 			Content: `[Unit]
-Description=k0s etcd leave Service
+Description=k0s etcd leave service
 After=multi-user.target
 
 [Service]
 Type=simple
 ExecStart=/bin/true
-ExecStop=/usr/local/bin/k0s etcd leave
+ExecStop=/etc/bin/k0sleave.sh
 TimeoutStartSec=0
 TimeoutStopSec=180
 RemainAfterExit=yes
@@ -592,9 +604,8 @@ WantedBy=multi-user.target
 			Content: `#!/sbin/openrc-run
 
 name="k0sleave"
-description=""
-command="/usr/local/bin/k0s"
-command_args="etcd leave"
+description="k0s etcd leave service"
+command="/etc/bin/k0sleave.sh"
 		`,
 		},
 	}
