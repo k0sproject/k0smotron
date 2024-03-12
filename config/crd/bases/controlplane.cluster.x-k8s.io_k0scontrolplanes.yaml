@@ -229,12 +229,15 @@ spec:
               replicas:
                 format: int32
                 type: integer
+              version:
+                type: string
             required:
             - controlPlaneReady
             - externalManagedControlPlane
             - initialized
             - ready
             - replicas
+            - version
             type: object
         type: object
     served: true

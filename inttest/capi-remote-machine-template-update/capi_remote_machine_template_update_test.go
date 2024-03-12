@@ -30,6 +30,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -42,24 +43,24 @@ import (
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type RemoteMachineTemplateSuite struct {
+type RemoteMachineTemplateUpdateSuite struct {
 	common.FootlooseSuite
 
-	client           *kubernetes.Clientset
-	restConfig       *rest.Config
-	clusterYamlsPath string
-	privateKey       []byte
-	publicKey        []byte
+	client                  *kubernetes.Clientset
+	restConfig              *rest.Config
+	clusterYamlsPath        string
+	updatedClusterYamlsPath string
+	privateKey              []byte
+	publicKey               []byte
 }
 
-func (s *RemoteMachineTemplateSuite) SetupSuite() {
+func (s *RemoteMachineTemplateUpdateSuite) SetupSuite() {
 	s.FootlooseSuite.SetupSuite()
 }
 
@@ -97,7 +98,7 @@ func TestRemoteMachineSuite(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	s := RemoteMachineTemplateSuite{
+	s := RemoteMachineTemplateUpdateSuite{
 		common.FootlooseSuite{
 			ControllerCount:      0,
 			WorkerCount:          0,
@@ -107,13 +108,14 @@ func TestRemoteMachineSuite(t *testing.T) {
 		kubeClient,
 		restCfg,
 		tmpDir + "/cluster.yaml",
+		tmpDir + "/updated-cluster.yaml",
 		privateKeyPEM,
 		sshPublicKeyBytes,
 	}
 	suite.Run(t, &s)
 }
 
-func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
+func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	ctx := s.Context()
 	// Push public key to worker authorized_keys
 	workerSSH, err := s.SSH(ctx, s.K0smotronNode(0))
@@ -152,9 +154,26 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 
 	// Verify the RemoteMachine is at expected state
 
+	var rmName string
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		rm, err := s.getRemoteMachine("remote-test-0", "default")
+		rm, err := s.findRemoteMachines("default")
+		if err != nil {
+			return false, err
+		}
+
+		if len(rm) == 0 {
+			return true, nil
+		}
+
+		rmName = rm[0].GetName()
+		return true, nil
+	})
+	s.Require().NoError(err)
+
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		rm, err := s.getRemoteMachine(rmName, "default")
 		if err != nil {
 			return false, err
 		}
@@ -167,16 +186,37 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
 
-	s.T().Log("deleting node from cluster")
-	s.Require().NoError(s.deleteRemoteMachine("remote-test-0", "default"))
+	s.T().Log("update cluster")
+	s.updateCluster()
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		output, err := exec.Command("docker", "exec", "TestRemoteMachineSuite-k0smotron0", "k0s", "status").Output()
+		if err != nil {
+			return false, nil
+		}
 
-	nodes, err := kmcKC.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		return strings.Contains(string(output), "Version: v1.29"), nil
+	})
 	s.Require().NoError(err)
-	s.Require().Equal(corev1.ConditionFalse, nodes.Items[0].Status.Conditions[0].Status)
 
+	s.T().Log("waiting for node to be ready in updated cluster")
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
 }
 
-func (s *RemoteMachineTemplateSuite) getRemoteMachine(name string, namespace string) (*infra.RemoteMachine, error) {
+func (s *RemoteMachineTemplateUpdateSuite) findRemoteMachines(namespace string) ([]infra.RemoteMachine, error) {
+	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/%s/remotemachines", namespace)
+	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(s.Context())
+	if err != nil {
+		return nil, err
+	}
+	rm := &infra.RemoteMachineList{}
+	if err := yaml.Unmarshal(result, rm); err != nil {
+		return nil, err
+	}
+	return rm.Items, nil
+}
+
+func (s *RemoteMachineTemplateUpdateSuite) getRemoteMachine(name string, namespace string) (*infra.RemoteMachine, error) {
 	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/%s/remotemachines/%s", namespace, name)
 	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(s.Context())
 	if err != nil {
@@ -189,18 +229,17 @@ func (s *RemoteMachineTemplateSuite) getRemoteMachine(name string, namespace str
 	return rm, nil
 }
 
-func (s *RemoteMachineTemplateSuite) deleteRemoteMachine(name string, namespace string) error {
-	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/%s/remotemachines/%s", namespace, name)
-	_, err := s.client.RESTClient().Delete().AbsPath(apiPath).DoRaw(s.Context())
-	return err
-}
-
-func (s *RemoteMachineTemplateSuite) deleteCluster() {
+func (s *RemoteMachineTemplateUpdateSuite) deleteCluster() {
 	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
-func (s *RemoteMachineTemplateSuite) createCluster() {
+func (s *RemoteMachineTemplateUpdateSuite) updateCluster() {
+	out, err := exec.Command("kubectl", "apply", "-f", s.updatedClusterYamlsPath).CombinedOutput()
+	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
+}
+
+func (s *RemoteMachineTemplateUpdateSuite) createCluster() {
 
 	// Get worker IP
 	workerIP := s.getWorkerIP()
@@ -230,6 +269,7 @@ func (s *RemoteMachineTemplateSuite) createCluster() {
 
 	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, bytes, 0644))
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	s.Require().NoError(os.WriteFile(s.updatedClusterYamlsPath, []byte(updatedClusterYaml), 0644))
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
@@ -248,7 +288,7 @@ func getLBPort(name string) (int, error) {
 	return strconv.Atoi(ports["6443/tcp"][0]["HostPort"])
 }
 
-func (s *RemoteMachineTemplateSuite) getWorkerIP() string {
+func (s *RemoteMachineTemplateUpdateSuite) getWorkerIP() string {
 	nodeName := s.K0smotronNode(0)
 	ssh, err := s.SSH(s.Context(), nodeName)
 	s.Require().NoError(err)
@@ -266,7 +306,7 @@ metadata:
   name: remote-test
 spec:
   replicas: 1
-  version: v1.27.1+k0s.0
+  version: v1.28.7+k0s.0
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
@@ -354,4 +394,35 @@ metadata:
 data:
    value: {{ .SSHKey }}
 type: Opaque
+`
+
+var updatedClusterYaml = `
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: remote-test
+spec:
+  replicas: 1
+  version: v1.29.2+k0s.0
+  k0sConfigSpec:
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+        telemetry:
+          enabled: false
+    args:
+      - --enable-worker
+      - --no-taints
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: RemoteMachineTemplate
+      name: remote-test-cp-template
+      namespace: default
 `

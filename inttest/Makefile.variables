@@ -22,3 +22,5 @@ smoketests := \
     check-capi-docker-clusterclass \
     check-capi-docker-clusterclass-k0smotron \
     check-capi-remote-machine-template \
+    check-capi-remote-machine-template-update \
+    check-capi-docker-machine-template-update \

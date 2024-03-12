@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 
@@ -87,4 +88,21 @@ func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Con
 	kcSecret.Name = secretName
 
 	return c.Create(ctx, kcSecret)
+}
+
+func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
+	data, err := kubeconfig.FromSecret(ctx, c.Client, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name})
+	if err != nil {
+		return nil, err // TODO
+	}
+	config, err := clientcmd.NewClientConfigFromBytes(data)
+	if err != nil {
+		return nil, err // TODO
+	}
+	restConfig, err := config.ClientConfig()
+	if err != nil {
+		return nil, err // TODO
+	}
+
+	return kubernetes.NewForConfig(restConfig)
 }

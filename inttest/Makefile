@@ -36,3 +36,5 @@ clean:
 check-monitoring: TIMEOUT=7m
 check-ha-controlplane: TIMEOUT=7m
 check-capi-controlplane-docker-tunneling: TIMEOUT=10m
+check-capi-remote-machine-template-update: TIMEOUT=10m
+check-capi-docker-machine-template-update: TIMEOUT=10m

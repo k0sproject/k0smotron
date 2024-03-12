@@ -19,12 +19,13 @@ package infrastructure
 import (
 	"context"
 	"fmt"
-	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -32,6 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 )
 
 var ErrPooledMachineNotFound = fmt.Errorf("free pooled machine not found")
@@ -181,7 +184,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	if !rm.ObjectMeta.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
 			if err := p.Cleanup(ctx, mode); err != nil {
-				return ctrl.Result{}, err
+				p.log.Error(err, "Failed to cleanup RemoteMachine")
 			}
 			if rm.Spec.Pool != "" {
 				// Return the machine back to pool
@@ -229,6 +232,22 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 	if err := r.Update(ctx, rm); err != nil {
 		log.Error(err, "Failed to update RemoteMachine")
+		return ctrl.Result{}, err
+	}
+
+	m := machine.DeepCopy()
+	m.Status.Addresses = []clusterv1.MachineAddress{
+		{
+			Type:    clusterv1.MachineExternalIP,
+			Address: rm.Spec.Address,
+		},
+	}
+
+	err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		return r.Status().Patch(ctx, m, client.Merge)
+	})
+	if err != nil {
+		log.Error(err, "Failed to update Machine")
 		return ctrl.Result{}, err
 	}
 
@@ -312,7 +331,10 @@ func (r *RemoteMachineController) returnMachineToPool(ctx context.Context, rm *i
 			return nil
 		}
 	}
-	return fmt.Errorf("no pooled machine found for remote machine %s/%s", rm.Namespace, rm.Name)
+	log := log.FromContext(ctx).WithValues("remotemachine", rm.Name)
+	log.Error(fmt.Errorf("no pooled machine found for remote machine"), rm.Namespace, rm.Name)
+
+	return nil
 }
 
 func (r *RemoteMachineController) getSSHKey(ctx context.Context, rm *infrastructure.RemoteMachine) ([]byte, error) {

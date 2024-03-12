@@ -46,8 +46,7 @@ import (
 )
 
 const (
-	defaultK0sSuffix  = "k0s.0"
-	defaultK0SVersion = "v1.27.2+k0s.0"
+	defaultK0sSuffix = "k0s.0"
 )
 
 type K0sController struct {
@@ -123,6 +122,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	kcp.Status.Inititalized = true
 	kcp.Status.ControlPlaneReady = true
 	kcp.Status.Replicas = kcp.Spec.Replicas
+	kcp.Status.Version = kcp.Spec.Version
 	err = c.Status().Update(ctx, kcp)
 
 	return res, err
@@ -203,8 +203,14 @@ func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluste
 }
 
 func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+
 	// TODO: Scale down machines if needed
 	if kcp.Status.Replicas > kcp.Spec.Replicas {
+		kubeClient, err := c.getKubeClient(ctx, cluster)
+		if err != nil {
+			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
+		}
+
 		for i := kcp.Spec.Replicas; i < kcp.Status.Replicas; i++ {
 			name := machineName(kcp.Name, int(i))
 
@@ -216,11 +222,28 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				return fmt.Errorf("error deleting machine from template: %w", err)
 			}
 
+			if err := c.markChildControlNodeToLeave(ctx, name, kubeClient); err != nil {
+				return fmt.Errorf("error marking controlnode to leave: %w", err)
+			}
+
 			if err := c.deleteMachine(ctx, name, kcp); err != nil {
 				return fmt.Errorf("error deleting machine from template: %w", err)
 			}
 		}
 	}
+
+	if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
+		kubeClient, err := c.getKubeClient(ctx, cluster)
+		if err != nil {
+			return fmt.Errorf("error getting cluster client set for machine update: %w", err)
+		}
+
+		err = c.createAutopilotPlan(ctx, kcp, kubeClient)
+		if err != nil {
+			return fmt.Errorf("error creating autopilot plan: %w", err)
+		}
+	}
+
 	for i := 0; i < int(kcp.Spec.Replicas); i++ {
 		name := machineName(kcp.Name, i)
 
@@ -294,7 +317,12 @@ func (c *K0sController) deleteBootstrapConfig(ctx context.Context, name string, 
 			Namespace: kcp.Namespace,
 		},
 	}
-	return c.Client.Delete(ctx, &controllerConfig)
+
+	err := c.Client.Delete(ctx, &controllerConfig)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("error deleting K0sControllerConfig: %w", err)
+	}
+	return nil
 }
 
 func (c *K0sController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
