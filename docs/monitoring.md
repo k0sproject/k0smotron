@@ -12,7 +12,10 @@ in the `Cluster` resource:
 
 ```yaml
 apiVersion: k0smotron.io/v1beta1
-	@@ -14,8 +18,12 @@ spec:
+kind: Cluster
+metadata:
+  name: k0smotron-test
+spec:
   enableMonitoring: true
 ``` 
 
