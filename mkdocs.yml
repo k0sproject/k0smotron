@@ -29,7 +29,7 @@ nav:
       - Remote Machine Provider: capi-remote.md
       - ClusterClass: capi-clusterclass.md
       - Examples:
-        - Overview: capi-examples.md
+        - Software prerequisites: capi-examples.md
         - AWS: capi-aws.md
         - Hetzner Cloud: capi-hetzner.md
         - OpenStack: capi-openstack.md
