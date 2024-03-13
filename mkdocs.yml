@@ -74,9 +74,9 @@ extra_css:
 plugins:
   - search
   - ezglossary:
-        section_config:
-            - name: demo
-              inline_refs: short
+      section_config:
+        - name: demo
+          inline_refs: short
   - macros:
       j2_variable_start_string: "{{{"
       j2_variable_end_string: "}}}"
