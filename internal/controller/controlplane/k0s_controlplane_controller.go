@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Masterminds/semver"
 	"strings"
 
 	"github.com/google/uuid"
@@ -253,13 +254,28 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
+	var isNewMachineReady bool
+	for _, m := range machines {
+		ver := semver.MustParse(kcp.Spec.Version)
+		if m.Spec.Version != nil && *m.Spec.Version == fmt.Sprintf("%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()) {
+			continue
+		}
+		if m.Status.Phase == string(clusterv1.MachinePhaseProvisioning) ||
+			m.Status.Phase == string(clusterv1.MachinePhaseProvisioned) ||
+			m.Status.Phase == string(clusterv1.MachinePhaseRunning) {
+			isNewMachineReady = true
+		}
+	}
+
+	if machinesToDelete > 0 && isNewMachineReady {
+		return fmt.Errorf("waiting for new machines")
+	}
+
 	sortedMachines := machines.SortedByCreationTimestamp()
 
 	var clientset *kubernetes.Clientset
-	if machinesToDelete > 0 {
+	if isNewMachineReady && machinesToDelete > 0 {
 		var kcSecret corev1.Secret
-		{
-		}
 		secretName := secret.Name(cluster.Name, secret.Kubeconfig)
 		err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &kcSecret)
 		if err != nil {

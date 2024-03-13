@@ -210,9 +210,10 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	downloadCommands := createCPDownloadCommands(config)
 
 	commands := config.Spec.PreStartCommands
-	commands = append(commands, downloadCommands...)
 	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service || true)")
 	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && rc-update add k0sleave shutdown || true)")
+	commands = append(commands, "k0s stop || true")
+	commands = append(commands, downloadCommands...)
 	commands = append(commands, installCmd, "k0s start")
 	commands = append(commands, config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
@@ -511,28 +512,41 @@ func createCPInstallCmdWithJoinToken(config *bootstrapv1.K0sControllerConfig, to
 }
 
 func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv1.Machine) (string, error) {
-	name := firstControllerMachine.Name
-	machineImpl, err := c.getMachineImplementation(ctx, firstControllerMachine)
-	if err != nil {
-		return "", fmt.Errorf("error getting machine implementation: %w", err)
-	}
-	addresses, found, err := unstructured.NestedSlice(machineImpl.UnstructuredContent(), "status", "addresses")
-	if err != nil {
-		return "", err
-	}
-
 	extAddr, intAddr := "", ""
+	for _, addr := range firstControllerMachine.Status.Addresses {
+		if addr.Type == clusterv1.MachineExternalIP {
+			extAddr = addr.Address
+			break
+		}
+		if addr.Type == clusterv1.MachineInternalIP {
+			intAddr = addr.Address
+			break
+		}
+	}
 
-	if found {
-		for _, addr := range addresses {
-			addrMap, _ := addr.(map[string]interface{})
-			if addrMap["type"] == string(v1.NodeExternalIP) {
-				extAddr = addrMap["address"].(string)
-				break
-			}
-			if addrMap["type"] == string(v1.NodeInternalIP) {
-				intAddr = addrMap["address"].(string)
-				break
+	name := firstControllerMachine.Name
+
+	if extAddr == "" && intAddr == "" {
+		machineImpl, err := c.getMachineImplementation(ctx, firstControllerMachine)
+		if err != nil {
+			return "", fmt.Errorf("error getting machine implementation: %w", err)
+		}
+		addresses, found, err := unstructured.NestedSlice(machineImpl.UnstructuredContent(), "status", "addresses")
+		if err != nil {
+			return "", err
+		}
+
+		if found {
+			for _, addr := range addresses {
+				addrMap, _ := addr.(map[string]interface{})
+				if addrMap["type"] == string(v1.NodeExternalIP) {
+					extAddr = addrMap["address"].(string)
+					break
+				}
+				if addrMap["type"] == string(v1.NodeInternalIP) {
+					intAddr = addrMap["address"].(string)
+					break
+				}
 			}
 		}
 	}

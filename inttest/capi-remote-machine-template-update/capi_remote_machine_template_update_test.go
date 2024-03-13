@@ -253,9 +253,12 @@ func (s *RemoteMachineTemplateUpdateSuite) createCluster() {
 	// Parse the cluster yaml as template
 	t, err := template.New("cluster").Parse(clusterYaml)
 	s.Require().NoError(err)
+	ut, err := template.New("clusterUpdate").Parse(updatedClusterYaml)
+	s.Require().NoError(err)
 
 	// Execute the template to buffer
 	var clusterYaml bytes.Buffer
+	var updateClusterYaml bytes.Buffer
 
 	err = t.Execute(&clusterYaml, struct {
 		Address string
@@ -267,9 +270,19 @@ func (s *RemoteMachineTemplateUpdateSuite) createCluster() {
 	s.Require().NoError(err)
 	bytes := clusterYaml.Bytes()
 
+	err = ut.Execute(&updateClusterYaml, struct {
+		Address string
+		SSHKey  string
+	}{
+		Address: workerIP,
+		SSHKey:  base64.StdEncoding.EncodeToString(s.privateKey),
+	})
+	s.Require().NoError(err)
+	updateClusterBytes := updateClusterYaml.Bytes()
+
 	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, bytes, 0644))
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
-	s.Require().NoError(os.WriteFile(s.updatedClusterYamlsPath, []byte(updatedClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.updatedClusterYamlsPath, updateClusterBytes, 0644))
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
@@ -425,4 +438,18 @@ spec:
       kind: RemoteMachineTemplate
       name: remote-test-cp-template
       namespace: default
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: PooledRemoteMachine
+metadata:
+  name: remote-test-1
+  namespace: default
+spec:
+  pool: default
+  machine:
+    address: {{ .Address }}
+    port: 22
+    user: root
+    sshKeyRef:
+      name: footloose-key
 `
