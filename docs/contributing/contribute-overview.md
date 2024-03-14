@@ -19,6 +19,8 @@ k0smotron follows the [CNCF Code of Conduct](https://github.com/cncf/foundation/
 
 k0smotron follows the [Effective Go coding guidelines](https://go.dev/doc/effective_go).
 
+## 
+
 ## Follow k0smotron GitHub workflow
 
 Ensure that your contribution adheres to [the k0smotron GitHub workflow](contribute-workflow.md):
@@ -34,13 +36,13 @@ Ensure that your contribution adheres to [the k0smotron GitHub workflow](contrib
 ## Test code
 
 All PRs submitted to the k0smotron project go through a series of tests and reviews.
-As such, remember to run your own tests before you submit a PR.
-This will reduce the number of review iterations and automated test runs.
+As such, you should run your own tests before you submit a PR,
+as this will reduce the number of review iterations and automated test runs.
 For detailed information, refer to the k0smotron [testing guidelines](contribute-testing.md).
 
 ## License
 
-In contributing to the k0smotron project, you agree that your submissions will be licensed as followed:
+In contributing to the k0smotron project, you agree that your submissions will be licensed as follows:
 
 - All content residing under the `docs` directory is licensed under
 ["Creative Commons Attribution Share Alike 4.0 International" (CC-BY-SA-4.0)](../LICENSE).
@@ -49,6 +51,6 @@ available under the ["Apache License 2.0"](../../LICENSE).
 
 ## Community
 
-Get the latest news on k0smotron from [k0sproject Twitter account](https://twitter.com/k0sproject).
+Get the latest news on k0smotron from [the k0sproject Twitter account](https://twitter.com/k0sproject).
 You can also learn about k0smotron updates and initiatives on [the official k0s community blog](https://medium.com/k0sproject).
 Share your views on the [Lens Forums](https://forums.k8slens.dev/).

@@ -55,15 +55,15 @@ Once you decide the PR is ready for review, transition it out of draft mode to n
 
 In order for a pull request to be merged, the following conditions should exist:
 
-1. Pull request passes all the automated tests (style, build and conformance tests).
-2. Pull request commits are signed with the `--signoff` option.
-3. Pull request is reviewed and approved by a code owner.
-4. Pull request is rebased against upstream main branch.
+The PR has passed all the automated tests (style, build and conformance tests).
+All the PR commits have been signed with the `--signoff` option.
+The PR has been reviewed and approved by a code owner.
+The PR has been rebased against upstream main branch.
 
 ## Cleanup local workspace
 
-To clean up the local workspace, run `make clean`.
-This removes all the intermediate files and directories created during the k0smotron build.
+Run `make clean` to remove all the intermediate files and directories created
+locally during the k0smotron build.
 You cannot use `git clean -X` or `rm -rf`, since the Go modules
 cache sets all of its subdirectories to read-only.
 If you encounter problems during a deletion process,
