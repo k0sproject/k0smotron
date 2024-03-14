@@ -20,7 +20,7 @@ Policy](https://kubernetes.io/releases/version-skew-policy/).
 
 A [valid version](https://hub.docker.com/r/kindest/node/tags) of `spec.template.spec.version` is required for MachineDeployment.
 
-## Overcoming issues with Cluster API Capd k0smotron child cluster deployment
+## Overcoming issues with CAPD k0smotron child cluster deployment
 
 In [Cluster API](https://cluster-api.sigs.k8s.io/), check whether the
 MachineDeployment `spec.template.spec.version` field is present. If it is
