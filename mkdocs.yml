@@ -37,6 +37,10 @@ nav:
         - vSphere: capi-vsphere.md
   - FAQ: faq.md
   - Troubleshooting: troubleshooting.md
+  - Contributing:
+      - Overview: contributing/contribute-overview.md
+      - Workflow: contributing/contribute-workflow.md
+      - Testing: contributing/contribute-testing.md
   - Reference:
     - Custom resources: resource-reference.md
 

@@ -84,7 +84,7 @@ Explore the comprehensive [documentation](https://docs.k0smotron.io/stable) for 
 
 ## Contributing
 
-Contributions to k0smotron are welcome! Read the [Contribution Guidelines](contributors/) to learn how you can participate in enhancing this tool.
+We invite you to contribute to the growth and enhancement of k0smotron. To learn how you can leave your mark on the project, please read our [Contribution Guidelines.](https://docs.k0smotron.io/stable).
 
 ## License
 
