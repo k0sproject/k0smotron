@@ -55,10 +55,10 @@ Once you decide the PR is ready for review, transition it out of draft mode to n
 
 In order for a pull request to be merged, the following conditions should exist:
 
-The PR has passed all the automated tests (style, build and conformance tests).
-All the PR commits have been signed with the `--signoff` option.
-The PR has been reviewed and approved by a code owner.
-The PR has been rebased against upstream main branch.
+1. The PR has passed all the automated tests (style, build and conformance tests).
+1. All the PR commits have been signed with the `--signoff` option.
+1. The PR has been reviewed and approved by a code owner.
+1. The PR has been rebased against upstream main branch.
 
 ## Cleanup local workspace
 
