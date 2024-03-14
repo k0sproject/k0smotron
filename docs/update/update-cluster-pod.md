@@ -52,7 +52,7 @@ to prevent data loss. For example:
         hostPath: "/tmp/kmc-test" # k0smotron will mount a basic hostPath volume to avoid data loss.
    ```
 
-   Do not configure persistence in production environment. 
+   Do not configure `hostPath` persistence in production environment. 
    Learn more from the official Kubernetes documentation on [hostPath](https://kubernetes.io/docs/concepts/storage/volumes/#hostpath).
 
 3. Change all the k0s versions to [the target one](https://docs.k0sproject.io/v1.29.2+k0s.0/releases/#k0s-release-and-support-model). For example:
@@ -102,6 +102,7 @@ with the new names to create machines for the target k0smotron version. For exam
 
    ```bash
    kubectl apply -f ./path-to-file.yaml
+   ```
 
    
 6. Remove the machines running the old k0smotron version:
