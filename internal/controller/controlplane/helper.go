@@ -3,6 +3,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 
 	"github.com/Masterminds/semver"
@@ -41,7 +42,11 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 		},
 	}
 
-	return c.Client.Delete(ctx, machine)
+	err := c.Client.Delete(ctx, machine)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("error deleting machine: %w", err)
+	}
+	return nil
 }
 
 func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) *clusterv1.Machine {
@@ -97,7 +102,11 @@ func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name stri
 		return err
 	}
 
-	return c.Client.Delete(ctx, machineFromTemplate)
+	err = c.Client.Delete(ctx, machineFromTemplate)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("error deleting machine implementation: %w", err)
+	}
+	return nil
 }
 
 func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
@@ -148,11 +157,15 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 		return nil
 	}
 
-	return clientset.RESTClient().
+	err := clientset.RESTClient().
 		Patch(types.MergePatchType).
 		Resource("controlnodes").
 		Name(name).
 		Body([]byte(`{"metadata":{"annotations":{"k0smotron.io/leave":"true"}}}`)).
 		Do(ctx).
 		Error()
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("error marking control node to leave: %w", err)
+	}
+	return nil
 }

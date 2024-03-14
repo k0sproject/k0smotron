@@ -264,10 +264,11 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			m.Status.Phase == string(clusterv1.MachinePhaseProvisioned) ||
 			m.Status.Phase == string(clusterv1.MachinePhaseRunning) {
 			isNewMachineReady = true
+			break
 		}
 	}
 
-	if machinesToDelete > 0 && isNewMachineReady {
+	if machinesToDelete > 0 && !isNewMachineReady {
 		return fmt.Errorf("waiting for new machines")
 	}
 
@@ -362,7 +363,11 @@ func (c *K0sController) deleteBootstrapConfig(ctx context.Context, name string, 
 			Namespace: kcp.Namespace,
 		},
 	}
-	return c.Client.Delete(ctx, &controllerConfig)
+	err := c.Client.Delete(ctx, &controllerConfig)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("error deleting K0sControllerConfig: %w", err)
+	}
+	return nil
 }
 
 func (c *K0sController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
