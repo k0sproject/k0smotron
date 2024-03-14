@@ -53,7 +53,7 @@ Once you decide the PR is ready for review, transition it out of draft mode to n
 
 ### Pre-requisites for merge
 
-In order for a pull request to be merged, the following conditions should exist:
+In order for a pull request to be merged, the following conditions should be met:
 
 1. The PR has passed all the automated tests (style, build and conformance tests).
 1. All the PR commits have been signed with the `--signoff` option.
