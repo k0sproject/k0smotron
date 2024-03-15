@@ -15,10 +15,10 @@
         <link rel="canonical" href="https://docs.k0smotron.io/head/monitoring/">
       
       
-        <link rel="prev" href="../ha/">
+        <link rel="prev" href="../capi-vsphere/">
       
       
-        <link rel="next" href="../cluster-api/">
+        <link rel="next" href="../faq/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -397,19 +397,17 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
         
           
           <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
@@ -423,7 +421,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             Standalone
@@ -509,37 +507,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    Monitoring
-  </span>
-  
-
-      </a>
-      
     </li>
   
 
@@ -891,6 +858,37 @@ You are not currently viewing the documentation for the current stable release o
 
               
             
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Monitoring
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1139,10 +1137,15 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="control-plane-monitoring">Control Plane Monitoring<a class="headerlink" href="#control-plane-monitoring" title="Permanent link">#</a></h1>
-<p>K0smotron provides a mechanism to expose child cluster control plane metrics to a Prometheus instance running in the parent cluster. 
-This allows you to monitor the control plane components of the child cluster as the usual Kubernetes workload, using the same Prometheus instance that is used to monitor the parent cluster.</p>
-<p>To enable the monitoring for the k0smotron cluster you need to set <code>spec.enableMonitoring=true</code> in the <code>Cluster</code> resource:</p>
+<h1 id="control-plane-monitoring">Control plane monitoring<a class="headerlink" href="#control-plane-monitoring" title="Permanent link">#</a></h1>
+<p>For the standalone and Cluster API in-cluster use cases, k0smotron provides
+a mechanism to expose control plane metrics of a managed cluster to
+a Prometheus instance running in the management cluster. This allows you to
+monitor the control plane components of the managed cluster as a usual
+Kubernetes workload using the same Prometheus instance that is used to monitor
+the management cluster.</p>
+<p>To enable monitoring for a k0smotron cluster, set <code>spec.enableMonitoring=true</code>
+in the <code>Cluster</code> resource:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1150,10 +1153,15 @@ This allows you to monitor the control plane components of the child cluster as 
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">enableMonitoring</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
-<p>This will add two sidecar containers to the control plane pods:
-- <code>monitoring-agent</code> - a container that will scrape the metrics from the control plane components.
-- <code>monitoring-proxy</code> - a container with a proxy that will expose the metrics scraped by the <code>monitoring-agent</code> to the parent cluster.</p>
-<p>All metrics contain the <code>k0smotron_cluster</code> label with the name of the cluster.</p>
+<p>Once done, two sidecar containers are added to the control plane pods:</p>
+<ul>
+<li><code>monitoring-agent</code> - a container that scrapes metrics from the control plane
+  components.</li>
+<li><code>monitoring-proxy</code> - a container with a proxy that exposes metrics scraped by
+  <code>monitoring-agent</code> to the management cluster.</li>
+</ul>
+<p>All metrics contain the <code>k0smotron_cluster</code> label with the name of the managed
+cluster.</p>
 
 
 
