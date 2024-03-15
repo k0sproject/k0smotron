@@ -3775,6 +3775,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#volumeattributesclass
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -3938,21 +3956,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -3970,35 +3973,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -4898,6 +4872,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -4923,6 +4919,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6228,6 +6389,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#volumeattributesclass
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -6391,21 +6570,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -6423,35 +6587,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -6655,6 +6790,24 @@ resized then the Condition will be set to 'ResizeStarted'.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>currentVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
+When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatusmodifyvolumestatus">modifyVolumeStatus</a></b></td>
+        <td>object</td>
+        <td>
+          ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>phase</b></td>
         <td>string</td>
         <td>
@@ -6727,6 +6880,51 @@ PersistentVolumeClaimCondition contains details about state of pvc
           reason is a unique, this should be a short, machine understandable string that gives the reason
 for condition's last transition. If it reports "ResizeStarted" that means the underlying
 persistent volume is being resized.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.status.modifyVolumeStatus
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatus)</sup></sup>
+
+
+
+ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status is the status of the ControllerModifyVolume operation. It can be in any of following states:
+ - Pending
+   Pending indicates that the PersistentVolumeClaim cannot be modified due to unmet requirements, such as
+   the specified VolumeAttributesClass not existing.
+ - InProgress
+   InProgress indicates that the volume is being modified.
+ - Infeasible
+  Infeasible indicates that the request has been rejected as invalid by the CSI driver. To
+	  resolve the error, a valid VolumeAttributesClass needs to be specified.
+Note: New statuses can be added in the future. Consumers should check for unknown statuses and fail appropriately.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          targetVolumeAttributesClassName is the name of the VolumeAttributesClass the PVC currently being reconciled<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8647,6 +8845,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#volumeattributesclass
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -8810,21 +9026,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -8842,35 +9043,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -9770,6 +9942,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -9795,6 +9989,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11100,6 +11459,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#volumeattributesclass
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -11263,21 +11640,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimspecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -11295,35 +11657,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.persistence.persistentVolumeClaim.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimspecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -11527,6 +11860,24 @@ resized then the Condition will be set to 'ResizeStarted'.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>currentVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
+When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimstatusmodifyvolumestatus">modifyVolumeStatus</a></b></td>
+        <td>object</td>
+        <td>
+          ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>phase</b></td>
         <td>string</td>
         <td>
@@ -11599,6 +11950,51 @@ PersistentVolumeClaimCondition contains details about state of pvc
           reason is a unique, this should be a short, machine understandable string that gives the reason
 for condition's last transition. If it reports "ResizeStarted" that means the underlying
 persistent volume is being resized.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.persistence.persistentVolumeClaim.status.modifyVolumeStatus
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimstatus)</sup></sup>
+
+
+
+ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status is the status of the ControllerModifyVolume operation. It can be in any of following states:
+ - Pending
+   Pending indicates that the PersistentVolumeClaim cannot be modified due to unmet requirements, such as
+   the specified VolumeAttributesClass not existing.
+ - InProgress
+   InProgress indicates that the volume is being modified.
+ - Infeasible
+  Infeasible indicates that the request has been rejected as invalid by the CSI driver. To
+	  resolve the error, a valid VolumeAttributesClass needs to be specified.
+Note: New statuses can be added in the future. Consumers should check for unknown statuses and fail appropriately.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          targetVolumeAttributesClassName is the name of the VolumeAttributesClass the PVC currently being reconciled<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -14149,6 +14545,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#volumeattributesclass
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -14312,21 +14726,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#clusterspecmanifestsindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -14344,35 +14743,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### Cluster.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#clusterspecmanifestsindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -15272,6 +15642,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterspecmanifestsindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -15297,6 +15689,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.manifests[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#clusterspecmanifestsindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -16602,6 +17159,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#volumeattributesclass
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -16765,21 +17340,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#clusterspecpersistencepersistentvolumeclaimspecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -16797,35 +17357,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### Cluster.spec.persistence.persistentVolumeClaim.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#clusterspecpersistencepersistentvolumeclaimspecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -17029,6 +17560,24 @@ resized then the Condition will be set to 'ResizeStarted'.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>currentVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
+When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecpersistencepersistentvolumeclaimstatusmodifyvolumestatus">modifyVolumeStatus</a></b></td>
+        <td>object</td>
+        <td>
+          ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>phase</b></td>
         <td>string</td>
         <td>
@@ -17101,6 +17650,51 @@ PersistentVolumeClaimCondition contains details about state of pvc
           reason is a unique, this should be a short, machine understandable string that gives the reason
 for condition's last transition. If it reports "ResizeStarted" that means the underlying
 persistent volume is being resized.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.persistence.persistentVolumeClaim.status.modifyVolumeStatus
+<sup><sup>[↩ Parent](#clusterspecpersistencepersistentvolumeclaimstatus)</sup></sup>
+
+
+
+ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status is the status of the ControllerModifyVolume operation. It can be in any of following states:
+ - Pending
+   Pending indicates that the PersistentVolumeClaim cannot be modified due to unmet requirements, such as
+   the specified VolumeAttributesClass not existing.
+ - InProgress
+   InProgress indicates that the volume is being modified.
+ - Infeasible
+  Infeasible indicates that the request has been rejected as invalid by the CSI driver. To
+	  resolve the error, a valid VolumeAttributesClass needs to be specified.
+Note: New statuses can be added in the future. Consumers should check for unknown statuses and fail appropriately.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          targetVolumeAttributesClassName is the name of the VolumeAttributesClass the PVC currently being reconciled<br/>
         </td>
         <td>false</td>
       </tr></tbody>
