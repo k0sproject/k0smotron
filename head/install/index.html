@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#installation" class="md-skip">
+        <a href="#introduction" class="md-skip">
           Skip to content
         </a>
       
@@ -331,17 +331,6 @@ You are not currently viewing the documentation for the current stable release o
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Installation
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -351,34 +340,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#clusterctl" class="md-nav__link">
-    <span class="md-ellipsis">
-      clusterctl
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -795,7 +756,7 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    Overview
+    Software prerequisites
   </span>
   
 
@@ -1161,23 +1122,6 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#clusterctl" class="md-nav__link">
-    <span class="md-ellipsis">
-      clusterctl
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1191,28 +1135,66 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">#</a></h1>
-<p>To install k0smotron, run the following command:</p>
+<h1 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">#</a></h1>
+<p>This section describes how to install k0smotron on top of an existing k0s
+Kubernetes cluster that allows for creation and management of the k0s
+control plane.</p>
+<h1 id="hardware-requirements">Hardware requirements<a class="headerlink" href="#hardware-requirements" title="Permanent link">#</a></h1>
+<p>k0smotron does not require any special hardware for workloads aside from
+the one required for k0s. For details on k0s hardware requirements for
+workloads, see <a href="https://docs.k0sproject.io/stable/system-requirements/">k0s documentation</a>.</p>
+<h1 id="software-prerequisites">Software prerequisites<a class="headerlink" href="#software-prerequisites" title="Permanent link">#</a></h1>
+<p>k0smotron requires the following software to be preinstalled:</p>
+<ul>
+<li>Kubernetes management cluster.
+  In this documentation set, we use the
+  <a href="https://docs.k0sproject.io/stable/install/">k0s Kubernetes distribution</a>
+  as a management cluster.
+  For Cluster API integration, you can use a
+  <a href="https://cluster-api.sigs.k8s.io/reference/glossary.html#management-cluster">Cluster API cluster</a>.</li>
+<li><code>kubectl</code> installed locally.</li>
+<li>
+<p>For Cluster API integration:</p>
+<ul>
+<li><a href="https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl">clusterctl</a>
+  installed locally.</li>
+<li>Configured cloud provider. In this documentation set, we describe
+  configuration examples for the following providers: AWS, Docker,
+  Hetzner Cloud, OpenStack, vSphere. For setup instructions, refer to the
+  official documentation of the selected cloud provider.</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>Optional. CSI provider for persistent storage in managed clusters.</li>
+<li>Optional. Load balancer provider for ensuring high availability of the
+  control plane.</li>
+</ul>
+<h1 id="full-installation">Full installation<a class="headerlink" href="#full-installation" title="Permanent link">#</a></h1>
+<p>A full k0smotron installation implies the following components:</p>
+<ul>
+<li>k0smotron operator</li>
+<li>Custom Resource Definitions</li>
+<li>Role-based access control rules</li>
+<li>Bootstrap provider</li>
+<li>Infrastructure provider</li>
+<li>Control plane provider</li>
+</ul>
+<p>To install the full version of k0smotron:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/None/install.yaml
 </code></pre></div>
-<p>This install the k0smotron controller manager, all the related CRD definitions and needed RBAC rules.</p>
-<p>Once the installation is completed you are ready to <a href="../cluster/">create your first control planes</a>.</p>
-<h2 id="clusterctl">clusterctl<a class="headerlink" href="#clusterctl" title="Permanent link">#</a></h2>
-<p>k0smotron is compatible with clusterctl and can act as bootstrap, infrastructure, and control plane provider. To use k0smotron with clusterctl, you need to create a clusterctl configuration file. Here's an example:</p>
-<div class="highlight"><pre><span></span><code>providers:
-<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;k0smotron&quot;</span>
-<span class="w">    </span>url:<span class="w"> </span><span class="s2">&quot;https://github.com/k0sproject/k0smotron/releases/latest/bootstrap-components.yaml&quot;</span>
-<span class="w">    </span>type:<span class="w"> </span><span class="s2">&quot;BootstrapProvider&quot;</span>
-<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;k0smotron&quot;</span>
-<span class="w">    </span>url:<span class="w"> </span><span class="s2">&quot;https://github.com/k0sproject/k0smotron/releases/latest/control-plane-components.yaml&quot;</span>
-<span class="w">    </span>type:<span class="w"> </span><span class="s2">&quot;ControlPlaneProvider&quot;</span>
-<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;k0smotron&quot;</span>
-<span class="w">    </span>url:<span class="w"> </span><span class="s2">&quot;https://github.com/k0sproject/k0smotron/releases/latest/infrastructure-components.yaml&quot;</span>
-<span class="w">    </span>type:<span class="w"> </span><span class="s2">&quot;InfrastructureProvider&quot;</span>
+<p>Now, you can create your first control planes using k0smotron either as a
+standalone manager, or as a Cluster API provider. For use case details, see
+<a href="../usage-overview/">k0smotron usage</a>.</p>
+<h1 id="per-module-installation-for-cluster-api">Per-module installation for Cluster API<a class="headerlink" href="#per-module-installation-for-cluster-api" title="Permanent link">#</a></h1>
+<p>k0smotron is compatible with <code>clusterctl</code> and can act as a Cluster API
+bootstrap, infrastructure, and control plane provider. You can use
+<code>clusterctl</code> to install each k0smotron Cluster API module separately:</p>
+<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--bootstrap<span class="w"> </span>k0sproject-k0smotron<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--control-plane<span class="w"> </span>k0sproject-k0smotron<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--infrastructure<span class="w"> </span>k0sproject-k0smotron
 </code></pre></div>
-<p>Once you have the configuration file in place, you can use clusterctl to create a cluster:</p>
-<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--bootstrap<span class="w"> </span>k0smotron<span class="w"> </span>--control-plane<span class="w"> </span>k0smotron<span class="w"> </span>--config<span class="w"> </span>config.yaml
-</code></pre></div>
+<p>To start using the k0smotron Cluster API, refer to <a href="../cluster-api/">Cluster API</a>.</p>
 
 
 
