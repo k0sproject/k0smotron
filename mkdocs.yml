@@ -43,6 +43,9 @@ nav:
       - Testing: contributing/contribute-testing.md
   - Reference:
     - Custom resources: resource-reference.md
+    - Terminology: terminology.md
+
+
 
 theme:
   name: "material"
@@ -70,6 +73,10 @@ extra_css:
   - stylesheets/extra.css
 plugins:
   - search
+  - ezglossary:
+      section_config:
+        - name: demo
+          inline_refs: short
   - macros:
       j2_variable_start_string: "{{{"
       j2_variable_end_string: "}}}"
