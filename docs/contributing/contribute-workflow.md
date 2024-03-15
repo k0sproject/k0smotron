@@ -59,10 +59,10 @@ Create pull requests to contribute to [k0smotron GitHub repository](http://githu
 
 !!! note
 
-   Use `git fetch` or `git rebase` instead of `git pull` to keep the commit history linear. 
-   The `git pull` command performs a merge, which leaves merge commits.
-   Too many commits make the history messy and violate the principle
-   that commits ought to be individually understandable and useful.
+    Use `git fetch` or `git rebase` instead of `git pull` to keep the commit history linear.
+    The `git pull` command performs a merge, which leaves merge commits.
+    Too many commits make the history messy and violate the principle
+    that commits ought to be individually understandable and useful.
 
 ## Commit and push
 
