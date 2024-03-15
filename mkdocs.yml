@@ -6,7 +6,7 @@ docs_dir: docs/
 repo_name: GitHub
 repo_url: https://github.com/k0sproject/k0smotron
 copyright:
-  Copyright &copy; 2023 <a href="https://mirantis.com/">Mirantis Inc.</a>
+  Copyright &copy; 2024 <a href="https://mirantis.com/">Mirantis Inc.</a>
   - All rights reserved.
 edit_uri: ""
 nav:
@@ -16,11 +16,10 @@ nav:
   - Usage:
     - Overview: usage-overview.md
     - Standalone:
-      - Creating a cluster: cluster.md
+      - Create a cluster: cluster.md
+      - Join a worker node: join-nodes.md
       - Configuration: configuration.md
-      - Join nodes: join-nodes.md
       - HA control planes: ha.md
-      - Monitoring: monitoring.md
     - Cluster API:
       - Overview: cluster-api.md
       - Control Plane: capi-controlplane.md
@@ -29,16 +28,22 @@ nav:
       - Remote Machine Provider: capi-remote.md
       - ClusterClass: capi-clusterclass.md
       - Examples:
-        - Overview: capi-examples.md
+        - Software prerequisites: capi-examples.md
         - AWS: capi-aws.md
         - Hetzner Cloud: capi-hetzner.md
         - OpenStack: capi-openstack.md
         - Docker: capi-docker.md
         - vSphere: capi-vsphere.md
+    - Monitoring: monitoring.md
   - Update:
      - Standalone: update/update-standalone.md
      - Cluster API: update/update-cluster-pod.md
   - FAQ: faq.md
+  - Troubleshooting: troubleshooting.md
+  - Contributing:
+      - Overview: contributing/contribute-overview.md
+      - Workflow: contributing/contribute-workflow.md
+      - Testing: contributing/contribute-testing.md
   - Reference:
     - Custom resources: resource-reference.md
 
@@ -62,6 +67,7 @@ theme:
     - toc.autohide
     - search.suggest
     - search.highlight
+    - content.code.copy
 
 extra_css:
   - stylesheets/extra.css
@@ -95,6 +101,7 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
   - admonition
+  - def_list
 
 extra:
   k0smotron_version: !!python/object/apply:os.getenv ["K0SMOTRON_VERSION"]

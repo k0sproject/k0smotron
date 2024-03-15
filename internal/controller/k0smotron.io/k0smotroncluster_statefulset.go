@@ -183,17 +183,6 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 	}
 
 	switch kmc.Spec.Persistence.Type {
-	case "emptyDir":
-		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
-			Name: kmc.GetVolumeName(),
-			VolumeSource: v1.VolumeSource{
-				EmptyDir: &v1.EmptyDirVolumeSource{},
-			},
-		})
-		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
-			Name:      kmc.GetVolumeName(),
-			MountPath: "/var/lib/k0s",
-		})
 	case "hostPath":
 		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
 			Name: kmc.GetVolumeName(),
@@ -227,6 +216,19 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.Spec.Persistence.PersistentVolumeClaim.Name,
+			MountPath: "/var/lib/k0s",
+		})
+	case "emptyDir":
+		fallthrough
+	default:
+		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: kmc.GetVolumeName(),
+			VolumeSource: v1.VolumeSource{
+				EmptyDir: &v1.EmptyDirVolumeSource{},
+			},
+		})
+		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+			Name:      kmc.GetVolumeName(),
 			MountPath: "/var/lib/k0s",
 		})
 	}
