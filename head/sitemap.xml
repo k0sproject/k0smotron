@@ -111,6 +111,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://docs.k0smotron.io/head/terminology/</loc>
+         <lastmod>2024-03-15</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://docs.k0smotron.io/head/troubleshooting/</loc>
          <lastmod>2024-03-15</lastmod>
          <changefreq>daily</changefreq>

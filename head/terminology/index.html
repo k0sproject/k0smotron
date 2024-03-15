@@ -12,13 +12,11 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/status/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/terminology/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../resource-reference/">
       
-      
-        <link rel="next" href="../install/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +24,7 @@
     
     
       
-        <title>Project status - Documentation</title>
+        <title>Terminology - Documentation</title>
       
     
     
@@ -87,7 +85,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#project-status" class="md-skip">
+        <a href="#terminology" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +136,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Project status
+              Terminology
             
           </span>
         </div>
@@ -299,30 +297,10 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Project status
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../status/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -331,44 +309,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#cluster-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      Cluster API
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#known-limitations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Known limitations
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1091,17 +1031,19 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
         
           
           <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
@@ -1115,7 +1057,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             Reference
@@ -1147,10 +1089,19 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../terminology/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1159,6 +1110,7 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
     </li>
   
 
@@ -1191,32 +1143,6 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#cluster-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      Cluster API
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#known-limitations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Known limitations
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1230,35 +1156,25 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="project-status">Project status<a class="headerlink" href="#project-status" title="Permanent link">#</a></h1>
-<p>To gauge the level of interest in running k0s control planes as Kubernetes
-resources, we are releasing k0smotron at the earliest possible moment. Of
-course, as with any young project just getting started, there are bound to be
-some bumps, unforeseen issues, and a few surprises. In line with that, we can
-offer no guarantees regarding backward or forward compatibility, and you should
-expect a certain amount of breakage with each ensuing k0smotron release.</p>
-<p>All caveats aside, though, we are truly excited about what k0smotron has to
-offer, and look forward to seeing how it can transform the way you manage your
-Kubernetes deployments. We are confident that the open source community will
-take great interest in the project, too, and help us to smooth out the rough
-edges in the days, weeks, and months ahead.</p>
-<h2 id="cluster-api">Cluster API<a class="headerlink" href="#cluster-api" title="Permanent link">#</a></h2>
-<p>One key focus of the k0smotron project is to have it function as a Cluster
-API provider for <code>ControlPlane</code>, <code>Bootstrap</code> and <code>Infrastructure</code> providers.</p>
-<h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">#</a></h2>
-<p>Areas in which k0smotron is currently limited include:</p>
-<ul>
-<li>Control plane exposure<p>Currently k0smotron only supports <code>ClusterIP</code>, <code>NodePort</code> and
-  <code>LoadBalancer</code> services, and often it is necessary to further configure
-  created services to ease their interraction with cloud provider
-  implementations.</p>
-</li>
-</ul>
-<ul>
-<li>Updates prevalence<p>Although k0smotron can easily update the cluster controlplane, in
-  standalone mode such updates do not extend to worker nodes.</p>
-</li>
-</ul>
+<h1 id="terminology">Terminology<a class="headerlink" href="#terminology" title="Permanent link">#</a></h1>
+<dl>
+<dt>
+	<a name="term_Control_plane_defs_0">Control plane</a> 
+</dt>
+<dd>A set of components that manages the overall state of a cluster</dd>
+
+</dl>
+<!--Use the following syntax to refer to the terminology entry:
+<a class="mkdocs-ezglossary-link"
+    name="term_Control_plane_refs_0"
+    title=""
+    href="../terminology/#term_Control_plane_defs_0">Control plane</a> or <a class="mkdocs-ezglossary-link"
+    name="term_Control_plane_refs_1"
+    title=""
+    href="../terminology/#term_Control_plane_defs_0">custom wording</a>
+
+Keep in mind that the entries are case-sensitive. So, specify the terminology entry as it is on the terminology page.
+-->
 
 
 
