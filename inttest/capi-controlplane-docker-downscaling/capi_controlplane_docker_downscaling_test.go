@@ -27,12 +27,14 @@ import (
 	"time"
 
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
+	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -133,16 +135,20 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
-	s.T().Log("verifying cloud-init extras")
-	preStartFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/pre-start")
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		result, err := kmcKC.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes").DoRaw(ctx)
+		if err != nil {
+			return false, err
+		}
+		var controlNodeList autopilot.ControlNodeList
+		if err := yaml.Unmarshal(result, &controlNodeList); err != nil {
+			return false, err
+		}
+
+		return len(controlNodeList.Items) == 3, nil
+	})
 	s.Require().NoError(err)
-	s.Require().Equal("pre-start", preStartFile)
-	postStartFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/post-start")
-	s.Require().NoError(err)
-	s.Require().Equal("post-start", postStartFile)
-	extraFile, err := getDockerNodeFile("docker-test-worker-0", "/tmp/test-file")
-	s.Require().NoError(err)
-	s.Require().Equal("test-file", extraFile)
 
 	s.T().Log("scaling down control plane")
 
@@ -185,15 +191,6 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) deleteCluster() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
-}
-
-func getDockerNodeFile(nodeName string, path string) (string, error) {
-	output, err := exec.Command("docker", "exec", nodeName, "cat", path).Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to get file %s from node %s: %w", path, nodeName, err)
-	}
-
-	return string(output), nil
 }
 
 func getLBPort(name string) (int, error) {
