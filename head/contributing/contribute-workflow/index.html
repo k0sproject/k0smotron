@@ -1405,11 +1405,11 @@ my_fork<span class="w"> </span>git@github.com:<span class="o">{</span><span clas
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
+<p>Use <code>git fetch</code> or <code>git rebase</code> instead of <code>git pull</code> to keep the commit history linear.
+The <code>git pull</code> command performs a merge, which leaves merge commits.
+Too many commits make the history messy and violate the principle
+that commits ought to be individually understandable and useful.</p>
 </div>
-<p>Use <code>git fetch</code> or <code>git rebase</code> instead of <code>git pull</code> to keep the commit history linear. 
-   The <code>git pull</code> command performs a merge, which leaves merge commits.
-   Too many commits make the history messy and violate the principle
-   that commits ought to be individually understandable and useful.</p>
 <h2 id="commit-and-push">Commit and push<a class="headerlink" href="#commit-and-push" title="Permanent link">#</a></h2>
 <p>Commit and sign your changes:</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>commit<span class="w"> </span>--signoff
