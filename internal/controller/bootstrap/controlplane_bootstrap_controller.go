@@ -206,7 +206,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	commands := config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
-	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service || true)")
+	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
 	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && rc-update add k0sleave shutdown || true)")
 	commands = append(commands, installCmd, "k0s start")
 	commands = append(commands, config.Spec.PostStartCommands...)

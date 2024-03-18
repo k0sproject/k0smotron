@@ -196,6 +196,9 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 						},
 						"linux-arm64": {
 							"url": "https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm64"
+						},
+						"linux-arm": {
+							"url": "https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm"
 						}
 					},
 					"targets": {

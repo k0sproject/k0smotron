@@ -93,15 +93,15 @@ func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Con
 func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
 	data, err := kubeconfig.FromSecret(ctx, c.Client, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name})
 	if err != nil {
-		return nil, err // TODO
+		return nil, fmt.Errorf("error fetching %s kubeconfig from secret: %w", cluster.Name, err)
 	}
 	config, err := clientcmd.NewClientConfigFromBytes(data)
 	if err != nil {
-		return nil, err // TODO
+		return nil, fmt.Errorf("error generating %s clientconfig: %w", cluster.Name, err)
 	}
 	restConfig, err := config.ClientConfig()
 	if err != nil {
-		return nil, err // TODO
+		return nil, fmt.Errorf("error generating %s restconfig:  %w", cluster.Name, err)
 	}
 
 	return kubernetes.NewForConfig(restConfig)

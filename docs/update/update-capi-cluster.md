@@ -9,6 +9,8 @@ and configure the new machine, and safer by keeping any data on the machine secu
 This differs from the usual Cluster API workflow,
 where deploying the new control plane is followed by decommissioning of the old one.
 
+## Updating the control plane
+
 1. Localize the configuration of deployed k0smotron cluster in your repository. For example:
 
     ```yaml 
@@ -59,7 +61,7 @@ where deploying the new control plane is followed by decommissioning of the old 
         spec: {}
     ```
 
-2. Change all the k0s versions to [the target one](https://docs.k0sproject.io/v1.29.2+k0s.0/releases/#k0s-release-and-support-model). For example:
+2. Change all the k0s versions to [the target one](https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model). For example:
 
    ```yaml
    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
