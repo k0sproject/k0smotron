@@ -19,7 +19,10 @@ k0smotron follows the [CNCF Code of Conduct](https://github.com/cncf/foundation/
 
 k0smotron follows the [Effective Go coding guidelines](https://go.dev/doc/effective_go).
 
-## 
+## Development environment
+
+Ensure successful development by setting up your environment correctly.
+Follow k0smotron instructions on [how to set up development environment](dev-environment.md).
 
 ## Follow k0smotron GitHub workflow
 
