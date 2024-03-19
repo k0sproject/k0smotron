@@ -25,12 +25,12 @@ import (
 )
 
 var (
-	// GroupVersion is group version used to register these objects
+	// defines the version of the API resources
 	GroupVersion = schema.GroupVersion{Group: "bootstrap.cluster.x-k8s.io", Version: "v1beta1"}
 
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
+	// adds the Go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 
-	// AddToScheme adds the types in this group-version to the given scheme.
+	// adds the types of the GroupVersion to the given scheme
 	AddToScheme = SchemeBuilder.AddToScheme
 )
