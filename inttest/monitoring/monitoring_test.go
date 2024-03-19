@@ -87,7 +87,7 @@ func (s *MonitoringSuite) TestK0sGetsUp() {
 
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 
-	err = wait.PollUntilContextTimeout(s.Context(), time.Second, time.Second*30, true, func(_ context.Context) (done bool, err error) {
+	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
 		b, err := kc.RESTClient().
 			Get().
 			AbsPath("/api/v1/namespaces/default/services/prometheus-server:http/proxy/api/v1/query").

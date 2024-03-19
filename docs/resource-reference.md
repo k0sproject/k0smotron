@@ -1594,6 +1594,13 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

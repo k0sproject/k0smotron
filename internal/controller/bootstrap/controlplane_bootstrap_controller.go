@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
@@ -199,11 +200,14 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		files = append(files, tunnelingFiles...)
 	}
 	files = append(files, config.Spec.Files...)
+	files = append(files, genShutdownServiceFiles()...)
 
 	downloadCommands := createCPDownloadCommands(config)
 
 	commands := config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
+	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
+	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && rc-update add k0sleave shutdown || true)")
 	commands = append(commands, installCmd, "k0s start")
 	commands = append(commands, config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
@@ -258,7 +262,11 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	// Set the status to ready
 	config.Status.Ready = true
 	config.Status.DataSecretName = pointer.String(bootstrapSecret.Name)
-	if err := c.Status().Update(ctx, config); err != nil {
+
+	err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		return c.Status().Update(ctx, config)
+	})
+	if err != nil {
 		log.Error(err, "Failed to patch config status")
 		return ctrl.Result{}, err
 	}
@@ -484,7 +492,11 @@ func createCPDownloadCommands(config *bootstrapv1.K0sControllerConfig) []string 
 
 func createCPInstallCmd(config *bootstrapv1.K0sControllerConfig) string {
 	installCmd := []string{
-		"k0s install controller"}
+		"k0s install controller",
+		"--force",
+		"--env AUTOPILOT_HOSTNAME=" + config.Name,
+		"--kubelet-extra-args=--hostname-override=" + config.Name,
+	}
 	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
 		installCmd = append(installCmd, config.Spec.Args...)
 	}
@@ -493,7 +505,11 @@ func createCPInstallCmd(config *bootstrapv1.K0sControllerConfig) string {
 
 func createCPInstallCmdWithJoinToken(config *bootstrapv1.K0sControllerConfig, tokenPath string) string {
 	installCmd := []string{
-		"k0s install controller"}
+		"k0s install controller",
+		"--force",
+		"--env AUTOPILOT_HOSTNAME=" + config.Name,
+		"--kubelet-extra-args=--hostname-override=" + config.Name,
+	}
 	installCmd = append(installCmd, "--token-file", tokenPath)
 	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
 		installCmd = append(installCmd, config.Spec.Args...)
@@ -506,7 +522,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, conf
 	nameParts := strings.Split(config.Name, "-")
 	nameParts[len(nameParts)-1] = "0"
 	name := strings.Join(nameParts, "-")
-	machineImpl, err := c.getMachineImplementation(ctx, name, config)
+	machine, machineImpl, err := c.getMachineImplementation(ctx, name, config)
 	if err != nil {
 		return "", fmt.Errorf("error getting machine implementation: %w", err)
 	}
@@ -516,6 +532,16 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, conf
 	}
 
 	extAddr, intAddr := "", ""
+	for _, addr := range machine.Status.Addresses {
+		if addr.Type == clusterv1.MachineExternalIP {
+			extAddr = addr.Address
+			break
+		}
+		if addr.Type == clusterv1.MachineInternalIP {
+			intAddr = addr.Address
+			break
+		}
+	}
 
 	if found {
 		for _, addr := range addresses {
@@ -542,11 +568,11 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, conf
 	return "", fmt.Errorf("no address found for machine %s", name)
 }
 
-func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, name string, config *bootstrapv1.K0sControllerConfig) (*unstructured.Unstructured, error) {
+func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, name string, config *bootstrapv1.K0sControllerConfig) (*clusterv1.Machine, *unstructured.Unstructured, error) {
 	var machine clusterv1.Machine
 	err := c.Get(ctx, client.ObjectKey{Name: name, Namespace: config.Namespace}, &machine)
 	if err != nil {
-		return nil, fmt.Errorf("error getting machine object: %w", err)
+		return nil, nil, fmt.Errorf("error getting machine object: %w", err)
 	}
 
 	infRef := machine.Spec.InfrastructureRef
@@ -560,7 +586,56 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, n
 
 	err = c.Get(ctx, key, machineImpl)
 	if err != nil {
-		return nil, fmt.Errorf("error getting machine implementation object: %w", err)
+		return nil, nil, fmt.Errorf("error getting machine implementation object: %w", err)
 	}
-	return machineImpl, nil
+	return &machine, machineImpl, nil
+}
+
+func genShutdownServiceFiles() []cloudinit.File {
+	return []cloudinit.File{
+		{
+			Path:        "/etc/bin/k0sleave.sh",
+			Permissions: "0777",
+			Content: `#!/bin/sh
+
+PID=$(k0s status | grep "Process ID" | awk '{print $3}')
+AUTOPILOT_HOSTNAME=$(tr '\0' '\n' < /proc/$PID/environ | grep AUTOPILOT_HOSTNAME)
+MACHINE_NAME=${AUTOPILOT_HOSTNAME#"AUTOPILOT_HOSTNAME="}
+
+IS_LEAVING=$(/usr/local/bin/k0s kc get controlnodes $MACHINE_NAME -o jsonpath='{.metadata.annotations.k0smotron\.io/leave}')
+
+if [ $IS_LEAVING = "true" ]; then
+        /usr/local/bin/k0s etcd leave
+fi
+`,
+		}, {
+			Path:        "/etc/systemd/system/k0sleave.service",
+			Permissions: "0644",
+			Content: `[Unit]
+Description=k0s etcd leave service
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/bin/true
+ExecStop=/etc/bin/k0sleave.sh
+TimeoutStartSec=0
+TimeoutStopSec=180
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+`,
+		},
+		{
+			Path:        "/etc/init.d/k0sleave",
+			Permissions: "0644",
+			Content: `#!/sbin/openrc-run
+
+name="k0sleave"
+description="k0s etcd leave service"
+command="/etc/bin/k0sleave.sh"
+		`,
+		},
+	}
 }
