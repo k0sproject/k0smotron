@@ -22,7 +22,7 @@ provided configuration file:
     make k0smotron-image-bundle.tar && kind load image-archive k0smotron-image-bundle.tar
     ```
 
-4. Releases the necessary components and installs them into the Kubernetes cluster:
+4. Release the necessary components and install them into the Kubernetes cluster:
 
     ```bash
     make release && kubectl create -f install.yaml
@@ -38,7 +38,7 @@ provided configuration file:
                 '{"spec":{"template":{"spec":{"containers":[{"name":"manager","args":["--leader-elect", "--metrics-bind-addr=localhost:8080", "--feature-gates=ClusterTopology=true"]}]}}}}'
     ```
 
-6. Deploys the Local Path Provisioner for storage provisioning:
+6. Deploy the Local Path Provisioner for storage provisioning:
 
     ```bash
     kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
