@@ -22,7 +22,9 @@ k0smotron follows the [Effective Go coding guidelines](https://go.dev/doc/effect
 ## Development environment
 
 Ensure successful development by setting up your environment correctly.
-Follow k0smotron instructions on [how to set up development environment](dev-environment.md).
+For basic k0smotron development, install Go, and follow k0smotron GitHub workflow.
+For tasks involving CAPI testing,
+follow k0smotron instructions on [setting up the CAPI development environment](dev-environment.md).
 
 ## Follow k0smotron GitHub workflow
 

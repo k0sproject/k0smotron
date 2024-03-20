@@ -1,7 +1,10 @@
-# Set up development environment
+# Set up CAPI development environment
 
 To contribute to k0smotron, ensure you have set up the development environment properly.
-Follow the steps below to configure your environment.
+For simple development tasks, it is enough to install Go,
+and follow [k0smotron GitHub workflow](contribute-workflow.md).
+For more complicated changes that require running CAPI (Common Application Programming Interface)
+tests, follow the steps below to configure your environment:
 
 1. Create Docker network:
 
