@@ -2244,14 +2244,6 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>enableMonitoring</b></td>
-        <td>boolean</td>
-        <td>
-          EnableMonitoring enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
-them as usual kubernetes pod metrics.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>externalAddress</b></td>
         <td>string</td>
         <td>
@@ -2307,6 +2299,13 @@ recommendation is to use secrets and configmaps.
 For more information check:
 https://docs.k0sproject.io/stable/manifests/ and
 https://kubernetes.io/docs/concepts/storage/volumes<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmonitoring">monitoring</a></b></td>
+        <td>object</td>
+        <td>
+          Monitoring defines the monitoring configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5841,6 +5840,52 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 </table>
 
 
+### K0smotronControlPlane.spec.monitoring
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+Monitoring defines the monitoring configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
+them as usual kubernetes pod metrics.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>prometheusImage</b></td>
+        <td>string</td>
+        <td>
+          PrometheusImage defines the image used for the prometheus sidecar.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/prometheus:v2.44.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>proxyImage</b></td>
+        <td>string</td>
+        <td>
+          ProxyImage defines the image used for the nginx proxy sidecar.<br/>
+          <br/>
+            <i>Default</i>: nginx:1.19.10<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlane.spec.persistence
 <sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
 
@@ -6990,14 +7035,6 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>enableMonitoring</b></td>
-        <td>boolean</td>
-        <td>
-          EnableMonitoring enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
-them as usual kubernetes pod metrics.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>externalAddress</b></td>
         <td>string</td>
         <td>
@@ -7053,6 +7090,13 @@ recommendation is to use secrets and configmaps.
 For more information check:
 https://docs.k0sproject.io/stable/manifests/ and
 https://kubernetes.io/docs/concepts/storage/volumes<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmonitoring">monitoring</a></b></td>
+        <td>object</td>
+        <td>
+          Monitoring defines the monitoring configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10587,6 +10631,52 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 </table>
 
 
+### K0smotronControlPlaneTemplate.spec.template.spec.monitoring
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+Monitoring defines the monitoring configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
+them as usual kubernetes pod metrics.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>prometheusImage</b></td>
+        <td>string</td>
+        <td>
+          PrometheusImage defines the image used for the prometheus sidecar.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/prometheus:v2.44.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>proxyImage</b></td>
+        <td>string</td>
+        <td>
+          ProxyImage defines the image used for the nginx proxy sidecar.<br/>
+          <br/>
+            <i>Default</i>: nginx:1.19.10<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlaneTemplate.spec.template.spec.persistence
 <sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
 
@@ -12366,14 +12456,6 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>enableMonitoring</b></td>
-        <td>boolean</td>
-        <td>
-          EnableMonitoring enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
-them as usual kubernetes pod metrics.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>externalAddress</b></td>
         <td>string</td>
         <td>
@@ -12429,6 +12511,13 @@ recommendation is to use secrets and configmaps.
 For more information check:
 https://docs.k0sproject.io/stable/manifests/ and
 https://kubernetes.io/docs/concepts/storage/volumes<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecmonitoring">monitoring</a></b></td>
+        <td>object</td>
+        <td>
+          Monitoring defines the monitoring configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15959,6 +16048,52 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
           storagePolicyName is the storage Policy Based Management (SPBM) profile name.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.monitoring
+<sup><sup>[↩ Parent](#clusterspec)</sup></sup>
+
+
+
+Monitoring defines the monitoring configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
+them as usual kubernetes pod metrics.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>prometheusImage</b></td>
+        <td>string</td>
+        <td>
+          PrometheusImage defines the image used for the prometheus sidecar.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/prometheus:v2.44.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>proxyImage</b></td>
+        <td>string</td>
+        <td>
+          ProxyImage defines the image used for the nginx proxy sidecar.<br/>
+          <br/>
+            <i>Default</i>: nginx:1.19.10<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

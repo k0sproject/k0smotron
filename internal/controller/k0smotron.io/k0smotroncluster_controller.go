@@ -106,7 +106,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	if kmc.Spec.EnableMonitoring {
+	if kmc.Spec.Monitoring.Enabled {
 		if err := r.reconcileMonitoringCM(ctx, kmc); err != nil {
 			r.updateStatus(ctx, kmc, "Failed reconciling prometheus configmap")
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err

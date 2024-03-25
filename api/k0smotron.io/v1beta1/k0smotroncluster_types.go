@@ -88,10 +88,9 @@ type ClusterSpec struct {
 	// be specified as a single string, e.g. --some-flag=argument
 	//+kubebuilder:validation:Optional
 	ControlPlaneFlags []string `json:"controllerPlaneFlags,omitempty"`
-	// EnableMonitoring enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
-	// them as usual kubernetes pod metrics.
+	// Monitoring defines the monitoring configuration.
 	//+kubebuilder:validation:Optional
-	EnableMonitoring bool `json:"enableMonitoring,omitempty"`
+	Monitoring MonitoringSpec `json:"monitoring,omitempty"`
 
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
@@ -149,7 +148,7 @@ type ClusterList struct {
 
 type PersistenceSpec struct {
 	//+kubebuilder:validation:Enum:emptyDir;hostPath;pvc
-	//+kubebuilder:default:=emptyDir
+	//+kubebuilder:default=emptyDir
 	Type string `json:"type"`
 	// PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.
 	//+kubebuilder:validation:Optional
@@ -195,6 +194,18 @@ type ObjectMeta struct {
 	// +optional
 	// +patchStrategy=merge
 	Finalizers []string `json:"finalizers,omitempty" patchStrategy:"merge" protobuf:"bytes,14,rep,name=finalizers"`
+}
+
+type MonitoringSpec struct {
+	// Enabled enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
+	// them as usual kubernetes pod metrics.
+	Enabled bool `json:"enabled"`
+	// PrometheusImage defines the image used for the prometheus sidecar.
+	//+kubebuilder:default="quay.io/k0sproject/prometheus:v2.44.0"
+	PrometheusImage string `json:"prometheusImage"`
+	// ProxyImage defines the image used for the nginx proxy sidecar.
+	//+kubebuilder:default="nginx:1.19.10"
+	ProxyImage string `json:"proxyImage"`
 }
 
 type CertificateRef struct {

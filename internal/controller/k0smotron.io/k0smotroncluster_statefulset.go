@@ -161,7 +161,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 				}},
 		}}
 
-	if kmc.Spec.EnableMonitoring {
+	if kmc.Spec.Monitoring.Enabled {
 		if kmc.Spec.Persistence.Type == "" {
 			kmc.Spec.Persistence.Type = "emptyDir"
 		}
@@ -386,7 +386,7 @@ func (r *ClusterReconciler) addMonitoringStack(kmc *km.Cluster, statefulSet *app
 	nginxConfCMName := kmc.GetMonitoringConfigMapName() + "-nginx"
 	statefulSet.Spec.Template.Spec.Containers = append(statefulSet.Spec.Template.Spec.Containers, v1.Container{
 		Name:            "monitoring-agent",
-		Image:           "quay.io/k0sproject/prometheus:v2.44.0",
+		Image:           kmc.Spec.Monitoring.PrometheusImage,
 		ImagePullPolicy: v1.PullIfNotPresent,
 		Command:         []string{"prometheus", "--config.file=/prometheus/prometheus.yml"},
 		Args:            []string{"--storage.tsdb.retention.size=200MB"},
@@ -405,7 +405,7 @@ func (r *ClusterReconciler) addMonitoringStack(kmc *km.Cluster, statefulSet *app
 		}},
 	}, v1.Container{
 		Name:            "monitoring-proxy",
-		Image:           "nginx:1.19.10",
+		Image:           kmc.Spec.Monitoring.ProxyImage,
 		ImagePullPolicy: v1.PullIfNotPresent,
 		Ports: []v1.ContainerPort{{
 			Name:          "nginx",
