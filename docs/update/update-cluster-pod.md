@@ -1,7 +1,7 @@
 # Update k0smotron in Cluster API integrated cluster
 
 To update k0smotron cluster deployed with Cluster API, you need to update
-the k0s version and machine names in the YAML configuration file.
+the k0s version and machine names in the YAML configuration file:
 
 1. Localize the configuration of deployed k0smotron cluster in your repository. For example:
 
@@ -52,10 +52,11 @@ to prevent data loss. For example:
         hostPath: "/tmp/kmc-test" # k0smotron will mount a basic hostPath volume to avoid data loss.
    ```
 
-   Do not configure `hostPath` persistence in production environment. 
-   Learn more from the official Kubernetes documentation on [hostPath](https://kubernetes.io/docs/concepts/storage/volumes/#hostpath).
+   Using the `hostPath` volume type introduces many security risks.
+   Avoid configuring persistence for volumes of the `hostPath` type.
+   Learn more from [official Kubernetes documentation: hostPath](https://kubernetes.io/docs/concepts/storage/volumes/#hostpath).
 
-3. Change all the k0s versions to [the target one](https://docs.k0sproject.io/v1.29.2+k0s.0/releases/#k0s-release-and-support-model). For example:
+3. Change all the k0s versions to the target one. For example:
 
    ```yaml
    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -110,3 +111,5 @@ with the new names to create machines for the target k0smotron version. For exam
    ```bash
    kubectl delete machine docker-test-0
    ```
+   
+The update procedure is completed, you now have the latest k0smotron version.
