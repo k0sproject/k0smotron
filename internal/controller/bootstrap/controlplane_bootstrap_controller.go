@@ -423,7 +423,16 @@ func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Scope) ([]
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
 
-	err := certificates.Lookup(ctx, c.Client, util.ObjectKey(scope.Cluster))
+	s := &corev1.Secret{}
+	err := c.Client.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secret.Name(scope.Cluster.Name, secret.Kubeconfig)}, s)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil, fmt.Errorf("cluster's CA secret not found, waiting for secret")
+		}
+		return nil, nil, err
+	}
+
+	err = certificates.Lookup(ctx, c.Client, util.ObjectKey(scope.Cluster))
 	if err != nil {
 		return nil, nil, err
 	}
