@@ -66,11 +66,6 @@ spec:
                 items:
                   type: string
                 type: array
-              enableMonitoring:
-                description: |-
-                  EnableMonitoring enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
-                  them as usual kubernetes pod metrics.
-                type: boolean
               externalAddress:
                 description: |-
                   ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
@@ -1728,6 +1723,29 @@ spec:
                   - name
                   type: object
                 type: array
+              monitoring:
+                description: Monitoring defines the monitoring configuration.
+                properties:
+                  enabled:
+                    description: |-
+                      Enabled enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
+                      them as usual kubernetes pod metrics.
+                    type: boolean
+                  prometheusImage:
+                    default: quay.io/k0sproject/prometheus:v2.44.0
+                    description: PrometheusImage defines the image used for the prometheus
+                      sidecar.
+                    type: string
+                  proxyImage:
+                    default: nginx:1.19.10
+                    description: ProxyImage defines the image used for the nginx proxy
+                      sidecar.
+                    type: string
+                required:
+                - enabled
+                - prometheusImage
+                - proxyImage
+                type: object
               persistence:
                 description: |-
                   Persistence defines the persistence configuration. If empty k0smotron

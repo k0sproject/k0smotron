@@ -7,7 +7,7 @@ monitor the control plane components of the managed cluster as a usual
 Kubernetes workload using the same Prometheus instance that is used to monitor
 the management cluster.
 
-To enable monitoring for a k0smotron cluster, set `spec.enableMonitoring=true`
+To enable monitoring for a k0smotron cluster, set `spec.monitoring.enabled=true`
 in the `Cluster` resource:
 
 ```yaml
@@ -16,7 +16,8 @@ kind: Cluster
 metadata:
   name: k0smotron-test
 spec:
-  enableMonitoring: true
+  monitoring:
+    enabled: true
 ``` 
 
 Once done, two sidecar containers are added to the control plane pods:
