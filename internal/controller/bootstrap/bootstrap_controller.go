@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
@@ -207,7 +207,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 					Kind:       "K0sWorkerConfig",
 					Name:       scope.Config.Name,
 					UID:        scope.Config.UID,
-					Controller: pointer.Bool(true),
+					Controller: ptr.To[bool](true),
 				},
 			},
 		},
@@ -226,7 +226,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	// Set the status to ready
 	scope.Config.Status.Ready = true
-	scope.Config.Status.DataSecretName = pointer.String(bootstrapSecret.Name)
+	scope.Config.Status.DataSecretName = ptr.To[string](bootstrapSecret.Name)
 	if err := r.Status().Update(ctx, scope.Config); err != nil {
 		log.Error(err, "Failed to patch config status")
 		return ctrl.Result{}, err
