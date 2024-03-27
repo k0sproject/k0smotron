@@ -90,6 +90,11 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	logger.Info("Reconciling")
 
+	if !kmc.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info("Cluster is being deleted, no action needed")
+		return ctrl.Result{}, nil
+	}
+
 	logger.Info("Reconciling services")
 	if err := r.reconcileServices(ctx, kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling services")
