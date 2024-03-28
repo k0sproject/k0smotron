@@ -112,4 +112,4 @@ with the new names to create machines for the target k0smotron version. For exam
    kubectl delete machine docker-test-0
    ```
    
-The update procedure is completed, you now have the latest k0smotron version.
+The update procedure is completed, you now have the target version of k0smotron.

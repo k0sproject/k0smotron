@@ -55,4 +55,4 @@ to prevent data loss. For example:
    kubectl apply -f ./path-to-file.yaml
    ```
 
-The update procedure is completed, you now have the latest k0smotron version.
+The update procedure is completed, you now have the target version of k0smotron.
