@@ -331,6 +331,17 @@ You are not currently viewing the documentation for the current stable release o
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -340,6 +351,34 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Known limitations
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1143,6 +1182,23 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Known limitations
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1160,6 +1216,20 @@ You are not currently viewing the documentation for the current stable release o
 <p>This section describes how to install k0smotron on top of an existing k0s
 Kubernetes cluster that allows for creation and management of the k0s
 control plane.</p>
+<h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">#</a></h2>
+<p>Areas in which k0smotron is currently limited include:</p>
+<ul>
+<li>Control plane exposure<p>Currently k0smotron only supports <code>ClusterIP</code>, <code>NodePort</code>, and
+  <code>LoadBalancer</code> services, and often it is necessary to further configure
+  created services to ease their interaction with cloud provider
+  implementations.</p>
+</li>
+</ul>
+<ul>
+<li>Updates prevalence<p>Although k0smotron can easily update the cluster control plane, in
+  standalone mode such updates do not extend to worker nodes.</p>
+</li>
+</ul>
 <h1 id="hardware-requirements">Hardware requirements<a class="headerlink" href="#hardware-requirements" title="Permanent link">#</a></h1>
 <p>k0smotron does not require any special hardware for workloads aside from
 the one required for k0s. For details on k0s hardware requirements for

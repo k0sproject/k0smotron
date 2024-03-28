@@ -356,15 +356,6 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#known-limitations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Known limitations
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1206,15 +1197,6 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#known-limitations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Known limitations
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1245,20 +1227,6 @@ edges in the days, weeks, and months ahead.</p>
 <h2 id="cluster-api">Cluster API<a class="headerlink" href="#cluster-api" title="Permanent link">#</a></h2>
 <p>One key focus of the k0smotron project is to have it function as a Cluster
 API provider for <code>ControlPlane</code>, <code>Bootstrap</code> and <code>Infrastructure</code> providers.</p>
-<h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">#</a></h2>
-<p>Areas in which k0smotron is currently limited include:</p>
-<ul>
-<li>Control plane exposure<p>Currently k0smotron only supports <code>ClusterIP</code>, <code>NodePort</code> and
-  <code>LoadBalancer</code> services, and often it is necessary to further configure
-  created services to ease their interraction with cloud provider
-  implementations.</p>
-</li>
-</ul>
-<ul>
-<li>Updates prevalence<p>Although k0smotron can easily update the cluster controlplane, in
-  standalone mode such updates do not extend to worker nodes.</p>
-</li>
-</ul>
 
 
 
