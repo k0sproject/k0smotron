@@ -17,19 +17,3 @@ edges in the days, weeks, and months ahead.
 
 One key focus of the k0smotron project is to have it function as a Cluster
 API provider for `ControlPlane`, `Bootstrap` and `Infrastructure` providers.
-
-## Known limitations
-
-Areas in which k0smotron is currently limited include:
-
-* Control plane exposure
-
-    Currently k0smotron only supports `ClusterIP`, `NodePort` and
-    `LoadBalancer` services, and often it is necessary to further configure
-    created services to ease their interraction with cloud provider
-    implementations.
-
-* Updates prevalence
-
-    Although k0smotron can easily update the cluster controlplane, in
-    standalone mode such updates do not extend to worker nodes.

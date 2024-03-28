@@ -4,6 +4,22 @@ This section describes how to install k0smotron on top of an existing k0s
 Kubernetes cluster that allows for creation and management of the k0s
 control plane.
 
+## Known limitations
+
+Areas in which k0smotron is currently limited include:
+
+* Control plane exposure
+
+    Currently k0smotron only supports `ClusterIP`, `NodePort`, and
+    `LoadBalancer` services, and often it is necessary to further configure
+    created services to ease their interaction with cloud provider
+    implementations.
+
+* Updates prevalence
+
+    Although k0smotron can easily update the cluster control plane, in
+    standalone mode such updates do not extend to worker nodes.
+
 # Hardware requirements
 
 k0smotron does not require any special hardware for workloads aside from
