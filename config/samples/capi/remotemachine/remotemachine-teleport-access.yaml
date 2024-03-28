@@ -1,0 +1,127 @@
+# This ServiceAccount will be used to give the `tbot` pods a discrete identity
+# which can be validated by the Teleport Auth Server.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tbot
+  namespace: default
+---
+# This role grants the ability to manage secrets within the namespace - this is
+# necessary for the `kubernetes_secret` destination to work correctly.
+#
+# You may wish to add the `resourceNames` field to the role to further restrict
+# this access in sensitive environments.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: secrets-admin
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["*"]
+---
+# Bind the role to the service account created for tbot.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tbot-secrets-admin
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: tbot
+roleRef:
+  kind: Role
+  name:  secrets-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tbot-config
+  namespace: default
+data:
+  tbot.yaml: |
+    version: v2
+    onboarding:
+      join_method: kubernetes
+      # ensure token is set to the name of the join token you created earlier
+      token: example-bot
+    storage:
+      # a memory destination is used for the bots own state since the kubernetes
+      # join method does not require persistence.
+      type: memory
+    # ensure this is configured to the address of your Teleport Proxy or
+    # Auth Server. Prefer the address of the Teleport Proxy.
+    auth_server: teleport.example.com:443
+    outputs:
+    - type: identity
+      destination:
+        type: kubernetes_secret
+        name: identity-output
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tbot
+  namespace: default
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tbot
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tbot
+    spec:
+      containers:
+        - name: tbot
+          image: public.ecr.aws/gravitational/teleport:14.3.3
+          command:
+            - tbot
+          args:
+            - start
+            - -c
+            - /config/tbot.yaml
+            - --insecure
+          env:
+            # POD_NAMESPACE is required for the kubernetes_secret` destination
+            # type to work correctly.
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            # KUBERNETES_TOKEN_PATH specifies the path to the service account
+            # JWT to use for joining.
+            # This path is based on the configuration of the volume and
+            # volumeMount.
+            - name: KUBERNETES_TOKEN_PATH
+              value: /var/run/secrets/tokens/join-sa-token
+            # TELEPORT_ANONYMOUS_TELEMETRY enables the submission of anonymous
+            # usage telemetry.  This helps us shape the future development of
+            # `tbot`. You can disable this by omitting this.
+            - name: TELEPORT_ANONYMOUS_TELEMETRY
+              value: "1"
+          volumeMounts:
+            - mountPath: /config
+              name: config
+            - mountPath: /var/run/secrets/tokens
+              name: join-sa-token
+      serviceAccountName: tbot
+      volumes:
+        - name: config
+          configMap:
+            name: tbot-config
+        - name: join-sa-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: join-sa-token
+                  # 600 seconds is the minimum that Kubernetes supports. We
+                  # recommend this value is used.
+                  expirationSeconds: 600
+                  audience: test
