@@ -39,6 +39,7 @@ nav:
   - Troubleshooting: troubleshooting.md
   - Contributing:
       - Overview: contributing/contribute-overview.md
+      - Development environment: contributing/dev-environment.md
       - Workflow: contributing/contribute-workflow.md
       - Testing: contributing/contribute-testing.md
   - Reference:
