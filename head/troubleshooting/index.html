@@ -1041,9 +1041,9 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#i-cannot-join-a-worker-node" class="md-nav__link">
+  <a href="#worker-nodes-cannot-be-joined" class="md-nav__link">
     <span class="md-ellipsis">
-      I cannot join a worker node
+      Worker nodes cannot be joined
     </span>
   </a>
   
@@ -1053,15 +1053,6 @@ You are not currently viewing the documentation for the current stable release o
   <a href="#machinedeployment-with-docker-provider-does-not-function" class="md-nav__link">
     <span class="md-ellipsis">
       MachineDeployment with Docker Provider does not function
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#overcoming-issues-with-capd-k0smotron-child-cluster-deployment" class="md-nav__link">
-    <span class="md-ellipsis">
-      Overcoming issues with CAPD k0smotron child cluster deployment
     </span>
   </a>
   
@@ -1312,9 +1303,9 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#i-cannot-join-a-worker-node" class="md-nav__link">
+  <a href="#worker-nodes-cannot-be-joined" class="md-nav__link">
     <span class="md-ellipsis">
-      I cannot join a worker node
+      Worker nodes cannot be joined
     </span>
   </a>
   
@@ -1324,15 +1315,6 @@ You are not currently viewing the documentation for the current stable release o
   <a href="#machinedeployment-with-docker-provider-does-not-function" class="md-nav__link">
     <span class="md-ellipsis">
       MachineDeployment with Docker Provider does not function
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#overcoming-issues-with-capd-k0smotron-child-cluster-deployment" class="md-nav__link">
-    <span class="md-ellipsis">
-      Overcoming issues with CAPD k0smotron child cluster deployment
     </span>
   </a>
   
@@ -1354,25 +1336,41 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h1>
-<h2 id="i-cannot-join-a-worker-node">I cannot join a worker node<a class="headerlink" href="#i-cannot-join-a-worker-node" title="Permanent link">#</a></h2>
-<p>In <a href="../usage-overview/#standalone">standalone</a> mode, check whether the join
+<h2 id="worker-nodes-cannot-be-joined">Worker nodes cannot be joined<a class="headerlink" href="#worker-nodes-cannot-be-joined" title="Permanent link">#</a></h2>
+<p>If you are using k0smotron in standalone mode, check whether the join
 token has expired. If this is the case, attempt to create a new one using
 <a href="https://docs.k0smotron.io/stable/join-nodes/#join-tokens">JoinTokenRequest</a>.</p>
-<p>In <a href="../cluster-api/">Cluster API</a>, check the logs of your infrastructure
-provider controller.</p>
-<p>Also, check to see whether different versions were used in the initial cluster
-creation for the control plane and the worker nodes, as Kubernetes is
-compatible with a limited number of different versions. For more information,
-refer to the Kubernetes <a href="https://kubernetes.io/releases/version-skew-policy/">Version Skew
+<p>If you are using k0smotron as a Cluster API provider, use the following
+procedure to check the logs of your infrastructure provider controller:</p>
+<ol>
+<li>
+<p>Decode the token:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;&lt;token&gt;&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>gunzip
+</code></pre></div>
+</li>
+<li>
+<p>Take note of the <code>users.user.token</code> field. For purposes of example, the
+   field will be <code>gb823t.b8ftcytc4ktmvkjz</code>.</p>
+</li>
+<li>
+<p>Run the following command, using the KUBECONFIG of the child cluster, which
+   is the first part of the <code>users.user.token</code> field:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>bootstrap-token-gb823t<span class="w"> </span>--template<span class="o">=</span><span class="s1">&#39;{{.data.expiration}}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d
+<span class="m">2024</span>-03-14T11:08:13Z
+</code></pre></div>
+</li>
+</ol>
+<p>Furthermore, check whether different Kubernetes minor versions were used in the
+initial cluster creation for the control plane and the worker nodes, as k0s
+requires that the controllers and workers were created using the same minor
+version. For more information, refer to the Kubernetes <a href="https://kubernetes.io/releases/version-skew-policy/">Version Skew
 Policy</a>.</p>
 <h2 id="machinedeployment-with-docker-provider-does-not-function">MachineDeployment with Docker Provider does not function<a class="headerlink" href="#machinedeployment-with-docker-provider-does-not-function" title="Permanent link">#</a></h2>
-<p>A <a href="https://hub.docker.com/r/kindest/node/tags">valid version</a> of <code>spec.template.spec.version</code> is required for MachineDeployment.</p>
-<h2 id="overcoming-issues-with-capd-k0smotron-child-cluster-deployment">Overcoming issues with CAPD k0smotron child cluster deployment<a class="headerlink" href="#overcoming-issues-with-capd-k0smotron-child-cluster-deployment" title="Permanent link">#</a></h2>
-<p>In <a href="https://cluster-api.sigs.k8s.io/">Cluster API</a>, check whether the
-MachineDeployment <code>spec.template.spec.version</code> field is present. If it is
-present, check that the version is supported by your infrastructure provider.
-Docker Provider relies on the version field for worker nodes, as it uses it to
-determine the docker image version for the node.</p>
+<p>Docker Provider uses the version field to determine the docker image version
+for the worker nodes. If you are using k0smotron as a Cluster API
+provider, check whether the MachineDeployment <code>spec.template.spec.version</code>
+field is present. If it is present, check that the version is supported by your
+infrastructure provider.</p>
 
 
 

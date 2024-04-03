@@ -1021,9 +1021,9 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-does-k0smotron-differ-from-other-multi-cluster-management-solutions-such-as-tanzu-and-rancher" class="md-nav__link">
+  <a href="#how-does-k0smotron-differ-from-other-multi-cluster-management-solutions" class="md-nav__link">
     <span class="md-ellipsis">
-      How does k0smotron differ from other multi-cluster management solutions such as Tanzu and Rancher?
+      How does k0smotron differ from other multi-cluster management solutions?
     </span>
   </a>
   
@@ -1321,9 +1321,9 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-does-k0smotron-differ-from-other-multi-cluster-management-solutions-such-as-tanzu-and-rancher" class="md-nav__link">
+  <a href="#how-does-k0smotron-differ-from-other-multi-cluster-management-solutions" class="md-nav__link">
     <span class="md-ellipsis">
-      How does k0smotron differ from other multi-cluster management solutions such as Tanzu and Rancher?
+      How does k0smotron differ from other multi-cluster management solutions?
     </span>
   </a>
   
@@ -1372,12 +1372,19 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">#</a></h1>
-<h2 id="how-does-k0smotron-differ-from-other-multi-cluster-management-solutions-such-as-tanzu-and-rancher">How does k0smotron differ from other multi-cluster management solutions such as Tanzu and Rancher?<a class="headerlink" href="#how-does-k0smotron-differ-from-other-multi-cluster-management-solutions-such-as-tanzu-and-rancher" title="Permanent link">#</a></h2>
+<p>The k0smotron FAQ is designed to quickly provide answers to common questions
+about the project. We strive to include answers to the most common questions and
+uncertainties that users encounter, along with helpful tips and references
+to step-by-step instructions whenever possible.</p>
+<p>If you are unable to find the information you seek in this FAQ, please extend
+your search into the overall k0smotron documentation set.</p>
+<p>Of course, we welcome your suggestions for the k0smotron FAQ, as well as your contributions!</p>
+<h2 id="how-does-k0smotron-differ-from-other-multi-cluster-management-solutions">How does k0smotron differ from other multi-cluster management solutions?<a class="headerlink" href="#how-does-k0smotron-differ-from-other-multi-cluster-management-solutions" title="Permanent link">#</a></h2>
 <p>As a multi-cluster management solution, k0smotron provides a distinct advantage
 over the competition in that it allows you to leverage the full capabilities of
-the management cluster. Most other such solutions are unable to offer the same,
-as they typically provision a VM-based control plane and worker planes in the
-same infrastructure.</p>
+the management cluster. Most other such solutions, such as Tanzu and Rancher,
+are unable to offer the same, as they typically provision a VM-based control
+plane and worker planes in the same infrastructure.</p>
 <h2 id="how-does-k0smotron-differ-from-managed-kubernetes-providers">How does k0smotron differ from managed Kubernetes providers?<a class="headerlink" href="#how-does-k0smotron-differ-from-managed-kubernetes-providers" title="Permanent link">#</a></h2>
 <p>k0smotron offers heightened functionality over such managed Kubernetes
 providers as GKE and AKS, including:</p>
@@ -1393,30 +1400,32 @@ providers as GKE and AKS, including:</p>
 </ul>
 <ul>
 <li>Cost efficiency<p>In leveraging your existing Kubernetes cluster, k0smotron can reduce your
-  costs, in particular those associated with managing separate clusters or
+  costs, such as those associated with managing separate clusters or
   funding additional resources.</p>
 </li>
 </ul>
 <ul>
-<li>Homogeneous setup<p>k0smotron installs with a single command, which installs the k0smotron
-  controller manager, all of the related CRD definitions, and the necessary
-  RBAC rules. This approach ensures a consistent configuration across
-  clusters and simplifies maintenance and management tasks.</p>
+<li>Homogeneous setup<p>k0smotron installs with a single command. This one command installs the
+  k0smotron controller manager, all of the related CRD definitions, and the
+  necessary RBAC rules. This approach ensures that you have a consistent
+  configuration across clusters. It also simplifies maintenance and
+  management tasks.</p>
 </li>
 </ul>
 <h2 id="what-is-the-relation-of-k0smotron-to-cluster-api">What is the relation of k0smotron to Cluster API?<a class="headerlink" href="#what-is-the-relation-of-k0smotron-to-cluster-api" title="Permanent link">#</a></h2>
 <p>k0smotron is a fully compliant Cluster API provider for k0s that can be used
-with any Cluster API compatible tooling. In addition, k0smotron is a Cluster
-API infrastructure provider which you can use SSH connections to provision
-clusters on remote machines.</p>
+with any Cluster API compatible tooling. In addition, k0smotron is
+a Cluster API infrastructure provider with which you can use SSH connections to
+provision clusters on remote machines.</p>
 <h2 id="what-do-we-mean-by-from-pets-to-cattle">What do we mean by "from pets to cattle"?<a class="headerlink" href="#what-do-we-mean-by-from-pets-to-cattle" title="Permanent link">#</a></h2>
 <p>A <em>pets</em> service model describes carefully tended resources that are nurtured
 with care and given relatable names. When such resources have issues, it is
 immediately noticed, and time and effort are expended to bring them back to a
-healthy state. In a <em>cattle</em> model, the resources in question are not
-given the same level of careful attention, and they are tagged rather than
-named. Such resources are typically configured in an identical sense, and if
-the health of one fails it is quickly replaced without much thought.</p>
+healthy state.</p>
+<p>In a <em>cattle</em> model, the resources in question are not given the same level of
+careful attention, and they are tagged rather than named. Such resources are
+typically configured in an identical sense, and if the health of one fails it
+is quickly replaced without much thought.</p>
 <p>As cluster control planes are somewhat static, these are usually managed in a
 <em>pets</em> sense. In contrast, using an operator such as k0smotron to manage k0s
 control planes within an existing Kubernetes cluster is more of a <em>cattle</em>
