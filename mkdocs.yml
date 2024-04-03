@@ -35,6 +35,9 @@ nav:
         - Docker: capi-docker.md
         - vSphere: capi-vsphere.md
     - Monitoring: monitoring.md
+  - Update:
+     - Standalone: update/update-standalone.md
+     - Cluster API: update/update-cluster-pod.md
   - FAQ: faq.md
   - Troubleshooting: troubleshooting.md
   - Contributing:
