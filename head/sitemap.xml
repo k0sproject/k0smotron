@@ -150,4 +150,14 @@
          <lastmod>2024-04-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/update/update-cluster-pod/</loc>
+         <lastmod>2024-04-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/update/update-standalone/</loc>
+         <lastmod>2024-04-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
 </urlset>

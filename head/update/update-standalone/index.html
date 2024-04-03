@@ -12,9 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/update/update-capi-cluster/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/update/update-standalone/">
       
       
+        <link rel="prev" href="../../monitoring/">
+      
+      
+        <link rel="next" href="../update-cluster-pod/">
       
       
       <link rel="icon" href="../../img/k0s_social.png">
@@ -22,7 +26,7 @@
     
     
       
-        <title>Update control nodes in Cluster API clusters - Documentation</title>
+        <title>Standalone - Documentation</title>
       
     
     
@@ -83,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#update-control-nodes-in-cluster-api-clusters" class="md-skip">
+        <a href="#update-k0smotron-in-standalone-cluster" class="md-skip">
           Skip to content
         </a>
       
@@ -134,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Update control nodes in Cluster API clusters
+              Standalone
             
           </span>
         </div>
@@ -884,17 +888,19 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -908,7 +914,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Update
@@ -919,10 +925,19 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../update-standalone/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -931,6 +946,7 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
     </li>
   
 
@@ -1234,32 +1250,6 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#updating-the-control-plane" class="md-nav__link">
-    <span class="md-ellipsis">
-      Updating the control plane
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#known-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      Known issues
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1273,80 +1263,50 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="update-control-nodes-in-cluster-api-clusters">Update control nodes in Cluster API clusters<a class="headerlink" href="#update-control-nodes-in-cluster-api-clusters" title="Permanent link">#</a></h1>
-<p>k0smotron uses <a href="https://docs.k0sproject.io/stable/autopilot/">k0s autopilot</a>
-to seamlessly update the k0s version on the control plane <strong>in-place</strong>.</p>
-<p>k0smotron does not recycle new machines for the new nodes
-to make the control plane upgrade process faster by avoiding the need to spin up
-and configure the new machine, and safer by keeping any data on the machine safe.
-This differs from the usual Cluster API workflow,
-where deploying the new control plane is followed by decommissioning of the old one.</p>
-<h2 id="updating-the-control-plane">Updating the control plane<a class="headerlink" href="#updating-the-control-plane" title="Permanent link">#</a></h2>
+<h1 id="update-k0smotron-in-standalone-cluster">Update k0smotron in standalone cluster<a class="headerlink" href="#update-k0smotron-in-standalone-cluster" title="Permanent link">#</a></h1>
+<p>To update a standalone k0smotron cluster, you need to update the k0s version
+in the YAML configuration file:</p>
 <ol>
 <li>
-<p>Check the configuration of deployed k0smotron cluster in your repository. For example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
+<p>Localize the configuration of deployed k0smotron cluster in your repository. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-test</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.0.0/16</span>
-<span class="w">    </span><span class="nt">serviceDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.local</span>
-<span class="w">    </span><span class="nt">services</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.128.0.0/12</span>
-<span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
-<span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerCluster</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.28.7+k0s.0</span>
-<span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp-template</span>
-<span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp-template</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">k0sImage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0sproject/k0s</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.1-k0s.0</span>
 </code></pre></div>
 </li>
 <li>
-<p>Change the k0s version to <a href="https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model">the target one</a>. For example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<p>Configure <a href="https://docs.k0smotron.io/stable/resource-reference/#clusterspecpersistence">persistence</a>
+to prevent data loss. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">---</span>
+<span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiVersion</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span>
+<span class="w"> </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">   </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
+<span class="w"> </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">   </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2-k0s.0</span>
+<span class="w">   </span><span class="nt">persistence</span><span class="p">:</span>
+<span class="w">     </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hostPath</span>
+<span class="w">     </span><span class="nt">hostPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/tmp/kmc-test&quot;</span><span class="w"> </span><span class="c1"># k0smotron will mount a basic hostPath volume to avoid data loss.</span>
+</code></pre></div>
+<p>Using the <code>hostPath</code> volume type introduces many security risks.
+ Avoid configuring persistence for volumes of the <code>hostPath</code> type. 
+ Learn more from <a href="https://kubernetes.io/docs/concepts/storage/volumes/#hostpath">official Kubernetes documentation: hostPath</a>.</p>
+</li>
+<li>
+<p>Change all the k0s versions to the target one. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-test</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.29.2+k0s.0</span><span class="w"> </span><span class="c1"># updated version</span>
-<span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp-template</span>
-<span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">k0sImage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0sproject/k0s</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.28.7-k0s.0</span><span class="w"> </span><span class="c1"># new k0s version</span>
 </code></pre></div>
 </li>
 <li>
@@ -1355,18 +1315,7 @@ where deploying the new control plane is followed by decommissioning of the old 
 </code></pre></div>
 </li>
 </ol>
-<h2 id="known-issues">Known issues<a class="headerlink" href="#known-issues" title="Permanent link">#</a></h2>
-<p>Due to the bug in the older k0s autopilot versions,
-the control plane upgrade may get stuck on the <code>Cordoning</code> stage
-if the control plane is running on the same node as
-the worker nodes. For example, <code>--enable-worker</code> flag was used during
-the control plane deployment. The bug is fixed in the latest patch versions of k0s.</p>
-<p>To fix this issue:
-- Check the current node that is being updated from the <code>kubectl get plan autopilot -o yaml</code> output.
-- Manually drain the node.
-- In <code>Controlnode</code> object patch the corresponding <code>k0sproject.io/autopilot-signal-data</code> annotation:
-  change the <code>status</code> field in the JSON from <code>Cordoning</code> to <code>ApplyingUpdate</code>.
-- Repeat the steps for all the nodes that are being updated.</p>
+<p>The update procedure is completed, you now have the target version of k0smotron.</p>
 
 
 
