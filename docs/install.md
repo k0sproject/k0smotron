@@ -1,8 +1,14 @@
-# Introduction
+# Installation
 
 This section describes how to install k0smotron on top of an existing k0s
 Kubernetes cluster that allows for creation and management of the k0s
 control plane.
+
+!!! note "TL;DR"
+
+    ```bash
+    kubectl apply -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/install.yaml
+    ```
 
 ## Known limitations
 
@@ -20,13 +26,13 @@ Areas in which k0smotron is currently limited include:
     Although k0smotron can easily update the cluster control plane, in
     standalone mode such updates do not extend to worker nodes.
 
-# Hardware requirements
+## Hardware requirements
 
 k0smotron does not require any special hardware for workloads aside from
 the one required for k0s. For details on k0s hardware requirements for
 workloads, see [k0s documentation](https://docs.k0sproject.io/stable/system-requirements/).
 
-# Software prerequisites
+## Software prerequisites
 
 k0smotron requires the following software to be preinstalled:
 
@@ -50,7 +56,7 @@ k0smotron requires the following software to be preinstalled:
 * Optional. Load balancer provider for ensuring high availability of the
   control plane.
 
-# Full installation
+## Full installation
 
 A full k0smotron installation implies the following components:
 
@@ -71,7 +77,7 @@ Now, you can create your first control planes using k0smotron either as a
 standalone manager, or as a Cluster API provider. For use case details, see
 [k0smotron usage](usage-overview.md).
 
-# Per-module installation for Cluster API
+## Per-module installation for Cluster API
 
 k0smotron is compatible with `clusterctl` and can act as a Cluster API
 bootstrap, infrastructure, and control plane provider. You can use
