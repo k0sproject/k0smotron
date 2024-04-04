@@ -59,10 +59,8 @@ kubectl apply -f https://docs.k0smotron.io/stable/install.yaml
 You can also install k0smotron ClusterAPI providers via `clusterctl`:
 
 ```shell
-clusterctl init --bootstrap k0smotron --control-plane k0smotron --infrastructure k0smotron --config config.yaml
+clusterctl init --bootstrap k0sproject-k0smotron --control-plane k0sproject-k0smotron --infrastructure k0sproject-k0smotron
 ```
-
-Refer to [installation instructions](https://docs.k0smotron.io/stable/install/#clusterctl) for details how to create the needed `config.yaml` configuration.
 
 Like with any other Cluster API provider and Kubernetes controllers, the cluster operations are declarative. For example creating a new child cluster control plane within the management cluster can be done via creating a new resource in the Kubernetes API:
 
