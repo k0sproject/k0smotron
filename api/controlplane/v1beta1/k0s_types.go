@@ -47,46 +47,46 @@ type K0sControlPlaneSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
 	Replicas int32 `json:"replicas,omitempty"`
-	// Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
+	// The k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
 	// just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.
 	//+kubebuilder:validation:Optional
 	Version string `json:"version,omitempty"`
 }
 
 type K0sBootstrapConfigSpec struct {
-	// Files specifies extra files to be passed to user_data upon creation.
+	// Additional files to be passed to user_data upon creation.
 	// +kubebuilder:validation:Optional
 	Files []cloudinit.File `json:"files,omitempty"`
 
-	// Args specifies extra arguments to be passed to k0s worker.
+	// Additional arguments to be passed to the k0s worker node.
 	// See: https://docs.k0sproject.io/stable/advanced/worker-configuration/
 	Args []string `json:"args,omitempty"`
 
-	// PreStartCommands specifies commands to be run before starting k0s worker.
+	// Commands that should be executed before the k0s worker node start.
 	// +kubebuilder:validation:Optional
 	PreStartCommands []string `json:"preStartCommands,omitempty"`
 
-	// PostStartCommands specifies commands to be run after starting k0s worker.
+	// Commands that should be executed after the k0s worker node start.
 	// +kubebuilder:validation:Optional
 	PostStartCommands []string `json:"postStartCommands,omitempty"`
 
-	// PreInstallK0s specifies whether k0s binary is pre-installed on the node.
+	// Specifies whether k0s binary is pre-installed on the node.
 	// +kubebuilder:validation:Optional
 	PreInstalledK0s bool `json:"preInstalledK0s,omitempty"`
 
-	// DownloadURL specifies the URL from which to download the k0s binary.
-	// If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
+	// The URL from which the k0s binary should be downloaded.
+	// If the Version field is empty, the downloaded version of k0s is used.
 	// +kubebuilder:validation:Optional
 	DownloadURL string `json:"downloadURL,omitempty"`
 }
 
 type K0sControlPlaneMachineTemplate struct {
 	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// For detais, see https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
 
-	// InfrastructureRef is a required reference to a custom resource
+	// A required reference to a custom resource
 	// offered by an infrastructure provider.
 	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
 }
