@@ -160,7 +160,7 @@ jobs:
 
 
       - name: Download kind
-        uses: supplypike/setup-bin@v3
+        uses: supplypike/setup-bin@v4
         with:
           name: kind
           version: v0.20.0
@@ -177,7 +177,7 @@ jobs:
       
 
       - name: Download clusterctl
-        uses: supplypike/setup-bin@v3
+        uses: supplypike/setup-bin@v4
         with:
           name: clusterctl
           version: v1.4.3
