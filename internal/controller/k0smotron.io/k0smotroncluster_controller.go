@@ -135,7 +135,28 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				Type: string(secret.ServiceAccount),
 				Name: secret.Name(kmc.Name, secret.ServiceAccount),
 			},
+			{
+				Type: string(secret.EtcdCA),
+				Name: secret.Name(kmc.Name, secret.EtcdCA),
+			},
 		}
+	}
+	if kmc.Spec.KineDataSourceURL == "" {
+		logger.Info("Reconciling etcd certs")
+		err := r.ensureEtcdCertificates(ctx, &kmc)
+		if err != nil {
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating etcd certificates: %w", err)
+		}
+		kmc.Spec.CertificateRefs = append(kmc.Spec.CertificateRefs, km.CertificateRef{
+			Type: string(secret.APIServerEtcdClient),
+			Name: secret.Name(kmc.Name, secret.APIServerEtcdClient),
+		})
+	}
+
+	logger.Info("Reconciling etcd")
+	if err := r.reconcileEtcd(ctx, &kmc); err != nil {
+		r.updateStatus(ctx, kmc, fmt.Sprintf("Failed reconciling etcd, %+v", err))
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling statefulset")
@@ -171,7 +192,12 @@ func (r *ClusterReconciler) updateReadiness(ctx context.Context, kmc km.Cluster,
 
 func (r *ClusterReconciler) ensureCertificates(ctx context.Context, kmc *km.Cluster) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
-	return certificates.LookupOrGenerate(ctx, r.Client, util.ObjectKey(kmc), *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")))
+	err := certificates.LookupOrGenerate(ctx, r.Client, util.ObjectKey(kmc), *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")))
+	if err != nil {
+		return fmt.Errorf("error generating cluster certificates: %w", err)
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

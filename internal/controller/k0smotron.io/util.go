@@ -33,6 +33,12 @@ func labelsForCluster(kmc *km.Cluster) map[string]string {
 	return labels
 }
 
+func labelsForEtcdCluster(kmc *km.Cluster) map[string]string {
+	labels := labelsForCluster(kmc)
+	labels["component"] = "etcd"
+	return labels
+}
+
 func annotationsForCluster(kmc *km.Cluster) map[string]string {
 	return kmc.Annotations
 }

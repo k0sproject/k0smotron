@@ -357,6 +357,38 @@ func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet)
 					},
 				},
 			})
+		case "apiserver-etcd-client":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "apiserver-etcd-client.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "apiserver-etcd-client.key",
+						},
+					},
+				},
+			})
+		case "etcd":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "etcd-ca.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "etcd-ca.key",
+						},
+					},
+				},
+			})
 
 		}
 	}

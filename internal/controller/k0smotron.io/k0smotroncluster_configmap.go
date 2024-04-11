@@ -156,6 +156,19 @@ func getV1Beta1Spec(kmc *km.Cluster) map[string]interface{} {
 				"dataSource": kmc.Spec.KineDataSourceURL,
 			},
 		}
+	} else {
+		v1beta1Spec["storage"] = map[string]interface{}{
+			"type": "etcd",
+			"etcd": map[string]interface{}{
+				"externalCluster": map[string]interface{}{
+					"endpoints":      []string{fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
+					"etcdPrefix":     kmc.GetName(),
+					"caFile":         "/var/lib/k0s/pki/etcd-ca.crt",
+					"clientCertFile": "/var/lib/k0s/pki/apiserver-etcd-client.crt",
+					"clientKeyFile":  "/var/lib/k0s/pki/apiserver-etcd-client.key",
+				},
+			},
+		}
 	}
 	return v1beta1Spec
 }
