@@ -19,7 +19,10 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,7 +32,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 func (r *ClusterReconciler) reconcileEtcd(ctx context.Context, kmc *km.Cluster) error {
@@ -104,6 +106,9 @@ func (r *ClusterReconciler) reconcileEtcdStatefulSet(ctx context.Context, kmc *k
 		if desiredReplicas > *foundStatefulSet.Spec.Replicas {
 			desiredReplicas = int32(*foundStatefulSet.Spec.Replicas) + 1
 		}
+		if desiredReplicas > foundStatefulSet.Status.ReadyReplicas+1 {
+			return fmt.Errorf("waiting for previous etcd member to be ready")
+		}
 	}
 
 	statefulSet := r.generateEtcdStatefulSet(kmc, desiredReplicas)
@@ -150,6 +155,7 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 			Annotations: annotationsForCluster(kmc),
 		},
 		Spec: apps.StatefulSetSpec{
+			ServiceName: kmc.GetEtcdServiceName(),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
@@ -225,7 +231,18 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 						Args:            []string{"-c", entrypointScript},
 						Env: []v1.EnvVar{
 							{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
+							{Name: "ETCDCTL_ENDPOINTS", Value: fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
+							{Name: "ETCDCTL_CACERT", Value: "/var/lib/k0s/pki/etcd/ca.crt"},
+							{Name: "ETCDCTL_CERT", Value: "/var/lib/k0s/pki/etcd/server.crt"},
+							{Name: "ETCDCTL_KEY", Value: "/var/lib/k0s/pki/etcd/server.key"},
 							{Name: "ETCD_INITIAL_CLUSTER", Value: r.initialCluster(kmc, replicas)},
+						},
+						ReadinessProbe: &v1.Probe{
+							ProbeHandler: v1.ProbeHandler{
+								Exec: &v1.ExecAction{
+									Command: []string{"etcdctl", "endpoint", "health"},
+								},
+							},
 						},
 						Ports: []v1.ContainerPort{
 							{
@@ -266,7 +283,7 @@ func (r *ClusterReconciler) initialCluster(kmc *km.Cluster, replicas int32) stri
 func (r *ClusterReconciler) generateEtcdInitContainers(kmc *km.Cluster) []v1.Container {
 	return []v1.Container{
 		{
-			Name:            "etcd-init",
+			Name:            "init",
 			Image:           kmc.Spec.Etcd.Image,
 			ImagePullPolicy: v1.PullIfNotPresent,
 			Command:         []string{"/bin/bash"},
@@ -288,9 +305,9 @@ func (r *ClusterReconciler) generateEtcdInitContainers(kmc *km.Cluster) []v1.Con
 
 var entrypointScript = `
 
-ETCD_INITIAL_CLUSTER_STATE="new"
+export ETCD_INITIAL_CLUSTER_STATE="new"
 if [[ -f /var/lib/k0s/etcd/existing ]]; then
-  ETCD_INITIAL_CLUSTER_STATE="existing"
+  export ETCD_INITIAL_CLUSTER_STATE="existing"
 fi
 
 etcd --name ${HOSTNAME} \
@@ -318,12 +335,7 @@ set -eu
 
 export ETCDCTL_ENDPOINTS=https://${SVC_NAME}:2379
 
-if [[ -f /var/lib/k0s/etcd/existing ]]; then
-  rm /var/lib/k0s/etcd/existing
-fi
-
-if [[ ! -f /var/lib/data/member/snap/db ]]; then
-  echo "No existing etcd data found"
+if [[ ! -f /var/lib/k0s/etcd/snap/db ]]; then
   echo "Checking if cluster is functional"
   if etcdctl member list; then
     echo "Cluster is functional"
@@ -331,16 +343,15 @@ if [[ ! -f /var/lib/data/member/snap/db ]]; then
 	if [[ -n "${MEMBER_ID}" ]]; then
 	  echo "A member with this name (${HOSTNAME}) already exists, removing"
 	  etcdctl member remove "${MEMBER_ID}"
-	  echo "Adding new member"
-	  etcdctl member add ${HOSTNAME} --peer-urls https://${HOSTNAME}.${SVC_NAME}.${NAMESPACE}.svc:2380
-	  touch /etc/etcd/clusterstate/existing
-	else
-	  echo "A member does not exist with name (${HOSTNAME}), nothing to do"
+      echo "Adding new member"
 	fi
+
+    etcdctl member add ${HOSTNAME} --peer-urls https://${HOSTNAME}.${SVC_NAME}:2380
+    touch /var/lib/k0s/etcd/existing
   else
-    echo "Cannot list members in cluster, so likely not up yet"
+    echo "Could not list members, assuming this is the first member or the cluster is not up yet"
   fi
 else
-  echo "Snapshot db exists, member has data"
+  echo "Snapshot db exists, the member has data"
 fi
 `

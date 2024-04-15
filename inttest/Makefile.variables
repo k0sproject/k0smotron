@@ -10,6 +10,7 @@ smoketests := \
     check-ha-controller \
     check-ha-controller-secret \
     check-jointoken \
+    check-scaling-etcd \
     check-capi-docker \
     check-capi-controlplane-docker \
     check-capi-controlplane-docker-downscaling \

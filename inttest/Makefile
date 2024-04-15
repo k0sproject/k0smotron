@@ -5,7 +5,7 @@ K0SMOTRON_IMAGES_BUNDLE ?= $(realpath ../k0smotron-image-bundle.tar)
 K0SMOTRON_INSTALL_YAML ?= $(realpath ../install.yaml)
 LOCAL_STORAGE_INSTALL_YAML ?= $(realpath ./footloose-alpine/local-path-storage.yaml)
 K0S_USE_DEFAULT_K0S_BINARIES ?= true
-TIMEOUT ?= 5m
+TIMEOUT ?= 6m
 
 .PHONY: $(smoketests)
 include Makefile.variables
@@ -35,8 +35,10 @@ $(smoketests): ../k0smotron-image-bundle.tar ../install.yaml .footloose-alpine.s
 clean:
 	rm -rf .*.stamp
 
+check-scaling-etcd: TIMEOUT=10m
 check-monitoring: TIMEOUT=7m
 check-ha-controlplane: TIMEOUT=7m
 check-capi-controlplane-docker-tunneling: TIMEOUT=10m
+check-capi-remote-machine: TIMEOUT=8m
 check-capi-remote-machine-template-update: TIMEOUT=10m
 check-capi-docker-machine-template-update: TIMEOUT=10m

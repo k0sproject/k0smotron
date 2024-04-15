@@ -18,7 +18,6 @@ package k0smotronio
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -57,11 +56,6 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		if kmc.Spec.Image == defaultK0SImage && !strings.Contains(kmc.Spec.Version, "-k0s.") {
 			k0sVersion = fmt.Sprintf("%s-%s", kmc.Spec.Version, defaultK0SSuffix)
 		}
-	}
-
-	if kmc.Spec.Replicas > 1 && (kmc.Spec.KineDataSourceURL == "" && kmc.Spec.KineDataSourceSecretName == "") {
-		return apps.StatefulSet{}, errors.New("kineDataSourceURL can't be empty if replicas > 1")
-
 	}
 
 	labels := labelsForCluster(kmc)

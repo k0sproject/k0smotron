@@ -100,6 +100,7 @@ jobs:
           - check-ha-controller-secret
           - check-jointoken
           - check-monitoring
+          - check-scaling-etcd
 
     steps:
       - name: Check out code into the Go module directory
