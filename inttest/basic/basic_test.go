@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -66,6 +67,21 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().NoError(err)
 	s.Require().Equal("100m", pod.Spec.Containers[0].Resources.Requests.Cpu().String())
 	s.Require().Equal("100Mi", pod.Spec.Containers[0].Resources.Requests.Memory().String())
+
+	s.T().Log("updating k0smotron cluster")
+	s.updateK0smotronCluster(s.Context(), rc)
+
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.Context(), 100*time.Millisecond, func(ctx context.Context) (bool, error) {
+		pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), "kmc-kmc-test-0", metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+
+		return pod.Spec.Containers[0].Resources.Requests.Cpu().String() == "200m", nil
+	})
+	s.Require().NoError(err)
+	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
 	s.checkClusterStatus(s.Context(), rc)
 
@@ -141,6 +157,26 @@ func (s *BasicSuite) checkClusterStatus(ctx context.Context, rc *rest.Config) {
 	})
 
 	s.Require().NoError(err)
+}
+
+func (s *BasicSuite) updateK0smotronCluster(ctx context.Context, rc *rest.Config) {
+	crdConfig := *rc
+	crdConfig.ContentConfig.GroupVersion = &km.GroupVersion
+	crdConfig.APIPath = "/apis"
+	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
+	crdConfig.UserAgent = rest.DefaultKubernetesUserAgent()
+	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
+	s.Require().NoError(err)
+
+	patch := `[{"op": "replace", "path": "/spec/resources/requests/cpu", "value": "200m"}]`
+	res := crdRestClient.
+		Patch(types.JSONPatchType).
+		Resource("clusters").
+		Name("kmc-test").
+		Namespace("kmc-test").
+		Body([]byte(patch)).
+		Do(ctx)
+	s.Require().NoError(res.Error())
 }
 
 func (s *BasicSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
