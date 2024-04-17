@@ -1,4 +1,4 @@
-# Highly available control planes
+# Highly available hosted control planes
 
 !!! note
 
