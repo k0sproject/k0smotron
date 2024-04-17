@@ -8,6 +8,7 @@ smoketests := \
     check-basic \
     check-hostpath \
     check-ha-controller \
+    check-ha-controller-etcd \
     check-ha-controller-secret \
     check-jointoken \
     check-scaling-etcd \
