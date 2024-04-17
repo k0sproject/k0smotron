@@ -75,12 +75,12 @@ spec:
                 type: array
               etcd:
                 default:
-                  image: bitnami/etcd:3.5.11
+                  image: quay.io/k0sproject/etcd:v3.5.13
                   persistence: {}
                 description: Etcd defines the etcd configuration.
                 properties:
                   image:
-                    default: bitnami/etcd:3.5.11
+                    default: quay.io/k0sproject/etcd:v3.5.13
                     description: Image defines the etcd image to be deployed.
                     type: string
                   persistence:

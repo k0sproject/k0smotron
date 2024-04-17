@@ -93,7 +93,7 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	Monitoring MonitoringSpec `json:"monitoring,omitempty"`
 	// Etcd defines the etcd configuration.
-	//+kubebuilder:default={"image":"bitnami/etcd:3.5.11","persistence":{}}
+	//+kubebuilder:default={"image":"quay.io/k0sproject/etcd:v3.5.13","persistence":{}}
 	Etcd EtcdSpec `json:"etcd,omitempty"`
 
 	// Resources describes the compute resource requirements for the control plane pods.
@@ -214,7 +214,7 @@ type MonitoringSpec struct {
 
 type EtcdSpec struct {
 	// Image defines the etcd image to be deployed.
-	//+kubebuilder:default="bitnami/etcd:3.5.11"
+	//+kubebuilder:default="quay.io/k0sproject/etcd:v3.5.13"
 	Image string `json:"image"`
 	// Persistence defines the persistence configuration.
 	//+kubebuilder:validation:Optional

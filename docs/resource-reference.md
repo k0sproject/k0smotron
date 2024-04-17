@@ -2249,7 +2249,7 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         <td>
           Etcd defines the etcd configuration.<br/>
           <br/>
-            <i>Default</i>: map[image:bitnami/etcd:3.5.11 persistence:map[]]<br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2423,7 +2423,7 @@ Etcd defines the etcd configuration.
         <td>
           Image defines the etcd image to be deployed.<br/>
           <br/>
-            <i>Default</i>: bitnami/etcd:3.5.11<br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -7121,7 +7121,7 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         <td>
           Etcd defines the etcd configuration.<br/>
           <br/>
-            <i>Default</i>: map[image:bitnami/etcd:3.5.11 persistence:map[]]<br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7295,7 +7295,7 @@ Etcd defines the etcd configuration.
         <td>
           Image defines the etcd image to be deployed.<br/>
           <br/>
-            <i>Default</i>: bitnami/etcd:3.5.11<br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -12623,7 +12623,7 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         <td>
           Etcd defines the etcd configuration.<br/>
           <br/>
-            <i>Default</i>: map[image:bitnami/etcd:3.5.11 persistence:map[]]<br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12797,7 +12797,7 @@ Etcd defines the etcd configuration.
         <td>
           Image defines the etcd image to be deployed.<br/>
           <br/>
-            <i>Default</i>: bitnami/etcd:3.5.11<br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
         </td>
         <td>true</td>
       </tr><tr>
