@@ -18,6 +18,7 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -105,13 +106,9 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	// 	return ctrl.Result{}, nil
 	// }
 
-	if err = c.ensureCertificates(ctx, cluster, kcp); err != nil {
-		log.Error(err, "Failed to ensure certificates")
-		return ctrl.Result{}, err
-	}
-
 	res, ready, err := c.reconcile(ctx, cluster, kcp)
 	if err != nil {
+		log.Error(err, "Reconciliation failed")
 		return res, err
 	}
 	if !ready {
@@ -193,19 +190,25 @@ func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *
 }
 
 func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) (ctrl.Result, bool, error) {
-	kcp.Spec.CertificateRefs = []kapi.CertificateRef{
-		{
-			Type: string(secret.ClusterCA),
-			Name: secret.Name(cluster.Name, secret.ClusterCA),
-		},
-		{
-			Type: string(secret.FrontProxyCA),
-			Name: secret.Name(cluster.Name, secret.FrontProxyCA),
-		},
-		{
-			Type: string(secret.ServiceAccount),
-			Name: secret.Name(cluster.Name, secret.ServiceAccount),
-		},
+	if kcp.Spec.CertificateRefs == nil {
+		kcp.Spec.CertificateRefs = []kapi.CertificateRef{
+			{
+				Type: string(secret.ClusterCA),
+				Name: secret.Name(cluster.Name, secret.ClusterCA),
+			},
+			{
+				Type: string(secret.FrontProxyCA),
+				Name: secret.Name(cluster.Name, secret.FrontProxyCA),
+			},
+			{
+				Type: string(secret.ServiceAccount),
+				Name: secret.Name(cluster.Name, secret.ServiceAccount),
+			},
+		}
+
+		if err := c.ensureCertificates(ctx, cluster, kcp); err != nil {
+			return ctrl.Result{}, false, fmt.Errorf("failed to ensure certificates for K0smotronControlPlane %s/%s", kcp.Namespace, kcp.Name)
+		}
 	}
 	kcluster := kapi.Cluster{
 		TypeMeta: metav1.TypeMeta{
