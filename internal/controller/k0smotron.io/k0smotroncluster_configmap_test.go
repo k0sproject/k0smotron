@@ -47,7 +47,7 @@ func TestGenerateCM(t *testing.T) {
 			},
 		}
 
-		cm, err := r.generateCM(&kmc)
+		cm, _, err := r.generateConfig(&kmc)
 		require.NoError(t, err)
 
 		conf := cm.Data["K0SMOTRON_K0S_YAML"]

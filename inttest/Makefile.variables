@@ -6,6 +6,7 @@ kubernetes_version=1.27.2
 
 smoketests := \
     check-basic \
+    check-config-update-hcp \
     check-hostpath \
     check-ha-controller \
     check-ha-controller-etcd \
@@ -13,6 +14,7 @@ smoketests := \
     check-jointoken \
     check-scaling-etcd \
     check-capi-docker \
+    check-capi-config-update-vm \
     check-capi-controlplane-docker \
     check-capi-controlplane-docker-downscaling \
     check-capi-controlplane-docker-worker \

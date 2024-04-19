@@ -23,23 +23,25 @@ import (
 	"github.com/imdario/mergo"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/util"
 )
 
 const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDER__"
 
-// generateCM merges provided config with k0smotron generated values and generates the k0s configmap
+// generateConfig merges provided config with k0smotron generated values and generates the k0s config and configmap
 // We use plain map[string]interface{} for the following reasons:
 //   - we want to support multiple versions of k0s config
 //   - some of the fields in the k0s config struct are not pointers, e.g. spec.api.address in string, so it will be
 //     marshalled as "address": "", which is not correct value for the k0s config
 //   - we can't use the k0s config default values, because some of them are calculated based on the cluster state (e.g. spec.api.address)
-func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
+func (r *ClusterReconciler) generateConfig(kmc *km.Cluster) (v1.ConfigMap, map[string]interface{}, error) {
 	k0smotronValues := map[string]interface{}{"spec": nil}
 	unstructuredConfig := k0smotronValues
 
@@ -55,18 +57,18 @@ func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 			k0smotronValues["spec"] = getV1Beta1Spec(kmc)
 		default:
 			// TODO: should we just use the v1beta1 in case the api version is not provided?
-			return v1.ConfigMap{}, fmt.Errorf("unsupported k0s config version: %s", kmc.Spec.K0sConfig.GetAPIVersion())
+			return v1.ConfigMap{}, nil, fmt.Errorf("unsupported k0s config version: %s", kmc.Spec.K0sConfig.GetAPIVersion())
 		}
 	}
 
 	err := mergo.Merge(&unstructuredConfig, k0smotronValues, mergo.WithOverride)
 	if err != nil {
-		return v1.ConfigMap{}, err
+		return v1.ConfigMap{}, nil, err
 	}
 
 	b, err := yaml.Marshal(unstructuredConfig)
 	if err != nil {
-		return v1.ConfigMap{}, err
+		return v1.ConfigMap{}, nil, err
 	}
 
 	cm := v1.ConfigMap{
@@ -86,10 +88,10 @@ func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 	}
 
 	_ = ctrl.SetControllerReference(kmc, &cm, r.Scheme)
-	return cm, nil
+	return cm, unstructuredConfig, nil
 }
 
-func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc *km.Cluster) error {
+func (r *ClusterReconciler) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling configmap")
 
@@ -109,12 +111,41 @@ func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc *km.Cluster) er
 		kmc.Spec.KineDataSourceURL = kineDataSourceURLPlaceholder
 	}
 
-	cm, err := r.generateCM(kmc)
+	cm, unstructuredConfig, err := r.generateConfig(kmc)
 	if err != nil {
 		return err
 	}
 
+	err = r.reconcileDynamicConfig(ctx, kmc, unstructuredConfig)
+	if err != nil {
+		// Don't return error from dynamic config reconciliation, as it may not be created yet
+		logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
+	}
+
 	return r.Client.Patch(ctx, &cm, client.Apply, patchOpts...)
+}
+
+func (r *ClusterReconciler) reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[string]interface{}) error {
+	u := unstructured.Unstructured{Object: k0sConfig}
+
+	if kmc.Spec.KineDataSourceSecretName != "" {
+		kineDSNSecret := &v1.Secret{}
+		err := r.Client.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: kmc.Spec.KineDataSourceSecretName}, kineDSNSecret)
+		if err != nil {
+			return fmt.Errorf("failed to get kine data source secret: %w", err)
+		}
+
+		if string(kineDSNSecret.Data["K0SMOTRON_KINE_DATASOURCE_URL"]) == "" {
+			return fmt.Errorf("kine data source secret does not contain K0SMOTRON_KINE_DATASOURCE_URL key")
+		}
+
+		err = unstructured.SetNestedField(u.Object, string(kineDSNSecret.Data["K0SMOTRON_KINE_DATASOURCE_URL"]), "spec", "storage", "kine", "dataSource")
+		if err != nil {
+			return fmt.Errorf("failed to set kine data source url to the k0s config: %w", err)
+		}
+	}
+
+	return util.ReconcileDynamicConfig(ctx, kmc, r.Client, &u)
 }
 
 func (r *ClusterReconciler) detectExternalAddress(ctx context.Context) (string, error) {

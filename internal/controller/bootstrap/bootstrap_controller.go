@@ -23,31 +23,26 @@ import (
 	"strings"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/pointer"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+	"sigs.k8s.io/cluster-api/controllers/remote"
+	capiutil "sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/secret"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
-
-	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/secret"
-
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
-	capiutil "sigs.k8s.io/cluster-api/util"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -258,7 +253,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		return "", errors.New("control plane endpoint is not set")
 
 	}
-	childClient, err := kutil.LoadChildClusterKubeClient(ctx, scope.Cluster, r.Client)
+	childClient, err := remote.NewClusterClient(ctx, "k0smotron", r.Client, capiutil.ObjectKey(scope.Cluster))
 	if err != nil {
 		return "", fmt.Errorf("failed to create child cluster client: %w", err)
 	}
