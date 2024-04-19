@@ -5,10 +5,9 @@
    Highly available control planes are supported for the standalone and
    Cluster API in-cluster use cases.
 
-As the nature of Kubernetes workloads, in our case the cluster control planes,
-is quite dynamic, it poses a challenge to set up highly available etcd cluster
-for the control plane. In k0smotron, we are solving the challenge by
-"externalizing" the HA setup of data storage for the control plane.
+Setting up a highly available etcd cluster for Kubernetes control planes can be
+complicated due to their dynamic nature. In k0smotron, we solve this challenge
+by "externalizing" the HA setup of data storage for the control plane.
 
 The control planes managed by k0smotron are k0s control planes. As k0s comes
 with support for using SQL databases as data store, which uses Kine, you can
@@ -18,10 +17,9 @@ data store for the control planes.
 
 ## Using Postgres operator
 
-In this example, we provide instruction on how to use
-[Postgres operator](https://postgres-operator.readthedocs.io/en/latest/)
-to manage the data store of a control plane. Use this instruction as an example
-for the required data store resource.
+This instruction demonstrates how to configure the [Postgres operator](https://postgres-operator.readthedocs.io/en/latest/)
+to manage the data store of a control plane. Use these steps as an example for
+the required data store resource.
 
 1. Install the Postgres operator following the [quickstart guide](https://postgres-operator.readthedocs.io/en/latest/quickstart/).
 
