@@ -46,7 +46,8 @@ import (
 )
 
 const (
-	defaultK0sSuffix = "k0s.0"
+	defaultK0sSuffix  = "k0s.0"
+	defaultK0sVersion = "v1.27.9+k0s.0"
 )
 
 type K0sController struct {
@@ -78,6 +79,10 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	if !kcp.ObjectMeta.DeletionTimestamp.IsZero() {
 		log.Info("K0sControlPlane is being deleted, no action needed")
 		return ctrl.Result{}, nil
+	}
+
+	if kcp.Spec.Version == "" {
+		kcp.Spec.Version = defaultK0sVersion
 	}
 
 	if !strings.Contains(kcp.Spec.Version, "+k0s.") {
