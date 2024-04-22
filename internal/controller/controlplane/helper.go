@@ -21,8 +21,10 @@ import (
 )
 
 func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
-	machine := c.generateMachine(ctx, name, cluster, kcp, infraRef)
-
+	machine, err := c.generateMachine(ctx, name, cluster, kcp, infraRef)
+	if err != nil {
+		return nil, fmt.Errorf("error generating machine: %w", err)
+	}
 	_ = ctrl.SetControllerReference(kcp, machine, c.Scheme)
 
 	return machine, c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
@@ -50,8 +52,11 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 	return nil
 }
 
-func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) *clusterv1.Machine {
-	ver := semver.MustParse(kcp.Spec.Version)
+func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
+	ver, err := semver.NewVersion(kcp.Spec.Version)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing version %q: %w", kcp.Spec.Version, err)
+	}
 	v := fmt.Sprintf("%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch())
 	return &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{
@@ -79,7 +84,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			},
 			InfrastructureRef: infraRef,
 		},
-	}
+	}, nil
 }
 
 func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
