@@ -28,8 +28,10 @@ import (
 
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubernetes/pkg/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -37,7 +39,10 @@ import (
 
 var entrypointDefaultMode = int32(0744)
 
-const clusterLabel = "k0smotron.io/cluster"
+const (
+	clusterLabel          = "k0smotron.io/cluster"
+	statefulSetAnnotation = "k0smotron.io/statefulset-hash"
+)
 
 // findStatefulSetPod returns a first running pod from a StatefulSet
 func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
@@ -288,6 +293,11 @@ data:
 	})
 
 	err := ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
+
+	statefulSet.Annotations = map[string]string{
+		statefulSetAnnotation: controller.ComputeHash(&statefulSet.Spec.Template, statefulSet.Status.CollisionCount),
+	}
+
 	return statefulSet, err
 }
 
@@ -483,8 +493,8 @@ func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc km.Clu
 
 func isStatefulSetsEqual(new, old *apps.StatefulSet) bool {
 	return *new.Spec.Replicas == *old.Spec.Replicas &&
-		new.Spec.Template.Spec.Containers[0].Image == old.Spec.Template.Spec.Containers[0].Image &&
+		new.Annotations[statefulSetAnnotation] == old.Annotations[statefulSetAnnotation] &&
 		reflect.DeepEqual(new.Spec.Selector, old.Spec.Selector) &&
-		reflect.DeepEqual(new.Spec.Template.Labels, old.Spec.Template.Labels) &&
-		reflect.DeepEqual(new.Spec.Template.Spec.Containers[0].VolumeMounts, old.Spec.Template.Spec.Containers[0].VolumeMounts)
+		equality.Semantic.DeepDerivative(new.Spec.VolumeClaimTemplates, old.Spec.VolumeClaimTemplates)
+
 }
