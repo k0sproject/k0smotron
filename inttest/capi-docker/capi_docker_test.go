@@ -33,6 +33,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/secret"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,7 +80,7 @@ func (s *CAPIDockerSuite) SetupSuite() {
 }
 
 func (s *CAPIDockerSuite) TestCAPIDocker() {
-
+	s.prepareCerts()
 	// Apply the child cluster objects
 	s.applyClusterObjects()
 	defer func() {
@@ -137,6 +140,20 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().Equal("test-file", extraFile)
 }
 
+func (s *CAPIDockerSuite) prepareCerts() {
+	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
+	err := certificates.Generate()
+	s.Require().NoError(err, "failed to generate certificates")
+
+	for _, certificate := range certificates {
+		certificate.Generated = false
+		certSecret := certificate.AsSecret(client.ObjectKey{Namespace: "default", Name: "docker-test"}, metav1.OwnerReference{})
+		if _, err := s.client.CoreV1().Secrets("default").Create(s.ctx, certSecret, metav1.CreateOptions{}); err != nil {
+			s.Require().NoError(err)
+		}
+	}
+}
+
 func (s *CAPIDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
@@ -145,7 +162,10 @@ func (s *CAPIDockerSuite) applyClusterObjects() {
 
 func (s *CAPIDockerSuite) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.Command("kubectl", "delete", "secret", "docker-test-ca", "docker-test-etcd", "docker-test-proxy", "docker-test-sa").CombinedOutput()
+	s.Require().NoError(err, "failed to delete secrets: %s", string(out))
+
+	out, err = exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
@@ -215,6 +235,13 @@ metadata:
   name: docker-test-cp
 spec:
   version: v1.27.2-k0s.0
+  certificateRefs:
+    - name: docker-test-ca
+      type: ca
+    - name: docker-test-proxy
+      type: proxy
+    - name: docker-test-sa
+      type: sa
   persistence:
     type: pvc
     persistentVolumeClaim:
