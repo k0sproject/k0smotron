@@ -15,10 +15,10 @@
         <link rel="canonical" href="https://docs.k0smotron.io/head/ha/">
       
       
-        <link rel="prev" href="../configuration/">
+        <link rel="prev" href="../capi-vsphere/">
       
       
-        <link rel="next" href="../cluster-api/">
+        <link rel="next" href="../monitoring/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#highly-available-controlplanes" class="md-skip">
+        <a href="#highly-available-hosted-control-planes" class="md-skip">
           Skip to content
         </a>
       
@@ -397,19 +397,17 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
         
           
           <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
@@ -423,7 +421,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             Standalone
@@ -488,76 +486,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    HA control planes
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    HA control planes
-  </span>
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#using-postgres-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      Using Postgres operator
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -903,6 +831,76 @@ You are not currently viewing the documentation for the current stable release o
             
           </ul>
         </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    HA control planes
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    HA control planes
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#using-postgres-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Postgres operator
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1321,13 +1319,30 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="highly-available-controlplanes">Highly available controlplanes<a class="headerlink" href="#highly-available-controlplanes" title="Permanent link">#</a></h1>
-<p>As the nature of Kubernetes workloads, in this case the cluster control planes, is quite dynamic it poses a challenge to setup highly available Etcd cluster for the control plane. In k0smotron we're solving the challenge by "externalizing" the control plane data storage HA setup.</p>
-<p>The control planes managed by <code>k0smotron</code> are k0s control planes. As k0s comes with support for using SQL DBs as data store (via Kine) you can use HA databases instead of Etcd. This enables you to use e.g. Postgres operator, MySQL operator or cloud provider managed databases as the data store for the control planes.</p>
+<h1 id="highly-available-hosted-control-planes">Highly available hosted control planes<a class="headerlink" href="#highly-available-hosted-control-planes" title="Permanent link">#</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+</div>
+<p>Highly available control planes are supported for the standalone and
+   Cluster API in-cluster use cases.</p>
+<p>Setting up a highly available etcd cluster for Kubernetes control planes can be
+complicated due to their dynamic nature. In k0smotron, we solve this challenge
+by "externalizing" the HA setup of data storage for the control plane.</p>
+<p>The control planes managed by k0smotron are k0s control planes. As k0s comes
+with support for using SQL databases as data store, which uses Kine, you can
+use HA databases instead of etcd. This enables you to use, for example,
+Postgres operator, MySQL operator, or cloud provider managed databases as the
+data store for the control planes.</p>
 <h2 id="using-postgres-operator">Using Postgres operator<a class="headerlink" href="#using-postgres-operator" title="Permanent link">#</a></h2>
-<p>In this example we show how to use <a href="https://postgres-operator.readthedocs.io/en/latest/">Postgres operator</a> to manage the control plane data store.</p>
-<p>Install the operator following the <a href="https://postgres-operator.readthedocs.io/en/latest/quickstart/">quickstart guide</a>.</p>
-<p>Create the database with a custom resource:
+<p>This instruction demonstrates how to configure the <a href="https://postgres-operator.readthedocs.io/en/latest/">Postgres operator</a>
+to manage the data store of a control plane. Use these steps as an example for
+the required data store resource.</p>
+<ol>
+<li>
+<p>Install the Postgres operator following the <a href="https://postgres-operator.readthedocs.io/en/latest/quickstart/">quickstart guide</a>.</p>
+</li>
+<li>
+<p>Create the database using a custom resource:</p>
 <div class="highlight"><pre><span></span><code>apiVersion: &quot;acid.zalan.do/v1&quot;
 kind: postgresql
 metadata:
@@ -1347,8 +1362,10 @@ spec:
     kine: k0smotron
   postgresql:
     version: &quot;15&quot;
-</code></pre></div></p>
-<p>Once the database has been setup properly, you can instruct k0smotron to create a control plane using it:</p>
+</code></pre></div>
+</li>
+<li>
+<p>Once you set up the database, configure k0smotron to create a control plane:</p>
 <div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: k0smotron.io/v1beta1</span>
 <span class="s">kind: Cluster</span>
@@ -1361,7 +1378,8 @@ spec:
 <span class="s">  kineDataSourceURL: postgres://k0smotron:&lt;passwd&gt;@acid-minimal-cluster.default:5432/kine?sslmode=disable</span>
 <span class="s">EOF</span>
 </code></pre></div>
-<p>Another option is to use the reference to the secret containing the database credentials:</p>
+<p>You can also use the reference to the secret containing the database
+ credentials:</p>
 <div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
 <span class="s">apiVersion: v1</span>
 <span class="s">kind: Secret</span>
@@ -1383,7 +1401,12 @@ spec:
 <span class="s">  kineDataSourceSecretName: database-credentials</span>
 <span class="s">EOF</span>
 </code></pre></div>
-<p><strong>Note</strong>: The secret must be in the same namespace as the cluster and the key must be <code>K0SMOTRON_KINE_DATASOURCE_URL</code>.</p>
+<p>!!! note</p>
+<div class="highlight"><pre><span></span><code>The secret must be in the same namespace as the cluster and the key
+must be `K0SMOTRON_KINE_DATASOURCE_URL`.
+</code></pre></div>
+</li>
+</ol>
 
 
 
