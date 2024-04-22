@@ -19,7 +19,6 @@ nav:
       - Create a cluster: cluster.md
       - Join a worker node: join-nodes.md
       - Configuration: configuration.md
-      - HA control planes: ha.md
     - Cluster API:
       - Overview: cluster-api.md
       - Control Plane: capi-controlplane.md
@@ -34,6 +33,7 @@ nav:
         - OpenStack: capi-openstack.md
         - Docker: capi-docker.md
         - vSphere: capi-vsphere.md
+    - HA control planes: ha.md
     - Monitoring: monitoring.md
   - Update:
      - Standalone: update/update-standalone.md

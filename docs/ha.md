@@ -1,77 +1,95 @@
-# Highly available controlplanes
+# Highly available hosted control planes
 
-As the nature of Kubernetes workloads, in this case the cluster control planes, is quite dynamic it poses a challenge to setup highly available Etcd cluster for the control plane. In k0smotron we're solving the challenge by "externalizing" the control plane data storage HA setup.
+!!! note
 
-The control planes managed by `k0smotron` are k0s control planes. As k0s comes with support for using SQL DBs as data store (via Kine) you can use HA databases instead of Etcd. This enables you to use e.g. Postgres operator, MySQL operator or cloud provider managed databases as the data store for the control planes.
+   Highly available control planes are supported for the standalone and
+   Cluster API in-cluster use cases.
+
+Setting up a highly available etcd cluster for Kubernetes control planes can be
+complicated due to their dynamic nature. In k0smotron, we solve this challenge
+by "externalizing" the HA setup of data storage for the control plane.
+
+The control planes managed by k0smotron are k0s control planes. As k0s comes
+with support for using SQL databases as data store, which uses Kine, you can
+use HA databases instead of etcd. This enables you to use, for example,
+Postgres operator, MySQL operator, or cloud provider managed databases as the
+data store for the control planes.
 
 ## Using Postgres operator
 
-In this example we show how to use [Postgres operator](https://postgres-operator.readthedocs.io/en/latest/) to manage the control plane data store.
+This instruction demonstrates how to configure the [Postgres operator](https://postgres-operator.readthedocs.io/en/latest/)
+to manage the data store of a control plane. Use these steps as an example for
+the required data store resource.
 
-Install the operator following the [quickstart guide](https://postgres-operator.readthedocs.io/en/latest/quickstart/).
+1. Install the Postgres operator following the [quickstart guide](https://postgres-operator.readthedocs.io/en/latest/quickstart/).
 
-Create the database with a custom resource:
-```
-apiVersion: "acid.zalan.do/v1"
-kind: postgresql
-metadata:
-  name: acid-minimal-cluster
-spec:
-  teamId: "acid"
-  volume:
-    size: 10Gi
-  numberOfInstances: 2
-  users:
-    # database owner
-    k0smotron:
-    - superuser
-    - createdb
+2. Create the database using a custom resource:
 
-  databases:
-    kine: k0smotron
-  postgresql:
-    version: "15"
-```
+   ```
+   apiVersion: "acid.zalan.do/v1"
+   kind: postgresql
+   metadata:
+     name: acid-minimal-cluster
+   spec:
+     teamId: "acid"
+     volume:
+       size: 10Gi
+     numberOfInstances: 2
+     users:
+       # database owner
+       k0smotron:
+       - superuser
+       - createdb
 
-Once the database has been setup properly, you can instruct k0smotron to create a control plane using it:
+     databases:
+       kine: k0smotron
+     postgresql:
+       version: "15"
+   ```
 
-```shell
-cat <<EOF | kubectl apply -f -
-apiVersion: k0smotron.io/v1beta1
-kind: Cluster
-metadata:
-  name: k0smotron-test
-spec:
-  replicas: 3
-  service:
-    type: LoadBalancer
-  kineDataSourceURL: postgres://k0smotron:<passwd>@acid-minimal-cluster.default:5432/kine?sslmode=disable
-EOF
-```
+3. Once you set up the database, configure k0smotron to create a control plane:
 
-Another option is to use the reference to the secret containing the database credentials:
+   ```shell
+   cat <<EOF | kubectl apply -f -
+   apiVersion: k0smotron.io/v1beta1
+   kind: Cluster
+   metadata:
+     name: k0smotron-test
+   spec:
+     replicas: 3
+     service:
+       type: LoadBalancer
+     kineDataSourceURL: postgres://k0smotron:<passwd>@acid-minimal-cluster.default:5432/kine?sslmode=disable
+   EOF
+   ```
 
-```shell
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Secret
-metadata:
-  name: database-credentials
-  namespace: k0smotron-test
-type: Opaque
-data:
-  K0SMOTRON_KINE_DATASOURCE_URL: <base64-encoded-datasource>
----
-apiVersion: k0smotron.io/v1beta1
-kind: Cluster
-metadata:
-  name: k0smotron-test
-spec:
-  replicas: 3
-  service:
-    type: LoadBalancer
-  kineDataSourceSecretName: database-credentials
-EOF
-```
+   You can also use the reference to the secret containing the database
+   credentials:
 
-**Note**: The secret must be in the same namespace as the cluster and the key must be `K0SMOTRON_KINE_DATASOURCE_URL`.
+   ```shell
+   cat <<EOF | kubectl apply -f -
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: database-credentials
+     namespace: k0smotron-test
+   type: Opaque
+   data:
+     K0SMOTRON_KINE_DATASOURCE_URL: <base64-encoded-datasource>
+   ---
+   apiVersion: k0smotron.io/v1beta1
+   kind: Cluster
+   metadata:
+     name: k0smotron-test
+   spec:
+     replicas: 3
+     service:
+       type: LoadBalancer
+     kineDataSourceSecretName: database-credentials
+   EOF
+   ```
+
+   !!! note
+
+      The secret must be in the same namespace as the cluster and the key
+      must be `K0SMOTRON_KINE_DATASOURCE_URL`.
