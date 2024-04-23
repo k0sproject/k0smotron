@@ -18,6 +18,7 @@ nameSuffix: -bootstrap
 resources:
 - ../../rbac
 - ../../manager
+- ../k0smotron.io
 - ./bases/bootstrap.cluster.x-k8s.io_k0scontrollerconfigs.yaml
 - ./bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigs.yaml
 - ./bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml

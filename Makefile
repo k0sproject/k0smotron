@@ -177,6 +177,7 @@ clusterapi-manifests:
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/bootstrap/..." output:crd:artifacts:config=config/clusterapi/bootstrap/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/controlplane/..." output:crd:artifacts:config=config/clusterapi/controlplane/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/infrastructure/..." output:crd:artifacts:config=config/clusterapi/infrastructure/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/k0smotron.io/..." output:crd:artifacts:config=config/clusterapi/k0smotron.io/bases
 
 bootstrap-components.yaml: $(CONTROLLER_GEN) clusterapi-manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
