@@ -18,6 +18,7 @@ nameSuffix: -control-plane
 resources:
 - ../../rbac
 - ../../manager
+- ../k0smotron.io
 - ./bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
 - ./bases/controlplane.cluster.x-k8s.io_k0scontrolplanetemplates.yaml
 - ./bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
