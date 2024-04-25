@@ -16,10 +16,12 @@ updates:
       - dependency-name: github.com/k0sproject/k0s
   - package-ecosystem: github-actions
     directory: /
+    open-pull-requests-limit: 3
     schedule:
       interval: daily
 
   - package-ecosystem: pip
     directory: /docs
+    open-pull-requests-limit: 3
     schedule:
       interval: daily
