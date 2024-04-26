@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: controller-manager
   namespace: k0smotron
+  labels:
+    k0smotron-provider: infrastructure
 spec:
   template:
     spec:

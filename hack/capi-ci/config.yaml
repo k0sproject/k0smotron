@@ -1,0 +1,10 @@
+providers:
+  - name: "k0sproject-k0smotron"
+    url: "file://%pwd%/k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/v0.0.0/bootstrap-components.yaml"
+    type: "BootstrapProvider"
+  - name: "k0sproject-k0smotron"
+    url: "file://%pwd%/k0sproject-k0smotron/control-plane-k0sproject-k0smotron/v0.0.0/control-plane-components.yaml"
+    type: "ControlPlaneProvider"
+  - name: "k0sproject-k0smotron"
+    url: "file://%pwd%/k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/v0.0.0/infrastructure-components.yaml"
+    type: "InfrastructureProvider"

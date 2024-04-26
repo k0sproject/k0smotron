@@ -170,11 +170,9 @@ jobs:
         run: |
           kind create cluster --config config/samples/capi/docker/kind.yaml
 
-      - name: Load k0smotron image to KinD and install k0smotron controllers
+      - name: Load k0smotron image to KinD
         run: |
           kind load image-archive k0smotron-image-bundle.tar
-          kubectl apply -f install.yaml
-      
 
       - name: Download clusterctl
         uses: supplypike/setup-bin@v4
@@ -183,9 +181,24 @@ jobs:
           version: v1.4.3
           uri: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.3/clusterctl-linux-amd64
 
+      - name: Prepare cluster api components
+        run: |
+          make bootstrap-components.yaml control-plane-components.yaml infrastructure-components.yaml
+          mkdir -p v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/ k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/ k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+          
+          mv bootstrap-components.yaml v0.0.0
+          mv control-plane-components.yaml v0.0.0
+          mv infrastructure-components.yaml v0.0.0
+          mv ./hack/capi-ci/metadata.yaml v0.0.0
+          
+          cp -r v0.0.0 k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+          sed -e 's#%pwd%#'`pwd`'#g' ./hack/capi-ci/config.yaml > config.yaml
+
       - name: Install cluster api components
         run: |
-          clusterctl init --infrastructure docker
+          clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure k0sproject-k0smotron,docker --config config.yaml
           kubectl patch -n capi-system deployment/capi-controller-manager -p \
             '{"spec":{"template":{"spec":{"containers":[{"name":"manager","args":["--leader-elect", "--metrics-bind-addr=localhost:8080", "--feature-gates=ClusterTopology=true"]}]}}}}'
           kubectl patch -n capd-system deployment/capd-controller-manager -p \
