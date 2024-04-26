@@ -89,13 +89,7 @@ func (r *ClusterReconciler) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluste
 }
 
 func (r *ClusterReconciler) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster) error {
-	var desiredReplicas int32 = 1
-	if kmc.Spec.Replicas > 1 {
-		desiredReplicas = kmc.Spec.Replicas
-		if kmc.Spec.Replicas%2 == 0 {
-			desiredReplicas = kmc.Spec.Replicas + 1
-		}
-	}
+	desiredReplicas := calculateDesiredReplicas(kmc)
 
 	foundStatefulSet, err := r.ClientSet.AppsV1().StatefulSets(kmc.Namespace).Get(ctx, kmc.GetEtcdStatefulSetName(), metav1.GetOptions{})
 	if err != nil {
@@ -103,10 +97,14 @@ func (r *ClusterReconciler) reconcileEtcdStatefulSet(ctx context.Context, kmc *k
 			return err
 		}
 	} else {
+		// If we want to scale up existing etcd statefulset, we always scale up by 1 replica at a time and wait for the previous member to be ready
+		// This is to avoid the situation where the new member is not able to join the cluster because the previous member is not ready
 		if desiredReplicas > *foundStatefulSet.Spec.Replicas {
+			// Scale up by 1 replica
 			desiredReplicas = int32(*foundStatefulSet.Spec.Replicas) + 1
 		}
 		if desiredReplicas > foundStatefulSet.Status.ReadyReplicas+1 {
+			// Wait for the previous member to be ready. For example, if the desired replicas is 3, we need to wait for the 2nd member to be ready before adding the 3rd member
 			return fmt.Errorf("waiting for previous etcd member to be ready")
 		}
 	}
@@ -301,6 +299,20 @@ func (r *ClusterReconciler) generateEtcdInitContainers(kmc *km.Cluster) []v1.Con
 			},
 		},
 	}
+}
+
+// calculateDesiredReplicas calculates the desired number of etcd replicas
+// We don't allow even number of replicas, so we always round up to the next odd number
+func calculateDesiredReplicas(kmc *km.Cluster) int32 {
+	var desiredReplicas int32 = 1
+	if kmc.Spec.Replicas > 1 {
+		desiredReplicas = kmc.Spec.Replicas
+		if kmc.Spec.Replicas%2 == 0 {
+			desiredReplicas = kmc.Spec.Replicas + 1
+		}
+	}
+
+	return desiredReplicas
 }
 
 var entrypointScript = `

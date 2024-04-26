@@ -152,8 +152,6 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 
 	s.T().Log("scaling down control plane")
 
-	time.Sleep(5 * time.Second)
-
 	out, err := exec.Command("docker", "exec", "docker-test-1", "k0s", "etcd", "leave").CombinedOutput()
 	s.T().Log(string(out))
 	s.Require().NoError(err)
