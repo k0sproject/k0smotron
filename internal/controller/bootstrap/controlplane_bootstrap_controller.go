@@ -206,8 +206,8 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	commands := config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
-	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
-	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && rc-update add k0sleave shutdown || true)")
+	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
+	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
 	commands = append(commands, installCmd, "k0s start")
 	commands = append(commands, config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
@@ -614,11 +614,13 @@ MACHINE_NAME=${AUTOPILOT_HOSTNAME#"AUTOPILOT_HOSTNAME="}
 IS_LEAVING=$(/usr/local/bin/k0s kc get controlnodes $MACHINE_NAME -o jsonpath='{.metadata.annotations.k0smotron\.io/leave}')
 
 if [ $IS_LEAVING = "true" ]; then
-        /usr/local/bin/k0s etcd leave
+    until /usr/local/bin/k0s etcd leave; do
+        sleep 1
+    done
 fi
 `,
 		}, {
-			Path:        "/etc/systemd/system/k0sleave.service",
+			Path:        "/k0s/k0sleave.service",
 			Permissions: "0644",
 			Content: `[Unit]
 Description=k0s etcd leave service
@@ -637,7 +639,7 @@ WantedBy=multi-user.target
 `,
 		},
 		{
-			Path:        "/etc/init.d/k0sleave",
+			Path:        "/k0s/k0sleave-openrc",
 			Permissions: "0644",
 			Content: `#!/sbin/openrc-run
 
