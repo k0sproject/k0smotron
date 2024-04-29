@@ -8,7 +8,7 @@ require (
 	github.com/imdario/mergo v0.3.16
 	github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29
 	github.com/k0sproject/rig v0.18.1
-	github.com/onsi/ginkgo/v2 v2.17.1
+	github.com/onsi/ginkgo/v2 v2.17.2
 	github.com/onsi/gomega v1.33.0
 	github.com/stretchr/testify v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -38,8 +38,7 @@ require (
 	github.com/docker/go-connections v0.4.1-0.20190612165340-fd1b1942c4d5 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
-	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
+	github.com/google/pprof v0.0.0-20240424215950-a892ee059fd6 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -54,8 +53,8 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	golang.org/x/crypto v0.22.0
-	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/tools v0.17.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/tools v0.20.0 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 	helm.sh/helm/v3 v3.11.3 // indirect
 	k8s.io/kube-aggregator v0.27.2 // indirect
@@ -88,6 +87,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
+	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gobuffalo/flect v1.0.2 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -143,8 +143,8 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
-	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/term v0.19.0 // indirect
