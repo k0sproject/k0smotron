@@ -218,7 +218,9 @@ jobs:
       - name: Get k0smotron logs
         if: failure()
         run: |
-          kubectl logs -n k0smotron deploy/k0smotron-controller-manager > /tmp/${{ matrix.smoke-suite }}-k0smotron.log
+          kubectl logs -n k0smotron deploy/k0smotron-controller-manager-bootstrap > /tmp/${{ matrix.smoke-suite }}-k0smotron-bootstrap.log
+          kubectl logs -n k0smotron deploy/k0smotron-controller-manager-control-plane > /tmp/${{ matrix.smoke-suite }}-k0smotron-control-plane.log
+          kubectl logs -n k0smotron deploy/k0smotron-controller-manager-infrastructure > /tmp/${{ matrix.smoke-suite }}-k0smotron-infrastructure.log
 
       - name: Collect k0s logs and support bundle
         if: failure()
