@@ -54,39 +54,39 @@ type K0sControlPlaneSpec struct {
 }
 
 type K0sBootstrapConfigSpec struct {
-	// Additional files to be passed to user_data upon creation.
+	// Files specifies additional files associated with the newly created user.
 	// +kubebuilder:validation:Optional
 	Files []cloudinit.File `json:"files,omitempty"`
 
-	// Additional arguments to be passed to the k0s worker node.
-	// See: https://docs.k0sproject.io/stable/advanced/worker-configuration/
+	// Args specifies additional arguments to be passed to the k0s worker.
+	// See: https://docs.k0sproject.io/stable/worker-node-config/ for configuration details
 	Args []string `json:"args,omitempty"`
 
-	// Commands that should be executed before the k0s worker node start.
+	// PreStartCommands specifies the commands that should be executed before the k0s worker node start.
 	// +kubebuilder:validation:Optional
 	PreStartCommands []string `json:"preStartCommands,omitempty"`
 
-	// Commands that should be executed after the k0s worker node start.
+	// PostStartCommands specifies the commands that should be executed after the k0s worker node start.
 	// +kubebuilder:validation:Optional
 	PostStartCommands []string `json:"postStartCommands,omitempty"`
 
-	// Specifies whether k0s binary is pre-installed on the node.
+	// PreInstalledK0s specifies whether the k0s binary is pre-installed on the node.
 	// +kubebuilder:validation:Optional
 	PreInstalledK0s bool `json:"preInstalledK0s,omitempty"`
 
-	// The URL from which the k0s binary should be downloaded.
-	// If the Version field is empty, the downloaded version of k0s is used.
+	// DownloadURL specifies the URL of the k0s binary.
+	// Specifying DownloadURL overrides the Version field, and the downloaded version of k0s is used.
 	// +kubebuilder:validation:Optional
 	DownloadURL string `json:"downloadURL,omitempty"`
 }
 
 type K0sControlPlaneMachineTemplate struct {
-	// Standard object's metadata.
+	// ObjectMeta defines standard object metadata.
 	// For detais, see https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
 
-	// A required reference to a custom resource
+	// InfrastructureRef is a required reference to a custom resource
 	// offered by an infrastructure provider.
 	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
 }
@@ -100,7 +100,7 @@ type K0sControlPlaneList struct {
 }
 
 type K0sControlPlaneStatus struct {
-	// Ready denotes that the control plane is ready
+	// Ready signals that the control plane is ready
 	Ready                       bool   `json:"ready"`
 	ControlPlaneReady           bool   `json:"controlPlaneReady"`
 	Inititalized                bool   `json:"initialized"`
