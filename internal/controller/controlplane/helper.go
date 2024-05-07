@@ -181,6 +181,15 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 		return nil
 	}
 
+	amd64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-amd64`
+	arm64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm64`
+	armDownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm`
+	if kcp.Spec.K0sConfigSpec.DownloadURL != "" {
+		amd64DownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
+		arm64DownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
+		armDownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
+	}
+
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 	plan := []byte(`
 	{
@@ -197,13 +206,13 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 					"version": "` + kcp.Spec.Version + `",
 					"platforms": {
 						"linux-amd64": {
-							"url": "https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-amd64"
+							"url": "` + amd64DownloadURL + `"
 						},
 						"linux-arm64": {
-							"url": "https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm64"
+							"url": "` + arm64DownloadURL + `"
 						},
 						"linux-arm": {
-							"url": "https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm"
+							"url": "` + armDownloadURL + `"
 						}
 					},
 					"targets": {
