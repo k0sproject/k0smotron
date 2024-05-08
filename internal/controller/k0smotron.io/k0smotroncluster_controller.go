@@ -36,12 +36,6 @@ import (
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
 
-const (
-	defaultK0SImage   = "k0sproject/k0s"
-	defaultK0SVersion = "v1.27.9-k0s.0"
-	defaultK0SSuffix  = "k0s.0"
-)
-
 var patchOpts []client.PatchOption = []client.PatchOption{
 	client.FieldOwner("k0smotron-operator"),
 	client.ForceOwnership,

@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	"fmt"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -98,6 +99,29 @@ type ClusterSpec struct {
 
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+const (
+	defaultK0SImage   = "k0sproject/k0s"
+	defaultK0SVersion = "v1.27.9-k0s.0"
+	defaultK0SSuffix  = "k0s.0"
+)
+
+func (c *ClusterSpec) GetImage() string {
+	k0sVersion := c.Version
+	if k0sVersion == "" {
+		k0sVersion = defaultK0SVersion
+	}
+
+	if !strings.Contains(k0sVersion, "-k0s.") {
+		k0sVersion = fmt.Sprintf("%s-%s", k0sVersion, defaultK0SSuffix)
+	}
+
+	if c.Image == "" {
+		return fmt.Sprintf("%s:%s", defaultK0SImage, k0sVersion)
+	}
+
+	return fmt.Sprintf("%s:%s", c.Image, k0sVersion)
 }
 
 // ClusterStatus defines the observed state of K0smotronCluster
