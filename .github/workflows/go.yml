@@ -97,9 +97,11 @@ jobs:
           - check-basic
           - check-hostpath
           - check-ha-controller
+          - check-ha-controller-etcd
           - check-ha-controller-secret
           - check-jointoken
           - check-monitoring
+          - check-scaling-etcd
 
     steps:
       - name: Check out code into the Go module directory

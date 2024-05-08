@@ -74,6 +74,10 @@ spec:
                               - ca
                               - sa
                               - proxy
+                              - etcd
+                              - apiserver-etcd-client
+                              - etcd-peer
+                              - etcd-server
                               type: string
                           required:
                           - type
@@ -88,6 +92,37 @@ spec:
                         items:
                           type: string
                         type: array
+                      etcd:
+                        default:
+                          image: quay.io/k0sproject/etcd:v3.5.13
+                          persistence: {}
+                        description: Etcd defines the etcd configuration.
+                        properties:
+                          image:
+                            default: quay.io/k0sproject/etcd:v3.5.13
+                            description: Image defines the etcd image to be deployed.
+                            type: string
+                          persistence:
+                            description: Persistence defines the persistence configuration.
+                            properties:
+                              size:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                default: 1Gi
+                                description: 'Size defines the size of the etcd volume.
+                                  Default: 1Gi'
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              storageClass:
+                                description: StorageClass defines the storage class
+                                  to be used for etcd persistence. If empty, will
+                                  be used the default storage class.
+                                type: string
+                            type: object
+                        required:
+                        - image
+                        type: object
                       externalAddress:
                         description: |-
                           ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi

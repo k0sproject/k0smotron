@@ -204,6 +204,10 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 				Type: string(secret.ServiceAccount),
 				Name: secret.Name(cluster.Name, secret.ServiceAccount),
 			},
+			{
+				Type: string(secret.EtcdCA),
+				Name: secret.Name(cluster.Name, secret.EtcdCA),
+			},
 		}
 
 		if err := c.ensureCertificates(ctx, cluster, kcp); err != nil {

@@ -2244,6 +2244,15 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecetcd">etcd</a></b></td>
+        <td>object</td>
+        <td>
+          Etcd defines the etcd configuration.<br/>
+          <br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>externalAddress</b></td>
         <td>string</td>
         <td>
@@ -2378,7 +2387,7 @@ will pick it automatically.<br/>
         <td>
           <br/>
           <br/>
-            <i>Enum</i>: ca, sa, proxy<br/>
+            <i>Enum</i>: ca, sa, proxy, etcd, apiserver-etcd-client, etcd-peer, etcd-server<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -2386,6 +2395,78 @@ will pick it automatically.<br/>
         <td>string</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.etcd
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+Etcd defines the etcd configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd image to be deployed.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecetcdpersistence">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.etcd.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd)</sup></sup>
+
+
+
+Persistence defines the persistence configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the etcd volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7035,6 +7116,15 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcd">etcd</a></b></td>
+        <td>object</td>
+        <td>
+          Etcd defines the etcd configuration.<br/>
+          <br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>externalAddress</b></td>
         <td>string</td>
         <td>
@@ -7169,7 +7259,7 @@ will pick it automatically.<br/>
         <td>
           <br/>
           <br/>
-            <i>Enum</i>: ca, sa, proxy<br/>
+            <i>Enum</i>: ca, sa, proxy, etcd, apiserver-etcd-client, etcd-peer, etcd-server<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -7177,6 +7267,78 @@ will pick it automatically.<br/>
         <td>string</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.etcd
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+Etcd defines the etcd configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd image to be deployed.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcdpersistence">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.etcd.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecetcd)</sup></sup>
+
+
+
+Persistence defines the persistence configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the etcd volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12456,6 +12618,15 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#clusterspecetcd">etcd</a></b></td>
+        <td>object</td>
+        <td>
+          Etcd defines the etcd configuration.<br/>
+          <br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>externalAddress</b></td>
         <td>string</td>
         <td>
@@ -12590,7 +12761,7 @@ will pick it automatically.<br/>
         <td>
           <br/>
           <br/>
-            <i>Enum</i>: ca, sa, proxy<br/>
+            <i>Enum</i>: ca, sa, proxy, etcd, apiserver-etcd-client, etcd-peer, etcd-server<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -12598,6 +12769,78 @@ will pick it automatically.<br/>
         <td>string</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.etcd
+<sup><sup>[↩ Parent](#clusterspec)</sup></sup>
+
+
+
+Etcd defines the etcd configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd image to be deployed.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecetcdpersistence">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.etcd.persistence
+<sup><sup>[↩ Parent](#clusterspecetcd)</sup></sup>
+
+
+
+Persistence defines the persistence configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the etcd volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

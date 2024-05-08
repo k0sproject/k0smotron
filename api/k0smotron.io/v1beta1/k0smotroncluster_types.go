@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -91,6 +92,9 @@ type ClusterSpec struct {
 	// Monitoring defines the monitoring configuration.
 	//+kubebuilder:validation:Optional
 	Monitoring MonitoringSpec `json:"monitoring,omitempty"`
+	// Etcd defines the etcd configuration.
+	//+kubebuilder:default={"image":"quay.io/k0sproject/etcd:v3.5.13","persistence":{}}
+	Etcd EtcdSpec `json:"etcd,omitempty"`
 
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
@@ -208,8 +212,27 @@ type MonitoringSpec struct {
 	ProxyImage string `json:"proxyImage"`
 }
 
+type EtcdSpec struct {
+	// Image defines the etcd image to be deployed.
+	//+kubebuilder:default="quay.io/k0sproject/etcd:v3.5.13"
+	Image string `json:"image"`
+	// Persistence defines the persistence configuration.
+	//+kubebuilder:validation:Optional
+	Persistence EtcdPersistenceSpec `json:"persistence"`
+}
+
+type EtcdPersistenceSpec struct {
+	// StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.
+	//+kubebuilder:validation:Optional
+	StorageClass string `json:"storageClass"`
+	// Size defines the size of the etcd volume. Default: 1Gi
+	//+kubebuilder:default="1Gi"
+	//+kubebuilder:validation:Optional
+	Size resource.Quantity `json:"size"`
+}
+
 type CertificateRef struct {
-	//+kubebuilder:validation:Enum=ca;sa;proxy
+	//+kubebuilder:validation:Enum=ca;sa;proxy;etcd;apiserver-etcd-client;etcd-peer;etcd-server
 	Type string `json:"type"`
 	//+kubebuilder:validation:Optional
 	Name string `json:"name,omitempty"`
@@ -225,6 +248,10 @@ func GetStatefulSetName(clusterName string) string {
 
 func (kmc *Cluster) GetStatefulSetName() string {
 	return GetStatefulSetName(kmc.Name)
+}
+
+func (kmc *Cluster) GetEtcdStatefulSetName() string {
+	return fmt.Sprintf("kmc-%s-etcd", kmc.Name)
 }
 
 func (kmc *Cluster) GetAdminConfigSecretName() string {
@@ -245,6 +272,10 @@ func (kmc *Cluster) GetConfigMapName() string {
 
 func (kmc *Cluster) GetServiceName() string {
 	return fmt.Sprintf("kmc-%s", kmc.Name)
+}
+
+func (kmc *Cluster) GetEtcdServiceName() string {
+	return fmt.Sprintf("kmc-%s-etcd", kmc.Name)
 }
 
 func (kmc *Cluster) GetLoadBalancerServiceName() string {

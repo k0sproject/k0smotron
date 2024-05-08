@@ -162,11 +162,12 @@ func (s *CAPIDockerSuite) applyClusterObjects() {
 
 func (s *CAPIDockerSuite) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "secret", "docker-test-ca", "docker-test-etcd", "docker-test-proxy", "docker-test-sa").CombinedOutput()
-	s.Require().NoError(err, "failed to delete secrets: %s", string(out))
+	_, _ = exec.Command("kubectl", "delete", "secret", "docker-test-ca", "docker-test-etcd", "docker-test-proxy", "docker-test-sa").CombinedOutput()
 
-	out, err = exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
+
+	_, _ = exec.Command("kubectl", "delete", "pvc", "etcd-data-kmc-docker-test-etcd-0", "kmc-docker-test-kmc-docker-test-0").CombinedOutput()
 }
 
 func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.Config) {
@@ -242,6 +243,8 @@ spec:
       type: proxy
     - name: docker-test-sa
       type: sa
+    - name: docker-test-etcd
+      type: etcd
   persistence:
     type: pvc
     persistentVolumeClaim:

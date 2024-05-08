@@ -18,7 +18,6 @@ package k0smotronio
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -57,11 +56,6 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		if kmc.Spec.Image == defaultK0SImage && !strings.Contains(kmc.Spec.Version, "-k0s.") {
 			k0sVersion = fmt.Sprintf("%s-%s", kmc.Spec.Version, defaultK0SSuffix)
 		}
-	}
-
-	if kmc.Spec.Replicas > 1 && (kmc.Spec.KineDataSourceURL == "" && kmc.Spec.KineDataSourceSecretName == "") {
-		return apps.StatefulSet{}, errors.New("kineDataSourceURL can't be empty if replicas > 1")
-
 	}
 
 	labels := labelsForCluster(kmc)
@@ -150,11 +144,15 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 						}},
 						Resources: kmc.Spec.Resources,
 						ReadinessProbe: &v1.Probe{
-							InitialDelaySeconds: 5,
+							InitialDelaySeconds: 60,
+							PeriodSeconds:       10,
+							FailureThreshold:    15,
 							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
 						},
 						LivenessProbe: &v1.Probe{
-							InitialDelaySeconds: 10,
+							InitialDelaySeconds: 90,
+							FailureThreshold:    10,
+							PeriodSeconds:       10,
 							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
 						},
 						VolumeMounts: []v1.VolumeMount{{
@@ -353,6 +351,38 @@ func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet)
 						{
 							Key:  "tls.key",
 							Path: "front-proxy-ca.key",
+						},
+					},
+				},
+			})
+		case "apiserver-etcd-client":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "apiserver-etcd-client.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "apiserver-etcd-client.key",
+						},
+					},
+				},
+			})
+		case "etcd":
+			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "etcd-ca.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "etcd-ca.key",
 						},
 					},
 				},

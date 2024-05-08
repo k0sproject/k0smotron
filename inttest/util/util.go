@@ -43,7 +43,16 @@ import (
 )
 
 func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
+	err := InstallLocalPathStorage(ctx, kc, rc)
+	if err != nil {
+		return err
+	}
+
 	return CreateFromYAML(ctx, kc, rc, os.Getenv("K0SMOTRON_INSTALL_YAML"))
+}
+
+func InstallLocalPathStorage(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
+	return CreateFromYAML(ctx, kc, rc, os.Getenv("LOCAL_STORAGE_INSTALL_YAML"))
 }
 
 func CreateFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, filename string) error {
