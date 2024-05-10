@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
@@ -49,14 +48,6 @@ func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet 
 }
 
 func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
-	k0sVersion := kmc.Spec.Version
-	if k0sVersion == "" {
-		k0sVersion = defaultK0SVersion
-	} else {
-		if kmc.Spec.Image == defaultK0SImage && !strings.Contains(kmc.Spec.Version, "-k0s.") {
-			k0sVersion = fmt.Sprintf("%s-%s", kmc.Spec.Version, defaultK0SSuffix)
-		}
-	}
 
 	labels := labelsForCluster(kmc)
 
@@ -120,7 +111,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 					}},
 					Containers: []v1.Container{{
 						Name:            "controller",
-						Image:           fmt.Sprintf("%s:%s", kmc.Spec.Image, k0sVersion),
+						Image:           kmc.Spec.GetImage(),
 						ImagePullPolicy: v1.PullIfNotPresent,
 						Args:            []string{"/k0smotron-entrypoint.sh"},
 						Ports: []v1.ContainerPort{
@@ -403,7 +394,7 @@ func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet)
 	// Otherwise k0s will trip over the permissions and RO mounts
 	sfs.Spec.Template.Spec.InitContainers = append(sfs.Spec.Template.Spec.InitContainers, v1.Container{
 		Name:  "certs-init",
-		Image: "busybox",
+		Image: kmc.Spec.GetImage(),
 		Command: []string{
 			"sh",
 			"-c",
