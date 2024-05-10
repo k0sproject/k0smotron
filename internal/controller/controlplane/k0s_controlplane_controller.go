@@ -21,9 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/controller/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -43,6 +40,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"strings"
+
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
 const (
@@ -116,7 +117,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, err
 	}
 
-	res, err = c.reconcile(ctx, cluster, kcp)
+	replicasToReport, err := c.reconcile(ctx, cluster, kcp)
 	if err != nil {
 		return res, err
 	}
@@ -126,7 +127,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	kcp.Status.ExternalManagedControlPlane = false
 	kcp.Status.Inititalized = true
 	kcp.Status.ControlPlaneReady = true
-	kcp.Status.Replicas = kcp.Spec.Replicas
+	kcp.Status.Replicas = replicasToReport
 	kcp.Status.Version = kcp.Spec.Version
 	err = c.Status().Update(ctx, kcp)
 
@@ -193,59 +194,74 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 	return nil
 }
 
-func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
-	err := c.reconcileMachines(ctx, cluster, kcp)
+func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (int32, error) {
+	replicasToReport, err := c.reconcileMachines(ctx, cluster, kcp)
 	if err != nil {
-		return ctrl.Result{}, err
+		return replicasToReport, err
 	}
 
 	err = c.reconcileKubeconfig(ctx, cluster, kcp)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
+		return replicasToReport, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
 	}
 
-	return ctrl.Result{}, nil
+	return replicasToReport, nil
 }
 
-func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
-
+func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (int32, error) {
+	replicasToReport := kcp.Spec.Replicas
 	// TODO: Scale down machines if needed
 	if kcp.Status.Replicas > kcp.Spec.Replicas {
 		kubeClient, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
-			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
+			return replicasToReport, fmt.Errorf("error getting cluster client set for deletion: %w", err)
 		}
 
-		for i := kcp.Spec.Replicas; i < kcp.Status.Replicas; i++ {
-			name := machineName(kcp.Name, int(i))
+		// Remove the last machine and report the new number of replicas to status
+		// On the next reconcile, the next machine will be removed
+		if kcp.Status.Replicas > kcp.Spec.Replicas {
+			// Wait for the previous machine to be deleted to avoid etcd issues
+			previousMachineName := machineName(kcp.Name, int(kcp.Status.Replicas))
+			exist, err := c.machineExist(ctx, previousMachineName, kcp)
+			if err != nil {
+				return kcp.Status.Replicas, fmt.Errorf("error checking machine existance: %w", err)
+			}
+			if exist {
+				return kcp.Status.Replicas, fmt.Errorf("waiting for previous machine to be deleted")
+			}
+
+			replicasToReport = kcp.Status.Replicas - 1
+			name := machineName(kcp.Name, int(kcp.Status.Replicas-1))
+
+			if err := c.markChildControlNodeToLeave(ctx, name, kubeClient); err != nil {
+				return replicasToReport, fmt.Errorf("error marking controlnode to leave: %w", err)
+			}
 
 			if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
-				return fmt.Errorf("error deleting machine from template: %w", err)
+				return replicasToReport, fmt.Errorf("error deleting machine from template: %w", err)
 			}
 
 			if err := c.deleteMachineFromTemplate(ctx, name, cluster, kcp); err != nil {
-				return fmt.Errorf("error deleting machine from template: %w", err)
-			}
-
-			if err := c.markChildControlNodeToLeave(ctx, name, kubeClient); err != nil {
-				return fmt.Errorf("error marking controlnode to leave: %w", err)
+				return replicasToReport, fmt.Errorf("error deleting machine from template: %w", err)
 			}
 
 			if err := c.deleteMachine(ctx, name, kcp); err != nil {
-				return fmt.Errorf("error deleting machine from template: %w", err)
+				return replicasToReport, fmt.Errorf("error deleting machine from template: %w", err)
 			}
+
+			return replicasToReport, nil
 		}
 	}
 
 	if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
 		kubeClient, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
-			return fmt.Errorf("error getting cluster client set for machine update: %w", err)
+			return replicasToReport, fmt.Errorf("error getting cluster client set for machine update: %w", err)
 		}
 
 		err = c.createAutopilotPlan(ctx, kcp, kubeClient)
 		if err != nil {
-			return fmt.Errorf("error creating autopilot plan: %w", err)
+			return replicasToReport, fmt.Errorf("error creating autopilot plan: %w", err)
 		}
 	}
 
@@ -254,7 +270,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 		machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
 		if err != nil {
-			return fmt.Errorf("error creating machine from template: %w", err)
+			return replicasToReport, fmt.Errorf("error creating machine from template: %w", err)
 		}
 
 		infraRef := corev1.ObjectReference{
@@ -266,16 +282,16 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 		machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef)
 		if err != nil {
-			return fmt.Errorf("error creating machine: %w", err)
+			return replicasToReport, fmt.Errorf("error creating machine: %w", err)
 		}
 
 		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machine)
 		if err != nil {
-			return fmt.Errorf("error creating bootstrap config: %w", err)
+			return replicasToReport, fmt.Errorf("error creating bootstrap config: %w", err)
 		}
 	}
 
-	return nil
+	return replicasToReport, nil
 }
 
 func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
