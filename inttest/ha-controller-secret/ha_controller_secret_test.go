@@ -20,12 +20,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/k0sproject/k0s/inttest/common"
-	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/secret"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/k0sproject/k0s/inttest/common"
+	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
 type HAControllerSecretSuite struct {
@@ -95,6 +99,20 @@ func TestHAControllerSecretSuite(t *testing.T) {
 	suite.Run(t, &s)
 }
 
+func (s *HAControllerSecretSuite) prepareCerts(kc *kubernetes.Clientset) {
+	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
+	err := certificates.Generate()
+	s.Require().NoError(err, "failed to generate certificates")
+
+	for _, certificate := range certificates {
+		certificate.Generated = false
+		certSecret := certificate.AsSecret(client.ObjectKey{Namespace: "kmc-test", Name: "kmc-test"}, metav1.OwnerReference{})
+		if _, err := kc.CoreV1().Secrets("kmc-test").Create(s.Context(), certSecret, metav1.CreateOptions{}); err != nil {
+			s.Require().NoError(err)
+		}
+	}
+}
+
 func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx context.Context, kc *kubernetes.Clientset) {
 	_, err := kc.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -102,6 +120,8 @@ func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx contex
 		},
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
+
+	s.prepareCerts(kc)
 
 	// create K0smotron namespace
 	_, err = kc.CoreV1().Secrets("kmc-test").Create(ctx, &corev1.Secret{
@@ -133,6 +153,7 @@ func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx contex
 				"type": "NodePort"
 			},
 			"kineDataSourceSecretName": "postgres-dsn",
+			"certificateRefs": [{"name": "kmc-test-ca","type": "ca"}, {"name": "kmc-test-proxy", "type": "proxy"}, {"name": "kmc-test-sa", "type": "sa"}],
 			"k0sConfig": {
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind": "ClusterConfig",
