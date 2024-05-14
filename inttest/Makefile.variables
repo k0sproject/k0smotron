@@ -30,3 +30,4 @@ smoketests := \
     check-capi-remote-machine-template \
     check-capi-remote-machine-template-update \
     check-capi-docker-machine-template-update \
+    check-capi-docker-machine-template-update-rollout \

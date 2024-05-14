@@ -184,7 +184,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, rmName, corev1.ConditionTrue))
 
 	s.T().Log("update cluster")
 	s.updateCluster()
@@ -200,7 +200,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready in updated cluster")
-	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, rmName, corev1.ConditionTrue))
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) findRemoteMachines(namespace string) ([]infra.RemoteMachine, error) {
@@ -230,7 +230,7 @@ func (s *RemoteMachineTemplateUpdateSuite) getRemoteMachine(name string, namespa
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) deleteCluster() {
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.Command("kubectl", "delete", "cluster", "remote-test-cluster").CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
@@ -269,8 +269,8 @@ func (s *RemoteMachineTemplateUpdateSuite) createCluster() {
 
 	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, bytes, 0644))
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 	s.Require().NoError(os.WriteFile(s.updatedClusterYamlsPath, []byte(updatedClusterYaml), 0644))
-	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
 func getLBPort(name string) (int, error) {
