@@ -52,7 +52,7 @@ type K0sWorkerConfigList struct {
 }
 
 type K0sWorkerConfigSpec struct {
-	// K0sWorkerConfigSpec refers to a secret that contains the join token.
+	// JoinTokenSecretRef refers to a secret that contains the join token.
 	// Specify the secret only when using a pre-generated join token.
 	// +kubebuilder:validation:Optional
 	JoinTokenSecretRef *JoinTokenSecretRef `json:"joinTokenSecretRef,omitempty"`
@@ -151,7 +151,7 @@ type K0sControllerConfigSpec struct {
 }
 
 type K0sConfigSpec struct {
-	// k0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
+	// K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 	// If empty, the default k0s configuration is used. For details, see https://docs.k0sproject.io/stable/configuration/.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:pruning:PreserveUnknownFields
