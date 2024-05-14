@@ -232,4 +232,6 @@ jobs:
         with:
           name: smoketests-${{ matrix.smoke-suite }}-files
           path: |
-            /tmp/${{ matrix.smoke-suite }}-k0smotron.log
+            /tmp/${{ matrix.smoke-suite }}-k0smotron-bootstrap.log
+            /tmp/${{ matrix.smoke-suite }}-k0smotron-control-plane.log
+            /tmp/${{ matrix.smoke-suite }}-k0smotron-infrastructure.log
