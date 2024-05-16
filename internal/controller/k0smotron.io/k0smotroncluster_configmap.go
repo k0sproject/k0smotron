@@ -89,7 +89,7 @@ func (r *ClusterReconciler) generateCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 	return cm, nil
 }
 
-func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling configmap")
 
@@ -109,7 +109,7 @@ func (r *ClusterReconciler) reconcileCM(ctx context.Context, kmc km.Cluster) err
 		kmc.Spec.KineDataSourceURL = kineDataSourceURLPlaceholder
 	}
 
-	cm, err := r.generateCM(&kmc)
+	cm, err := r.generateCM(kmc)
 	if err != nil {
 		return err
 	}
