@@ -94,23 +94,23 @@ Resource Types:
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
-          Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+          Args specifies additional arguments to be passed to the k0s worker node.
+See: https://docs.k0sproject.io/stable/worker-node-config/ for configuration details<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>downloadURL</b></td>
         <td>string</td>
         <td>
-          DownloadURL specifies the URL from which to download the k0s binary.
-If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.<br/>
+          DownloadURL specifies the URL of the k0s binary.
+Specifying DownloadURL overrides the Version field, and the downloaded version of k0s is used.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrollerconfigspecfilesindex">files</a></b></td>
         <td>[]object</td>
         <td>
-          Files specifies extra files to be passed to user_data upon creation.<br/>
+          Files specifies additional files associated with the newly created user.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -118,45 +118,45 @@ If the version field is specified, it is ignored, and whatever version is downlo
         <td>object</td>
         <td>
           K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
-If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+If empty, the default k0s configuration is used. For details, see https://docs.k0sproject.io/stable/configuration/.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PostStartCommands specifies commands to be run after starting k0s worker.<br/>
+          PostStartCommands specifies the commands that should be executed after the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preInstalledK0s</b></td>
         <td>boolean</td>
         <td>
-          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+          PreInstalledK0s specifies whether the k0s binary is pre-installed on the node.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+          PreStartCommands specifies the commands that should be executed before the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrollerconfigspectunneling">tunneling</a></b></td>
         <td>object</td>
         <td>
-          Tunneling defines the tunneling configuration for the cluster.<br/>
+          Tunneling defines the tunneling configuration of the cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          Version is the version of k0s to use. In case this is not set, k0smotron will use
-a version field of the Machine object. If it's empty, the latest version is used.
+          Version defines the version of k0s to be deployed. If the parameter is not set, k0smotron uses
+the Version field of the Machine object. If the Version field is empty, the latest version of k0s is used.
 Make sure the version is compatible with the k0s version running on the control plane.
-For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+For reference, see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -209,7 +209,7 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
 
 
 
-Tunneling defines the tunneling configuration for the cluster.
+Tunneling defines the tunneling configuration of the cluster.
 
 <table>
     <thead>
@@ -233,8 +233,8 @@ Tunneling defines the tunneling configuration for the cluster.
         <td><b>mode</b></td>
         <td>enum</td>
         <td>
-          Mode describes tunneling mode.
-If empty, k0smotron will use the default one.<br/>
+          Mode defines the tunneling mode.
+If empty, k0smotron uses the default mode.<br/>
           <br/>
             <i>Enum</i>: tunnel, proxy<br/>
             <i>Default</i>: tunnel<br/>
@@ -244,16 +244,16 @@ If empty, k0smotron will use the default one.<br/>
         <td><b>serverAddress</b></td>
         <td>string</td>
         <td>
-          Server address of the tunneling server.
-If empty, k0smotron will try to detect worker node address for.<br/>
+          ServerAddress defines the address of the tunneling server.
+If empty, k0smotron tries to detect the address of the worker node.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>serverNodePort</b></td>
         <td>integer</td>
         <td>
-          NodePort to publish for server port of the tunneling server.
-If empty, k0smotron will use the default one.<br/>
+          ServerNodePort defines the NodePort to be used as the server port of the tunneling server.
+If empty, k0smotron uses the default port.<br/>
           <br/>
             <i>Format</i>: int32<br/>
             <i>Default</i>: 31700<br/>
@@ -263,8 +263,8 @@ If empty, k0smotron will use the default one.<br/>
         <td><b>tunnelingNodePort</b></td>
         <td>integer</td>
         <td>
-          NodePort to publish for tunneling port.
-If empty, k0smotron will use the default one.<br/>
+          TunnelingNodePort defines the NodePort to be used as the tunneling port.
+If empty, k0smotron uses the default port.<br/>
           <br/>
             <i>Format</i>: int32<br/>
             <i>Default</i>: 31443<br/>
@@ -301,7 +301,7 @@ If empty, k0smotron will use the default one.<br/>
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
-          Ready indicates the Bootstrapdata field is ready to be consumed<br/>
+          Ready indicates whether the Bootstrapdata field is ready to be consumed.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -381,62 +381,62 @@ If empty, k0smotron will use the default one.<br/>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
-          Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+          Args specifies additional arguments to be passed to the k0s worker node.
+See: https://docs.k0sproject.io/stable/worker-node-config/ for configuration details<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>downloadURL</b></td>
         <td>string</td>
         <td>
-          DownloadURL specifies the URL to download k0s binary from.
-If specified the version field is ignored and what ever version is downloaded from the URL is used.<br/>
+          DownloadURL specifies the URL of the k0s binary.
+Specifying DownloadURL overrides the Version field, and the downloaded version of k0s is used.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0sworkerconfigspecfilesindex">files</a></b></td>
         <td>[]object</td>
         <td>
-          Files specifies extra files to be passed to user_data upon creation.<br/>
+          Files specifies additional files associated with the newly created user.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0sworkerconfigspecjointokensecretref">joinTokenSecretRef</a></b></td>
         <td>object</td>
         <td>
-          JoinTokenSecretRef is a reference to a secret that contains the join token.
-This should be only set in the case you want to use a pre-generated join token.<br/>
+          JoinTokenSecretRef refers to a secret that contains the join token.
+Specify the secret only when using a pre-generated join token.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PostStartCommands specifies commands to be run after starting k0s worker.<br/>
+          PostStartCommands specifies the commands that should be executed after the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preInstalledK0s</b></td>
         <td>boolean</td>
         <td>
-          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+          PreInstalledK0s specifies whether the k0s binary is pre-installed on the node.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+          PreStartCommands specifies the commands that should be executed before the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          Version is the version of k0s to use. In case this is not set, k0smotron will use
-a version field of the Machine object. If it's empty, the latest version is used.
+          Version defines the version of k0s to be deployed. If the parameter is not set, k0smotron uses
+the Version field of the Machine object. If the Version field is empty, the latest version of k0s is used.
 Make sure the version is compatible with the k0s version running on the control plane.
-For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+For reference, see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -489,8 +489,8 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
 
 
 
-JoinTokenSecretRef is a reference to a secret that contains the join token.
-This should be only set in the case you want to use a pre-generated join token.
+JoinTokenSecretRef refers to a secret that contains the join token.
+Specify the secret only when using a pre-generated join token.
 
 <table>
     <thead>
@@ -505,14 +505,14 @@ This should be only set in the case you want to use a pre-generated join token.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          Key is the key in the secret that contains the join token<br/>
+          Key defines the key of the secret that contains the join token.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the secret<br/>
+          Name defines the name of the secret with the join token.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -546,7 +546,7 @@ This should be only set in the case you want to use a pre-generated join token.
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
-          Ready indicates the Bootstrapdata field is ready to be consumed<br/>
+          Ready indicates whether the Bootstrapdata field is ready to be consumed.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -735,62 +735,62 @@ This should be only set in the case you want to use a pre-generated join token.
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
-          Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+          Args specifies additional arguments to be passed to the k0s worker node.
+See: https://docs.k0sproject.io/stable/worker-node-config/ for configuration details<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>downloadURL</b></td>
         <td>string</td>
         <td>
-          DownloadURL specifies the URL to download k0s binary from.
-If specified the version field is ignored and what ever version is downloaded from the URL is used.<br/>
+          DownloadURL specifies the URL of the k0s binary.
+Specifying DownloadURL overrides the Version field, and the downloaded version of k0s is used.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0sworkerconfigtemplatespectemplatespecfilesindex">files</a></b></td>
         <td>[]object</td>
         <td>
-          Files specifies extra files to be passed to user_data upon creation.<br/>
+          Files specifies additional files associated with the newly created user.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0sworkerconfigtemplatespectemplatespecjointokensecretref">joinTokenSecretRef</a></b></td>
         <td>object</td>
         <td>
-          JoinTokenSecretRef is a reference to a secret that contains the join token.
-This should be only set in the case you want to use a pre-generated join token.<br/>
+          JoinTokenSecretRef refers to a secret that contains the join token.
+Specify the secret only when using a pre-generated join token.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PostStartCommands specifies commands to be run after starting k0s worker.<br/>
+          PostStartCommands specifies the commands that should be executed after the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preInstalledK0s</b></td>
         <td>boolean</td>
         <td>
-          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+          PreInstalledK0s specifies whether the k0s binary is pre-installed on the node.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+          PreStartCommands specifies the commands that should be executed before the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          Version is the version of k0s to use. In case this is not set, k0smotron will use
-a version field of the Machine object. If it's empty, the latest version is used.
+          Version defines the version of k0s to be deployed. If the parameter is not set, k0smotron uses
+the Version field of the Machine object. If the Version field is empty, the latest version of k0s is used.
 Make sure the version is compatible with the k0s version running on the control plane.
-For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+For reference, see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -843,8 +843,8 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
 
 
 
-JoinTokenSecretRef is a reference to a secret that contains the join token.
-This should be only set in the case you want to use a pre-generated join token.
+JoinTokenSecretRef refers to a secret that contains the join token.
+Specify the secret only when using a pre-generated join token.
 
 <table>
     <thead>
@@ -859,14 +859,14 @@ This should be only set in the case you want to use a pre-generated join token.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          Key is the key in the secret that contains the join token<br/>
+          Key defines the key of the secret that contains the join token.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the secret<br/>
+          Name defines the name of the secret with the join token.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -1184,7 +1184,7 @@ Resource Types:
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
+          The k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
 just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.<br/>
         </td>
         <td>false</td>
@@ -1212,23 +1212,23 @@ just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
-          Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+          Args specifies additional arguments to be passed to the k0s worker node.
+See: https://docs.k0sproject.io/stable/worker-node-config/ for configuration details<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>downloadURL</b></td>
         <td>string</td>
         <td>
-          DownloadURL specifies the URL from which to download the k0s binary.
-If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.<br/>
+          DownloadURL specifies the URL of the k0s binary.
+Specifying DownloadURL overrides the Version field, and the downloaded version of k0s is used.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanespeck0sconfigspecfilesindex">files</a></b></td>
         <td>[]object</td>
         <td>
-          Files specifies extra files to be passed to user_data upon creation.<br/>
+          Files specifies additional files associated with the newly created user.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1236,35 +1236,35 @@ If the version field is specified, it is ignored, and whatever version is downlo
         <td>object</td>
         <td>
           K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
-If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+If empty, the default k0s configuration is used. For details, see https://docs.k0sproject.io/stable/configuration/.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PostStartCommands specifies commands to be run after starting k0s worker.<br/>
+          PostStartCommands specifies the commands that should be executed after the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preInstalledK0s</b></td>
         <td>boolean</td>
         <td>
-          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+          PreInstalledK0s specifies whether the k0s binary is pre-installed on the node.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+          PreStartCommands specifies the commands that should be executed before the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanespeck0sconfigspectunneling">tunneling</a></b></td>
         <td>object</td>
         <td>
-          Tunneling defines the tunneling configuration for the cluster.<br/>
+          Tunneling defines the tunneling configuration of the cluster.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1317,7 +1317,7 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
 
 
 
-Tunneling defines the tunneling configuration for the cluster.
+Tunneling defines the tunneling configuration of the cluster.
 
 <table>
     <thead>
@@ -1341,8 +1341,8 @@ Tunneling defines the tunneling configuration for the cluster.
         <td><b>mode</b></td>
         <td>enum</td>
         <td>
-          Mode describes tunneling mode.
-If empty, k0smotron will use the default one.<br/>
+          Mode defines the tunneling mode.
+If empty, k0smotron uses the default mode.<br/>
           <br/>
             <i>Enum</i>: tunnel, proxy<br/>
             <i>Default</i>: tunnel<br/>
@@ -1352,16 +1352,16 @@ If empty, k0smotron will use the default one.<br/>
         <td><b>serverAddress</b></td>
         <td>string</td>
         <td>
-          Server address of the tunneling server.
-If empty, k0smotron will try to detect worker node address for.<br/>
+          ServerAddress defines the address of the tunneling server.
+If empty, k0smotron tries to detect the address of the worker node.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>serverNodePort</b></td>
         <td>integer</td>
         <td>
-          NodePort to publish for server port of the tunneling server.
-If empty, k0smotron will use the default one.<br/>
+          ServerNodePort defines the NodePort to be used as the server port of the tunneling server.
+If empty, k0smotron uses the default port.<br/>
           <br/>
             <i>Format</i>: int32<br/>
             <i>Default</i>: 31700<br/>
@@ -1371,8 +1371,8 @@ If empty, k0smotron will use the default one.<br/>
         <td><b>tunnelingNodePort</b></td>
         <td>integer</td>
         <td>
-          NodePort to publish for tunneling port.
-If empty, k0smotron will use the default one.<br/>
+          TunnelingNodePort defines the NodePort to be used as the tunneling port.
+If empty, k0smotron uses the default port.<br/>
           <br/>
             <i>Format</i>: int32<br/>
             <i>Default</i>: 31443<br/>
@@ -1410,8 +1410,8 @@ offered by an infrastructure provider.<br/>
         <td><b><a href="#k0scontrolplanespecmachinetemplatemetadata">metadata</a></b></td>
         <td>object</td>
         <td>
-          Standard object's metadata.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
+          ObjectMeta defines standard object metadata.
+For detais, see https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1505,8 +1505,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-Standard object's metadata.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+ObjectMeta defines standard object metadata.
+For detais, see https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 
 <table>
     <thead>
@@ -1582,7 +1582,7 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
-          Ready denotes that the control plane is ready<br/>
+          Ready signals that the control plane is ready<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1828,23 +1828,23 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
-          Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+          Args specifies additional arguments to be passed to the k0s worker node.
+See: https://docs.k0sproject.io/stable/worker-node-config/ for configuration details<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>downloadURL</b></td>
         <td>string</td>
         <td>
-          DownloadURL specifies the URL from which to download the k0s binary.
-If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.<br/>
+          DownloadURL specifies the URL of the k0s binary.
+Specifying DownloadURL overrides the Version field, and the downloaded version of k0s is used.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindex">files</a></b></td>
         <td>[]object</td>
         <td>
-          Files specifies extra files to be passed to user_data upon creation.<br/>
+          Files specifies additional files associated with the newly created user.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1852,35 +1852,35 @@ If the version field is specified, it is ignored, and whatever version is downlo
         <td>object</td>
         <td>
           K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
-If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+If empty, the default k0s configuration is used. For details, see https://docs.k0sproject.io/stable/configuration/.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PostStartCommands specifies commands to be run after starting k0s worker.<br/>
+          PostStartCommands specifies the commands that should be executed after the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preInstalledK0s</b></td>
         <td>boolean</td>
         <td>
-          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+          PreInstalledK0s specifies whether the k0s binary is pre-installed on the node.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>preStartCommands</b></td>
         <td>[]string</td>
         <td>
-          PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+          PreStartCommands specifies the commands that should be executed before the k0s worker node start.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspectunneling">tunneling</a></b></td>
         <td>object</td>
         <td>
-          Tunneling defines the tunneling configuration for the cluster.<br/>
+          Tunneling defines the tunneling configuration of the cluster.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1933,7 +1933,7 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
 
 
 
-Tunneling defines the tunneling configuration for the cluster.
+Tunneling defines the tunneling configuration of the cluster.
 
 <table>
     <thead>
@@ -1957,8 +1957,8 @@ Tunneling defines the tunneling configuration for the cluster.
         <td><b>mode</b></td>
         <td>enum</td>
         <td>
-          Mode describes tunneling mode.
-If empty, k0smotron will use the default one.<br/>
+          Mode defines the tunneling mode.
+If empty, k0smotron uses the default mode.<br/>
           <br/>
             <i>Enum</i>: tunnel, proxy<br/>
             <i>Default</i>: tunnel<br/>
@@ -1968,16 +1968,16 @@ If empty, k0smotron will use the default one.<br/>
         <td><b>serverAddress</b></td>
         <td>string</td>
         <td>
-          Server address of the tunneling server.
-If empty, k0smotron will try to detect worker node address for.<br/>
+          ServerAddress defines the address of the tunneling server.
+If empty, k0smotron tries to detect the address of the worker node.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>serverNodePort</b></td>
         <td>integer</td>
         <td>
-          NodePort to publish for server port of the tunneling server.
-If empty, k0smotron will use the default one.<br/>
+          ServerNodePort defines the NodePort to be used as the server port of the tunneling server.
+If empty, k0smotron uses the default port.<br/>
           <br/>
             <i>Format</i>: int32<br/>
             <i>Default</i>: 31700<br/>
@@ -1987,8 +1987,8 @@ If empty, k0smotron will use the default one.<br/>
         <td><b>tunnelingNodePort</b></td>
         <td>integer</td>
         <td>
-          NodePort to publish for tunneling port.
-If empty, k0smotron will use the default one.<br/>
+          TunnelingNodePort defines the NodePort to be used as the tunneling port.
+If empty, k0smotron uses the default port.<br/>
           <br/>
             <i>Format</i>: int32<br/>
             <i>Default</i>: 31443<br/>
@@ -2026,8 +2026,8 @@ offered by an infrastructure provider.<br/>
         <td><b><a href="#k0scontrolplanetemplatespectemplatespecmachinetemplatemetadata">metadata</a></b></td>
         <td>object</td>
         <td>
-          Standard object's metadata.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
+          ObjectMeta defines standard object metadata.
+For detais, see https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2121,8 +2121,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-Standard object's metadata.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+ObjectMeta defines standard object metadata.
+For detais, see https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 
 <table>
     <thead>
