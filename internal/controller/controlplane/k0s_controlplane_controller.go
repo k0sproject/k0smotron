@@ -20,6 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/Masterminds/semver"
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -43,8 +46,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
-	"time"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
@@ -229,10 +230,8 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		replicasToReport = kcp.Status.Replicas
 	}
 
-	fmt.Println("asdfsadfsdafsdafa111")
-
 	if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
-		if kcp.Spec.UpdateStrategy == "rollout" {
+		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
 			desiredReplicas += kcp.Spec.Replicas
 			machinesToDelete = int(kcp.Spec.Replicas)
 			replicasToReport = desiredReplicas
@@ -278,11 +277,6 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
-	fmt.Println("asdfsadfsdafsdafa")
-	fmt.Println("machines", machines)
-	fmt.Println("machinesToDelete", machinesToDelete)
-
-	//var isNewMachineReady bool
 	for _, m := range machines {
 		ver := semver.MustParse(kcp.Spec.Version)
 		fmt.Println("machines ver", machinesToDelete, *m.Spec.Version, fmt.Sprintf("v%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()), m.Spec.Version != nil && *m.Spec.Version != fmt.Sprintf("v%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()))
@@ -291,13 +285,12 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 
 		if machinesToDelete > 0 {
-
 			kubeClient, err := c.getKubeClient(ctx, cluster)
 			if err != nil {
 				return replicasToReport, fmt.Errorf("error getting cluster client set for machine update: %w", err)
 			}
 			var cn autopilot.ControlNode
-			err = kubeClient.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes").Name(m.Name).Do(ctx).Into(&cn)
+			err = kubeClient.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + m.Name).Do(ctx).Into(&cn)
 			fmt.Println("machines !!!", cn.Name, cn.Status)
 			if err != nil {
 				if apierrors.IsNotFound(err) {

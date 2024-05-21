@@ -31,7 +31,7 @@ func init() {
 type UpdateStrategy string
 
 const (
-	UpdateInPlace UpdateStrategy = "InPlace"
+	UpdateInPlace  UpdateStrategy = "InPlace"
 	UpdateRecreate UpdateStrategy = "Recreate"
 )
 
