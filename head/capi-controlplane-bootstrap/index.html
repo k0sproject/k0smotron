@@ -640,9 +640,9 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
-  <a href="#running-workloads-on-the-control-plane" class="md-nav__link">
+  <a href="#recovering-from-a-lost-control-plane-node" class="md-nav__link">
     <span class="md-ellipsis">
-      Running workloads on the control plane
+      Recovering from a lost control plane node
     </span>
   </a>
   
@@ -1325,9 +1325,9 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
-  <a href="#running-workloads-on-the-control-plane" class="md-nav__link">
+  <a href="#recovering-from-a-lost-control-plane-node" class="md-nav__link">
     <span class="md-ellipsis">
-      Running workloads on the control plane
+      Recovering from a lost control plane node
     </span>
   </a>
   
@@ -1414,40 +1414,51 @@ You are not currently viewing the documentation for the current stable release o
 <p>By applying this yaml, k0smotron will create 3 machines based on the <code>MachineTemplate</code> configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.</p>
 <p>For a full reference on <code>K0sControlPlane</code> configurability see the <a href="../resource-reference/#controlplaneclusterx-k8siov1beta1">reference docs</a>.</p>
 <h2 id="downscaling-the-control-plane">Downscaling the control plane<a class="headerlink" href="#downscaling-the-control-plane" title="Permanent link">#</a></h2>
-<p><strong>WARNING: Downscaling is a dangerous operation and should only be done if you know what you are doing.</strong></p>
+<p><strong>WARNING: Downscaling is a potentially dangerous operation.</strong></p>
 <p>Kubernetes using etcd as its backing store. It's crucial to have a quorum of etcd nodes available at all times. Always run etcd as a cluster of <strong>odd</strong> members.</p>
-<p>When downscaling the control plane, you need firstly to deregister the node from the etcd cluster. This can be done by running the following command on the node that will be removed:</p>
-<div class="highlight"><pre><span></span><code>k0s<span class="w"> </span>etcd<span class="w"> </span>leave
+<p>When downscaling the control plane, you need firstly to deregister the node from the etcd cluster. k0smotron will do it automatically for you.</p>
+<p><strong>NOTE:</strong> k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have <code>k0smotron-test</code> cluster of 5 nodes and you downscale to 3 nodes, the nodes <code>k0smotron-test-3</code> and <code>k0smotron-test-4</code> will be removed.</p>
+<h2 id="recovering-from-a-lost-control-plane-node">Recovering from a lost control plane node<a class="headerlink" href="#recovering-from-a-lost-control-plane-node" title="Permanent link">#</a></h2>
+<p>If you lose a control plane node, you need to recover the cluster. First, you need to remove the lost node from the etcd cluster. You can do this by running the following command on the remaining control plane nodes:</p>
+<div class="highlight"><pre><span></span><code>k0s<span class="w"> </span>etcd<span class="w"> </span>leave<span class="w"> </span>--peer-address<span class="w"> </span>&lt;peer-address&gt;
 </code></pre></div>
-<p><strong>NOTE:</strong> k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have <code>k0smotron-test</code> cluster of 5 nodes and you downscale to 3 nodes, the nodes <code>k0smotron-test-3</code> and <code>k0smotron-test-4</code> will be removed. </p>
-<p>After removing members from etcd cluster, you can simply edit the <code>K0sControlPlane</code> object and change the <code>spec.replicas</code> field to the desired number of replicas. k0smotron will then automatically scale down the control plane to the desired number of replicas.</p>
-<h2 id="running-workloads-on-the-control-plane">Running workloads on the control plane<a class="headerlink" href="#running-workloads-on-the-control-plane" title="Permanent link">#</a></h2>
-<p>By default, k0s and k0smotron don't run kubelet and any workloads on control plane nodes. But you can enable it by adding <code>--enable-worker</code> flag to the <code>spec.k0sConfigSpec.args</code> in the <code>K0sControlPlane</code> object. This will enable the kubelet on control plane nodes and allow you to run workloads on them.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">args</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-worker</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--no-taints</span><span class="w"> </span><span class="c1"># disable default taints</span>
-<span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp-template</span>
-<span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp-template</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<p>Then you need to remove old objects from the management cluster with the name of the lost node. You can do this by running the following command:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span>machine<span class="w"> </span>&lt;lost-node-name&gt;
+kubectl<span class="w"> </span>delete<span class="w"> </span>&lt;infra-provider-specific-machine-object&gt;<span class="w"> </span>&lt;lost-node-name&gt;
+kubectl<span class="w"> </span>delete<span class="w"> </span>secret<span class="w"> </span>&lt;lost-node-name&gt;
+kubectl<span class="w"> </span>delete<span class="w"> </span>k0scontrollerconfig<span class="w"> </span>&lt;lost-node-name&gt;
+</code></pre></div>
+<p>After that you need to trigger the reconciliation of the control plane object by updating the <code>K0sControlPlane</code> object or restarting the controller manager.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">## Running workloads on the control plane</span>
+
+By<span class="w"> </span>default,<span class="w"> </span>k0s<span class="w"> </span>and<span class="w"> </span>k0smotron<span class="w"> </span>don<span class="err">&#39;</span>t<span class="w"> </span>run<span class="w"> </span>kubelet<span class="w"> </span>and<span class="w"> </span>any<span class="w"> </span>workloads<span class="w"> </span>on<span class="w"> </span>control<span class="w"> </span>plane<span class="w"> </span>nodes.<span class="w"> </span>But<span class="w"> </span>you<span class="w"> </span>can<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>it<span class="w"> </span>by<span class="w"> </span>adding<span class="w"> </span><span class="sb">`</span>--enable-worker<span class="sb">`</span><span class="w"> </span>flag<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span><span class="sb">`</span>spec.k0sConfigSpec.args<span class="sb">`</span><span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span><span class="sb">`</span>K0sControlPlane<span class="sb">`</span><span class="w"> </span>object.<span class="w"> </span>This<span class="w"> </span>will<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>the<span class="w"> </span>kubelet<span class="w"> </span>on<span class="w"> </span>control<span class="w"> </span>plane<span class="w"> </span>nodes<span class="w"> </span>and<span class="w"> </span>allow<span class="w"> </span>you<span class="w"> </span>to<span class="w"> </span>run<span class="w"> </span>workloads<span class="w"> </span>on<span class="w"> </span>them.
+
+<span class="sb">```</span>yaml
+apiVersion:<span class="w"> </span>controlplane.cluster.x-k8s.io/v1beta1
+kind:<span class="w"> </span>K0sControlPlane
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>docker-test
+spec:
+<span class="w">  </span>replicas:<span class="w"> </span><span class="m">1</span>
+<span class="w">  </span>k0sConfigSpec:
+<span class="w">    </span>args:
+<span class="w">      </span>-<span class="w"> </span>--enable-worker
+<span class="w">      </span>-<span class="w"> </span>--no-taints<span class="w"> </span><span class="c1"># disable default taints</span>
+<span class="w">  </span>machineTemplate:
+<span class="w">    </span>infrastructureRef:
+<span class="w">      </span>apiVersion:<span class="w"> </span>infrastructure.cluster.x-k8s.io/v1beta1
+<span class="w">      </span>kind:<span class="w"> </span>DockerMachineTemplate
+<span class="w">      </span>name:<span class="w"> </span>docker-test-cp-template
+<span class="w">      </span>namespace:<span class="w"> </span>default
+---
+apiVersion:<span class="w"> </span>infrastructure.cluster.x-k8s.io/v1beta1
+kind:<span class="w"> </span>DockerMachineTemplate
+metadata:
+<span class="w">  </span>name:<span class="w"> </span>docker-test-cp-template
+<span class="w">  </span>namespace:<span class="w"> </span>default
+spec:
+<span class="w">  </span>template:
+<span class="w">    </span>spec:<span class="w"> </span><span class="o">{}</span>
 </code></pre></div>
 <p><strong>Note:</strong> Controller nodes running with <code>--enable-worker</code> are assigned <code>node-role.kubernetes.io/master:NoExecute</code> taint automatically. You can disable default taints using <code>--no-taints</code>  parameter.</p>
 <h2 id="client-connection-tunneling">Client connection tunneling<a class="headerlink" href="#client-connection-tunneling" title="Permanent link">#</a></h2>
