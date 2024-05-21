@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package capidockermachinetemplateupdaterollout
+package capidockermachinetemplateupdaterecreate
 
 import (
 	"context"
@@ -38,8 +38,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type CAPIDockerMachineTemplateUpdateRollout struct {
-	//type CAPIDockerMachineTemplateUpdateRollout struct {
+type CAPIDockerMachineTemplateUpdateRecreate struct {
+	//type CAPIDockerMachineTemplateUpdateRecreate struct {
 	suite.Suite
 	client                 *kubernetes.Clientset
 	restConfig             *rest.Config
@@ -48,12 +48,12 @@ type CAPIDockerMachineTemplateUpdateRollout struct {
 	ctx                    context.Context
 }
 
-func TestCAPIDockerMachineTemplateUpdateRollout(t *testing.T) {
-	s := CAPIDockerMachineTemplateUpdateRollout{}
+func TestCAPIDockerMachineTemplateUpdateRecreate(t *testing.T) {
+	s := CAPIDockerMachineTemplateUpdateRecreate{}
 	suite.Run(t, &s)
 }
 
-func (s *CAPIDockerMachineTemplateUpdateRollout) SetupSuite() {
+func (s *CAPIDockerMachineTemplateUpdateRecreate) SetupSuite() {
 	kubeConfigPath := os.Getenv("KUBECONFIG")
 	s.Require().NotEmpty(kubeConfigPath, "KUBECONFIG env var must be set and point to kind cluster")
 	// Get kube client from kubeconfig
@@ -77,7 +77,7 @@ func (s *CAPIDockerMachineTemplateUpdateRollout) SetupSuite() {
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
 
-func (s *CAPIDockerMachineTemplateUpdateRollout) TestCAPIControlPlaneDockerDownScaling() {
+func (s *CAPIDockerMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownScaling() {
 
 	// Apply the child cluster objects
 	s.applyClusterObjects()
@@ -117,28 +117,83 @@ func (s *CAPIDockerMachineTemplateUpdateRollout) TestCAPIControlPlaneDockerDownS
 	})
 	s.Require().NoError(err)
 
-	//for i := 0; i < 3; i++ {
-	//	// nolint:staticcheck
-	//	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-	//		nodeName := fmt.Sprintf("docker-test-%d", i)
-	//		output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
-	//		if err != nil {
-	//			return false, nil
-	//		}
-	//
-	//		return strings.Contains(string(output), "Version:"), nil
-	//	})
-	//	s.Require().NoError(err)
-	//}
-	time.Sleep(time.Minute * 3)
+	var nodeIDs []string
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		var err error
+		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
+
+		if err != nil {
+			return false, nil
+		}
+
+		return len(nodeIDs) == 3, nil
+	})
+
+	for i := 0; i < 3; i++ {
+		// nolint:staticcheck
+		err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+			nodeID := nodeIDs[i]
+			output, err := exec.Command("docker", "exec", nodeID, "k0s", "status").Output()
+			if err != nil {
+				return false, nil
+			}
+
+			return strings.Contains(string(output), "Version:"), nil
+		})
+		s.Require().NoError(err)
+	}
 
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
+	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
+
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.ctx, 100*time.Millisecond, func(ctx context.Context) (bool, error) {
+		var err error
+		newNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
+
+		if err != nil {
+			return false, nil
+		}
+
+		return len(newNodeIDs) == 6, nil
+	})
+
+	//for i := range nodeIDs {
+	//	out, err := exec.Command("docker", "stop", nodeIDs[i]).CombinedOutput()
+	//	s.Require().NoError(err, "failed to stop node: %s", string(out))
+	//}
+
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.ctx, 100*time.Millisecond, func(ctx context.Context) (bool, error) {
+		var err error
+		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
+
+		if err != nil {
+			return false, nil
+		}
+
+		return len(nodeIDs) == 3, nil
+	})
+
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-0", "k0s", "status").CombinedOutput()
+		var err error
+		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
+
+		if err != nil {
+			return false, nil
+		}
+
+		return len(nodeIDs) == 3, nil
+	})
+
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		output, err := exec.Command("docker", "exec", nodeIDs[0], "k0s", "status").CombinedOutput()
 		if err != nil {
 			return false, nil
 		}
@@ -146,23 +201,21 @@ func (s *CAPIDockerMachineTemplateUpdateRollout) TestCAPIControlPlaneDockerDownS
 		return strings.Contains(string(output), "Version: v1.28"), nil
 	})
 	s.Require().NoError(err)
-
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 }
 
-func (s *CAPIDockerMachineTemplateUpdateRollout) applyClusterObjects() {
+func (s *CAPIDockerMachineTemplateUpdateRecreate) applyClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
-func (s *CAPIDockerMachineTemplateUpdateRollout) updateClusterObjects() {
+func (s *CAPIDockerMachineTemplateUpdateRecreate) updateClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
-func (s *CAPIDockerMachineTemplateUpdateRollout) deleteCluster() {
+func (s *CAPIDockerMachineTemplateUpdateRecreate) deleteCluster() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
@@ -223,7 +276,7 @@ metadata:
 spec:
   replicas: 3
   version: v1.27.1+k0s.0
-  updateStrategy: rollout
+  updateStrategy: Recreate
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
@@ -293,7 +346,7 @@ metadata:
 spec:
   replicas: 3
   version: v1.28.7+k0s.0
-  updateStrategy: rollout
+  updateStrategy: Recreate
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1

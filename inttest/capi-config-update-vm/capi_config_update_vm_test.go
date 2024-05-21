@@ -105,9 +105,16 @@ func (s *CAPIConfigUpdateVMSuite) TestCAPIConfigUpdateVMWorker() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for cluster to be ready")
+
+	var ids []string
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "status").Output()
+		ids, err = util.GetControlPlaneNodesIDs("docker-test-cluster-docker-test-0")
+		if err != nil || len(ids) == 0 {
+			return false, err
+		}
+
+		output, err := exec.Command("docker", "exec", ids[0], "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
@@ -118,7 +125,7 @@ func (s *CAPIConfigUpdateVMSuite) TestCAPIConfigUpdateVMWorker() {
 
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "kc", "--kubeconfig=/var/lib/k0s/pki/admin.conf", "get", "clusterconfig", "-A").Output()
+		output, err := exec.Command("docker", "exec", ids[0], "k0s", "kc", "--kubeconfig=/var/lib/k0s/pki/admin.conf", "get", "clusterconfig", "-A").Output()
 		if err != nil {
 			return false, nil
 		}

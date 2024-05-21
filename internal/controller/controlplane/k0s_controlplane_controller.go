@@ -20,12 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/Masterminds/semver"
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -46,10 +46,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"strings"
 )
 
 const (
@@ -230,10 +227,8 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		replicasToReport = kcp.Status.Replicas
 	}
 
-	fmt.Println("asdfsadfsdafsdafa111")
-
 	if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
-		if kcp.Spec.UpdateStrategy == "rollout" {
+		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
 			desiredReplicas += kcp.Spec.Replicas
 			machinesToDelete = int(kcp.Spec.Replicas)
 			replicasToReport = desiredReplicas
@@ -243,9 +238,10 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				return replicasToReport, fmt.Errorf("error getting cluster client set for machine update: %w", err)
 			}
 
-		err = c.createAutopilotPlan(ctx, kcp, cluster, kubeClient)
-		if err != nil {
-			return replicasToReport, fmt.Errorf("error creating autopilot plan: %w", err)
+			err = c.createAutopilotPlan(ctx, kcp, cluster, kubeClient)
+			if err != nil {
+				return replicasToReport, fmt.Errorf("error creating autopilot plan: %w", err)
+			}
 		}
 	}
 
@@ -278,11 +274,6 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
-	fmt.Println("asdfsadfsdafsdafa")
-	fmt.Println("machines", machines)
-	fmt.Println("machinesToDelete", machinesToDelete)
-
-	//var isNewMachineReady bool
 	for _, m := range machines {
 		ver := semver.MustParse(kcp.Spec.Version)
 		fmt.Println("machines ver", machinesToDelete, *m.Spec.Version, fmt.Sprintf("v%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()), m.Spec.Version != nil && *m.Spec.Version != fmt.Sprintf("v%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()))
@@ -291,13 +282,12 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 
 		if machinesToDelete > 0 {
-
 			kubeClient, err := c.getKubeClient(ctx, cluster)
 			if err != nil {
 				return replicasToReport, fmt.Errorf("error getting cluster client set for machine update: %w", err)
 			}
 			var cn autopilot.ControlNode
-			err = kubeClient.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes").Name(m.Name).Do(ctx).Into(&cn)
+			err = kubeClient.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + m.Name).Do(ctx).Into(&cn)
 			fmt.Println("machines !!!", cn.Name, cn.Status)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
@@ -340,7 +330,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return kcp.Status.Replicas, fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		time.Sleep(time.Second * 10)
+		//time.Sleep(time.Second * 10)
 
 		replicasToReport -= 1
 		name := machine.Name

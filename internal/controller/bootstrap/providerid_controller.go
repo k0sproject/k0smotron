@@ -48,7 +48,8 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "" {
-		return ctrl.Result{}, fmt.Errorf("waiting for providerID for the machine %s/%s", machine.Namespace, machine.Name)
+		log.Info("waiting for providerID for the machine " + machine.Name)
+		return ctrl.Result{RequeueAfter: time.Second * 10}, nil
 	}
 
 	cluster, err := capiutil.GetClusterByName(ctx, p.Client, machine.Namespace, machine.Spec.ClusterName)
