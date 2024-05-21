@@ -66,19 +66,34 @@ For a full reference on `K0sControlPlane` configurability see the [reference doc
 
 ## Downscaling the control plane
 
-**WARNING: Downscaling is a dangerous operation and should only be done if you know what you are doing.**
+**WARNING: Downscaling is a potentially dangerous operation.**
 
 Kubernetes using etcd as its backing store. It's crucial to have a quorum of etcd nodes available at all times. Always run etcd as a cluster of **odd** members.
     
-When downscaling the control plane, you need firstly to deregister the node from the etcd cluster. This can be done by running the following command on the node that will be removed:
+When downscaling the control plane, you need firstly to deregister the node from the etcd cluster. k0smotron will do it automatically for you.
+
+**NOTE:** k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have `k0smotron-test` cluster of 5 nodes and you downscale to 3 nodes, the nodes `k0smotron-test-3` and `k0smotron-test-4` will be removed.
+
+## Recovering from a lost control plane node
+
+If you lose a control plane node, you need to recover the cluster. First, you need to remove the lost node from the etcd cluster. You can do this by running the following command on the remaining control plane nodes:
 
 ```bash
-k0s etcd leave
-``` 
+k0s etcd leave --peer-address <peer-address>
+```
 
-**NOTE:** k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have `k0smotron-test` cluster of 5 nodes and you downscale to 3 nodes, the nodes `k0smotron-test-3` and `k0smotron-test-4` will be removed. 
+Then you need to remove old objects from the management cluster with the name of the lost node. You can do this by running the following command:
 
-After removing members from etcd cluster, you can simply edit the `K0sControlPlane` object and change the `spec.replicas` field to the desired number of replicas. k0smotron will then automatically scale down the control plane to the desired number of replicas.
+```bash
+kubectl delete machine <lost-node-name>
+kubectl delete <infra-provider-specific-machine-object> <lost-node-name>
+kubectl delete secret <lost-node-name>
+kubectl delete k0scontrollerconfig <lost-node-name>
+```
+
+After that you need to trigger the reconciliation of the control plane object by updating the `K0sControlPlane` object or restarting the controller manager.
+
+```bash
 
 ## Running workloads on the control plane
 
