@@ -37,7 +37,6 @@ import (
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/remote"
-	"sigs.k8s.io/cluster-api/util"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -79,10 +78,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		}
 		log.Error(err, "Failed to get config")
 		return ctrl.Result{}, err
-	}
-
-	if config.Status.Ready {
-		return ctrl.Result{}, nil
 	}
 
 	// Look up the owner of this config if there is one
@@ -163,6 +158,13 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			}
 		}
 
+		// Reconcile the dynamic config
+		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, config.Spec.K0s)
+		if dErr != nil {
+			// Don't return error from dynamic config reconciliation, as it may not be created yet
+			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")
+		}
+
 		k0sConfigBytes, err := config.Spec.K0s.MarshalJSON()
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error marshalling k0s config: %v", err)
@@ -173,6 +175,10 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Content:     string(k0sConfigBytes),
 		})
 		config.Spec.Args = append(config.Spec.Args, "--config", "/etc/k0s.yaml")
+	}
+
+	if config.Status.Ready {
+		return ctrl.Result{}, nil
 	}
 
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
@@ -304,7 +310,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
 	tokenKubeSecret := createTokenSecret(tokenID, tokenSecret)
 
-	chCS, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, util.ObjectKey(scope.Cluster))
+	chCS, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(scope.Cluster))
 	if err != nil {
 		log.Error(err, "Failed to getting child cluster client set")
 		return nil, err
@@ -432,7 +438,7 @@ func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Scope) ([]
 		return nil, nil, err
 	}
 
-	err = certificates.Lookup(ctx, c.Client, util.ObjectKey(scope.Cluster))
+	err = certificates.Lookup(ctx, c.Client, capiutil.ObjectKey(scope.Cluster))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -503,6 +509,7 @@ func createCPInstallCmd(config *bootstrapv1.K0sControllerConfig) string {
 	installCmd := []string{
 		"k0s install controller",
 		"--force",
+		"--enable-dynamic-config",
 		"--env AUTOPILOT_HOSTNAME=" + config.Name,
 		"--kubelet-extra-args=--hostname-override=" + config.Name,
 	}
@@ -516,6 +523,7 @@ func createCPInstallCmdWithJoinToken(config *bootstrapv1.K0sControllerConfig, to
 	installCmd := []string{
 		"k0s install controller",
 		"--force",
+		"--enable-dynamic-config",
 		"--env AUTOPILOT_HOSTNAME=" + config.Name,
 		"--kubelet-extra-args=--hostname-override=" + config.Name,
 	}

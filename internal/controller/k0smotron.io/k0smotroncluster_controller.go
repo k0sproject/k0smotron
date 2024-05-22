@@ -95,7 +95,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	if err := r.reconcileCM(ctx, &kmc); err != nil {
+	if err := r.reconcileK0sConfig(ctx, &kmc); err != nil {
 		r.updateStatus(ctx, kmc, "Failed reconciling configmap")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}

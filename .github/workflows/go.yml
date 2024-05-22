@@ -95,6 +95,7 @@ jobs:
       matrix:
         smoke-suite:
           - check-basic
+          - check-config-update-hcp
           - check-hostpath
           - check-ha-controller
           - check-ha-controller-etcd
@@ -130,6 +131,7 @@ jobs:
       matrix:
         smoke-suite:
           - check-capi-docker
+          - check-capi-config-update-vm
           - check-capi-docker-clusterclass
           - check-capi-docker-clusterclass-k0smotron
           - check-capi-docker-machinedeployment
