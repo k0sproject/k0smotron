@@ -28,6 +28,12 @@ func init() {
 	SchemeBuilder.Register(&K0sControlPlane{}, &K0sControlPlaneList{})
 }
 
+type UpdateStrategy string
+
+const (
+	UpdateInPlace UpdateStrategy = "InPlace"
+)
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
@@ -47,6 +53,11 @@ type K0sControlPlaneSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
 	Replicas int32 `json:"replicas,omitempty"`
+	// UpdateStrategy defines the strategy to use when updating the control plane. Currently only InPlace is supported.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:validation:Enum:InPlace
+	//+kubebuilder:default=InPlace
+	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
 	// Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
 	// just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.
 	//+kubebuilder:validation:Optional

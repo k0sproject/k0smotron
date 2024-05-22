@@ -1181,6 +1181,15 @@ Resource Types:
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>updateStrategy</b></td>
+        <td>string</td>
+        <td>
+          UpdateStrategy defines the strategy to use when updating the control plane. Currently only InPlace is supported.<br/>
+          <br/>
+            <i>Default</i>: InPlace<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>version</b></td>
         <td>string</td>
         <td>

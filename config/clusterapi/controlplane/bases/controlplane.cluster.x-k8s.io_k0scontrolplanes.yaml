@@ -206,6 +206,11 @@ spec:
                 default: 1
                 format: int32
                 type: integer
+              updateStrategy:
+                default: InPlace
+                description: UpdateStrategy defines the strategy to use when updating
+                  the control plane. Currently only InPlace is supported.
+                type: string
               version:
                 description: |-
                   Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
