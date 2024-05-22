@@ -52,55 +52,55 @@ type K0sWorkerConfigList struct {
 }
 
 type K0sWorkerConfigSpec struct {
-	// JoinTokenSecretRef is a reference to a secret that contains the join token.
-	// This should be only set in the case you want to use a pre-generated join token.
+	// JoinTokenSecretRef refers to a secret that contains the join token.
+	// Specify the secret only when using a pre-generated join token.
 	// +kubebuilder:validation:Optional
 	JoinTokenSecretRef *JoinTokenSecretRef `json:"joinTokenSecretRef,omitempty"`
 
-	// Version is the version of k0s to use. In case this is not set, k0smotron will use
-	// a version field of the Machine object. If it's empty, the latest version is used.
+	// Version defines the version of k0s to be deployed. If the parameter is not set, k0smotron uses
+	// the Version field of the Machine object. If the Version field is empty, the latest version of k0s is used.
 	// Make sure the version is compatible with the k0s version running on the control plane.
-	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
+	// For reference, see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/.
 	// +kubebuilder:validation:Optional
 	Version string `json:"version,omitempty"`
 
-	// Files specifies extra files to be passed to user_data upon creation.
+	// Files specifies additional files associated with the newly created user.
 	// +kubebuilder:validation:Optional
 	Files []cloudinit.File `json:"files,omitempty"`
 
-	// Args specifies extra arguments to be passed to k0s worker.
-	// See: https://docs.k0sproject.io/stable/advanced/worker-configuration/
+	// Args specifies additional arguments to be passed to the k0s worker node.
+	// See: https://docs.k0sproject.io/stable/worker-node-config/ for configuration details
 	Args []string `json:"args,omitempty"`
 
-	// PreStartCommands specifies commands to be run before starting k0s worker.
+	// PreStartCommands specifies the commands that should be executed before the k0s worker node start.
 	// +kubebuilder:validation:Optional
 	PreStartCommands []string `json:"preStartCommands,omitempty"`
 
-	// PostStartCommands specifies commands to be run after starting k0s worker.
+	// PostStartCommands specifies the commands that should be executed after the k0s worker node start.
 	// +kubebuilder:validation:Optional
 	PostStartCommands []string `json:"postStartCommands,omitempty"`
 
-	// PreInstallK0s specifies whether k0s binary is pre-installed on the node.
+	// PreInstalledK0s specifies whether the k0s binary is pre-installed on the node.
 	// +kubebuilder:validation:Optional
 	PreInstalledK0s bool `json:"preInstalledK0s,omitempty"`
 
-	// DownloadURL specifies the URL to download k0s binary from.
-	// If specified the version field is ignored and what ever version is downloaded from the URL is used.
+	// DownloadURL specifies the URL of the k0s binary.
+	// Specifying DownloadURL overrides the Version field, and the downloaded version of k0s is used.
 	// +kubebuilder:validation:Optional
 	DownloadURL string `json:"downloadURL,omitempty"`
 }
 
 type JoinTokenSecretRef struct {
-	// Name is the name of the secret
+	// Name defines the name of the secret with the join token.
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
-	// Key is the key in the secret that contains the join token
+	// Key defines the key of the secret that contains the join token.
 	// +kubebuilder:validation:Required
 	Key string `json:"key"`
 }
 
 type K0sWorkerConfigStatus struct {
-	// Ready indicates the Bootstrapdata field is ready to be consumed
+	// Ready indicates whether the Bootstrapdata field is ready to be consumed.
 	Ready bool `json:"ready,omitempty"`
 
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
@@ -123,7 +123,7 @@ type K0sControllerConfig struct {
 }
 
 type K0sControllerConfigStatus struct {
-	// Ready indicates the Bootstrapdata field is ready to be consumed
+	// Ready indicates whether the Bootstrapdata field is ready to be consumed.
 	Ready bool `json:"ready,omitempty"`
 
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
@@ -140,10 +140,10 @@ type K0sControllerConfigList struct {
 }
 
 type K0sControllerConfigSpec struct {
-	// Version is the version of k0s to use. In case this is not set, k0smotron will use
-	// a version field of the Machine object. If it's empty, the latest version is used.
+	// Version defines the version of k0s to be deployed. If the parameter is not set, k0smotron uses
+	// the Version field of the Machine object. If the Version field is empty, the latest version of k0s is used.
 	// Make sure the version is compatible with the k0s version running on the control plane.
-	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
+	// For reference, see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/.
 	// +kubebuilder:validation:Optional
 	Version string `json:"version,omitempty"`
 
@@ -152,37 +152,37 @@ type K0sControllerConfigSpec struct {
 
 type K0sConfigSpec struct {
 	// K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
-	// If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
+	// If empty, the default k0s configuration is used. For details, see https://docs.k0sproject.io/stable/configuration/.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:pruning:PreserveUnknownFields
 	K0s *unstructured.Unstructured `json:"k0s,omitempty"`
 
-	// Files specifies extra files to be passed to user_data upon creation.
+	// Files specifies additional files associated with the newly created user.
 	// +kubebuilder:validation:Optional
 	Files []cloudinit.File `json:"files,omitempty"`
 
-	// Args specifies extra arguments to be passed to k0s worker.
-	// See: https://docs.k0sproject.io/stable/advanced/worker-configuration/
+	// Args specifies additional arguments to be passed to the k0s worker node.
+	// See: https://docs.k0sproject.io/stable/worker-node-config/ for configuration details
 	Args []string `json:"args,omitempty"`
 
-	// PreStartCommands specifies commands to be run before starting k0s worker.
+	// PreStartCommands specifies the commands that should be executed before the k0s worker node start.
 	// +kubebuilder:validation:Optional
 	PreStartCommands []string `json:"preStartCommands,omitempty"`
 
-	// PostStartCommands specifies commands to be run after starting k0s worker.
+	// PostStartCommands specifies the commands that should be executed after the k0s worker node start.
 	// +kubebuilder:validation:Optional
 	PostStartCommands []string `json:"postStartCommands,omitempty"`
 
-	// PreInstallK0s specifies whether k0s binary is pre-installed on the node.
+	// PreInstalledK0s specifies whether the k0s binary is pre-installed on the node.
 	// +kubebuilder:validation:Optional
 	PreInstalledK0s bool `json:"preInstalledK0s,omitempty"`
 
-	// DownloadURL specifies the URL from which to download the k0s binary.
-	// If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
+	// DownloadURL specifies the URL of the k0s binary.
+	// Specifying DownloadURL overrides the Version field, and the downloaded version of k0s is used.
 	// +kubebuilder:validation:Optional
 	DownloadURL string `json:"downloadURL,omitempty"`
 
-	// Tunneling defines the tunneling configuration for the cluster.
+	// Tunneling defines the tunneling configuration of the cluster.
 	//+kubebuilder:validation:Optional
 	Tunneling TunnelingSpec `json:"tunneling,omitempty"`
 }
@@ -192,22 +192,22 @@ type TunnelingSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=false
 	Enabled bool `json:"enabled,omitempty"`
-	// Server address of the tunneling server.
-	// If empty, k0smotron will try to detect worker node address for.
+	// ServerAddress defines the address of the tunneling server.
+	// If empty, k0smotron tries to detect the address of the worker node.
 	//+kubebuilder:validation:Optional
 	ServerAddress string `json:"serverAddress,omitempty"`
-	// NodePort to publish for server port of the tunneling server.
-	// If empty, k0smotron will use the default one.
+	// ServerNodePort defines the NodePort to be used as the server port of the tunneling server.
+	// If empty, k0smotron uses the default port.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=31700
 	ServerNodePort int32 `json:"serverNodePort,omitempty"`
-	// NodePort to publish for tunneling port.
-	// If empty, k0smotron will use the default one.
+	// TunnelingNodePort defines the NodePort to be used as the tunneling port.
+	// If empty, k0smotron uses the default port.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=31443
 	TunnelingNodePort int32 `json:"tunnelingNodePort,omitempty"`
-	// Mode describes tunneling mode.
-	// If empty, k0smotron will use the default one.
+	// Mode defines the tunneling mode.
+	// If empty, k0smotron uses the default mode.
 	//+kubebuilder:validation:Enum=tunnel;proxy
 	//+kubebuilder:default=tunnel
 	Mode string `json:"mode,omitempty"`
