@@ -40,6 +40,7 @@ nav:
      - Cluster API: update/update-cluster-pod.md
   - FAQ: faq.md
   - Troubleshooting: troubleshooting.md
+  - Commercial Support: commercial-support.md
   - Contributing:
       - Overview: contributing/contribute-overview.md
       - Development environment: contributing/dev-environment.md
