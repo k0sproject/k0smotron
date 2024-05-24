@@ -144,6 +144,7 @@ jobs:
           - check-capi-remote-machine-template
           - check-capi-remote-machine-template-update
           - check-capi-docker-machine-template-update
+          - check-capi-remote-machine-job-provision
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4

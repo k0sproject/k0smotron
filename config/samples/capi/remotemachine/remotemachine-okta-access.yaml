@@ -1,0 +1,70 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: okta-asa-config
+  namespace: default
+data:
+  sftd.yaml: |
+    CanonicalName: "k0smotron-job-runner"
+  sft.conf: |
+    # Allow authentication as a Service User
+    section "service_auth" {
+      enable = true
+    }
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: okta-asa-enrollment-token
+stringData:
+  enrollment.token: <REDACTED>
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: okta-asa-demo-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: okta-asa-demo-pod
+  namespace: default
+spec:
+  containers:
+      - name: okta-asa
+        image: makhov/okta-asa-demo:latest
+        args:
+          - sleep
+          - infinity
+        env:
+        volumeMounts:
+          - name: config
+            mountPath: /etc/sft/sftd.yaml
+            subPath: sftd.yaml
+          - name: config
+            mountPath: /root/.config/ScaleFT/sft.conf
+            subPath: sft.conf
+          - name: sftd-lib
+            mountPath: /var/lib/sftd
+          - name: enrollment-token
+            mountPath: /var/lib/sftd/enrollment.token
+            subPath: enrollment.token
+  volumes:
+    - name: config
+      configMap:
+        name: okta-asa-config
+    - name: enrollment-token
+      secret:
+        secretName: okta-asa-enrollment-token
+    - name: sftd-lib
+      persistentVolumeClaim:
+        claimName: okta-asa-demo-pvc
+

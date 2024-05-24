@@ -21,10 +21,12 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -33,11 +35,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 )
 
 var ErrPooledMachineNotFound = fmt.Errorf("free pooled machine not found")
+
+type Provisioner interface {
+	Provision(ctx context.Context) error
+	Cleanup(ctx context.Context, mode RemoteMachineMode) error
+}
 
 type RemoteMachineController struct {
 	client.Client
@@ -63,6 +68,7 @@ const (
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status;machines;machines/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=exp.cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="batch",resources=jobs,verbs=get;list;watch;create;update;patch;delete
 
 func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("remotemachine", req.NamespacedName)
@@ -116,7 +122,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 				log.Error(err, "Error reserving PooledMachine")
 				return ctrl.Result{Requeue: true}, err
 			}
-		} else {
+		} else if rm.Spec.ProvisionJob == nil {
 			if rm.Spec.Address == "" || rm.Spec.SSHKeyRef.Name == "" {
 				rm.Status.FailureReason = "MissingFields"
 				rm.Status.FailureMessage = "If pool is empty, following fields are required: address, sshKeyRef"
@@ -167,24 +173,37 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
-	// Get the ssh key
-	sshKey, err := r.getSSHKey(ctx, rm)
-	if err != nil {
-		log.Error(err, "Failed to get ssh key")
-		return ctrl.Result{Requeue: true}, err
-	}
+	var p Provisioner
+	if rm.Spec.ProvisionJob != nil {
+		p = &JobProvisioner{
+			bootstrapData: bootstrapData,
+			remoteMachine: rm,
+			machine:       machine,
+			provisionJob:  rm.Spec.ProvisionJob,
+			client:        r.Client,
+			clientSet:     r.ClientSet,
+			log:           log,
+		}
+	} else {
+		// Get the ssh key
+		sshKey, err := r.getSSHKey(ctx, rm)
+		if err != nil {
+			log.Error(err, "Failed to get ssh key")
+			return ctrl.Result{Requeue: true}, err
+		}
 
-	p := &Provisioner{
-		bootstrapData: bootstrapData,
-		sshKey:        sshKey,
-		machine:       rm,
-		log:           log,
+		p = &SSHProvisioner{
+			bootstrapData: bootstrapData,
+			sshKey:        sshKey,
+			machine:       rm,
+			log:           log,
+		}
 	}
 
 	if !rm.ObjectMeta.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
 			if err := p.Cleanup(ctx, mode); err != nil {
-				p.log.Error(err, "Failed to cleanup RemoteMachine")
+				log.Error(err, "Failed to cleanup RemoteMachine")
 			}
 			if rm.Spec.Pool != "" {
 				// Return the machine back to pool

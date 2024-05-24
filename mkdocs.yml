@@ -33,6 +33,8 @@ nav:
         - OpenStack: capi-openstack.md
         - Docker: capi-docker.md
         - vSphere: capi-vsphere.md
+        - Remote Machine with Teleport: capi-remotemachine-teleport.md
+        - Remote Machine with Okta ASA: capi-remotemachine-okta-asa.md
     - HA control planes: ha.md
     - Monitoring: monitoring.md
   - Update:

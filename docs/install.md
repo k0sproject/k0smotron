@@ -70,7 +70,7 @@ A full k0smotron installation implies the following components:
 To install the full version of k0smotron:
 
 ```bash
-kubectl apply -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/install.yaml
+kubectl create -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/install.yaml
 ```
 
 Now, you can create your first control planes using k0smotron either as a
