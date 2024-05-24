@@ -56,6 +56,16 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://docs.k0smotron.io/head/capi-remotemachine-okta-asa/</loc>
+         <lastmod>2024-05-24</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/capi-remotemachine-teleport/</loc>
+         <lastmod>2024-05-24</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://docs.k0smotron.io/head/capi-vsphere/</loc>
          <lastmod>2024-05-24</lastmod>
          <changefreq>daily</changefreq>

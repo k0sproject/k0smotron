@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-hetzner/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-remotemachine-teleport/">
       
       
-        <link rel="prev" href="../capi-aws/">
+        <link rel="prev" href="../capi-vsphere/">
       
       
-        <link rel="next" href="../capi-openstack/">
+        <link rel="next" href="../capi-remotemachine-okta-asa/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Hetzner Cloud - Documentation</title>
+        <title>Remote Machine with Teleport - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cluster-api-hetzner" class="md-skip">
+        <a href="#using-remote-machine-with-teleport" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Hetzner Cloud
+              Remote Machine with Teleport
             
           </span>
         </div>
@@ -745,30 +745,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Hetzner Cloud
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../capi-hetzner/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -777,77 +757,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#preparations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Preparations
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Preparations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#token" class="md-nav__link">
-    <span class="md-ellipsis">
-      Token
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#creating-a-child-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Creating a child cluster
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accessing-the-workload-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Accessing the workload cluster
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#deleting-the-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Deleting the cluster
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -920,10 +829,30 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../capi-remotemachine-teleport/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Remote Machine with Teleport
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -932,6 +861,71 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-service-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating Service Account
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-teleport-bot-user" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating Teleport Bot User
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a deployment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-remotemachine" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a RemoteMachine
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1404,51 +1398,45 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#preparations" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
-      Preparations
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Preparations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#token" class="md-nav__link">
-    <span class="md-ellipsis">
-      Token
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#creating-a-child-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Creating a child cluster
+      Prerequisites
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#accessing-the-workload-cluster" class="md-nav__link">
+  <a href="#creating-service-account" class="md-nav__link">
     <span class="md-ellipsis">
-      Accessing the workload cluster
+      Creating Service Account
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#deleting-the-cluster" class="md-nav__link">
+  <a href="#creating-teleport-bot-user" class="md-nav__link">
     <span class="md-ellipsis">
-      Deleting the cluster
+      Creating Teleport Bot User
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a deployment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-remotemachine" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a RemoteMachine
     </span>
   </a>
   
@@ -1469,146 +1457,191 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="cluster-api-hetzner">Cluster API - Hetzner<a class="headerlink" href="#cluster-api-hetzner" title="Permanent link">#</a></h1>
-<p>This example demonstrates how k0smotron can be used with CAPH (Cluster API Provider HetznerCloud).</p>
-<h2 id="preparations">Preparations<a class="headerlink" href="#preparations" title="Permanent link">#</a></h2>
-<p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>.</p>
-<p>To initialize the management cluster with Hetzner infrastrcture provider you can run:</p>
-<div class="highlight"><pre><span></span><code>clusterctl init --core cluster-api --infrastructure hetzner
+<h1 id="using-remote-machine-with-teleport">Using Remote Machine with Teleport<a class="headerlink" href="#using-remote-machine-with-teleport" title="Permanent link">#</a></h1>
+<p>This guide will walk you through the process of preparing your management cluster to use the Remote Machine provider with <a href="https://goteleport.com/">Teleport</a>.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
+<p>To use the Remote Machine provider with Teleport, you need to have a Teleport cluster up and running. You can follow the <a href="https://goteleport.com/docs/quickstart/">official guide</a> to get started.
+Also, you need to have <code>tctl</code> installed on your desktop.</p>
+<h2 id="creating-service-account">Creating Service Account<a class="headerlink" href="#creating-service-account" title="Permanent link">#</a></h2>
+<p>First, you need to create a service account for Teleport user. It requires an admin access to the secrets since it creates and regularly updates a secret with the Teleport credentials.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-teleport-bot</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secrets-admin</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;secrets&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;*&quot;</span><span class="p p-Indicator">]</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RoleBinding</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-teleport-bot-secrets-admin</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">subjects</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">teleport-bot</span>
+<span class="nt">roleRef</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">secrets-admin</span>
+<span class="w">  </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io</span>
 </code></pre></div>
-<p>For more details on Cluster API Provider Hetzner see it's <a href="https://github.com/syself/cluster-api-provider-hetzner/tree/main/docs">docs</a>.</p>
-<h3 id="token">Token<a class="headerlink" href="#token" title="Permanent link">#</a></h3>
-<p>To be able to provision the infrastructure Hetzner provider you will need a token to interact with the Hetzner API. You'll can create &amp; find the token in your project at "Security" in the Hetzner Cloud console.</p>
-<h2 id="creating-a-child-cluster">Creating a child cluster<a class="headerlink" href="#creating-a-child-cluster" title="Permanent link">#</a></h2>
-<p>Once all the controllers are up and running, you can apply the cluster manifests containing the specifications of the cluster you want to provision.</p>
-<p>Here is an example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<h2 id="creating-teleport-bot-user">Creating Teleport Bot User<a class="headerlink" href="#creating-teleport-bot-user" title="Permanent link">#</a></h2>
+<p>Next, you need to create a Teleport Bot user for the service account. Since we use a <code>kubernetes</code> auth method for Teleport, first we need to figure out the cluster's JWKS. 
+It will be used by the Teleport Cluster to verify the JWT tokens.</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>proxy<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>
+$<span class="w"> </span>curl<span class="w"> </span>http://localhost:8080/openid/v1/jwks
+<span class="o">{</span><span class="s2">&quot;keys&quot;</span>:<span class="o">[</span>&lt;REDACTED&gt;<span class="o">]}</span>
+</code></pre></div>
+<p>Create <code>teleport-role.yaml</code>. Don't forget to specify correct permissions for the role, see <a href="https://goteleport.com/docs/access-controls/guides/role-templates/">Teleport documentation</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">role</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v5</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-bot</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.244.0.0/16</span>
-<span class="w">    </span><span class="nt">services</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.96.0.0/12</span>
-<span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span><span class="w"> </span><span class="c1"># This tells that k0smotron should create the controlplane</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test-cp</span>
-<span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HetznerCluster</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span><span class="w"> </span><span class="c1"># This is the config for the controlplane</span>
+<span class="w">  </span><span class="nt">allow</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">  </span><span class="nt">deny</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">  </span><span class="nt">options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>tctl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>teleport-role.yaml
+</code></pre></div>
+<p>Now, we can create a Teleport Bot user. Create <code>k0smotron-bot-token.yaml</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">token</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test-cp</span>
+<span class="w">  </span><span class="c1"># name will be specified in the `tbot` to use this token</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-bot</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2-k0s.0</span>
-<span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
-<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
-<span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
-<span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8132</span>
-<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">load-balancer.hetzner.cloud/location</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span><span class="w"> </span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HetznerCluster</span>
+<span class="w">  </span><span class="nt">roles</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Bot</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="c1"># bot_name will match the name of the bot created later in this guide.</span>
+<span class="w">  </span><span class="nt">bot_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron</span>
+<span class="w">  </span><span class="nt">join_method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes</span>
+<span class="w">  </span><span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">static_jwks</span>
+<span class="w">    </span><span class="nt">static_jwks</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">jwks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">{&quot;keys&quot;:[&lt;REDACTED&gt;]}</span>
+<span class="w">    </span><span class="nt">allow</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">service_account</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;default:k0smotron-teleport-bot&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>tctl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>k0smotron-bot-token.yaml
+</code></pre></div>
+<p>Finally, create a bot user:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>tctl<span class="w"> </span>bots<span class="w"> </span>add<span class="w"> </span>k0smotron<span class="w"> </span>--token<span class="w"> </span>k0smotron-bot<span class="w"> </span>--roles<span class="w"> </span>k0smotron-bot
+</code></pre></div>
+<h2 id="creating-a-deployment">Creating a deployment<a class="headerlink" href="#creating-a-deployment" title="Permanent link">#</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-tbot-config</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron</span><span class="w"> </span><span class="c1"># This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">controlPlaneLoadBalancer</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">  </span><span class="nt">controlPlaneEndpoint</span><span class="p">:</span><span class="w"> </span><span class="c1"># This is just a placeholder, can be anything as k0smotron will overwrite it</span>
-<span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.2.3.4&quot;</span>
-<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
-<span class="w">  </span><span class="nt">controlPlaneRegions</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span>
-<span class="w">  </span><span class="nt">hetznerSecretRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner</span>
-<span class="w">    </span><span class="nt">key</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">hcloudToken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hcloud</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">tbot.yaml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">version: v2</span>
+<span class="w">    </span><span class="no">onboarding:</span>
+<span class="w">      </span><span class="no">join_method: kubernetes</span>
+<span class="w">      </span><span class="no">token: k0smotron-bot # name of the join token</span>
+<span class="w">    </span><span class="no">storage:</span>
+<span class="w">      </span><span class="no">type: memory</span>
+<span class="w">    </span><span class="no"># ensure this is configured to the address of your Teleport Proxy or</span>
+<span class="w">    </span><span class="no"># Auth Server. Prefer the address of the Teleport Proxy.</span>
+<span class="w">    </span><span class="no">auth_server: teleport.example.com:443</span>
+<span class="w">    </span><span class="no"># in outputs we specify the destination of the identity. In our case we will put it into the kubernetes secret.</span>
+<span class="w">    </span><span class="no">outputs:</span>
+<span class="w">    </span><span class="no">- type: identity</span>
+<span class="w">      </span><span class="no">destination:</span>
+<span class="w">        </span><span class="no">type: kubernetes_secret</span>
+<span class="w">        </span><span class="no">name: k0smotron-bot-identity</span>
 <span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineDeployment</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetnzer-test-md</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-tbot</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test</span>
-<span class="w">      </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-tbot</span>
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test</span>
-<span class="w">        </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
+<span class="w">        </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-tbot</span>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test</span>
-<span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">configRef</span><span class="p">:</span><span class="w"> </span><span class="c1"># This triggers our controller to create cloud-init secret</span>
-<span class="w">          </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
-<span class="w">          </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
-<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test-machine-config</span>
-<span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HCloudMachineTemplate</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test-mt</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HCloudMachineTemplate</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tbot</span>
+<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public.ecr.aws/gravitational/teleport:14.3.3</span>
+<span class="w">          </span><span class="nt">command</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tbot</span>
+<span class="w">          </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">start</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-c</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config/tbot.yaml</span>
+<span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">            </span><span class="c1"># POD_NAMESPACE is required for the kubernetes_secret` destination type to work correctly.</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">POD_NAMESPACE</span>
+<span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">fieldRef</span><span class="p">:</span>
+<span class="w">                  </span><span class="nt">fieldPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metadata.namespace</span>
+<span class="w">            </span><span class="c1"># KUBERNETES_TOKEN_PATH specifies the path to the service account JWT to use for joining.</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KUBERNETES_TOKEN_PATH</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/secrets/tokens/join-token</span>
+<span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config</span>
+<span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/secrets/tokens</span>
+<span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">join-sa-token</span>
+<span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tbot</span>
+<span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config</span>
+<span class="w">          </span><span class="nt">configMap</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-tbot-config</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">join-sa-token</span>
+<span class="w">          </span><span class="nt">projected</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">serviceAccountToken</span><span class="p">:</span>
+<span class="w">                  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">join-token</span>
+<span class="w">                  </span><span class="nt">expirationSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+<span class="w">                  </span><span class="c1"># `teleport.example.com` must be replaced with the _name_ of your Teleport cluster.</span>
+<span class="w">                  </span><span class="nt">audience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">teleport.example.com</span>
+</code></pre></div>
+<p>More information about Teleport's Machine ID and how to set it up with Kubernetes can be found <a href="https://goteleport.com/docs/machine-id/deployment/kubernetes/">here</a>.
+Also, you can use <a href="https://github.com/k0sproject/k0smotron/blob/None/config/samples/capi/remotemachine/capi-remotemachine-teleport.yaml">this example</a> as a reference.</p>
+<h2 id="create-a-remotemachine">Create a RemoteMachine<a class="headerlink" href="#create-a-remotemachine" title="Permanent link">#</a></h2>
+<p>Now we can create a RemoteMachine that will run the pod to setup the machine.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachine</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test-mt</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remote-test-0</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">imageName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
-<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cx21</span>
-<span class="w">  </span><span class="nt">sshKeys</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ssh-key</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test-machine-config</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">      </span><span class="c1"># More details of the worker configuration can be set here</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
-<span class="nt">data</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">hcloud</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64 encoded token&gt;</span><span class="w"> </span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;server-name&gt;</span>
+<span class="w">  </span><span class="nt">useSudo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">provisionJob</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">sshCommand</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tsh</span><span class="nv"> </span><span class="s">-i</span><span class="nv"> </span><span class="s">/identity-output/identity</span><span class="nv"> </span><span class="s">--proxy</span><span class="nv"> </span><span class="s">teleport.example.com:443</span><span class="nv"> </span><span class="s">ssh&quot;</span>
+<span class="w">    </span><span class="nt">scpCommand</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tsh</span><span class="nv"> </span><span class="s">-i</span><span class="nv"> </span><span class="s">/identity-output/identity</span><span class="nv"> </span><span class="s">--proxy</span><span class="nv"> </span><span class="s">teleport.example.com:443</span><span class="nv"> </span><span class="s">scp&quot;</span>
+<span class="w">    </span><span class="nt">jobSpecTemplate</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">teleport</span>
+<span class="w">            </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public.ecr.aws/gravitational/teleport:14.3.3</span>
+<span class="w">            </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<span class="w">             </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">identity-output</span>
+<span class="w">               </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/identity-output</span>
+<span class="w">        </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">identity-output</span>
+<span class="w">            </span><span class="nt">secret</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">secretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">identity-output</span>
+<span class="w">        </span><span class="nt">restartPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Never</span>
 </code></pre></div>
-<p>In the case of <code>HetznerCluster.spec.controlPlaneEndpoint</code> you can add any valid address. k0smotron will overwrite these automatically once the control plane is up and running. You do need to specify some placeholder address as the <code>HetznerCluster</code> object has those marked as mandatory fields.</p>
-<p>After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:</p>
-<div class="highlight"><pre><span></span><code>% kubectl get cluster,machine
-NAME                                   PHASE         AGE     VERSION
-cluster.cluster.x-k8s.io/hetzer-test   Provisioned   3m51s   
-
-NAME                                         CLUSTER        NODENAME   PROVIDERID          PHASE         AGE     VERSION
-machine.cluster.x-k8s.io/hetzner-test-md-0   hetzner-test              hcloud://12345678   Provisioned   3m50s
-</code></pre></div>
-<p>You can also check the status of the cluster deployment with <code>clusterctl describe cluster</code>.</p>
-<h2 id="accessing-the-workload-cluster">Accessing the workload cluster<a class="headerlink" href="#accessing-the-workload-cluster" title="Permanent link">#</a></h2>
-<p>To access the child cluster we can get the kubeconfig for it with <code>clusterctl get kubeconfig hetzner-test</code>. You can then save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a>.</p>
-<h2 id="deleting-the-cluster">Deleting the cluster<a class="headerlink" href="#deleting-the-cluster" title="Permanent link">#</a></h2>
-<p>For cluster deletion, do <strong>NOT</strong> use <code>kubectl delete -f my-hetzner-cluster.yaml</code> as that can result in orphan resources. Instead, delete the top level <code>Cluster</code> object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.</p>
 
 
 
