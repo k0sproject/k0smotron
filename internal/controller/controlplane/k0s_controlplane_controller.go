@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/google/uuid"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +41,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
@@ -259,7 +260,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return replicasToReport, fmt.Errorf("error getting cluster client set for machine update: %w", err)
 		}
 
-		err = c.createAutopilotPlan(ctx, kcp, kubeClient)
+		err = c.createAutopilotPlan(ctx, kcp, cluster, kubeClient)
 		if err != nil {
 			return replicasToReport, fmt.Errorf("error creating autopilot plan: %w", err)
 		}

@@ -3,17 +3,18 @@ package controlplane
 import (
 	"context"
 	"fmt"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 	"time"
 
 	"github.com/Masterminds/semver"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/collections"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -189,9 +190,14 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 	return nil
 }
 
-func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, clientset *kubernetes.Clientset) error {
+func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv1.Cluster, clientset *kubernetes.Clientset) error {
 	if clientset == nil {
 		return nil
+	}
+
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
+	if err != nil {
+		return fmt.Errorf("error getting control plane machines: %w", err)
 	}
 
 	amd64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-amd64`
@@ -231,7 +237,9 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 					"targets": {
 						"controllers": {
 							"discovery": {
-							    "selector": {}
+							    "static": {
+									"nodes": ["` + strings.Join(machines.Names(), `","`) + `"]
+								}
 							}
 						}
 					}
