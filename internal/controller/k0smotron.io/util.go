@@ -30,6 +30,7 @@ func labelsForCluster(kmc *km.Cluster) map[string]string {
 	for k, v := range kmc.Labels {
 		labels[k] = v
 	}
+	labels["component"] = "cluster"
 	return labels
 }
 
