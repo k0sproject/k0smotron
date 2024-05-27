@@ -14,7 +14,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -178,7 +178,7 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *cloudinit.CloudInit) (volum
 	volume.VolumeSource.Secret.Items = append(volume.VolumeSource.Secret.Items, v1.KeyToPath{
 		Key:  "k0smotron-entrypoint.sh",
 		Path: "k0smotron-entrypoint.sh",
-		Mode: pointer.Int32(0755),
+		Mode: ptr.To[int32](0755),
 	})
 
 	return volume, volumeMounts, secretData

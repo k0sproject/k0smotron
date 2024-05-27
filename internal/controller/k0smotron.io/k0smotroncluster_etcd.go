@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -220,6 +221,9 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 							},
 						},
 					}},
+					SecurityContext: &v1.PodSecurityContext{
+						FSGroup: ptr.To(int64(1001)),
+					},
 					InitContainers: r.generateEtcdInitContainers(kmc),
 					Containers: []v1.Container{{
 						Name:            "etcd",

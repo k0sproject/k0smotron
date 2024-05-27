@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/google/uuid"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -39,7 +41,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
@@ -308,8 +309,8 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 				Kind:               machine.Kind,
 				Name:               machine.GetName(),
 				UID:                machine.GetUID(),
-				BlockOwnerDeletion: pointer.Bool(true),
-				Controller:         pointer.Bool(true),
+				BlockOwnerDeletion: ptr.To(true),
+				Controller:         ptr.To(true),
 			}},
 		},
 		Spec: bootstrapv1.K0sControllerConfigSpec{
