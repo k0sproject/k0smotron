@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
@@ -248,7 +248,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 					Kind:       "K0sControllerConfig",
 					Name:       config.Name,
 					UID:        config.UID,
-					Controller: pointer.Bool(true),
+					Controller: ptr.To(true),
 				},
 			},
 		},
@@ -267,7 +267,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Set the status to ready
 	config.Status.Ready = true
-	config.Status.DataSecretName = pointer.String(bootstrapSecret.Name)
+	config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
 
 	err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		return c.Status().Update(ctx, config)
