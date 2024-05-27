@@ -260,7 +260,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return replicasToReport, fmt.Errorf("error getting cluster client set for machine update: %w", err)
 		}
 
-		err = c.createAutopilotPlan(ctx, kcp, kubeClient)
+		err = c.createAutopilotPlan(ctx, kcp, cluster, kubeClient)
 		if err != nil {
 			return replicasToReport, fmt.Errorf("error creating autopilot plan: %w", err)
 		}
