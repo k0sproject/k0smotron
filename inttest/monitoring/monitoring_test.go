@@ -91,7 +91,7 @@ func (s *MonitoringSuite) TestK0sGetsUp() {
 		b, err := kc.RESTClient().
 			Get().
 			AbsPath("/api/v1/namespaces/default/services/prometheus-server:http/proxy/api/v1/query").
-			Param("query", "workqueue_work_duration_seconds_count").
+			Param("query", "process_open_fds").
 			DoRaw(s.Context())
 		if err != nil {
 			return true, err
@@ -99,7 +99,7 @@ func (s *MonitoringSuite) TestK0sGetsUp() {
 
 		out := string(b)
 
-		return strings.Contains(out, `"k0smotron_cluster":"kmc-test"`), nil
+		return strings.Contains(out, `k0smotron_etcd_metrics`), nil
 	})
 	s.Require().NoError(err)
 }
