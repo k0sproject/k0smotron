@@ -94,8 +94,8 @@ Resource Types:
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
-          Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+          Args specifies extra arguments to be passed to k0s controller.
+See: https://docs.k0sproject.io/stable/cli/k0s_controller/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -382,7 +382,8 @@ If empty, k0smotron will use the default one.<br/>
         <td>[]string</td>
         <td>
           Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+See: https://docs.k0sproject.io/stable/worker-node-config/
+See: https://docs.k0sproject.io/stable/cli/k0s_worker/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -736,7 +737,8 @@ This should be only set in the case you want to use a pre-generated join token.
         <td>[]string</td>
         <td>
           Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+See: https://docs.k0sproject.io/stable/worker-node-config/
+See: https://docs.k0sproject.io/stable/cli/k0s_worker/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1221,8 +1223,8 @@ just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
-          Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+          Args specifies extra arguments to be passed to k0s controller.
+See: https://docs.k0sproject.io/stable/cli/k0s_controller/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1837,8 +1839,8 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
         <td><b>args</b></td>
         <td>[]string</td>
         <td>
-          Args specifies extra arguments to be passed to k0s worker.
-See: https://docs.k0sproject.io/stable/advanced/worker-configuration/<br/>
+          Args specifies extra arguments to be passed to k0s controller.
+See: https://docs.k0sproject.io/stable/cli/k0s_controller/<br/>
         </td>
         <td>false</td>
       </tr><tr>

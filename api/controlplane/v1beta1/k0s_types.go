@@ -70,7 +70,8 @@ type K0sBootstrapConfigSpec struct {
 	Files []cloudinit.File `json:"files,omitempty"`
 
 	// Args specifies extra arguments to be passed to k0s worker.
-	// See: https://docs.k0sproject.io/stable/advanced/worker-configuration/
+	// See: https://docs.k0sproject.io/stable/worker-node-config/
+	// See: https://docs.k0sproject.io/stable/cli/k0s_worker/
 	Args []string `json:"args,omitempty"`
 
 	// PreStartCommands specifies commands to be run before starting k0s worker.
