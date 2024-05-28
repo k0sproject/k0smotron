@@ -44,8 +44,8 @@ spec:
                 properties:
                   args:
                     description: |-
-                      Args specifies extra arguments to be passed to k0s worker.
-                      See: https://docs.k0sproject.io/stable/advanced/worker-configuration/
+                      Args specifies extra arguments to be passed to k0s controller.
+                      See: https://docs.k0sproject.io/stable/cli/k0s_controller/
                     items:
                       type: string
                     type: array
