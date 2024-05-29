@@ -37,7 +37,13 @@ func init() {
 
 func (r *ClusterReconciler) generateMonitoringCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 	var entrypointBuf bytes.Buffer
-	err := prometheusConfigTmpl.Execute(&entrypointBuf, kmc)
+	err := prometheusConfigTmpl.Execute(&entrypointBuf, struct {
+		Kmc         *km.Cluster
+		EtcdSvcName string
+	}{
+		Kmc:         kmc,
+		EtcdSvcName: kmc.GetEtcdServiceName(),
+	})
 	if err != nil {
 		return v1.ConfigMap{}, err
 	}
@@ -87,29 +93,29 @@ scrape_configs:
       cert_file: /var/lib/k0s/pki/admin.crt
       key_file: /var/lib/k0s/pki/admin.key 
     static_configs:
-      - targets: ["localhost:{{ .Spec.Service.APIPort }}"]
+      - targets: ["localhost:{{ .Kmc.Spec.Service.APIPort }}"]
         labels:
           component: kube-apiserver
-          k0smotron_cluster: "{{ .Name }}"
+          k0smotron_cluster: "{{ .Kmc.Name }}"
       - targets: ["localhost:10259"]
         labels:
           component: kube-scheduler
-          k0smotron_cluster: "{{ .Name }}"
+          k0smotron_cluster: "{{ .Kmc.Name }}"
       - targets: ["localhost:10257"]
         labels:
           component: kube-controller-manager
-          k0smotron_cluster: "{{ .Name }}"
+          k0smotron_cluster: "{{ .Kmc.Name }}"
   - job_name: "k0smotron_etcd_metrics"
     scheme: https
     tls_config: 
       insecure_skip_verify: true
-      cert_file: /var/lib/k0s/pki/etcd/ca.crt
-      key_file: /var/lib/k0s/pki/etcd/ca.key
+      cert_file: /var/lib/k0s/pki/etcd-ca.crt
+      key_file: /var/lib/k0s/pki/etcd-ca.key
     static_configs:
-      - targets: ["localhost:2379"]
+      - targets: ["{{ .EtcdSvcName }}:2379"]
         labels:
           component: etcd
-          k0smotron_cluster: "{{ .Name }}"
+          k0smotron_cluster: "{{ .Kmc.Name }}"
 `
 
 const nginxConf = `
