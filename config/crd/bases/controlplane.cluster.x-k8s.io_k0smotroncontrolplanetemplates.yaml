@@ -98,6 +98,11 @@ spec:
                           persistence: {}
                         description: Etcd defines the etcd configuration.
                         properties:
+                          args:
+                            description: Args defines the etcd arguments.
+                            items:
+                              type: string
+                            type: array
                           image:
                             default: quay.io/k0sproject/etcd:v3.5.13
                             description: Image defines the etcd image to be deployed.

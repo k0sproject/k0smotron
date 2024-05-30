@@ -2438,6 +2438,13 @@ Etcd defines the etcd configuration.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecetcdpersistence">persistence</a></b></td>
         <td>object</td>
         <td>
@@ -7309,6 +7316,13 @@ Etcd defines the etcd configuration.
             <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcdpersistence">persistence</a></b></td>
         <td>object</td>
@@ -28096,6 +28110,13 @@ Etcd defines the etcd configuration.
             <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b><a href="#clusterspecetcdpersistence">persistence</a></b></td>
         <td>object</td>

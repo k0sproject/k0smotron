@@ -190,6 +190,9 @@ var clusterResource = `
 				"spec": {
 					"telemetry": {"enabled": false}
 				}
+			},
+			"etcd": {
+				"args": ["--auto-compaction-retention=1h", "--snapshot-count=500000"]
 			}
 		}
 	  }
