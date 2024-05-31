@@ -103,7 +103,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.checkControlPlaneStatus(s.ctx, s.restConfig)
 
 	s.T().Log("Starting portforward")
-	fw, err := util.GetPortForwarder(s.restConfig, "kmc-docker-test-0", "default", 30443)
+	fw, err := util.GetPortForwarder(s.restConfig, "kmc-docker-test-0", "default", 6443)
 	s.Require().NoError(err)
 
 	go fw.Start(s.Require().NoError)
