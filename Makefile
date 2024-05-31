@@ -152,7 +152,7 @@ endif
 
 .PHONY: install
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+	$(KUSTOMIZE) build config/crd | kubectl create -f -
 
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
@@ -161,7 +161,7 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image k0s/k0smotron=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	$(KUSTOMIZE) build config/default | kubectl create -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
@@ -276,7 +276,7 @@ kind-cluster:
 .PHONY: kind-deploy-k0smotron
 kind-deploy-k0smotron: release k0smotron-image-bundle.tar
 	kind load image-archive k0smotron-image-bundle.tar
-	kubectl create -f install.yaml
+	kubectl apply --server-side=true -f install.yaml
 	kubectl rollout restart -n k0smotron deployment/k0smotron-controller-manager
 
 sbom/spdx.json: go.mod
