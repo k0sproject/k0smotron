@@ -17,9 +17,11 @@ limitations under the License.
 package k0smotronio
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
+	"text/template"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 
@@ -34,6 +36,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var etcdEntrypointScriptTmpl *template.Template
+
+func init() {
+	etcdEntrypointScriptTmpl = template.Must(template.New("entrypoint.sh").Parse(etcdEntrypointScriptTemplate))
+}
 
 func (r *ClusterReconciler) reconcileEtcd(ctx context.Context, kmc *km.Cluster) error {
 	if kmc.Spec.KineDataSourceURL != "" || kmc.Spec.KineDataSourceSecretName != "" {
@@ -142,6 +150,13 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 		pvc.Spec.StorageClassName = &kmc.Spec.Etcd.Persistence.StorageClass
 	}
 
+	var etcdEntrypointScriptBuf bytes.Buffer
+	_ = etcdEntrypointScriptTmpl.Execute(&etcdEntrypointScriptBuf, struct {
+		Args []string
+	}{
+		Args: kmc.Spec.Etcd.Args,
+	})
+
 	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -230,7 +245,7 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 						Image:           kmc.Spec.Etcd.Image,
 						ImagePullPolicy: v1.PullIfNotPresent,
 						Command:         []string{"/bin/bash"},
-						Args:            []string{"-c", entrypointScript},
+						Args:            []string{"-c", etcdEntrypointScriptBuf.String()},
 						Env: []v1.EnvVar{
 							{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
 							{Name: "ETCDCTL_ENDPOINTS", Value: fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
@@ -319,7 +334,7 @@ func calculateDesiredReplicas(kmc *km.Cluster) int32 {
 	return desiredReplicas
 }
 
-var entrypointScript = `
+const etcdEntrypointScriptTemplate = `
 
 export ETCD_INITIAL_CLUSTER_STATE="new"
 if [[ -f /var/lib/k0s/etcd/existing ]]; then
@@ -327,7 +342,6 @@ if [[ -f /var/lib/k0s/etcd/existing ]]; then
 fi
 
 etcd --name ${HOSTNAME} \
-  --data-dir=/var/lib/k0s/etcd \
   --listen-peer-urls=https://0.0.0.0:2380 \
   --listen-client-urls=https://0.0.0.0:2379 \
   --advertise-client-urls=https://${HOSTNAME}.${SVC_NAME}:2379 \
@@ -341,7 +355,14 @@ etcd --name ${HOSTNAME} \
   --peer-key-file=/var/lib/k0s/pki/etcd/peer.key \
   --peer-cert-file=/var/lib/k0s/pki/etcd/peer.crt \
   --peer-client-cert-auth=true \
-  --enable-pprof=false 
+  --enable-pprof=false \
+  --auto-compaction-mode=periodic \
+  --auto-compaction-retention=5m \
+  --snapshot-count=10000 \
+{{- range $arg := .Args }}
+  {{ $arg }} \
+{{- end }}
+  --data-dir=/var/lib/k0s/etcd 
 `
 
 var initEntryScript = `

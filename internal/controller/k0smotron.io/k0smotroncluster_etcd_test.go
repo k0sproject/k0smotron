@@ -18,6 +18,7 @@ package k0smotronio
 
 import (
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -40,6 +41,51 @@ func TestEtcd_calculateDesiredReplicas(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			got := calculateDesiredReplicas(tc.cluster)
 			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
+	var tests = []struct {
+		cluster *km.Cluster
+		want    []string
+	}{
+		{
+			cluster: &km.Cluster{},
+			want: []string{
+				"--auto-compaction-mode=periodic",
+				"--auto-compaction-retention=5m",
+				"--snapshot-count=10000",
+			}},
+		{
+			cluster: &km.Cluster{Spec: km.ClusterSpec{Etcd: km.EtcdSpec{Args: []string{
+				"--auto-compaction-mode=periodic",
+			}}}},
+			want: []string{
+				"--auto-compaction-mode=periodic",
+				"--auto-compaction-retention=5m",
+				"--snapshot-count=10000",
+			}},
+		{
+			cluster: &km.Cluster{Spec: km.ClusterSpec{Etcd: km.EtcdSpec{Args: []string{
+				"--auto-compaction-mode=periodic",
+				"--auto-compaction-retention=2h",
+				"--snapshot-count=50000",
+			}}}},
+			want: []string{
+				"--auto-compaction-mode=periodic",
+				"--auto-compaction-retention=2h",
+				"--snapshot-count=50000",
+			}},
+	}
+
+	for _, tc := range tests {
+		t.Run("", func(t *testing.T) {
+			r := new(ClusterReconciler)
+			sts := r.generateEtcdStatefulSet(tc.cluster, 1)
+			for _, w := range tc.want {
+				assert.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
+			}
 		})
 	}
 }

@@ -240,6 +240,9 @@ type EtcdSpec struct {
 	// Image defines the etcd image to be deployed.
 	//+kubebuilder:default="quay.io/k0sproject/etcd:v3.5.13"
 	Image string `json:"image"`
+	// Args defines the etcd arguments.
+	//+kubebuilder:validation:Optional
+	Args []string `json:"args,omitempty"`
 	// Persistence defines the persistence configuration.
 	//+kubebuilder:validation:Optional
 	Persistence EtcdPersistenceSpec `json:"persistence"`
