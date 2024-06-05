@@ -28,7 +28,7 @@ provided configuration file:
 4. Release the necessary components and install them into the Kubernetes cluster:
 
     ```bash
-    make release && kubectl create -f install.yaml
+    make release && kubectl apply --server-side=true -f install.yaml
     ```
 
 5. Initialize the cluster, patch configurations, and enable features:
