@@ -18,6 +18,7 @@ package basic
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -67,6 +68,10 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().NoError(err)
 	s.Require().Equal("100m", pod.Spec.Containers[0].Resources.Requests.Cpu().String())
 	s.Require().Equal("100Mi", pod.Spec.Containers[0].Resources.Requests.Memory().String())
+
+	configMap, err := kc.CoreV1().ConfigMaps("kmc-test").Get(s.Context(), "kmc-kmc-test-config", metav1.GetOptions{})
+	s.Require().NoError(err)
+	s.Require().True(strings.Contains(configMap.Data["K0SMOTRON_K0S_YAML"], "kmc-kmc-test-nodeport.kmc-test.svc.cluster.local"))
 
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)

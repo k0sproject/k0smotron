@@ -295,6 +295,20 @@ func (kmc *Cluster) GetConfigMapName() string {
 }
 
 func (kmc *Cluster) GetServiceName() string {
+	switch kmc.Spec.Service.Type {
+	case v1.ServiceTypeNodePort:
+		return kmc.GetNodePortServiceName()
+	case v1.ServiceTypeLoadBalancer:
+		return kmc.GetLoadBalancerServiceName()
+	case v1.ServiceTypeClusterIP:
+		return kmc.GetClusterIPServiceName()
+	default:
+		// The list of service types is limited and defined as enum in the CRD, so the default case should never be reached
+		panic("unknown service type")
+	}
+}
+
+func (kmc *Cluster) GetClusterIPServiceName() string {
 	return fmt.Sprintf("kmc-%s", kmc.Name)
 }
 

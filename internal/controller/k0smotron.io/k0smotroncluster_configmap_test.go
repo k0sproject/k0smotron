@@ -47,7 +47,7 @@ func TestGenerateCM(t *testing.T) {
 			},
 		}
 
-		cm, _, err := r.generateConfig(&kmc)
+		cm, _, err := r.generateConfig(&kmc, []string{})
 		require.NoError(t, err)
 
 		conf := cm.Data["K0SMOTRON_K0S_YAML"]
@@ -55,5 +55,33 @@ func TestGenerateCM(t *testing.T) {
 		assert.True(t, strings.Contains(conf, "my.external.address"), "The external address must be my.external.address")
 		assert.True(t, strings.Contains(conf, "calico"), "The provider must be calico")
 		assert.False(t, strings.Contains(conf, "kuberouter"), "The provider must not be kuberouter")
+	})
+
+	t.Run("sans merge", func(t *testing.T) {
+		kmc := km.Cluster{
+			Spec: km.ClusterSpec{
+				ExternalAddress: "my.external.address",
+				K0sConfig: &unstructured.Unstructured{Object: map[string]interface{}{
+					"apiVersion": "k0s.k0sproject.io/v1beta1",
+					"kind":       "ClusterConfig",
+					"spec": map[string]interface{}{
+						"api": map[string]interface{}{
+							"sans": []interface{}{"my.san.address"},
+						},
+					},
+				}},
+			},
+		}
+
+		sans := []string{"1.2.3.4", "my.san.address2"}
+
+		cm, _, err := r.generateConfig(&kmc, sans)
+		require.NoError(t, err)
+
+		conf := cm.Data["K0SMOTRON_K0S_YAML"]
+
+		assert.True(t, strings.Contains(conf, "1.2.3.4"))
+		assert.True(t, strings.Contains(conf, "my.san.address"))
+		assert.True(t, strings.Contains(conf, "my.san.address2"))
 	})
 }
