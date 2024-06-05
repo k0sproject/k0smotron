@@ -1477,7 +1477,7 @@ Kubernetes cluster that allows for creation and management of the k0s
 control plane.</p>
 <div class="admonition note">
 <p class="admonition-title">TL;DR</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/None/install.yaml
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/None/install.yaml
 </code></pre></div>
 </div>
 <h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">#</a></h2>
@@ -1536,7 +1536,7 @@ workloads, see <a href="https://docs.k0sproject.io/stable/system-requirements/">
 <li>Control plane provider</li>
 </ul>
 <p>To install the full version of k0smotron:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/None/install.yaml
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/None/install.yaml
 </code></pre></div>
 <p>Now, you can create your first control planes using k0smotron either as a
 standalone manager, or as a Cluster API provider. For use case details, see

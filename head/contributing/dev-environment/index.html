@@ -1370,7 +1370,7 @@ provided configuration file:</p>
 </li>
 <li>
 <p>Release the necessary components and install them into the Kubernetes cluster:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>release<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>install.yaml
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>release<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>install.yaml
 </code></pre></div>
 </li>
 <li>
