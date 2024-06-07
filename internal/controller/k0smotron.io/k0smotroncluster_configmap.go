@@ -214,7 +214,7 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
 	v1beta1Spec := map[string]interface{}{
 		"api": map[string]interface{}{
 			"externalAddress": kmc.Spec.ExternalAddress,
-			"port":            kmc.Spec.Service.APIPort,
+			"port":            defaultKubeAPIPort,
 			"sans":            sans,
 		},
 		"konnectivity": map[string]interface{}{

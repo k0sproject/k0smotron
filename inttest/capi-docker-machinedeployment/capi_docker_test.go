@@ -90,7 +90,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().NoError(common.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-md-test", "default"))
 
 	s.T().Log("Starting portforward")
-	fw, err := util.GetPortForwarder(s.restConfig, "kmc-docker-md-test-0", "default", 30443)
+	fw, err := util.GetPortForwarder(s.restConfig, "kmc-docker-md-test-0", "default", 6443)
 	s.Require().NoError(err)
 
 	go fw.Start(s.Require().NoError)
