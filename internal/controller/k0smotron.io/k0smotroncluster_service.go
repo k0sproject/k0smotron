@@ -71,7 +71,7 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 	default:
 		// Default to ClusterIP
 		kmc.Spec.Service.Type = v1.ServiceTypeClusterIP
-		name = kmc.GetServiceName()
+		name = kmc.GetClusterIPServiceName()
 
 		ports = append(ports,
 			v1.ServicePort{

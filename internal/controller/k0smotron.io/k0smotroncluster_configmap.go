@@ -19,6 +19,8 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
+	"net"
+	"strings"
 
 	"github.com/imdario/mergo"
 	v1 "k8s.io/api/core/v1"
@@ -41,20 +43,24 @@ const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDE
 //   - some of the fields in the k0s config struct are not pointers, e.g. spec.api.address in string, so it will be
 //     marshalled as "address": "", which is not correct value for the k0s config
 //   - we can't use the k0s config default values, because some of them are calculated based on the cluster state (e.g. spec.api.address)
-func (r *ClusterReconciler) generateConfig(kmc *km.Cluster) (v1.ConfigMap, map[string]interface{}, error) {
+func (r *ClusterReconciler) generateConfig(kmc *km.Cluster, sans []string) (v1.ConfigMap, map[string]interface{}, error) {
 	k0smotronValues := map[string]interface{}{"spec": nil}
 	unstructuredConfig := k0smotronValues
 
 	if kmc.Spec.K0sConfig == nil {
 		k0smotronValues["apiVersion"] = "k0s.k0sproject.io/v1beta1"
 		k0smotronValues["kind"] = "ClusterConfig"
-		k0smotronValues["spec"] = getV1Beta1Spec(kmc)
+		k0smotronValues["spec"] = getV1Beta1Spec(kmc, sans)
 	} else {
 		unstructuredConfig = kmc.Spec.K0sConfig.UnstructuredContent()
 
 		switch kmc.Spec.K0sConfig.GetAPIVersion() {
 		case "k0s.k0sproject.io/v1beta1":
-			k0smotronValues["spec"] = getV1Beta1Spec(kmc)
+			existingSANs, found, err := unstructured.NestedStringSlice(unstructuredConfig, "spec", "api", "sans")
+			if err == nil && found {
+				sans = append(sans, existingSANs...)
+			}
+			k0smotronValues["spec"] = getV1Beta1Spec(kmc, sans)
 		default:
 			// TODO: should we just use the v1beta1 in case the api version is not provided?
 			return v1.ConfigMap{}, nil, fmt.Errorf("unsupported k0s config version: %s", kmc.Spec.K0sConfig.GetAPIVersion())
@@ -111,7 +117,12 @@ func (r *ClusterReconciler) reconcileK0sConfig(ctx context.Context, kmc *km.Clus
 		kmc.Spec.KineDataSourceURL = kineDataSourceURLPlaceholder
 	}
 
-	cm, unstructuredConfig, err := r.generateConfig(kmc)
+	sans, err := r.genSANs(kmc)
+	if err != nil {
+		return fmt.Errorf("failed to generate SANs: %w", err)
+	}
+
+	cm, unstructuredConfig, err := r.generateConfig(kmc, sans)
 	if err != nil {
 		return err
 	}
@@ -170,11 +181,41 @@ func (r *ClusterReconciler) detectExternalAddress(ctx context.Context) (string, 
 	return internalAddress, nil
 }
 
-func getV1Beta1Spec(kmc *km.Cluster) map[string]interface{} {
+func (r *ClusterReconciler) genSANs(kmc *km.Cluster) ([]string, error) {
+	var sans []string
+	if kmc.Spec.ExternalAddress != "" {
+		sans = append(sans, kmc.Spec.ExternalAddress)
+	}
+	svcName := kmc.GetServiceName()
+	svcNamespacedName := fmt.Sprintf("%s.%s", svcName, kmc.Namespace)
+
+	sans = append(sans, svcName)
+	sans = append(sans, svcNamespacedName)
+	sans = append(sans, fmt.Sprintf("%s.svc", svcNamespacedName))
+
+	ips, err := net.LookupHost(svcNamespacedName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve service IPs %s: %w", svcNamespacedName, err)
+	}
+	sans = append(sans, ips...)
+
+	cname, err := net.LookupCNAME(svcNamespacedName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve service CNAME %s: %w", svcNamespacedName, err)
+	}
+	// Trim the trailing dot from the CNAME
+	trimmedCNAME, _ := strings.CutSuffix(cname, ".")
+	sans = append(sans, trimmedCNAME)
+
+	return sans, nil
+}
+
+func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
 	v1beta1Spec := map[string]interface{}{
 		"api": map[string]interface{}{
 			"externalAddress": kmc.Spec.ExternalAddress,
 			"port":            kmc.Spec.Service.APIPort,
+			"sans":            sans,
 		},
 		"konnectivity": map[string]interface{}{
 			"agentPort": kmc.Spec.Service.KonnectivityPort,
