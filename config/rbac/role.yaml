@@ -236,6 +236,7 @@ rules:
   resources:
   - pods
   verbs:
+  - delete
   - get
   - list
 - apiGroups:
@@ -420,6 +421,4 @@ rules:
   verbs:
   - get
   - list
-  - patch
-  - update
   - watch

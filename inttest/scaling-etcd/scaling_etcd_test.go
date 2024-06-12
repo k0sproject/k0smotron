@@ -87,7 +87,7 @@ func (s *ScalingSuite) TestK0sGetsUp() {
 	err = wait.PollImmediateUntilWithContext(s.Context(), 1*time.Second, func(ctx context.Context) (bool, error) {
 		etcdSts, err := kc.AppsV1().StatefulSets("default").Get(s.Context(), "kmc-scaling-etcd", metav1.GetOptions{})
 		if err != nil {
-			return false, err
+			return false, nil
 		}
 
 		return etcdSts.Status.Replicas == 3, nil

@@ -8,6 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,7 +30,7 @@ func (r *ClusterReconciler) reconcilePVC(ctx context.Context, kmc km.Cluster) er
 	}
 	err = r.reconcileEtcdPVC(ctx, kmc)
 	if err != nil {
-		return fmt.Errorf("failed to reconcile control plane PVC: %w", err)
+		return fmt.Errorf("failed to reconcile etcd PVC: %w", err)
 	}
 
 	return nil
@@ -41,8 +42,20 @@ func (r *ClusterReconciler) reconcileControlPlanePVC(ctx context.Context, kmc km
 		return nil
 	}
 
+	if kmc.Spec.Persistence.PersistentVolumeClaim.Name == "" {
+		kmc.Spec.Persistence.PersistentVolumeClaim.Name = kmc.GetVolumeName()
+	}
+
+	return r.resizeStatefulSetAndPVC(ctx, kmc, *kmc.Spec.Persistence.PersistentVolumeClaim.Spec.Resources.Requests.Storage(), kmc.Spec.Replicas, kmc.GetStatefulSetName(), kmc.Spec.Persistence.PersistentVolumeClaim.Name)
+}
+
+func (r *ClusterReconciler) reconcileEtcdPVC(ctx context.Context, kmc km.Cluster) error {
+	return r.resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Etcd.Persistence.Size, calculateDesiredReplicas(&kmc), kmc.GetEtcdStatefulSetName(), "etcd-data")
+}
+
+func (r *ClusterReconciler) resizeStatefulSetAndPVC(ctx context.Context, kmc km.Cluster, desiredStorageSize resource.Quantity, replicas int32, stsName, vctName string) error {
 	var sts appsv1.StatefulSet
-	err := r.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: kmc.GetStatefulSetName()}, &sts)
+	err := r.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: stsName}, &sts)
 	if err != nil {
 		// Do nothing if StatefulSet does not exist yet
 		if apierrors.IsNotFound(err) {
@@ -52,117 +65,57 @@ func (r *ClusterReconciler) reconcileControlPlanePVC(ctx context.Context, kmc km
 		return fmt.Errorf("failed to get statefulset: %w", err)
 	}
 
-	// Do nothing if the sizes match
-	if kmc.Spec.Persistence.PersistentVolumeClaim.Spec.Resources.Requests.Storage().Cmp(*sts.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests.Storage()) == 0 {
+	if desiredStorageSize.IsZero() ||
+		len(sts.Spec.VolumeClaimTemplates) == 0 ||
+		desiredStorageSize.Cmp(*sts.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests.Storage()) == 0 {
 		return nil
 	}
 
-	// Update the PVC size
 	var allowExpansion *bool
-	for i := 0; i < int(kmc.Spec.Replicas); i++ {
-
-		if kmc.Spec.Persistence.PersistentVolumeClaim.Name == "" {
-			kmc.Spec.Persistence.PersistentVolumeClaim.Name = kmc.GetVolumeName()
-		}
-		name := fmt.Sprintf("%s-%s-%d", kmc.Spec.Persistence.PersistentVolumeClaim.Name, kmc.GetStatefulSetName(), i)
-
+	for i := 0; i < int(replicas); i++ {
 		var pvc corev1.PersistentVolumeClaim
+
+		name := fmt.Sprintf("%s-%s-%d", vctName, stsName, i)
 		err := r.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: name}, &pvc)
 		if err != nil {
-			return fmt.Errorf("failed to get PVC: %w", err)
+			if apierrors.IsNotFound(err) {
+				// Do nothing if PVC does not exist yet
+				return nil
+			}
+			return fmt.Errorf("failed to get PVC %s: %w", name, err)
 		}
 
 		if allowExpansion == nil {
 			var sc storagev1.StorageClass
 			err = r.Get(ctx, client.ObjectKey{Name: *pvc.Spec.StorageClassName}, &sc)
 			if err != nil {
-				return fmt.Errorf("failed to get StorageClass: %w", err)
+				return fmt.Errorf("failed to get StorageClass %s: %w", *pvc.Spec.StorageClassName, err)
 			}
 			allowExpansion = sc.AllowVolumeExpansion
 		}
 
 		if allowExpansion != nil && *allowExpansion {
-			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = kmc.Spec.Persistence.PersistentVolumeClaim.Spec.Resources.Requests[corev1.ResourceStorage]
+			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = desiredStorageSize
 			err = r.Update(ctx, &pvc)
 			if err != nil {
-				return fmt.Errorf("failed to update PVC: %w", err)
+				return fmt.Errorf("failed to update PVC %s: %w", pvc.Name, err)
 			}
 
 			// Remove pod to trigger file system resize
 			err = r.Delete(ctx, &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-%d", kmc.GetStatefulSetName(), i),
+					Name:      fmt.Sprintf("%s-%d", stsName, i),
 					Namespace: kmc.Namespace,
 				},
 			}, &client.DeleteOptions{})
 
 			if err != nil {
-				return fmt.Errorf("failed to delete pod for resizing: %w", err)
+				return fmt.Errorf("failed to delete pod '%s' for resizing: %w", fmt.Sprintf("%s-%d", stsName, i), err)
 			}
 		} else {
-			break
-		}
-	}
+			// Do not check other PVCs if expansion is not allowed and just write an event
+			r.Recorder.Eventf(&kmc, corev1.EventTypeWarning, "PVCExpansionNotAllowed", "PVC expansion is not allowed for the storage class %s", *pvc.Spec.StorageClassName)
 
-	return r.Delete(ctx, &sts, &client.DeleteOptions{PropagationPolicy: ptr.To(metav1.DeletePropagationOrphan)})
-}
-
-func (r *ClusterReconciler) reconcileEtcdPVC(ctx context.Context, kmc km.Cluster) error {
-	var sts appsv1.StatefulSet
-	err := r.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: kmc.GetEtcdStatefulSetName()}, &sts)
-	if err != nil {
-		// Do nothing if StatefulSet does not exist yet
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-
-		return fmt.Errorf("failed to get etcd statefulset: %w", err)
-	}
-
-	// Do nothing if the sizes match
-	if kmc.Spec.Etcd.Persistence.Size.Cmp(*sts.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests.Storage()) == 0 {
-		return nil
-	}
-
-	// Update the PVC size
-	var allowExpansion *bool
-	for i := 0; i < int(calculateDesiredReplicas(&kmc)); i++ {
-		var pvc corev1.PersistentVolumeClaim
-
-		name := fmt.Sprintf("etcd-data-%s-%d", kmc.GetEtcdStatefulSetName(), i)
-		err := r.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: name}, &pvc)
-		if err != nil {
-			return fmt.Errorf("failed to get etcd PVC: %w", err)
-		}
-
-		if allowExpansion == nil {
-			var sc storagev1.StorageClass
-			err = r.Get(ctx, client.ObjectKey{Name: *pvc.Spec.StorageClassName}, &sc)
-			if err != nil {
-				return fmt.Errorf("failed to get etcd StorageClass: %w", err)
-			}
-			allowExpansion = sc.AllowVolumeExpansion
-		}
-
-		if allowExpansion != nil && *allowExpansion {
-			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = kmc.Spec.Etcd.Persistence.Size
-			err = r.Update(ctx, &pvc)
-			if err != nil {
-				return fmt.Errorf("failed to update etcd PVC: %w", err)
-			}
-
-			// Remove pod to trigger file system resize
-			err = r.Delete(ctx, &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-%d", kmc.GetStatefulSetName(), i),
-					Namespace: kmc.Namespace,
-				},
-			}, &client.DeleteOptions{})
-
-			if err != nil {
-				return fmt.Errorf("failed to delete etcd pod for resizing: %w", err)
-			}
-		} else {
 			break
 		}
 	}

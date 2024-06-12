@@ -18,7 +18,9 @@ package pvc
 
 import (
 	"context"
+	"fmt"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,11 +56,9 @@ func (s *PVCSuite) TestK0sGetsUp() {
 	s.NoError(err)
 
 	// create folder for k0smotron persistent volume
-	ssh, err := s.SSH(s.Context(), s.WorkerNode(0))
+	ssh, err := s.SSH(s.Context(), s.ControllerNode(0))
 	s.Require().NoError(err)
 	defer ssh.Disconnect()
-	_, err = ssh.ExecWithOutput(s.Context(), "mkdir -p /tmp/kmc-test")
-	s.Require().NoError(err)
 
 	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
 
@@ -66,14 +66,43 @@ func (s *PVCSuite) TestK0sGetsUp() {
 	s.Require().NoError(util.InstallK0smotronOperator(s.Context(), kc, rc))
 	s.Require().NoError(common.WaitForDeployment(s.Context(), kc, "k0smotron-controller-manager", "k0smotron"))
 
+	s.T().Log("waiting for seaweed storage to be ready")
+	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "seaweedfs-volume", "seaweedfs-operator-system"))
+	s.Require().NoError(common.WaitForDeployment(s.Context(), kc, "seaweedfs-csi-driver-controller", "seaweedfs-operator-system"))
+
 	s.T().Log("deploying k0smotron cluster")
 	s.createK0smotronCluster(s.Context(), kc)
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
+	s.T().Log("Starting portforward")
+	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 6443)
+	s.Require().NoError(err)
+
+	go fw.Start(s.Require().NoError)
+	defer fw.Close()
+
+	<-fw.ReadyChan
+
+	localPort, err := fw.LocalPort()
+	s.Require().NoError(err)
+	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", localPort)
+	s.Require().NoError(err)
+
+	_, err = kmcKC.CoreV1().ConfigMaps("default").Create(s.Context(), &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-config",
+		},
+		Data: map[string]string{
+			"foo": "bar",
+		},
+	}, metav1.CreateOptions{})
+	s.Require().NoError(err)
+
+	_, err = ssh.ExecWithOutput(s.Context(), fmt.Sprintf("%s kc exec -n kmc-test kmc-kmc-test-0 -- touch /var/lib/k0s/pvc-test", s.K0sFullPath))
+	s.Require().NoError(err)
+
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
-
-	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
 	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
 		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(s.Context(), "kmc-kmc-test", metav1.GetOptions{})
@@ -81,9 +110,27 @@ func (s *PVCSuite) TestK0sGetsUp() {
 			return false, nil
 		}
 
-		return "200Mi" == sts.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests.Storage().String(), nil
+		return "250Mi" == sts.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests.Storage().String(), nil
 	})
 	s.Require().NoError(err)
+
+	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
+		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(s.Context(), "kmc-kmc-test-etcd", metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+
+		return "70Mi" == sts.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests.Storage().String(), nil
+	})
+	s.Require().NoError(err)
+
+	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
+	_, err = ssh.ExecWithOutput(s.Context(), fmt.Sprintf("%s kc exec -n kmc-test kmc-kmc-test-0 -- ls /var/lib/k0s/pvc-test", s.K0sFullPath))
+	s.Require().NoError(err)
+
+	out, err := ssh.ExecWithOutput(s.Context(), fmt.Sprintf("%s kc exec -n kmc-test kmc-kmc-test-0 -- k0s kc get configmap test-config -oyaml -n default", s.K0sFullPath))
+	s.Require().NoError(err)
+	s.Require().True(strings.Contains(out, "foo: bar"))
 }
 
 func TestPVCSuite(t *testing.T) {
@@ -117,16 +164,20 @@ func (s *PVCSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Cl
 		},
 		"spec": {
 			"etcd":{
-				"persistence": {"size": "200Mi"}
+				"persistence": {"size": "50Mi", "storageClass": "seaweedfs-storage"}
+			},
+			"service":{
+				"type": "NodePort"
 			},
 			"persistence": {
 				"type": "pvc",
 				"persistentVolumeClaim": {
 					"spec": {
 						"accessModes": ["ReadWriteOnce"],
+						"storageClassName": "seaweedfs-storage",
 						"resources": {
 							"requests": {
-								"storage": "50Mi"
+								"storage": "200Mi"
 							}
 						}
 					}
@@ -156,7 +207,7 @@ func (s *PVCSuite) updateK0smotronCluster(ctx context.Context, rc *rest.Config) 
 	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
 	s.Require().NoError(err)
 
-	patch := `[{"op": "replace", "path": "/spec/persistence/persistentVolumeClaim/spec/resources/requests/storage", "value": "200Mi"}]`
+	patch := `[{"op": "replace", "path": "/spec/persistence/persistentVolumeClaim/spec/resources/requests/storage", "value": "250Mi"}]`
 	res := crdRestClient.
 		Patch(types.JSONPatchType).
 		Resource("clusters").
@@ -166,7 +217,7 @@ func (s *PVCSuite) updateK0smotronCluster(ctx context.Context, rc *rest.Config) 
 		Do(ctx)
 	s.Require().NoError(res.Error())
 
-	patch = `[{"op": "replace", "path": "/spec/etcd/persistence/size", "value": "300Mi"}]`
+	patch = `[{"op": "replace", "path": "/spec/etcd/persistence/size", "value": "70Mi"}]`
 	res = crdRestClient.
 		Patch(types.JSONPatchType).
 		Resource("clusters").
