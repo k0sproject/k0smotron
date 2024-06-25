@@ -1670,7 +1670,7 @@ Cluster/cluster3<span class="w">                                                
 <p>To access the child cluster we can get the kubeconfig for it with <code>clusterctl get kubeconfig cluster-openstack</code>. You can then save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a>.</p>
 <h2 id="deleting-the-cluster">Deleting the cluster<a class="headerlink" href="#deleting-the-cluster" title="Permanent link">#</a></h2>
 <p>For cluster deletion, do <strong>NOT</strong> use <code>kubectl delete -f k0smotron-cluster-with-capo.yaml</code> as that can result in orphan resources. Instead, delete the top level <code>Cluster</code> object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.</p>
-<p>To do that, you can use the command <code>clusterctl delete cluster cluster-openstack</code></p>
+<p>To do that, you can use the command <code>kubectl delete cluster cluster-openstack</code></p>
 
 
 
