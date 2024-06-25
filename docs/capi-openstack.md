@@ -215,4 +215,4 @@ To access the child cluster we can get the kubeconfig for it with `clusterctl ge
 
 For cluster deletion, do **NOT** use `kubectl delete -f k0smotron-cluster-with-capo.yaml` as that can result in orphan resources. Instead, delete the top level `Cluster` object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.
 
-To do that, you can use the command `clusterctl delete cluster cluster-openstack`
+To do that, you can use the command `kubectl delete cluster cluster-openstack`
