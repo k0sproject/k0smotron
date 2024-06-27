@@ -28,7 +28,7 @@ nav:
       - ClusterClass: capi-clusterclass.md
       - Examples:
         - Software prerequisites: capi-examples.md
-        - AWS: capi-aws.md
+        - AWS (HCP): capi-aws.md
         - Hetzner Cloud: capi-hetzner.md
         - OpenStack: capi-openstack.md
         - Docker: capi-docker.md

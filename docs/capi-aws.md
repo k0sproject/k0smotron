@@ -1,6 +1,7 @@
-# Cluster API - AWS
+# Cluster API - AWS (Hosted Control Plane)
 
-This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services).
+This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy 
+a cluster with hosted control plane and workers in AWS.
 
 ## Prerequisites
 
@@ -16,9 +17,10 @@ Follow the AWS Provider [installation guide](https://cluster-api-aws.sigs.k8s.io
 
 Once all the controllers are up and running, you can apply the cluster manifests containing the specifications of the cluster you want to provision.
 
-!!! note "k0smotron is currently only able to work with [externally managed](https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html) cluster infrastructure."
+!!! note "k0smotron in standalone mode is only able to work with [externally managed](https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html) cluster infrastructure."
     This is because in CAPA there is no way to disable it to provision all control plane related infrastructure (VPC, ELB, etc.).
     This also renders k0smotron unable to dynamically edit the `AWSCluster` API endpoint details. Make sure your VPC and subnets you are planning to use fullfill the [needed prerequisites](https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites).
+    This limitation is not applicable to the clusters on the VMs.
 
 Here is an example:
 
