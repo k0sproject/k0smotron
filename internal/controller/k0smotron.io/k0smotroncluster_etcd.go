@@ -180,6 +180,7 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 					Labels: labels,
 				},
 				Spec: v1.PodSpec{
+					AutomountServiceAccountToken: ptr.To(false),
 					Affinity: &v1.Affinity{PodAntiAffinity: &v1.PodAntiAffinity{
 						PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
 							{
