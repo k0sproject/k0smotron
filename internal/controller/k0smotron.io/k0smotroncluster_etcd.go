@@ -306,7 +306,7 @@ func (r *ClusterReconciler) generateEtcdInitContainers(kmc *km.Cluster) []v1.Con
 			Name:            "dns-check",
 			Image:           kmc.Spec.GetImage(),
 			ImagePullPolicy: v1.PullIfNotPresent,
-			Command:         []string{"/bin/bash", "-c"},
+			Command:         []string{"/bin/sh", "-c"},
 			Args:            []string{"getent ahostsv4 ${HOSTNAME}.${SVC_NAME}." + kmc.Namespace + ".svc"},
 			Env: []v1.EnvVar{
 				{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
