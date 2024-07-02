@@ -40,8 +40,8 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 		name = kmc.GetNodePortServiceName()
 		ports = append(ports,
 			v1.ServicePort{
-				Port:       int32(defaultKubeAPIPort),
-				TargetPort: intstr.FromInt(defaultKubeAPIPort),
+				Port:       int32(kmc.Spec.Service.APIPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
 				Name:       "api",
 				NodePort:   int32(kmc.Spec.Service.APIPort),
 			},
@@ -57,7 +57,7 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 		ports = append(ports,
 			v1.ServicePort{
 				Port:       int32(kmc.Spec.Service.APIPort),
-				TargetPort: intstr.FromInt(defaultKubeAPIPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
 				Name:       "api",
 			},
 			v1.ServicePort{
@@ -76,7 +76,7 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 		ports = append(ports,
 			v1.ServicePort{
 				Port:       int32(kmc.Spec.Service.APIPort),
-				TargetPort: intstr.FromInt(defaultKubeAPIPort),
+				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
 				Name:       "api",
 			},
 			v1.ServicePort{

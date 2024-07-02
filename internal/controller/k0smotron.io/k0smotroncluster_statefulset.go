@@ -118,7 +118,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 							{
 								Name:          "api",
 								Protocol:      v1.ProtocolTCP,
-								ContainerPort: int32(defaultKubeAPIPort),
+								ContainerPort: int32(kmc.Spec.Service.APIPort),
 							},
 							{
 								Name:          "konnectivity",

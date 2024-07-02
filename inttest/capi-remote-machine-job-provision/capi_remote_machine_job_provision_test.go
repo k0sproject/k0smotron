@@ -133,7 +133,7 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(common.WaitForStatefulSet(ctx, s.client, "kmc-remote-test", "default"))
 
 	s.T().Log("Starting portforward")
-	fw, err := util.GetPortForwarder(s.restConfig, "kmc-remote-test-0", "default", 6443)
+	fw, err := util.GetPortForwarder(s.restConfig, "kmc-remote-test-0", "default", 30443)
 	s.Require().NoError(err)
 
 	go fw.Start(s.Require().NoError)

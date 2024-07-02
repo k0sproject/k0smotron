@@ -372,9 +372,6 @@ func (r *RemoteMachineController) getSSHKey(ctx context.Context, rm *infrastruct
 }
 
 func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine *clusterv1.Machine) ([]byte, error) {
-	if machine.Spec.Bootstrap.DataSecretName == nil {
-		return nil, fmt.Errorf("wait for bootstap secret for the machine: %s", machine.Name)
-	}
 	secret := &v1.Secret{}
 	key := client.ObjectKey{
 		Namespace: machine.Namespace,

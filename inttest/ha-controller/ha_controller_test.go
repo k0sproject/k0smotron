@@ -60,7 +60,7 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
 	s.T().Log("Generating k0smotron join token")
-	token, err := util.GetJoinToken(kc, rc, "kmc-kmc-test-0", "kmc-test", 30443)
+	token, err := util.GetJoinToken(kc, rc, "kmc-kmc-test-0", "kmc-test")
 	s.Require().NoError(err)
 
 	s.T().Log("joining worker to k0smotron cluster")
@@ -69,18 +69,15 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 	s.T().Log("Starting portforward")
 	pod := s.getPod(s.Context(), kc)
 
-	fw, err := util.GetPortForwarder(rc, pod.Name, pod.Namespace, 6443)
+	fw, err := util.GetPortForwarder(rc, pod.Name, pod.Namespace, 30443)
 	s.Require().NoError(err)
 	go fw.Start(s.Require().NoError)
 	defer fw.Close()
 
 	<-fw.ReadyChan
 
-	localPort, err := fw.LocalPort()
-	s.Require().NoError(err)
-
 	s.T().Log("waiting for node to be ready")
-	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", localPort)
+	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", 30443)
 	s.Require().NoError(err)
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 

@@ -91,14 +91,14 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.checkClusterStatus(s.Context(), rc)
 
 	s.T().Log("Generating k0smotron join token")
-	token, err := util.GetJoinToken(kc, rc, "kmc-kmc-test-0", "kmc-test", 30443)
+	token, err := util.GetJoinToken(kc, rc, "kmc-kmc-test-0", "kmc-test")
 	s.Require().NoError(err)
 
 	s.T().Log("joining worker to k0smotron cluster")
 	s.Require().NoError(s.RunWithToken(s.K0smotronNode(0), token))
 
 	s.T().Log("Starting portforward")
-	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 6443)
+	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 30443)
 	s.Require().NoError(err)
 
 	go fw.Start(s.Require().NoError)

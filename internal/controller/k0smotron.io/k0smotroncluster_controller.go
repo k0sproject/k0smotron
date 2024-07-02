@@ -36,8 +36,6 @@ import (
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
 
-const defaultKubeAPIPort = 6443
-
 var patchOpts []client.PatchOption = []client.PatchOption{
 	client.FieldOwner("k0smotron-operator"),
 	client.ForceOwnership,

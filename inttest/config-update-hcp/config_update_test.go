@@ -67,7 +67,7 @@ func (s *ConfigUpdateSuite) TestK0sGetsUp() {
 	s.checkClusterStatus(s.Context(), rc)
 
 	s.T().Log("Starting portforward")
-	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 6443)
+	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 30443)
 	s.Require().NoError(err)
 
 	go fw.Start(s.Require().NoError)
