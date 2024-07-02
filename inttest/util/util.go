@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/k0sproject/k0smotron/internal/exec"
 )
@@ -113,23 +114,34 @@ func getMapper(kc *kubernetes.Clientset) *restmapper.DeferredDiscoveryRESTMapper
 func CreateResources(ctx context.Context, resources []*unstructured.Unstructured, kc *kubernetes.Clientset, client *dynamic.DynamicClient) error {
 	mapper := getMapper(kc)
 	for _, res := range resources {
+		err := retry.OnError(wait.Backoff{
+			Steps:    10,
+			Duration: 1 * time.Second,
+			Factor:   1.0,
+			Jitter:   0.1,
+		}, func(err error) bool {
+			return true
+		}, func() error {
+			mapping, err := mapper.RESTMapping(
+				res.GroupVersionKind().GroupKind(),
+				res.GroupVersionKind().Version)
 
-		mapping, err := mapper.RESTMapping(
-			res.GroupVersionKind().GroupKind(),
-			res.GroupVersionKind().Version)
+			if err != nil {
+				mapper.Reset()
+				return fmt.Errorf("getting mapping error: %w", err)
+			}
 
-		if err != nil {
-			return fmt.Errorf("getting mapping error: %w", err)
-		}
+			var drClient dynamic.ResourceInterface
+			if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
+				drClient = client.Resource(mapping.Resource).Namespace(res.GetNamespace())
+			} else {
+				drClient = client.Resource(mapping.Resource)
+			}
 
-		var drClient dynamic.ResourceInterface
-		if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-			drClient = client.Resource(mapping.Resource).Namespace(res.GetNamespace())
-		} else {
-			drClient = client.Resource(mapping.Resource)
-		}
+			_, err = drClient.Create(ctx, res, metav1.CreateOptions{})
 
-		_, err = drClient.Create(ctx, res, metav1.CreateOptions{})
+			return err
+		})
 		if err != nil {
 			return fmt.Errorf("creating %s/%s objects error: %w", res.GroupVersionKind(), res.GetName(), err)
 		}

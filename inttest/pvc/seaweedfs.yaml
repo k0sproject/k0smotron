@@ -1,0 +1,1160 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: seaweedfs-operator-system
+---
+# Source: seaweedfs/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: seaweedfs
+  namespace: seaweedfs-operator-system
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+---
+# Source: seaweedfs/templates/master-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seaweedfs-master-config
+  namespace: seaweedfs-operator-system
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+data:
+  master.toml: |-
+    
+    # Enter any extra configuration for master.toml here.
+    # It may be a multi-line string.
+---
+# Source: seaweedfs/templates/service-account.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-rw-cr
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+# Source: seaweedfs/templates/service-account.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: system:serviceaccount:seaweedfs:default
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+subjects:
+- kind: ServiceAccount
+  name: seaweedfs
+  namespace: seaweedfs-operator-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: seaweedfs-rw-cr
+---
+# Source: seaweedfs/templates/filer-service-client.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: seaweedfs-filer-client
+  namespace: seaweedfs-operator-system
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: filer
+    monitoring: "true"
+spec:
+  clusterIP: None
+  ports:
+  - name: "swfs-filer"
+    port: 8888
+    targetPort: 8888
+    protocol: TCP
+  - name: "swfs-filer-grpc"
+    port: 18888
+    targetPort: 18888
+    protocol: TCP
+  - name: "metrics"
+    port: 9327
+    targetPort: 9327
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: filer
+---
+# Source: seaweedfs/templates/filer-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  name: seaweedfs-filer
+  namespace: seaweedfs-operator-system
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: filer
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+  - name: "swfs-filer"
+    port: 8888
+    targetPort: 8888
+    protocol: TCP
+  - name: "swfs-filer-grpc"
+    port: 18888
+    targetPort: 18888
+    protocol: TCP
+  - name: "metrics"
+    port: 9327
+    targetPort: 9327
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: filer
+---
+# Source: seaweedfs/templates/master-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: seaweedfs-master
+  namespace: seaweedfs-operator-system
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: master
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+  - name: "swfs-master"
+    port: 9333
+    targetPort: 9333
+    protocol: TCP
+  - name: "swfs-master-grpc"
+    port: 19333
+    targetPort: 19333
+    protocol: TCP
+  - name: "metrics"
+    port: 9327
+    targetPort: 9327
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: master
+---
+# Source: seaweedfs/templates/volume-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: seaweedfs-volume
+  namespace: seaweedfs-operator-system
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: volume
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+spec:
+  clusterIP: None
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: "swfs-volume"
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: "swfs-volume-18080"
+    port: 18080
+    targetPort: 18080
+    protocol: TCP
+  - name: "metrics"
+    port: 9327
+    targetPort: 9327
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: volume
+---
+# Source: seaweedfs/templates/filer-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: seaweedfs-filer
+  namespace: seaweedfs-operator-system
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/component: filer
+spec:
+  serviceName: seaweedfs-filer
+  podManagementPolicy: Parallel
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: seaweedfs
+      app.kubernetes.io/instance: release-name
+      app.kubernetes.io/component: filer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: seaweedfs
+        helm.sh/chart: seaweedfs-3.68.0
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/component: filer
+
+      annotations:
+
+    spec:
+      restartPolicy: Always
+      serviceAccountName: "seaweedfs" # for deleting statefulset pods after migration
+      terminationGracePeriodSeconds: 60
+      enableServiceLinks: false
+      containers:
+        - name: seaweedfs
+          image: chrislusf/seaweedfs:3.68
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: WEED_MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: secret-seaweedfs-db
+                  key: user
+                  optional: true
+            - name: WEED_MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: secret-seaweedfs-db
+                  key: password
+                  optional: true
+            - name: SEAWEEDFS_FULLNAME
+              value: "seaweedfs"
+            - name: WEED_FILER_BUCKETS_FOLDER
+              value: "/buckets"
+            - name: WEED_FILER_OPTIONS_RECURSIVE_DELETE
+              value: "false"
+            - name: WEED_LEVELDB2_ENABLED
+              value: "true"
+            - name: WEED_MYSQL_CONNECTION_MAX_IDLE
+              value: "5"
+            - name: WEED_MYSQL_CONNECTION_MAX_LIFETIME_SECONDS
+              value: "600"
+            - name: WEED_MYSQL_CONNECTION_MAX_OPEN
+              value: "75"
+            - name: WEED_MYSQL_DATABASE
+              value: "sw_database"
+            - name: WEED_MYSQL_ENABLED
+              value: "false"
+            - name: WEED_MYSQL_HOSTNAME
+              value: "mysql-db-host"
+            - name: WEED_MYSQL_INTERPOLATEPARAMS
+              value: "true"
+            - name: WEED_MYSQL_PORT
+              value: "3306"
+            - name: WEED_CLUSTER_DEFAULT
+              value: "sw"
+            - name: WEED_CLUSTER_SW_FILER
+              value: "seaweedfs-filer-client.seaweedfs:8888"
+            - name: WEED_CLUSTER_SW_MASTER
+              value: "seaweedfs-master.seaweedfs:9333"
+          command:
+            - "/bin/sh"
+            - "-ec"
+            - |
+              exec /usr/bin/weed \
+              -logdir=/logs \
+              -v=1 \
+              filer \
+              -port=8888 \
+              -metricsPort=9327 \
+              -dirListLimit=100000 \
+              -defaultReplicaPlacement=000 \
+              -ip=${POD_IP} \
+              -master=${SEAWEEDFS_FULLNAME}-master-0.${SEAWEEDFS_FULLNAME}-master.seaweedfs-operator-system:9333
+          volumeMounts:
+            - name: seaweedfs-filer-log-volume
+              mountPath: "/logs/"
+            - name: data-filer
+              mountPath: /data
+
+          ports:
+            - containerPort: 8888
+              name: swfs-filer
+            - containerPort: 9327
+              name: metrics
+            - containerPort: 18888
+              #name: swfs-filer-grpc
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8888
+              scheme:
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            successThreshold: 1
+            failureThreshold: 100
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8888
+              scheme:
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 10
+      volumes:
+        - name: seaweedfs-filer-log-volume
+          hostPath:
+            path: /storage/logs/seaweedfs/filer
+            type: DirectoryOrCreate
+        - name: data-filer
+          hostPath:
+            path: /storage/filer_store
+            type: DirectoryOrCreate
+        - name: db-schema-config-volume
+          configMap:
+            name: seaweedfs-db-init-config
+
+---
+# Source: seaweedfs/templates/master-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: seaweedfs-master
+  namespace: seaweedfs-operator-system
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+spec:
+  serviceName: seaweedfs-master
+  podManagementPolicy: Parallel
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: seaweedfs
+      app.kubernetes.io/instance: release-name
+      app.kubernetes.io/component: master
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: seaweedfs
+        helm.sh/chart: seaweedfs-3.68.0
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/component: master
+
+      annotations:
+
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 60
+      enableServiceLinks: false
+      serviceAccountName: "seaweedfs" # for deleting statefulset pods after migration
+      containers:
+        - name: seaweedfs
+          image: chrislusf/seaweedfs:3.68
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: SEAWEEDFS_FULLNAME
+              value: "seaweedfs"
+            - name: WEED_MASTER_VOLUME_GROWTH_COPY_1
+              value: "7"
+            - name: WEED_MASTER_VOLUME_GROWTH_COPY_2
+              value: "6"
+            - name: WEED_MASTER_VOLUME_GROWTH_COPY_3
+              value: "3"
+            - name: WEED_MASTER_VOLUME_GROWTH_COPY_OTHER
+              value: "1"
+            - name: WEED_CLUSTER_DEFAULT
+              value: "sw"
+            - name: WEED_CLUSTER_SW_FILER
+              value: "seaweedfs-filer-client.seaweedfs:8888"
+            - name: WEED_CLUSTER_SW_MASTER
+              value: "seaweedfs-master.seaweedfs:9333"
+          command:
+            - "/bin/sh"
+            - "-ec"
+            - |
+              exec /usr/bin/weed \
+              -logdir=/logs \
+              -v=1 \
+              master \
+              -port=9333 \
+              -mdir=/data \
+              -ip.bind=0.0.0.0 \
+              -defaultReplication=000 \
+              -metricsPort=9327 \
+              -volumeSizeLimitMB=1000 \
+              -ip=${POD_NAME}.${SEAWEEDFS_FULLNAME}-master.seaweedfs-operator-system \
+              -peers=${SEAWEEDFS_FULLNAME}-master-0.${SEAWEEDFS_FULLNAME}-master.seaweedfs-operator-system:9333
+          volumeMounts:
+            - name : data-seaweedfs-operator-system
+              mountPath: /data
+            - name: seaweedfs-master-log-volume
+              mountPath: "/logs/"
+            - name: master-config
+              readOnly: true
+              mountPath: /etc/seaweedfs/master.toml
+              subPath: master.toml
+
+          ports:
+            - containerPort: 9333
+              name: swfs-master
+            - containerPort: 19333
+              #name: swfs-master-grpc
+          readinessProbe:
+            httpGet:
+              path: /cluster/status
+              port: 9333
+              scheme:
+            initialDelaySeconds: 10
+            periodSeconds: 45
+            successThreshold: 2
+            failureThreshold: 100
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /cluster/status
+              port: 9333
+              scheme:
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 4
+            timeoutSeconds: 10
+      volumes:
+        - name: seaweedfs-master-log-volume
+          hostPath:
+            path: /storage/logs/seaweedfs/master
+            type: DirectoryOrCreate
+        - name: data-seaweedfs-operator-system
+          hostPath:
+            path: /ssd/seaweed-master/
+            type: DirectoryOrCreate
+        - name: master-config
+          configMap:
+            name: seaweedfs-master-config
+
+---
+# Source: seaweedfs/templates/volume-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: seaweedfs-volume
+  namespace: seaweedfs-operator-system
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+spec:
+  serviceName: seaweedfs-volume
+  replicas: 1
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: seaweedfs
+      app.kubernetes.io/instance: release-name
+      app.kubernetes.io/component: volume
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: seaweedfs
+        helm.sh/chart: seaweedfs-3.68.0
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/component: volume
+    spec:
+      restartPolicy: Always
+
+      terminationGracePeriodSeconds: 150
+      enableServiceLinks: false
+      serviceAccountName: "seaweedfs" # for deleting statefulset pods after migration
+      containers:
+        - name: seaweedfs
+          image: chrislusf/seaweedfs:3.68
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: SEAWEEDFS_FULLNAME
+              value: "seaweedfs"
+            - name: WEED_CLUSTER_DEFAULT
+              value: "sw"
+            - name: WEED_CLUSTER_SW_FILER
+              value: "seaweedfs-filer-client.seaweedfs:8888"
+            - name: WEED_CLUSTER_SW_MASTER
+              value: "seaweedfs-master.seaweedfs:9333"
+          command:
+            - "/bin/sh"
+            - "-ec"
+            - |
+              exec /usr/bin/weed \
+                -logtostderr=true \
+                -v=1 \
+                volume \
+                -port=8080 \
+                -metricsPort=9327 \
+                -dir /data1 \
+                -max 0 \
+                -ip.bind=0.0.0.0 \
+                -readMode=proxy \
+                -minFreeSpacePercent=7 \
+                -ip=${POD_NAME}.${SEAWEEDFS_FULLNAME}-volume.seaweedfs-operator-system \
+                -compactionMBps=50 \
+                -mserver=${SEAWEEDFS_FULLNAME}-master-0.${SEAWEEDFS_FULLNAME}-master.seaweedfs-operator-system:9333
+          volumeMounts:
+            - name: data1
+              mountPath: "/data1/"
+
+          ports:
+            - containerPort: 8080
+              name: swfs-vol
+            - containerPort: 9327
+              name: metrics
+            - containerPort: 18080
+              name: swfs-vol-grpc
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 8080
+              scheme:
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            successThreshold: 1
+            failureThreshold: 100
+            timeoutSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: 8080
+              scheme:
+            initialDelaySeconds: 20
+            periodSeconds: 90
+            successThreshold: 1
+            failureThreshold: 4
+            timeoutSeconds: 30
+      volumes:
+        - name: data1
+          hostPath:
+            path: /ssd/object_store/
+            type: DirectoryOrCreate
+  volumeClaimTemplates:
+---
+# Source: seaweedfs/templates/service-account.yaml
+#hack for delete pod master after migration
+---
+# Source: seaweedfs/templates/secret-seaweedfs-db.yaml
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: secret-seaweedfs-db
+  namespace: seaweedfs-operator-system
+  annotations:
+    "helm.sh/resource-policy": keep
+    "helm.sh/hook": "pre-install"
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    helm.sh/chart: seaweedfs-3.68.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: release-name
+stringData:
+  user: "YourSWUser"
+  password: "HardCodedPassword"
+  # better to random generate and create in DB
+  # password: OGE0N2VhMzc3NDdkZTc2Y2UzNTM5ZjIw
+
+---
+# Source: seaweedfs-csi-driver/templates/serviceaccounts.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: seaweedfs-csi-driver-controller-sa
+  namespace: seaweedfs-operator-system
+---
+# Source: seaweedfs-csi-driver/templates/serviceaccounts.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: seaweedfs-csi-driver-node-sa
+  namespace: seaweedfs-operator-system
+---
+# Source: seaweedfs-csi-driver/templates/storageclass.yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: seaweedfs-storage
+provisioner: seaweedfs-csi-driver
+allowVolumeExpansion: true
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-provisioner-role
+  namespace: seaweedfs-operator-system
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumeclaims/status" ]
+    verbs: [ "get", "list", "watch", "update", "patch" ]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots"]
+    verbs: ["get", "list"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents"]
+    verbs: ["get", "list"]
+  - apiGroups: [ "" ]
+    resources: [ "pods" ]
+    verbs: [ "get", "list", "watch" ]
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-attacher-role
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["csi.storage.k8s.io"]
+    resources: ["csinodeinfos"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments", "volumeattachments/status"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-driver-registrar-controller-role
+rules:
+  - apiGroups: ["csi.storage.k8s.io"]
+    resources: ["csidrivers"]
+    verbs: ["create", "delete"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-driver-registrar-node-role
+rules:
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["create", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch","update","patch"]
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-provisioner-binding
+subjects:
+  - kind: ServiceAccount
+    name: seaweedfs-csi-driver-controller-sa
+    namespace: seaweedfs-operator-system
+roleRef:
+  kind: ClusterRole
+  name: seaweedfs-csi-driver-provisioner-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-attacher-binding
+subjects:
+  - kind: ServiceAccount
+    name: seaweedfs-csi-driver-controller-sa
+    namespace: seaweedfs-operator-system
+roleRef:
+  kind: ClusterRole
+  name: seaweedfs-csi-driver-attacher-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-driver-registrar-controller-binding
+subjects:
+  - kind: ServiceAccount
+    name: seaweedfs-csi-driver-controller-sa
+    namespace: seaweedfs-operator-system
+roleRef:
+  kind: ClusterRole
+  name: seaweedfs-csi-driver-driver-registrar-controller-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-driver-registrar-node-binding
+subjects:
+  - kind: ServiceAccount
+    name: seaweedfs-csi-driver-node-sa
+    namespace: seaweedfs-operator-system
+roleRef:
+  kind: ClusterRole
+  name: seaweedfs-csi-driver-driver-registrar-node-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-leader-election-controller-role
+  namespace: seaweedfs-operator-system
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "watch", "list", "delete", "update", "create"]
+---
+# Source: seaweedfs-csi-driver/templates/rbac.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: seaweedfs-csi-driver-leader-election-controller-binding
+  namespace: seaweedfs-operator-system
+subjects:
+  - kind: ServiceAccount
+    namespace: seaweedfs-operator-system
+    name: seaweedfs-csi-driver-controller-sa
+roleRef:
+  kind: Role
+  name: seaweedfs-csi-driver-leader-election-controller-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: seaweedfs-csi-driver/templates/daemonset.yaml
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: seaweedfs-csi-driver-node
+  namespace: seaweedfs-operator-system
+spec:
+  selector:
+    matchLabels:
+      app: seaweedfs-csi-driver-node
+  updateStrategy:
+
+    rollingUpdate:
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: seaweedfs-csi-driver-node
+    spec:
+      priorityClassName: system-node-critical
+      serviceAccountName: seaweedfs-csi-driver-node-sa
+      #hostNetwork: true
+      #dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        # SeaweedFs Plugin (node)
+        - name: csi-seaweedfs-plugin
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+            privileged: true
+          image: chrislusf/seaweedfs-csi-driver:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --endpoint=$(CSI_ENDPOINT)
+            - --filer=$(SEAWEEDFS_FILER)
+            - --nodeid=$(NODE_ID)
+            - --driverName=$(DRIVER_NAME)
+            - --cacheDir=/var/cache/seaweedfs
+            - --components=node
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
+            - name: SEAWEEDFS_FILER
+              value: "seaweedfs-filer.seaweedfs-operator-system:8888"
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: DRIVER_NAME
+              value: "seaweedfs-csi-driver"
+          ports:
+            - containerPort: 9808
+              name: healthz
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 60
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: plugins-dir
+              mountPath: /var/lib/kubelet/plugins
+              mountPropagation: "Bidirectional"
+            - name: pods-mount-dir
+              mountPath: /var/lib/kubelet/pods
+              mountPropagation: "Bidirectional"
+            - mountPath: /dev
+              name: device-dir
+            - name: cache
+              mountPath: /var/cache/seaweedfs
+          resources:
+            null
+
+        # driver registrar
+        - name: driver-registrar
+          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --csi-address=$(ADDRESS)
+            - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+            - --http-endpoint=:9809
+            #- --v=5
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+            - name: DRIVER_REG_SOCK_PATH
+              value: /var/lib/kubelet/plugins/seaweedfs-csi-driver/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - containerPort: 9809
+              name: healthz
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 60
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi/
+            - name: registration-dir
+              mountPath: /registration/
+          resources:
+            {}
+
+        # liveness probe
+        - name: csi-liveness-probe
+          image: registry.k8s.io/sig-storage/livenessprobe:v2.10.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --csi-address=$(ADDRESS)
+            - --http-endpoint=:9808
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          ports:
+            - containerPort: 9808
+              name: livenessprobe
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+          resources:
+            {}
+
+      volumes:
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: DirectoryOrCreate
+        - name: plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/seaweedfs-csi-driver
+            type: DirectoryOrCreate
+        - name: plugins-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins
+            type: Directory
+        - name: pods-mount-dir
+          hostPath:
+            path: /var/lib/kubelet/pods
+            type: Directory
+        - name: device-dir
+          hostPath:
+            path: /dev
+        - name: cache
+          emptyDir: {}
+---
+# Source: seaweedfs-csi-driver/templates/deployment.yaml
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: seaweedfs-csi-driver-controller
+  namespace: seaweedfs-operator-system
+spec:
+  selector:
+    matchLabels:
+      app: seaweedfs-csi-driver-controller
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: seaweedfs-csi-driver-controller
+    spec:
+      priorityClassName: system-cluster-critical
+      serviceAccountName: seaweedfs-csi-driver-controller-sa
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - seaweedfs-csi-driver-controller
+              topologyKey: kubernetes.io/hostname
+      containers:
+        # SeaweedFs Plugin (controller)
+        - name: seaweedfs-csi-plugin
+          image: chrislusf/seaweedfs-csi-driver:latest
+          imagePullPolicy: IfNotPresent
+          args :
+            - --endpoint=$(CSI_ENDPOINT)
+            - --filer=$(SEAWEEDFS_FILER)
+            - --nodeid=$(NODE_ID)
+            - --driverName=$(DRIVER_NAME)
+            - --components=controller
+            - --attacher=true
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+            - name: SEAWEEDFS_FILER
+              value: "seaweedfs-filer.seaweedfs-operator-system:8888"
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: DRIVER_NAME
+              value: "seaweedfs-csi-driver"
+          ports:
+            - containerPort: 9808
+              name: healthz
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 60
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          resources:
+            {}
+
+        # provisioner
+        - name: csi-provisioner
+          image: registry.k8s.io/sig-storage/csi-provisioner:v3.5.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --csi-address=$(ADDRESS)
+            - --leader-election
+            - --leader-election-namespace=seaweedfs-operator-system
+            - --http-endpoint=:9809
+            #- --v=9
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          ports:
+            - containerPort: 9809
+              name: healthz
+          livenessProbe:
+            httpGet:
+              path: /healthz/leader-election
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 60
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          resources:
+            {}
+
+        # resizer
+        - name: csi-resizer
+          image: registry.k8s.io/sig-storage/csi-resizer:v1.8.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --csi-address=$(ADDRESS)
+            - --leader-election
+            - --leader-election-namespace=seaweedfs-operator-system
+            - --http-endpoint=:9810
+            #- --v=5
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          ports:
+            - containerPort: 9810
+              name: healthz
+          livenessProbe:
+            httpGet:
+              path: /healthz/leader-election
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 60
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          resources:
+            {}
+        # attacher
+        - name: csi-attacher
+          image: registry.k8s.io/sig-storage/csi-attacher:v4.3.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --csi-address=$(ADDRESS)
+            - --leader-election
+            - --leader-election-namespace=seaweedfs-operator-system
+            - --http-endpoint=:9811
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          ports:
+            - containerPort: 9811
+              name: healthz
+          livenessProbe:
+            httpGet:
+              path: /healthz/leader-election
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 60
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          resources:
+            {}
+
+        # liveness probe
+        - name: csi-liveness-probe
+          image: registry.k8s.io/sig-storage/livenessprobe:v2.10.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --csi-address=$(ADDRESS)
+            - --http-endpoint=:9808
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          ports:
+            - containerPort: 9808
+              name: livenessprobe
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          resources:
+            {}
+
+      volumes:
+        - name: socket-dir
+          emptyDir: {}
+---
+# Source: seaweedfs-csi-driver/templates/kubemod_modrule.yaml
+# Based on https://github.com/kubernetes/kubernetes/issues/40610#issuecomment-1364368282
+---
+# Source: seaweedfs-csi-driver/templates/csidriver.yaml
+apiVersion: storage.k8s.io/v1
+kind: CSIDriver
+metadata:
+  name: seaweedfs-csi-driver
+spec:
+  attachRequired: true
+  podInfoOnMount: true

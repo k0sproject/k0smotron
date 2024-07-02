@@ -130,7 +130,7 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 
 	size := kmc.Spec.Etcd.Persistence.Size
 
-	if n, _ := size.AsInt64(); n == 0 {
+	if size.IsZero() {
 		size = resource.MustParse("1Gi")
 	}
 	pvc := v1.PersistentVolumeClaim{
@@ -300,6 +300,18 @@ func (r *ClusterReconciler) initialCluster(kmc *km.Cluster, replicas int32) stri
 
 func (r *ClusterReconciler) generateEtcdInitContainers(kmc *km.Cluster) []v1.Container {
 	return []v1.Container{
+		{
+			// Wait for the pods dns name is resolvable, since it takes some time after the pod is created
+			// and etcd tries to connect to the other members using the dns names
+			Name:            "dns-check",
+			Image:           kmc.Spec.GetImage(),
+			ImagePullPolicy: v1.PullIfNotPresent,
+			Command:         []string{"/bin/bash", "-c"},
+			Args:            []string{"getent ahostsv4 ${HOSTNAME}.${SVC_NAME}." + kmc.Namespace + ".svc"},
+			Env: []v1.EnvVar{
+				{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
+			},
+		},
 		{
 			Name:            "init",
 			Image:           kmc.Spec.Etcd.Image,

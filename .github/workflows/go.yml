@@ -97,6 +97,7 @@ jobs:
           - check-basic
           - check-config-update-hcp
           - check-hostpath
+          - check-pvc
           - check-ha-controller
           - check-ha-controller-etcd
           - check-ha-controller-secret
