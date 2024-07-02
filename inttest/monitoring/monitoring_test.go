@@ -61,7 +61,7 @@ func (s *MonitoringSuite) TestK0sGetsUp() {
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
 	s.T().Log("Generating k0smotron join token")
-	token, err := util.GetJoinToken(kc, rc, "kmc-kmc-test-0", "kmc-test", 30443)
+	token, err := util.GetJoinToken(kc, rc, "kmc-kmc-test-0", "kmc-test")
 	s.Require().NoError(err)
 
 	s.T().Log("joining worker to k0smotron cluster")
@@ -70,7 +70,7 @@ func (s *MonitoringSuite) TestK0sGetsUp() {
 	s.Require().NoError(common.WaitForDeployment(s.Context(), kc, "prometheus-server", "default"))
 
 	s.T().Log("Starting portforward")
-	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 6443)
+	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 30443)
 	s.Require().NoError(err)
 
 	go fw.Start(s.Require().NoError)

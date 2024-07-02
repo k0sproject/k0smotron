@@ -39,8 +39,6 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 
-	v1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
-	k0smotronio "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
 	"github.com/k0sproject/k0smotron/internal/exec"
 )
 
@@ -139,16 +137,13 @@ func CreateResources(ctx context.Context, resources []*unstructured.Unstructured
 	return nil
 }
 
-func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namespace string, port int) (string, error) {
+func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namespace string) (string, error) {
 	output, err := exec.PodExecCmdOutput(context.TODO(), kc, rc, name, namespace, "k0s token create --role=worker")
 	if err != nil {
 		return "", fmt.Errorf("failed to get join token: %s", err)
 	}
 
-	cluster := v1beta1.Cluster{Spec: v1beta1.ClusterSpec{Service: v1beta1.ServiceSpec{APIPort: port}}}
-	token, _, err := k0smotronio.ReplaceTokenPort(output, cluster)
-
-	return token, err
+	return output, nil
 }
 
 // GetKMCClientSet returns a kubernetes clientset for the cluster given

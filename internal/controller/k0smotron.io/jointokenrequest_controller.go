@@ -23,7 +23,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"net/url"
 	"strings"
 	"time"
 
@@ -34,7 +33,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -115,18 +113,12 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	newToken, newKubeconfig, err := ReplaceTokenPort(token, cluster)
-	if err != nil {
-		r.updateStatus(ctx, jtr, "Failed update token URL")
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
-	}
-
-	if err := r.reconcileSecret(ctx, jtr, newToken); err != nil {
+	if err := r.reconcileSecret(ctx, jtr, token); err != nil {
 		r.updateStatus(ctx, jtr, "Failed creating secret")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	tokenID, err := getTokenID(newKubeconfig, jtr.Spec.Role)
+	tokenID, err := getTokenID(token, jtr.Spec.Role)
 	if err != nil {
 		r.updateStatus(ctx, jtr, "Failed getting token id")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
@@ -199,46 +191,17 @@ func (r *JoinTokenRequestReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func replaceKubeconfigPort(in string, cluster km.Cluster) (string, *api.Config, error) {
-	cfg, err := clientcmd.Load([]byte(in))
-	if err != nil {
-		return "", nil, err
-	}
-
-	u, err := url.Parse(cfg.Clusters["k0s"].Server)
-	if err != nil {
-		return "", nil, err
-	}
-	parts := strings.Split(u.Host, ":")
-	u.Host = fmt.Sprintf("%s:%d", parts[0], cluster.Spec.Service.APIPort)
-
-	cfg.Clusters["k0s"].Server = u.String()
-
-	b, err := clientcmd.Write(*cfg)
-	if err != nil {
-		return "", nil, err
-	}
-
-	return string(b), cfg, nil
-}
-
-func ReplaceTokenPort(token string, cluster km.Cluster) (string, *api.Config, error) {
+func getTokenID(token, role string) (string, error) {
 	b, err := tokenDecode(token)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
-	updatedKubeconfig, cfg, err := replaceKubeconfigPort(string(b), cluster)
+	cfg, err := clientcmd.Load(b)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
-	newToken, err := tokenEncode([]byte(updatedKubeconfig))
-
-	return newToken, cfg, err
-}
-
-func getTokenID(cfg *api.Config, role string) (string, error) {
 	var userName string
 	switch role {
 	case "controller":
@@ -269,25 +232,4 @@ func tokenDecode(token string) ([]byte, error) {
 	}
 
 	return output, err
-}
-
-func tokenEncode(token []byte) (string, error) {
-	in := bytes.NewReader(token)
-
-	var outBuf bytes.Buffer
-	gz, err := gzip.NewWriterLevel(&outBuf, gzip.BestCompression)
-	if err != nil {
-		return "", err
-	}
-
-	_, err = io.Copy(gz, in)
-	gzErr := gz.Close()
-	if err != nil {
-		return "", err
-	}
-	if gzErr != nil {
-		return "", gzErr
-	}
-
-	return base64.StdEncoding.EncodeToString(outBuf.Bytes()), nil
 }

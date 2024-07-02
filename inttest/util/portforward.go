@@ -52,7 +52,7 @@ func GetPortForwarder(cfg *rest.Config, name string, namespace string, port int)
 
 	stopChan := make(chan struct{})
 	readyChan := make(chan struct{})
-	fw, err := portforward.New(dialer, []string{fmt.Sprintf("42042:%d", port)}, stopChan, readyChan, io.Discard, os.Stderr)
+	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d", port)}, stopChan, readyChan, io.Discard, os.Stderr)
 	if err != nil {
 		return nil, err
 	}

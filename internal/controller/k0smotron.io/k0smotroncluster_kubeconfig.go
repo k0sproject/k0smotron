@@ -42,11 +42,6 @@ func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc k
 		return err
 	}
 
-	output, _, err = replaceKubeconfigPort(output, kmc)
-	if err != nil {
-		return err
-	}
-
 	logger.Info("Kubeconfig generated, creating the secret")
 
 	secret := v1.Secret{

@@ -38,9 +38,10 @@ func init() {
 
 func (r *ClusterReconciler) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 	var entrypointBuf bytes.Buffer
-	err := entrypointTmpl.Execute(&entrypointBuf, map[string]string{
+	err := entrypointTmpl.Execute(&entrypointBuf, map[string]interface{}{
 		"KineDataSourceURLPlaceholder": kineDataSourceURLPlaceholder,
 		"K0sControllerArgs":            r.getControllerFlags(kmc),
+		"PrivilegedPortIsUsed":         kmc.Spec.Service.APIPort <= 1024,
 	})
 	if err != nil {
 		return v1.ConfigMap{}, err
@@ -109,6 +110,11 @@ mkdir /etc/k0s && echo "$K0SMOTRON_K0S_YAML" > /etc/k0s/k0s.yaml
 
 # Substitute the kine datasource URL from the env var
 sed -i "s {{ .KineDataSourceURLPlaceholder }} ${K0SMOTRON_KINE_DATASOURCE_URL} g" /etc/k0s/k0s.yaml
+
+{{if .PrivilegedPortIsUsed}}
+apk add --no-cache libcap
+{ while ! setcap 'cap_net_bind_service=+ep' /var/lib/k0s/bin/kube-apiserver; do sleep 1 ; done ; } &
+{{end}}
 
 # Run the k0s controller
 k0s controller {{ .K0sControllerArgs }}
