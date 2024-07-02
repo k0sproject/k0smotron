@@ -1,4 +1,4 @@
-# Update k0smotron in standalone cluster
+# Update hosted control plane in standalone mode
 
 To update a standalone k0smotron cluster, you need to update the k0s version
 in the YAML configuration file:
@@ -16,7 +16,7 @@ in the YAML configuration file:
       version: v1.27.1-k0s.0
     ```
 
-2. Configure [persistence](https://docs.k0smotron.io/stable/resource-reference/#clusterspecpersistence)
+2. Make sure that the [persistence](https://docs.k0smotron.io/stable/resource-reference/#clusterspecpersistence) is configured
 to prevent data loss. For example:
 
    ```yaml
@@ -33,7 +33,7 @@ to prevent data loss. For example:
    ```
 
    Using the `hostPath` volume type introduces many security risks.
-   Avoid configuring persistence for volumes of the `hostPath` type. 
+   Avoid configuring persistence for volumes of the `hostPath` type in production environments. 
    Learn more from [official Kubernetes documentation: hostPath](https://kubernetes.io/docs/concepts/storage/volumes/#hostpath).
 
 3. Change all the k0s versions to the target one. For example:
