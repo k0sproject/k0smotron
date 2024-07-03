@@ -24,6 +24,7 @@ import (
 
 	"github.com/k0sproject/k0s/inttest/common"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/exec"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
@@ -123,6 +124,11 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	cm, err := kmcKC.CoreV1().ConfigMaps("kube-system").Get(s.Context(), "k0s-telemetry", metav1.GetOptions{})
 	s.Require().NoError(err, "k0s-telemetry CM not found. Manifest not appllied?")
 	s.Require().Equal("k0smotron", cm.Data["provider"])
+
+	s.T().Log("Verifying files are mounted")
+	output, err := exec.PodExecCmdOutput(context.TODO(), kc, rc, "kmc-kmc-test-0", "kmc-test", "ls /tmp/test")
+	s.Require().NoError(err, "/tmp/test dir not found. Mount not mounted?")
+	s.Require().Contains(output, "manifest.yaml")
 }
 
 func TestBasicSuite(t *testing.T) {
@@ -241,6 +247,12 @@ metadata:
 				},
 				{
 					"name": "configmap",
+					"configMap": { "name": "manifest-cm" }
+				}
+			],
+			"mounts": [
+				{
+					"path": "/tmp/test",
 					"configMap": { "name": "manifest-cm" }
 				}
 			],

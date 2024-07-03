@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
@@ -235,6 +236,17 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      manifest.Name,
 			MountPath: fmt.Sprintf("/var/lib/k0s/manifests/%s", manifest.Name),
+			ReadOnly:  true,
+		})
+	}
+
+	for _, file := range kmc.Spec.Mounts {
+		volumeName := strings.Replace(file.Path[1:], "/", "-", -1)
+		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{Name: volumeName, VolumeSource: file.VolumeSource})
+
+		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
+			Name:      volumeName,
+			MountPath: file.Path,
 			ReadOnly:  true,
 		})
 	}
