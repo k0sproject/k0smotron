@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#update-k0smotron-in-standalone-cluster" class="md-skip">
+        <a href="#update-hosted-control-plane-in-standalone-mode" class="md-skip">
           Skip to content
         </a>
       
@@ -1005,7 +1005,28 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    Cluster API
+    Cluster API (HCP)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../update-capi-cluster/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster API (VMs)
   </span>
   
 
@@ -1345,7 +1366,7 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="update-k0smotron-in-standalone-cluster">Update k0smotron in standalone cluster<a class="headerlink" href="#update-k0smotron-in-standalone-cluster" title="Permanent link">#</a></h1>
+<h1 id="update-hosted-control-plane-in-standalone-mode">Update hosted control plane in standalone mode<a class="headerlink" href="#update-hosted-control-plane-in-standalone-mode" title="Permanent link">#</a></h1>
 <p>To update a standalone k0smotron cluster, you need to update the k0s version
 in the YAML configuration file:</p>
 <ol>
@@ -1362,7 +1383,7 @@ in the YAML configuration file:</p>
 </code></pre></div>
 </li>
 <li>
-<p>Configure <a href="https://docs.k0smotron.io/stable/resource-reference/#clusterspecpersistence">persistence</a>
+<p>Make sure that the <a href="https://docs.k0smotron.io/stable/resource-reference/#clusterspecpersistence">persistence</a> is configured
 to prevent data loss. For example:</p>
 <div class="highlight"><pre><span></span><code><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">---</span>
 <span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiVersion</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
@@ -1376,7 +1397,7 @@ to prevent data loss. For example:</p>
 <span class="w">     </span><span class="nt">hostPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/tmp/kmc-test&quot;</span><span class="w"> </span><span class="c1"># k0smotron will mount a basic hostPath volume to avoid data loss.</span>
 </code></pre></div>
 <p>Using the <code>hostPath</code> volume type introduces many security risks.
- Avoid configuring persistence for volumes of the <code>hostPath</code> type. 
+ Avoid configuring persistence for volumes of the <code>hostPath</code> type in production environments. 
  Learn more from <a href="https://kubernetes.io/docs/concepts/storage/volumes/#hostpath">official Kubernetes documentation: hostPath</a>.</p>
 </li>
 <li>
