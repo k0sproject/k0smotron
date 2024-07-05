@@ -72,6 +72,7 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	configMap, err := kc.CoreV1().ConfigMaps("kmc-test").Get(s.Context(), "kmc-kmc-test-config", metav1.GetOptions{})
 	s.Require().NoError(err)
 	s.Require().True(strings.Contains(configMap.Data["K0SMOTRON_K0S_YAML"], "kmc-kmc-test-nodeport.kmc-test.svc.cluster.local"))
+	s.Require().True(strings.Contains(configMap.Data["K0SMOTRON_K0S_YAML"], "externalAddress:"))
 
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)

@@ -118,12 +118,12 @@ func (s *CAPIConfigUpdateVMSuite) TestCAPIConfigUpdateVMWorker() {
 
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "kc", "--kubeconfig=/var/lib/k0s/pki/admin.conf", "get", "clusterconfig", "-A").Output()
+		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "kc", "--kubeconfig=/var/lib/k0s/pki/admin.conf", "get", "clusterconfig", "-A", "-oyaml").Output()
 		if err != nil {
 			return false, nil
 		}
 
-		return strings.Contains(string(output), "k0s"), nil
+		return strings.Contains(string(output), "name: k0s") && !strings.Contains(string(output), "externalAddress"), nil
 	})
 	s.Require().NoError(err)
 
@@ -229,6 +229,8 @@ spec:
           kuberouter:
             autoMTU: false
             mtu: 1200
+          nodeLocalLoadBalancing:
+            enabled: true
         telemetry:
           enabled: false
   machineTemplate:
