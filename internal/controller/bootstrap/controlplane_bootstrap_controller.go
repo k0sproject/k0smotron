@@ -141,9 +141,17 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	)
 
 	if config.Spec.K0s != nil {
-		err = unstructured.SetNestedField(config.Spec.K0s.Object, scope.Cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
+
+		nllbEnabled, found, err := unstructured.NestedBool(config.Spec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error setting control plane endpoint: %v", err)
+			return ctrl.Result{}, fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
+		}
+		// Set the external address if NLLB is not enabled
+		if !(found && nllbEnabled) {
+			err = unstructured.SetNestedField(config.Spec.K0s.Object, scope.Cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("error setting control plane endpoint: %v", err)
+			}
 		}
 
 		if config.Spec.Tunneling.ServerAddress != "" {

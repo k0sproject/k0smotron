@@ -47,6 +47,7 @@ func (r *ClusterReconciler) generateConfig(kmc *km.Cluster, sans []string) (v1.C
 	k0smotronValues := map[string]interface{}{"spec": nil}
 	unstructuredConfig := k0smotronValues
 
+	nllbEnabled := false
 	if kmc.Spec.K0sConfig == nil {
 		k0smotronValues["apiVersion"] = "k0s.k0sproject.io/v1beta1"
 		k0smotronValues["kind"] = "ClusterConfig"
@@ -61,9 +62,22 @@ func (r *ClusterReconciler) generateConfig(kmc *km.Cluster, sans []string) (v1.C
 				sans = append(sans, existingSANs...)
 			}
 			k0smotronValues["spec"] = getV1Beta1Spec(kmc, sans)
+
+			enabled, found, err := unstructured.NestedBool(unstructuredConfig, "spec", "network", "nodeLocalLoadBalancing", "enabled")
+			if err != nil {
+				return v1.ConfigMap{}, nil, fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
+			}
+			nllbEnabled = found && enabled
 		default:
 			// TODO: should we just use the v1beta1 in case the api version is not provided?
 			return v1.ConfigMap{}, nil, fmt.Errorf("unsupported k0s config version: %s", kmc.Spec.K0sConfig.GetAPIVersion())
+		}
+	}
+
+	if !nllbEnabled {
+		err := unstructured.SetNestedField(k0smotronValues, kmc.Spec.ExternalAddress, "spec", "api", "externalAddress")
+		if err != nil {
+			return v1.ConfigMap{}, nil, fmt.Errorf("error setting externalAddress: %v", err)
 		}
 	}
 
@@ -213,9 +227,8 @@ func (r *ClusterReconciler) genSANs(kmc *km.Cluster) ([]string, error) {
 func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
 	v1beta1Spec := map[string]interface{}{
 		"api": map[string]interface{}{
-			"externalAddress": kmc.Spec.ExternalAddress,
-			"port":            kmc.Spec.Service.APIPort,
-			"sans":            sans,
+			"port": kmc.Spec.Service.APIPort,
+			"sans": sans,
 		},
 		"konnectivity": map[string]interface{}{
 			"agentPort": kmc.Spec.Service.KonnectivityPort,
