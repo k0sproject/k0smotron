@@ -21,33 +21,45 @@ import (
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 )
 
 func Test_createInstallCmd(t *testing.T) {
-	base := "k0s install worker --token-file /etc/k0s.token"
+	base := "k0s install worker --token-file /etc/k0s.token --labels=k0smotron.io/machine-name=test"
 	tests := []struct {
-		name   string
-		config *bootstrapv1.K0sWorkerConfig
-		want   string
+		name  string
+		scope *Scope
+		want  string
 	}{
 		{
-			name:   "with default config",
-			config: &bootstrapv1.K0sWorkerConfig{},
-			want:   base,
+			name: "with default config",
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
+					"metadata": map[string]interface{}{"name": "test"},
+				}}},
+			},
+			want: base,
 		},
 		{
 			name: "with args",
-			config: &bootstrapv1.K0sWorkerConfig{
-				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Args: []string{"--debug", "--labels=k0sproject.io/foo=bar"},
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{
+					Spec: bootstrapv1.K0sWorkerConfigSpec{
+						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar"},
+					},
 				},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
+					"metadata": map[string]interface{}{"name": "test"},
+				}}},
 			},
 			want: base + " --debug --labels=k0sproject.io/foo=bar",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, createInstallCmd(tt.config))
+			require.Equal(t, tt.want, createInstallCmd(tt.scope))
 		})
 	}
 }

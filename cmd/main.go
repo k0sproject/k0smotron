@@ -182,6 +182,13 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
 		}
+		if err = (&bootstrap.ProviderIDController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
+			os.Exit(1)
+		}
 	}
 
 	if isControllerEnabled(controlPlaneController) {

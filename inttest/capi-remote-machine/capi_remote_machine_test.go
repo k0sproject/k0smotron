@@ -18,6 +18,7 @@ package capiremotemachine
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -27,6 +28,7 @@ import (
 	"os"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
@@ -37,6 +39,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -157,6 +160,16 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().True(rm.Status.Ready)
 	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 	s.Require().Equal(expectedProviderID, rm.Spec.ProviderID)
+
+	err = wait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (done bool, err error) {
+		node, err := kmcKC.CoreV1().Nodes().Get(ctx, "k0smotron0", metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		return node.Labels["k0smotron.io/machine-name"] == "remote-test-0" && node.Spec.ProviderID == expectedProviderID, nil
+	})
+	s.Require().NoError(err)
 
 	s.T().Log("deleting node from cluster")
 	s.Require().NoError(s.deleteRemoteMachine("remote-test-0", "default"))

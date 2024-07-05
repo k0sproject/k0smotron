@@ -127,9 +127,18 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	scope := &Scope{
-		ConfigOwner: configOwner,
-		Cluster:     cluster,
+	scope := &ControllerScope{
+		Config:        config,
+		ConfigOwner:   configOwner,
+		Cluster:       cluster,
+		WorkerEnabled: false,
+	}
+
+	for _, arg := range config.Spec.Args {
+		if arg == "--enable-worker" || arg == "--enable-worker=true" {
+			scope.WorkerEnabled = true
+			break
+		}
 	}
 
 	// TODO Check if the secret is already present etc. to bail out early
@@ -209,16 +218,16 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error generating initial control plane files: %v", err)
 		}
-		installCmd = createCPInstallCmd(config)
+		installCmd = createCPInstallCmd(scope)
 	} else {
-		files, err = c.genControlPlaneJoinFiles(ctx, scope, config, files)
+		files, err = c.genControlPlaneJoinFiles(ctx, scope, files)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error generating control plane join files: %v", err)
 		}
-		installCmd = createCPInstallCmdWithJoinToken(config, joinTokenFilePath)
+		installCmd = createCPInstallCmdWithJoinToken(scope, joinTokenFilePath)
 	}
 	if config.Spec.Tunneling.Enabled {
-		tunnelingFiles, err := c.genTunnelingFiles(ctx, scope, config)
+		tunnelingFiles, err := c.genTunnelingFiles(ctx, scope)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error generating tunneling files: %v", err)
 		}
@@ -301,7 +310,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *Scope, files []cloudinit.File) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *ControllerScope, files []cloudinit.File) ([]cloudinit.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	certs, _, err := c.getCerts(ctx, scope)
@@ -314,7 +323,7 @@ func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context
 	return files, nil
 }
 
-func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *Scope, config *bootstrapv1.K0sControllerConfig, files []cloudinit.File) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []cloudinit.File) ([]cloudinit.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	_, ca, err := c.getCerts(ctx, scope)
@@ -341,7 +350,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		return nil, err
 	}
 
-	host, err := c.findFirstControllerIP(ctx, config)
+	host, err := c.findFirstControllerIP(ctx, scope.Config)
 	if err != nil {
 		log.Error(err, "Failed to get controller IP")
 		return nil, err
@@ -360,7 +369,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	return files, err
 }
 
-func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *Scope, kcs *bootstrapv1.K0sControllerConfig) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *ControllerScope) ([]cloudinit.File, error) {
 	secretName := scope.Cluster.Name + "-frp-token"
 	frpSecret := corev1.Secret{}
 	err := c.Client.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secretName}, &frpSecret)
@@ -370,7 +379,7 @@ func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *S
 	frpToken := string(frpSecret.Data["value"])
 
 	var modeConfig string
-	if kcs.Spec.Tunneling.Mode == "proxy" {
+	if scope.Config.Spec.Tunneling.Mode == "proxy" {
 		modeConfig = fmt.Sprintf(`
     type = tcpmux
     custom_domains = %s
@@ -438,11 +447,11 @@ spec:
 	return []cloudinit.File{{
 		Path:        "/var/lib/k0s/manifests/k0smotron-tunneling/manifest.yaml",
 		Permissions: "0644",
-		Content:     fmt.Sprintf(tunnelingResources, kcs.Spec.Tunneling.ServerAddress, kcs.Spec.Tunneling.ServerNodePort, frpToken, modeConfig),
+		Content:     fmt.Sprintf(tunnelingResources, scope.Config.Spec.Tunneling.ServerAddress, scope.Config.Spec.Tunneling.ServerNodePort, frpToken, modeConfig),
 	}}, nil
 }
 
-func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Scope) ([]cloudinit.File, *secret.Certificate, error) {
+func (c *ControlPlaneController) getCerts(ctx context.Context, scope *ControllerScope) ([]cloudinit.File, *secret.Certificate, error) {
 	var files []cloudinit.File
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
 		CertificatesDir: "/var/lib/k0s/pki",
@@ -524,31 +533,45 @@ func createCPDownloadCommands(config *bootstrapv1.K0sControllerConfig) []string 
 	return []string{"curl -sSfL https://get.k0s.sh | sh"}
 }
 
-func createCPInstallCmd(config *bootstrapv1.K0sControllerConfig) string {
+func createCPInstallCmd(scope *ControllerScope) string {
 	installCmd := []string{
 		"k0s install controller",
 		"--force",
 		"--enable-dynamic-config",
-		"--env AUTOPILOT_HOSTNAME=" + config.Name,
-		"--kubelet-extra-args=--hostname-override=" + config.Name,
+		"--env AUTOPILOT_HOSTNAME=" + scope.Config.Name,
 	}
-	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
-		installCmd = append(installCmd, config.Spec.Args...)
+
+	if scope.WorkerEnabled {
+		installCmd = append(installCmd,
+			"--kubelet-extra-args=--hostname-override="+scope.Config.Name,
+			"--labels="+fmt.Sprintf("%s=%s", machineNameNodeLabel, scope.ConfigOwner.GetName()),
+		)
+	}
+
+	if scope.Config.Spec.Args != nil && len(scope.Config.Spec.Args) > 0 {
+		installCmd = append(installCmd, scope.Config.Spec.Args...)
 	}
 	return strings.Join(installCmd, " ")
 }
 
-func createCPInstallCmdWithJoinToken(config *bootstrapv1.K0sControllerConfig, tokenPath string) string {
+func createCPInstallCmdWithJoinToken(scope *ControllerScope, tokenPath string) string {
 	installCmd := []string{
 		"k0s install controller",
 		"--force",
 		"--enable-dynamic-config",
-		"--env AUTOPILOT_HOSTNAME=" + config.Name,
-		"--kubelet-extra-args=--hostname-override=" + config.Name,
+		"--env AUTOPILOT_HOSTNAME=" + scope.Config.Name,
 	}
+
+	if scope.WorkerEnabled {
+		installCmd = append(installCmd,
+			"--kubelet-extra-args=--hostname-override="+scope.Config.Name,
+			"--labels="+fmt.Sprintf("%s=%s", machineNameNodeLabel, scope.ConfigOwner.GetName()),
+		)
+	}
+
 	installCmd = append(installCmd, "--token-file", tokenPath)
-	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
-		installCmd = append(installCmd, config.Spec.Args...)
+	if scope.Config.Spec.Args != nil && len(scope.Config.Spec.Args) > 0 {
+		installCmd = append(installCmd, scope.Config.Spec.Args...)
 	}
 	return strings.Join(installCmd, " ")
 }

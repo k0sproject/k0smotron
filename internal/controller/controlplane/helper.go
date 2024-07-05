@@ -72,6 +72,20 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 		return nil, fmt.Errorf("error parsing version %q: %w", kcp.Spec.Version, err)
 	}
 	v := fmt.Sprintf("%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch())
+
+	labels := map[string]string{
+		"cluster.x-k8s.io/cluster-name":         kcp.Name,
+		"cluster.x-k8s.io/control-plane":        "true",
+		"cluster.x-k8s.io/generateMachine-role": "control-plane",
+	}
+
+	for _, arg := range kcp.Spec.K0sConfigSpec.Args {
+		if arg == "--enable-worker" || arg == "--enable-worker=true" {
+			labels["k0smotron.io/control-plane-worker-enabled"] = "true"
+			break
+		}
+	}
+
 	return &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: clusterv1.GroupVersion.String(),
@@ -80,11 +94,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: kcp.Namespace,
-			Labels: map[string]string{
-				"cluster.x-k8s.io/cluster-name":         kcp.Name,
-				"cluster.x-k8s.io/control-plane":        "true",
-				"cluster.x-k8s.io/generateMachine-role": "control-plane",
-			},
+			Labels:    labels,
 		},
 		Spec: clusterv1.MachineSpec{
 			Version:     &v,
