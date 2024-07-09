@@ -147,7 +147,7 @@ func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *
 		host := k0smoCluster.Spec.ExternalAddress
 		port := k0smoCluster.Spec.Service.APIPort
 		// Update the Clusters endpoint if needed
-		if cluster.Spec.ControlPlaneEndpoint.Host != host || cluster.Spec.ControlPlaneEndpoint.Port != int32(port) {
+		if cluster.Spec.InfrastructureRef != nil && (cluster.Spec.ControlPlaneEndpoint.Host != host || cluster.Spec.ControlPlaneEndpoint.Port != int32(port)) {
 
 			// Get the infrastructure cluster object
 			infraCluster := &unstructured.Unstructured{}
