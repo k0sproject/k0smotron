@@ -146,6 +146,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		ClientSet:  clientSet,
 		RESTConfig: restConfig,
+		Recorder:   mgr.GetEventRecorderFor("cluster-reconciler"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "K0smotronCluster")
 		os.Exit(1)

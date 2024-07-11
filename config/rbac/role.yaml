@@ -236,6 +236,7 @@ rules:
   resources:
   - pods
   verbs:
+  - delete
   - get
   - list
 - apiGroups:
@@ -413,3 +414,11 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  verbs:
+  - get
+  - list
+  - watch
