@@ -75,7 +75,7 @@ func (s *PVCSuite) TestK0sGetsUp() {
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
 	s.T().Log("Starting portforward")
-	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 6443)
+	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 30443)
 	s.Require().NoError(err)
 
 	go fw.Start(s.Require().NoError)
