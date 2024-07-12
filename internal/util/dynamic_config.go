@@ -5,6 +5,7 @@ import (
 	"fmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -14,20 +15,32 @@ func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli clie
 	u.SetName("k0s")
 	u.SetNamespace("kube-system")
 
+	// Remove fields that can be configured only via the local k0s config
+	// See: https://docs.k0sproject.io/stable/dynamic-configuration/#cluster-configuration-vs-controller-node-configuration
+	//unstructured.RemoveNestedField(u.Object, "spec", "api") // This field is not really should be removed, requires some investigation on the k0s side
+	unstructured.RemoveNestedField(u.Object, "spec", "storage")
+	unstructured.RemoveNestedField(u.Object, "spec", "network", "controlPlaneLoadBalancing")
+
 	b, err := u.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("failed to marshal unstructured config: %w", err)
 	}
+	fmt.Println(string(b))
 
 	chCS, err := remote.NewClusterClient(ctx, "k0smotron", cli, util.ObjectKey(cluster))
 	if err != nil {
 		return fmt.Errorf("failed to create workload cluster client: %w", err)
 	}
 
-	err = chCS.Patch(ctx, u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)
+	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		return true
+	}, func() error {
+		return chCS.Patch(ctx, u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to patch k0s config: %w", err)
 	}
+	//return chCS.Patch(ctx, u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)
 
 	return nil
 }

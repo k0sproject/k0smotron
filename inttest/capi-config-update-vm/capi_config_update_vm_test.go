@@ -229,6 +229,8 @@ spec:
           kuberouter:
             autoMTU: false
             mtu: 1200
+          nodeLocalLoadBalancing:
+            enabled: true
         telemetry:
           enabled: false
   machineTemplate:
@@ -300,6 +302,8 @@ spec:
           kuberouter:
             autoMTU: false
             mtu: 1300
+          nodeLocalLoadBalancing:
+            enabled: true
         telemetry:
           enabled: false
   machineTemplate:

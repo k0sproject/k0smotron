@@ -141,9 +141,28 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	)
 
 	if config.Spec.K0s != nil {
-		err = unstructured.SetNestedField(config.Spec.K0s.Object, scope.Cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
+
+		nllbEnabled, found, err := unstructured.NestedBool(config.Spec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error setting control plane endpoint: %v", err)
+			return ctrl.Result{}, fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
+		}
+		// Set the external address if NLLB is not enabled
+		// Otherwise, just add the external address to the SANs to allow the clients to connect using LB address
+		if !(found && nllbEnabled) {
+			err = unstructured.SetNestedField(config.Spec.K0s.Object, scope.Cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("error setting control plane endpoint: %v", err)
+			}
+		} else {
+			sans := []string{scope.Cluster.Spec.ControlPlaneEndpoint.Host}
+			existingSANs, sansFound, err := unstructured.NestedStringSlice(config.Spec.K0s.Object, "spec", "api", "sans")
+			if err == nil && sansFound {
+				sans = append(sans, existingSANs...)
+			}
+			err = unstructured.SetNestedStringSlice(config.Spec.K0s.Object, sans, "spec", "api", "sans")
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("error setting sans: %v", err)
+			}
 		}
 
 		if config.Spec.Tunneling.ServerAddress != "" {
