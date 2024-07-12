@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -179,7 +180,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 func (r *ClusterReconciler) updateStatus(ctx context.Context, kmc km.Cluster, status string) {
 	logger := log.FromContext(ctx)
 	kmc.Status.ReconciliationStatus = status
-	if err := r.Status().Patch(ctx, &kmc, client.Merge); err != nil {
+	err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		return true
+	}, func() error {
+		return r.Status().Patch(ctx, &kmc, client.Merge)
+	})
+	if err != nil {
 		logger.Error(err, fmt.Sprintf("Unable to update status: %s", status))
 	}
 }

@@ -152,6 +152,7 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 
 	// Verify the RemoteMachine is at expected state
 
+	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		rm, err := s.getRemoteMachine("remote-test-0", "default")
@@ -159,13 +160,22 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 			return false, err
 		}
 
-		expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 		return rm.Status.Ready && expectedProviderID == rm.Spec.ProviderID, nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
+
+	err = wait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (done bool, err error) {
+		node, err := kmcKC.CoreV1().Nodes().Get(ctx, "remote-test-0", metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		return node.Labels["k0smotron.io/machine-name"] == "remote-test-0" && node.Spec.ProviderID == expectedProviderID, nil
+	})
+	s.Require().NoError(err)
 
 	s.T().Log("deleting node from cluster")
 	s.Require().NoError(s.deleteRemoteMachine("remote-test-0", "default"))

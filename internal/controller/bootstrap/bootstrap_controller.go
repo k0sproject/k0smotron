@@ -47,6 +47,8 @@ import (
 
 const (
 	defaultK0sSuffix = "k0s.0"
+
+	machineNameNodeLabel = "k0smotron.io/machine-name"
 )
 
 type Controller struct {
@@ -60,6 +62,13 @@ type Scope struct {
 	Config      *bootstrapv1.K0sWorkerConfig
 	ConfigOwner *bsutil.ConfigOwner
 	Cluster     *clusterv1.Cluster
+}
+
+type ControllerScope struct {
+	Config        *bootstrapv1.K0sControllerConfig
+	ConfigOwner   *bsutil.ConfigOwner
+	Cluster       *clusterv1.Cluster
+	WorkerEnabled bool
 }
 
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -160,7 +169,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	files = append(files, config.Spec.Files...)
 	downloadCommands := createDownloadCommands(config)
-	installCmd := createInstallCmd(config)
+	installCmd := createInstallCmd(scope)
 
 	commands := config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
@@ -289,7 +298,6 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	ca := certificates.GetByPurpose(secret.ClusterCA)
 	if ca.KeyPair == nil {
 		return "", errors.New("failed to get CA certificate key pair")
-
 	}
 
 	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port), "kubelet-bootstrap")
@@ -299,11 +307,13 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	return joinToken, nil
 }
 
-func createInstallCmd(config *bootstrapv1.K0sWorkerConfig) string {
+func createInstallCmd(scope *Scope) string {
 	installCmd := []string{
-		"k0s install worker --token-file /etc/k0s.token"}
-	if config.Spec.Args != nil && len(config.Spec.Args) > 0 {
-		installCmd = append(installCmd, config.Spec.Args...)
+		"k0s install worker --token-file /etc/k0s.token",
+		"--labels=" + fmt.Sprintf("%s=%s", machineNameNodeLabel, scope.ConfigOwner.GetName()),
+	}
+	if scope.Config.Spec.Args != nil && len(scope.Config.Spec.Args) > 0 {
+		installCmd = append(installCmd, scope.Config.Spec.Args...)
 	}
 	return strings.Join(installCmd, " ")
 }
