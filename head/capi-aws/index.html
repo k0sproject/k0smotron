@@ -26,7 +26,7 @@
     
     
       
-        <title>AWS - Documentation</title>
+        <title>AWS (HCP) - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cluster-api-aws" class="md-skip">
+        <a href="#cluster-api-aws-hosted-control-plane" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              AWS
+              AWS (HCP)
             
           </span>
         </div>
@@ -740,7 +740,7 @@ You are not currently viewing the documentation for the current stable release o
           
   
   <span class="md-ellipsis">
-    AWS
+    AWS (HCP)
   </span>
   
 
@@ -751,7 +751,7 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    AWS
+    AWS (HCP)
   </span>
   
 
@@ -1540,8 +1540,9 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="cluster-api-aws">Cluster API - AWS<a class="headerlink" href="#cluster-api-aws" title="Permanent link">#</a></h1>
-<p>This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services).</p>
+<h1 id="cluster-api-aws-hosted-control-plane">Cluster API - AWS (Hosted Control Plane)<a class="headerlink" href="#cluster-api-aws-hosted-control-plane" title="Permanent link">#</a></h1>
+<p>This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy 
+a cluster with hosted control plane and workers in AWS.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
 <p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>. In addition to those, you should also have appropriate AWS credentials available and the AWS CLI configured on your local machine.</p>
 <h3 id="prepare-the-aws-infra-provider">Prepare the AWS infra provider<a class="headerlink" href="#prepare-the-aws-infra-provider" title="Permanent link">#</a></h3>
@@ -1550,9 +1551,10 @@ You are not currently viewing the documentation for the current stable release o
 <h2 id="creating-a-child-cluster">Creating a child cluster<a class="headerlink" href="#creating-a-child-cluster" title="Permanent link">#</a></h2>
 <p>Once all the controllers are up and running, you can apply the cluster manifests containing the specifications of the cluster you want to provision.</p>
 <div class="admonition note">
-<p class="admonition-title">k0smotron is currently only able to work with <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html">externally managed</a> cluster infrastructure.</p>
+<p class="admonition-title">k0smotron in standalone mode is only able to work with <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html">externally managed</a> cluster infrastructure.</p>
 <p>This is because in CAPA there is no way to disable it to provision all control plane related infrastructure (VPC, ELB, etc.).
-This also renders k0smotron unable to dynamically edit the <code>AWSCluster</code> API endpoint details. Make sure your VPC and subnets you are planning to use fullfill the <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites">needed prerequisites</a>.</p>
+This also renders k0smotron unable to dynamically edit the <code>AWSCluster</code> API endpoint details. Make sure your VPC and subnets you are planning to use fullfill the <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites">needed prerequisites</a>.
+This limitation is not applicable to the clusters on the VMs.</p>
 </div>
 <p>Here is an example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
