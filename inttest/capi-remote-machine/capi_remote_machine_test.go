@@ -222,18 +222,22 @@ func (s *RemoteMachineSuite) createCluster() {
 	t, err := template.New("cluster").Parse(clusterYaml)
 	s.Require().NoError(err)
 
-	// Execute the template to buffer
-	var clusterYaml bytes.Buffer
+	k0sVersion := os.Getenv("K0S_VERSION")
 
-	err = t.Execute(&clusterYaml, struct {
-		Address string
-		SSHKey  string
+	// Execute the template to buffer
+	var clusterYamlBuf bytes.Buffer
+
+	err = t.Execute(&clusterYamlBuf, struct {
+		Address    string
+		SSHKey     string
+		K0SVersion string
 	}{
-		Address: workerIP,
-		SSHKey:  base64.StdEncoding.EncodeToString(s.privateKey),
+		Address:    workerIP,
+		SSHKey:     base64.StdEncoding.EncodeToString(s.privateKey),
+		K0SVersion: k0sVersion,
 	})
 	s.Require().NoError(err)
-	bytes := clusterYaml.Bytes()
+	bytes := clusterYamlBuf.Bytes()
 	// s.T().Logf("cluster yaml: %s", string(bytes))
 	resources, err := util.ParseManifests(bytes)
 	s.Require().NoError(err)
@@ -287,7 +291,7 @@ metadata:
   name: remote-test
   namespace: default
 spec:
-  version: v1.27.2-k0s.0
+  version: {{ .K0SVersion }}-k0s.0
   persistence:
     type: emptyDir
   service:
@@ -323,7 +327,7 @@ metadata:
   name: remote-test-0
   namespace: default
 spec:
-  version: v1.27.2+k0s.0
+  version: {{ .K0SVersion }}+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteMachine

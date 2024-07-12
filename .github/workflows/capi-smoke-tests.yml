@@ -1,0 +1,107 @@
+name: Smoke tests
+
+on:
+  workflow_call:
+    inputs:
+      smoke-suite:
+        required: true
+        type: string
+      k0s-version:
+        required: false
+        type: string
+
+jobs:
+  capi-smokes:
+    name: "${{ inputs.smoke-suite }} :: ${{ inputs.k0s-version }}"
+    runs-on: ubuntu-22.04-8core
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Create image bundle
+        run: |
+          make release
+          make k0smotron-image-bundle.tar
+
+      - name: Create kind network with IPv4 only
+        run: |
+          docker network create kind --opt com.docker.network.bridge.enable_ip_masquerade=true
+
+
+      - name: Download kind
+        uses: supplypike/setup-bin@v4
+        with:
+          name: kind
+          version: v0.20.0
+          uri: https://github.com/kubernetes-sigs/kind/releases/download/v0.20.0/kind-linux-amd64
+
+      - name: Setup KinD cluster
+        run: |
+          kind create cluster --config config/samples/capi/docker/kind.yaml
+
+      - name: Load k0smotron image to KinD
+        run: |
+          kind load image-archive k0smotron-image-bundle.tar
+
+      - name: Download clusterctl
+        uses: supplypike/setup-bin@v4
+        with:
+          name: clusterctl
+          version: v1.4.3
+          uri: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.3/clusterctl-linux-amd64
+
+      - name: Prepare cluster api components
+        run: |
+          make bootstrap-components.yaml control-plane-components.yaml infrastructure-components.yaml
+          mkdir -p v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/ k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/ k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+
+          mv bootstrap-components.yaml v0.0.0
+          mv control-plane-components.yaml v0.0.0
+          mv infrastructure-components.yaml v0.0.0
+          mv ./hack/capi-ci/metadata.yaml v0.0.0
+
+          cp -r v0.0.0 k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+          sed -e 's#%pwd%#'`pwd`'#g' ./hack/capi-ci/config.yaml > config.yaml
+
+      - name: Install cluster api components
+        run: |
+          clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure k0sproject-k0smotron,docker --config config.yaml
+          kubectl patch -n capi-system deployment/capi-controller-manager -p \
+            '{"spec":{"template":{"spec":{"containers":[{"name":"manager","args":["--leader-elect", "--metrics-bind-addr=localhost:8080", "--feature-gates=ClusterTopology=true"]}]}}}}'
+          kubectl patch -n capd-system deployment/capd-controller-manager -p \
+            '{"spec":{"template":{"spec":{"containers":[{"name":"manager","args":["--leader-elect", "--metrics-bind-addr=localhost:8080", "--feature-gates=ClusterTopology=true"]}]}}}}'
+
+      - name: Install PVC provider
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
+
+      - name: Run inttest for CAPI with docker provider
+        run: |
+          kind get kubeconfig > kind.conf
+          export KUBECONFIG=$(realpath kind.conf)
+          docker system prune -f
+          make -C inttest ${{ inputs.smoke-suite }} K0S_VERSION=${{ inputs.k0s-version }}
+
+      - name: Get k0smotron logs
+        if: failure()
+        run: |
+          kubectl logs -n k0smotron deploy/k0smotron-controller-manager-bootstrap > /tmp/${{ inputs.smoke-suite }}-k0smotron-bootstrap.log
+          kubectl logs -n k0smotron deploy/k0smotron-controller-manager-control-plane > /tmp/${{ inputs.smoke-suite }}-k0smotron-control-plane.log
+          kubectl logs -n k0smotron deploy/k0smotron-controller-manager-infrastructure > /tmp/${{ inputs.smoke-suite }}-k0smotron-infrastructure.log
+
+      - name: Collect k0s logs and support bundle
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoketests-${{ inputs.smoke-suite }}-files
+          path: |
+            /tmp/${{ inputs.smoke-suite }}-k0smotron-*.log
+    

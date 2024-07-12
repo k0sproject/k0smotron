@@ -226,17 +226,21 @@ func (s *RemoteMachineTemplateSuite) createCluster() {
 	s.Require().NoError(err)
 
 	// Execute the template to buffer
-	var clusterYaml bytes.Buffer
+	var clusterYamlBuf bytes.Buffer
 
-	err = t.Execute(&clusterYaml, struct {
-		Address string
-		SSHKey  string
+	k0sVersion := os.Getenv("K0S_VERSION")
+
+	err = t.Execute(&clusterYamlBuf, struct {
+		Address    string
+		SSHKey     string
+		K0SVersion string
 	}{
-		Address: workerIP,
-		SSHKey:  base64.StdEncoding.EncodeToString(s.privateKey),
+		Address:    workerIP,
+		SSHKey:     base64.StdEncoding.EncodeToString(s.privateKey),
+		K0SVersion: k0sVersion,
 	})
 	s.Require().NoError(err)
-	bytes := clusterYaml.Bytes()
+	bytes := clusterYamlBuf.Bytes()
 
 	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, bytes, 0644))
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
@@ -276,7 +280,7 @@ metadata:
   name: remote-test
 spec:
   replicas: 1
-  version: v1.27.1+k0s.0
+  version: {{ .K0SVersion }}+k0s.0
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1

@@ -25,7 +25,6 @@ func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli clie
 	if err != nil {
 		return fmt.Errorf("failed to marshal unstructured config: %w", err)
 	}
-	fmt.Println(string(b))
 
 	chCS, err := remote.NewClusterClient(ctx, "k0smotron", cli, util.ObjectKey(cluster))
 	if err != nil {
