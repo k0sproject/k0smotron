@@ -25,3 +25,7 @@ updates:
     open-pull-requests-limit: 3
     schedule:
       interval: daily
+    groups:
+      mkdocs:
+        patterns:
+          - "mkdocs*"
