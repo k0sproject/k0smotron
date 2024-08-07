@@ -157,7 +157,8 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		rm, err := s.getRemoteMachine("remote-test-0", "default")
 		if err != nil {
-			return false, err
+			s.T().Log(err)
+			return false, nil
 		}
 
 		return rm.Status.Ready && expectedProviderID == rm.Spec.ProviderID, nil

@@ -3,8 +3,11 @@ package util
 import (
 	"context"
 	"fmt"
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util"
@@ -31,7 +34,12 @@ func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli clie
 		return fmt.Errorf("failed to create workload cluster client: %w", err)
 	}
 
-	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
+	err = retry.OnError(wait.Backoff{
+		Steps:    2,
+		Duration: 100 * time.Millisecond,
+		Factor:   5.0,
+		Jitter:   0.5,
+	}, func(err error) bool {
 		return true
 	}, func() error {
 		return chCS.Patch(ctx, u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)
@@ -39,7 +47,6 @@ func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli clie
 	if err != nil {
 		return fmt.Errorf("failed to patch k0s config: %w", err)
 	}
-	//return chCS.Patch(ctx, u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)
 
 	return nil
 }

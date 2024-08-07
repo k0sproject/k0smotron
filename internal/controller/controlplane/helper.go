@@ -189,12 +189,20 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 
 	err := clientset.RESTClient().
 		Patch(types.MergePatchType).
-		AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + name).
-		Body([]byte(`{"metadata":{"annotations":{"k0smotron.io/leave":"true"}}}`)).
+		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
+		Body([]byte(`{"spec":{"leave":"true"}}`)).
 		Do(ctx).
 		Error()
-	if err != nil && !apierrors.IsNotFound(err) {
-		return fmt.Errorf("error marking control node to leave: %w", err)
+	if err != nil {
+		err := clientset.RESTClient().
+			Patch(types.MergePatchType).
+			AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + name).
+			Body([]byte(`{"metadata":{"annotations":{"k0smotron.io/leave":"true"}}}`)).
+			Do(ctx).
+			Error()
+		if err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("error marking control node to leave: %w", err)
+		}
 	}
 
 	return nil
