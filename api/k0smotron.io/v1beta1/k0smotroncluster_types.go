@@ -84,6 +84,13 @@ type ClusterSpec struct {
 	// https://kubernetes.io/docs/concepts/storage/volumes
 	//+kubebuilder:validation:Optional
 	Manifests []v1.Volume `json:"manifests,omitempty"`
+	// Mounts allows to specify list of volumes with any files to be
+	// mounted in the controlplane pod. K0smotron allows any kind of volume, but the
+	// recommendation is to use secrets and configmaps.
+	// For more information check:
+	// https://kubernetes.io/docs/concepts/storage/volumes
+	//+kubebuilder:validation:Optional
+	Mounts []Mount `json:"mounts,omitempty"`
 	// ControlPlaneFlags allows to configure additional flags for k0s
 	// control plane and to override existing ones. The default flags are
 	// kept unless they are overriden explicitly. Flags with arguments must
@@ -99,6 +106,11 @@ type ClusterSpec struct {
 
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+type Mount struct {
+	Path            string `json:"path"`
+	v1.VolumeSource `json:",inline"`
 }
 
 const (
