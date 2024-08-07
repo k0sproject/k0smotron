@@ -31,3 +31,4 @@ smoketests := \
     check-capi-remote-machine-template-update \
     check-capi-docker-machine-template-update \
     check-capi-docker-machine-template-update-recreate \
+    check-capi-docker-machine-template-update-recreate-single \

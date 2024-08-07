@@ -246,10 +246,25 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
-	for i := 0; i < int(desiredReplicas); i++ {
+	machineNames := make(map[string]bool)
+	for _, m := range machines.Names() {
+		machineNames[m] = true
+	}
+
+	if len(machineNames) < int(desiredReplicas) {
+		for i := 0; i < int(desiredReplicas); i++ {
+			name := machineName(kcp.Name, i)
+			machineNames[name] = false
+			if len(machineNames) == int(desiredReplicas) {
+				break
+			}
+		}
+	}
+
+	for name, exists := range machineNames {
 		//name := names.SimpleNameGenerator.GenerateName(fmt.Sprintf("%s-%d", kcp.Name, i))
 		//for i := 0; i < int(kcp.Spec.Replicas); i++ {
-		name := machineName(kcp.Name, i)
+		//name := machineName(kcp.Name, i)
 
 		machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
 		if err != nil {
@@ -263,13 +278,15 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			Namespace:  kcp.Namespace,
 		}
 
-		machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef)
-		if err != nil {
-			return replicasToReport, fmt.Errorf("error creating machine: %w", err)
+		if !exists || kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
+			machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef)
+			if err != nil {
+				return replicasToReport, fmt.Errorf("error creating machine: %w", err)
+			}
+			machines[machine.Name] = machine
 		}
-		machines[machine.Name] = machine
 
-		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machine)
+		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name])
 		if err != nil {
 			return replicasToReport, fmt.Errorf("error creating bootstrap config: %w", err)
 		}
@@ -331,9 +348,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return kcp.Status.Replicas, fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		//time.Sleep(time.Second * 10)
-
-		replicasToReport -= 1
+		replicasToReport--
 		name := machine.Name
 		if err := c.markChildControlNodeToLeave(ctx, name, kubeClient); err != nil {
 			return replicasToReport, fmt.Errorf("error marking controlnode to leave: %w", err)
