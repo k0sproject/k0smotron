@@ -159,6 +159,7 @@ jobs:
           - check-capi-controlplane-docker-worker
           - check-capi-remote-machine-template-update
           - check-capi-docker-machine-template-update
+          - check-capi-docker-machine-template-update-recreate
           - check-capi-remote-machine-job-provision
 
     uses: ./.github/workflows/capi-smoke-tests.yml
