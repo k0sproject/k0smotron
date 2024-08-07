@@ -1342,10 +1342,11 @@ Resource Types:
         <td>false</td>
       </tr><tr>
         <td><b>updateStrategy</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
-          UpdateStrategy defines the strategy to use when updating the control plane. Currently only InPlace is supported.<br/>
+          UpdateStrategy defines the strategy to use when updating the control plane.<br/>
           <br/>
+            <i>Enum</i>: InPlace, Recreate<br/>
             <i>Default</i>: InPlace<br/>
         </td>
         <td>false</td>

@@ -53,9 +53,9 @@ type K0sControlPlaneSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
 	Replicas int32 `json:"replicas,omitempty"`
-	// UpdateStrategy defines the strategy to use when updating the control plane. Currently only InPlace is supported.
+	// UpdateStrategy defines the strategy to use when updating the control plane.
 	//+kubebuilder:validation:Optional
-	//+kubebuilder:validation:Enum:InPlace,Recreate
+	//+kubebuilder:validation:Enum=InPlace;Recreate
 	//+kubebuilder:default=InPlace
 	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
 	// Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or

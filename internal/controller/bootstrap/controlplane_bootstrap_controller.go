@@ -137,7 +137,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	for _, arg := range config.Spec.Args {
-		if arg == "--enable-worker" || arg == "--enable-worker=true" {
+		if arg == "--enable-worker" || arg == "--enable-worker=true" || arg == "--single" {
 			scope.WorkerEnabled = true
 			break
 		}
@@ -218,6 +218,11 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error collecting machines: %w", err)
+	}
+
+	if machines.Len() == 0 {
+		log.Info("No control plane machines found, waiting for machines to be created")
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if machines.Oldest().Name == config.Name {

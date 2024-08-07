@@ -20,8 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/Masterminds/semver"
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -45,6 +43,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"strings"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
@@ -54,6 +53,8 @@ const (
 	defaultK0sSuffix  = "k0s.0"
 	defaultK0sVersion = "v1.27.9+k0s.0"
 )
+
+var ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines")
 
 type K0sController struct {
 	client.Client
@@ -123,6 +124,9 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 	replicasToReport, err := c.reconcile(ctx, cluster, kcp)
 	if err != nil {
+		if errors.Is(err, ErrNewMachinesNotReady) {
+			return ctrl.Result{RequeueAfter: 10, Requeue: true}, nil
+		}
 		return res, err
 	}
 
@@ -228,8 +232,20 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		replicasToReport = kcp.Status.Replicas
 	}
 
+	var clusterIsUpdating bool
 	if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
+		clusterIsUpdating = true
 		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
+
+			// If the cluster is running in single mode, we can't use the Recreate strategy
+			if kcp.Spec.K0sConfigSpec.Args != nil {
+				for _, arg := range kcp.Spec.K0sConfigSpec.Args {
+					if arg == "--single" {
+						return replicasToReport, fmt.Errorf("UpdateRecreate strategy is not allowed when the cluster is running in single mode")
+					}
+				}
+			}
+
 			desiredReplicas += kcp.Spec.Replicas
 			machinesToDelete = int(kcp.Spec.Replicas)
 			replicasToReport = desiredReplicas
@@ -246,30 +262,51 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
-	for i := 0; i < int(desiredReplicas); i++ {
-		//name := names.SimpleNameGenerator.GenerateName(fmt.Sprintf("%s-%d", kcp.Name, i))
-		//for i := 0; i < int(kcp.Spec.Replicas); i++ {
-		name := machineName(kcp.Name, i)
+	machineNames := make(map[string]bool)
+	for _, m := range machines.Names() {
+		machineNames[m] = true
+	}
 
-		machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
-		if err != nil {
-			return replicasToReport, fmt.Errorf("error creating machine from template: %w", err)
+	if len(machineNames) < int(desiredReplicas) {
+		for i := len(machineNames); i < int(desiredReplicas); i++ {
+			name := machineName(kcp.Name, i)
+			machineNames[name] = false
+			if len(machineNames) == int(desiredReplicas) {
+				break
+			}
+		}
+	}
+
+	for name, exists := range machineNames {
+		if !exists || kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
+			// Wait for the previous machine to be created to avoid etcd issues
+			if clusterIsUpdating {
+				err := c.checkMachineIsReady(ctx, machines.Newest().Name, cluster)
+				if err != nil {
+					return int32(machines.Len()), err
+				}
+			}
+
+			machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
+			if err != nil {
+				return replicasToReport, fmt.Errorf("error creating machine from template: %w", err)
+			}
+
+			infraRef := corev1.ObjectReference{
+				APIVersion: machineFromTemplate.GetAPIVersion(),
+				Kind:       machineFromTemplate.GetKind(),
+				Name:       machineFromTemplate.GetName(),
+				Namespace:  kcp.Namespace,
+			}
+
+			machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef)
+			if err != nil {
+				return replicasToReport, fmt.Errorf("error creating machine: %w", err)
+			}
+			machines[machine.Name] = machine
 		}
 
-		infraRef := corev1.ObjectReference{
-			APIVersion: machineFromTemplate.GetAPIVersion(),
-			Kind:       machineFromTemplate.GetKind(),
-			Name:       machineFromTemplate.GetName(),
-			Namespace:  kcp.Namespace,
-		}
-
-		machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef)
-		if err != nil {
-			return replicasToReport, fmt.Errorf("error creating machine: %w", err)
-		}
-		machines[machine.Name] = machine
-
-		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machine)
+		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name])
 		if err != nil {
 			return replicasToReport, fmt.Errorf("error creating bootstrap config: %w", err)
 		}
@@ -277,46 +314,18 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	for _, m := range machines {
 		ver := semver.MustParse(kcp.Spec.Version)
-		fmt.Println("machines ver", machinesToDelete, *m.Spec.Version, fmt.Sprintf("v%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()), m.Spec.Version != nil && *m.Spec.Version != fmt.Sprintf("v%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()))
 		if m.Spec.Version != nil && *m.Spec.Version != fmt.Sprintf("v%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()) {
 			continue
 		}
 
 		if machinesToDelete > 0 {
-			kubeClient, err := c.getKubeClient(ctx, cluster)
+			err := c.checkMachineIsReady(ctx, m.Name, cluster)
 			if err != nil {
-				return replicasToReport, fmt.Errorf("error getting cluster client set for machine update: %w", err)
-			}
-			var cn autopilot.ControlNode
-			err = kubeClient.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + m.Name).Do(ctx).Into(&cn)
-			fmt.Println("machines !!!", cn.Name, cn.Status)
-			if err != nil {
-				if apierrors.IsNotFound(err) {
-					return int32(machines.Len()), fmt.Errorf("waiting for new machines")
-				}
-				return replicasToReport, fmt.Errorf("error getting controlnode: %w", err)
+				return int32(machines.Len()), err
 			}
 		}
 	}
 
-	//if machinesToDelete > 0 && !isNewMachineReady {
-	//	return replicasToReport, fmt.Errorf("waiting for new machines")
-	//}
-
-	//if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
-	//	kubeClient, err := c.getKubeClient(ctx, cluster)
-	//	if err != nil {
-	//		return replicasToReport, fmt.Errorf("error getting cluster client set for machine update: %w", err)
-	//	}
-	//
-	//	err = c.createAutopilotPlan(ctx, kcp, kubeClient)
-	//	if err != nil {
-	//		return replicasToReport, fmt.Errorf("error creating autopilot plan: %w", err)
-	//	}
-	//}
-
-	// TODO: Scale down machines if needed
-	//if kcp.Status.Replicas > kcp.Spec.Replicas {
 	if machinesToDelete > 0 {
 		kubeClient, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
@@ -331,9 +340,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return kcp.Status.Replicas, fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		//time.Sleep(time.Second * 10)
-
-		replicasToReport -= 1
+		replicasToReport--
 		name := machine.Name
 		if err := c.markChildControlNodeToLeave(ctx, name, kubeClient); err != nil {
 			return replicasToReport, fmt.Errorf("error marking controlnode to leave: %w", err)
@@ -387,6 +394,22 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 		return fmt.Errorf("error patching K0sControllerConfig: %w", err)
 	}
 
+	return nil
+}
+
+func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName string, cluster *clusterv1.Cluster) error {
+	kubeClient, err := c.getKubeClient(ctx, cluster)
+	if err != nil {
+		return fmt.Errorf("error getting cluster client set for machine update: %w", err)
+	}
+	var cn autopilot.ControlNode
+	err = kubeClient.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + machineName).Do(ctx).Into(&cn)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return ErrNewMachinesNotReady
+		}
+		return fmt.Errorf("error getting controlnode: %w", err)
+	}
 	return nil
 }
 

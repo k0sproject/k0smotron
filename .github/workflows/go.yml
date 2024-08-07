@@ -160,6 +160,7 @@ jobs:
           - check-capi-remote-machine-template-update
           - check-capi-docker-machine-template-update
           - check-capi-docker-machine-template-update-recreate
+          - check-capi-docker-machine-template-update-recreate-single
           - check-capi-remote-machine-job-provision
 
     uses: ./.github/workflows/capi-smoke-tests.yml
