@@ -151,11 +151,28 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	// Verify the RemoteMachine is at expected state
+	var rmName string
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		rm, err := s.findRemoteMachines("default")
+		if err != nil {
+			s.T().Errorf("failed to list RemoteMachines: %v", err)
+			return false, nil
+		}
+
+		if len(rm) == 0 {
+			return true, nil
+		}
+
+		rmName = rm[0].GetName()
+		return true, nil
+	})
+	s.Require().NoError(err)
 
 	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		rm, err := s.getRemoteMachine("remote-test-0", "default")
+		rm, err := s.getRemoteMachine(rmName, "default")
 		if err != nil {
 			return false, err
 		}
@@ -165,25 +182,39 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, rmName, corev1.ConditionTrue))
 
+	s.T().Log("waiting for node to have the correct providerID")
 	err = wait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (done bool, err error) {
-		node, err := kmcKC.CoreV1().Nodes().Get(ctx, "remote-test-0", metav1.GetOptions{})
+		node, err := kmcKC.CoreV1().Nodes().Get(ctx, rmName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
 
-		return node.Labels["k0smotron.io/machine-name"] == "remote-test-0" && node.Spec.ProviderID == expectedProviderID, nil
+		return node.Labels["k0smotron.io/machine-name"] == rmName && node.Spec.ProviderID == expectedProviderID, nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("deleting node from cluster")
-	s.Require().NoError(s.deleteRemoteMachine("remote-test-0", "default"))
+	s.Require().NoError(s.deleteRemoteMachine(rmName, "default"))
 
 	nodes, err := kmcKC.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	s.Require().NoError(err)
 	s.Require().Equal(corev1.ConditionFalse, nodes.Items[0].Status.Conditions[0].Status)
 
+}
+
+func (s *RemoteMachineTemplateSuite) findRemoteMachines(namespace string) ([]infra.RemoteMachine, error) {
+	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/%s/remotemachines", namespace)
+	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(s.Context())
+	if err != nil {
+		return nil, err
+	}
+	rm := &infra.RemoteMachineList{}
+	if err := yaml.Unmarshal(result, rm); err != nil {
+		return nil, err
+	}
+	return rm.Items, nil
 }
 
 func (s *RemoteMachineTemplateSuite) getRemoteMachine(name string, namespace string) (*infra.RemoteMachine, error) {
