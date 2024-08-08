@@ -183,8 +183,9 @@ func main() {
 			os.Exit(1)
 		}
 		if err = (&bootstrap.ProviderIDController{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
+			Client:    mgr.GetClient(),
+			Scheme:    mgr.GetScheme(),
+			ClientSet: clientSet,
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
