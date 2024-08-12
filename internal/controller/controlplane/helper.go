@@ -219,6 +219,15 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 		armDownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
 	}
 
+	var nodeNames []string
+	for _, machine := range machines {
+		if machine.Status.NodeRef != nil {
+			nodeNames = append(nodeNames, machine.Status.NodeRef.Name)
+		} else {
+			nodeNames = append(nodeNames, machine.Name)
+		}
+	}
+
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 	plan := []byte(`
 	{
@@ -248,7 +257,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 						"controllers": {
 							"discovery": {
 							    "static": {
-									"nodes": ["` + strings.Join(machines.Names(), `","`) + `"]
+									"nodes": ["` + strings.Join(nodeNames, `","`) + `"]
 								}
 							}
 						}
