@@ -246,11 +246,11 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 					},
 					"targets": {
 						"controllers": {
-							"discovery": {
-							    "static": {
-									"nodes": ["` + strings.Join(machines.Names(), `","`) + `"]
-								}
-							}
+							"discovery": { }
+							    // "static": {
+								// 	"nodes": ["` + strings.Join(machines.Names(), `","`) + `"]
+								// }
+							// }
 						}
 					}
 				}
