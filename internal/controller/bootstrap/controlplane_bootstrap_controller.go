@@ -541,16 +541,8 @@ func createCPInstallCmd(scope *ControllerScope) string {
 		"--env AUTOPILOT_HOSTNAME=" + scope.Config.Name,
 	}
 
-	if scope.WorkerEnabled {
-		installCmd = append(installCmd,
-			"--kubelet-extra-args=--hostname-override="+scope.Config.Name,
-			"--labels="+fmt.Sprintf("%s=%s", machineNameNodeLabel, scope.ConfigOwner.GetName()),
-		)
-	}
+	installCmd = append(installCmd, mergeExtraArgs(scope)...)
 
-	if scope.Config.Spec.Args != nil && len(scope.Config.Spec.Args) > 0 {
-		installCmd = append(installCmd, scope.Config.Spec.Args...)
-	}
 	return strings.Join(installCmd, " ")
 }
 
@@ -562,18 +554,38 @@ func createCPInstallCmdWithJoinToken(scope *ControllerScope, tokenPath string) s
 		"--env AUTOPILOT_HOSTNAME=" + scope.Config.Name,
 	}
 
-	if scope.WorkerEnabled {
-		installCmd = append(installCmd,
-			"--kubelet-extra-args=--hostname-override="+scope.Config.Name,
-			"--labels="+fmt.Sprintf("%s=%s", machineNameNodeLabel, scope.ConfigOwner.GetName()),
-		)
+	installCmd = append(installCmd, mergeExtraArgs(scope)...)
+	installCmd = append(installCmd, "--token-file", tokenPath)
+
+	return strings.Join(installCmd, " ")
+}
+
+func mergeExtraArgs(scope *ControllerScope) []string {
+	args := []string{
+		"--labels=" + fmt.Sprintf("%s=%s", machineNameNodeLabel, scope.ConfigOwner.GetName()),
 	}
 
-	installCmd = append(installCmd, "--token-file", tokenPath)
-	if scope.Config.Spec.Args != nil && len(scope.Config.Spec.Args) > 0 {
-		installCmd = append(installCmd, scope.Config.Spec.Args...)
+	kubeletExtraArgs := fmt.Sprintf(`--kubelet-extra-args="--hostname-override=%s"`, scope.Config.Name)
+	for _, arg := range scope.Config.Spec.Args {
+		if strings.HasPrefix(arg, "--kubelet-extra-args") {
+			_, after, ok := strings.Cut(arg, "=")
+			if !ok {
+				_, after, ok = strings.Cut(arg, " ")
+			}
+			if !ok {
+				kubeletExtraArgs = arg
+			} else {
+				kubeletExtraArgs = fmt.Sprintf(`--kubelet-extra-args="--hostname-override=%s %s"`, scope.Config.Name, strings.Trim(after, "\"'"))
+			}
+		} else {
+			args = append(args, arg)
+		}
 	}
-	return strings.Join(installCmd, " ")
+	if scope.WorkerEnabled {
+		args = append(args, kubeletExtraArgs)
+	}
+
+	return args
 }
 
 func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, config *bootstrapv1.K0sControllerConfig) (string, error) {
