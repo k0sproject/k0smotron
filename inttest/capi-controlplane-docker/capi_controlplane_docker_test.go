@@ -129,7 +129,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	}
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-cluster-docker-test-worker-0", corev1.ConditionTrue))
+	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
 	s.T().Log("verifying cloud-init extras")
 	preStartFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/pre-start")

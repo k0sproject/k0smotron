@@ -129,7 +129,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-cluster-docker-test-worker-0", corev1.ConditionTrue))
+	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
 	s.T().Log("waiting for frp server to be ready")
 	s.Require().NoError(k0stestutil.WaitForDeployment(s.ctx, s.client, "docker-test-frps", "default"))
@@ -151,7 +151,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 		DoRaw(context.Background())
 	s.Require().NoError(err)
 
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, tunneledKmcKC, "docker-test-cluster-docker-test-worker-0", corev1.ConditionTrue))
+	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, tunneledKmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
 	s.Require().NoError(k0stestutil.WaitForDeployment(s.ctx, tunneledKmcKC, "frpc", "kube-system"))
 }

@@ -150,6 +150,16 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>useSystemHostname</b></td>
+        <td>boolean</td>
+        <td>
+          UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>version</b></td>
         <td>string</td>
         <td>
@@ -428,6 +438,16 @@ This should be only set in the case you want to use a pre-generated join token.<
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>useSystemHostname</b></td>
+        <td>boolean</td>
+        <td>
+          UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -783,6 +803,16 @@ This should be only set in the case you want to use a pre-generated join token.<
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>useSystemHostname</b></td>
+        <td>boolean</td>
+        <td>
+          UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1276,6 +1306,16 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         <td>object</td>
         <td>
           Tunneling defines the tunneling configuration for the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>useSystemHostname</b></td>
+        <td>boolean</td>
+        <td>
+          UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1892,6 +1932,16 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         <td>object</td>
         <td>
           Tunneling defines the tunneling configuration for the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>useSystemHostname</b></td>
+        <td>boolean</td>
+        <td>
+          UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr></tbody>
