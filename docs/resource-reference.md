@@ -168,7 +168,7 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
 
 
 
-
+File defines a file to be passed to user_data upon creation.
 
 <table>
     <thead>
@@ -187,6 +187,13 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrollerconfigspecfilesindexcontentfrom">contentFrom</a></b></td>
+        <td>object</td>
+        <td>
+          ContentFrom specifies the source of the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
         <td>
@@ -200,6 +207,108 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
           <br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.spec.files[index].contentFrom
+<sup><sup>[↩ Parent](#k0scontrollerconfigspecfilesindex)</sup></sup>
+
+
+
+ContentFrom specifies the source of the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrollerconfigspecfilesindexcontentfromconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrollerconfigspecfilesindexcontentfromsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.spec.files[index].contentFrom.configMapRef
+<sup><sup>[↩ Parent](#k0scontrollerconfigspecfilesindexcontentfrom)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.spec.files[index].contentFrom.secretRef
+<sup><sup>[↩ Parent](#k0scontrollerconfigspecfilesindexcontentfrom)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -449,7 +558,7 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
 
 
 
-
+File defines a file to be passed to user_data upon creation.
 
 <table>
     <thead>
@@ -468,6 +577,13 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0sworkerconfigspecfilesindexcontentfrom">contentFrom</a></b></td>
+        <td>object</td>
+        <td>
+          ContentFrom specifies the source of the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
         <td>
@@ -481,6 +597,108 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
           <br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfig.spec.files[index].contentFrom
+<sup><sup>[↩ Parent](#k0sworkerconfigspecfilesindex)</sup></sup>
+
+
+
+ContentFrom specifies the source of the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0sworkerconfigspecfilesindexcontentfromconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0sworkerconfigspecfilesindexcontentfromsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfig.spec.files[index].contentFrom.configMapRef
+<sup><sup>[↩ Parent](#k0sworkerconfigspecfilesindexcontentfrom)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfig.spec.files[index].contentFrom.secretRef
+<sup><sup>[↩ Parent](#k0sworkerconfigspecfilesindexcontentfrom)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -804,7 +1022,7 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
 
 
 
-
+File defines a file to be passed to user_data upon creation.
 
 <table>
     <thead>
@@ -823,6 +1041,13 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecfilesindexcontentfrom">contentFrom</a></b></td>
+        <td>object</td>
+        <td>
+          ContentFrom specifies the source of the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
         <td>
@@ -836,6 +1061,108 @@ For reference see the Kubernetes version skew policy: https://kubernetes.io/docs
           <br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec.template.spec.files[index].contentFrom
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespecfilesindex)</sup></sup>
+
+
+
+ContentFrom specifies the source of the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecfilesindexcontentfromconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecfilesindexcontentfromsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec.template.spec.files[index].contentFrom.configMapRef
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespecfilesindexcontentfrom)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec.template.spec.files[index].contentFrom.secretRef
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespecfilesindexcontentfrom)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -1287,7 +1614,7 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
 
 
 
-
+File defines a file to be passed to user_data upon creation.
 
 <table>
     <thead>
@@ -1306,6 +1633,13 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecfilesindexcontentfrom">contentFrom</a></b></td>
+        <td>object</td>
+        <td>
+          ContentFrom specifies the source of the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
         <td>
@@ -1319,6 +1653,108 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
           <br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.files[index].contentFrom
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecfilesindex)</sup></sup>
+
+
+
+ContentFrom specifies the source of the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecfilesindexcontentfromconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecfilesindexcontentfromsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.files[index].contentFrom.configMapRef
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecfilesindexcontentfrom)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.files[index].contentFrom.secretRef
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecfilesindexcontentfrom)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -1903,7 +2339,7 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
 
 
 
-
+File defines a file to be passed to user_data upon creation.
 
 <table>
     <thead>
@@ -1922,6 +2358,13 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfrom">contentFrom</a></b></td>
+        <td>object</td>
+        <td>
+          ContentFrom specifies the source of the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
         <td>
@@ -1935,6 +2378,108 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
           <br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.files[index].contentFrom
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindex)</sup></sup>
+
+
+
+ContentFrom specifies the source of the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfromconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfromsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.files[index].contentFrom.configMapRef
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfrom)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.files[index].contentFrom.secretRef
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfrom)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

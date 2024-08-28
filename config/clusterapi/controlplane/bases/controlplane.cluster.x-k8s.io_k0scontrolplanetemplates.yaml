@@ -80,9 +80,46 @@ spec:
                             description: Files specifies extra files to be passed
                               to user_data upon creation.
                             items:
+                              description: File defines a file to be passed to user_data
+                                upon creation.
                               properties:
                                 content:
                                   type: string
+                                contentFrom:
+                                  description: ContentFrom specifies the source of
+                                    the content.
+                                  properties:
+                                    configMapRef:
+                                      description: ConfigMapRef is a reference to
+                                        a configmap that contains the content.
+                                      properties:
+                                        key:
+                                          description: Key is the key in the source
+                                            that contains the content
+                                          type: string
+                                        name:
+                                          description: Name is the name of the source
+                                          type: string
+                                      required:
+                                      - key
+                                      - name
+                                      type: object
+                                    secretRef:
+                                      description: SecretRef is a reference to a secret
+                                        that contains the content.
+                                      properties:
+                                        key:
+                                          description: Key is the key in the source
+                                            that contains the content
+                                          type: string
+                                        name:
+                                          description: Name is the name of the source
+                                          type: string
+                                      required:
+                                      - key
+                                      - name
+                                      type: object
+                                  type: object
                                 path:
                                   type: string
                                 permissions:

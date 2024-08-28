@@ -167,7 +167,11 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		},
 	}
 
-	files = append(files, config.Spec.Files...)
+	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, config.Spec.Files)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	files = append(files, resolvedFiles...)
 	downloadCommands := createDownloadCommands(config)
 	installCmd := createInstallCmd(scope)
 
@@ -336,6 +340,47 @@ func createDownloadCommands(config *bootstrapv1.K0sWorkerConfig) []string {
 	}
 
 	return []string{"curl -sSfL https://get.k0s.sh | sh"}
+}
+
+func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, filesToResolve []bootstrapv1.File) ([]cloudinit.File, error) {
+	var files []cloudinit.File
+	for _, file := range filesToResolve {
+		if file.ContentFrom != nil {
+			switch {
+			case file.ContentFrom.SecretRef != nil:
+				s := &corev1.Secret{}
+				err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: file.ContentFrom.SecretRef.Name}, s)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get file content from source: %w", err)
+				}
+
+				content, ok := s.Data[file.ContentFrom.SecretRef.Key]
+				if !ok {
+					return nil, fmt.Errorf("failed to get file content from source: key not found in secret")
+				}
+				file.Content = string(content)
+			case file.ContentFrom.ConfigMapRef != nil:
+				cfg := &corev1.ConfigMap{}
+				err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: file.ContentFrom.ConfigMapRef.Name}, cfg)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get file content from source: %w", err)
+				}
+
+				content, ok := cfg.Data[file.ContentFrom.SecretRef.Key]
+				if !ok {
+					return nil, fmt.Errorf("failed to get file content from source: key not found in configmap")
+				}
+				file.Content = content
+			default:
+				return nil, fmt.Errorf("failed to get file content from source: no source specified")
+			}
+
+			file.ContentFrom = nil
+		}
+
+		files = append(files, file.File)
+	}
+	return files, nil
 }
 
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {

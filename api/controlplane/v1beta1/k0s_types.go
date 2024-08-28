@@ -18,7 +18,6 @@ package v1beta1
 
 import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -62,34 +61,6 @@ type K0sControlPlaneSpec struct {
 	// just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.
 	//+kubebuilder:validation:Optional
 	Version string `json:"version,omitempty"`
-}
-
-type K0sBootstrapConfigSpec struct {
-	// Files specifies extra files to be passed to user_data upon creation.
-	// +kubebuilder:validation:Optional
-	Files []cloudinit.File `json:"files,omitempty"`
-
-	// Args specifies extra arguments to be passed to k0s worker.
-	// See: https://docs.k0sproject.io/stable/worker-node-config/
-	// See: https://docs.k0sproject.io/stable/cli/k0s_worker/
-	Args []string `json:"args,omitempty"`
-
-	// PreStartCommands specifies commands to be run before starting k0s worker.
-	// +kubebuilder:validation:Optional
-	PreStartCommands []string `json:"preStartCommands,omitempty"`
-
-	// PostStartCommands specifies commands to be run after starting k0s worker.
-	// +kubebuilder:validation:Optional
-	PostStartCommands []string `json:"postStartCommands,omitempty"`
-
-	// PreInstallK0s specifies whether k0s binary is pre-installed on the node.
-	// +kubebuilder:validation:Optional
-	PreInstalledK0s bool `json:"preInstalledK0s,omitempty"`
-
-	// DownloadURL specifies the URL from which to download the k0s binary.
-	// If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
-	// +kubebuilder:validation:Optional
-	DownloadURL string `json:"downloadURL,omitempty"`
 }
 
 type K0sControlPlaneMachineTemplate struct {
