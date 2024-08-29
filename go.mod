@@ -1,6 +1,6 @@
 module github.com/k0sproject/k0smotron
 
-go 1.21
+go 1.22
 
 require (
 	github.com/cloudflare/cfssl v1.6.4
