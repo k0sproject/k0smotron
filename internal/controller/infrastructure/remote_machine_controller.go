@@ -351,7 +351,7 @@ func (r *RemoteMachineController) returnMachineToPool(ctx context.Context, rm *i
 		}
 	}
 	log := log.FromContext(ctx).WithValues("remotemachine", rm.Name)
-	log.Error(fmt.Errorf("no pooled machine found for remote machine"), "pooled machine not found", "namespace", rm.Namespace, "name", rm.Name)
+	log.Error(fmt.Errorf("no pooled machine found for remote machine"), "failed to found pooled remote machine", "namespace", rm.Namespace, "name", rm.Name)
 
 	return nil
 }
