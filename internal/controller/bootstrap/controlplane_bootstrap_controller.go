@@ -233,7 +233,12 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		}
 		files = append(files, tunnelingFiles...)
 	}
-	files = append(files, config.Spec.Files...)
+
+	resolvedFiles, err := resolveFiles(ctx, c.Client, scope.Cluster, config.Spec.Files)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	files = append(files, resolvedFiles...)
 	files = append(files, genShutdownServiceFiles()...)
 
 	downloadCommands := createCPDownloadCommands(config)

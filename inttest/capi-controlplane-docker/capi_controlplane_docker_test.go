@@ -141,6 +141,12 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	extraFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
+	extraFileFromSecret, err := getDockerNodeFile("docker-test-cluster-docker-test-0", "/tmp/test-file-secret")
+	s.Require().NoError(err)
+	s.Require().Equal("test", extraFileFromSecret)
+	extraFileFromSecret, err = getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file-secret")
+	s.Require().NoError(err)
+	s.Require().Equal("test", extraFileFromSecret)
 }
 
 func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
@@ -250,6 +256,13 @@ spec:
             anonymous-auth: "true"
         telemetry:
           enabled: false
+    
+    files:
+    - path: /tmp/test-file-secret
+      contentFrom: 
+        secretRef: 
+          name: test-file-secret
+          key: value
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -299,6 +312,11 @@ spec:
   files:
     - path: /tmp/test-file
       content: test-file
+    - path: /tmp/test-file-secret
+      contentFrom: 
+        secretRef: 
+          name: test-file-secret
+          key: value
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
@@ -306,4 +324,13 @@ metadata:
   name: docker-test-worker-0
   namespace: default
 spec:
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-file-secret
+  namespace: default
+type: Opaque
+data:
+  value: dGVzdA==
 `

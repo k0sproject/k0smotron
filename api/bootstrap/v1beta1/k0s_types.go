@@ -66,7 +66,7 @@ type K0sWorkerConfigSpec struct {
 
 	// Files specifies extra files to be passed to user_data upon creation.
 	// +kubebuilder:validation:Optional
-	Files []cloudinit.File `json:"files,omitempty"`
+	Files []File `json:"files,omitempty"`
 
 	// Args specifies extra arguments to be passed to k0s worker.
 	// See: https://docs.k0sproject.io/stable/worker-node-config/
@@ -151,6 +151,34 @@ type K0sControllerConfigSpec struct {
 	*K0sConfigSpec `json:",inline"`
 }
 
+// File defines a file to be passed to user_data upon creation.
+type File struct {
+	cloudinit.File `json:",inline"`
+	// ContentFrom specifies the source of the content.
+	// +kubebuilder:validation:Optional
+	ContentFrom *ContentSource `json:"contentFrom,omitempty"`
+}
+
+// ContentSource defines the source of the content.
+type ContentSource struct {
+	// SecretRef is a reference to a secret that contains the content.
+	// +kubebuilder:validation:Optional
+	SecretRef *ContentSourceRef `json:"secretRef,omitempty"`
+	// ConfigMapRef is a reference to a configmap that contains the content.
+	// +kubebuilder:validation:Optional
+	ConfigMapRef *ContentSourceRef `json:"configMapRef,omitempty"`
+}
+
+// ContentSourceRef is a reference to a secret or a configmap that contains the content.
+type ContentSourceRef struct {
+	// Name is the name of the source
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// Key is the key in the source that contains the content
+	// +kubebuilder:validation:Required
+	Key string `json:"key"`
+}
+
 type K0sConfigSpec struct {
 	// K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 	// If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
@@ -160,7 +188,7 @@ type K0sConfigSpec struct {
 
 	// Files specifies extra files to be passed to user_data upon creation.
 	// +kubebuilder:validation:Optional
-	Files []cloudinit.File `json:"files,omitempty"`
+	Files []File `json:"files,omitempty"`
 
 	// Args specifies extra arguments to be passed to k0s controller.
 	// See: https://docs.k0sproject.io/stable/cli/k0s_controller/
