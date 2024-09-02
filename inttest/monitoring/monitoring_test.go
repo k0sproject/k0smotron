@@ -33,7 +33,7 @@ import (
 )
 
 type MonitoringSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *MonitoringSuite) TestK0sGetsUp() {
@@ -106,7 +106,7 @@ func (s *MonitoringSuite) TestK0sGetsUp() {
 
 func TestMonitoringSuite(t *testing.T) {
 	s := MonitoringSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,

@@ -98,7 +98,7 @@ spec:
   user: root
   sshKeyRef:
     # This defines which SSH key to use for connecting to the machine. The Secret needs to have key 'value' with the SSH private key in it.
-    name: footloose-key
+    name: bootloose-key
 ```
 
 ## Using `RemoteMachine`s in `machineTemplate`s of higher-level objects
@@ -130,7 +130,7 @@ spec:
     port: 22
     user: root
     sshKeyRef:
-      name: footloose-key-0
+      name: bootloose-key-0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: PooledRemoteMachine
@@ -144,7 +144,7 @@ spec:
     port: 22
     user: root
     sshKeyRef:
-      name: footloose-key-1
+      name: bootloose-key-1
 ```
 
 Then you can use the `RemoteMachineTemplate` in the `machineTemplate` of `K0sControlPlane`:

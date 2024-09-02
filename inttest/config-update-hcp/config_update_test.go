@@ -18,10 +18,11 @@ package configupdate
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -38,7 +39,7 @@ import (
 )
 
 type ConfigUpdateSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *ConfigUpdateSuite) TestK0sGetsUp() {
@@ -80,7 +81,7 @@ func (s *ConfigUpdateSuite) TestK0sGetsUp() {
 	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", localPort)
 	s.Require().NoError(err)
 
-	err = common.WaitForDaemonSet(s.Context(), kmcKC, "kube-router")
+	err = common.WaitForDaemonSet(s.Context(), kmcKC, "kube-router", "kube-system")
 	s.Require().NoError(err)
 
 	s.T().Log("updating k0smotron cluster")
@@ -100,7 +101,7 @@ func (s *ConfigUpdateSuite) TestK0sGetsUp() {
 
 func TestConfigUpdateSuite(t *testing.T) {
 	s := ConfigUpdateSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,

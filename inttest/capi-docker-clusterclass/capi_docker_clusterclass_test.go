@@ -25,15 +25,16 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"github.com/k0sproject/k0s/inttest/common"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/ssh"
 	"os"
 	"os/exec"
 	"strconv"
 	"testing"
 	"text/template"
 	"time"
+
+	"github.com/k0sproject/k0s/inttest/common"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
 
@@ -47,7 +48,7 @@ import (
 )
 
 type CAPIDockerClusterClassSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 
 	client                *kubernetes.Clientset
 	restConfig            *rest.Config
@@ -59,7 +60,7 @@ type CAPIDockerClusterClassSuite struct {
 }
 
 func (s *CAPIDockerClusterClassSuite) SetupSuite() {
-	s.FootlooseSuite.SetupSuite()
+	s.BootlooseSuite.SetupSuite()
 }
 
 //func TestCAPIDockerClusterClassSuite(t *testing.T) {
@@ -102,7 +103,7 @@ func TestCAPIDockerClusterClassSuite(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Log("111cluster objects applied, waiting for cluster to be ready")
 	s := CAPIDockerClusterClassSuite{
-		FootlooseSuite: common.FootlooseSuite{
+		BootlooseSuite: common.BootlooseSuite{
 			ControllerCount:      0,
 			WorkerCount:          0,
 			K0smotronWorkerCount: 1,
@@ -398,12 +399,12 @@ spec:
     port: 22
     user: root
     sshKeyRef:
-      name: footloose-key
+      name: bootloose-key
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name:  footloose-key
+  name:  bootloose-key
   namespace: default
 data:
    value: {{ .SSHKey }}

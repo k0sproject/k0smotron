@@ -3390,8 +3390,14 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3476,8 +3482,14 @@ to OpenStack.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3533,8 +3545,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3688,8 +3706,14 @@ secret object contains more than one secret, all secret references are passed.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3766,7 +3790,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3800,7 +3824,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -4150,6 +4174,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -4313,21 +4355,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -4345,35 +4372,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -4667,8 +4665,14 @@ scripts.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5043,8 +5047,14 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5273,6 +5283,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -5298,6 +5330,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5338,8 +5535,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5458,7 +5661,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5492,7 +5695,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -5597,8 +5800,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5901,8 +6110,14 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6028,8 +6243,14 @@ sensitive information. If this is not provided, Login operation will fail.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6238,8 +6459,14 @@ credentials.  If not specified, default values will be attempted.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6882,8 +7109,14 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6968,8 +7201,14 @@ to OpenStack.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7025,8 +7264,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7180,8 +7425,14 @@ secret object contains more than one secret, all secret references are passed.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7258,7 +7509,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#k0smotroncontrolplanespecmountsindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7292,7 +7543,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -7642,6 +7893,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -7805,21 +8074,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -7837,35 +8091,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.mounts[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -8159,8 +8384,14 @@ scripts.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8535,8 +8766,14 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8765,6 +9002,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -8790,6 +9049,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8830,8 +9254,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8950,7 +9380,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8984,7 +9414,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -9089,8 +9519,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9393,8 +9829,14 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9520,8 +9962,14 @@ sensitive information. If this is not provided, Login operation will fail.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9730,8 +10178,14 @@ credentials.  If not specified, default values will be attempted.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10049,6 +10503,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -10212,21 +10684,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -10244,35 +10701,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -10472,7 +10900,25 @@ This is an alpha field and requires enabling RecoverVolumeExpansionFailure featu
         <td>[]object</td>
         <td>
           conditions is the current Condition of persistent volume claim. If underlying persistent volume is being
-resized then the Condition will be set to 'ResizeStarted'.<br/>
+resized then the Condition will be set to 'Resizing'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>currentVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
+When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatusmodifyvolumestatus">modifyVolumeStatus</a></b></td>
+        <td>object</td>
+        <td>
+          ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10546,8 +10992,53 @@ PersistentVolumeClaimCondition contains details about state of pvc
         <td>string</td>
         <td>
           reason is a unique, this should be a short, machine understandable string that gives the reason
-for condition's last transition. If it reports "ResizeStarted" that means the underlying
+for condition's last transition. If it reports "Resizing" that means the underlying
 persistent volume is being resized.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.status.modifyVolumeStatus
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatus)</sup></sup>
+
+
+
+ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status is the status of the ControllerModifyVolume operation. It can be in any of following states:
+ - Pending
+   Pending indicates that the PersistentVolumeClaim cannot be modified due to unmet requirements, such as
+   the specified VolumeAttributesClass not existing.
+ - InProgress
+   InProgress indicates that the volume is being modified.
+ - Infeasible
+  Infeasible indicates that the request has been rejected as invalid by the CSI driver. To
+	  resolve the error, a valid VolumeAttributesClass needs to be specified.
+Note: New statuses can be added in the future. Consumers should check for unknown statuses and fail appropriately.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          targetVolumeAttributesClassName is the name of the VolumeAttributesClass the PVC currently being reconciled<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11726,8 +12217,14 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11812,8 +12309,14 @@ to OpenStack.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11869,8 +12372,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12024,8 +12533,14 @@ secret object contains more than one secret, all secret references are passed.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12102,7 +12617,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12136,7 +12651,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -12486,6 +13001,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -12649,21 +13182,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -12681,35 +13199,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -13003,8 +13492,14 @@ scripts.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13379,8 +13874,14 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13609,6 +14110,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -13634,6 +14157,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13674,8 +14362,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13794,7 +14488,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13828,7 +14522,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -13933,8 +14627,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -14237,8 +14937,14 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -14364,8 +15070,14 @@ sensitive information. If this is not provided, Login operation will fail.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -14574,8 +15286,14 @@ credentials.  If not specified, default values will be attempted.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -15218,8 +15936,14 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -15304,8 +16028,14 @@ to OpenStack.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -15361,8 +16091,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15516,8 +16252,14 @@ secret object contains more than one secret, all secret references are passed.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -15594,7 +16336,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15628,7 +16370,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -15978,6 +16720,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -16141,21 +16901,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -16173,35 +16918,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmountsindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -16495,8 +17211,14 @@ scripts.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -16871,8 +17593,14 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17101,6 +17829,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -17126,6 +17876,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmountsindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmountsindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmountsindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17166,8 +18081,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17286,7 +18207,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexprojectedsourcesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17320,7 +18241,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -17425,8 +18346,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17729,8 +18656,14 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17856,8 +18789,14 @@ sensitive information. If this is not provided, Login operation will fail.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18066,8 +19005,14 @@ credentials.  If not specified, default values will be attempted.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18385,6 +19330,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -18548,21 +19511,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimspecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -18580,35 +19528,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.persistence.persistentVolumeClaim.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimspecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -18808,7 +19727,25 @@ This is an alpha field and requires enabling RecoverVolumeExpansionFailure featu
         <td>[]object</td>
         <td>
           conditions is the current Condition of persistent volume claim. If underlying persistent volume is being
-resized then the Condition will be set to 'ResizeStarted'.<br/>
+resized then the Condition will be set to 'Resizing'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>currentVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
+When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimstatusmodifyvolumestatus">modifyVolumeStatus</a></b></td>
+        <td>object</td>
+        <td>
+          ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18882,8 +19819,53 @@ PersistentVolumeClaimCondition contains details about state of pvc
         <td>string</td>
         <td>
           reason is a unique, this should be a short, machine understandable string that gives the reason
-for condition's last transition. If it reports "ResizeStarted" that means the underlying
+for condition's last transition. If it reports "Resizing" that means the underlying
 persistent volume is being resized.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.persistence.persistentVolumeClaim.status.modifyVolumeStatus
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimstatus)</sup></sup>
+
+
+
+ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status is the status of the ControllerModifyVolume operation. It can be in any of following states:
+ - Pending
+   Pending indicates that the PersistentVolumeClaim cannot be modified due to unmet requirements, such as
+   the specified VolumeAttributesClass not existing.
+ - InProgress
+   InProgress indicates that the volume is being modified.
+ - Infeasible
+  Infeasible indicates that the request has been rejected as invalid by the CSI driver. To
+	  resolve the error, a valid VolumeAttributesClass needs to be specified.
+Note: New statuses can be added in the future. Consumers should check for unknown statuses and fail appropriately.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          targetVolumeAttributesClassName is the name of the VolumeAttributesClass the PVC currently being reconciled<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -19755,8 +20737,8 @@ failures per index is kept in the pod's
 batch.kubernetes.io/job-index-failure-count annotation. It can only
 be set when Job's completionMode=Indexed, and the Pod's restart
 policy is Never. The field is immutable.
-This field is alpha-level. It can be used when the `JobBackoffLimitPerIndex`
-feature gate is enabled (disabled by default).<br/>
+This field is beta-level. It can be used when the `JobBackoffLimitPerIndex`
+feature gate is enabled (enabled by default).<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
@@ -19807,6 +20789,24 @@ More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>managedBy</b></td>
+        <td>string</td>
+        <td>
+          ManagedBy field indicates the controller that manages a Job. The k8s Job
+controller reconciles jobs which don't have this field at all or the field
+value is the reserved string `kubernetes.io/job-controller`, but skips
+reconciling Jobs with a custom value for this field.
+The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
+all characters before the first "/" must be a valid subdomain as defined
+by RFC 1123. All characters trailing the first "/" must be valid HTTP Path
+characters as defined by RFC 3986. The value cannot exceed 64 characters.
+
+
+This field is alpha-level. The job controller accepts setting the field
+when the feature gate JobManagedBy is enabled (disabled by default).<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>manualSelector</b></td>
         <td>boolean</td>
         <td>
@@ -19834,8 +20834,8 @@ all of its indexes and is marked with the `Complete` Job condition.
 It can only be specified when backoffLimitPerIndex is set.
 It can be null or up to completions. It is required and must be
 less than or equal to 10^4 when is completions greater than 10^5.
-This field is alpha-level. It can be used when the `JobBackoffLimitPerIndex`
-feature gate is enabled (disabled by default).<br/>
+This field is beta-level. It can be used when the `JobBackoffLimitPerIndex`
+feature gate is enabled (enabled by default).<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
@@ -19884,7 +20884,8 @@ Possible values are:
 
 When using podFailurePolicy, Failed is the the only allowed value.
 TerminatingOrFailed and Failed are allowed values when podFailurePolicy is not in use.
-This is an alpha field. Enable JobPodReplacementPolicy to be able to use this field.<br/>
+This is an beta field. To use this, enable the JobPodReplacementPolicy feature toggle.
+This is on by default.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19894,6 +20895,21 @@ This is an alpha field. Enable JobPodReplacementPolicy to be able to use this fi
           A label query over pods that should match the pod count.
 Normally, the system sets this field for you.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespecsuccesspolicy">successPolicy</a></b></td>
+        <td>object</td>
+        <td>
+          successPolicy specifies the policy when the Job can be declared as succeeded.
+If empty, the default behavior applies - the Job is declared as succeeded
+only when the number of succeeded pods equals to the completions.
+When the field is specified, it must be immutable and works only for the Indexed Jobs.
+Once the Job meets the SuccessPolicy, the lingering pods are terminated.
+
+
+This field  is alpha-level. To use this field, you must enable the
+`JobSuccessPolicy` feature gate (disabled by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -20119,7 +21135,7 @@ ephemeral container to an existing pod, use the pod's ephemeralcontainers subres
         <td>[]object</td>
         <td>
           HostAliases is an optional list of hosts and IPs that will be injected into the pod's hosts
-file if specified. This is only valid for non-hostNetwork pods.<br/>
+file if specified.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -20232,6 +21248,7 @@ If the OS field is set to windows, following fields must be unset:
 - spec.hostPID
 - spec.hostIPC
 - spec.hostUsers
+- spec.securityContext.appArmorProfile
 - spec.securityContext.seLinuxOptions
 - spec.securityContext.seccompProfile
 - spec.securityContext.fsGroup
@@ -20241,6 +21258,7 @@ If the OS field is set to windows, following fields must be unset:
 - spec.securityContext.runAsUser
 - spec.securityContext.runAsGroup
 - spec.securityContext.supplementalGroups
+- spec.containers[*].securityContext.appArmorProfile
 - spec.containers[*].securityContext.seLinuxOptions
 - spec.containers[*].securityContext.seccompProfile
 - spec.containers[*].securityContext.capabilities
@@ -20364,10 +21382,7 @@ If schedulingGates is not empty, the pod will stay in the SchedulingGated state 
 scheduler will not attempt to schedule the pod.
 
 
-SchedulingGates can only be set at pod creation time, and be removed only afterwards.
-
-
-This is a beta feature enabled by the PodSchedulingReadiness feature gate.<br/>
+SchedulingGates can only be set at pod creation time, and be removed only afterwards.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -20382,7 +21397,7 @@ Optional: Defaults to empty.  See type description for default values of each fi
         <td><b>serviceAccount</b></td>
         <td>string</td>
         <td>
-          DeprecatedServiceAccount is a depreciated alias for ServiceAccountName.
+          DeprecatedServiceAccount is a deprecated alias for ServiceAccountName.
 Deprecated: Use serviceAccountName instead.<br/>
         </td>
         <td>false</td>
@@ -20874,8 +21889,14 @@ Selects a key of a ConfigMap.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -20994,8 +22015,14 @@ Selects a key of a secret in the pod's namespace
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21071,8 +22098,14 @@ The ConfigMap to select from
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21107,8 +22140,14 @@ The Secret to select from
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21199,6 +22238,13 @@ More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-ho
         <td>object</td>
         <td>
           HTTPGet specifies the http request to perform.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespeccontainersindexlifecyclepoststartsleep">sleep</a></b></td>
+        <td>object</td>
+        <td>
+          Sleep represents the duration that the container should sleep before being terminated.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21339,6 +22385,35 @@ This will be canonicalized upon output, so case-variant names will be understood
 </table>
 
 
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.containers[index].lifecycle.postStart.sleep
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespeccontainersindexlifecyclepoststart)</sup></sup>
+
+
+
+Sleep represents the duration that the container should sleep before being terminated.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>seconds</b></td>
+        <td>integer</td>
+        <td>
+          Seconds is the number of seconds to sleep.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 ### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.containers[index].lifecycle.postStart.tcpSocket
 <sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespeccontainersindexlifecyclepoststart)</sup></sup>
 
@@ -21413,6 +22488,13 @@ More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-ho
         <td>object</td>
         <td>
           HTTPGet specifies the http request to perform.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespeccontainersindexlifecycleprestopsleep">sleep</a></b></td>
+        <td>object</td>
+        <td>
+          Sleep represents the duration that the container should sleep before being terminated.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21547,6 +22629,35 @@ This will be canonicalized upon output, so case-variant names will be understood
         <td>string</td>
         <td>
           The header field value<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.containers[index].lifecycle.preStop.sleep
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespeccontainersindexlifecycleprestop)</sup></sup>
+
+
+
+Sleep represents the duration that the container should sleep before being terminated.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>seconds</b></td>
+        <td>integer</td>
+        <td>
+          Seconds is the number of seconds to sleep.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -22453,6 +23564,15 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespeccontainersindexsecuritycontextapparmorprofile">appArmorProfile</a></b></td>
+        <td>object</td>
+        <td>
+          appArmorProfile is the AppArmor options to use by this container. If set, this profile
+overrides the pod's appArmorProfile.
+Note that this field cannot be set when spec.os.name is windows.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespeccontainersindexsecuritycontextcapabilities">capabilities</a></b></td>
         <td>object</td>
         <td>
@@ -22558,6 +23678,49 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
 If unspecified, the options from the PodSecurityContext will be used.
 If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
 Note that this field cannot be set when spec.os.name is linux.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.containers[index].securityContext.appArmorProfile
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespeccontainersindexsecuritycontext)</sup></sup>
+
+
+
+appArmorProfile is the AppArmor options to use by this container. If set, this profile
+overrides the pod's appArmorProfile.
+Note that this field cannot be set when spec.os.name is windows.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type indicates which kind of AppArmor profile will be applied.
+Valid options are:
+  Localhost - a profile pre-loaded on the node.
+  RuntimeDefault - the container runtime's default profile.
+  Unconfined - no AppArmor enforcement.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>localhostProfile</b></td>
+        <td>string</td>
+        <td>
+          localhostProfile indicates a profile loaded on the node that should be used.
+The profile must be preconfigured on the node to work.
+Must match the loaded name of the profile.
+Must be set if and only if type is "Localhost".<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -23153,7 +24316,9 @@ not contain ':'.<br/>
           mountPropagation determines how mounts are propagated from the host
 to container and the other way around.
 When not set, MountPropagationNone is used.
-This field is beta in 1.10.<br/>
+This field is beta in 1.10.
+When RecursiveReadOnly is set to IfPossible or to Enabled, MountPropagation must be None or unspecified
+(which defaults to None).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -23162,6 +24327,32 @@ This field is beta in 1.10.<br/>
         <td>
           Mounted read-only if true, read-write otherwise (false or unspecified).
 Defaults to false.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>recursiveReadOnly</b></td>
+        <td>string</td>
+        <td>
+          RecursiveReadOnly specifies whether read-only mounts should be handled
+recursively.
+
+
+If ReadOnly is false, this field has no meaning and must be unspecified.
+
+
+If ReadOnly is true, and this field is set to Disabled, the mount is not made
+recursively read-only.  If this field is set to IfPossible, the mount is made
+recursively read-only, if it is supported by the container runtime.  If this
+field is set to Enabled, the mount is made recursively read-only if it is
+supported by the container runtime, otherwise the pod will not be started and
+an error will be generated to indicate the reason.
+
+
+If this field is set to IfPossible or Enabled, MountPropagation must be set to
+None (or be unspecified, which defaults to None).
+
+
+If this field is not specified, it is treated as an equivalent of Disabled.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -23715,7 +24906,38 @@ Empty topologyKey is not allowed.<br/>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>
-          A label query over a set of resources, in this case pods.<br/>
+          A label query over a set of resources, in this case pods.
+If it's null, this PodAffinityTerm matches with no Pods.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabelKeys</b></td>
+        <td>[]string</td>
+        <td>
+          MatchLabelKeys is a set of pod label keys to select which pods will
+be taken into consideration. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
+to select the group of existing pods which pods will be taken into consideration
+for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+pod labels will be ignored. The default value is empty.
+The same key is forbidden to exist in both matchLabelKeys and labelSelector.
+Also, matchLabelKeys cannot be set when labelSelector isn't set.
+This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mismatchLabelKeys</b></td>
+        <td>[]string</td>
+        <td>
+          MismatchLabelKeys is a set of pod label keys to select which pods will
+be taken into consideration. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
+to select the group of existing pods which pods will be taken into consideration
+for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+pod labels will be ignored. The default value is empty.
+The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
+Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
+This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -23749,6 +24971,7 @@ null or empty namespaces list and null namespaceSelector means "this pod's names
 
 
 A label query over a set of resources, in this case pods.
+If it's null, this PodAffinityTerm matches with no Pods.
 
 <table>
     <thead>
@@ -23947,7 +25170,38 @@ Empty topologyKey is not allowed.<br/>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>
-          A label query over a set of resources, in this case pods.<br/>
+          A label query over a set of resources, in this case pods.
+If it's null, this PodAffinityTerm matches with no Pods.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabelKeys</b></td>
+        <td>[]string</td>
+        <td>
+          MatchLabelKeys is a set of pod label keys to select which pods will
+be taken into consideration. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
+to select the group of existing pods which pods will be taken into consideration
+for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+pod labels will be ignored. The default value is empty.
+The same key is forbidden to exist in both matchLabelKeys and labelSelector.
+Also, matchLabelKeys cannot be set when labelSelector isn't set.
+This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mismatchLabelKeys</b></td>
+        <td>[]string</td>
+        <td>
+          MismatchLabelKeys is a set of pod label keys to select which pods will
+be taken into consideration. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
+to select the group of existing pods which pods will be taken into consideration
+for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+pod labels will be ignored. The default value is empty.
+The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
+Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
+This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -23981,6 +25235,7 @@ null or empty namespaces list and null namespaceSelector means "this pod's names
 
 
 A label query over a set of resources, in this case pods.
+If it's null, this PodAffinityTerm matches with no Pods.
 
 <table>
     <thead>
@@ -24259,7 +25514,38 @@ Empty topologyKey is not allowed.<br/>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>
-          A label query over a set of resources, in this case pods.<br/>
+          A label query over a set of resources, in this case pods.
+If it's null, this PodAffinityTerm matches with no Pods.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabelKeys</b></td>
+        <td>[]string</td>
+        <td>
+          MatchLabelKeys is a set of pod label keys to select which pods will
+be taken into consideration. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
+to select the group of existing pods which pods will be taken into consideration
+for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+pod labels will be ignored. The default value is empty.
+The same key is forbidden to exist in both matchLabelKeys and labelSelector.
+Also, matchLabelKeys cannot be set when labelSelector isn't set.
+This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mismatchLabelKeys</b></td>
+        <td>[]string</td>
+        <td>
+          MismatchLabelKeys is a set of pod label keys to select which pods will
+be taken into consideration. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
+to select the group of existing pods which pods will be taken into consideration
+for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+pod labels will be ignored. The default value is empty.
+The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
+Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
+This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -24293,6 +25579,7 @@ null or empty namespaces list and null namespaceSelector means "this pod's names
 
 
 A label query over a set of resources, in this case pods.
+If it's null, this PodAffinityTerm matches with no Pods.
 
 <table>
     <thead>
@@ -24491,7 +25778,38 @@ Empty topologyKey is not allowed.<br/>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>
-          A label query over a set of resources, in this case pods.<br/>
+          A label query over a set of resources, in this case pods.
+If it's null, this PodAffinityTerm matches with no Pods.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabelKeys</b></td>
+        <td>[]string</td>
+        <td>
+          MatchLabelKeys is a set of pod label keys to select which pods will
+be taken into consideration. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
+to select the group of existing pods which pods will be taken into consideration
+for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+pod labels will be ignored. The default value is empty.
+The same key is forbidden to exist in both matchLabelKeys and labelSelector.
+Also, matchLabelKeys cannot be set when labelSelector isn't set.
+This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mismatchLabelKeys</b></td>
+        <td>[]string</td>
+        <td>
+          MismatchLabelKeys is a set of pod label keys to select which pods will
+be taken into consideration. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
+to select the group of existing pods which pods will be taken into consideration
+for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
+pod labels will be ignored. The default value is empty.
+The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
+Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
+This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -24525,6 +25843,7 @@ null or empty namespaces list and null namespaceSelector means "this pod's names
 
 
 A label query over a set of resources, in this case pods.
+If it's null, this PodAffinityTerm matches with no Pods.
 
 <table>
     <thead>
@@ -25163,8 +26482,14 @@ Selects a key of a ConfigMap.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -25283,8 +26608,14 @@ Selects a key of a secret in the pod's namespace
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -25360,8 +26691,14 @@ The ConfigMap to select from
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -25396,8 +26733,14 @@ The Secret to select from
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -25487,6 +26830,13 @@ More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-ho
         <td>object</td>
         <td>
           HTTPGet specifies the http request to perform.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecephemeralcontainersindexlifecyclepoststartsleep">sleep</a></b></td>
+        <td>object</td>
+        <td>
+          Sleep represents the duration that the container should sleep before being terminated.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -25627,6 +26977,35 @@ This will be canonicalized upon output, so case-variant names will be understood
 </table>
 
 
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.ephemeralContainers[index].lifecycle.postStart.sleep
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecephemeralcontainersindexlifecyclepoststart)</sup></sup>
+
+
+
+Sleep represents the duration that the container should sleep before being terminated.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>seconds</b></td>
+        <td>integer</td>
+        <td>
+          Seconds is the number of seconds to sleep.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 ### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.ephemeralContainers[index].lifecycle.postStart.tcpSocket
 <sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecephemeralcontainersindexlifecyclepoststart)</sup></sup>
 
@@ -25701,6 +27080,13 @@ More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-ho
         <td>object</td>
         <td>
           HTTPGet specifies the http request to perform.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecephemeralcontainersindexlifecycleprestopsleep">sleep</a></b></td>
+        <td>object</td>
+        <td>
+          Sleep represents the duration that the container should sleep before being terminated.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -25835,6 +27221,35 @@ This will be canonicalized upon output, so case-variant names will be understood
         <td>string</td>
         <td>
           The header field value<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.ephemeralContainers[index].lifecycle.preStop.sleep
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecephemeralcontainersindexlifecycleprestop)</sup></sup>
+
+
+
+Sleep represents the duration that the container should sleep before being terminated.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>seconds</b></td>
+        <td>integer</td>
+        <td>
+          Seconds is the number of seconds to sleep.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -26733,6 +28148,15 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecephemeralcontainersindexsecuritycontextapparmorprofile">appArmorProfile</a></b></td>
+        <td>object</td>
+        <td>
+          appArmorProfile is the AppArmor options to use by this container. If set, this profile
+overrides the pod's appArmorProfile.
+Note that this field cannot be set when spec.os.name is windows.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecephemeralcontainersindexsecuritycontextcapabilities">capabilities</a></b></td>
         <td>object</td>
         <td>
@@ -26838,6 +28262,49 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
 If unspecified, the options from the PodSecurityContext will be used.
 If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
 Note that this field cannot be set when spec.os.name is linux.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.ephemeralContainers[index].securityContext.appArmorProfile
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecephemeralcontainersindexsecuritycontext)</sup></sup>
+
+
+
+appArmorProfile is the AppArmor options to use by this container. If set, this profile
+overrides the pod's appArmorProfile.
+Note that this field cannot be set when spec.os.name is windows.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type indicates which kind of AppArmor profile will be applied.
+Valid options are:
+  Localhost - a profile pre-loaded on the node.
+  RuntimeDefault - the container runtime's default profile.
+  Unconfined - no AppArmor enforcement.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>localhostProfile</b></td>
+        <td>string</td>
+        <td>
+          localhostProfile indicates a profile loaded on the node that should be used.
+The profile must be preconfigured on the node to work.
+Must match the loaded name of the profile.
+Must be set if and only if type is "Localhost".<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -27427,7 +28894,9 @@ not contain ':'.<br/>
           mountPropagation determines how mounts are propagated from the host
 to container and the other way around.
 When not set, MountPropagationNone is used.
-This field is beta in 1.10.<br/>
+This field is beta in 1.10.
+When RecursiveReadOnly is set to IfPossible or to Enabled, MountPropagation must be None or unspecified
+(which defaults to None).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -27436,6 +28905,32 @@ This field is beta in 1.10.<br/>
         <td>
           Mounted read-only if true, read-write otherwise (false or unspecified).
 Defaults to false.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>recursiveReadOnly</b></td>
+        <td>string</td>
+        <td>
+          RecursiveReadOnly specifies whether read-only mounts should be handled
+recursively.
+
+
+If ReadOnly is false, this field has no meaning and must be unspecified.
+
+
+If ReadOnly is true, and this field is set to Disabled, the mount is not made
+recursively read-only.  If this field is set to IfPossible, the mount is made
+recursively read-only, if it is supported by the container runtime.  If this
+field is set to Enabled, the mount is made recursively read-only if it is
+supported by the container runtime, otherwise the pod will not be started and
+an error will be generated to indicate the reason.
+
+
+If this field is set to IfPossible or Enabled, MountPropagation must be set to
+None (or be unspecified, which defaults to None).
+
+
+If this field is not specified, it is treated as an equivalent of Disabled.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -27478,17 +28973,17 @@ pod's hosts file.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>hostnames</b></td>
-        <td>[]string</td>
-        <td>
-          Hostnames for the above IP address.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>ip</b></td>
         <td>string</td>
         <td>
           IP address of the host file entry.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>hostnames</b></td>
+        <td>[]string</td>
+        <td>
+          Hostnames for the above IP address.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -27517,8 +29012,14 @@ referenced object inside the same namespace.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -27931,8 +29432,14 @@ Selects a key of a ConfigMap.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -28051,8 +29558,14 @@ Selects a key of a secret in the pod's namespace
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -28128,8 +29641,14 @@ The ConfigMap to select from
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -28164,8 +29683,14 @@ The Secret to select from
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -28256,6 +29781,13 @@ More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-ho
         <td>object</td>
         <td>
           HTTPGet specifies the http request to perform.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexlifecyclepoststartsleep">sleep</a></b></td>
+        <td>object</td>
+        <td>
+          Sleep represents the duration that the container should sleep before being terminated.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -28396,6 +29928,35 @@ This will be canonicalized upon output, so case-variant names will be understood
 </table>
 
 
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.initContainers[index].lifecycle.postStart.sleep
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexlifecyclepoststart)</sup></sup>
+
+
+
+Sleep represents the duration that the container should sleep before being terminated.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>seconds</b></td>
+        <td>integer</td>
+        <td>
+          Seconds is the number of seconds to sleep.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 ### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.initContainers[index].lifecycle.postStart.tcpSocket
 <sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexlifecyclepoststart)</sup></sup>
 
@@ -28470,6 +30031,13 @@ More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-ho
         <td>object</td>
         <td>
           HTTPGet specifies the http request to perform.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexlifecycleprestopsleep">sleep</a></b></td>
+        <td>object</td>
+        <td>
+          Sleep represents the duration that the container should sleep before being terminated.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -28604,6 +30172,35 @@ This will be canonicalized upon output, so case-variant names will be understood
         <td>string</td>
         <td>
           The header field value<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.initContainers[index].lifecycle.preStop.sleep
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexlifecycleprestop)</sup></sup>
+
+
+
+Sleep represents the duration that the container should sleep before being terminated.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>seconds</b></td>
+        <td>integer</td>
+        <td>
+          Seconds is the number of seconds to sleep.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -29510,6 +31107,15 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexsecuritycontextapparmorprofile">appArmorProfile</a></b></td>
+        <td>object</td>
+        <td>
+          appArmorProfile is the AppArmor options to use by this container. If set, this profile
+overrides the pod's appArmorProfile.
+Note that this field cannot be set when spec.os.name is windows.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexsecuritycontextcapabilities">capabilities</a></b></td>
         <td>object</td>
         <td>
@@ -29615,6 +31221,49 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
 If unspecified, the options from the PodSecurityContext will be used.
 If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
 Note that this field cannot be set when spec.os.name is linux.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.initContainers[index].securityContext.appArmorProfile
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexsecuritycontext)</sup></sup>
+
+
+
+appArmorProfile is the AppArmor options to use by this container. If set, this profile
+overrides the pod's appArmorProfile.
+Note that this field cannot be set when spec.os.name is windows.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type indicates which kind of AppArmor profile will be applied.
+Valid options are:
+  Localhost - a profile pre-loaded on the node.
+  RuntimeDefault - the container runtime's default profile.
+  Unconfined - no AppArmor enforcement.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>localhostProfile</b></td>
+        <td>string</td>
+        <td>
+          localhostProfile indicates a profile loaded on the node that should be used.
+The profile must be preconfigured on the node to work.
+Must match the loaded name of the profile.
+Must be set if and only if type is "Localhost".<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -30210,7 +31859,9 @@ not contain ':'.<br/>
           mountPropagation determines how mounts are propagated from the host
 to container and the other way around.
 When not set, MountPropagationNone is used.
-This field is beta in 1.10.<br/>
+This field is beta in 1.10.
+When RecursiveReadOnly is set to IfPossible or to Enabled, MountPropagation must be None or unspecified
+(which defaults to None).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -30219,6 +31870,32 @@ This field is beta in 1.10.<br/>
         <td>
           Mounted read-only if true, read-write otherwise (false or unspecified).
 Defaults to false.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>recursiveReadOnly</b></td>
+        <td>string</td>
+        <td>
+          RecursiveReadOnly specifies whether read-only mounts should be handled
+recursively.
+
+
+If ReadOnly is false, this field has no meaning and must be unspecified.
+
+
+If ReadOnly is true, and this field is set to Disabled, the mount is not made
+recursively read-only.  If this field is set to IfPossible, the mount is made
+recursively read-only, if it is supported by the container runtime.  If this
+field is set to Enabled, the mount is made recursively read-only if it is
+supported by the container runtime, otherwise the pod will not be started and
+an error will be generated to indicate the reason.
+
+
+If this field is set to IfPossible or Enabled, MountPropagation must be set to
+None (or be unspecified, which defaults to None).
+
+
+If this field is not specified, it is treated as an equivalent of Disabled.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -30260,6 +31937,7 @@ If the OS field is set to windows, following fields must be unset:
 - spec.hostPID
 - spec.hostIPC
 - spec.hostUsers
+- spec.securityContext.appArmorProfile
 - spec.securityContext.seLinuxOptions
 - spec.securityContext.seccompProfile
 - spec.securityContext.fsGroup
@@ -30269,6 +31947,7 @@ If the OS field is set to windows, following fields must be unset:
 - spec.securityContext.runAsUser
 - spec.securityContext.runAsGroup
 - spec.securityContext.supplementalGroups
+- spec.containers[*].securityContext.appArmorProfile
 - spec.containers[*].securityContext.seLinuxOptions
 - spec.containers[*].securityContext.seccompProfile
 - spec.containers[*].securityContext.capabilities
@@ -30460,6 +32139,14 @@ Optional: Defaults to empty.  See type description for default values of each fi
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecsecuritycontextapparmorprofile">appArmorProfile</a></b></td>
+        <td>object</td>
+        <td>
+          appArmorProfile is the AppArmor options to use by the containers in this pod.
+Note that this field cannot be set when spec.os.name is windows.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>fsGroup</b></td>
         <td>integer</td>
         <td>
@@ -30582,6 +32269,48 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
 If unspecified, the options within a container's SecurityContext will be used.
 If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
 Note that this field cannot be set when spec.os.name is linux.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.securityContext.appArmorProfile
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecsecuritycontext)</sup></sup>
+
+
+
+appArmorProfile is the AppArmor options to use by the containers in this pod.
+Note that this field cannot be set when spec.os.name is windows.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type indicates which kind of AppArmor profile will be applied.
+Valid options are:
+  Localhost - a profile pre-loaded on the node.
+  RuntimeDefault - the container runtime's default profile.
+  Unconfined - no AppArmor enforcement.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>localhostProfile</b></td>
+        <td>string</td>
+        <td>
+          localhostProfile indicates a profile loaded on the node that should be used.
+The profile must be preconfigured on the node to work.
+Must match the loaded name of the profile.
+Must be set if and only if type is "Localhost".<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -30975,10 +32704,7 @@ labelSelector spread as 2/2/2:
 The number of domains is less than 5(MinDomains), so "global minimum" is treated as 0.
 In this situation, new pod with the same labelSelector cannot be scheduled,
 because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones,
-it will violate MaxSkew.
-
-
-This is a beta field and requires the MinDomainsInPodTopologySpread feature gate to be enabled (enabled by default).<br/>
+it will violate MaxSkew.<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
@@ -31642,8 +33368,14 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -31728,8 +33460,14 @@ to OpenStack.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -31785,8 +33523,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -31940,8 +33684,14 @@ secret object contains more than one secret, all secret references are passed.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -32018,7 +33768,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -32052,7 +33802,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -32402,6 +34152,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -32565,21 +34333,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -32597,35 +34350,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.volumes[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -32919,8 +34643,14 @@ scripts.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -33295,8 +35025,14 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -33525,6 +35261,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -33550,6 +35308,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.volumes[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.volumes[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.volumes[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -33590,8 +35513,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -33710,7 +35639,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexprojectedsourcesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -33744,7 +35673,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -33849,8 +35778,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -34153,8 +36088,14 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -34280,8 +36221,14 @@ sensitive information. If this is not provided, Login operation will fail.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -34490,8 +36437,14 @@ credentials.  If not specified, default values will be attempted.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -34618,8 +36571,8 @@ Possible values are:
   running pods are terminated.
 - FailIndex: indicates that the pod's index is marked as Failed and will
   not be restarted.
-  This value is alpha-level. It can be used when the
-  `JobBackoffLimitPerIndex` feature gate is enabled (disabled by default).
+  This value is beta-level. It can be used when the
+  `JobBackoffLimitPerIndex` feature gate is enabled (enabled by default).
 - Ignore: indicates that the counter towards the .backoffLimit is not
   incremented and a replacement pod is created.
 - Count: indicates that the pod is handled in the default way - the
@@ -34824,6 +36777,102 @@ Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
 the values array must be non-empty. If the operator is Exists or DoesNotExist,
 the values array must be empty. This array is replaced during a strategic
 merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.successPolicy
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespec)</sup></sup>
+
+
+
+successPolicy specifies the policy when the Job can be declared as succeeded.
+If empty, the default behavior applies - the Job is declared as succeeded
+only when the number of succeeded pods equals to the completions.
+When the field is specified, it must be immutable and works only for the Indexed Jobs.
+Once the Job meets the SuccessPolicy, the lingering pods are terminated.
+
+
+This field  is alpha-level. To use this field, you must enable the
+`JobSuccessPolicy` feature gate (disabled by default).
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespecsuccesspolicyrulesindex">rules</a></b></td>
+        <td>[]object</td>
+        <td>
+          rules represents the list of alternative rules for the declaring the Jobs
+as successful before `.status.succeeded >= .spec.completions`. Once any of the rules are met,
+the "SucceededCriteriaMet" condition is added, and the lingering pods are removed.
+The terminal state for such a Job has the "Complete" condition.
+Additionally, these rules are evaluated in order; Once the Job meets one of the rules,
+other rules are ignored. At most 20 elements are allowed.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.successPolicy.rules[index]
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespecsuccesspolicy)</sup></sup>
+
+
+
+SuccessPolicyRule describes rule for declaring a Job as succeeded.
+Each rule must have at least one of the "succeededIndexes" or "succeededCount" specified.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>succeededCount</b></td>
+        <td>integer</td>
+        <td>
+          succeededCount specifies the minimal required size of the actual set of the succeeded indexes
+for the Job. When succeededCount is used along with succeededIndexes, the check is
+constrained only to the set of indexes specified by succeededIndexes.
+For example, given that succeededIndexes is "1-4", succeededCount is "3",
+and completed indexes are "1", "3", and "5", the Job isn't declared as succeeded
+because only "1" and "3" indexes are considered in that rules.
+When this field is null, this doesn't default to any value and
+is never evaluated at any time.
+When specified it needs to be a positive integer.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>succeededIndexes</b></td>
+        <td>string</td>
+        <td>
+          succeededIndexes specifies the set of indexes
+which need to be contained in the actual set of the succeeded indexes for the Job.
+The list of indexes must be within 0 to ".spec.completions-1" and
+must not contain duplicates. At least one element is required.
+The indexes are represented as intervals separated by commas.
+The intervals can be a decimal integer or a pair of decimal integers separated by a hyphen.
+The number are listed in represented by the first and last element of the series,
+separated by a hyphen.
+For example, if the completed indexes are 1, 3, 4, 5 and 7, they are
+represented as "1,3-5,7".
+When this field is null, this field doesn't default to any value
+and is never evaluated at any time.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -35977,8 +38026,14 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -36063,8 +38118,14 @@ to OpenStack.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -36120,8 +38181,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -36275,8 +38342,14 @@ secret object contains more than one secret, all secret references are passed.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -36353,7 +38426,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#clusterspecmanifestsindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -36387,7 +38460,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -36737,6 +38810,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -36900,21 +38991,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#clusterspecmanifestsindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -36932,35 +39008,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### Cluster.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#clusterspecmanifestsindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -37254,8 +39301,14 @@ scripts.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -37630,8 +39683,14 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -37860,6 +39919,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterspecmanifestsindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -37885,6 +39966,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.manifests[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#clusterspecmanifestsindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#clusterspecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -37925,8 +40171,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -38045,7 +40297,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#clusterspecmanifestsindexprojectedsourcesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -38079,7 +40331,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -38184,8 +40436,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -38488,8 +40746,14 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -38615,8 +40879,14 @@ sensitive information. If this is not provided, Login operation will fail.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -38825,8 +41095,14 @@ credentials.  If not specified, default values will be attempted.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -39469,8 +41745,14 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -39555,8 +41837,14 @@ to OpenStack.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -39612,8 +41900,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -39767,8 +42061,14 @@ secret object contains more than one secret, all secret references are passed.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -39845,7 +42145,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#clusterspecmountsindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -39879,7 +42179,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -40229,6 +42529,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -40392,21 +42710,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#clusterspecmountsindexephemeralvolumeclaimtemplatespecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -40424,35 +42727,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### Cluster.spec.mounts[index].ephemeral.volumeClaimTemplate.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#clusterspecmountsindexephemeralvolumeclaimtemplatespecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -40746,8 +43020,14 @@ scripts.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -41122,8 +43402,14 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -41352,6 +43638,28 @@ Projection that may be projected along with other supported volume types
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#clusterspecmountsindexprojectedsourcesindexclustertrustbundle">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterspecmountsindexprojectedsourcesindexconfigmap">configMap</a></b></td>
         <td>object</td>
         <td>
@@ -41377,6 +43685,171 @@ Projection that may be projected along with other supported volume types
         <td>object</td>
         <td>
           serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.mounts[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#clusterspecmountsindexprojectedsourcesindex)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecmountsindexprojectedsourcesindexclustertrustbundlelabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.mounts[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#clusterspecmountsindexprojectedsourcesindexclustertrustbundle)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#clusterspecmountsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.mounts[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#clusterspecmountsindexprojectedsourcesindexclustertrustbundlelabelselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -41417,8 +43890,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -41537,7 +44016,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
         <td><b><a href="#clusterspecmountsindexprojectedsourcesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
         <td>object</td>
         <td>
-          Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.<br/>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -41571,7 +44050,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
 
 <table>
     <thead>
@@ -41676,8 +44155,14 @@ relative and may not contain the '..' path or start with '..'.<br/>
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -41980,8 +44465,14 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -42107,8 +44598,14 @@ sensitive information. If this is not provided, Login operation will fail.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -42317,8 +44814,14 @@ credentials.  If not specified, default values will be attempted.
         <td>string</td>
         <td>
           Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+TODO: Add other useful fields. apiVersion, kind, uid?
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -42636,6 +45139,24 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+will be set by the persistentvolume controller if it exists.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>volumeMode</b></td>
         <td>string</td>
         <td>
@@ -42799,21 +45320,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resour
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#clusterspecpersistencepersistentvolumeclaimspecresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
-
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
         <td>
@@ -42831,35 +45337,6 @@ otherwise to an implementation-defined value. Requests cannot exceed Limits.
 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
         </td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### Cluster.spec.persistence.persistentVolumeClaim.spec.resources.claims[index]
-<sup><sup>[↩ Parent](#clusterspecpersistencepersistentvolumeclaimspecresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -43059,7 +45536,25 @@ This is an alpha field and requires enabling RecoverVolumeExpansionFailure featu
         <td>[]object</td>
         <td>
           conditions is the current Condition of persistent volume claim. If underlying persistent volume is being
-resized then the Condition will be set to 'ResizeStarted'.<br/>
+resized then the Condition will be set to 'Resizing'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>currentVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
+When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecpersistencepersistentvolumeclaimstatusmodifyvolumestatus">modifyVolumeStatus</a></b></td>
+        <td>object</td>
+        <td>
+          ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -43133,8 +45628,53 @@ PersistentVolumeClaimCondition contains details about state of pvc
         <td>string</td>
         <td>
           reason is a unique, this should be a short, machine understandable string that gives the reason
-for condition's last transition. If it reports "ResizeStarted" that means the underlying
+for condition's last transition. If it reports "Resizing" that means the underlying
 persistent volume is being resized.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.persistence.persistentVolumeClaim.status.modifyVolumeStatus
+<sup><sup>[↩ Parent](#clusterspecpersistencepersistentvolumeclaimstatus)</sup></sup>
+
+
+
+ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+This is an alpha field and requires enabling VolumeAttributesClass feature.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status is the status of the ControllerModifyVolume operation. It can be in any of following states:
+ - Pending
+   Pending indicates that the PersistentVolumeClaim cannot be modified due to unmet requirements, such as
+   the specified VolumeAttributesClass not existing.
+ - InProgress
+   InProgress indicates that the volume is being modified.
+ - Infeasible
+  Infeasible indicates that the request has been rejected as invalid by the CSI driver. To
+	  resolve the error, a valid VolumeAttributesClass needs to be specified.
+Note: New statuses can be added in the future. Consumers should check for unknown statuses and fail appropriately.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          targetVolumeAttributesClassName is the name of the VolumeAttributesClass the PVC currently being reconciled<br/>
         </td>
         <td>false</td>
       </tr></tbody>

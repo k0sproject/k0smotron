@@ -18,9 +18,10 @@ package scalingetcd
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/types"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -36,7 +37,7 @@ import (
 )
 
 type ScalingSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *ScalingSuite) TestK0sGetsUp() {
@@ -102,7 +103,7 @@ func (s *ScalingSuite) TestK0sGetsUp() {
 
 func TestScalingSuite(t *testing.T) {
 	s := ScalingSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,

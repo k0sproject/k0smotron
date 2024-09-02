@@ -24,12 +24,13 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"github.com/k0sproject/k0s/inttest/common"
-	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
-	"github.com/k0sproject/k0smotron/inttest/util"
 	"os"
 	"testing"
 	"text/template"
+
+	"github.com/k0sproject/k0s/inttest/common"
+	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -43,7 +44,7 @@ import (
 )
 
 type RemoteMachineSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 
 	client     *kubernetes.Clientset
 	restConfig *rest.Config
@@ -52,7 +53,7 @@ type RemoteMachineSuite struct {
 }
 
 func (s *RemoteMachineSuite) SetupSuite() {
-	s.FootlooseSuite.SetupSuite()
+	s.BootlooseSuite.SetupSuite()
 }
 
 func TestRemoteMachineSuite(t *testing.T) {
@@ -88,7 +89,7 @@ func TestRemoteMachineSuite(t *testing.T) {
 	sshPublicKeyBytes := ssh.MarshalAuthorizedKey(sshPublicKey)
 
 	s := RemoteMachineSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:      0,
 			WorkerCount:          0,
 			K0smotronWorkerCount: 1,
@@ -188,8 +189,8 @@ func (s *RemoteMachineSuite) deleteRemoteMachine(name string, namespace string) 
 func (s *RemoteMachineSuite) deleteCluster() {
 	response := s.client.RESTClient().Delete().AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/clusters/remote-test").Do(s.Context())
 	s.Require().NoError(response.Error())
-	if err := s.client.CoreV1().Secrets("default").Delete(s.Context(), "footloose-key", metav1.DeleteOptions{}); err != nil {
-		s.T().Logf("failed to delete footloose SSH key secret: %s", err.Error())
+	if err := s.client.CoreV1().Secrets("default").Delete(s.Context(), "bootloose-key", metav1.DeleteOptions{}); err != nil {
+		s.T().Logf("failed to delete bootloose SSH key secret: %s", err.Error())
 	}
 }
 
@@ -336,7 +337,7 @@ spec:
             volumes:
               - name: ssh-key
                 secret: 
-                  secretName: footloose-key
+                  secretName: bootloose-key
                   items: 
                     - key: id_rsa
                       path: id_rsa
@@ -346,7 +347,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name:  footloose-key
+  name:  bootloose-key
   namespace: default
 data:
    id_rsa: {{ .SSHKey }}

@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"os"
 	"os/exec"
 	"strconv"
@@ -34,6 +33,8 @@ import (
 	"testing"
 	"text/template"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
@@ -50,7 +51,7 @@ import (
 )
 
 type RemoteMachineTemplateUpdateSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 
 	client                  *kubernetes.Clientset
 	restConfig              *rest.Config
@@ -61,7 +62,7 @@ type RemoteMachineTemplateUpdateSuite struct {
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) SetupSuite() {
-	s.FootlooseSuite.SetupSuite()
+	s.BootlooseSuite.SetupSuite()
 }
 
 func TestRemoteMachineSuite(t *testing.T) {
@@ -99,7 +100,7 @@ func TestRemoteMachineSuite(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	s := RemoteMachineTemplateUpdateSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:      0,
 			WorkerCount:          0,
 			K0smotronWorkerCount: 1,
@@ -384,12 +385,12 @@ spec:
     port: 22
     user: root
     sshKeyRef:
-      name: footloose-key
+      name: bootloose-key
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name:  footloose-key
+  name:  bootloose-key
   namespace: default
 data:
    value: {{ .SSHKey }}

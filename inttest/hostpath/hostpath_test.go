@@ -29,7 +29,7 @@ import (
 )
 
 type HostPathSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *HostPathSuite) TestK0sGetsUp() {
@@ -92,7 +92,7 @@ func (s *HostPathSuite) TestK0sGetsUp() {
 
 func TestHostPathSuite(t *testing.T) {
 	s := HostPathSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,
