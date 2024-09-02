@@ -7,7 +7,6 @@ resources:
 - bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigs.yaml
 - bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
 - bases/bootstrap.cluster.x-k8s.io_k0scontrollerconfigs.yaml
-- bases/controlplane.cluster.x-k8s.io_k0scontrollerconfigs.yaml
 - bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
 - bases/controlplane.cluster.x-k8s.io_k0scontrolplanetemplates.yaml
 - bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
