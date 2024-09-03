@@ -1,0 +1,995 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}'
+  namespace: '${NAMESPACE}'
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane 
+    name: '${CLUSTER_NAME}'
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: VSphereCluster
+    name: '${CLUSTER_NAME}'
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: VSphereCluster
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${NAMESPACE}'
+spec:
+  controlPlaneEndpoint:
+    host: ${CONTROL_PLANE_ENDPOINT_IP}
+    port: 6443
+  identityRef:
+    kind: Secret
+    name: '${CLUSTER_NAME}'
+  server: '${VSPHERE_SERVER}'
+  thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: VSphereMachineTemplate
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${NAMESPACE}'
+spec:
+  template:
+    spec:
+      cloneMode: linkedClone
+      datacenter: '${VSPHERE_DATACENTER}'
+      datastore: '${VSPHERE_DATASTORE}'
+      diskGiB: 100
+      folder: '${VSPHERE_FOLDER}'
+      memoryMiB: 8192
+      network:
+        devices:
+        - addressesFromPools:
+          - apiGroup: '${NODE_IPAM_POOL_API_GROUP}'
+            kind: '${NODE_IPAM_POOL_KIND}'
+            name: '${NODE_IPAM_POOL_NAME}'
+          nameservers:
+          - '${NAMESERVER}'
+          networkName: '${VSPHERE_NETWORK}'
+      numCPUs: 2
+      os: Linux
+      powerOffMode: hard
+      resourcePool: '${VSPHERE_RESOURCE_POOL}'
+      server: '${VSPHERE_SERVER}'
+      storagePolicyName: '${VSPHERE_STORAGE_POLICY}'
+      template: '${VSPHERE_TEMPLATE}'
+      thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: VSphereMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-worker
+  namespace: '${NAMESPACE}'
+spec:
+  template:
+    spec:
+      cloneMode: linkedClone
+      datacenter: '${VSPHERE_DATACENTER}'
+      datastore: '${VSPHERE_DATASTORE}'
+      diskGiB: 100
+      folder: '${VSPHERE_FOLDER}'
+      memoryMiB: 8192
+      network:
+        devices:
+        - addressesFromPools:
+          - apiGroup: '${NODE_IPAM_POOL_API_GROUP}'
+            kind: '${NODE_IPAM_POOL_KIND}'
+            name: '${NODE_IPAM_POOL_NAME}'
+          nameservers:
+          - '${NAMESERVER}'
+          networkName: '${VSPHERE_NETWORK}'
+      numCPUs: 2
+      os: Linux
+      powerOffMode: hard
+      resourcePool: '${VSPHERE_RESOURCE_POOL}'
+      server: '${VSPHERE_SERVER}'
+      storagePolicyName: '${VSPHERE_STORAGE_POLICY}'
+      template: '${VSPHERE_TEMPLATE}'
+      thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: '${CLUSTER_NAME}'
+spec:
+  k0sVersion: '${K0S_VERSION}' 
+  replicas: 3
+  k0sConfigSpec:
+    # Those args are mandatory since kube-vip should be running on controllers
+    args:
+      - --enable-worker
+      - --no-taints # disable default taints
+    # WA for NLLB (temporary, until k0s team fix it)
+    preStartCommands:
+      - sed -i 's/"externalAddress":"${CONTROL_PLANE_ENDPOINT_IP}",//' /etc/k0s.yaml
+    files:
+      - content: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            creationTimestamp: null
+            name: kube-vip
+            namespace: kube-system
+          spec:
+            containers:
+            - args:
+              - manager
+              env:
+              - name: vip_arp
+                value: "true"
+              - name: port
+                value: "6443"
+              - name: vip_interface
+                value: ${VIP_NETWORK_INTERFACE:=""}
+              - name: vip_cidr
+                value: "32"
+              - name: cp_enable
+                value: "true"
+              - name: cp_namespace
+                value: kube-system
+              - name: vip_ddns
+                value: "false"
+              - name: svc_enable
+                value: "true"
+              - name: svc_leasename
+                value: plndr-svcs-lock
+              - name: svc_election
+                value: "true"
+              - name: vip_leaderelection
+                value: "true"
+              - name: vip_leasename
+                value: plndr-cp-lock
+              - name: vip_leaseduration
+                value: "15"
+              - name: vip_renewdeadline
+                value: "10"
+              - name: vip_retryperiod
+                value: "2"
+              - name: address
+                value: ${CONTROL_PLANE_ENDPOINT_IP}
+              - name: prometheus_server
+                value: :2112
+              image: ghcr.io/kube-vip/kube-vip:v0.6.4
+              imagePullPolicy: IfNotPresent
+              name: kube-vip
+              resources: {}
+              securityContext:
+                capabilities:
+                  add:
+                  - NET_ADMIN
+                  - NET_RAW
+              volumeMounts:
+              - mountPath: /etc/kubernetes/admin.conf
+                name: kubeconfig
+            hostNetwork: true
+            volumes:
+            - hostPath:
+                path: /var/lib/k0s/pki/admin.conf
+              name: kubeconfig
+            hostAliases:
+            - hostnames:
+              - kubernetes
+              ip: 127.0.0.1
+            nodeSelector:
+              node.k0sproject.io/role: control-plane
+        path: /var/lib/k0s/manifests/kubevip/kube-vip.yaml
+        permissions: "0644"
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          sans:
+          # WA for NLLB
+            - ${CONTROL_PLANE_ENDPOINT_IP}
+          extraArgs:
+            anonymous-auth: "true" 
+        network:
+          nodeLocalLoadBalancing:
+            enabled: true
+            type: EnvoyProxy
+  machineTemplate:
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: VSphereMachineTemplate
+        name: ${CLUSTER_NAME}
+        namespace: '${NAMESPACE}'
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: '${CLUSTER_NAME}'
+spec:
+  template:
+    spec:
+      version: '${K0S_VERSION}'
+      args:
+        - --enable-cloud-provider
+        - --kubelet-extra-args="--cloud-provider=external"
+      # More details of the worker configuration can be set here
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: ${CLUSTER_NAME}-md-0
+  namespace: '${NAMESPACE}'
+spec:
+  clusterName: '${CLUSTER_NAME}'
+  replicas: 1
+  selector:
+    matchLabels: {}
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: K0sWorkerConfigTemplate 
+          name: '${CLUSTER_NAME}'
+      clusterName: '${CLUSTER_NAME}'
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: VSphereMachineTemplate
+        name: ${CLUSTER_NAME}-worker
+      version: '${K0S_VERSION}'
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: ${CLUSTER_NAME}-crs-0
+  namespace: '${NAMESPACE}'
+spec:
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  resources:
+  - kind: Secret
+    name: vsphere-csi-controller
+  - kind: ConfigMap
+    name: vsphere-csi-controller-role
+  - kind: ConfigMap
+    name: vsphere-csi-controller-binding
+  - kind: Secret
+    name: csi-vsphere-config
+  - kind: ConfigMap
+    name: csi.vsphere.vmware.com
+  - kind: ConfigMap
+    name: vsphere-csi-node
+  - kind: ConfigMap
+    name: vsphere-csi-controller
+  - kind: Secret
+    name: cloud-controller-manager
+  - kind: Secret
+    name: cloud-provider-vsphere-credentials
+  - kind: ConfigMap
+    name: cpi-manifests
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${NAMESPACE}'
+stringData:
+  password: "${VSPHERE_PASSWORD}"
+  username: ${VSPHERE_USERNAME}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vsphere-csi-controller
+  namespace: '${NAMESPACE}'
+stringData:
+  data: |
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: vsphere-csi-controller
+      namespace: kube-system
+type: addons.cluster.x-k8s.io/resource-set
+---
+apiVersion: v1
+data:
+  data: |
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: vsphere-csi-controller-role
+    rules:
+    - apiGroups:
+      - storage.k8s.io
+      resources:
+      - csidrivers
+      verbs:
+      - create
+      - delete
+    - apiGroups:
+      - ""
+      resources:
+      - nodes
+      - pods
+      - secrets
+      - configmaps
+      verbs:
+      - get
+      - list
+      - watch
+    - apiGroups:
+      - ""
+      resources:
+      - persistentvolumes
+      verbs:
+      - get
+      - list
+      - watch
+      - update
+      - create
+      - delete
+      - patch
+    - apiGroups:
+      - storage.k8s.io
+      resources:
+      - volumeattachments
+      verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+    - apiGroups:
+      - storage.k8s.io
+      resources:
+      - volumeattachments/status
+      verbs:
+      - patch
+    - apiGroups:
+      - ""
+      resources:
+      - persistentvolumeclaims
+      verbs:
+      - get
+      - list
+      - watch
+      - update
+    - apiGroups:
+      - storage.k8s.io
+      resources:
+      - storageclasses
+      - csinodes
+      verbs:
+      - get
+      - list
+      - watch
+    - apiGroups:
+      - ""
+      resources:
+      - events
+      verbs:
+      - list
+      - watch
+      - create
+      - update
+      - patch
+    - apiGroups:
+      - coordination.k8s.io
+      resources:
+      - leases
+      verbs:
+      - get
+      - watch
+      - list
+      - delete
+      - update
+      - create
+    - apiGroups:
+      - snapshot.storage.k8s.io
+      resources:
+      - volumesnapshots
+      verbs:
+      - get
+      - list
+    - apiGroups:
+      - snapshot.storage.k8s.io
+      resources:
+      - volumesnapshotcontents
+      verbs:
+      - get
+      - list
+kind: ConfigMap
+metadata:
+  name: vsphere-csi-controller-role
+  namespace: '${NAMESPACE}'
+---
+apiVersion: v1
+data:
+  data: |
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: vsphere-csi-controller-binding
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: vsphere-csi-controller-role
+    subjects:
+    - kind: ServiceAccount
+      name: vsphere-csi-controller
+      namespace: kube-system
+kind: ConfigMap
+metadata:
+  name: vsphere-csi-controller-binding
+  namespace: '${NAMESPACE}'
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: csi-vsphere-config
+  namespace: '${NAMESPACE}'
+stringData:
+  data: |
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: csi-vsphere-config
+      namespace: kube-system
+    stringData:
+      csi-vsphere.conf: |+
+        [Global]
+        thumbprint = "${VSPHERE_TLS_THUMBPRINT}"
+        cluster-id = "${NAMESPACE}/${CLUSTER_NAME}"
+        insecure-flag = "${CSI_INSECURE}"
+
+        [VirtualCenter "${VSPHERE_SERVER}"]
+        user = "${VSPHERE_USERNAME}"
+        password = "${VSPHERE_PASSWORD}"
+        datacenters = "${VSPHERE_DATACENTER}"
+
+        [Network]
+        public-network = "${VSPHERE_NETWORK}"
+
+    type: Opaque
+type: addons.cluster.x-k8s.io/resource-set
+---
+apiVersion: v1
+data:
+  data: |
+    apiVersion: storage.k8s.io/v1
+    kind: CSIDriver
+    metadata:
+      name: csi.vsphere.vmware.com
+    spec:
+      attachRequired: true
+kind: ConfigMap
+metadata:
+  name: csi.vsphere.vmware.com
+  namespace: '${NAMESPACE}'
+---
+apiVersion: v1
+data:
+  data: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: vsphere-csi-node
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          app: vsphere-csi-node
+      template:
+        metadata:
+          labels:
+            app: vsphere-csi-node
+            role: vsphere-csi
+        spec:
+          containers:
+          - args:
+            - --v=5
+            - --csi-address=$(ADDRESS)
+            - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+            env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+            - name: DRIVER_REG_SOCK_PATH
+              value: /var/lib/k0s/kubelet/plugins/csi.vsphere.vmware.com/csi.sock
+            image: quay.io/k8scsi/csi-node-driver-registrar:v2.0.1
+            lifecycle:
+              preStop:
+                exec:
+                  command:
+                  - /bin/sh
+                  - -c
+                  - rm -rf /registration/csi.vsphere.vmware.com-reg.sock /csi/csi.sock
+            name: node-driver-registrar
+            resources: {}
+            securityContext:
+              privileged: true
+            volumeMounts:
+            - mountPath: /csi
+              name: plugin-dir
+            - mountPath: /registration
+              name: registration-dir
+          - env:
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
+            - name: X_CSI_MODE
+              value: node
+            - name: X_CSI_SPEC_REQ_VALIDATION
+              value: "false"
+            - name: VSPHERE_CSI_CONFIG
+              value: /etc/cloud/csi-vsphere.conf
+            - name: LOGGER_LEVEL
+              value: PRODUCTION
+            - name: X_CSI_LOG_LEVEL
+              value: INFO
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            image: gcr.io/cloud-provider-vsphere/csi/release/driver:v2.1.0
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /healthz
+                port: healthz
+              initialDelaySeconds: 10
+              periodSeconds: 5
+              timeoutSeconds: 3
+            name: vsphere-csi-node
+            ports:
+            - containerPort: 9808
+              name: healthz
+              protocol: TCP
+            resources: {}
+            securityContext:
+              allowPrivilegeEscalation: true
+              capabilities:
+                add:
+                - SYS_ADMIN
+              privileged: true
+            volumeMounts:
+            - mountPath: /etc/cloud
+              name: vsphere-config-volume
+            - mountPath: /csi
+              name: plugin-dir
+            - mountPath: /var/lib/k0s/kubelet
+              mountPropagation: Bidirectional
+              name: pods-mount-dir
+            - mountPath: /dev
+              name: device-dir
+          - args:
+            - --csi-address=/csi/csi.sock
+            image: quay.io/k8scsi/livenessprobe:v2.1.0
+            name: liveness-probe
+            resources: {}
+            volumeMounts:
+            - mountPath: /csi
+              name: plugin-dir
+          dnsPolicy: Default
+          tolerations:
+          - effect: NoSchedule
+            operator: Exists
+          - effect: NoExecute
+            operator: Exists
+          volumes:
+          - name: vsphere-config-volume
+            secret:
+              secretName: csi-vsphere-config
+          - hostPath:
+              path: /var/lib/k0s/kubelet/plugins_registry
+              type: Directory
+            name: registration-dir
+          - hostPath:
+              path: /var/lib/k0s/kubelet/plugins/csi.vsphere.vmware.com/
+              type: DirectoryOrCreate
+            name: plugin-dir
+          - hostPath:
+              path: /var/lib/k0s/kubelet
+              type: Directory
+            name: pods-mount-dir
+          - hostPath:
+              path: /dev
+            name: device-dir
+      updateStrategy:
+        type: RollingUpdate
+kind: ConfigMap
+metadata:
+  name: vsphere-csi-node
+  namespace: '${NAMESPACE}'
+---
+apiVersion: v1
+data:
+  data: |
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: vsphere-csi-controller
+      namespace: kube-system
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: vsphere-csi-controller
+      template:
+        metadata:
+          labels:
+            app: vsphere-csi-controller
+            role: vsphere-csi
+        spec:
+          containers:
+          - args:
+            - --v=4
+            - --timeout=300s
+            - --csi-address=$(ADDRESS)
+            - --leader-election
+            env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+            image: quay.io/k8scsi/csi-attacher:v3.0.0
+            name: csi-attacher
+            resources: {}
+            volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+          - env:
+            - name: CSI_ENDPOINT
+              value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+            - name: X_CSI_MODE
+              value: controller
+            - name: VSPHERE_CSI_CONFIG
+              value: /etc/cloud/csi-vsphere.conf
+            - name: LOGGER_LEVEL
+              value: PRODUCTION
+            - name: X_CSI_LOG_LEVEL
+              value: INFO
+            image: gcr.io/cloud-provider-vsphere/csi/release/driver:v2.1.0
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /healthz
+                port: healthz
+              initialDelaySeconds: 10
+              periodSeconds: 5
+              timeoutSeconds: 3
+            name: vsphere-csi-controller
+            ports:
+            - containerPort: 9808
+              name: healthz
+              protocol: TCP
+            resources: {}
+            volumeMounts:
+            - mountPath: /etc/cloud
+              name: vsphere-config-volume
+              readOnly: true
+            - mountPath: /var/lib/csi/sockets/pluginproxy/
+              name: socket-dir
+          - args:
+            - --csi-address=$(ADDRESS)
+            env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+            image: quay.io/k8scsi/livenessprobe:v2.1.0
+            name: liveness-probe
+            resources: {}
+            volumeMounts:
+            - mountPath: /var/lib/csi/sockets/pluginproxy/
+              name: socket-dir
+          - args:
+            - --leader-election
+            env:
+            - name: X_CSI_FULL_SYNC_INTERVAL_MINUTES
+              value: "30"
+            - name: LOGGER_LEVEL
+              value: PRODUCTION
+            - name: VSPHERE_CSI_CONFIG
+              value: /etc/cloud/csi-vsphere.conf
+            image: gcr.io/cloud-provider-vsphere/csi/release/syncer:v2.1.0
+            name: vsphere-syncer
+            resources: {}
+            volumeMounts:
+            - mountPath: /etc/cloud
+              name: vsphere-config-volume
+              readOnly: true
+          - args:
+            - --v=4
+            - --timeout=300s
+            - --csi-address=$(ADDRESS)
+            - --leader-election
+            - --default-fstype=ext4
+            env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+            image: quay.io/k8scsi/csi-provisioner:v2.0.0
+            name: csi-provisioner
+            resources: {}
+            volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+          dnsPolicy: Default
+          serviceAccountName: vsphere-csi-controller
+          tolerations:
+          - effect: NoSchedule
+            key: node-role.kubernetes.io/master
+            operator: Exists
+          - effect: NoSchedule
+            key: node-role.kubernetes.io/control-plane
+            operator: Exists
+          volumes:
+          - name: vsphere-config-volume
+            secret:
+              secretName: csi-vsphere-config
+          - emptyDir: {}
+            name: socket-dir
+kind: ConfigMap
+metadata:
+  name: vsphere-csi-controller
+  namespace: '${NAMESPACE}'
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-controller-manager
+  namespace: '${NAMESPACE}'
+stringData:
+  data: |
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      labels:
+        component: cloud-controller-manager
+        vsphere-cpi-infra: service-account
+      name: cloud-controller-manager
+      namespace: kube-system
+type: addons.cluster.x-k8s.io/resource-set
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-provider-vsphere-credentials
+  namespace: '${NAMESPACE}'
+stringData:
+  data: |
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      labels:
+        component: cloud-controller-manager
+        vsphere-cpi-infra: secret
+      name: cloud-provider-vsphere-credentials
+      namespace: kube-system
+    stringData:
+      ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
+      ${VSPHERE_SERVER}.username: ${VSPHERE_USERNAME}
+    type: Opaque
+type: addons.cluster.x-k8s.io/resource-set
+---
+apiVersion: v1
+data:
+  data: |
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      labels:
+        component: cloud-controller-manager
+        vsphere-cpi-infra: role
+      name: system:cloud-controller-manager
+    rules:
+    - apiGroups:
+      - ""
+      resources:
+      - events
+      verbs:
+      - create
+      - patch
+      - update
+    - apiGroups:
+      - ""
+      resources:
+      - nodes
+      verbs:
+      - '*'
+    - apiGroups:
+      - ""
+      resources:
+      - nodes/status
+      verbs:
+      - patch
+    - apiGroups:
+      - ""
+      resources:
+      - services
+      verbs:
+      - list
+      - patch
+      - update
+      - watch
+    - apiGroups:
+      - ""
+      resources:
+      - services/status
+      verbs:
+      - patch
+    - apiGroups:
+      - ""
+      resources:
+      - serviceaccounts
+      verbs:
+      - create
+      - get
+      - list
+      - watch
+      - update
+    - apiGroups:
+      - ""
+      resources:
+      - persistentvolumes
+      verbs:
+      - get
+      - list
+      - watch
+      - update
+    - apiGroups:
+      - ""
+      resources:
+      - endpoints
+      verbs:
+      - create
+      - get
+      - list
+      - watch
+      - update
+    - apiGroups:
+      - ""
+      resources:
+      - secrets
+      verbs:
+      - get
+      - list
+      - watch
+    - apiGroups:
+      - coordination.k8s.io
+      resources:
+      - leases
+      verbs:
+      - get
+      - watch
+      - list
+      - update
+      - create
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      labels:
+        component: cloud-controller-manager
+        vsphere-cpi-infra: cluster-role-binding
+      name: system:cloud-controller-manager
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: system:cloud-controller-manager
+    subjects:
+    - kind: ServiceAccount
+      name: cloud-controller-manager
+      namespace: kube-system
+    - kind: User
+      name: cloud-controller-manager
+    ---
+    apiVersion: v1
+    data:
+      vsphere.conf: |
+        global:
+          port: 443
+          secretName: cloud-provider-vsphere-credentials
+          secretNamespace: kube-system
+          thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+        vcenter:
+          ${VSPHERE_SERVER}:
+            datacenters:
+            - '${VSPHERE_DATACENTER}'
+            server: '${VSPHERE_SERVER}'
+    kind: ConfigMap
+    metadata:
+      name: vsphere-cloud-config
+      namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      labels:
+        component: cloud-controller-manager
+        vsphere-cpi-infra: role-binding
+      name: servicecatalog.k8s.io:apiserver-authentication-reader
+      namespace: kube-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: extension-apiserver-authentication-reader
+    subjects:
+    - kind: ServiceAccount
+      name: cloud-controller-manager
+      namespace: kube-system
+    - kind: User
+      name: cloud-controller-manager
+    ---
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      labels:
+        component: cloud-controller-manager
+        tier: control-plane
+      name: vsphere-cloud-controller-manager
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          name: vsphere-cloud-controller-manager
+      template:
+        metadata:
+          labels:
+            component: cloud-controller-manager
+            name: vsphere-cloud-controller-manager
+            tier: control-plane
+        spec:
+          containers:
+          - args:
+            - --v=2
+            - --cloud-provider=vsphere
+            - --cloud-config=/etc/cloud/vsphere.conf
+            image: gcr.io/cloud-provider-vsphere/cpi/release/manager:v1.25.0
+            name: vsphere-cloud-controller-manager
+            resources:
+              requests:
+                cpu: 200m
+            volumeMounts:
+            - mountPath: /etc/cloud
+              name: vsphere-config-volume
+              readOnly: true
+          hostNetwork: true
+          priorityClassName: system-node-critical
+          securityContext:
+            runAsUser: 1001
+          serviceAccountName: cloud-controller-manager
+          tolerations:
+          - effect: NoSchedule
+            key: node.cloudprovider.kubernetes.io/uninitialized
+            value: "true"
+          - effect: NoSchedule
+            key: node-role.kubernetes.io/master
+            operator: Exists
+          - effect: NoSchedule
+            key: node-role.kubernetes.io/control-plane
+            operator: Exists
+          - effect: NoSchedule
+            key: node.kubernetes.io/not-ready
+            operator: Exists
+          volumes:
+          - configMap:
+              name: vsphere-cloud-config
+            name: vsphere-config-volume
+      updateStrategy:
+        type: RollingUpdate
+kind: ConfigMap
+metadata:
+  name: cpi-manifests
+  namespace: '${NAMESPACE}'
+
