@@ -40,21 +40,36 @@ func Test_createInstallCmd(t *testing.T) {
 					"metadata": map[string]interface{}{"name": "test"},
 				}}},
 			},
-			want: base,
+			want: base + ` --kubelet-extra-args="--hostname-override=test"`,
 		},
 		{
 			name: "with args",
 			scope: &Scope{
 				Config: &bootstrapv1.K0sWorkerConfig{
 					Spec: bootstrapv1.K0sWorkerConfigSpec{
-						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar"},
+						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
 					},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
 					"metadata": map[string]interface{}{"name": "test"},
 				}}},
 			},
-			want: base + " --debug --labels=k0sproject.io/foo=bar",
+			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --hostname-override=test-from-arg"`,
+		},
+		{
+			name: "with useSystemHostname set",
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{
+					Spec: bootstrapv1.K0sWorkerConfigSpec{
+						UseSystemHostname: true,
+						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
+					},
+				},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
+					"metadata": map[string]interface{}{"name": "test"},
+				}}},
+			},
+			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test-from-arg"`,
 		},
 	}
 	for _, tt := range tests {

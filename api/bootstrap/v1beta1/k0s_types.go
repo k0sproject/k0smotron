@@ -64,6 +64,12 @@ type K0sWorkerConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	Version string `json:"version,omitempty"`
 
+	// UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+	// By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
+	UseSystemHostname bool `json:"useSystemHostname,omitempty"`
+
 	// Files specifies extra files to be passed to user_data upon creation.
 	// +kubebuilder:validation:Optional
 	Files []File `json:"files,omitempty"`
@@ -189,6 +195,12 @@ type K0sConfigSpec struct {
 	// Files specifies extra files to be passed to user_data upon creation.
 	// +kubebuilder:validation:Optional
 	Files []File `json:"files,omitempty"`
+
+	// UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+	// By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
+	UseSystemHostname bool `json:"useSystemHostname,omitempty"`
 
 	// Args specifies extra arguments to be passed to k0s controller.
 	// See: https://docs.k0sproject.io/stable/cli/k0s_controller/

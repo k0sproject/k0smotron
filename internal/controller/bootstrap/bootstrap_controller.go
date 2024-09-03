@@ -314,11 +314,8 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 func createInstallCmd(scope *Scope) string {
 	installCmd := []string{
 		"k0s install worker --token-file /etc/k0s.token",
-		"--labels=" + fmt.Sprintf("%s=%s", machineNameNodeLabel, scope.ConfigOwner.GetName()),
 	}
-	if scope.Config.Spec.Args != nil && len(scope.Config.Spec.Args) > 0 {
-		installCmd = append(installCmd, scope.Config.Spec.Args...)
-	}
+	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
 	return strings.Join(installCmd, " ")
 }
 

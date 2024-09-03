@@ -47,7 +47,7 @@ func Test_createCPInstallCmd(t *testing.T) {
 					"metadata": map[string]interface{}{"name": "test-machine"},
 				}}},
 			},
-			want: base + "--env AUTOPILOT_HOSTNAME=test --labels=k0smotron.io/machine-name=test-machine",
+			want: base + "--env AUTOPILOT_HOSTNAME=test",
 		},
 		{
 			name: "with args",
@@ -58,15 +58,16 @@ func Test_createCPInstallCmd(t *testing.T) {
 					},
 					Spec: bootstrapv1.K0sControllerConfigSpec{
 						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{
-							Args: []string{"--debug", "--labels=k0sproject.io/foo=bar"},
+							Args: []string{"--enable-worker", "--labels=k0sproject.io/foo=bar"},
 						},
 					},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
 					"metadata": map[string]interface{}{"name": "test-machine"},
 				}}},
+				WorkerEnabled: true,
 			},
-			want: base + "--env AUTOPILOT_HOSTNAME=test --labels=k0smotron.io/machine-name=test-machine --debug --labels=k0sproject.io/foo=bar",
+			want: base + "--env AUTOPILOT_HOSTNAME=test --labels=k0smotron.io/machine-name=test-machine --enable-worker --labels=k0sproject.io/foo=bar --kubelet-extra-args=\"--hostname-override=test-machine\"",
 		},
 	}
 	for _, tt := range tests {

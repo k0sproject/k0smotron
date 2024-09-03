@@ -153,7 +153,7 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "k0smotron0", corev1.ConditionTrue))
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
 	// Verify the RemoteMachine is at expected state
 	rm, err := s.getRemoteMachine("remote-test-0", "default")
 	s.Require().NoError(err)
@@ -162,7 +162,7 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().Equal(expectedProviderID, rm.Spec.ProviderID)
 
 	err = wait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (done bool, err error) {
-		node, err := kmcKC.CoreV1().Nodes().Get(ctx, "k0smotron0", metav1.GetOptions{})
+		node, err := kmcKC.CoreV1().Nodes().Get(ctx, "remote-test-0", metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

@@ -546,7 +546,7 @@ func createCPInstallCmd(scope *ControllerScope) string {
 		"--env AUTOPILOT_HOSTNAME=" + scope.Config.Name,
 	}
 
-	installCmd = append(installCmd, mergeExtraArgs(scope)...)
+	installCmd = append(installCmd, mergeControllerExtraArgs(scope)...)
 
 	return strings.Join(installCmd, " ")
 }
@@ -559,38 +559,14 @@ func createCPInstallCmdWithJoinToken(scope *ControllerScope, tokenPath string) s
 		"--env AUTOPILOT_HOSTNAME=" + scope.Config.Name,
 	}
 
-	installCmd = append(installCmd, mergeExtraArgs(scope)...)
+	installCmd = append(installCmd, mergeControllerExtraArgs(scope)...)
 	installCmd = append(installCmd, "--token-file", tokenPath)
 
 	return strings.Join(installCmd, " ")
 }
 
-func mergeExtraArgs(scope *ControllerScope) []string {
-	args := []string{
-		"--labels=" + fmt.Sprintf("%s=%s", machineNameNodeLabel, scope.ConfigOwner.GetName()),
-	}
-
-	kubeletExtraArgs := fmt.Sprintf(`--kubelet-extra-args="--hostname-override=%s"`, scope.Config.Name)
-	for _, arg := range scope.Config.Spec.Args {
-		if strings.HasPrefix(arg, "--kubelet-extra-args") {
-			_, after, ok := strings.Cut(arg, "=")
-			if !ok {
-				_, after, ok = strings.Cut(arg, " ")
-			}
-			if !ok {
-				kubeletExtraArgs = arg
-			} else {
-				kubeletExtraArgs = fmt.Sprintf(`--kubelet-extra-args="--hostname-override=%s %s"`, scope.Config.Name, strings.Trim(after, "\"'"))
-			}
-		} else {
-			args = append(args, arg)
-		}
-	}
-	if scope.WorkerEnabled {
-		args = append(args, kubeletExtraArgs)
-	}
-
-	return args
+func mergeControllerExtraArgs(scope *ControllerScope) []string {
+	return mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
 }
 
 func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, config *bootstrapv1.K0sControllerConfig) (string, error) {

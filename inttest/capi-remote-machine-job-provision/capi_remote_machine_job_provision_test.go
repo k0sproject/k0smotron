@@ -149,7 +149,7 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "k0smotron0", corev1.ConditionTrue))
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
 	// Verify the RemoteMachine is at expected state
 	rm, err := s.getRemoteMachine("remote-test-0", "default")
 	s.Require().NoError(err)
