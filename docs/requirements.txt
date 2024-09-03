@@ -28,5 +28,5 @@ six==1.16.0
 termcolor==2.4.0
 urllib3==2.2.2
 verspec==0.1.0
-watchdog==4.0.2
+watchdog==5.0.1
 mkdocs-ezglossary-plugin==1.6.10
