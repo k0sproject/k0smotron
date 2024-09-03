@@ -70,7 +70,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           build-args: |
-            BUILD_IMG=golang:1.21.3
+            BUILD_IMG=golang:1.22.6
           context: .
           platforms: linux/amd64,linux/arm64
           tags: |
