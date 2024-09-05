@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
@@ -131,7 +130,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	}
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
+	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
 	s.updateClusterObjects()
 	// nolint:staticcheck
@@ -145,7 +144,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	})
 	s.Require().NoError(err)
 
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
+	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 }
 
 func (s *CAPIControlPlaneDockerDownScalingSuite) applyClusterObjects() {

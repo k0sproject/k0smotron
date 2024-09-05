@@ -30,7 +30,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
@@ -129,13 +128,13 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
+	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
 	s.T().Log("waiting for frp server to be ready")
-	s.Require().NoError(k0stestutil.WaitForDeployment(s.ctx, s.client, "docker-test-frps", "default"))
+	s.Require().NoError(util.WaitForDeployment(s.ctx, s.client, "docker-test-frps", "default"))
 
 	s.T().Log("waiting for frp client to be ready")
-	s.Require().NoError(k0stestutil.WaitForDeployment(s.ctx, kmcKC, "frpc", "kube-system"))
+	s.Require().NoError(util.WaitForDeployment(s.ctx, kmcKC, "frpc", "kube-system"))
 
 	s.T().Log("checking connectivity to the child cluster via tunnel")
 
@@ -151,9 +150,9 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 		DoRaw(context.Background())
 	s.Require().NoError(err)
 
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, tunneledKmcKC, "docker-test-worker-0", corev1.ConditionTrue))
+	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, tunneledKmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
-	s.Require().NoError(k0stestutil.WaitForDeployment(s.ctx, tunneledKmcKC, "frpc", "kube-system"))
+	s.Require().NoError(util.WaitForDeployment(s.ctx, tunneledKmcKC, "frpc", "kube-system"))
 }
 
 func GetKMCClientSetWithProxy(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string, port int) (*kubernetes.Clientset, error) {

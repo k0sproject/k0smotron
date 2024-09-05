@@ -18,16 +18,15 @@ package capidockerclusterclassk0smotron
 
 import (
 	"context"
+	"os"
+	"os/exec"
+	"testing"
+
 	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"os/exec"
-	"testing"
-
-	"github.com/k0sproject/k0s/inttest/common"
 )
 
 type CAPIDockerClusterClassK0smotronSuite struct {
@@ -87,7 +86,7 @@ func (s *CAPIDockerClusterClassK0smotronSuite) TestCAPIDocker() {
 
 	// Wait for the cluster to be ready
 	// Wait to see the CP pods ready
-	s.Require().NoError(common.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test-cluster", "default"))
+	s.Require().NoError(util.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test-cluster", "default"))
 }
 
 func (s *CAPIDockerClusterClassK0smotronSuite) applyClusterObjects() {

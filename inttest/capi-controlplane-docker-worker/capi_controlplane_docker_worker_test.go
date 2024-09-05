@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
@@ -125,7 +124,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDockerWorker() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))
+	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))
 }
 
 func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {

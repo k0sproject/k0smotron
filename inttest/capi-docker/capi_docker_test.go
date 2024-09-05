@@ -19,14 +19,15 @@ package capidocker
 import (
 	"context"
 	"fmt"
-	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes/scheme"
 	"os"
 	"os/exec"
 	"testing"
 	"time"
+
+	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
@@ -39,9 +40,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/k0sproject/k0s/inttest/common"
-	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 )
 
 type CAPIDockerSuite struct {
@@ -98,7 +96,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 
 	// Wait for the cluster to be ready
 	// Wait to see the CP pods ready
-	s.Require().NoError(common.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test", "default"))
+	s.Require().NoError(util.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test", "default"))
 
 	s.checkControlPlaneStatus(s.ctx, s.restConfig)
 
@@ -120,7 +118,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))
+	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))
 	node, err := kmcKC.CoreV1().Nodes().Get(s.ctx, "docker-test-0", metav1.GetOptions{})
 	s.Require().NoError(err)
 	s.Require().Equal("v1.27.1+k0s", node.Status.NodeInfo.KubeletVersion)

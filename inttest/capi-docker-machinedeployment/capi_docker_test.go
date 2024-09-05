@@ -33,9 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-
-	"github.com/k0sproject/k0s/inttest/common"
-	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 )
 
 type CAPIDockerSuite struct {
@@ -87,7 +84,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 
 	// Wait for the cluster to be ready
 	// Wait to see the CP pods ready
-	s.Require().NoError(common.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-md-test", "default"))
+	s.Require().NoError(util.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-md-test", "default"))
 
 	s.T().Log("Starting portforward")
 	fw, err := util.GetPortForwarder(s.restConfig, "kmc-docker-md-test-0", "default", 30443)
@@ -108,7 +105,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.T().Log("waiting for 2 nodes to be ready")
 	ctx, cancel := context.WithTimeout(s.ctx, 5*time.Minute)
 	defer cancel()
-	err = k0stestutil.Poll(ctx, func(ctx context.Context) (done bool, err error) {
+	err = util.Poll(ctx, func(ctx context.Context) (done bool, err error) {
 		nodes, err := kmcKC.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
