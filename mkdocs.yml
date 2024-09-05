@@ -32,6 +32,7 @@ nav:
         - Hetzner Cloud: capi-hetzner.md
         - OpenStack: capi-openstack.md
         - Docker: capi-docker.md
+        - KubeVirt: capi-kubevirt.md
         - vSphere: capi-vsphere.md
         - Remote Machine with Teleport: capi-remotemachine-teleport.md
         - Remote Machine with Okta ASA: capi-remotemachine-okta-asa.md
