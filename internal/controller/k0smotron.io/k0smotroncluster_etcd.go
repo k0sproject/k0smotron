@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	batchv1 "k8s.io/api/batch/v1"
 	"strings"
 	"text/template"
 
@@ -53,6 +54,11 @@ func (r *ClusterReconciler) reconcileEtcd(ctx context.Context, kmc *km.Cluster) 
 	}
 	if err := r.reconcileEtcdStatefulSet(ctx, kmc); err != nil {
 		return fmt.Errorf("error reconciling etcd statefulset: %w", err)
+	}
+	if kmc.Spec.Etcd.DefragJob.Enabled {
+		if err := r.reconcileEtcdDefragJob(ctx, kmc); err != nil {
+			return fmt.Errorf("error reconciling etcd defrag job: %w", err)
+		}
 	}
 
 	return nil
@@ -95,6 +101,88 @@ func (r *ClusterReconciler) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluste
 	_ = ctrl.SetControllerReference(kmc, &svc, r.Scheme)
 
 	return r.Client.Patch(ctx, &svc, client.Apply, patchOpts...)
+}
+
+func (r *ClusterReconciler) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Cluster) error {
+	labels := labelsForEtcdCluster(kmc)
+
+	cronJob := batchv1.CronJob{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "batch/v1",
+			Kind:       "CronJob",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        kmc.GetEtcdDefragJobName(),
+			Namespace:   kmc.Namespace,
+			Labels:      labels,
+			Annotations: annotationsForCluster(kmc),
+		},
+		Spec: batchv1.CronJobSpec{
+			Schedule:          kmc.Spec.Etcd.DefragJob.Schedule,
+			ConcurrencyPolicy: batchv1.ForbidConcurrent,
+			JobTemplate: batchv1.JobTemplateSpec{
+				Spec: batchv1.JobSpec{
+					Template: v1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: labels,
+						},
+						Spec: v1.PodSpec{
+							RestartPolicy: v1.RestartPolicyOnFailure,
+							Containers: []v1.Container{
+								{
+									Name:            "etcd-defrag",
+									Image:           kmc.Spec.Etcd.Image,
+									ImagePullPolicy: v1.PullIfNotPresent,
+									Args: []string{
+										fmt.Sprintf("--endpoints=https://%s:2379", kmc.GetEtcdServiceName()),
+										"--cacert=/var/lib/k0s/pki/etcd/ca.crt",
+										"--cert=/var/lib/k0s/pki/etcd/client.crt",
+										"--key=/var/lib/k0s/pki/etcd/client.key",
+										"--cluster",
+										"--defrag-rule",
+										kmc.Spec.Etcd.DefragJob.Rule,
+									},
+									VolumeMounts: []v1.VolumeMount{
+										{Name: "certs", MountPath: "/var/lib/k0s/pki/etcd/"},
+									},
+								},
+							},
+							Volumes: []v1.Volume{{
+								Name: "certs",
+								VolumeSource: v1.VolumeSource{
+									Projected: &v1.ProjectedVolumeSource{
+										Sources: []v1.VolumeProjection{
+											{
+												Secret: &v1.SecretProjection{
+													LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, secret.EtcdCA)},
+													Items: []v1.KeyToPath{
+														{Key: "tls.crt", Path: "ca.crt"},
+														{Key: "tls.key", Path: "ca.key"},
+													},
+												},
+											}, {
+												Secret: &v1.SecretProjection{
+													LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-server")},
+													Items: []v1.KeyToPath{
+														{Key: "tls.crt", Path: "client.crt"},
+														{Key: "tls.key", Path: "client.key"},
+													},
+												},
+											},
+										},
+									},
+								},
+							}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_ = ctrl.SetControllerReference(kmc, &cronJob, r.Scheme)
+
+	return r.Client.Patch(ctx, &cronJob, client.Apply, patchOpts...)
 }
 
 func (r *ClusterReconciler) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster) error {

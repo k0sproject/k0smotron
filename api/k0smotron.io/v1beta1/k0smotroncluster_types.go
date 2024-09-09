@@ -258,6 +258,25 @@ type EtcdSpec struct {
 	// Persistence defines the persistence configuration.
 	//+kubebuilder:validation:Optional
 	Persistence EtcdPersistenceSpec `json:"persistence"`
+	// DefragJob defines the etcd defragmentation job configuration.
+	//+kubebuilder:validation:Optional
+	DefragJob DefragJob `json:"defragJob"`
+}
+
+type DefragJob struct {
+	// Enabled enables the etcd defragmentation job.
+	//+kubebuilder:default=false
+	Enabled bool `json:"enabled"`
+	// Schedule defines the etcd defragmentation job schedule.
+	//+kubebuilder:default="0 12 * * *"
+	Schedule string `json:"schedule"`
+	// Rule defines the etcd defragmentation job defrag-rule.
+	// For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule
+	//+kubebuilder:default="dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024"
+	Rule string `json:"rule"`
+	// Image defines the etcd defragmentation job image.
+	//+kubebuilder:default="ghcr.io/ahrtr/etcd-defrag:v0.16.0"
+	Image string `json:"image"`
 }
 
 type EtcdPersistenceSpec struct {
@@ -291,6 +310,10 @@ func (kmc *Cluster) GetStatefulSetName() string {
 
 func (kmc *Cluster) GetEtcdStatefulSetName() string {
 	return fmt.Sprintf("kmc-%s-etcd", kmc.Name)
+}
+
+func (kmc *Cluster) GetEtcdDefragJobName() string {
+	return fmt.Sprintf("kmc-%s-defrag", kmc.Name)
 }
 
 func (kmc *Cluster) GetAdminConfigSecretName() string {
