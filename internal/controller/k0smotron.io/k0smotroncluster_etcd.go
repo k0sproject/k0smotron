@@ -131,7 +131,7 @@ func (r *ClusterReconciler) reconcileEtcdDefragJob(ctx context.Context, kmc *km.
 							Containers: []v1.Container{
 								{
 									Name:            "etcd-defrag",
-									Image:           kmc.Spec.Etcd.Image,
+									Image:           kmc.Spec.Etcd.DefragJob.Image,
 									ImagePullPolicy: v1.PullIfNotPresent,
 									Args: []string{
 										fmt.Sprintf("--endpoints=https://%s:2379", kmc.GetEtcdServiceName()),
