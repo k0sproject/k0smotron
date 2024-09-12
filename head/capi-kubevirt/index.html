@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/cluster-api/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-kubevirt/">
       
       
-        <link rel="prev" href="../configuration/">
+        <link rel="prev" href="../capi-docker/">
       
       
-        <link rel="next" href="../capi-controlplane/">
+        <link rel="next" href="../capi-vsphere/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Overview - Documentation</title>
+        <title>KubeVirt - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#k0smotron-as-cluster-api-provider" class="md-skip">
+        <a href="#cluster-api-kubevirt" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              KubeVirt
             
           </span>
         </div>
@@ -540,30 +540,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Overview
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../cluster-api/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -572,71 +552,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#control-plane-provider-in-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Control Plane provider - in-cluster
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#control-plane-out-of-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Control Plane - out-of-cluster
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#bootstrap-provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      Bootstrap provider
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote-machine-provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      Remote Machine provider
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cluster-autoscaling" class="md-nav__link">
-    <span class="md-ellipsis">
-      Cluster autoscaling
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -751,17 +666,19 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_7" checked>
         
           
           <label class="md-nav__link" for="__nav_4_3_7" id="__nav_4_3_7_label" tabindex="0">
@@ -775,7 +692,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_3_7">
             <span class="md-nav__icon md-icon"></span>
             Examples
@@ -891,10 +808,30 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../capi-kubevirt/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    KubeVirt
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -903,6 +840,71 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#preparations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nested-virtualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Nested Virtualization
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-child-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a child cluster
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accessing-the-workload-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Accessing the workload cluster
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deleting-the-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deleting the cluster
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1458,45 +1460,45 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#control-plane-provider-in-cluster" class="md-nav__link">
+  <a href="#preparations" class="md-nav__link">
     <span class="md-ellipsis">
-      Control Plane provider - in-cluster
+      Preparations
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#control-plane-out-of-cluster" class="md-nav__link">
+  <a href="#nested-virtualization" class="md-nav__link">
     <span class="md-ellipsis">
-      Control Plane - out-of-cluster
+      Nested Virtualization
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#bootstrap-provider" class="md-nav__link">
+  <a href="#creating-a-child-cluster" class="md-nav__link">
     <span class="md-ellipsis">
-      Bootstrap provider
+      Creating a child cluster
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#remote-machine-provider" class="md-nav__link">
+  <a href="#accessing-the-workload-cluster" class="md-nav__link">
     <span class="md-ellipsis">
-      Remote Machine provider
+      Accessing the workload cluster
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#cluster-autoscaling" class="md-nav__link">
+  <a href="#deleting-the-cluster" class="md-nav__link">
     <span class="md-ellipsis">
-      Cluster autoscaling
+      Deleting the cluster
     </span>
   </a>
   
@@ -1517,59 +1519,151 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="k0smotron-as-cluster-api-provider">k0smotron as Cluster API provider<a class="headerlink" href="#k0smotron-as-cluster-api-provider" title="Permanent link">#</a></h1>
-<p>k0smotron can act as a <a href="https://cluster-api.sigs.k8s.io/">Cluster API</a> provider in several different roles.</p>
-<h2 id="control-plane-provider-in-cluster">Control Plane provider - in-cluster<a class="headerlink" href="#control-plane-provider-in-cluster" title="Permanent link">#</a></h2>
-<p>When k0smotron acts as a <a href="https://cluster-api.sigs.k8s.io/developer/architecture/controllers/control-plane.html">control plane provider</a> it will create and manage the cluster control plane within the management cluster, just as in the <a href="../cluster/">standalone</a> case.</p>
-<h2 id="control-plane-out-of-cluster">Control Plane - out-of-cluster<a class="headerlink" href="#control-plane-out-of-cluster" title="Permanent link">#</a></h2>
-<p>k0smotron can function also as a "traditional" contol plane provider where the control plane is running on CAPI managed <code>Machines</code>s.</p>
-<h2 id="bootstrap-provider">Bootstrap provider<a class="headerlink" href="#bootstrap-provider" title="Permanent link">#</a></h2>
-<p>k0smotron can also act as a <a href="https://cluster-api.sigs.k8s.io/developer/architecture/controllers/bootstrap.html">bootstrap provider</a> for worker nodes you want to manage via Cluster API. When k0smotron detects a new node that needs to be added to the cluster it will automatically create a new <a href="">join token</a> needed for the node and creates the provisioning cloud-init script for the node. Once Cluster API controllers sees the node initialization script in place (in a secret) the <a href="https://cluster-api.sigs.k8s.io/developer/providers/machine-infrastructure.html">infrastructure provider</a> will create the needed resources (usually VMs in cloud provider infrastructure) with the k0smotron created cloud-init script.</p>
-<h2 id="remote-machine-provider">Remote Machine provider<a class="headerlink" href="#remote-machine-provider" title="Permanent link">#</a></h2>
-<p>k0smotron also provides a ClusterAPI provider to manage and bootstrap cluster <code>Machines</code> remotely via SSH connection. This allows managing the clusters in environment where there's no existing ClusterAPi provider available. Such environments could be for example bare metal environments.</p>
-<h2 id="cluster-autoscaling">Cluster autoscaling<a class="headerlink" href="#cluster-autoscaling" title="Permanent link">#</a></h2>
-<p><a href="https://github.com/kubernetes/autoscaler">Cluster Autoscaler</a> works with <a href="https://cluster-api.sigs.k8s.io/tasks/automated-machine-management/autoscaling">ClusterAPI</a>. You need to deploy an "instance" of autoscaler per child cluster in order for it to work properly. If you deploy autoscaler via Helm, here's some values to look out:</p>
-<table>
-<thead>
-<tr>
-<th>Value</th>
-<th>Why?</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>autodiscovery.clusterName</code></td>
-<td>Select the child cluster you want to autoscale. E.g. <code>my-cluster</code></td>
-</tr>
-<tr>
-<td><code>cloudProvider</code></td>
-<td>Set to <code>clusterapi</code> to make autoscaler work with ClusterAPI</td>
-</tr>
-<tr>
-<td><code>clusterAPIKubeconfigSecret</code></td>
-<td>Set to the kubeconfig secret created by CAPI. E.g. <code>my-cluster-kubeconfig</code></td>
-</tr>
-<tr>
-<td><code>clusterAPIMode</code></td>
-<td>Set to <code>kubeconfig-incluster</code>. Essentially this tells that the child cluster API is accessed with the kubeconfig from the secret and management cluster via <code>incluster</code> kubeconfig</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition note">
-<p class="admonition-title">RBAC finetuning needed with Helm deployed autoscaler</p>
-<p>The Helm chart does not take into account the need for autoscaler to access the implementation specific resources in <code>infrastructure.cluster.x-k8s.io</code> group. To fix that you need to modify* the <code>ClusterRole</code> to include e.g.</p>
-<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">verbs</span><span class="p">:</span>
-<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span>
-<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list</span>
-<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
-<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span>
-<span class="w w-Error"> </span><span class="nt">apiGroups</span><span class="p">:</span>
-<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
-<span class="w"> </span><span class="nt">resources</span><span class="p">:</span>
-<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;*&#39;</span><span class="w"> </span><span class="c1"># You can of course limit this to your specific infrastructure types only, e.g. `AWSMachineDeployment` etc.</span>
+<h1 id="cluster-api-kubevirt">Cluster API - Kubevirt<a class="headerlink" href="#cluster-api-kubevirt" title="Permanent link">#</a></h1>
+<p>This example demonstrates how k0smotron can be used with CAPK (Cluster API Provider Kubevirt).</p>
+<h2 id="preparations">Preparations<a class="headerlink" href="#preparations" title="Permanent link">#</a></h2>
+<p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>. </p>
+<p>To install the latest stable version of Kubevirt you can run:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">VERSION</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt<span class="k">)</span>
+kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>https://github.com/kubevirt/kubevirt/releases/download/<span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span>/kubevirt-operator.yaml
+kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>https://github.com/kubevirt/kubevirt/releases/download/<span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span>/kubevirt-cr.yaml
 </code></pre></div>
-<p>*) Happy to get feedback whether there's a better workaround for this.</p>
-</div>
+<p>To initialize the management cluster with Kubevirt infrastructure provider you can run:</p>
+<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--core<span class="w"> </span>cluster-api<span class="w"> </span>--infrastructure<span class="w"> </span>kubevirt
+</code></pre></div>
+<p>For more details on Cluster API Provider Kubevirt see it's <a href="https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt">docs</a>.</p>
+<h2 id="nested-virtualization">Nested Virtualization<a class="headerlink" href="#nested-virtualization" title="Permanent link">#</a></h2>
+<p>If your kubernetes nodes are able to support nested virtualization please make sure it is enabled. If your nodes are not able to support nested virtualization you can work around it by running the following.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>kubevirt<span class="w"> </span>patch<span class="w"> </span>kubevirt<span class="w"> </span>kubevirt<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>--patch<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;configuration&quot;:{&quot;developerConfiguration&quot;:{&quot;useEmulation&quot;:true}}}}&#39;</span>
+</code></pre></div>
+<h2 id="creating-a-child-cluster">Creating a child cluster<a class="headerlink" href="#creating-a-child-cluster" title="Permanent link">#</a></h2>
+<p>Once all the controllers are up and running, you can apply the cluster manifests containing the specifications of the cluster you want to provision.</p>
+<p>Here is an example:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.0.0/16</span>
+<span class="w">    </span><span class="nt">serviceDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.local</span>
+<span class="w">    </span><span class="nt">services</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.128.0.0/12</span>
+<span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-test-cp</span>
+<span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KubevirtCluster</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span><span class="w"> </span><span class="c1"># This is the config for the controlplane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-test-cp</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.4-k0s.0</span>
+<span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
+<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KubevirtCluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">controlPlaneServiceTemplate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineDeployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-md</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test</span>
+<span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">configRef</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
+<span class="w">          </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test-machine-config</span>
+<span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1alpha1</span>
+<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KubevirtMachineTemplate</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test-mt</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.4</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KubevirtMachineTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test-mt</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">virtualMachineBootstrapCheck</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">checkStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ssh</span>
+<span class="w">      </span><span class="nt">virtualMachineTemplate</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">runStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Always</span>
+<span class="w">          </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">domain</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">cpu</span><span class="p">:</span>
+<span class="w">                  </span><span class="nt">cores</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">                </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">                  </span><span class="nt">disks</span><span class="p">:</span>
+<span class="w">                  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">disk</span><span class="p">:</span>
+<span class="w">                      </span><span class="nt">bus</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">virtio</span>
+<span class="w">                    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">containervolume</span>
+<span class="w">                  </span><span class="nt">networkInterfaceMultiqueue</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">                </span><span class="nt">memory</span><span class="p">:</span>
+<span class="w">                  </span><span class="nt">guest</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1Gi</span>
+<span class="w">              </span><span class="nt">evictionStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">External</span>
+<span class="w">              </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerDisk</span><span class="p">:</span>
+<span class="w">                  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/capk/ubuntu-2204-container-disk:v1.27.14</span>
+<span class="w">                </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">containervolume</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubevirt-test-machine-config</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.4+k0s.0</span>
+<span class="w">      </span><span class="c1"># More details of the worker configuration can be set here</span>
+</code></pre></div>
+<p>After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:</p>
+<div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
+NAME<span class="w">                                   </span>PHASE<span class="w">         </span>AGE<span class="w">     </span>VERSION
+cluster.cluster.x-k8s.io/kubevirt-test<span class="w"> </span>Provisioned<span class="w">   </span>22h<span class="w">   </span>
+
+NAME<span class="w">                                               </span>CLUSTER<span class="w">         </span>NODENAME<span class="w">                  </span>PROVIDERID<span class="w">                           </span>PHASE<span class="w">     </span>AGE<span class="w">     </span>VERSION
+machine.cluster.x-k8s.io/kubevirt-md-mdvns-l2rxb<span class="w">   </span>kubevirt-test<span class="w">   </span>kubevirt-md-mdvns-l2rxb<span class="w">   </span>kubevirt://kubevirt-md-mdvns-l2rxb<span class="w">   </span>Running<span class="w">   </span>22h<span class="w">     </span>v1.27.4
+</code></pre></div>
+<p>You can also check the status of the cluster deployment with <code>clusterctl describe cluster</code>.</p>
+<h2 id="accessing-the-workload-cluster">Accessing the workload cluster<a class="headerlink" href="#accessing-the-workload-cluster" title="Permanent link">#</a></h2>
+<p>To access the child cluster we can get the kubeconfig for it with <code>clusterctl get kubeconfig kubevirt-test</code>. You can then save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a></p>
+<h2 id="deleting-the-cluster">Deleting the cluster<a class="headerlink" href="#deleting-the-cluster" title="Permanent link">#</a></h2>
+<p>For cluster deletion, do <strong>NOT</strong> use <code>kubectl delete -f my-kubevirt-cluster.yaml</code> as that can result in orphan resources. Instead, delete the top level <code>Cluster</code> object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.</p>
 
 
 
