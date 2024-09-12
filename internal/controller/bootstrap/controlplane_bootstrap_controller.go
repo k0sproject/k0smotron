@@ -150,7 +150,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	)
 
 	if config.Spec.K0s != nil {
-
 		nllbEnabled, found, err := unstructured.NestedBool(config.Spec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
@@ -186,13 +185,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			}
 		}
 
-		// Reconcile the dynamic config
-		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, config.Spec.K0s)
-		if dErr != nil {
-			// Don't return error from dynamic config reconciliation, as it may not be created yet
-			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")
-		}
-
 		k0sConfigBytes, err := config.Spec.K0s.MarshalJSON()
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error marshalling k0s config: %v", err)
@@ -203,6 +195,13 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Content:     string(k0sConfigBytes),
 		})
 		config.Spec.Args = append(config.Spec.Args, "--config", "/etc/k0s.yaml")
+
+		// Reconcile the dynamic config
+		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, *config.Spec.K0s)
+		if dErr != nil {
+			// Don't return error from dynamic config reconciliation, as it may not be created yet
+			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")
+		}
 	}
 
 	if config.Status.Ready {

@@ -130,6 +130,11 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
+	s.T().Log("verifying k0s.yaml")
+	k0sConfig, err := getDockerNodeFile("docker-test-cluster-docker-test-0", "/etc/k0s.yaml")
+	s.Require().NoError(err)
+	s.Require().True(strings.Contains(k0sConfig, "controlPlaneLoadBalancing"))
+
 	s.T().Log("verifying cloud-init extras")
 	preStartFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/pre-start")
 	s.Require().NoError(err)
@@ -255,7 +260,9 @@ spec:
             anonymous-auth: "true"
         telemetry:
           enabled: false
-    
+        network:
+          controlPlaneLoadBalancing:
+            enabled: false 
     files:
     - path: /tmp/test-file-secret
       contentFrom: 
