@@ -241,6 +241,12 @@ metadata:
 			"service":{
 				"type": "NodePort"
 			},
+			"etcd": {
+				"defragJob": {
+					"enabled": true,
+					"schedule": "* * * * *"
+				}
+			},
 			"manifests": [
 				{
 					"name": "secret",

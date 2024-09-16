@@ -1,9 +1,4 @@
-# Highly available hosted control planes
-
-!!! note
-
-   Highly available control planes are supported for the standalone and
-   Cluster API in-cluster use cases.
+# Highly available hosted control planes using external data stores
 
 Setting up a highly available etcd cluster for Kubernetes control planes can be
 complicated due to their dynamic nature. In k0smotron, we solve this challenge

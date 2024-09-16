@@ -2852,12 +2852,76 @@ Etcd defines the etcd configuration.
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecetcddefragjob">defragJob</a></b></td>
+        <td>object</td>
+        <td>
+          DefragJob defines the etcd defragmentation job configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecetcdpersistence">persistence</a></b></td>
         <td>object</td>
         <td>
           Persistence defines the persistence configuration.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.etcd.defragJob
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd)</sup></sup>
+
+
+
+DefragJob defines the etcd defragmentation job configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables the etcd defragmentation job.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd defragmentation job image.<br/>
+          <br/>
+            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>rule</b></td>
+        <td>string</td>
+        <td>
+          Rule defines the etcd defragmentation job defrag-rule.
+For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
+          <br/>
+            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>schedule</b></td>
+        <td>string</td>
+        <td>
+          Schedule defines the etcd defragmentation job schedule.<br/>
+          <br/>
+            <i>Default</i>: 0 12 * * *<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -11188,12 +11252,76 @@ Etcd defines the etcd configuration.
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcddefragjob">defragJob</a></b></td>
+        <td>object</td>
+        <td>
+          DefragJob defines the etcd defragmentation job configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcdpersistence">persistence</a></b></td>
         <td>object</td>
         <td>
           Persistence defines the persistence configuration.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.etcd.defragJob
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecetcd)</sup></sup>
+
+
+
+DefragJob defines the etcd defragmentation job configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables the etcd defragmentation job.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd defragmentation job image.<br/>
+          <br/>
+            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>rule</b></td>
+        <td>string</td>
+        <td>
+          Rule defines the etcd defragmentation job defrag-rule.
+For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
+          <br/>
+            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>schedule</b></td>
+        <td>string</td>
+        <td>
+          Schedule defines the etcd defragmentation job schedule.<br/>
+          <br/>
+            <i>Default</i>: 0 12 * * *<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -35439,12 +35567,76 @@ Etcd defines the etcd configuration.
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#clusterspecetcddefragjob">defragJob</a></b></td>
+        <td>object</td>
+        <td>
+          DefragJob defines the etcd defragmentation job configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterspecetcdpersistence">persistence</a></b></td>
         <td>object</td>
         <td>
           Persistence defines the persistence configuration.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.etcd.defragJob
+<sup><sup>[↩ Parent](#clusterspecetcd)</sup></sup>
+
+
+
+DefragJob defines the etcd defragmentation job configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables the etcd defragmentation job.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd defragmentation job image.<br/>
+          <br/>
+            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>rule</b></td>
+        <td>string</td>
+        <td>
+          Rule defines the etcd defragmentation job defrag-rule.
+For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
+          <br/>
+            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>schedule</b></td>
+        <td>string</td>
+        <td>
+          Schedule defines the etcd defragmentation job schedule.<br/>
+          <br/>
+            <i>Default</i>: 0 12 * * *<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

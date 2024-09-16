@@ -103,6 +103,38 @@ spec:
                             items:
                               type: string
                             type: array
+                          defragJob:
+                            description: DefragJob defines the etcd defragmentation
+                              job configuration.
+                            properties:
+                              enabled:
+                                default: false
+                                description: Enabled enables the etcd defragmentation
+                                  job.
+                                type: boolean
+                              image:
+                                default: ghcr.io/ahrtr/etcd-defrag:v0.16.0
+                                description: Image defines the etcd defragmentation
+                                  job image.
+                                type: string
+                              rule:
+                                default: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse
+                                  > 200*1024*1024
+                                description: |-
+                                  Rule defines the etcd defragmentation job defrag-rule.
+                                  For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule
+                                type: string
+                              schedule:
+                                default: 0 12 * * *
+                                description: Schedule defines the etcd defragmentation
+                                  job schedule.
+                                type: string
+                            required:
+                            - enabled
+                            - image
+                            - rule
+                            - schedule
+                            type: object
                           image:
                             default: quay.io/k0sproject/etcd:v3.5.13
                             description: Image defines the etcd image to be deployed.

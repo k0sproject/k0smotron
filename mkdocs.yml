@@ -19,6 +19,8 @@ nav:
       - Create a cluster: cluster.md
       - Join a worker node: join-nodes.md
       - Configuration: configuration.md
+      - Etcd configuration: etcd.md
+      - HA control planes with Kine: ha.md
     - Cluster API:
       - Overview: cluster-api.md
       - Control Plane: capi-controlplane.md
@@ -36,7 +38,6 @@ nav:
         - vSphere: capi-vsphere.md
         - Remote Machine with Teleport: capi-remotemachine-teleport.md
         - Remote Machine with Okta ASA: capi-remotemachine-okta-asa.md
-    - HA control planes: ha.md
     - Monitoring: monitoring.md
   - Update:
      - Standalone: update/update-standalone.md
