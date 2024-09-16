@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -39,6 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -135,7 +137,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	for _, arg := range config.Spec.Args {
-		if arg == "--enable-worker" || arg == "--enable-worker=true" {
+		if arg == "--enable-worker" || arg == "--enable-worker=true" || arg == "--single" {
 			scope.WorkerEnabled = true
 			break
 		}
@@ -212,14 +214,28 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, fmt.Errorf("control plane endpoint is not set")
 	}
 
-	if strings.HasSuffix(config.Name, "-0") {
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error collecting machines: %w", err)
+	}
+
+	if machines.Len() == 0 {
+		log.Info("No control plane machines found, waiting for machines to be created")
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if machines.Oldest().Name == config.Name {
 		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error generating initial control plane files: %v", err)
 		}
 		installCmd = createCPInstallCmd(scope)
 	} else {
-		files, err = c.genControlPlaneJoinFiles(ctx, scope, files)
+		oldest := getFirstRunningMachineWithLatestVersion(machines)
+		if oldest == nil {
+			return ctrl.Result{}, fmt.Errorf("wait for initial control plane provisioning")
+		}
+		files, err = c.genControlPlaneJoinFiles(ctx, scope, files, oldest)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error generating control plane join files: %v", err)
 		}
@@ -327,7 +343,7 @@ func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context
 	return files, nil
 }
 
-func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []cloudinit.File) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []cloudinit.File, firstControllerMachine *clusterv1.Machine) ([]cloudinit.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	_, ca, err := c.getCerts(ctx, scope)
@@ -354,7 +370,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		return nil, err
 	}
 
-	host, err := c.findFirstControllerIP(ctx, scope.Config)
+	host, err := c.findFirstControllerIP(ctx, firstControllerMachine)
 	if err != nil {
 		log.Error(err, "Failed to get controller IP")
 		return nil, err
@@ -568,22 +584,9 @@ func mergeControllerExtraArgs(scope *ControllerScope) []string {
 	return mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
 }
 
-func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, config *bootstrapv1.K0sControllerConfig) (string, error) {
-	// Dirty first controller name generation
-	nameParts := strings.Split(config.Name, "-")
-	nameParts[len(nameParts)-1] = "0"
-	name := strings.Join(nameParts, "-")
-	machine, machineImpl, err := c.getMachineImplementation(ctx, name, config)
-	if err != nil {
-		return "", fmt.Errorf("error getting machine implementation: %w", err)
-	}
-	addresses, found, err := unstructured.NestedSlice(machineImpl.UnstructuredContent(), "status", "addresses")
-	if err != nil {
-		return "", err
-	}
-
+func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv1.Machine) (string, error) {
 	extAddr, intAddr := "", ""
-	for _, addr := range machine.Status.Addresses {
+	for _, addr := range firstControllerMachine.Status.Addresses {
 		if addr.Type == clusterv1.MachineExternalIP {
 			extAddr = addr.Address
 			break
@@ -594,16 +597,29 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, conf
 		}
 	}
 
-	if found {
-		for _, addr := range addresses {
-			addrMap, _ := addr.(map[string]interface{})
-			if addrMap["type"] == string(v1.NodeExternalIP) {
-				extAddr = addrMap["address"].(string)
-				break
-			}
-			if addrMap["type"] == string(v1.NodeInternalIP) {
-				intAddr = addrMap["address"].(string)
-				break
+	name := firstControllerMachine.Name
+
+	if extAddr == "" && intAddr == "" {
+		machineImpl, err := c.getMachineImplementation(ctx, firstControllerMachine)
+		if err != nil {
+			return "", fmt.Errorf("error getting machine implementation: %w", err)
+		}
+		addresses, found, err := unstructured.NestedSlice(machineImpl.UnstructuredContent(), "status", "addresses")
+		if err != nil {
+			return "", err
+		}
+
+		if found {
+			for _, addr := range addresses {
+				addrMap, _ := addr.(map[string]interface{})
+				if addrMap["type"] == string(v1.NodeExternalIP) {
+					extAddr = addrMap["address"].(string)
+					break
+				}
+				if addrMap["type"] == string(v1.NodeInternalIP) {
+					intAddr = addrMap["address"].(string)
+					break
+				}
 			}
 		}
 	}
@@ -619,13 +635,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, conf
 	return "", fmt.Errorf("no address found for machine %s", name)
 }
 
-func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, name string, config *bootstrapv1.K0sControllerConfig) (*clusterv1.Machine, *unstructured.Unstructured, error) {
-	var machine clusterv1.Machine
-	err := c.Get(ctx, client.ObjectKey{Name: name, Namespace: config.Namespace}, &machine)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error getting machine object: %w", err)
-	}
-
+func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, machine *clusterv1.Machine) (*unstructured.Unstructured, error) {
 	infRef := machine.Spec.InfrastructureRef
 
 	machineImpl := new(unstructured.Unstructured)
@@ -635,11 +645,11 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, n
 
 	key := client.ObjectKey{Name: infRef.Name, Namespace: infRef.Namespace}
 
-	err = c.Get(ctx, key, machineImpl)
+	err := c.Get(ctx, key, machineImpl)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting machine implementation object: %w", err)
+		return nil, fmt.Errorf("error getting machine implementation object: %w", err)
 	}
-	return &machine, machineImpl, nil
+	return machineImpl, nil
 }
 
 func genShutdownServiceFiles() []cloudinit.File {
@@ -691,4 +701,32 @@ command="/etc/bin/k0sleave.sh"
 		`,
 		},
 	}
+}
+
+func getFirstRunningMachineWithLatestVersion(machines collections.Machines) *clusterv1.Machine {
+	res := make(machinesByVersionAndCreationTimestamp, 0, len(machines))
+	for _, value := range machines {
+		if value.Status.Phase == string(clusterv1.MachinePhasePending) {
+			continue
+		}
+		res = append(res, value)
+	}
+	if len(res) == 0 {
+		return nil
+	}
+	sort.Sort(res)
+	return res[0]
+}
+
+// machinesByCreationTimestamp sorts a list of Machine by creation timestamp, using their names as a tie breaker.
+type machinesByVersionAndCreationTimestamp []*clusterv1.Machine
+
+func (o machinesByVersionAndCreationTimestamp) Len() int      { return len(o) }
+func (o machinesByVersionAndCreationTimestamp) Swap(i, j int) { o[i], o[j] = o[j], o[i] }
+func (o machinesByVersionAndCreationTimestamp) Less(i, j int) bool {
+
+	if o[i].CreationTimestamp.Equal(&o[j].CreationTimestamp) {
+		return o[i].Name < o[j].Name
+	}
+	return *o[i].Spec.Version < *o[j].Spec.Version && o[i].CreationTimestamp.Before(&o[j].CreationTimestamp)
 }

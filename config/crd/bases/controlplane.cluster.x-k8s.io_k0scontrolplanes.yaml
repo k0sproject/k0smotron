@@ -251,7 +251,10 @@ spec:
               updateStrategy:
                 default: InPlace
                 description: UpdateStrategy defines the strategy to use when updating
-                  the control plane. Currently only InPlace is supported.
+                  the control plane.
+                enum:
+                - InPlace
+                - Recreate
                 type: string
               version:
                 description: |-
