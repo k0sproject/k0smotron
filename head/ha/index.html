@@ -15,10 +15,10 @@
         <link rel="canonical" href="https://docs.k0smotron.io/head/ha/">
       
       
-        <link rel="prev" href="../capi-remotemachine-okta-asa/">
+        <link rel="prev" href="../etcd/">
       
       
-        <link rel="next" href="../monitoring/">
+        <link rel="next" href="../cluster-api/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>HA control planes - Documentation</title>
+        <title>HA control planes with Kine - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#highly-available-hosted-control-planes" class="md-skip">
+        <a href="#highly-available-hosted-control-planes-using-external-data-stores" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              HA control planes
+              HA control planes with Kine
             
           </span>
         </div>
@@ -397,17 +397,19 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
         
           
           <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
@@ -421,7 +423,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             Standalone
@@ -486,6 +488,97 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../etcd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Etcd configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    HA control planes with Kine
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    HA control planes with Kine
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#using-postgres-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Postgres operator
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -894,76 +987,6 @@ You are not currently viewing the documentation for the current stable release o
             
           </ul>
         </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    HA control planes
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    HA control planes
-  </span>
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#using-postgres-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      Using Postgres operator
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -1443,12 +1466,7 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="highly-available-hosted-control-planes">Highly available hosted control planes<a class="headerlink" href="#highly-available-hosted-control-planes" title="Permanent link">#</a></h1>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-</div>
-<p>Highly available control planes are supported for the standalone and
-   Cluster API in-cluster use cases.</p>
+<h1 id="highly-available-hosted-control-planes-using-external-data-stores">Highly available hosted control planes using external data stores<a class="headerlink" href="#highly-available-hosted-control-planes-using-external-data-stores" title="Permanent link">#</a></h1>
 <p>Setting up a highly available etcd cluster for Kubernetes control planes can be
 complicated due to their dynamic nature. In k0smotron, we solve this challenge
 by "externalizing" the HA setup of data storage for the control plane.</p>

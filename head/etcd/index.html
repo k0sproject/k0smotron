@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-controlplane-bootstrap/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/etcd/">
       
       
-        <link rel="prev" href="../capi-controlplane/">
+        <link rel="prev" href="../configuration/">
       
       
-        <link rel="next" href="../capi-bootstrap/">
+        <link rel="next" href="../ha/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Control Plane Bootstrap - Documentation</title>
+        <title>Etcd configuration - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cluster-api-control-plane-bootstrap-provider" class="md-skip">
+        <a href="#etcd-configuration" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Control Plane Bootstrap
+              Etcd configuration
             
           </span>
         </div>
@@ -397,17 +397,19 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
         
           
           <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
@@ -421,7 +423,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             Standalone
@@ -495,10 +497,30 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../etcd/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Etcd configuration
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -507,6 +529,53 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#default-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customizing-etcd-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customizing etcd configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defragmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Defragmentation
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -545,19 +614,17 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
           <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
@@ -571,7 +638,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             Cluster API
@@ -624,30 +691,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Control Plane Bootstrap
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../capi-controlplane-bootstrap/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -656,53 +703,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#downscaling-the-control-plane" class="md-nav__link">
-    <span class="md-ellipsis">
-      Downscaling the control plane
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recovering-from-a-lost-control-plane-node" class="md-nav__link">
-    <span class="md-ellipsis">
-      Recovering from a lost control plane node
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#client-connection-tunneling" class="md-nav__link">
-    <span class="md-ellipsis">
-      Client connection tunneling
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1461,27 +1461,27 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#downscaling-the-control-plane" class="md-nav__link">
+  <a href="#default-configuration" class="md-nav__link">
     <span class="md-ellipsis">
-      Downscaling the control plane
+      Default configuration
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#recovering-from-a-lost-control-plane-node" class="md-nav__link">
+  <a href="#customizing-etcd-configuration" class="md-nav__link">
     <span class="md-ellipsis">
-      Recovering from a lost control plane node
+      Customizing etcd configuration
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#client-connection-tunneling" class="md-nav__link">
+  <a href="#defragmentation" class="md-nav__link">
     <span class="md-ellipsis">
-      Client connection tunneling
+      Defragmentation
     </span>
   </a>
   
@@ -1502,129 +1502,98 @@ You are not currently viewing the documentation for the current stable release o
                   
 
 
-<h1 id="cluster-api-control-plane-bootstrap-provider">Cluster API - Control Plane Bootstrap provider<a class="headerlink" href="#cluster-api-control-plane-bootstrap-provider" title="Permanent link">#</a></h1>
-<p>k0smotron can act as a control plane bootstrap provider via usage of <code>K0sControlPlane</code> CRDs.</p>
-<p>When creating a Cluster with Cluster API you typically need to create a <code>Cluster</code> object. With k0smotron there needs to be a link to the control plane provider <code>K0sControlPlane</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
+<h1 id="etcd-configuration">Etcd configuration<a class="headerlink" href="#etcd-configuration" title="Permanent link">#</a></h1>
+<p>k0smotron in HCP mode deploys an etcd cluster to store the state of the control plane. 
+The etcd cluster is deployed as a StatefulSet with odd number of replicas to ensure quorum.
+For example:</p>
+<table>
+<thead>
+<tr>
+<th>Control Plane replicas</th>
+<th>etcd replicas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>3</td>
+</tr>
+<tr>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr>
+<td>4</td>
+<td>5</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+<h2 id="default-configuration">Default configuration<a class="headerlink" href="#default-configuration" title="Permanent link">#</a></h2>
+<p>The etcd cluster is deployed with the following default configuration options:</p>
+<table>
+<thead>
+<tr>
+<th>etcd flag</th>
+<th>default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--auto-compaction-mode=periodic</td>
+<td>periodic</td>
+</tr>
+<tr>
+<td>--auto-compaction-retention</td>
+<td>5m</td>
+</tr>
+<tr>
+<td>--snapshot-count</td>
+<td>10000</td>
+</tr>
+</tbody>
+</table>
+<h2 id="customizing-etcd-configuration">Customizing etcd configuration<a class="headerlink" href="#customizing-etcd-configuration" title="Permanent link">#</a></h2>
+<p>k0smotron supports passing (and overriding default) etcd configuration flags to the etcd cluster by setting the <code>spec.etcd.args</code> field in the <code>Cluster</code> resource. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.244.0.0/16</span>
-<span class="w">    </span><span class="nt">services</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.96.0.0/12</span>
-<span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
-</code></pre></div>
-<p>Next we need to provide the configuration for the actual <code>K0sControlPlane</code> and <code>machineTemplate</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-test</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">k0s</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s.k0sproject.io/v1beta1</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterConfig</span>
-<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
-<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">api</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">extraArgs</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="c1"># anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz </span>
-<span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test-machine-template</span>
-<span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
+<span class="w">  </span><span class="nt">etcd</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--auto-compaction-mode=periodic</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--auto-compaction-retention=15m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--snapshot-count=20000</span>
+</code></pre></div>
+<h2 id="defragmentation">Defragmentation<a class="headerlink" href="#defragmentation" title="Permanent link">#</a></h2>
+<p>k0smotron supports running etcd defragmentation job periodically. The defragmentation job is disabled by default. 
+To enable the defragmentation job, set the <code>spec.etcd.defragJob.enabled</code> field to <code>true</code> in the <code>Cluster</code> resource.
+If enabled, by default the defragmentation job runs every day at 12:00. You can customize the schedule and the rule for the defragmentation job by setting the <code>spec.etcd.defragJob.schedule</code> and <code>spec.etcd.defragJob.rule</code> fields in the <code>Cluster</code> resource. For example:</p>
+<p>The feature is based on the <strong>etcd-defrag</strong> tool. For more information, see the <a href="https://github.com/ahrtr/etcd-defrag">etcd-defrag repo</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test-machine-template</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-test</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-</code></pre></div>
-<p>By applying this yaml, k0smotron will create 3 machines based on the <code>MachineTemplate</code> configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.</p>
-<p>For a full reference on <code>K0sControlPlane</code> configurability see the <a href="../resource-reference/#controlplaneclusterx-k8siov1beta1">reference docs</a>.</p>
-<h2 id="downscaling-the-control-plane">Downscaling the control plane<a class="headerlink" href="#downscaling-the-control-plane" title="Permanent link">#</a></h2>
-<p><strong>WARNING: Downscaling is a potentially dangerous operation.</strong></p>
-<p>Kubernetes using etcd as its backing store. It's crucial to have a quorum of etcd nodes available at all times. Always run etcd as a cluster of <strong>odd</strong> members.</p>
-<p>When downscaling the control plane, you need firstly to deregister the node from the etcd cluster. k0smotron will do it automatically for you.</p>
-<p><strong>NOTE:</strong> k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have <code>k0smotron-test</code> cluster of 5 nodes and you downscale to 3 nodes, the nodes <code>k0smotron-test-3</code> and <code>k0smotron-test-4</code> will be removed.</p>
-<h2 id="recovering-from-a-lost-control-plane-node">Recovering from a lost control plane node<a class="headerlink" href="#recovering-from-a-lost-control-plane-node" title="Permanent link">#</a></h2>
-<p>If you lose a control plane node, you need to recover the cluster. First, you need to remove the lost node from the etcd cluster. You can do this by running the following command on the remaining control plane nodes:</p>
-<div class="highlight"><pre><span></span><code>k0s<span class="w"> </span>etcd<span class="w"> </span>leave<span class="w"> </span>--peer-address<span class="w"> </span>&lt;peer-address&gt;
-</code></pre></div>
-<p>Then you need to remove old objects from the management cluster with the name of the lost node. You can do this by running the following command:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span>machine<span class="w"> </span>&lt;lost-node-name&gt;
-kubectl<span class="w"> </span>delete<span class="w"> </span>&lt;infra-provider-specific-machine-object&gt;<span class="w"> </span>&lt;lost-node-name&gt;
-kubectl<span class="w"> </span>delete<span class="w"> </span>secret<span class="w"> </span>&lt;lost-node-name&gt;
-kubectl<span class="w"> </span>delete<span class="w"> </span>k0scontrollerconfig<span class="w"> </span>&lt;lost-node-name&gt;
-</code></pre></div>
-<p>After that you need to trigger the reconciliation of the control plane object by updating the <code>K0sControlPlane</code> object or restarting the controller manager.</p>
-<div class="highlight"><pre><span></span><code><span class="c1">## Running workloads on the control plane</span>
-
-By<span class="w"> </span>default,<span class="w"> </span>k0s<span class="w"> </span>and<span class="w"> </span>k0smotron<span class="w"> </span>don<span class="err">&#39;</span>t<span class="w"> </span>run<span class="w"> </span>kubelet<span class="w"> </span>and<span class="w"> </span>any<span class="w"> </span>workloads<span class="w"> </span>on<span class="w"> </span>control<span class="w"> </span>plane<span class="w"> </span>nodes.<span class="w"> </span>But<span class="w"> </span>you<span class="w"> </span>can<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>it<span class="w"> </span>by<span class="w"> </span>adding<span class="w"> </span><span class="sb">`</span>--enable-worker<span class="sb">`</span><span class="w"> </span>flag<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span><span class="sb">`</span>spec.k0sConfigSpec.args<span class="sb">`</span><span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span><span class="sb">`</span>K0sControlPlane<span class="sb">`</span><span class="w"> </span>object.<span class="w"> </span>This<span class="w"> </span>will<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>the<span class="w"> </span>kubelet<span class="w"> </span>on<span class="w"> </span>control<span class="w"> </span>plane<span class="w"> </span>nodes<span class="w"> </span>and<span class="w"> </span>allow<span class="w"> </span>you<span class="w"> </span>to<span class="w"> </span>run<span class="w"> </span>workloads<span class="w"> </span>on<span class="w"> </span>them.
-
-<span class="sb">```</span>yaml
-apiVersion:<span class="w"> </span>controlplane.cluster.x-k8s.io/v1beta1
-kind:<span class="w"> </span>K0sControlPlane
-metadata:
-<span class="w">  </span>name:<span class="w"> </span>docker-test
-spec:
-<span class="w">  </span>replicas:<span class="w"> </span><span class="m">1</span>
-<span class="w">  </span>k0sConfigSpec:
-<span class="w">    </span>args:
-<span class="w">      </span>-<span class="w"> </span>--enable-worker
-<span class="w">      </span>-<span class="w"> </span>--no-taints<span class="w"> </span><span class="c1"># disable default taints</span>
-<span class="w">  </span>machineTemplate:
-<span class="w">    </span>infrastructureRef:
-<span class="w">      </span>apiVersion:<span class="w"> </span>infrastructure.cluster.x-k8s.io/v1beta1
-<span class="w">      </span>kind:<span class="w"> </span>DockerMachineTemplate
-<span class="w">      </span>name:<span class="w"> </span>docker-test-cp-template
-<span class="w">      </span>namespace:<span class="w"> </span>default
----
-apiVersion:<span class="w"> </span>infrastructure.cluster.x-k8s.io/v1beta1
-kind:<span class="w"> </span>DockerMachineTemplate
-metadata:
-<span class="w">  </span>name:<span class="w"> </span>docker-test-cp-template
-<span class="w">  </span>namespace:<span class="w"> </span>default
-spec:
-<span class="w">  </span>template:
-<span class="w">    </span>spec:<span class="w"> </span><span class="o">{}</span>
-</code></pre></div>
-<p><strong>Note:</strong> Controller nodes running with <code>--enable-worker</code> are assigned <code>node-role.kubernetes.io/master:NoExecute</code> taint automatically. You can disable default taints using <code>--no-taints</code>  parameter.</p>
-<h2 id="client-connection-tunneling">Client connection tunneling<a class="headerlink" href="#client-connection-tunneling" title="Permanent link">#</a></h2>
-<p>k0smotron supports client connection tunneling to the child cluster's control plane nodes. This is useful when you want to access the control plane nodes from a remote location.
-To enable tunneling, you need to set <code>spec.k0sConfigSpec.tunneling.enabled</code> to <code>true</code> in the <code>K0sControlPlane</code> object.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">tunneling</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">etcd</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">defragJob</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tunnel</span><span class="w"> </span><span class="c1"># Tunneling mode: tunnel or proxy (default: tunnel)</span>
+<span class="w">      </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0</span><span class="nv"> </span><span class="s">0</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span><span class="w"> </span><span class="c1"># Default: 0 12 * * *</span>
+<span class="w">      </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dbQuotaUsage</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">0.5</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">dbSize</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">dbSizeInUse</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">200*1024*1024&quot;</span><span class="w"> </span><span class="c1"># Default: dbQuotaUsage &gt; 0.8 || dbSize - dbSizeInUse &gt; 200*1024*1024</span>
 </code></pre></div>
-<p>K0smotron supports two tunneling modes: <code>tunnel</code> and <code>proxy</code>. You can set the tunneling mode using <code>spec.k0sConfigSpec.tunneling.mode</code> field. The default mode is <code>tunnel</code>.</p>
-<p>K0smotron will create a kubeconfig file for the tunneling client in the <code>K0sControlPlane</code> object's namespace. You can find the kubeconfig file in the <code>&lt;cluster-name&gt;-&lt;mode&gt;-kubeconfig</code> secret.
-You can use this kubeconfig file to access the control plane nodes from a remote location.</p>
-<p><strong>Note:</strong> Parent cluster's worker nodes must be accessible from the child cluster's nodes. You can use <code>spec.k0sConfigSpec.tunneling.serverAddress</code> to set the address of the parent cluster's node or load balancer. If you don't set this field, k0smotron will use the random worker node's address as the default address.</p>
-<p>Currently, k0smotron supports only NodePort service type for tunneling. You can set the tunneling service port using <code>spec.k0sConfigSpec.tunneling.tunnelingNodePort</code> field. The default port is <code>31443</code>.</p>
 
 
 
