@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli client.Client, u *unstructured.Unstructured) error {
+func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli client.Client, u unstructured.Unstructured) error {
 	u.SetName("k0s")
 	u.SetNamespace("kube-system")
 
@@ -34,7 +34,7 @@ func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli clie
 	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
 		return true
 	}, func() error {
-		return chCS.Patch(ctx, u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)
+		return chCS.Patch(ctx, &u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to patch k0s config: %w", err)

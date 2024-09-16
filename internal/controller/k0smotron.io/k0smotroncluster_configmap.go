@@ -170,7 +170,7 @@ func (r *ClusterReconciler) reconcileDynamicConfig(ctx context.Context, kmc *km.
 		}
 	}
 
-	return util.ReconcileDynamicConfig(ctx, kmc, r.Client, &u)
+	return util.ReconcileDynamicConfig(ctx, kmc, r.Client, u)
 }
 
 func (r *ClusterReconciler) detectExternalAddress(ctx context.Context) (string, error) {
