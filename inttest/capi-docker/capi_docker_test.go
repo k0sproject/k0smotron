@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -79,8 +80,6 @@ func (s *CAPIDockerSuite) SetupSuite() {
 
 func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.prepareCerts()
-	// Apply the child cluster objects
-	s.applyClusterObjects()
 	defer func() {
 		keep := os.Getenv("KEEP_AFTER_TEST")
 		if keep == "true" {
@@ -92,6 +91,8 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 		s.T().Log("Deleting cluster objects")
 		s.deleteCluster()
 	}()
+	// Apply the child cluster objects
+	s.applyClusterObjects()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	// Wait for the cluster to be ready
@@ -126,6 +127,10 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().True(ok)
 	s.Require().Equal("bar", fooLabel)
 
+	s.T().Log("verifying pod cidrs")
+	k0sConfig, err := exec.Command("kubectl", "exec", "kmc-docker-test-0", "--", "cat", "/etc/k0s/k0s.yaml").Output()
+	s.Require().NoError(err)
+	s.Require().True(strings.Contains(string(k0sConfig), "192.168.0.0/16"))
 	s.T().Log("verifying cloud-init extras")
 	preStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/pre-start")
 	s.Require().NoError(err)

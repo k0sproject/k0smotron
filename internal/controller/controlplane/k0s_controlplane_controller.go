@@ -203,6 +203,12 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 }
 
 func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (int32, error) {
+	var err error
+	kcp.Spec.K0sConfigSpec.K0s, err = enrichK0sConfigWithClusterData(cluster, kcp.Spec.K0sConfigSpec.K0s)
+	if err != nil {
+		return kcp.Status.Replicas, err
+	}
+
 	replicasToReport, err := c.reconcileMachines(ctx, cluster, kcp)
 	if err != nil {
 		return replicasToReport, err

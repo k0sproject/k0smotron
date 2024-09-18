@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
@@ -398,6 +399,15 @@ func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *C
 	}
 	frpToken := string(frpSecret.Data["value"])
 
+	localIP := "10.96.0.1"
+	if scope.Cluster.Spec.ClusterNetwork != nil && scope.Cluster.Spec.ClusterNetwork.Services != nil {
+		kubeSvcIP, err := constants.GetAPIServerVirtualIP(scope.Cluster.Spec.ClusterNetwork.Services.String())
+		if err != nil {
+			return nil, err
+		}
+		localIP = kubeSvcIP.String()
+	}
+
 	var modeConfig string
 	if scope.Config.Spec.Tunneling.Mode == "proxy" {
 		modeConfig = fmt.Sprintf(`
@@ -428,7 +438,7 @@ data:
     
     [kube-apiserver]
     type = tcp
-    local_ip = 10.96.0.1
+    local_ip = %s
     local_port = 443
     %s
 ---
@@ -467,7 +477,7 @@ spec:
 	return []cloudinit.File{{
 		Path:        "/var/lib/k0s/manifests/k0smotron-tunneling/manifest.yaml",
 		Permissions: "0644",
-		Content:     fmt.Sprintf(tunnelingResources, scope.Config.Spec.Tunneling.ServerAddress, scope.Config.Spec.Tunneling.ServerNodePort, frpToken, modeConfig),
+		Content:     fmt.Sprintf(tunnelingResources, scope.Config.Spec.Tunneling.ServerAddress, scope.Config.Spec.Tunneling.ServerNodePort, frpToken, localIP, modeConfig),
 	}}, nil
 }
 
