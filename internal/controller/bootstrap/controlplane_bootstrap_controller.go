@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 	"time"
@@ -585,21 +586,25 @@ func mergeControllerExtraArgs(scope *ControllerScope) []string {
 }
 
 func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv1.Machine) (string, error) {
-	extAddr, intAddr := "", ""
+	extAddr, intIPv4Addr, intAddr := "", "", ""
 	for _, addr := range firstControllerMachine.Status.Addresses {
 		if addr.Type == clusterv1.MachineExternalIP {
 			extAddr = addr.Address
 			break
 		}
 		if addr.Type == clusterv1.MachineInternalIP {
-			intAddr = addr.Address
-			break
+			ip := net.ParseIP(addr.Address)
+			if len(ip) == net.IPv4len {
+				intIPv4Addr = ip.To4().String()
+				break
+			}
+			intAddr = fmt.Sprintf("[%s]", ip.To16().String())
 		}
 	}
 
 	name := firstControllerMachine.Name
 
-	if extAddr == "" && intAddr == "" {
+	if extAddr == "" && intAddr == "" && intIPv4Addr == "" {
 		machineImpl, err := c.getMachineImplementation(ctx, firstControllerMachine)
 		if err != nil {
 			return "", fmt.Errorf("error getting machine implementation: %w", err)
@@ -617,8 +622,12 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 					break
 				}
 				if addrMap["type"] == string(v1.NodeInternalIP) {
-					intAddr = addrMap["address"].(string)
-					break
+					ip := net.ParseIP(addrMap["address"].(string))
+					if len(ip) == net.IPv4len {
+						intIPv4Addr = ip.To4().String()
+						break
+					}
+					intAddr = fmt.Sprintf("[%s]", ip.To16().String())
 				}
 			}
 		}
@@ -626,6 +635,10 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 
 	if extAddr != "" {
 		return extAddr, nil
+	}
+
+	if intIPv4Addr != "" {
+		return intIPv4Addr, nil
 	}
 
 	if intAddr != "" {
