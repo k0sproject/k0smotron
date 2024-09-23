@@ -6707,6 +6707,13 @@ More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          ReadOnly specifies whether the volume should be mounted as read-only. (default: false, except for ConfigMaps and Secrets)<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexscaleio">scaleIO</a></b></td>
         <td>object</td>
         <td>
@@ -15104,6 +15111,13 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td>
           rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
 More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          ReadOnly specifies whether the volume should be mounted as read-only. (default: false, except for ConfigMaps and Secrets)<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -39419,6 +39433,13 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td>
           rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
 More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          ReadOnly specifies whether the volume should be mounted as read-only. (default: false, except for ConfigMaps and Secrets)<br/>
         </td>
         <td>false</td>
       </tr><tr>

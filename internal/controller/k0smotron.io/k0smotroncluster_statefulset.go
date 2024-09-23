@@ -244,10 +244,14 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		volumeName := strings.Replace(file.Path[1:], "/", "-", -1)
 		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{Name: volumeName, VolumeSource: file.VolumeSource})
 
+		if file.VolumeSource.ConfigMap != nil || file.VolumeSource.Secret != nil {
+			file.ReadOnly = true
+		}
+
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      volumeName,
 			MountPath: file.Path,
-			ReadOnly:  true,
+			ReadOnly:  file.ReadOnly,
 		})
 	}
 
