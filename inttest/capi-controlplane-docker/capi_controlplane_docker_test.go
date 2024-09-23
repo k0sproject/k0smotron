@@ -134,6 +134,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	k0sConfig, err := getDockerNodeFile("docker-test-cluster-docker-test-0", "/etc/k0s.yaml")
 	s.Require().NoError(err)
 	s.Require().True(strings.Contains(k0sConfig, "controlPlaneLoadBalancing"))
+	s.Require().True(strings.Contains(k0sConfig, "192.168.0.0/16"))
 
 	s.T().Log("verifying cloud-init extras")
 	preStartFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/pre-start")

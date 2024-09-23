@@ -214,6 +214,13 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 			return ctrl.Result{}, false, fmt.Errorf("failed to ensure certificates for K0smotronControlPlane %s/%s", kcp.Namespace, kcp.Name)
 		}
 	}
+
+	var err error
+	kcp.Spec.K0sConfig, err = enrichK0sConfigWithClusterData(cluster, kcp.Spec.K0sConfig)
+	if err != nil {
+		return ctrl.Result{}, false, fmt.Errorf("failed to enrich k0s config with cluster data for K0smotronControlPlane %s/%s", kcp.Namespace, kcp.Name)
+	}
+
 	kcluster := kapi.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kapi.GroupVersion.String(),
@@ -238,7 +245,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	}
 
 	var foundCluster kapi.Cluster
-	err := c.Client.Get(ctx, types.NamespacedName{Name: kcluster.Name, Namespace: kcluster.Namespace}, &foundCluster)
+	err = c.Client.Get(ctx, types.NamespacedName{Name: kcluster.Name, Namespace: kcluster.Namespace}, &foundCluster)
 	if err != nil && apierrors.IsNotFound(err) {
 		if err := c.Client.Patch(ctx, &kcluster, client.Apply, &client.PatchOptions{
 			FieldManager: "k0smotron",
