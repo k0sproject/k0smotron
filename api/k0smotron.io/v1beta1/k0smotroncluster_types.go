@@ -109,7 +109,10 @@ type ClusterSpec struct {
 }
 
 type Mount struct {
-	Path            string `json:"path"`
+	Path string `json:"path"`
+	// ReadOnly specifies whether the volume should be mounted as read-only. (default: false, except for ConfigMaps and Secrets)
+	//+kubebuilder:validation:Optional
+	ReadOnly        bool `json:"readOnly,omitempty"`
 	v1.VolumeSource `json:",inline"`
 }
 

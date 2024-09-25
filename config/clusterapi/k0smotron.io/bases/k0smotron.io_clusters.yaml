@@ -3237,6 +3237,11 @@ spec:
                       - image
                       - monitors
                       type: object
+                    readOnly:
+                      description: 'ReadOnly specifies whether the volume should be
+                        mounted as read-only. (default: false, except for ConfigMaps
+                        and Secrets)'
+                      type: boolean
                     scaleIO:
                       description: scaleIO represents a ScaleIO persistent volume
                         attached and mounted on Kubernetes nodes.
