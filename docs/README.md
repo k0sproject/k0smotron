@@ -12,7 +12,7 @@ k0smotron allows you to easily create and manage the clusters in an existing Kub
 
 ### True control and worker plane separation
 
-Using k0smotron the clusters controlplane and workerplane are truly separated. The controlplane, running on an existing cluster has no direct networking connection to the workerplane. This is similar patter nhow all the major cloud providers separate the control and worker planes on the managed clusters. 
+Using k0smotron the clusters controlplane and workerplane are truly separated. The controlplane, running on an existing cluster has no direct networking connection to the workerplane. This is similar pattern how all the major cloud providers separate the control and worker planes on the managed clusters.
 
 ### Bring your own workers
 
