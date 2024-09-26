@@ -1614,17 +1614,17 @@ You are not currently viewing the documentation for the current stable release o
 <li>
 <p>Add k0smotron as a remote branch:</p>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="nv">$WORKDIR</span>/k0smotron
-git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span><span class="nv">$GITHUB_USER</span><span class="w"> </span>git@github.com:<span class="si">${</span><span class="nv">GITHUB_USER</span><span class="si">}</span>/k0smotron.git
+git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>my_fork<span class="w"> </span>git@github.com:<span class="si">${</span><span class="nv">GITHUB_USER</span><span class="si">}</span>/k0smotron.git
 </code></pre></div>
 </li>
 <li>
 <p>Prevent push to upstream branch:</p>
-<p><code>shell
-  git remote set-url --push origin no_push</code></p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>remote<span class="w"> </span>set-url<span class="w"> </span>--push<span class="w"> </span>origin<span class="w"> </span>no_push
+</code></pre></div>
 </li>
 <li>
 <p>Set your fork remote as a default push target:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>--set-upstream<span class="w"> </span><span class="nv">$GITHUB_USER</span><span class="w"> </span>main
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>--set-upstream<span class="w"> </span>my_fork<span class="w"> </span>main
 </code></pre></div>
 </li>
 <li>

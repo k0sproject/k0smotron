@@ -1417,12 +1417,13 @@ section, you can start creating your Kubernetes control planes.</p>
 <ol>
 <li>
 <p>Create the <code>Cluster</code> object:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>&lt;&lt;EOF<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>-f-
-<span class="w"> </span>apiVersion:<span class="w"> </span>k0smotron.io/v1beta1
-<span class="w">   </span>kind:<span class="w"> </span>Cluster
-<span class="w">   </span>metadata:
-<span class="w">     </span>name:<span class="w"> </span>&lt;cluster-name&gt;
-<span class="w">   </span>spec:<span class="w"> </span>null
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl create -f-</span>
+<span class="s">apiVersion: k0smotron.io/v1beta1</span>
+<span class="s">kind: Cluster</span>
+<span class="s">metadata:</span>
+<span class="s">   name: &lt;cluster-name&gt;</span>
+<span class="s">spec: null</span>
+<span class="s">EOF</span>
 </code></pre></div>
 <p>This triggers the k0smotron controller manager to set up the control plane
  in pods.</p>
