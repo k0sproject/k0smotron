@@ -9,11 +9,12 @@ section, you can start creating your Kubernetes control planes.
 
    ```shell
    cat <<EOF | kubectl create -f-
-    apiVersion: k0smotron.io/v1beta1
-      kind: Cluster
-      metadata:
-        name: <cluster-name>
-      spec: null
+   apiVersion: k0smotron.io/v1beta1
+   kind: Cluster
+   metadata:
+      name: <cluster-name>
+   spec: null
+   EOF
    ```
 
    This triggers the k0smotron controller manager to set up the control plane

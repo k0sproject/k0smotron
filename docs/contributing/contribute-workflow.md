@@ -13,19 +13,19 @@ Create pull requests to contribute to [k0smotron GitHub repository](http://githu
 
     ``` shell
     cd $WORKDIR/k0smotron
-    git remote add $GITHUB_USER git@github.com:${GITHUB_USER}/k0smotron.git
+    git remote add my_fork git@github.com:${GITHUB_USER}/k0smotron.git
     ```
 
 2. Prevent push to upstream branch:
 
-   ``` shell
+    ``` shell
     git remote set-url --push origin no_push
     ```
    
 3. Set your fork remote as a default push target:
     
     ``` shell
-    git push --set-upstream $GITHUB_USER main
+    git push --set-upstream my_fork main
     ```
 
 4. Check the remote branches with the following command:
