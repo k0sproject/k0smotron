@@ -432,7 +432,7 @@ func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet)
 }
 
 func (r *ClusterReconciler) addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
-	nginxConfCMName := kmc.GetMonitoringConfigMapName() + "-nginx"
+	nginxConfCMName := kmc.GetMonitoringNginxConfigMapName()
 	statefulSet.Spec.Template.Spec.Containers = append(statefulSet.Spec.Template.Spec.Containers, v1.Container{
 		Name:            "monitoring-agent",
 		Image:           kmc.Spec.Monitoring.PrometheusImage,

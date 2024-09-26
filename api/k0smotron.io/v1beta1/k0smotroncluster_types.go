@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"crypto/md5"
 	"fmt"
 	"strings"
 
@@ -304,7 +305,7 @@ func init() {
 }
 
 func GetStatefulSetName(clusterName string) string {
-	return fmt.Sprintf("kmc-%s", clusterName)
+	return shortName(fmt.Sprintf("kmc-%s", clusterName))
 }
 
 func (kmc *Cluster) GetStatefulSetName() string {
@@ -312,27 +313,32 @@ func (kmc *Cluster) GetStatefulSetName() string {
 }
 
 func (kmc *Cluster) GetEtcdStatefulSetName() string {
-	return fmt.Sprintf("kmc-%s-etcd", kmc.Name)
+	return kmc.getObjectName("kmc-%s-etcd")
 }
 
 func (kmc *Cluster) GetEtcdDefragJobName() string {
-	return fmt.Sprintf("kmc-%s-defrag", kmc.Name)
+	return kmc.getObjectName("kmc-%s-defrag")
 }
 
 func (kmc *Cluster) GetAdminConfigSecretName() string {
+	// This is the form CAPI expects the secret to be named, don't try to shorten it
 	return fmt.Sprintf("%s-kubeconfig", kmc.Name)
 }
 
 func (kmc *Cluster) GetEntrypointConfigMapName() string {
-	return fmt.Sprintf("kmc-entrypoint-%s-config", kmc.Name)
+	return kmc.getObjectName("kmc-entrypoint-%s-config")
 }
 
 func (kmc *Cluster) GetMonitoringConfigMapName() string {
-	return fmt.Sprintf("kmc-prometheus-%s-config", kmc.Name)
+	return kmc.getObjectName("kmc-prometheus-%s-config")
+}
+
+func (kmc *Cluster) GetMonitoringNginxConfigMapName() string {
+	return kmc.getObjectName("kmc-prometheus-%s-config-nginx")
 }
 
 func (kmc *Cluster) GetConfigMapName() string {
-	return fmt.Sprintf("kmc-%s-config", kmc.Name)
+	return kmc.getObjectName("kmc-%s-config")
 }
 
 func (kmc *Cluster) GetServiceName() string {
@@ -350,21 +356,34 @@ func (kmc *Cluster) GetServiceName() string {
 }
 
 func (kmc *Cluster) GetClusterIPServiceName() string {
-	return fmt.Sprintf("kmc-%s", kmc.Name)
+	return kmc.getObjectName("kmc-%s")
 }
 
 func (kmc *Cluster) GetEtcdServiceName() string {
-	return fmt.Sprintf("kmc-%s-etcd", kmc.Name)
+	return kmc.getObjectName("kmc-%s-etcd")
 }
 
 func (kmc *Cluster) GetLoadBalancerServiceName() string {
-	return fmt.Sprintf("kmc-%s-lb", kmc.Name)
+	return kmc.getObjectName("kmc-%s-lb")
 }
 
 func (kmc *Cluster) GetNodePortServiceName() string {
-	return fmt.Sprintf("kmc-%s-nodeport", kmc.Name)
+	return kmc.getObjectName("kmc-%s-nodeport")
 }
 
 func (kmc *Cluster) GetVolumeName() string {
-	return fmt.Sprintf("kmc-%s", kmc.Name)
+	return kmc.getObjectName("kmc-%s")
+}
+
+const kubeNameLengthLimit = 63
+
+func (kmc *Cluster) getObjectName(pattern string) string {
+	return shortName(fmt.Sprintf(pattern, kmc.Name))
+}
+
+func shortName(name string) string {
+	if len(name) > kubeNameLengthLimit {
+		return fmt.Sprintf("%s-%s", name[:kubeNameLengthLimit-6], fmt.Sprintf("%x", md5.Sum([]byte(name)))[:5])
+	}
+	return name
 }
