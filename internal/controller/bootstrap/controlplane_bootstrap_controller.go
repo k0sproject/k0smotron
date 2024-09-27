@@ -320,7 +320,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
 
 	err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		return c.Status().Update(ctx, config)
+		return c.Status().Patch(ctx, config, client.Merge)
 	})
 	if err != nil {
 		log.Error(err, "Failed to patch config status")

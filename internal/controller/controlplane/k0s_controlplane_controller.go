@@ -137,7 +137,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	kcp.Status.ControlPlaneReady = true
 	kcp.Status.Replicas = replicasToReport
 	kcp.Status.Version = kcp.Spec.Version
-	err = c.Status().Update(ctx, kcp)
+	err = c.Status().Patch(ctx, kcp, client.Merge)
 
 	return res, err
 
