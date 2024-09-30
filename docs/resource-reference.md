@@ -2853,6 +2853,15 @@ Etcd defines the etcd configuration.
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecetcddefragjob">defragJob</a></b></td>
         <td>object</td>
         <td>
@@ -9937,6 +9946,15 @@ will use emptyDir as a volume.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>hostPath</b></td>
         <td>string</td>
         <td>
@@ -11257,6 +11275,15 @@ Etcd defines the etcd configuration.
         <td>[]string</td>
         <td>
           Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18343,6 +18370,15 @@ will use emptyDir as a volume.
             <i>Default</i>: emptyDir<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b>hostPath</b></td>
         <td>string</td>
@@ -35582,6 +35618,15 @@ Etcd defines the etcd configuration.
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterspecetcddefragjob">defragJob</a></b></td>
         <td>object</td>
         <td>
@@ -42665,6 +42710,15 @@ will use emptyDir as a volume.
             <i>Default</i>: emptyDir<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b>hostPath</b></td>
         <td>string</td>

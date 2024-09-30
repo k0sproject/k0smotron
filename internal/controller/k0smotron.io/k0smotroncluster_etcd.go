@@ -373,6 +373,12 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 		},
 	}
 
+	if kmc.Spec.Etcd.AutoDeletePVCs {
+		statefulSet.Spec.PersistentVolumeClaimRetentionPolicy = &apps.StatefulSetPersistentVolumeClaimRetentionPolicy{
+			WhenDeleted: apps.DeletePersistentVolumeClaimRetentionPolicyType,
+		}
+	}
+
 	return statefulSet
 }
 
