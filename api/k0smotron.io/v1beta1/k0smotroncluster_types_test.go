@@ -72,3 +72,34 @@ func TestClusterSpec_GetImage(t *testing.T) {
 		})
 	}
 }
+
+func TestShortName(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		{
+			"kmc-cluster",
+			"kmc-cluster",
+		},
+		{
+			"kmc-prometheus-dk-enc-nodes-basic-sep17-v5-lg5hz-njttw-config",
+			"kmc-prometheus-dk-enc-nodes-basic-sep17-v5-lg5hz-njttw-config",
+		},
+		{
+			"kmc-prometheus-dk-enc-nodes-basic-sep17-v5-lg5hz-njttw-config-nginx",
+			"kmc-prometheus-dk-enc-nodes-basic-sep17-v5-lg5hz-njttw-co-c79c4",
+		},
+		{
+			"kmc-prometheus-dk-enc-nodes-basic-sep17-v5-lg5hz-njttw-config-nginx2",
+			"kmc-prometheus-dk-enc-nodes-basic-sep17-v5-lg5hz-njttw-co-a85e8",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shortName(tt.name)
+			require.Equal(t, tt.want, got)
+			require.LessOrEqual(t, len(got), 63)
+		})
+	}
+}
