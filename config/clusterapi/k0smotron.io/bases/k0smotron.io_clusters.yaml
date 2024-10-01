@@ -84,6 +84,11 @@ spec:
                     items:
                       type: string
                     type: array
+                  autoDeletePVCs:
+                    default: false
+                    description: AutoDeletePVCs defines whether the PVC should be
+                      deleted when the etcd cluster is deleted.
+                    type: boolean
                   defragJob:
                     description: DefragJob defines the etcd defragmentation job configuration.
                     properties:
@@ -3446,6 +3451,11 @@ spec:
                   Persistence defines the persistence configuration. If empty k0smotron
                   will use emptyDir as a volume.
                 properties:
+                  autoDeletePVCs:
+                    default: false
+                    description: AutoDeletePVCs defines whether the PVC should be
+                      deleted when the cluster is deleted.
+                    type: boolean
                   hostPath:
                     description: HostPath defines the host path configuration. Will
                       be used as is in case of .spec.persistence.type is hostPath.

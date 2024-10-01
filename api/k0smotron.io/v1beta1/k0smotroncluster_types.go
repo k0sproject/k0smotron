@@ -196,6 +196,10 @@ type PersistenceSpec struct {
 	// PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.
 	//+kubebuilder:validation:Optional
 	PersistentVolumeClaim *PersistentVolumeClaim `json:"persistentVolumeClaim,omitempty"`
+	// AutoDeletePVCs defines whether the PVC should be deleted when the cluster is deleted.
+	//+kubebuilder:default=false
+	//+kubebuilder:validation:Optional
+	AutoDeletePVCs bool `json:"autoDeletePVCs,omitempty"`
 	// HostPath defines the host path configuration. Will be used as is in case of .spec.persistence.type is hostPath.
 	//+kubebuilder:validation:Optional
 	HostPath string `json:"hostPath,omitempty"`
@@ -261,6 +265,10 @@ type EtcdSpec struct {
 	// Persistence defines the persistence configuration.
 	//+kubebuilder:validation:Optional
 	Persistence EtcdPersistenceSpec `json:"persistence"`
+	// AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.
+	//+kubebuilder:default=false
+	//+kubebuilder:validation:Optional
+	AutoDeletePVCs bool `json:"autoDeletePVCs,omitempty"`
 	// DefragJob defines the etcd defragmentation job configuration.
 	//+kubebuilder:validation:Optional
 	DefragJob DefragJob `json:"defragJob"`
