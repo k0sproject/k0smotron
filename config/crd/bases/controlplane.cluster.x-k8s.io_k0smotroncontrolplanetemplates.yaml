@@ -3504,7 +3504,7 @@ spec:
                       persistence:
                         description: |-
                           Persistence defines the persistence configuration. If empty k0smotron
-                          will use emptyDir as a volume.
+                          will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
                         properties:
                           autoDeletePVCs:
                             default: false
