@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
+	"net/netip"
 	"sort"
 	"strings"
 	"time"
@@ -603,12 +603,17 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 			break
 		}
 		if addr.Type == clusterv1.MachineInternalIP {
-			ip := net.ParseIP(addr.Address)
-			if len(ip) == net.IPv4len {
-				intIPv4Addr = ip.To4().String()
+			ip, err := netip.ParseAddr(addr.Address)
+			if err != nil {
+				continue
+			}
+			if ip.Is4() {
+				intIPv4Addr = ip.String()
 				break
 			}
-			intAddr = fmt.Sprintf("[%s]", ip.To16().String())
+			if ip.Is6() {
+				intAddr = fmt.Sprintf("[%s]", ip.WithZone("").String())
+			}
 		}
 	}
 
@@ -632,12 +637,17 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 					break
 				}
 				if addrMap["type"] == string(v1.NodeInternalIP) {
-					ip := net.ParseIP(addrMap["address"].(string))
-					if len(ip) == net.IPv4len {
-						intIPv4Addr = ip.To4().String()
+					ip, err := netip.ParseAddr(addrMap["address"].(string))
+					if err != nil {
+						continue
+					}
+					if ip.Is4() {
+						intIPv4Addr = ip.String()
 						break
 					}
-					intAddr = fmt.Sprintf("[%s]", ip.To16().String())
+					if ip.Is6() {
+						intAddr = fmt.Sprintf("[%s]", ip.WithZone("").String())
+					}
 				}
 			}
 		}
