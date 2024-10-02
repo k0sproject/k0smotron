@@ -19,7 +19,6 @@ package pvc
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
 	"testing"
 	"time"
@@ -30,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -172,6 +172,9 @@ func (s *PVCSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Cl
 			"persistence": {
 				"type": "pvc",
 				"persistentVolumeClaim": {
+					"metadata": {
+						"name": "kmc-volume-test"
+					},
 					"spec": {
 						"accessModes": ["ReadWriteOnce"],
 						"storageClassName": "seaweedfs-storage",

@@ -414,6 +414,11 @@ func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet)
 		},
 	})
 
+	k0sDataVolumeName := kmc.GetVolumeName()
+	if kmc.Spec.Persistence.PersistentVolumeClaim != nil && kmc.Spec.Persistence.PersistentVolumeClaim.Name != "" {
+		k0sDataVolumeName = kmc.Spec.Persistence.PersistentVolumeClaim.Name
+	}
+
 	// We need to copy the certs from the projected volume to the /var/lib/k0s/pki directory
 	// Otherwise k0s will trip over the permissions and RO mounts
 	sfs.Spec.Template.Spec.InitContainers = append(sfs.Spec.Template.Spec.InitContainers, v1.Container{
@@ -430,7 +435,7 @@ func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet)
 				MountPath: "/certs-init",
 			},
 			{
-				Name:      kmc.GetVolumeName(),
+				Name:      k0sDataVolumeName,
 				MountPath: "/var/lib/k0s",
 			},
 		},
