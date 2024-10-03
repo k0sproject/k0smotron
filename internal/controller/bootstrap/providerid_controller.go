@@ -51,7 +51,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "" {
 		log.Info("waiting for providerID for the machine " + machine.Name)
-		return ctrl.Result{RequeueAfter: time.Second * 10}, nil
+		return ctrl.Result{RequeueAfter: time.Second * 30}, nil
 	}
 
 	cluster, err := capiutil.GetClusterByName(ctx, p.Client, machine.Namespace, machine.Spec.ClusterName)
@@ -61,7 +61,8 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	childClient, err := k0smoutil.GetKubeClient(context.Background(), p.Client, cluster)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("can't get kube client for cluster %s/%s: %w. may not be created yet", machine.Namespace, machine.Spec.ClusterName, err)
+		log.Info(fmt.Sprintf("can't get kube client for cluster %s/%s: %s. may not be created yet", machine.Namespace, machine.Spec.ClusterName, err))
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
 	}
 
 	nodes, err := childClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{
@@ -69,7 +70,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	})
 	if err != nil || len(nodes.Items) == 0 {
 		log.Info("waiting for node to be available for machine " + machine.Name)
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 10}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
 	}
 
 	node := nodes.Items[0]
