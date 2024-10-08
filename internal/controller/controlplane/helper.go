@@ -177,7 +177,7 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 	err := clientset.RESTClient().
 		Patch(types.MergePatchType).
 		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
-		Body([]byte(`{"spec":{"leave":"true"}}`)).
+		Body([]byte(`{"spec":{"leave":true}}`)).
 		Do(ctx).
 		Error()
 	if err != nil {
