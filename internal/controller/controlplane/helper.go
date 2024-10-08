@@ -53,12 +53,19 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 	return nil
 }
 
-func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
+func machineVersionFromControlPlaneVersion(kcp *cpv1beta1.K0sControlPlane) (string, error) {
 	ver, err := semver.NewVersion(kcp.Spec.Version)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing version %q: %w", kcp.Spec.Version, err)
+		return "", fmt.Errorf("error parsing version %q: %w", kcp.Spec.Version, err)
 	}
-	v := fmt.Sprintf("%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch())
+	return fmt.Sprintf("v%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()), nil
+}
+
+func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
+	v, err := machineVersionFromControlPlaneVersion(kcp)
+	if err != nil {
+		return nil, fmt.Errorf("error getting machine version: %w", err)
+	}
 
 	labels := map[string]string{
 		"cluster.x-k8s.io/cluster-name":         kcp.Name,

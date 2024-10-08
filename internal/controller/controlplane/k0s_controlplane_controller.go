@@ -239,10 +239,21 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	}
 
 	var clusterIsUpdating bool
-	if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
+	desiredMachineVersion, err := machineVersionFromControlPlaneVersion(kcp)
+	if err != nil {
+		return replicasToReport, fmt.Errorf("error getting machine version: %w", err)
+	}
+
+	var oldMachines int
+	for _, m := range machines {
+		if m.Spec.Version == nil || *m.Spec.Version != desiredMachineVersion {
+			oldMachines++
+		}
+	}
+
+	if oldMachines > 0 {
 		clusterIsUpdating = true
 		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
-
 			// If the cluster is running in single mode, we can't use the Recreate strategy
 			if kcp.Spec.K0sConfigSpec.Args != nil {
 				for _, arg := range kcp.Spec.K0sConfigSpec.Args {
@@ -252,8 +263,8 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				}
 			}
 
-			desiredReplicas += kcp.Spec.Replicas
-			machinesToDelete = int(kcp.Spec.Replicas)
+			desiredReplicas = kcp.Spec.Replicas + int32(oldMachines)
+			machinesToDelete = oldMachines
 			replicasToReport = desiredReplicas
 		} else {
 			kubeClient, err := c.getKubeClient(ctx, cluster)
@@ -274,9 +285,11 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	}
 
 	if len(machineNames) < int(desiredReplicas) {
-		for i := len(machineNames); i < int(desiredReplicas); i++ {
+		for i := 0; i < int(desiredReplicas); i++ {
 			name := machineName(kcp.Name, i)
-			machineNames[name] = false
+			if _, exists := machineNames[name]; !exists {
+				machineNames[name] = false
+			}
 			if len(machineNames) == int(desiredReplicas) {
 				break
 			}
