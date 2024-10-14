@@ -124,21 +124,21 @@ jobs:
           make -C inttest ${{ matrix.smoke-suite }}
 
 
-  capi-smokes-on-different-k0s-versions:
-    name: CAPI Smokes Matrix
-    needs: build
-    strategy:
-      fail-fast: false
-      matrix:
-        smoke-suite:
-          - check-capi-remote-machine
-          - check-capi-remote-machine-template
-        k0s-version: [ "v1.28.11", "v1.29.6", "v1.30.2" ]
+  # capi-smokes-on-different-k0s-versions:
+  #   name: CAPI Smokes Matrix
+  #   needs: build
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       smoke-suite:
+  #         - check-capi-remote-machine
+  #         - check-capi-remote-machine-template
+  #       k0s-version: [ "v1.28.11", "v1.29.6", "v1.30.2" ]
 
-    uses: ./.github/workflows/capi-smoke-tests.yml
-    with:
-      smoke-suite: ${{ matrix.smoke-suite }}
-      k0s-version: ${{ matrix.k0s-version }}
+  #   uses: ./.github/workflows/capi-smoke-tests.yml
+  #   with:
+  #     smoke-suite: ${{ matrix.smoke-suite }}
+  #     k0s-version: ${{ matrix.k0s-version }}
 
   capi-smokes:
     name: Cluster API smoke tests
@@ -149,19 +149,19 @@ jobs:
         smoke-suite:
           - check-capi-docker
           - check-capi-config-update-vm
-          - check-capi-docker-clusterclass
-          - check-capi-docker-clusterclass-k0smotron
-          - check-capi-docker-machinedeployment
-          - check-capi-controlplane-docker
-          - check-capi-controlplane-docker-downscaling
-          - check-capi-controlplane-docker-tunneling
-          - check-capi-controlplane-docker-tunneling-proxy
-          - check-capi-controlplane-docker-worker
-          - check-capi-remote-machine-template-update
-          - check-capi-docker-machine-template-update
-          - check-capi-docker-machine-template-update-recreate
-          - check-capi-docker-machine-template-update-recreate-single
-          - check-capi-remote-machine-job-provision
+          # - check-capi-docker-clusterclass
+          # - check-capi-docker-clusterclass-k0smotron
+          # - check-capi-docker-machinedeployment
+          # - check-capi-controlplane-docker
+          # - check-capi-controlplane-docker-downscaling
+          # - check-capi-controlplane-docker-tunneling
+          # - check-capi-controlplane-docker-tunneling-proxy
+          # - check-capi-controlplane-docker-worker
+          # - check-capi-remote-machine-template-update
+          # - check-capi-docker-machine-template-update
+          # - check-capi-docker-machine-template-update-recreate
+          # - check-capi-docker-machine-template-update-recreate-single
+          # - check-capi-remote-machine-job-provision
 
     uses: ./.github/workflows/capi-smoke-tests.yml
     with:

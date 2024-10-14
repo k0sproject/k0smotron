@@ -38,8 +38,14 @@ jobs:
         uses: supplypike/setup-bin@v4
         with:
           name: kind
-          version: v0.20.0
-          uri: https://github.com/kubernetes-sigs/kind/releases/download/v0.20.0/kind-linux-amd64
+          version: v0.24.0
+          uri: https://github.com/kubernetes-sigs/kind/releases/download/v0.24.0/kind-linux-amd64
+      
+      - name: Install support-bundle
+        run: |
+          curl --proto '=https' --tlsv1.2 -L https://github.com/replicatedhq/troubleshoot/releases/download/v0.107.0/support-bundle_linux_amd64.tar.gz \
+          | tar xzO support-bundle >/usr/local/bin/kubectl-supportbundle \
+          && chmod +x /usr/local/bin/kubectl-supportbundle
 
       - name: Setup KinD cluster
         run: |
@@ -88,7 +94,7 @@ jobs:
           kind get kubeconfig > kind.conf
           export KUBECONFIG=$(realpath kind.conf)
           docker system prune -f
-          make -C inttest ${{ inputs.smoke-suite }} K0S_VERSION=${{ inputs.k0s-version }}
+          make -C inttest ${{ inputs.smoke-suite }} K0S_VERSION=${{ inputs.k0s-version }} KEEP_AFTER_TESTS=true
 
       - name: Get k0smotron logs
         if: failure()
@@ -97,6 +103,19 @@ jobs:
           kubectl logs -n k0smotron deploy/k0smotron-controller-manager-control-plane > /tmp/${{ inputs.smoke-suite }}-k0smotron-control-plane.log
           kubectl logs -n k0smotron deploy/k0smotron-controller-manager-infrastructure > /tmp/${{ inputs.smoke-suite }}-k0smotron-infrastructure.log
 
+      - name: Collect support bundle
+        if: failure()
+        run: |
+          pwd
+          kubectl-supportbundle --debug --interactive=false --output="/tmp/${{ inputs.smoke-suite }}-support-bundle.tar.gz" inttest/support-bundle.yaml 1>&2
+
+      - name: Docker dump
+        if: failure()
+        run: |
+          docker ps -a > /tmp/${{ inputs.smoke-suite }}-docker-ps.log
+          docker images > /tmp/${{ inputs.smoke-suite }}-docker-images.log
+          docker info > /tmp/${{ inputs.smoke-suite }}-docker-info.log
+
       - name: Collect k0s logs and support bundle
         if: failure()
         uses: actions/upload-artifact@v4
@@ -104,4 +123,6 @@ jobs:
           name: smoketests-${{ inputs.smoke-suite }}-files
           path: |
             /tmp/${{ inputs.smoke-suite }}-k0smotron-*.log
+            /tmp/${{ inputs.smoke-suite }}-support-bundle.tar.gz
+            /tmp/${{ inputs.smoke-suite }}-docker-*.log
     
