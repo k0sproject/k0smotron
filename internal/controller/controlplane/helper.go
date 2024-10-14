@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Masterminds/semver"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +16,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/collections"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
@@ -54,11 +54,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 }
 
 func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
-	ver, err := semver.NewVersion(kcp.Spec.Version)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing version %q: %w", kcp.Spec.Version, err)
-	}
-	v := fmt.Sprintf("%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch())
+	v := kcp.Spec.Version
 
 	labels := map[string]string{
 		"cluster.x-k8s.io/cluster-name":         kcp.Name,
@@ -173,14 +169,16 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 	if clientset == nil {
 		return nil
 	}
+	logger := log.FromContext(ctx).WithValues("controlNode", name)
 
 	err := clientset.RESTClient().
 		Patch(types.MergePatchType).
 		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
-		Body([]byte(`{"spec":{"leave":"true"}}`)).
+		Body([]byte(`{"spec":{"leave":true}}`)).
 		Do(ctx).
 		Error()
 	if err != nil {
+		logger.Error(err, "error marking etcd member to leave. Trying to mark control node to leave")
 		err := clientset.RESTClient().
 			Patch(types.MergePatchType).
 			AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + name).

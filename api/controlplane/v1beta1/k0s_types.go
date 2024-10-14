@@ -34,6 +34,11 @@ const (
 	UpdateRecreate UpdateStrategy = "Recreate"
 )
 
+const (
+	// ControlPlaneReadyCondition documents the status of the control plane
+	ControlPlaneReadyCondition clusterv1.ConditionType = "ControlPlaneReady"
+)
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
@@ -91,4 +96,20 @@ type K0sControlPlaneStatus struct {
 	ExternalManagedControlPlane bool   `json:"externalManagedControlPlane"`
 	Replicas                    int32  `json:"replicas"`
 	Version                     string `json:"version"`
+	Selector                    string `json:"selector"`
+	UnavailableReplicas         int32  `json:"unavailableReplicas"`
+	ReadyReplicas               int32  `json:"readyReplicas"`
+	UpdatedReplicas             int32  `json:"updatedReplicas"`
+
+	// Conditions defines current service state of the K0sControlPlane.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+}
+
+func (in *K0sControlPlane) GetConditions() clusterv1.Conditions {
+	return in.Status.Conditions
+}
+
+func (in *K0sControlPlane) SetConditions(conditions clusterv1.Conditions) {
+	in.Status.Conditions = conditions
 }

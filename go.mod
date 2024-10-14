@@ -1,6 +1,6 @@
 module github.com/k0sproject/k0smotron
 
-go 1.22
+go 1.22.0
 
 require (
 	github.com/cloudflare/cfssl v1.6.4
@@ -9,6 +9,7 @@ require (
 	github.com/imdario/mergo v0.3.16
 	github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29
 	github.com/k0sproject/rig v0.18.7
+	github.com/k0sproject/version v0.6.0
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
 	github.com/stretchr/testify v1.9.0
@@ -103,6 +104,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
+	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect

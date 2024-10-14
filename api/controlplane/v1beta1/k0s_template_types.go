@@ -34,6 +34,11 @@ type K0sControlPlaneTemplateResourceSpec struct {
 	K0sConfigSpec   bootstrapv1.K0sConfigSpec       `json:"k0sConfigSpec"`
 	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate,omitempty"`
 	Version         string                          `json:"version,omitempty"`
+	// UpdateStrategy defines the strategy to use when updating the control plane.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:validation:Enum=InPlace;Recreate
+	//+kubebuilder:default=InPlace
+	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
 }
 
 // +kubebuilder:object:root=true

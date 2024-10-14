@@ -20,7 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Masterminds/semver"
+	"strings"
+	"time"
+
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
@@ -43,7 +45,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
@@ -52,6 +53,10 @@ import (
 const (
 	defaultK0sSuffix  = "k0s.0"
 	defaultK0sVersion = "v1.27.9+k0s.0"
+)
+
+const (
+	fieldOwner = client.FieldOwner("k0smotron-controlplane-controller")
 )
 
 var ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines")
@@ -73,6 +78,9 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
 	log.Info("Reconciling K0sControlPlane")
 
+	defer func() {
+		log.Info("Reconciliation finished", "result", res, "error", err)
+	}()
 	kcp := &cpv1beta1.K0sControlPlane{}
 	if err := c.Get(ctx, req.NamespacedName, kcp); err != nil {
 		if apierrors.IsNotFound(err) {
@@ -105,10 +113,34 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, nil
 	}
 
+	// Always patch the object to update the status
+	defer func() {
+		log.Info("Updating status")
+		// Separate var for status update errors to avoid shadowing err
+		derr := c.updateStatus(ctx, kcp, cluster)
+		if derr != nil {
+			log.Error(derr, "Failed to update status")
+			return
+		}
+
+		// Patch the status with server-side apply
+		derr = c.Status().Patch(ctx, kcp, client.Merge)
+		if derr != nil {
+			log.Error(derr, "Failed to patch status")
+		}
+		log.Info("Status updated successfully")
+		// Requque the reconciliation if the status is not ready
+		if !kcp.Status.Ready {
+			log.Info("Requeuing reconciliation in 20sec since the control plane is not ready")
+			res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
+		}
+
+	}()
+
 	log = log.WithValues("cluster", cluster.Name)
 
 	if annotations.IsPaused(cluster, kcp) {
-		log.Info("Reconciliation is paused for this object")
+		log.Info("Reconciliation is paused for this object or owning cluster")
 		return ctrl.Result{}, nil
 	}
 
@@ -122,22 +154,13 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, err
 	}
 
-	replicasToReport, err := c.reconcile(ctx, cluster, kcp)
+	_, err = c.reconcile(ctx, cluster, kcp)
 	if err != nil {
 		if errors.Is(err, ErrNewMachinesNotReady) {
 			return ctrl.Result{RequeueAfter: 10, Requeue: true}, nil
 		}
 		return res, err
 	}
-
-	// TODO: We need to have bit more detailed status and conditions handling
-	kcp.Status.Ready = true
-	kcp.Status.ExternalManagedControlPlane = false
-	kcp.Status.Inititalized = true
-	kcp.Status.ControlPlaneReady = true
-	kcp.Status.Replicas = replicasToReport
-	kcp.Status.Version = kcp.Spec.Version
-	err = c.Status().Patch(ctx, kcp, client.Merge)
 
 	return res, err
 
@@ -223,6 +246,9 @@ func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluste
 }
 
 func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (int32, error) {
+
+	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
+
 	replicasToReport := kcp.Spec.Replicas
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
@@ -240,6 +266,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	var clusterIsUpdating bool
 	if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
+		log.Log.Info("Cluster is updating", "currentVersion", kcp.Status.Version, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
 		clusterIsUpdating = true
 		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
 
@@ -255,6 +282,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			desiredReplicas += kcp.Spec.Replicas
 			machinesToDelete = int(kcp.Spec.Replicas)
 			replicasToReport = desiredReplicas
+			log.Log.Info("Calculated new replicas", "desiredReplicas", desiredReplicas, "machinesToDelete", machinesToDelete, "replicasToReport", replicasToReport)
 		} else {
 			kubeClient, err := c.getKubeClient(ctx, cluster)
 			if err != nil {
@@ -319,8 +347,8 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	}
 
 	for _, m := range machines {
-		ver := semver.MustParse(kcp.Spec.Version)
-		if m.Spec.Version != nil && *m.Spec.Version != fmt.Sprintf("v%d.%d.%d", ver.Major(), ver.Minor(), ver.Patch()) {
+		if m.Spec.Version != nil && *m.Spec.Version != kcp.Spec.Version {
+			logger.Info("Machine version is different from K0sControlPlane version", "machine", m.Name, "machineVersion", *m.Spec.Version, "kcpVersion", kcp.Spec.Version)
 			continue
 		}
 
@@ -333,6 +361,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	}
 
 	if machinesToDelete > 0 {
+		logger.Info("Found machines to delete", "count", machinesToDelete)
 		kubeClient, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
 			return replicasToReport, fmt.Errorf("error getting cluster client set for deletion: %w", err)
@@ -342,7 +371,9 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		// On the next reconcile, the next machine will be removed
 		// Wait for the previous machine to be deleted to avoid etcd issues
 		machine := machines.Oldest()
+		logger.Info("Found oldest machine to delete", "machine", machine.Name)
 		if machine.Status.Phase == string(clusterv1.MachinePhaseDeleting) {
+			logger.Info("Machine is being deleted, waiting for it to be deleted", "machine", machine.Name)
 			return kcp.Status.Replicas, fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
@@ -364,6 +395,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return replicasToReport, fmt.Errorf("error deleting machine from template: %w", err)
 		}
 
+		logger.Info("Deleted machine", "machine", name, "replicasToReport", replicasToReport)
 		return replicasToReport, nil
 	}
 
@@ -664,5 +696,6 @@ func machineName(base string, i int) string {
 func (c *K0sController) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cpv1beta1.K0sControlPlane{}).
+		Owns(&clusterv1.Machine{}).
 		Complete(c)
 }
