@@ -255,6 +255,10 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	if err != nil {
 		return replicasToReport, fmt.Errorf("error collecting machines: %w", err)
 	}
+	if machines == nil {
+		return replicasToReport, fmt.Errorf("machines collection is nil")
+	}
+	logger.Info("Collected machines", "count", machines.Len())
 
 	currentReplicas := machines.Len()
 	desiredReplicas := kcp.Spec.Replicas
@@ -282,7 +286,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			desiredReplicas += kcp.Spec.Replicas
 			machinesToDelete = int(kcp.Spec.Replicas)
 			replicasToReport = desiredReplicas
-			log.Log.Info("Calculated new replicas", "desiredReplicas", desiredReplicas, "machinesToDelete", machinesToDelete, "replicasToReport", replicasToReport)
+			log.Log.Info("Calculated new replicas", "desiredReplicas", desiredReplicas, "machinesToDelete", machinesToDelete, "replicasToReport", replicasToReport, "currentReplicas", currentReplicas)
 		} else {
 			kubeClient, err := c.getKubeClient(ctx, cluster)
 			if err != nil {
@@ -448,6 +452,15 @@ func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName str
 		}
 		return fmt.Errorf("error getting controlnode: %w", err)
 	}
+
+	joinedAt := cn.CreationTimestamp.Time
+
+	// Check if the node has joined properly more than a minute ago
+	// This allows a small "cool down" period between new nodes joining and old ones leaving
+	if time.Since(joinedAt) < time.Minute {
+		return ErrNewMachinesNotReady
+	}
+
 	return nil
 }
 

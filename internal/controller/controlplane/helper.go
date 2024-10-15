@@ -170,7 +170,6 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 		return nil
 	}
 	logger := log.FromContext(ctx).WithValues("controlNode", name)
-
 	err := clientset.RESTClient().
 		Patch(types.MergePatchType).
 		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
@@ -189,6 +188,7 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 			return fmt.Errorf("error marking control node to leave: %w", err)
 		}
 	}
+	logger.Info("marked etcd to leave")
 
 	return nil
 }

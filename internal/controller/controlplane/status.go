@@ -124,7 +124,7 @@ func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sCont
 
 	// Collect the facts: machines, child cluster status etc. to "calculate" the status and conditions
 
-	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name))
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	if err != nil {
 		return fmt.Errorf("failed to get machines: %w", err)
 	}
