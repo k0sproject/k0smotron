@@ -167,7 +167,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 			return false, nil
 		}
 
-		return strings.Contains(string(output), "Version: v1.28"), nil
+		return strings.Contains(string(output), "Version: v1.30.1"), nil
 	})
 	s.Require().NoError(err)
 }
@@ -245,9 +245,11 @@ metadata:
   name: docker-test
 spec:
   replicas: 1
-  version: v1.27.1+k0s.0
+  version: v1.30.0+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
+    args:
+      - --enable-worker
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig
@@ -279,7 +281,7 @@ metadata:
   name:  docker-test-worker-0
   namespace: default
 spec:
-  version: v1.27.1
+  version: v1.30.0
   clusterName: docker-test
   bootstrap:
     configRef:
@@ -298,7 +300,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.27.1+k0s.0
+  version: v1.30.0+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
@@ -316,9 +318,11 @@ metadata:
   name: docker-test
 spec:
   replicas: 1
-  version: v1.28.7+k0s.0
+  version: v1.30.1+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
+    args:
+      - --enable-worker
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig

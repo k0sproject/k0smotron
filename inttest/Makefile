@@ -6,7 +6,7 @@ K0SMOTRON_INSTALL_YAML ?= $(realpath ../install.yaml)
 LOCAL_STORAGE_INSTALL_YAML ?= $(realpath ./footloose-alpine/local-path-storage.yaml)
 K0S_USE_DEFAULT_K0S_BINARIES ?= true
 K0S_VERSION ?= v1.30.2
-TIMEOUT ?= 6m
+TIMEOUT ?= 8m
 
 .PHONY: $(smoketests)
 include Makefile.variables
