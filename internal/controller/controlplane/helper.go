@@ -3,6 +3,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/version"
 )
 
 func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
@@ -256,4 +258,21 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 		Body(plan).
 		Do(ctx).
 		Error()
+}
+
+// minVersion returns the minimum version from a list of machines
+func minVersion(machines collections.Machines) (string, error) {
+	if machines.Len() == 0 {
+		return "", nil
+	}
+	versions := make([]*version.Version, 0, len(machines))
+	for _, m := range machines {
+		v, err := version.NewVersion(*m.Spec.Version)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse version %s: %w", *m.Spec.Version, err)
+		}
+		versions = append(versions, v)
+	}
+	sort.Sort(version.Collection(versions))
+	return versions[0].String(), nil
 }

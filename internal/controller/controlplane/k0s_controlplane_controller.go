@@ -76,12 +76,15 @@ type K0sController struct {
 
 func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
-	log.Info("Reconciling K0sControlPlane")
+	kcp := &cpv1beta1.K0sControlPlane{}
 
 	defer func() {
-		log.Info("Reconciliation finished", "result", res, "error", err)
+		version := ""
+		if kcp != nil {
+			version = kcp.Spec.Version
+		}
+		log.Info("Reconciliation finished", "result", res, "error", err, "status.version", version)
 	}()
-	kcp := &cpv1beta1.K0sControlPlane{}
 	if err := c.Get(ctx, req.NamespacedName, kcp); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -94,6 +97,8 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		log.Info("K0sControlPlane is being deleted, no action needed")
 		return ctrl.Result{}, nil
 	}
+
+	log.Info("Reconciling K0sControlPlane", "version", kcp.Spec.Version)
 
 	if kcp.Spec.Version == "" {
 		kcp.Spec.Version = defaultK0sVersion
@@ -123,18 +128,23 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			return
 		}
 
-		// Patch the status with server-side apply
+		// // Patch the status with server-side apply
+		// kcp.ObjectMeta.ManagedFields = nil // Remove managed fields when doing server-side apply
+		// derr = c.Status().Patch(ctx, kcp, client.Apply, client.FieldOwner(fieldOwner))
 		derr = c.Status().Patch(ctx, kcp, client.Merge)
 		if derr != nil {
 			log.Error(derr, "Failed to patch status")
+			res = ctrl.Result{}
+			err = derr
+			return
+		} else {
+			log.Info("Status updated successfully")
 		}
-		log.Info("Status updated successfully")
 		// Requque the reconciliation if the status is not ready
 		if !kcp.Status.Ready {
 			log.Info("Requeuing reconciliation in 20sec since the control plane is not ready")
 			res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
 		}
-
 	}()
 
 	log = log.WithValues("cluster", cluster.Name)
@@ -268,9 +278,22 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		replicasToReport = kcp.Status.Replicas
 	}
 
+	currentVersion, err := minVersion(machines)
+	if err != nil {
+		return replicasToReport, fmt.Errorf("error getting current cluster version from machines: %w", err)
+	}
+	log.Log.Info("Got current cluster version", "version", currentVersion)
+
 	var clusterIsUpdating bool
-	if kcp.Status.Version != "" && kcp.Spec.Version != kcp.Status.Version {
-		log.Log.Info("Cluster is updating", "currentVersion", kcp.Status.Version, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
+	var oldMachines int
+	for _, m := range machines {
+		if m.Spec.Version == nil || *m.Spec.Version != kcp.Spec.Version {
+			oldMachines++
+		}
+	}
+
+	if oldMachines > 0 {
+		log.Log.Info("Cluster is updating", "currentVersion", currentVersion, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
 		clusterIsUpdating = true
 		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
 
