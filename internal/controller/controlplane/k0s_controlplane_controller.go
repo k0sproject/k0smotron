@@ -55,10 +55,6 @@ const (
 	defaultK0sVersion = "v1.27.9+k0s.0"
 )
 
-const (
-	fieldOwner = client.FieldOwner("k0smotron-controlplane-controller")
-)
-
 var ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines")
 
 type K0sController struct {
@@ -137,9 +133,9 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			res = ctrl.Result{}
 			err = derr
 			return
-		} else {
-			log.Info("Status updated successfully")
 		}
+		log.Info("Status updated successfully")
+
 		// Requque the reconciliation if the status is not ready
 		if !kcp.Status.Ready {
 			log.Info("Requeuing reconciliation in 20sec since the control plane is not ready")
