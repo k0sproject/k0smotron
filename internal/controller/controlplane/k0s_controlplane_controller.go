@@ -283,7 +283,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	var clusterIsUpdating bool
 	var oldMachines int
 	for _, m := range machines {
-		if m.Spec.Version == nil || *m.Spec.Version != kcp.Spec.Version {
+		if m.Spec.Version == nil || !versionMatches(m, kcp.Spec.Version) {
 			oldMachines++
 		}
 	}

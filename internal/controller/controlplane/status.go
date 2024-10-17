@@ -37,6 +37,7 @@ import (
 	"github.com/k0sproject/version"
 )
 
+// versionMatches checks if the machine version matches the kcp version taking the possibly missing suffix into account
 func versionMatches(machine *clusterv1.Machine, ver string) bool {
 
 	if machine.Spec.Version == nil || *machine.Spec.Version == "" {
@@ -51,11 +52,15 @@ func versionMatches(machine *clusterv1.Machine, ver string) bool {
 	kcpVersion := ver
 
 	// If either of the versions is missing the suffix, we need to add it
-	if !strings.Contains(machineVersion, "+") {
-		machineVersion = machineVersion + "+k0s.0" // FIXME Use constants
+	// But take the suffix from kcp version if present
+	kcpSuffix := getVersionSuffix(kcpVersion)
+	if kcpSuffix == "" {
+		kcpVersion = kcpVersion + "+k0s.0"
+		kcpSuffix = "k0s.0"
 	}
-	if !strings.Contains(kcpVersion, "+") {
-		kcpVersion = kcpVersion + "+k0s.0" // FIXME Use constants
+
+	if machineSuffix := getVersionSuffix(machineVersion); machineSuffix == "" && kcpSuffix != "" {
+		machineVersion = machineVersion + "+" + kcpSuffix
 	}
 
 	// Compare the versions
@@ -64,6 +69,13 @@ func versionMatches(machine *clusterv1.Machine, ver string) bool {
 
 	return vKCP.Equal(vMachine)
 
+}
+
+func getVersionSuffix(version string) string {
+	if strings.Contains(version, "+") {
+		return strings.Split(version, "+")[1]
+	}
+	return ""
 }
 
 func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane) {
@@ -96,6 +108,7 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 	kcp.Status.UnavailableReplicas = int32(unavailableReplicas)
 
 	// Find the lowest version
+	minVersion := ""
 	if len(versions) > 0 {
 		v, err := version.NewCollection(versions...)
 		if err != nil {
@@ -103,13 +116,26 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 			log.Log.Error(err, "Failed to parse versions")
 		} else {
 			sort.Sort(v)
-			kcp.Status.Version = v[0].String()
+			minVersion = v[0].String()
 		}
+	}
+
+	kcp.Status.Version = minVersion
+
+	// If kcp has suffix but machines don't, we need to add it to minVersion
+	// Otherwise CAPI topology will not be able to match the versions and might try to recreate the machines
+	// or restrict the upgrade path
+	if strings.Contains(kcp.Spec.Version, "+") && !strings.Contains(minVersion, "+") {
+		// Get the suffix from kcp version
+		suffix := strings.Split(kcp.Spec.Version, "+")[1]
+		kcp.Status.Version = kcp.Status.Version + "+" + suffix
 	}
 
 	// If the controlplane spec does NOT have workers enabled
 	// we need to mark the controlplane as externally managed
 	// Otherwise CAPI assumes it'll find node objects for the machines
+	// TODO Check with upstream CAPI folks whether this is the correct approach in this case when
+	// we still run the controlplane on Machines
 	if !slices.Contains(kcp.Spec.K0sConfigSpec.Args, "--enable-worker") {
 		kcp.Status.ExternalManagedControlPlane = true
 	}
@@ -157,7 +183,7 @@ func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sCont
 		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "Unable to connect to the workload cluster API", clusterv1.ConditionSeverityWarning, "Failed to get namespace: %v", err)
 		return nil
 	}
-
+	logger.Info("Successfully pinged the workload cluster API")
 	// Set the conditions
 	conditions.MarkTrue(kcp, cpv1beta1.ControlPlaneReadyCondition)
 	kcp.Status.Ready = true
