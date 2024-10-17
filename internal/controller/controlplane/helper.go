@@ -262,7 +262,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 
 // minVersion returns the minimum version from a list of machines
 func minVersion(machines collections.Machines) (string, error) {
-	if machines.Len() == 0 {
+	if machines == nil || machines.Len() == 0 {
 		return "", nil
 	}
 	versions := make([]*version.Version, 0, len(machines))

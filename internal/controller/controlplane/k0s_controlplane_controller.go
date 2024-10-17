@@ -136,7 +136,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		}
 		log.Info("Status updated successfully")
 
-		// Requque the reconciliation if the status is not ready
+		// Requeue the reconciliation if the status is not ready
 		if !kcp.Status.Ready {
 			log.Info("Requeuing reconciliation in 20sec since the control plane is not ready")
 			res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}

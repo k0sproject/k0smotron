@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -55,11 +54,11 @@ func versionMatches(machine *clusterv1.Machine, ver string) bool {
 	// But take the suffix from kcp version if present
 	kcpSuffix := getVersionSuffix(kcpVersion)
 	if kcpSuffix == "" {
-		kcpVersion = kcpVersion + "+k0s.0"
 		kcpSuffix = "k0s.0"
+		kcpVersion = kcpVersion + "+" + kcpSuffix
 	}
 
-	if machineSuffix := getVersionSuffix(machineVersion); machineSuffix == "" && kcpSuffix != "" {
+	if machineSuffix := getVersionSuffix(machineVersion); machineSuffix == "" {
 		machineVersion = machineVersion + "+" + kcpSuffix
 	}
 
@@ -83,7 +82,6 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 	readyReplicas := 0
 	updatedReplicas := 0
 	unavailableReplicas := 0
-	versions := []string{}
 	// Count the machines in different states
 	for _, machine := range machines {
 		// TODO Do we need to distinguish between Running and Provisioned
@@ -100,7 +98,6 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 		if versionMatches(machine, kcp.Spec.Version) {
 			updatedReplicas++
 		}
-		versions = append(versions, *machine.Spec.Version)
 	}
 
 	kcp.Status.ReadyReplicas = int32(readyReplicas)
@@ -108,24 +105,18 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 	kcp.Status.UnavailableReplicas = int32(unavailableReplicas)
 
 	// Find the lowest version
-	minVersion := ""
-	if len(versions) > 0 {
-		v, err := version.NewCollection(versions...)
-		if err != nil {
-			// TODO Set maybe some conditions or something
-			log.Log.Error(err, "Failed to parse versions")
-		} else {
-			sort.Sort(v)
-			minVersion = v[0].String()
-		}
+	lowestMachineVersion, err := minVersion(machines)
+	if err != nil {
+		log.Log.Error(err, "Failed to get the lowest version")
+		return
 	}
 
-	kcp.Status.Version = minVersion
+	kcp.Status.Version = lowestMachineVersion
 
 	// If kcp has suffix but machines don't, we need to add it to minVersion
 	// Otherwise CAPI topology will not be able to match the versions and might try to recreate the machines
 	// or restrict the upgrade path
-	if strings.Contains(kcp.Spec.Version, "+") && !strings.Contains(minVersion, "+") {
+	if strings.Contains(kcp.Spec.Version, "+") && !strings.Contains(lowestMachineVersion, "+") {
 		// Get the suffix from kcp version
 		suffix := strings.Split(kcp.Spec.Version, "+")[1]
 		kcp.Status.Version = kcp.Status.Version + "+" + suffix
@@ -139,7 +130,6 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 	if !slices.Contains(kcp.Spec.K0sConfigSpec.Args, "--enable-worker") {
 		kcp.Status.ExternalManagedControlPlane = true
 	}
-
 }
 
 func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv1.Cluster) error {
