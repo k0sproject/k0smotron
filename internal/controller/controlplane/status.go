@@ -19,7 +19,6 @@ package controlplane
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -84,11 +83,15 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 	unavailableReplicas := 0
 	// Count the machines in different states
 	for _, machine := range machines {
-		// TODO Do we need to distinguish between Running and Provisioned
-		// when we run ctrl node without --enable-worker?
 		switch machine.Status.Phase {
 		case string(clusterv1.MachinePhaseRunning):
 			readyReplicas++
+		case string(clusterv1.MachinePhaseProvisioned):
+			// If we're running without --enable-worker, the machine will never transition
+			// to running state, so we need to count it as ready when it's provisioned
+			if !kcp.WorkerEnabled() {
+				readyReplicas++
+			}
 		case string(clusterv1.MachinePhaseDeleting), string(clusterv1.MachinePhaseDeleted):
 			// Do nothing
 		default:
@@ -127,7 +130,7 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 	// Otherwise CAPI assumes it'll find node objects for the machines
 	// TODO Check with upstream CAPI folks whether this is the correct approach in this case when
 	// we still run the controlplane on Machines
-	if !slices.Contains(kcp.Spec.K0sConfigSpec.Args, "--enable-worker") {
+	if !kcp.WorkerEnabled() {
 		kcp.Status.ExternalManagedControlPlane = true
 	}
 }
