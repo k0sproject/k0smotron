@@ -155,6 +155,18 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	)
 
 	if config.Spec.K0s != nil {
+		storage, found, err := unstructured.NestedMap(config.Spec.K0s.Object, "spec", "storage", "etcd")
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("error retrieving storage.etcd: %w", err)
+
+		}
+		if found && storage != nil {
+			err = unstructured.SetNestedField(config.Spec.K0s.Object, machine.Name, "spec", "storage", "etcd", "extraArgs", "name")
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("error setting storage.etcd.extraArgs.name: %w", err)
+			}
+		}
+
 		nllbEnabled, found, err := unstructured.NestedBool(config.Spec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
