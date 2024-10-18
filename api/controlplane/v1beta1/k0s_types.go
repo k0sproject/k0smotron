@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"slices"
+
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,10 +108,14 @@ type K0sControlPlaneStatus struct {
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
-func (in *K0sControlPlane) GetConditions() clusterv1.Conditions {
-	return in.Status.Conditions
+func (k *K0sControlPlane) GetConditions() clusterv1.Conditions {
+	return k.Status.Conditions
 }
 
-func (in *K0sControlPlane) SetConditions(conditions clusterv1.Conditions) {
-	in.Status.Conditions = conditions
+func (k *K0sControlPlane) SetConditions(conditions clusterv1.Conditions) {
+	k.Status.Conditions = conditions
+}
+
+func (k *K0sControlPlane) WorkerEnabled() bool {
+	return slices.Contains(k.Spec.K0sConfigSpec.Args, "--enable-worker")
 }
