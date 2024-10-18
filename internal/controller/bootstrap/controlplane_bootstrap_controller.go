@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/netip"
 	"sort"
 	"strings"
@@ -372,15 +373,13 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		return nil, err
 	}
 
-	host, err := c.findFirstControllerIP(ctx, firstControllerMachine)
+	host, err := c.detectJoinHost(ctx, scope, firstControllerMachine)
 	if err != nil {
-		log.Error(err, "Failed to get controller IP")
+		log.Error(err, "Failed to detect join controller host")
 		return nil, err
 	}
 
-	// TODO: fix hardcoded port
-	port := "9443"
-	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%s", host, port), "controller-bootstrap")
+	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, host, "controller-bootstrap")
 
 	files = append(files, cloudinit.File{
 		Path:        joinTokenFilePath,
@@ -593,6 +592,29 @@ func createCPInstallCmdWithJoinToken(scope *ControllerScope, tokenPath string) s
 
 func mergeControllerExtraArgs(scope *ControllerScope) []string {
 	return mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
+}
+
+func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv1.Machine) (string, error) {
+	httpClient := &http.Client{
+		Transport: c.RESTConfig.Transport,
+		Timeout:   time.Second,
+	}
+
+	// TODO: fix hardcoded port
+	port := "9443"
+	host := fmt.Sprintf("https://%s:%s", scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
+
+	resp, err := httpClient.Get(fmt.Sprintf("%s/v1beta1/ca", host))
+	if err == nil && resp.StatusCode == http.StatusOK {
+		return host, nil
+	}
+
+	firstControllerIP, err := c.findFirstControllerIP(ctx, firstControllerMachine)
+	if err != nil {
+		return "", fmt.Errorf("failed to get first controller IP: %w", err)
+	}
+
+	return fmt.Sprintf("https://%s:%s", firstControllerIP, port), nil
 }
 
 func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv1.Machine) (string, error) {
