@@ -315,4 +315,5 @@ metadata:
   name: docker-test-0
   namespace: default
 spec:
+  customImage: kindest/node:v1.31.0
 `

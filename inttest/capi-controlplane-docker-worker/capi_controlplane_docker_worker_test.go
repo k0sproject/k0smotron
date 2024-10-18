@@ -185,7 +185,8 @@ metadata:
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      customImage: kindest/node:v1.31.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane

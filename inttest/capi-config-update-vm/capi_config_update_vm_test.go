@@ -19,13 +19,14 @@ package capiconfigupdatevm
 import (
 	"context"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
 
@@ -206,7 +207,8 @@ metadata:
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      customImage: kindest/node:v1.31.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
@@ -279,7 +281,8 @@ metadata:
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      customImage: kindest/node:v1.31.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
