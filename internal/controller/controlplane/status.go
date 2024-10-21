@@ -91,6 +91,8 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 			// to running state, so we need to count it as ready when it's provisioned
 			if !kcp.WorkerEnabled() {
 				readyReplicas++
+			} else {
+				unavailableReplicas++
 			}
 		case string(clusterv1.MachinePhaseDeleting), string(clusterv1.MachinePhaseDeleted):
 			// Do nothing

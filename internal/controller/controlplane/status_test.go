@@ -19,6 +19,7 @@ package controlplane
 import (
 	"testing"
 
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
@@ -191,6 +192,44 @@ func Test_computeStatus(t *testing.T) {
 		computeStatus(machines, kcp)
 		require.Equal(t, int32(3), kcp.Status.Replicas)
 		require.Equal(t, int32(2), kcp.Status.UnavailableReplicas)
+		require.Equal(t, int32(1), kcp.Status.UpdatedReplicas)
+		require.Equal(t, int32(1), kcp.Status.ReadyReplicas)
+		require.Equal(t, "v1.30.0", kcp.Status.Version)
+
+	})
+
+	t.Run("some machines stuck as provisioned but kcp using --enable-worker", func(t *testing.T) {
+		kcp := &cpv1beta1.K0sControlPlane{
+			Spec: cpv1beta1.K0sControlPlaneSpec{
+				Version:  "v1.31.0",
+				Replicas: 2,
+				K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+					Args: []string{"--enable-worker"},
+				},
+			},
+		}
+		machines := collections.Machines{
+			"machine1": &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
+					Version: ptr.To[string]("v1.31.0"),
+				},
+				Status: clusterv1.MachineStatus{
+					Phase: string(clusterv1.MachinePhaseProvisioned),
+				},
+			},
+			"machine2": &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
+					Version: ptr.To[string]("v1.30.0"),
+				},
+				Status: clusterv1.MachineStatus{
+					Phase: string(clusterv1.MachinePhaseRunning),
+				},
+			},
+		}
+
+		computeStatus(machines, kcp)
+		require.Equal(t, int32(2), kcp.Status.Replicas)
+		require.Equal(t, int32(1), kcp.Status.UnavailableReplicas)
 		require.Equal(t, int32(1), kcp.Status.UpdatedReplicas)
 		require.Equal(t, int32(1), kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
