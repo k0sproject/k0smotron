@@ -24,6 +24,7 @@ smoketests := \
     check-monitoring \
     check-capi-docker-machinedeployment \
     check-capi-docker-clusterclass \
+    check-capi-docker-clusterclass-recreate-upgrade \
     check-capi-docker-clusterclass-k0smotron \
     check-capi-remote-machine \
     check-capi-remote-machine-job-provision \
