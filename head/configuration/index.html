@@ -525,6 +525,15 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      Persistence
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#k0s-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       K0s configuration
@@ -1443,6 +1452,15 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      Persistence
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#k0s-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       K0s configuration
@@ -1484,6 +1502,10 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
 </code></pre></div>
 <p>For full reference of the fields check out the <a href="../resource-reference/#cluster">reference docs</a>.</p>
+<h2 id="persistence">Persistence<a class="headerlink" href="#persistence" title="Permanent link">#</a></h2>
+<p>K0smotron persists data related to each Cluster. Specifically, it persists the <code>/var/lib/k0s</code> directory of the k0s controller which is the default data directory used by k0s. </p>
+<p>The <code>/var/lib/k0s</code> directory contains essential data for the operation of the k0s controller, but its growth over time is primarily driven by the addition of small <a href="https://docs.k0sproject.io/stable/manifests/">manifest</a> files. Since these manifests are lightweight and in text format, the directory tends to grow gradually and not excessively. Typically, 250 MB of space is sufficient to handle its growth, as the main additions are these small manifests, keeping the overall size manageable.</p>
+<p>The type of persistence used for this can be configurable via <code>spec.persistence</code>. For more information, check out the <a href="../resource-reference/#clusterspecpersistence">reference docs</a> on Cluster persistence.</p>
 <h2 id="k0s-configuration">K0s configuration<a class="headerlink" href="#k0s-configuration" title="Permanent link">#</a></h2>
 <p>K0smotron allows you to configure k0s via <code>spec.k0sConfig</code> field. If empty, the default configuration will be used.</p>
 <p>Refer to <a href="https://docs.k0sproject.io/stable/configuration/">k0s docs</a> for a reference on k0s configuration.</p>
