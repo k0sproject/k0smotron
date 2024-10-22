@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"slices"
+
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +34,11 @@ type UpdateStrategy string
 const (
 	UpdateInPlace  UpdateStrategy = "InPlace"
 	UpdateRecreate UpdateStrategy = "Recreate"
+)
+
+const (
+	// ControlPlaneReadyCondition documents the status of the control plane
+	ControlPlaneReadyCondition clusterv1.ConditionType = "ControlPlaneReady"
 )
 
 // +kubebuilder:object:root=true
@@ -91,4 +98,24 @@ type K0sControlPlaneStatus struct {
 	ExternalManagedControlPlane bool   `json:"externalManagedControlPlane"`
 	Replicas                    int32  `json:"replicas"`
 	Version                     string `json:"version"`
+	Selector                    string `json:"selector"`
+	UnavailableReplicas         int32  `json:"unavailableReplicas"`
+	ReadyReplicas               int32  `json:"readyReplicas"`
+	UpdatedReplicas             int32  `json:"updatedReplicas"`
+
+	// Conditions defines current service state of the K0sControlPlane.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+}
+
+func (k *K0sControlPlane) GetConditions() clusterv1.Conditions {
+	return k.Status.Conditions
+}
+
+func (k *K0sControlPlane) SetConditions(conditions clusterv1.Conditions) {
+	k.Status.Conditions = conditions
+}
+
+func (k *K0sControlPlane) WorkerEnabled() bool {
+	return slices.Contains(k.Spec.K0sConfigSpec.Args, "--enable-worker")
 }
