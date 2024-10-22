@@ -214,7 +214,8 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
-		return ctrl.Result{}, fmt.Errorf("control plane endpoint is not set")
+		log.Info("control plane endpoint is not set")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
 	}
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
@@ -236,7 +237,8 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	} else {
 		oldest := getFirstRunningMachineWithLatestVersion(machines)
 		if oldest == nil {
-			return ctrl.Result{}, fmt.Errorf("wait for initial control plane provisioning")
+			log.Info("wait for initial control plane provisioning")
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
 		}
 		files, err = c.genControlPlaneJoinFiles(ctx, scope, files, oldest)
 		if err != nil {
@@ -321,6 +323,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
 
 	err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		config.ObjectMeta.ResourceVersion = ""
 		return c.Status().Patch(ctx, config, client.Merge)
 	})
 	if err != nil {
