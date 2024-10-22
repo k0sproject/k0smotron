@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/client-go/dynamic"
 	"strings"
 	"time"
 
@@ -61,9 +62,10 @@ var ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines")
 
 type K0sController struct {
 	client.Client
-	Scheme     *runtime.Scheme
-	ClientSet  *kubernetes.Clientset
-	RESTConfig *rest.Config
+	Scheme        *runtime.Scheme
+	ClientSet     *kubernetes.Clientset
+	DynamicClient dynamic.Interface
+	RESTConfig    *rest.Config
 }
 
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes/status,verbs=get;list;watch;create;update;patch;delete
