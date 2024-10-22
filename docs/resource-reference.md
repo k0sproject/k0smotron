@@ -2865,7 +2865,7 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         <td>object</td>
         <td>
           Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume.<br/>
+will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10049,7 +10049,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 
 Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume.
+will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
 
 <table>
     <thead>
@@ -11290,7 +11290,7 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         <td>object</td>
         <td>
           Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume.<br/>
+will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18474,7 +18474,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 
 Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume.
+will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
 
 <table>
     <thead>
@@ -35630,7 +35630,7 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         <td>object</td>
         <td>
           Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume.<br/>
+will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -42814,7 +42814,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 
 Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume.
+will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
 
 <table>
     <thead>
