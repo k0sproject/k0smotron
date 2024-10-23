@@ -418,6 +418,10 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return replicasToReport, fmt.Errorf("error deleting machine from template: %w", err)
 		}
 
+		if err := c.deleteControlNode(ctx, name, kubeClient); err != nil {
+			return replicasToReport, fmt.Errorf("error deleting controlnode: %w", err)
+		}
+
 		logger.Info("Deleted machine", "machine", name, "replicasToReport", replicasToReport)
 		return replicasToReport, nil
 	}

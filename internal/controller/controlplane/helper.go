@@ -195,6 +195,23 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 	return nil
 }
 
+func (c *K0sController) deleteControlNode(ctx context.Context, name string, clientset *kubernetes.Clientset) error {
+	if clientset == nil {
+		return nil
+	}
+
+	err := clientset.RESTClient().
+		Delete().
+		AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + name).
+		Do(ctx).
+		Error()
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	return nil
+}
+
 func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv1.Cluster, clientset *kubernetes.Clientset) error {
 	if clientset == nil {
 		return nil
