@@ -52,6 +52,7 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
+	"github.com/k0sproject/version"
 )
 
 type ControlPlaneController struct {
@@ -62,6 +63,8 @@ type ControlPlaneController struct {
 }
 
 const joinTokenFilePath = "/etc/k0s.token"
+
+var minVersionForETCDName = version.MustParse("v1.31.1+k0s.0")
 
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs/status,verbs=get;list;watch;create;update;patch;delete
@@ -155,6 +158,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	)
 
 	if config.Spec.K0s != nil {
+
 		nllbEnabled, found, err := unstructured.NestedBool(config.Spec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
@@ -190,17 +194,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			}
 		}
 
-		k0sConfigBytes, err := config.Spec.K0s.MarshalJSON()
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error marshalling k0s config: %v", err)
-		}
-		files = append(files, cloudinit.File{
-			Path:        "/etc/k0s.yaml",
-			Permissions: "0644",
-			Content:     string(k0sConfigBytes),
-		})
-		config.Spec.Args = append(config.Spec.Args, "--config", "/etc/k0s.yaml")
-
 		// Reconcile the dynamic config
 		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, *config.Spec.K0s)
 		if dErr != nil {
@@ -208,6 +201,44 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")
 		}
 	}
+
+	currentKCPVersion, err := version.NewVersion(config.Spec.Version)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error parsing k0s version: %w", err)
+	}
+	if currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
+		if config.Spec.K0s == nil {
+			config.Spec.K0s = &unstructured.Unstructured{
+				Object: make(map[string]interface{}),
+			}
+		}
+		// If it is not explicitly indicated to use Kine storage, we use the machine name to name the ETCD member.
+		kineStorage, found, err := unstructured.NestedString(config.Spec.K0s.Object, "spec", "storage", "kine", "dataSource")
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("error retrieving storage.kine.datasource: %w", err)
+		}
+		if !found || kineStorage == "" {
+			err = unstructured.SetNestedMap(config.Spec.K0s.Object, map[string]interface{}{}, "spec", "storage", "etcd", "extraArgs")
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("error ensuring intermediate maps spec.storage.etcd.extraArgs: %w", err)
+			}
+			err = unstructured.SetNestedField(config.Spec.K0s.Object, machine.Name, "spec", "storage", "etcd", "extraArgs", "name")
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("error setting storage.etcd.extraArgs.name: %w", err)
+			}
+		}
+	}
+
+	k0sConfigBytes, err := config.Spec.K0s.MarshalJSON()
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error marshalling k0s config: %v", err)
+	}
+	files = append(files, cloudinit.File{
+		Path:        "/etc/k0s.yaml",
+		Permissions: "0644",
+		Content:     string(k0sConfigBytes),
+	})
+	config.Spec.Args = append(config.Spec.Args, "--config", "/etc/k0s.yaml")
 
 	if config.Status.Ready {
 		return ctrl.Result{}, nil
