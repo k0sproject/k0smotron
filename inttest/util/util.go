@@ -19,6 +19,7 @@ package util
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -41,6 +42,9 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	"github.com/k0sproject/k0smotron/internal/exec"
+
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
@@ -218,4 +222,50 @@ func WaitForSecret(ctx context.Context, kc *kubernetes.Clientset, name string, n
 		}
 		return false, nil
 	})
+}
+
+func GetCluster(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*clusterv1.Cluster, error) {
+	url := fmt.Sprintf("apis/cluster.x-k8s.io/v1beta1/namespaces/%s/clusters/%s", namespace, name)
+
+	cluster := &clusterv1.Cluster{}
+
+	err := kc.RESTClient().
+		Get().
+		AbsPath(url).
+		Do(ctx).
+		Into(cluster)
+
+	return cluster, err
+}
+
+func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *clusterv1.Cluster) error {
+	url := fmt.Sprintf("apis/cluster.x-k8s.io/v1beta1/namespaces/%s/clusters/%s", cluster.Namespace, cluster.Name)
+
+	clusterJSON, err := json.Marshal(cluster)
+	if err != nil {
+		return err
+	}
+
+	return kc.RESTClient().
+		Put().
+		AbsPath(url).
+		Body(bytes.NewReader(clusterJSON)).
+		Do(ctx).
+		Into(cluster)
+
+}
+
+func GetK0sControlPlane(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*cpv1beta1.K0sControlPlane, error) {
+
+	url := fmt.Sprintf("apis/controlplane.cluster.x-k8s.io/v1beta1/namespaces/%s/k0scontrolplanes/%s", namespace, name)
+
+	cp := &cpv1beta1.K0sControlPlane{}
+
+	err := kc.RESTClient().
+		Get().
+		AbsPath(url).
+		Do(ctx).
+		Into(cp)
+
+	return cp, err
 }
