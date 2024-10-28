@@ -3,12 +3,11 @@ package controlplane
 import (
 	"context"
 	"fmt"
-	"github.com/imdario/mergo"
-	"k8s.io/utils/ptr"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/imdario/mergo"
 	"github.com/k0sproject/version"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -120,35 +119,30 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 
 		return nil, fmt.Errorf("error getting machine implementation: %w", err)
 	}
-	//gv, _ := schema.ParseGroupVersion(existingMachineFromTemplate.GetAPIVersion())
-	//gvr := gv.WithResource(strings.ToLower(existingMachineFromTemplate.GetKind()) + "s")
-	//patchBytes, _ := machineFromTemplate.MarshalJSON()
-	err = mergo.Merge(existingMachineFromTemplate.Object["spec"], machineFromTemplate.Object["spec"], mergo.WithOverride)
+
+	err = mergo.Merge(existingMachineFromTemplate, machineFromTemplate, mergo.WithSliceDeepCopy)
 	if err != nil {
-		return nil, fmt.Errorf("error merging: %w", err)
+		return nil, err
 	}
 
-	if err = c.Client.Patch(ctx, existingMachineFromTemplate, client.Merge, &client.PatchOptions{
-		FieldManager: "k0smotron",
-		Force:        ptr.To(true),
-	}); err != nil {
-		return nil, fmt.Errorf("error apply patching: %w", err)
+	spec, _, _ := unstructured.NestedMap(existingMachineFromTemplate.Object, "spec")
+	patch := unstructured.Unstructured{Object: map[string]interface{}{
+		"spec": spec,
+	}}
+	data, err := patch.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	resourceType := strings.ToLower(machineFromTemplate.GetKind()) + "s"
+	req := c.ClientSet.RESTClient().Patch(types.MergePatchType).
+		Body(data).
+		AbsPath("apis", machineFromTemplate.GetAPIVersion(), "namespaces", machineFromTemplate.GetNamespace(), resourceType, machineFromTemplate.GetName())
+	_, err = req.DoRaw(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error patching: %w", err)
 	}
 	return machineFromTemplate, nil
-	//return machineFromTemplate, nil
-
-	//data, err := machineFromTemplate.MarshalJSON()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//req := c.ClientSet.RESTClient().Patch(types.MergePatchType).
-	//	Body(data).
-	//	AbsPath("apis", machineFromTemplate.GetAPIVersion(), "namespaces", machineFromTemplate.GetNamespace(), strings.ToLower(machineFromTemplate.GetKind())+"s", machineFromTemplate.GetName())
-	//_, err = req.DoRaw(ctx)
-	//if err != nil {
-	//	return nil, fmt.Errorf("error patching: %w", err)
-	//}
-	//return machineFromTemplate, nil
 }
 
 func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
