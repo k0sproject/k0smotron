@@ -123,12 +123,12 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 	//gv, _ := schema.ParseGroupVersion(existingMachineFromTemplate.GetAPIVersion())
 	//gvr := gv.WithResource(strings.ToLower(existingMachineFromTemplate.GetKind()) + "s")
 	//patchBytes, _ := machineFromTemplate.MarshalJSON()
-	err = mergo.Merge(existingMachineFromTemplate, machineFromTemplate, mergo.WithOverride)
+	err = mergo.Merge(existingMachineFromTemplate.Object["spec"], machineFromTemplate.Object["spec"], mergo.WithOverride)
 	if err != nil {
 		return nil, fmt.Errorf("error merging: %w", err)
 	}
 
-	if err = c.Client.Patch(ctx, existingMachineFromTemplate, client.Apply, &client.PatchOptions{
+	if err = c.Client.Patch(ctx, existingMachineFromTemplate, client.Merge, &client.PatchOptions{
 		FieldManager: "k0smotron",
 		Force:        ptr.To(true),
 	}); err != nil {
