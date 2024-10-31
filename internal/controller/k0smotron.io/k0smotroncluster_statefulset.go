@@ -52,6 +52,7 @@ func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet 
 func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
 
 	labels := labelsForCluster(kmc)
+	annotations := annotationsForCluster(kmc)
 
 	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
@@ -59,10 +60,9 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 			Kind:       "StatefulSet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetStatefulSetName(),
-			Namespace:   kmc.Namespace,
-			Labels:      labels,
-			Annotations: annotationsForCluster(kmc),
+			Name:      kmc.GetStatefulSetName(),
+			Namespace: kmc.Namespace,
+			Labels:    labels,
 		},
 		Spec: apps.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
@@ -71,7 +71,8 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 			Replicas: &kmc.Spec.Replicas,
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+					Labels:      labels,
+					Annotations: annotations,
 				},
 				Spec: v1.PodSpec{
 					AutomountServiceAccountToken: ptr.To(false),
@@ -309,6 +310,9 @@ data:
 
 	statefulSet.Annotations = map[string]string{
 		statefulSetAnnotation: controller.ComputeHash(&statefulSet.Spec.Template, statefulSet.Status.CollisionCount),
+	}
+	for k, v := range annotations {
+		statefulSet.Annotations[k] = v
 	}
 
 	return statefulSet, err
