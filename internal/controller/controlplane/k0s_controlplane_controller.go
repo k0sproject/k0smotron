@@ -30,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
@@ -48,6 +49,7 @@ import (
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	kutil "github.com/k0sproject/k0smotron/internal/util"
 )
 
 const (
@@ -157,6 +159,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 	if err := c.reconcileTunneling(ctx, cluster, kcp); err != nil {
 		log.Error(err, "Failed to reconcile tunneling")
+		return ctrl.Result{}, err
+	}
+
+	if err := c.reconcileConfig(ctx, cluster, kcp); err != nil {
+		log.Error(err, "Failed to reconcile config")
 		return ctrl.Result{}, err
 	}
 
@@ -507,6 +514,55 @@ func (c *K0sController) ensureCertificates(ctx context.Context, cluster *cluster
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
 	return certificates.LookupOrGenerate(ctx, c.Client, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")))
+}
+
+func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+	log := log.FromContext(ctx)
+	if kcp.Spec.K0sConfigSpec.K0s != nil {
+		nllbEnabled, found, err := unstructured.NestedBool(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
+		if err != nil {
+			return fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
+		}
+		// Set the external address if NLLB is not enabled
+		// Otherwise, just add the external address to the SANs to allow the clients to connect using LB address
+		if !(found && nllbEnabled) {
+			err = unstructured.SetNestedField(kcp.Spec.K0sConfigSpec.K0s.Object, cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
+			if err != nil {
+				return fmt.Errorf("error setting control plane endpoint: %v", err)
+			}
+		} else {
+			sans := []string{cluster.Spec.ControlPlaneEndpoint.Host}
+			existingSANs, sansFound, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
+			if err == nil && sansFound {
+				sans = append(sans, existingSANs...)
+			}
+			err = unstructured.SetNestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
+			if err != nil {
+				return fmt.Errorf("error setting sans: %v", err)
+			}
+		}
+
+		if kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress != "" {
+			sans, _, err := unstructured.NestedSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
+			if err != nil {
+				return fmt.Errorf("error getting sans from config: %v", err)
+			}
+			sans = append(sans, kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress)
+			err = unstructured.SetNestedSlice(kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
+			if err != nil {
+				return fmt.Errorf("error setting sans to the config: %v", err)
+			}
+		}
+
+		// Reconcile the dynamic config
+		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, *kcp.Spec.K0sConfigSpec.K0s.DeepCopy())
+		if dErr != nil {
+			// Don't return error from dynamic config reconciliation, as it may not be created yet
+			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")
+		}
+	}
+
+	return nil
 }
 
 func (c *K0sController) reconcileTunneling(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
