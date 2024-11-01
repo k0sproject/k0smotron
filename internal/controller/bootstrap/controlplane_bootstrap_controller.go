@@ -185,41 +185,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	if config.Spec.K0s != nil {
-		nllbEnabled, found, err := unstructured.NestedBool(config.Spec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
-		}
-		// Set the external address if NLLB is not enabled
-		// Otherwise, just add the external address to the SANs to allow the clients to connect using LB address
-		if !(found && nllbEnabled) {
-			err = unstructured.SetNestedField(config.Spec.K0s.Object, scope.Cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("error setting control plane endpoint: %v", err)
-			}
-		} else {
-			sans := []string{scope.Cluster.Spec.ControlPlaneEndpoint.Host}
-			existingSANs, sansFound, err := unstructured.NestedStringSlice(config.Spec.K0s.Object, "spec", "api", "sans")
-			if err == nil && sansFound {
-				sans = append(sans, existingSANs...)
-			}
-			err = unstructured.SetNestedStringSlice(config.Spec.K0s.Object, sans, "spec", "api", "sans")
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("error setting sans: %v", err)
-			}
-		}
-
-		if config.Spec.Tunneling.ServerAddress != "" {
-			sans, _, err := unstructured.NestedSlice(config.Spec.K0s.Object, "spec", "api", "sans")
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("error getting sans from config: %v", err)
-			}
-			sans = append(sans, config.Spec.Tunneling.ServerAddress)
-			err = unstructured.SetNestedSlice(config.Spec.K0s.Object, sans, "spec", "api", "sans")
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("error setting sans to the config: %v", err)
-			}
-		}
-
 		k0sConfigBytes, err := config.Spec.K0s.MarshalJSON()
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error marshalling k0s config: %v", err)
@@ -230,13 +195,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Content:     string(k0sConfigBytes),
 		})
 		config.Spec.Args = append(config.Spec.Args, "--config", "/etc/k0s.yaml")
-
-		// Reconcile the dynamic config
-		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, *config.Spec.K0s)
-		if dErr != nil {
-			// Don't return error from dynamic config reconciliation, as it may not be created yet
-			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")
-		}
 	}
 
 	if config.Status.Ready {
