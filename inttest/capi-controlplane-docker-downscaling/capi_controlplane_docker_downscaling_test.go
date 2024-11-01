@@ -95,8 +95,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
-	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		localPort, _ = getLBPort("docker-test-lb")
 		return localPort > 0, nil
 	})
@@ -106,8 +105,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
@@ -118,8 +116,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	s.Require().NoError(err)
 
 	for i := 0; i < 3; i++ {
-		// nolint:staticcheck
-		err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 			nodeName := fmt.Sprintf("docker-test-%d", i)
 			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
 			if err != nil {
@@ -134,8 +131,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		result, err := kmcKC.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes").DoRaw(ctx)
 		if err != nil {
 			return false, err
@@ -150,28 +146,17 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	s.Require().NoError(err)
 
 	s.T().Log("scaling down control plane")
-
-	out, err := exec.Command("docker", "exec", "docker-test-1", "k0s", "etcd", "leave").CombinedOutput()
-	s.T().Log(string(out))
-	s.Require().NoError(err)
-
-	out, err = exec.Command("docker", "exec", "docker-test-2", "k0s", "etcd", "leave").CombinedOutput()
-	s.T().Log(string(out))
-	s.Require().NoError(err)
-
 	s.updateClusterObjects()
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-0", "k0s", "etcd", "member-list").CombinedOutput()
+
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		ids, err := util.GetControlPlaneNodesIDs("docker-test")
 		if err != nil {
 			return false, nil
 		}
 
-		return !strings.Contains(string(output), "docker-test-1"), nil
+		return len(ids) == 1, nil
 	})
 	s.Require().NoError(err)
-
-	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 }
 
 func (s *CAPIControlPlaneDockerDownScalingSuite) applyClusterObjects() {

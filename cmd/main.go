@@ -22,9 +22,6 @@ import (
 	"fmt"
 	"os"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	"k8s.io/client-go/dynamic"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -141,11 +138,6 @@ func main() {
 		setupLog.Error(err, "unable to get kubernetes clientset")
 		os.Exit(1)
 	}
-	dynamicClient, err := dynamic.NewForConfig(restConfig)
-	if err != nil {
-		setupLog.Error(err, "unable to get kubernetes dynamic client")
-		os.Exit(1)
-	}
 
 	if err = (&controller.ClusterReconciler{
 		Client:     mgr.GetClient(),
@@ -210,11 +202,10 @@ func main() {
 		}
 
 		if err = (&controlplane.K0sController{
-			Client:        mgr.GetClient(),
-			Scheme:        mgr.GetScheme(),
-			ClientSet:     clientSet,
-			DynamicClient: dynamicClient,
-			RESTConfig:    restConfig,
+			Client:     mgr.GetClient(),
+			Scheme:     mgr.GetScheme(),
+			ClientSet:  clientSet,
+			RESTConfig: restConfig,
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "K0sController")
 			os.Exit(1)

@@ -134,10 +134,17 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 		return nil, err
 	}
 
-	resourceType := strings.ToLower(machineFromTemplate.GetKind()) + "s"
+	pluralName := ""
+	resList, _ := c.ClientSet.Discovery().ServerResourcesForGroupVersion(existingMachineFromTemplate.GetAPIVersion())
+	for _, apiRes := range resList.APIResources {
+		if apiRes.Kind == existingMachineFromTemplate.GetKind() && !strings.Contains(apiRes.Name, "/") {
+			pluralName = apiRes.Name
+			break
+		}
+	}
 	req := c.ClientSet.RESTClient().Patch(types.MergePatchType).
 		Body(data).
-		AbsPath("apis", machineFromTemplate.GetAPIVersion(), "namespaces", machineFromTemplate.GetNamespace(), resourceType, machineFromTemplate.GetName())
+		AbsPath("apis", machineFromTemplate.GetAPIVersion(), "namespaces", machineFromTemplate.GetNamespace(), pluralName, machineFromTemplate.GetName())
 	_, err = req.DoRaw(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error patching: %w", err)
