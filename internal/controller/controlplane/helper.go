@@ -24,8 +24,8 @@ import (
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
 
-func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
-	machine, err := c.generateMachine(ctx, name, cluster, kcp, infraRef)
+func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain string) (*clusterv1.Machine, error) {
+	machine, err := c.generateMachine(ctx, name, cluster, kcp, infraRef, failureDomain)
 	if err != nil {
 		return nil, fmt.Errorf("error generating machine: %w", err)
 	}
@@ -56,7 +56,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 	return nil
 }
 
-func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
+func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain string) (*clusterv1.Machine, error) {
 	v := kcp.Spec.Version
 
 	labels := map[string]string{
@@ -72,7 +72,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 		}
 	}
 
-	return &clusterv1.Machine{
+	machine := &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: clusterv1.GroupVersion.String(),
 			Kind:       "Machine",
@@ -94,7 +94,12 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			},
 			InfrastructureRef: infraRef,
 		},
-	}, nil
+	}
+	if failureDomain != "" {
+		machine.Spec.FailureDomain = &failureDomain
+	}
+
+	return machine, nil
 }
 
 func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {

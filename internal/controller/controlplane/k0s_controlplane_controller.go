@@ -326,9 +326,13 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
+	failureDomainsStats := NewFailureDomainsStats(cluster.Status.FailureDomains.FilterControlPlane())
 	machineNames := make(map[string]bool)
-	for _, m := range machines.Names() {
-		machineNames[m] = true
+	for _, m := range machines {
+		machineNames[m.Name] = true
+		if m.Spec.FailureDomain != nil {
+			failureDomainsStats.Add(*m.Spec.FailureDomain)
+		}
 	}
 
 	if len(machineNames) < int(desiredReplicas) {
@@ -363,7 +367,12 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				Namespace:  kcp.Namespace,
 			}
 
-			machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef)
+			var selectedFailureDomain string
+			if len(cluster.Status.FailureDomains.FilterControlPlane()) > 0 {
+				selectedFailureDomain = failureDomainsStats.Select()
+				failureDomainsStats.Add(selectedFailureDomain)
+			}
+			machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
 			if err != nil {
 				return replicasToReport, fmt.Errorf("error creating machine: %w", err)
 			}

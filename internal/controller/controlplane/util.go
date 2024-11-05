@@ -3,8 +3,8 @@ package controlplane
 import (
 	"context"
 	"fmt"
-	"github.com/imdario/mergo"
 
+	"github.com/imdario/mergo"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
