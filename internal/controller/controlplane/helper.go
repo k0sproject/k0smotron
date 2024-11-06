@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/imdario/mergo"
+	"github.com/k0sproject/version"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +22,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0sproject/version"
 )
 
 func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference) (*clusterv1.Machine, error) {
@@ -102,12 +103,52 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 		return nil, err
 	}
 
-	if err = c.Client.Patch(ctx, machineFromTemplate, client.Apply, &client.PatchOptions{
-		FieldManager: "k0smotron",
-	}); err != nil {
+	existingMachineFromTemplate := &unstructured.Unstructured{}
+	existingMachineFromTemplate.SetAPIVersion(machineFromTemplate.GetAPIVersion())
+	existingMachineFromTemplate.SetKind(machineFromTemplate.GetKind())
+	err = c.Get(ctx, client.ObjectKey{Namespace: machineFromTemplate.GetNamespace(), Name: machineFromTemplate.GetName()}, existingMachineFromTemplate)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			if err = c.Client.Patch(ctx, machineFromTemplate, client.Apply, &client.PatchOptions{
+				FieldManager: "k0smotron",
+			}); err != nil {
+				return nil, fmt.Errorf("error apply patching: %w", err)
+			}
+			return machineFromTemplate, nil
+		}
+
+		return nil, fmt.Errorf("error getting machine implementation: %w", err)
+	}
+
+	err = mergo.Merge(existingMachineFromTemplate, machineFromTemplate, mergo.WithSliceDeepCopy)
+	if err != nil {
 		return nil, err
 	}
 
+	spec, _, _ := unstructured.NestedMap(existingMachineFromTemplate.Object, "spec")
+	patch := unstructured.Unstructured{Object: map[string]interface{}{
+		"spec": spec,
+	}}
+	data, err := patch.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	pluralName := ""
+	resList, _ := c.ClientSet.Discovery().ServerResourcesForGroupVersion(existingMachineFromTemplate.GetAPIVersion())
+	for _, apiRes := range resList.APIResources {
+		if apiRes.Kind == existingMachineFromTemplate.GetKind() && !strings.Contains(apiRes.Name, "/") {
+			pluralName = apiRes.Name
+			break
+		}
+	}
+	req := c.ClientSet.RESTClient().Patch(types.MergePatchType).
+		Body(data).
+		AbsPath("apis", machineFromTemplate.GetAPIVersion(), "namespaces", machineFromTemplate.GetNamespace(), pluralName, machineFromTemplate.GetName())
+	_, err = req.DoRaw(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error patching: %w", err)
+	}
 	return machineFromTemplate, nil
 }
 
