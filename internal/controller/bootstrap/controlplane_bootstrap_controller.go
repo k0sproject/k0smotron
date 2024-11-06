@@ -482,7 +482,7 @@ func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Controller
 	err := c.Client.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secret.Name(scope.Cluster.Name, secret.Kubeconfig)}, s)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return nil, nil, fmt.Errorf("cluster's CA secret not found, waiting for secret")
+			return nil, nil, fmt.Errorf("cluster's kubeconfig secret not found, waiting for secret")
 		}
 		return nil, nil, err
 	}

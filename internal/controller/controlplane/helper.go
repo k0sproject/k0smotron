@@ -24,7 +24,7 @@ import (
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
 
-func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain string) (*clusterv1.Machine, error) {
+func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
 	machine, err := c.generateMachine(ctx, name, cluster, kcp, infraRef, failureDomain)
 	if err != nil {
 		return nil, fmt.Errorf("error generating machine: %w", err)
@@ -56,7 +56,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 	return nil
 }
 
-func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain string) (*clusterv1.Machine, error) {
+func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
 	v := kcp.Spec.Version
 
 	labels := map[string]string{
@@ -83,8 +83,9 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			Labels:    labels,
 		},
 		Spec: clusterv1.MachineSpec{
-			Version:     &v,
-			ClusterName: cluster.Name,
+			Version:       &v,
+			ClusterName:   cluster.Name,
+			FailureDomain: failureDomain,
 			Bootstrap: clusterv1.Bootstrap{
 				ConfigRef: &corev1.ObjectReference{
 					APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
@@ -94,9 +95,6 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			},
 			InfrastructureRef: infraRef,
 		},
-	}
-	if failureDomain != "" {
-		machine.Spec.FailureDomain = &failureDomain
 	}
 
 	return machine, nil
