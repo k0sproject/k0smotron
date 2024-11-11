@@ -34,7 +34,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -63,15 +62,20 @@ const (
 )
 
 var (
-	ErrNotReady            = fmt.Errorf("waiting for the state")
-	ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines: %w", ErrNotReady)
+	ErrNotReady               = fmt.Errorf("waiting for the state")
+	ErrNewMachinesNotReady    = fmt.Errorf("waiting for new machines: %w", ErrNotReady)
+	FRPTokenNameTemplate      = "%s-frp-token"
+	FRPConfigMapNameTemplate  = "%s-frps-config"
+	FRPDeploymentNameTemplate = "%s-frps"
+	FRPServiceNameTemplate    = "%s-frps"
 )
 
 type K0sController struct {
 	client.Client
-	Scheme     *runtime.Scheme
 	ClientSet  *kubernetes.Clientset
 	RESTConfig *rest.Config
+	// workloadClusterKubeClient is used during testing to inject a fake client
+	workloadClusterKubeClient *kubernetes.Clientset
 }
 
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes/status,verbs=get;list;watch;create;update;patch;delete
@@ -124,6 +128,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, nil
 	}
 
+	if annotations.IsPaused(cluster, kcp) {
+		log.Info("Reconciliation is paused for this object or owning cluster")
+		return ctrl.Result{}, nil
+	}
+
 	// Always patch the object to update the status
 	defer func() {
 		log.Info("Updating status")
@@ -159,11 +168,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	}()
 
 	log = log.WithValues("cluster", cluster.Name)
-
-	if annotations.IsPaused(cluster, kcp) {
-		log.Info("Reconciliation is paused for this object or owning cluster")
-		return ctrl.Result{}, nil
-	}
 
 	if err := c.ensureCertificates(ctx, cluster, kcp); err != nil {
 		log.Error(err, "Failed to ensure certificates")
@@ -630,7 +634,7 @@ token = ` + frpToken + `
 `
 	}
 
-	frpsCMName := kcp.GetName() + "-frps-config"
+	frpsCMName := fmt.Sprintf(FRPConfigMapNameTemplate, kcp.GetName())
 	cm := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -645,7 +649,7 @@ token = ` + frpToken + `
 		},
 	}
 
-	_ = ctrl.SetControllerReference(kcp, &cm, c.Scheme)
+	_ = ctrl.SetControllerReference(kcp, &cm, c.Client.Scheme())
 	err = c.Client.Patch(ctx, &cm, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"})
 	if err != nil {
 		return fmt.Errorf("error creating ConfigMap: %w", err)
@@ -657,7 +661,7 @@ token = ` + frpToken + `
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kcp.GetName() + "-frps",
+			Name:      fmt.Sprintf(FRPDeploymentNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -714,7 +718,7 @@ token = ` + frpToken + `
 				}},
 		},
 	}
-	_ = ctrl.SetControllerReference(kcp, &frpsDeployment, c.Scheme)
+	_ = ctrl.SetControllerReference(kcp, &frpsDeployment, c.Client.Scheme())
 	err = c.Client.Patch(ctx, &frpsDeployment, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"})
 	if err != nil {
 		return fmt.Errorf("error creating Deployment: %w", err)
@@ -726,7 +730,7 @@ token = ` + frpToken + `
 			Kind:       "Service",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kcp.GetName() + "-frps",
+			Name:      fmt.Sprintf(FRPServiceNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
 		},
 		Spec: corev1.ServiceSpec{
@@ -750,7 +754,7 @@ token = ` + frpToken + `
 			Type: corev1.ServiceTypeNodePort,
 		},
 	}
-	_ = ctrl.SetControllerReference(kcp, &frpsService, c.Scheme)
+	_ = ctrl.SetControllerReference(kcp, &frpsService, c.Client.Scheme())
 	err = c.Client.Patch(ctx, &frpsService, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"})
 	if err != nil {
 		return fmt.Errorf("error creating Service: %w", err)
@@ -769,7 +773,7 @@ func (c *K0sController) detectNodeIP(ctx context.Context, _ *cpv1beta1.K0sContro
 }
 
 func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (string, error) {
-	secretName := cluster.Name + "-frp-token"
+	secretName := fmt.Sprintf(FRPTokenNameTemplate, cluster.Name)
 
 	var existingSecret corev1.Secret
 	err := c.Client.Get(ctx, client.ObjectKey{Name: secretName, Namespace: cluster.Namespace}, &existingSecret)
@@ -798,7 +802,7 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 		Type: clusterv1.ClusterSecretType,
 	}
 
-	_ = ctrl.SetControllerReference(kcp, frpSecret, c.Scheme)
+	_ = ctrl.SetControllerReference(kcp, frpSecret, c.Client.Scheme())
 
 	return frpToken, c.Client.Patch(ctx, frpSecret, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",

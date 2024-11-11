@@ -20,9 +20,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	batchv1 "k8s.io/api/batch/v1"
 	"strings"
 	"text/template"
+
+	batchv1 "k8s.io/api/batch/v1"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 
