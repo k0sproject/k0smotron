@@ -1,70 +1,22 @@
 # Testing guidelines
 
-k0smotron uses GitHub actions to run automated tests on all pull requests prior to merging.
-Pull request will not be reviewed before all tests are green,
-so to save time and prevent your Pull request from going stale,
-it is best to test it before submitting the pull request.
+K0smotron follows a comprehensive testing strategy that includes unit, integration, and e2e testing to ensure the reliability and robustness of the system.
 
-## Run local verifications
+All unit, integration, and e2e tests are executed automatically on pull requests that are intended to be merged, ensuring that changes are thoroughly validated before integration into the main codebase. These tests are executed using [GitHub Actions](https://docs.github.com/en/actions), which provides a seamless and automated way to validate proposed changes. This layered approach ensures that proposed changes are both correct and meet the expected quality standards.
 
-Run the following style and formatting commands to fix or check-in the changes:
+For details on the contribution process, including how to follow the GitHub workflow and ensure your changes pass all necessary validations, please refer to the [Contributing Workflow](contribute-workflow.md).
 
-1. Verify code style using [`golangci-lint`](https://golangci-lint.run/). In the root directory of the repository run:
+## Unit and Integration Testing
 
-   ```shell
-   make lint
-   ```
+In k0smotron project, tests are prioritized to execute quickly in order to maintain a fast feedback loop, ensuring efficient and agile development.
 
-   The build system automatically installs `golangci-lint`.
+K0smotron uses [go test](https://pkg.go.dev/testing) as the foundation for all our tests, combined with the [testify](https://pkg.go.dev/github.com/stretchr/testify) library to simplify assertions and improve test readability and reliability. Both unit and integration tests rely on this approach to ensure consistency and ease of development.
 
-2. Format Go source code using the `go fmt` command:
+- **Unit Testing**: Focused on isolated components, unit tests validate the correctness of individual functions or methods in a controlled environment, ensuring they behave as expected.
 
+- **Integration Testing**: For integration testing, k0smotron uses [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest), which provides a lightweight Kubernetes control plane with the essential components needed to test interactions between the code and Kubernetes API. This approach allows us to validate the behavior of our controllers and other Kubernetes integrations in a reproducible and efficient manner without requiring a full cluster. 
 
-   ```shell
-   go fmt ./...
-   ```
+  Following the best practices suggested in the [Cluster API documentation](https://cluster-api.sigs.k8s.io/developer/core/testing), integration tests are written using [**generic infrastructure providers**](https://cluster-api.sigs.k8s.io/developer/core/testing#generic-providers) rather than a specific provider. This ensures that tests remain agnostic and reusable across different infrastructures, fostering better maintainability and adaptability.
 
-3. Check documentation.
-
-   The Dockerized setup is used to locally perform documentation tests.
-   Run `make docs-serve-dev` to build documentation on http://localhost:8000.
-
-   If your port `8000` is busy, run `make docs-serve-dev DOCS_DEV_PORT=9999`.
-   The documentation page will be available on http://localhost:9999.
-
-4. Pre-submit flight checks.
-
-   In the repository root directory, ensure that the following commands are successfully run:
-
-    * `make build && git diff --exit-code`
-      This command verifies that the build is working
-      and that the generated source code matches the code checked into source control.
-    * `make test`
-      This command verifies that all the unit tests pass.
-
-   Once all tests have passed, you can open a pull request upstream.
-
-## Open pull request
-
-### Draft mode
-
-If you open a pull request in draft mode, it will only go through the automated testing.
-Once you decide the PR is ready for review, transition it out of draft mode to notify the k0smotron team.
-
-### Pre-requisites for merge
-
-In order for a pull request to be merged, the following conditions should be met:
-
-1. The PR has passed all the automated tests (style, build and conformance tests).
-1. All the PR commits have been signed with the `--signoff` option.
-1. The PR has been reviewed and approved by a code owner.
-1. The PR has been rebased against upstream main branch.
-
-## Cleanup local workspace
-
-Run `make clean` to remove all the intermediate files and directories created
-locally during the k0smotron build.
-You cannot use `git clean -X` or `rm -rf`, since the Go modules
-cache sets all of its subdirectories to read-only.
-If you encounter problems during a deletion process,
-run `chmod -R u+w /path/to/workspace && rm -rf /path/to/workspace`.
+## E2E testing
+TBD

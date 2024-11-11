@@ -50,7 +50,7 @@ func (c *K0sController) createMachine(ctx context.Context, name string, cluster 
 	if err != nil {
 		return nil, fmt.Errorf("error generating machine: %w", err)
 	}
-	_ = ctrl.SetControllerReference(kcp, machine, c.Scheme)
+	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
 
 	err = c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
@@ -226,7 +226,11 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 		return nil, err
 	}
 
-	_ = ctrl.SetControllerReference(kcp, infraMachineTemplate, c.Scheme)
+	_ = ctrl.SetControllerReference(cluster, infraMachineTemplate, c.Client.Scheme())
+	err = c.Client.Patch(ctx, infraMachineTemplate, client.Merge, &client.PatchOptions{FieldManager: "k0smotron"})
+	if err != nil {
+		return nil, err
+	}
 
 	template, found, err := unstructured.NestedMap(infraMachineTemplate.UnstructuredContent(), "spec", "template")
 	if !found {
