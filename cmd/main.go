@@ -237,6 +237,11 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "K0sController")
 			os.Exit(1)
 		}
+
+		if err = (&controlplane.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
+			os.Exit(1)
+		}
 	}
 
 	if isControllerEnabled(infrastructureController) {
