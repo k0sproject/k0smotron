@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util/collections"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -98,6 +99,21 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 
 	return machine, nil
+}
+
+func (c *K0sController) getInfraMachines(ctx context.Context, machines collections.Machines) (map[string]*unstructured.Unstructured, error) {
+	result := map[string]*unstructured.Unstructured{}
+	for _, m := range machines {
+		infraMachine, err := external.Get(ctx, c.Client, &m.Spec.InfrastructureRef, m.Namespace)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				continue
+			}
+			return nil, fmt.Errorf("failed to retrieve infra machine for machine object %s: %w", m.Name, err)
+		}
+		result[m.Name] = infraMachine
+	}
+	return result, nil
 }
 
 func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
@@ -209,6 +225,22 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	machine.SetKind(strings.TrimSuffix(unstructuredMachineTemplate.GetKind(), clusterv1.TemplateSuffix))
 
 	return machine, nil
+}
+
+func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
+	if machine == nil {
+		return false
+	}
+	infraMachine, found := infraMachines[machine.Name]
+	if !found {
+		return false
+	}
+
+	clonedFromName := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation]
+	clonedFromGroupKind := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation]
+
+	return clonedFromName == kcp.Spec.MachineTemplate.InfrastructureRef.Name &&
+		clonedFromGroupKind == kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
 }
 
 func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name string, clientset *kubernetes.Clientset) error {

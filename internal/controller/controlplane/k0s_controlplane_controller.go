@@ -330,9 +330,18 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
+	infraMachines, err := c.getInfraMachines(ctx, machines)
+	if err != nil {
+		return replicasToReport, fmt.Errorf("error getting infra machines: %w", err)
+	}
+
 	machineNames := make(map[string]bool)
 	for _, m := range machines {
 		machineNames[m.Name] = true
+		if !matchesTemplateClonedFrom(infraMachines, kcp, m) {
+			desiredReplicas++
+			machinesToDelete++
+		}
 	}
 
 	if len(machineNames) < int(desiredReplicas) {
