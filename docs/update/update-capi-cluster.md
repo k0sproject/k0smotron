@@ -103,7 +103,6 @@ which involves creating a new machines for control plane and decommissioning the
 
 For the example below, k0smotron will create 3 new machines for the control plane, ensure that the new control plane nodes are online, and then remove the old machines.
 
-```yaml
 
 1. Check the configuration of deployed k0smotron cluster in your repository. For example:
 
