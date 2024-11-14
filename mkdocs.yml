@@ -31,10 +31,10 @@ nav:
       - Examples:
         - Software prerequisites: capi-examples.md
         - AWS (HCP): capi-aws.md
-        - Hetzner Cloud: capi-hetzner.md
-        - OpenStack: capi-openstack.md
-        - Docker: capi-docker.md
-        - KubeVirt: capi-kubevirt.md
+        - Hetzner Cloud (HCP): capi-hetzner.md
+        - OpenStack (HCP): capi-openstack.md
+        - Docker (HCP): capi-docker.md
+        - KubeVirt (HCP): capi-kubevirt.md
         - vSphere: capi-vsphere.md
         - Remote Machine with Teleport: capi-remotemachine-teleport.md
         - Remote Machine with Okta ASA: capi-remotemachine-okta-asa.md
