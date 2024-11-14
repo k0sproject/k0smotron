@@ -794,7 +794,7 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    Hetzner Cloud
+    Hetzner Cloud (HCP)
   </span>
   
 
@@ -815,7 +815,7 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    OpenStack
+    OpenStack (HCP)
   </span>
   
 
@@ -836,7 +836,7 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    Docker
+    Docker (HCP)
   </span>
   
 
@@ -857,7 +857,7 @@ You are not currently viewing the documentation for the current stable release o
         
   
   <span class="md-ellipsis">
-    KubeVirt
+    KubeVirt (HCP)
   </span>
   
 
@@ -1807,11 +1807,11 @@ vim<span class="w"> </span>~/.cluster-api/clusterctl.yaml
 <h3 id="generate-a-child-cluster-definition-using-the-template">Generate a child cluster definition using the template<a class="headerlink" href="#generate-a-child-cluster-definition-using-the-template" title="Permanent link">#</a></h3>
 <p>There are two options for child cluster control plane with k0smotron:</p>
 <h4 id="control-plane-in-pods">Control plane in Pods:<a class="headerlink" href="#control-plane-in-pods" title="Permanent link">#</a></h4>
-<p>If you want to have child cluster <a href="https://docs.k0smotron.io/stable/capi-controlplane/">control plane in a Pods</a>, use <a href="../capi-vsphere-tmpl-cp-in-pods.yaml">this template</a>: </p>
+<p>If you want to have child cluster <a href="https://docs.k0smotron.io/stable/capi-controlplane/">control plane in a Pods</a>, use the following <a href="../capi-vsphere-tmpl-cp-in-pods.yaml">template</a>: </p>
 <div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>generate<span class="w"> </span>cluster<span class="w"> </span>my-cluster<span class="w"> </span>--control-plane-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--worker-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--from<span class="w"> </span>k0scluster-tmpl-cp-in-pods.yaml<span class="w"> </span>&gt;<span class="w"> </span>my-cluster.yaml
 </code></pre></div>
 <h4 id="control-plane-in-vms">Control plane in VMs:<a class="headerlink" href="#control-plane-in-vms" title="Permanent link">#</a></h4>
-<p>If you want to have child cluster <a href="https://docs.k0smotron.io/stable/capi-controlplane-bootstrap/">control plane in separate VMs</a>, use <a href="../capi-vsphere-tmpl-cp-in-pods.yaml">that template</a> (CP will consist of 3 controllers):</p>
+<p>If you want to have child cluster <a href="https://docs.k0smotron.io/stable/capi-controlplane-bootstrap/">control plane in separate VMs</a>, use the following <a href="../capi-vsphere-tmpl-cp-in-vms.yaml">template</a> (Control Plane will consist of 3 nodes):</p>
 <div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>generate<span class="w"> </span>cluster<span class="w"> </span>my-cluster<span class="w"> </span>--worker-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--from<span class="w"> </span>k0scluster-tmpl-cp-in-vms.yaml<span class="w"> </span>&gt;<span class="w"> </span>my-cluster.yaml<span class="w"> </span>
 </code></pre></div>
 <h3 id="deploy-the-child-clusters">Deploy the child clusters<a class="headerlink" href="#deploy-the-child-clusters" title="Permanent link">#</a></h3>
