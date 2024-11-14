@@ -41,6 +41,7 @@ import (
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -57,7 +58,10 @@ const (
 	defaultK0sVersion = "v1.27.9+k0s.0"
 )
 
-var ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines")
+var (
+	ErrNotReady            = fmt.Errorf("waiting for the state")
+	ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines: %w", ErrNotReady)
+)
 
 type K0sController struct {
 	client.Client
@@ -169,7 +173,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 	_, err = c.reconcile(ctx, cluster, kcp)
 	if err != nil {
-		if errors.Is(err, ErrNewMachinesNotReady) {
+		if errors.Is(err, ErrNotReady) {
 			return ctrl.Result{RequeueAfter: 10, Requeue: true}, nil
 		}
 		return res, err
@@ -181,7 +185,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
 	if cluster.Spec.ControlPlaneEndpoint.IsZero() {
-		return errors.New("control plane endpoint is not set")
+		return fmt.Errorf("control plane endpoint is not set: %w", ErrNotReady)
 	}
 
 	secretName := secret.Name(cluster.Name, secret.Kubeconfig)
@@ -245,14 +249,14 @@ func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluste
 		return kcp.Status.Replicas, err
 	}
 
+	err = c.reconcileKubeconfig(ctx, cluster, kcp)
+	if err != nil {
+		return kcp.Status.Replicas, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
+	}
+
 	replicasToReport, err := c.reconcileMachines(ctx, cluster, kcp)
 	if err != nil {
 		return replicasToReport, err
-	}
-
-	err = c.reconcileKubeconfig(ctx, cluster, kcp)
-	if err != nil {
-		return replicasToReport, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
 	}
 
 	return replicasToReport, nil
@@ -310,7 +314,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			}
 
 			desiredReplicas += kcp.Spec.Replicas
-			machinesToDelete = int(kcp.Spec.Replicas)
+			machinesToDelete = oldMachines
 			replicasToReport = desiredReplicas
 			log.Log.Info("Calculated new replicas", "desiredReplicas", desiredReplicas, "machinesToDelete", machinesToDelete, "replicasToReport", replicasToReport, "currentReplicas", currentReplicas)
 		} else {
@@ -327,8 +331,8 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	}
 
 	machineNames := make(map[string]bool)
-	for _, m := range machines.Names() {
-		machineNames[m] = true
+	for _, m := range machines {
+		machineNames[m.Name] = true
 	}
 
 	if len(machineNames) < int(desiredReplicas) {
@@ -343,8 +347,13 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	for name, exists := range machineNames {
 		if !exists || kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
-			// Wait for the previous machine to be created to avoid etcd issues
-			if clusterIsUpdating {
+
+			// Wait for the previous machine to be created to avoid etcd issues if cluster if updating
+			// OR
+			// Wait for the first controller to start before creating the next one
+			// Some providers don't publish failure domains immediately, so wait for the first machine to be ready
+			// It's not slowing down the process overall, as we wait to the first machine anyway to create join tokens
+			if clusterIsUpdating || (machines.Len() == 1 && kcp.Spec.Replicas > 1) {
 				err := c.checkMachineIsReady(ctx, machines.Newest().Name, cluster)
 				if err != nil {
 					return int32(machines.Len()), err
@@ -363,7 +372,8 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				Namespace:  kcp.Namespace,
 			}
 
-			machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef)
+			selectedFailureDomain := failuredomains.PickFewest(cluster.Status.FailureDomains.FilterControlPlane(), machines)
+			machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
 			if err != nil {
 				return replicasToReport, fmt.Errorf("error creating machine: %w", err)
 			}
