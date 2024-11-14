@@ -154,7 +154,7 @@ There are two options for child cluster control plane with k0smotron:
 
 #### Control plane in Pods:
 
-If you want to have child cluster [control plane in a Pods](https://docs.k0smotron.io/stable/capi-controlplane/), use [this template](capi-vsphere-tmpl-cp-in-pods.yaml): 
+If you want to have child cluster [control plane in a Pods](https://docs.k0smotron.io/stable/capi-controlplane/), use the following [template](capi-vsphere-tmpl-cp-in-pods.yaml): 
 
 ```sh
 clusterctl generate cluster my-cluster --control-plane-machine-count 1 --worker-machine-count 1 --from k0scluster-tmpl-cp-in-pods.yaml > my-cluster.yaml
@@ -162,7 +162,7 @@ clusterctl generate cluster my-cluster --control-plane-machine-count 1 --worker-
 
 #### Control plane in VMs:
 
-If you want to have child cluster [control plane in separate VMs](https://docs.k0smotron.io/stable/capi-controlplane-bootstrap/), use [that template](capi-vsphere-tmpl-cp-in-pods.yaml) (CP will consist of 3 controllers):
+If you want to have child cluster [control plane in separate VMs](https://docs.k0smotron.io/stable/capi-controlplane-bootstrap/), use the following [template](capi-vsphere-tmpl-cp-in-vms.yaml) (Control Plane will consist of 3 nodes):
 
 ```sh
 clusterctl generate cluster my-cluster --worker-machine-count 1 --from k0scluster-tmpl-cp-in-vms.yaml > my-cluster.yaml 
