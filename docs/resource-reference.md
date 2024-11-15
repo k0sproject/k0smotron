@@ -2814,18 +2814,14 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         <td><b>kineDataSourceSecretName</b></td>
         <td>string</td>
         <td>
-          KineDataSourceSecretName defines the name of kine datasource URL secret.
-KineDataSourceURL or KineDataSourceSecretName are required for HA controlplane setup
-and one of them must be set if replicas > 1.<br/>
+          KineDataSourceSecretName defines the name of kine datasource URL secret.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>kineDataSourceURL</b></td>
         <td>string</td>
         <td>
-          KineDataSourceURL defines the kine datasource URL.
-KineDataSourceURL or KineDataSourceSecretName are required for HA controlplane setup
-and one of them must be set if replicas > 1.<br/>
+          KineDataSourceURL defines the kine datasource URL.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11239,18 +11235,14 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         <td><b>kineDataSourceSecretName</b></td>
         <td>string</td>
         <td>
-          KineDataSourceSecretName defines the name of kine datasource URL secret.
-KineDataSourceURL or KineDataSourceSecretName are required for HA controlplane setup
-and one of them must be set if replicas > 1.<br/>
+          KineDataSourceSecretName defines the name of kine datasource URL secret.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>kineDataSourceURL</b></td>
         <td>string</td>
         <td>
-          KineDataSourceURL defines the kine datasource URL.
-KineDataSourceURL or KineDataSourceSecretName are required for HA controlplane setup
-and one of them must be set if replicas > 1.<br/>
+          KineDataSourceURL defines the kine datasource URL.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -35579,18 +35571,14 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         <td><b>kineDataSourceSecretName</b></td>
         <td>string</td>
         <td>
-          KineDataSourceSecretName defines the name of kine datasource URL secret.
-KineDataSourceURL or KineDataSourceSecretName are required for HA controlplane setup
-and one of them must be set if replicas > 1.<br/>
+          KineDataSourceSecretName defines the name of kine datasource URL secret.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>kineDataSourceURL</b></td>
         <td>string</td>
         <td>
-          KineDataSourceURL defines the kine datasource URL.
-KineDataSourceURL or KineDataSourceSecretName are required for HA controlplane setup
-and one of them must be set if replicas > 1.<br/>
+          KineDataSourceURL defines the kine datasource URL.<br/>
         </td>
         <td>false</td>
       </tr><tr>

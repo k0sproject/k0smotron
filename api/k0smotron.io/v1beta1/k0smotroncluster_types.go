@@ -59,13 +59,9 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	Persistence PersistenceSpec `json:"persistence,omitempty"`
 	// KineDataSourceURL defines the kine datasource URL.
-	// KineDataSourceURL or KineDataSourceSecretName are required for HA controlplane setup
-	// and one of them must be set if replicas > 1.
 	//+kubebuilder:validation:Optional
 	KineDataSourceURL string `json:"kineDataSourceURL,omitempty"`
 	// KineDataSourceSecretName defines the name of kine datasource URL secret.
-	// KineDataSourceURL or KineDataSourceSecretName are required for HA controlplane setup
-	// and one of them must be set if replicas > 1.
 	//+kubebuilder:validation:Optional
 	KineDataSourceSecretName string `json:"kineDataSourceSecretName,omitempty"`
 	// k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
