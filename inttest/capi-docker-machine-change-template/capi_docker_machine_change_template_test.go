@@ -42,11 +42,12 @@ import (
 
 type CAPIDockerMachineChangeTemplate struct {
 	suite.Suite
-	client                 *kubernetes.Clientset
-	restConfig             *rest.Config
-	clusterYamlsPath       string
-	clusterYamlsUpdatePath string
-	ctx                    context.Context
+	client                       *kubernetes.Clientset
+	restConfig                   *rest.Config
+	clusterYamlsPath             string
+	clusterYamlsUpdatePath       string
+	clusterYamlsSecondUpdatePath string
+	ctx                          context.Context
 }
 
 func TestCAPIDockerMachineChangeTemplate(t *testing.T) {
@@ -74,6 +75,8 @@ func (s *CAPIDockerMachineChangeTemplate) SetupSuite() {
 	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
 	s.clusterYamlsUpdatePath = tmpDir + "/update.yaml"
 	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, []byte(controlPlaneUpdate), 0644))
+	s.clusterYamlsSecondUpdatePath = tmpDir + "/update2.yaml"
+	s.Require().NoError(os.WriteFile(s.clusterYamlsSecondUpdatePath, []byte(controlPlaneSecondUpdate), 0644))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
@@ -147,7 +150,6 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
 
-	// nolint:staticcheck
 	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		newNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
 		if err != nil {
@@ -176,6 +178,38 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 		Into(&obj)
 	s.Require().NoError(err)
 	s.Require().Equal("docker-test-cp-template-new", obj.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation])
+
+	time.Sleep(time.Minute)
+	s.T().Log("updating cluster objects again")
+	s.updateClusterObjectsAgain()
+
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+		newNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
+		if err != nil {
+			return false, nil
+		}
+
+		return len(newNodeIDs) == 6, nil
+	})
+	s.Require().NoError(err)
+
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		veryNewNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
+		if err != nil {
+			return false, nil
+		}
+
+		return len(veryNewNodeIDs) == 3, nil
+	})
+	s.Require().NoError(err)
+
+	err = s.client.RESTClient().
+		Get().
+		AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines/docker-test-2").
+		Do(s.ctx).
+		Into(&obj)
+	s.Require().NoError(err)
+	s.Require().Equal("docker-test-cp-template-new-2", obj.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation])
 }
 
 func (s *CAPIDockerMachineChangeTemplate) applyClusterObjects() {
@@ -187,6 +221,12 @@ func (s *CAPIDockerMachineChangeTemplate) applyClusterObjects() {
 func (s *CAPIDockerMachineChangeTemplate) updateClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
+	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
+}
+
+func (s *CAPIDockerMachineChangeTemplate) updateClusterObjectsAgain() {
+	// Exec via kubectl
+	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsSecondUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
@@ -352,5 +392,45 @@ spec:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: DockerMachineTemplate
       name: docker-test-cp-template-new
+      namespace: default
+`
+
+var controlPlaneSecondUpdate = `
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-test-cp-template-new-2
+  namespace: default
+spec:
+  template:
+    spec:
+      customImage: kindest/node:v1.31.0
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: docker-test
+spec:
+  replicas: 3
+  version: v1.31.2+k0s.0
+  updateStrategy: Recreate
+  k0sConfigSpec:
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+        telemetry:
+          enabled: false
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerMachineTemplate
+      name: docker-test-cp-template-new-2
       namespace: default
 `

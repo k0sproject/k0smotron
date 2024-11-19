@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -33,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
@@ -123,10 +125,15 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	// Always patch the object to update the status
 	defer func() {
 		log.Info("Updating status")
+		existingStatus := kcp.Status.DeepCopy()
 		// Separate var for status update errors to avoid shadowing err
 		derr := c.updateStatus(ctx, kcp, cluster)
 		if derr != nil {
 			log.Error(derr, "Failed to update status")
+			return
+		}
+
+		if errors.Is(err, ErrNotReady) || reflect.DeepEqual(existingStatus, kcp.Status) {
 			return
 		}
 
@@ -171,7 +178,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, err
 	}
 
-	_, err = c.reconcile(ctx, cluster, kcp)
+	err = c.reconcile(ctx, cluster, kcp)
 	if err != nil {
 		if errors.Is(err, ErrNotReady) {
 			return ctrl.Result{RequeueAfter: 10, Requeue: true}, nil
@@ -242,119 +249,105 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 	return nil
 }
 
-func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (int32, error) {
+func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
 	var err error
 	kcp.Spec.K0sConfigSpec.K0s, err = enrichK0sConfigWithClusterData(cluster, kcp.Spec.K0sConfigSpec.K0s)
 	if err != nil {
-		return kcp.Status.Replicas, err
+		return err
 	}
 
 	err = c.reconcileKubeconfig(ctx, cluster, kcp)
 	if err != nil {
-		return kcp.Status.Replicas, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
+		return fmt.Errorf("error reconciling kubeconfig secret: %w", err)
 	}
 
-	replicasToReport, err := c.reconcileMachines(ctx, cluster, kcp)
+	err = c.reconcileMachines(ctx, cluster, kcp)
 	if err != nil {
-		return replicasToReport, err
+		return err
 	}
 
-	return replicasToReport, nil
+	return nil
 }
 
-func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (int32, error) {
-
+func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
 	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
-
-	replicasToReport := kcp.Spec.Replicas
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	if err != nil {
-		return replicasToReport, fmt.Errorf("error collecting machines: %w", err)
+		return fmt.Errorf("error collecting machines: %w", err)
 	}
 	if machines == nil {
-		return replicasToReport, fmt.Errorf("machines collection is nil")
-	}
-	logger.Info("Collected machines", "count", machines.Len())
-
-	currentReplicas := machines.Len()
-	desiredReplicas := kcp.Spec.Replicas
-	machinesToDelete := 0
-	if currentReplicas > int(desiredReplicas) {
-		machinesToDelete = currentReplicas - int(desiredReplicas)
-		replicasToReport = kcp.Status.Replicas
-	}
-
-	currentVersion, err := minVersion(machines)
-	if err != nil {
-		return replicasToReport, fmt.Errorf("error getting current cluster version from machines: %w", err)
-	}
-	log.Log.Info("Got current cluster version", "version", currentVersion)
-
-	var clusterIsUpdating bool
-	var oldMachines int
-	for _, m := range machines {
-		if m.Spec.Version == nil || !versionMatches(m, kcp.Spec.Version) {
-			oldMachines++
-		}
-	}
-
-	if oldMachines > 0 {
-		log.Log.Info("Cluster is updating", "currentVersion", currentVersion, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
-		clusterIsUpdating = true
-		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
-
-			// If the cluster is running in single mode, we can't use the Recreate strategy
-			if kcp.Spec.K0sConfigSpec.Args != nil {
-				for _, arg := range kcp.Spec.K0sConfigSpec.Args {
-					if arg == "--single" {
-						return replicasToReport, fmt.Errorf("UpdateRecreate strategy is not allowed when the cluster is running in single mode")
-					}
-				}
-			}
-
-			desiredReplicas += kcp.Spec.Replicas
-			machinesToDelete = oldMachines
-			replicasToReport = desiredReplicas
-			log.Log.Info("Calculated new replicas", "desiredReplicas", desiredReplicas, "machinesToDelete", machinesToDelete, "replicasToReport", replicasToReport, "currentReplicas", currentReplicas)
-		} else {
-			kubeClient, err := c.getKubeClient(ctx, cluster)
-			if err != nil {
-				return replicasToReport, fmt.Errorf("error getting cluster client set for machine update: %w", err)
-			}
-
-			err = c.createAutopilotPlan(ctx, kcp, cluster, kubeClient)
-			if err != nil {
-				return replicasToReport, fmt.Errorf("error creating autopilot plan: %w", err)
-			}
-		}
+		return fmt.Errorf("machines collection is nil")
 	}
 
 	infraMachines, err := c.getInfraMachines(ctx, machines)
 	if err != nil {
-		return replicasToReport, fmt.Errorf("error getting infra machines: %w", err)
+		return fmt.Errorf("error getting infra machines: %w", err)
 	}
 
-	machineNames := make(map[string]bool)
-	for _, m := range machines {
-		machineNames[m.Name] = true
-		if !matchesTemplateClonedFrom(infraMachines, kcp, m) {
-			desiredReplicas++
-			machinesToDelete++
+	currentVersion, err := minVersion(machines)
+	if err != nil {
+		return fmt.Errorf("error getting current cluster version from machines: %w", err)
+	}
+	log.Log.Info("Got current cluster version", "version", currentVersion)
+
+	machineNamesToDelete := make(map[string]bool)
+	desiredMachineNames := make(map[string]bool)
+
+	var clusterIsUpdating bool
+	for _, m := range machines.SortedByCreationTimestamp() {
+		if m.Spec.Version == nil || !versionMatches(m, kcp.Spec.Version) {
+			clusterIsUpdating = true
+			machineNamesToDelete[m.Name] = true
+		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) {
+			machineNamesToDelete[m.Name] = true
+		} else if machines.Len() > int(kcp.Spec.Replicas)+len(machineNamesToDelete) {
+			machineNamesToDelete[m.Name] = true
+		} else {
+			desiredMachineNames[m.Name] = true
 		}
 	}
+	log.Log.Info("Collected machines", "count", machines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachineNames)
 
-	if len(machineNames) < int(desiredReplicas) {
-		for i := len(machineNames); i < int(desiredReplicas); i++ {
-			name := machineName(kcp.Name, i)
-			machineNames[name] = false
-			if len(machineNames) == int(desiredReplicas) {
-				break
+	if clusterIsUpdating {
+		log.Log.Info("Cluster is updating", "currentVersion", currentVersion, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
+		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
+			// If the cluster is running in single mode, we can't use the Recreate strategy
+			if kcp.Spec.K0sConfigSpec.Args != nil {
+				for _, arg := range kcp.Spec.K0sConfigSpec.Args {
+					if arg == "--single" {
+						return fmt.Errorf("UpdateRecreate strategy is not allowed when the cluster is running in single mode")
+					}
+				}
+			}
+
+		} else {
+			kubeClient, err := c.getKubeClient(ctx, cluster)
+			if err != nil {
+				return fmt.Errorf("error getting cluster client set for machine update: %w", err)
+			}
+
+			err = c.createAutopilotPlan(ctx, kcp, cluster, kubeClient)
+			if err != nil {
+				return fmt.Errorf("error creating autopilot plan: %w", err)
 			}
 		}
 	}
 
-	for name, exists := range machineNames {
+	i := 0
+	for len(desiredMachineNames) < int(kcp.Spec.Replicas) {
+		name := machineName(kcp.Name, i)
+		log.Log.Info("desire machine", "name", len(desiredMachineNames))
+		_, ok := machineNamesToDelete[name]
+		if !ok {
+			_, exists := machines[name]
+			desiredMachineNames[name] = exists
+		}
+		i++
+	}
+	log.Log.Info("Desired machines", "count", len(desiredMachineNames))
+
+	for name, exists := range desiredMachineNames {
 		if !exists || kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
 
 			// Wait for the previous machine to be created to avoid etcd issues if cluster if updating
@@ -365,13 +358,13 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			if clusterIsUpdating || (machines.Len() == 1 && kcp.Spec.Replicas > 1) {
 				err := c.checkMachineIsReady(ctx, machines.Newest().Name, cluster)
 				if err != nil {
-					return int32(machines.Len()), err
+					return err
 				}
 			}
 
 			machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
 			if err != nil {
-				return replicasToReport, fmt.Errorf("error creating machine from template: %w", err)
+				return fmt.Errorf("error creating machine from template: %w", err)
 			}
 
 			infraRef := corev1.ObjectReference{
@@ -384,75 +377,86 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			selectedFailureDomain := failuredomains.PickFewest(cluster.Status.FailureDomains.FilterControlPlane(), machines)
 			machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
 			if err != nil {
-				return replicasToReport, fmt.Errorf("error creating machine: %w", err)
+				return fmt.Errorf("error creating machine: %w", err)
 			}
 			machines[machine.Name] = machine
 		}
 
 		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name])
 		if err != nil {
-			return replicasToReport, fmt.Errorf("error creating bootstrap config: %w", err)
+			return fmt.Errorf("error creating bootstrap config: %w", err)
 		}
 	}
 
-	for _, m := range machines {
-		if m.Spec.Version != nil && *m.Spec.Version != kcp.Spec.Version {
-			logger.Info("Machine version is different from K0sControlPlane version", "machine", m.Name, "machineVersion", *m.Spec.Version, "kcpVersion", kcp.Spec.Version)
-			continue
-		}
+	if len(machineNamesToDelete) > 0 {
+		for m := range machines {
+			if machineNamesToDelete[m] {
+				continue
+			}
 
-		if machinesToDelete > 0 {
-			err := c.checkMachineIsReady(ctx, m.Name, cluster)
+			err := c.checkMachineIsReady(ctx, m, cluster)
 			if err != nil {
-				return int32(machines.Len()), err
+				logger.Error(err, "Error checking machine left", "machine", m)
+				return err
 			}
 		}
 	}
 
-	if machinesToDelete > 0 {
-		logger.Info("Found machines to delete", "count", machinesToDelete)
+	if len(machineNamesToDelete) > 0 {
+		logger.Info("Found machines to delete", "count", len(machineNamesToDelete))
 		kubeClient, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
-			return replicasToReport, fmt.Errorf("error getting cluster client set for deletion: %w", err)
+			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
 		}
 
-		// Remove the last machine and report the new number of replicas to status
-		// On the next reconcile, the next machine will be removed
-		// Wait for the previous machine to be deleted to avoid etcd issues
-		machine := machines.Oldest()
+		// Remove the oldest machine abd wait for the machine to be deleted to avoid etcd issues
+		machine := machines.Filter(func(m *clusterv1.Machine) bool {
+			return machineNamesToDelete[m.Name]
+		}).Oldest()
 		logger.Info("Found oldest machine to delete", "machine", machine.Name)
 		if machine.Status.Phase == string(clusterv1.MachinePhaseDeleting) {
 			logger.Info("Machine is being deleted, waiting for it to be deleted", "machine", machine.Name)
-			return kcp.Status.Replicas, fmt.Errorf("waiting for previous machine to be deleted")
+			return fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		replicasToReport--
 		name := machine.Name
-		if err := c.markChildControlNodeToLeave(ctx, name, kubeClient); err != nil {
-			return replicasToReport, fmt.Errorf("error marking controlnode to leave: %w", err)
-		}
 
-		if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
-			return replicasToReport, fmt.Errorf("error deleting machine from template: %w", err)
-		}
+		waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+		defer cancel()
+		err = wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
+			if err := c.markChildControlNodeToLeave(fctx, name, kubeClient); err != nil {
+				return false, fmt.Errorf("error marking controlnode to leave: %w", err)
+			}
 
-		if err := c.deleteMachineFromTemplate(ctx, name, cluster, kcp); err != nil {
-			return replicasToReport, fmt.Errorf("error deleting machine from template: %w", err)
-		}
-
-		if err := c.deleteMachine(ctx, name, kcp); err != nil {
-			return replicasToReport, fmt.Errorf("error deleting machine from template: %w", err)
+			ok, err := c.checkMachineLeft(fctx, name, kubeClient)
+			if err != nil {
+				logger.Error(err, "Error checking machine left", "machine", name)
+			}
+			return ok, err
+		})
+		if err != nil {
+			return fmt.Errorf("error checking machine left: %w", err)
 		}
 
 		if err := c.deleteControlNode(ctx, name, kubeClient); err != nil {
-			return replicasToReport, fmt.Errorf("error deleting controlnode: %w", err)
+			return fmt.Errorf("error deleting controlnode: %w", err)
 		}
 
-		logger.Info("Deleted machine", "machine", name, "replicasToReport", replicasToReport)
-		return replicasToReport, nil
-	}
+		if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
+			return fmt.Errorf("error deleting machine from template: %w", err)
+		}
 
-	return replicasToReport, nil
+		if err := c.deleteMachineFromTemplate(ctx, name, cluster, kcp); err != nil {
+			return fmt.Errorf("error deleting machine from template: %w", err)
+		}
+
+		if err := c.deleteMachine(ctx, name, kcp); err != nil {
+			return fmt.Errorf("error deleting machine from template: %w", err)
+		}
+
+		logger.Info("Deleted machine", "machine", name)
+	}
+	return nil
 }
 
 func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
