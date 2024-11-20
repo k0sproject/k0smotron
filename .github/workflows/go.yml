@@ -104,6 +104,7 @@ jobs:
           - check-jointoken
           - check-monitoring
           - check-scaling-etcd
+          - check-upgrade
 
     steps:
       - name: Check out code into the Go module directory

@@ -22,9 +22,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -44,6 +47,8 @@ import (
 	"github.com/k0sproject/k0smotron/internal/exec"
 
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/inttest/util/watch"
+	"github.com/sirupsen/logrus"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -54,6 +59,20 @@ func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc 
 	}
 
 	return CreateFromYAML(ctx, kc, rc, os.Getenv("K0SMOTRON_INSTALL_YAML"))
+}
+
+func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
+	err := InstallLocalPathStorage(ctx, kc, rc)
+	if err != nil {
+		return err
+	}
+
+	installFileName, err := dowloadStableK0smotronOperator()
+	if err != nil {
+		return err
+	}
+
+	return CreateFromYAML(ctx, kc, rc, installFileName)
 }
 
 func InstallLocalPathStorage(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
@@ -77,6 +96,25 @@ func CreateFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Conf
 	}
 
 	return CreateResources(ctx, resources, kc, dc)
+}
+
+func ApplyFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, filename string) error {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	resources, err := ParseManifests(data)
+	if err != nil {
+		return err
+	}
+
+	dc, err := GetDynamicClient(rc)
+	if err != nil {
+		return err
+	}
+
+	return applyResources(ctx, resources, kc, dc)
 }
 
 func ParseManifests(data []byte) ([]*unstructured.Unstructured, error) {
@@ -148,6 +186,44 @@ func CreateResources(ctx context.Context, resources []*unstructured.Unstructured
 		})
 		if err != nil {
 			return fmt.Errorf("creating %s/%s objects error: %w", res.GroupVersionKind(), res.GetName(), err)
+		}
+	}
+	return nil
+}
+
+func applyResources(ctx context.Context, resources []*unstructured.Unstructured, kc *kubernetes.Clientset, client *dynamic.DynamicClient) error {
+	mapper := getMapper(kc)
+	for _, res := range resources {
+		err := retry.OnError(wait.Backoff{
+			Steps:    10,
+			Duration: 1 * time.Second,
+			Factor:   1.0,
+			Jitter:   0.1,
+		}, func(err error) bool {
+			return true
+		}, func() error {
+			mapping, err := mapper.RESTMapping(
+				res.GroupVersionKind().GroupKind(),
+				res.GroupVersionKind().Version)
+
+			if err != nil {
+				mapper.Reset()
+				return fmt.Errorf("getting mapping error: %w", err)
+			}
+
+			var drClient dynamic.ResourceInterface
+			if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
+				drClient = client.Resource(mapping.Resource).Namespace(res.GetNamespace())
+			} else {
+				drClient = client.Resource(mapping.Resource)
+			}
+
+			_, err = drClient.Apply(ctx, res.GetName(), res, metav1.ApplyOptions{Force: true, FieldManager: "application/apply-patch"})
+
+			return err
+		})
+		if err != nil {
+			return fmt.Errorf("applying %s/%s objects error: %w", res.GroupVersionKind(), res.GetName(), err)
 		}
 	}
 	return nil
@@ -268,4 +344,48 @@ func GetK0sControlPlane(ctx context.Context, kc *kubernetes.Clientset, name stri
 		Into(cp)
 
 	return cp, err
+}
+
+func WaitForRolloutCompleted(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) error {
+	newReplicaSetCreated := false
+	return watch.Deployments(kc.AppsV1().Deployments(namespace)).
+		WithObjectName(name).
+		WithErrorCallback(RetryWatchErrors(logrus.Infof)).
+		Until(ctx, func(deployment *appsv1.Deployment) (bool, error) {
+			if newReplicaSetCreated {
+				for _, c := range deployment.Status.Conditions {
+					if c.Type == appsv1.DeploymentProgressing {
+						newReplicaSetCreated = true
+						break
+					}
+				}
+			}
+
+			allReplicasAvailable := deployment.Status.UnavailableReplicas == 0
+			rolloutApplied := deployment.Status.ObservedGeneration >= deployment.Generation
+
+			return allReplicasAvailable && rolloutApplied, nil
+		})
+}
+
+func dowloadStableK0smotronOperator() (string, error) {
+	url := "https://docs.k0smotron.io/stable/install.yaml"
+
+	response, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to download k0smotron install file: %v", err)
+	}
+	defer response.Body.Close()
+
+	installFile, err := os.Create(filepath.Join(os.TempDir(), "install.yaml"))
+	if err != nil {
+		return "", fmt.Errorf("failed to create k0smotron install file: %v", err)
+	}
+	defer installFile.Close()
+
+	_, err = io.Copy(installFile, response.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to save k0smotron install file: %v", err)
+	}
+	return installFile.Name(), nil
 }
