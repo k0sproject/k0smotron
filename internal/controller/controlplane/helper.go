@@ -344,6 +344,28 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 		return nil
 	}
 
+	var existingPlan unstructured.Unstructured
+	err := clientset.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/plans/autopilot").Do(ctx).Into(&existingPlan)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("error getting autopilot plan: %w", err)
+	}
+
+	state, found, err := unstructured.NestedString(existingPlan.Object, "status", "state")
+	if err != nil {
+		return fmt.Errorf("error getting autopilot plan's state: %w", err)
+	}
+	if found {
+		if state == "Schedulable" || state == "SchedulableWait" {
+			// autopilot is already running
+			return nil
+		}
+	}
+
+	err = clientset.RESTClient().Delete().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/plans/autopilot").Do(ctx).Error()
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("error deleting autopilot plan: %w", err)
+	}
+
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	if err != nil {
 		return fmt.Errorf("error getting control plane machines: %w", err)
@@ -409,14 +431,18 @@ func minVersion(machines collections.Machines) (string, error) {
 	if machines == nil || machines.Len() == 0 {
 		return "", nil
 	}
+
 	versions := make([]*version.Version, 0, len(machines))
 	for _, m := range machines {
 		v, err := version.NewVersion(*m.Spec.Version)
 		if err != nil {
 			return "", fmt.Errorf("failed to parse version %s: %w", *m.Spec.Version, err)
 		}
+
 		versions = append(versions, v)
 	}
+
 	sort.Sort(version.Collection(versions))
+
 	return versions[0].String(), nil
 }

@@ -298,9 +298,13 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	var clusterIsUpdating bool
 	for _, m := range machines.SortedByCreationTimestamp() {
-		if m.Spec.Version == nil || !versionMatches(m, kcp.Spec.Version) {
+		if m.Spec.Version == nil || (!versionMatches(m, kcp.Spec.Version)) {
 			clusterIsUpdating = true
-			machineNamesToDelete[m.Name] = true
+			if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
+				desiredMachineNames[m.Name] = true
+			} else {
+				machineNamesToDelete[m.Name] = true
+			}
 		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) {
 			machineNamesToDelete[m.Name] = true
 		} else if machines.Len() > int(kcp.Spec.Replicas)+len(machineNamesToDelete) {
@@ -322,7 +326,6 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 					}
 				}
 			}
-
 		} else {
 			kubeClient, err := c.getKubeClient(ctx, cluster)
 			if err != nil {
