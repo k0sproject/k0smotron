@@ -120,7 +120,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if ready {
-		remoteClient, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, util.ObjectKey(cluster))
+		remoteClient, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
 		if err != nil {
 			return res, fmt.Errorf("failed to create remote client: %w", err)
 		}
