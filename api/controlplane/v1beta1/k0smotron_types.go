@@ -50,8 +50,9 @@ type K0smotronControlPlaneList struct {
 
 type K0smotronControlPlaneStatus struct {
 	// Ready denotes that the control plane is ready
-	Ready                       bool `json:"ready"`
-	ControlPlaneReady           bool `json:"controlPlaneReady"`
-	Inititalized                bool `json:"initialized"`
-	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
+	Ready                       bool   `json:"ready"`
+	ControlPlaneReady           bool   `json:"controlPlaneReady"`
+	Inititalized                bool   `json:"initialized"`
+	ExternalManagedControlPlane bool   `json:"externalManagedControlPlane"`
+	Version                     string `json:"version"`
 }

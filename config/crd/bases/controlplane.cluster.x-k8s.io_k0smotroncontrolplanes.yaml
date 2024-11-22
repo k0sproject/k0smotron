@@ -3976,11 +3976,14 @@ spec:
               ready:
                 description: Ready denotes that the control plane is ready
                 type: boolean
+              version:
+                type: string
             required:
             - controlPlaneReady
             - externalManagedControlPlane
             - initialized
             - ready
+            - version
             type: object
         type: object
     served: true

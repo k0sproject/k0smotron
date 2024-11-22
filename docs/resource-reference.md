@@ -11001,6 +11001,13 @@ will pick it automatically.<br/>
           Ready denotes that the control plane is ready<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
