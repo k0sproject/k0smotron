@@ -180,7 +180,7 @@ type ServiceSpec struct {
 	Labels map[string]string `json:"labels,omitempty"`
 	// LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.
 	//+kubebuilder:validation:Optional
-	LoadBalancerClass string `json:"loadBalancerClass,omitempty"`
+	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
 }
 
 //+kubebuilder:object:root=true

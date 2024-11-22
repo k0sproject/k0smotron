@@ -123,6 +123,10 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 		},
 	}
 
+	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer {
+		svc.Spec.LoadBalancerClass = kmc.Spec.Service.LoadBalancerClass
+	}
+
 	return svc
 }
 
