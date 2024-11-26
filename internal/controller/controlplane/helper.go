@@ -1,3 +1,19 @@
+/*
+Copyright 2023.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package controlplane
 
 import (
@@ -16,12 +32,17 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util/collections"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+)
+
+const (
+	etcdMemberConditionTypeJoined = "Joined"
 )
 
 func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
@@ -98,6 +119,21 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 
 	return machine, nil
+}
+
+func (c *K0sController) getInfraMachines(ctx context.Context, machines collections.Machines) (map[string]*unstructured.Unstructured, error) {
+	result := map[string]*unstructured.Unstructured{}
+	for _, m := range machines {
+		infraMachine, err := external.Get(ctx, c.Client, &m.Spec.InfrastructureRef, m.Namespace)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				continue
+			}
+			return nil, fmt.Errorf("failed to retrieve infra machine for machine object %s: %w", m.Name, err)
+		}
+		result[m.Name] = infraMachine
+	}
+	return result, nil
 }
 
 func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
@@ -211,15 +247,62 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	return machine, nil
 }
 
+func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
+	if machine == nil {
+		return false
+	}
+	infraMachine, found := infraMachines[machine.Name]
+	if !found {
+		return false
+	}
+
+	clonedFromName := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation]
+	clonedFromGroupKind := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation]
+
+	return clonedFromName == kcp.Spec.MachineTemplate.InfrastructureRef.Name &&
+		clonedFromGroupKind == kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
+}
+
+func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clientset *kubernetes.Clientset) (bool, error) {
+	var etcdMember unstructured.Unstructured
+	err := clientset.RESTClient().
+		Get().
+		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
+		Do(ctx).
+		Into(&etcdMember)
+
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return true, nil
+		}
+		return false, fmt.Errorf("error getting etcd member: %w", err)
+	}
+
+	conditions, _, err := unstructured.NestedSlice(etcdMember.Object, "status", "conditions")
+	if err != nil {
+		return false, fmt.Errorf("error getting etcd member conditions: %w", err)
+	}
+
+	for _, condition := range conditions {
+		conditionMap := condition.(map[string]interface{})
+		if conditionMap["type"] == etcdMemberConditionTypeJoined && conditionMap["status"] == "False" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name string, clientset *kubernetes.Clientset) error {
 	if clientset == nil {
 		return nil
 	}
+
 	logger := log.FromContext(ctx).WithValues("controlNode", name)
+
 	err := clientset.RESTClient().
 		Patch(types.MergePatchType).
 		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
-		Body([]byte(`{"spec":{"leave":true}}`)).
+		Body([]byte(`{"spec":{"leave":true}, "metadata": {"annotations": {"k0smotron.io/marked-to-leave-at": "` + time.Now().String() + `"}}}`)).
 		Do(ctx).
 		Error()
 	if err != nil {
