@@ -19,8 +19,9 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
-	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"time"
+
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -86,7 +87,14 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 			})
 	}
 
-	labels := labelsForCluster(kmc)
+	// Copy both Cluster level labels and Service labels
+	labels := map[string]string{}
+	for k, v := range labelsForCluster(kmc) {
+		labels[k] = v
+	}
+	for k, v := range kmc.Spec.Service.Labels {
+		labels[k] = v
+	}
 
 	// Copy both Cluster level annotations and Service annotations
 	annotations := map[string]string{}
@@ -113,6 +121,10 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 			Selector: labels,
 			Ports:    ports,
 		},
+	}
+
+	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer {
+		svc.Spec.LoadBalancerClass = kmc.Spec.Service.LoadBalancerClass
 	}
 
 	return svc

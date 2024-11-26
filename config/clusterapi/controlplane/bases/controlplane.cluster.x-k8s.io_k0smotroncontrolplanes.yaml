@@ -3942,6 +3942,15 @@ spec:
                       KonnectivityPort defines the konnectivity port. If empty k0smotron
                       will pick it automatically.
                     type: integer
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels defines extra labels to be added to the service.
+                    type: object
+                  loadBalancerClass:
+                    description: LoadBalancerClass defines the load balancer class
+                      to be used for the service. Used only when service type is LoadBalancer.
+                    type: string
                   type:
                     default: ClusterIP
                     description: Service Type string describes ingress methods for

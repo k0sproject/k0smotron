@@ -175,6 +175,12 @@ type ServiceSpec struct {
 	// Annotations defines extra annotations to be added to the service.
 	//+kubebuilder:validation:Optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+	// Labels defines extra labels to be added to the service.
+	//+kubebuilder:validation:Optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.
+	//+kubebuilder:validation:Optional
+	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
 }
 
 //+kubebuilder:object:root=true

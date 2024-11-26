@@ -10949,6 +10949,20 @@ will pick it automatically.<br/>
             <i>Default</i>: 30132<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels defines extra labels to be added to the service.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>loadBalancerClass</b></td>
+        <td>string</td>
+        <td>
+          LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -19375,6 +19389,20 @@ will pick it automatically.<br/>
 will pick it automatically.<br/>
           <br/>
             <i>Default</i>: 30132<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels defines extra labels to be added to the service.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>loadBalancerClass</b></td>
+        <td>string</td>
+        <td>
+          LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -43711,6 +43739,20 @@ will pick it automatically.<br/>
 will pick it automatically.<br/>
           <br/>
             <i>Default</i>: 30132<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels defines extra labels to be added to the service.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>loadBalancerClass</b></td>
+        <td>string</td>
+        <td>
+          LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
