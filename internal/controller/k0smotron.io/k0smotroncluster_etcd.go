@@ -20,9 +20,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	batchv1 "k8s.io/api/batch/v1"
 	"strings"
 	"text/template"
+
+	batchv1 "k8s.io/api/batch/v1"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 
@@ -265,7 +266,8 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 			PodManagementPolicy: apps.ParallelPodManagement,
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+					Labels:      labels,
+					Annotations: annotationsForCluster(kmc),
 				},
 				Spec: v1.PodSpec{
 					AutomountServiceAccountToken: ptr.To(false),
