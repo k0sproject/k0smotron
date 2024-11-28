@@ -294,6 +294,9 @@ spec:
   version: v1.31.2+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
+    postStartCommands:
+    - sed -i 's/RestartSec=120/RestartSec=1/' /etc/systemd/system/k0scontroller.service
+    - systemctl daemon-reload
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig
