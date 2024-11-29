@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"reflect"
 	"strings"
 	"time"
@@ -809,6 +811,14 @@ func machineName(base string, i int) string {
 
 // SetupWithManager sets up the controller with the Manager.
 func (c *K0sController) SetupWithManager(mgr ctrl.Manager) error {
+	// Check if the cluster.x-k8s.io API is available and if not, don't try to watch for Machine objects
+	_, err := c.RESTMapper().KindsFor(schema.GroupVersionResource{Group: "cluster.x-k8s.io", Version: "v1beta1"})
+	if errors.Is(err, &meta.NoResourceMatchError{}) {
+		return ctrl.NewControllerManagedBy(mgr).
+			For(&cpv1beta1.K0sControlPlane{}).
+			Complete(c)
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cpv1beta1.K0sControlPlane{}).
 		Owns(&clusterv1.Machine{}).
