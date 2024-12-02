@@ -34,3 +34,5 @@ var (
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
+
+const K0sClusterIDAnnotation = "k0sproject.io/cluster-id"

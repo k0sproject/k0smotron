@@ -19,8 +19,10 @@ package capicontolplanedocker
 import (
 	"context"
 	"fmt"
+	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"os"
 	"os/exec"
+	"sigs.k8s.io/cluster-api/api/v1beta1"
 	"strconv"
 	"strings"
 	"testing"
@@ -102,14 +104,26 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
 			DoRaw(context.Background())
 
 		return string(b) == "ok", nil
+	})
+	s.Require().NoError(err)
+
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		var cluster v1beta1.Cluster
+		err = s.client.RESTClient().
+			Get().
+			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/clusters/docker-test-cluster").
+			Do(ctx).
+			Into(&cluster)
+
+		clusterIDAnnotation, found := cluster.GetAnnotations()[controlplanev1beta1.K0sClusterIDAnnotation]
+		return found && strings.Contains(clusterIDAnnotation, "kube-system"), nil
 	})
 	s.Require().NoError(err)
 
