@@ -20,11 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"reflect"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -376,7 +377,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				Namespace:  kcp.Namespace,
 			}
 
-			selectedFailureDomain := failuredomains.PickFewest(cluster.Status.FailureDomains.FilterControlPlane(), machines)
+			selectedFailureDomain := failuredomains.PickFewest(ctx, cluster.Status.FailureDomains.FilterControlPlane(), machines)
 			machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
 			if err != nil {
 				return fmt.Errorf("error creating machine: %w", err)
