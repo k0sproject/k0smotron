@@ -151,11 +151,18 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		}
 		log.Info("Status updated successfully")
 
+		if kcp.Status.ControlPlaneReady {
+			if perr := c.Client.Patch(ctx, cluster, client.Merge); perr != nil {
+				err = fmt.Errorf("failed to patch cluster: %w", perr)
+			}
+		}
+
 		// Requeue the reconciliation if the status is not ready
 		if !kcp.Status.Ready {
 			log.Info("Requeuing reconciliation in 20sec since the control plane is not ready")
 			res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
 		}
+
 	}()
 
 	log = log.WithValues("cluster", cluster.Name)

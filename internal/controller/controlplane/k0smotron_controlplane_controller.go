@@ -22,11 +22,13 @@ import (
 	"reflect"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/cluster-api/controllers/remote"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,6 +117,29 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		err = c.waitExternalAddress(ctx, cluster, kcp)
 		if err != nil {
 			return res, err
+		}
+	}
+
+	if ready {
+		remoteClient, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, util.ObjectKey(cluster))
+		if err != nil {
+			return res, fmt.Errorf("failed to create remote client: %w", err)
+		}
+
+		ns := &corev1.Namespace{}
+		err = remoteClient.Get(ctx, types.NamespacedName{Name: "kube-system", Namespace: ""}, ns)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
+			}
+			return res, fmt.Errorf("failed to get namespace: %w", err)
+		}
+
+		annotations.AddAnnotations(cluster, map[string]string{
+			cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
+		})
+		if err := c.Client.Patch(ctx, cluster, client.Merge); err != nil {
+			return res, fmt.Errorf("failed to patch cluster: %w", err)
 		}
 	}
 

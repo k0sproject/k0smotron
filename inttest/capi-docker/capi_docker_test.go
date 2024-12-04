@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sigs.k8s.io/cluster-api/api/v1beta1"
 	"strings"
 	"testing"
 	"time"
@@ -100,6 +101,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().NoError(util.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test", "default"))
 
 	s.checkControlPlaneStatus(s.ctx, s.restConfig)
+	s.checkClusterIDAnnotation(s.ctx)
 
 	s.T().Log("Starting portforward")
 	fw, err := util.GetPortForwarder(s.restConfig, "kmc-docker-test-0", "default", 30443)
@@ -122,7 +124,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))
 	node, err := kmcKC.CoreV1().Nodes().Get(s.ctx, "docker-test-0", metav1.GetOptions{})
 	s.Require().NoError(err)
-	s.Require().Equal("v1.27.1+k0s", node.Status.NodeInfo.KubeletVersion)
+	s.Require().Equal("v1.31.1+k0s", node.Status.NodeInfo.KubeletVersion)
 	fooLabel, ok := node.Labels["k0sproject.io/foo"]
 	s.Require().True(ok)
 	s.Require().Equal("bar", fooLabel)
@@ -141,6 +143,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	extraFile, err := getDockerNodeFile("docker-test-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
+
 }
 
 func (s *CAPIDockerSuite) prepareCerts() {
@@ -183,8 +186,7 @@ func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.
 	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		var kcp controlplanev1beta1.K0smotronControlPlane
 		err = crdRestClient.
 			Get().
@@ -195,6 +197,23 @@ func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.
 			Into(&kcp)
 
 		return kcp.Status.Ready, nil
+	})
+
+	s.Require().NoError(err)
+}
+
+func (s *CAPIDockerSuite) checkClusterIDAnnotation(ctx context.Context) {
+	err := wait.PollUntilContextCancel(ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		var cluster v1beta1.Cluster
+		_ = s.client.RESTClient().
+			Get().
+			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/clusters/docker-test").
+			Do(ctx).
+			Into(&cluster)
+
+		s.T().Log(cluster)
+		clusterIDAnnotation, found := cluster.GetAnnotations()[controlplanev1beta1.K0sClusterIDAnnotation]
+		return found && strings.Contains(clusterIDAnnotation, "kube-system"), nil
 	})
 
 	s.Require().NoError(err)
@@ -238,7 +257,7 @@ kind: K0smotronControlPlane
 metadata:
   name: docker-test-cp
 spec:
-  version: v1.27.2-k0s.0
+  version: v1.31.2-k0s.0
   certificateRefs:
     - name: docker-test-ca
       type: ca
@@ -279,7 +298,7 @@ metadata:
   name:  docker-test-0
   namespace: default
 spec:
-  version: v1.27.1
+  version: v1.31.1
   clusterName: docker-test
   bootstrap:
     configRef:
@@ -298,7 +317,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.27.1+k0s.0
+  version: v1.31.1+k0s.0
   args:
     - --labels=k0sproject.io/foo=bar
   preStartCommands:
