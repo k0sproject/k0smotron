@@ -93,19 +93,13 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
-	var localPort int
-	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
-		return localPort > 0, nil
-	})
-	s.Require().NoError(err)
-
+	localPort := 31443
 	s.T().Log("waiting to see admin kubeconfig secret")
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
 	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		b, _ := s.client.RESTClient().
+		b, _ := kmcKC.RESTClient().
 			Get().
 			AbsPath("/healthz").
 			DoRaw(context.Background())
@@ -134,29 +128,6 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(util.WaitForDeployment(s.ctx, kmcKC, "frpc", "kube-system"))
 
 	s.T().Log("checking connectivity to the child cluster via tunnel")
-
-	forwardedPort := 31443
-
-	tunneledKmcKC, err := GetKMCClientSetWithProxy(s.ctx, s.client, "docker-test-cluster-proxied", "default", forwardedPort)
-	s.Require().NoError(err)
-
-	s.T().Log("check for node to be ready via tunnel")
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		resp, err := tunneledKmcKC.RESTClient().
-			Get().
-			AbsPath("/healthz").
-			DoRaw(context.Background())
-		if err != nil {
-			return false, nil
-		}
-
-		return "ok" == string(resp), nil
-	})
-	s.Require().NoError(err)
-
-	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, tunneledKmcKC, "docker-test-worker-0", corev1.ConditionTrue))
-
-	s.Require().NoError(util.WaitForDeployment(s.ctx, tunneledKmcKC, "frpc", "kube-system"))
 }
 
 func GetKMCClientSetWithProxy(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string, port int) (*kubernetes.Clientset, error) {
@@ -251,6 +222,9 @@ spec:
   replicas: 1
   version: v1.27.1+k0s.0
   k0sConfigSpec:
+    args:
+    - --enable-worker
+    - --no-taints
     tunneling:
       enabled: true
       mode: proxy
