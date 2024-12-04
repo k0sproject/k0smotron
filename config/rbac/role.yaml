@@ -424,6 +424,58 @@ rules:
   - patch
   - update
 - apiGroups:
+  - k0smotron.io.k0smotron.io
+  resources:
+  - clusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - k0smotron.io.k0smotron.io
+  resources:
+  - clusters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - k0smotron.io.k0smotron.io
+  resources:
+  - clusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - k0smotron.io.k0smotron.io
+  resources:
+  - jointokenrequests
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - k0smotron.io.k0smotron.io
+  resources:
+  - jointokenrequests/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - k0smotron.io.k0smotron.io
+  resources:
+  - jointokenrequests/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - storage.k8s.io
   resources:
   - storageclasses
