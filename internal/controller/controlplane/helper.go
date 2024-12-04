@@ -82,7 +82,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 
 	labels := map[string]string{
 		"cluster.x-k8s.io/cluster-name":         kcp.Name,
-		"cluster.x-k8s.io/control-plane":        "true",
+		"cluster.x-k8s.io/control-plane":        "",
 		"cluster.x-k8s.io/generateMachine-role": "control-plane",
 	}
 
@@ -356,7 +356,15 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 	}
 	if found {
 		if state == "Schedulable" || state == "SchedulableWait" {
-			// autopilot is already running
+			version, found, err := unstructured.NestedString(existingPlan.Object, "spec", "commands", "0", "k0supdate", "version")
+			if err != nil || !found {
+				return fmt.Errorf("error getting current autopilot plan's version: %w", err)
+			}
+
+			if version != kcp.Spec.Version {
+				return fmt.Errorf("previous autopilot is not finished: %w", ErrNotReady)
+			}
+
 			return nil
 		}
 	}

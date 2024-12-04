@@ -308,6 +308,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 path:
                                   description: 'path is Optional: Used as the mounted
                                     root, rather than the full Ceph tree, default
@@ -330,10 +331,15 @@ spec:
                                     More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -369,10 +375,15 @@ spec:
                                     to OpenStack.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -437,11 +448,17 @@ spec:
                                     - path
                                     type: object
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 name:
+                                  default: ""
                                   description: |-
                                     Name of the referent.
-                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
                                     TODO: Add other useful fields. apiVersion, kind, uid?
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                   type: string
                                 optional:
                                   description: optional specify whether the ConfigMap
@@ -474,10 +491,15 @@ spec:
                                     secret object contains more than one secret, all secret references are passed.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -522,8 +544,8 @@ spec:
                                     properties:
                                       fieldRef:
                                         description: 'Required: Selects a field of
-                                          the pod: only annotations, labels, name
-                                          and namespace are supported.'
+                                          the pod: only annotations, labels, name,
+                                          namespace and uid are supported.'
                                         properties:
                                           apiVersion:
                                             description: Version of the schema the
@@ -584,6 +606,7 @@ spec:
                                     - path
                                     type: object
                                   type: array
+                                  x-kubernetes-list-type: atomic
                               type: object
                             emptyDir:
                               description: |-
@@ -706,6 +729,7 @@ spec:
                                           items:
                                             type: string
                                           type: array
+                                          x-kubernetes-list-type: atomic
                                         dataSource:
                                           description: |-
                                             dataSource field can be used to specify either:
@@ -794,34 +818,6 @@ spec:
                                             status field of the claim.
                                             More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
                                           properties:
-                                            claims:
-                                              description: |-
-                                                Claims lists the names of resources, defined in spec.resourceClaims,
-                                                that are used by this container.
-
-
-                                                This is an alpha field and requires enabling the
-                                                DynamicResourceAllocation feature gate.
-
-
-                                                This field is immutable. It can only be set for containers.
-                                              items:
-                                                description: ResourceClaim references
-                                                  one entry in PodSpec.ResourceClaims.
-                                                properties:
-                                                  name:
-                                                    description: |-
-                                                      Name must match the name of one entry in pod.spec.resourceClaims of
-                                                      the Pod where this field is used. It makes that resource available
-                                                      inside a container.
-                                                    type: string
-                                                required:
-                                                - name
-                                                type: object
-                                              type: array
-                                              x-kubernetes-list-map-keys:
-                                              - name
-                                              x-kubernetes-list-type: map
                                             limits:
                                               additionalProperties:
                                                 anyOf:
@@ -879,11 +875,13 @@ spec:
                                                     items:
                                                       type: string
                                                     type: array
+                                                    x-kubernetes-list-type: atomic
                                                 required:
                                                 - key
                                                 - operator
                                                 type: object
                                               type: array
+                                              x-kubernetes-list-type: atomic
                                             matchLabels:
                                               additionalProperties:
                                                 type: string
@@ -898,6 +896,21 @@ spec:
                                           description: |-
                                             storageClassName is the name of the StorageClass required by the claim.
                                             More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
+                                          type: string
+                                        volumeAttributesClassName:
+                                          description: |-
+                                            volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+                                            If specified, the CSI driver will create or update the volume with the attributes defined
+                                            in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+                                            it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+                                            will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+                                            If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+                                            will be set by the persistentvolume controller if it exists.
+                                            If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+                                            set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+                                            exists.
+                                            More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+                                            (Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.
                                           type: string
                                         volumeMode:
                                           description: |-
@@ -940,6 +953,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 wwids:
                                   description: |-
                                     wwids Optional: FC volume world wide identifiers (wwids)
@@ -947,6 +961,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                               type: object
                             flexVolume:
                               description: |-
@@ -983,10 +998,15 @@ spec:
                                     scripts.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -1167,6 +1187,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 readOnly:
                                   description: |-
                                     readOnly here will force the ReadOnly setting in VolumeMounts.
@@ -1177,10 +1198,15 @@ spec:
                                     target and initiator authentication
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -1304,6 +1330,103 @@ spec:
                                     description: Projection that may be projected
                                       along with other supported volume types
                                     properties:
+                                      clusterTrustBundle:
+                                        description: |-
+                                          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+                                          of ClusterTrustBundle objects in an auto-updating file.
+
+
+                                          Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+                                          ClusterTrustBundle objects can either be selected by name, or by the
+                                          combination of signer name and a label selector.
+
+
+                                          Kubelet performs aggressive normalization of the PEM contents written
+                                          into the pod filesystem.  Esoteric PEM features such as inter-block
+                                          comments and block headers are stripped.  Certificates are deduplicated.
+                                          The ordering of certificates within the file is arbitrary, and Kubelet
+                                          may change the order over time.
+                                        properties:
+                                          labelSelector:
+                                            description: |-
+                                              Select all ClusterTrustBundles that match this label selector.  Only has
+                                              effect if signerName is set.  Mutually-exclusive with name.  If unset,
+                                              interpreted as "match nothing".  If set but empty, interpreted as "match
+                                              everything".
+                                            properties:
+                                              matchExpressions:
+                                                description: matchExpressions is a
+                                                  list of label selector requirements.
+                                                  The requirements are ANDed.
+                                                items:
+                                                  description: |-
+                                                    A label selector requirement is a selector that contains values, a key, and an operator that
+                                                    relates the key and values.
+                                                  properties:
+                                                    key:
+                                                      description: key is the label
+                                                        key that the selector applies
+                                                        to.
+                                                      type: string
+                                                    operator:
+                                                      description: |-
+                                                        operator represents a key's relationship to a set of values.
+                                                        Valid operators are In, NotIn, Exists and DoesNotExist.
+                                                      type: string
+                                                    values:
+                                                      description: |-
+                                                        values is an array of string values. If the operator is In or NotIn,
+                                                        the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                                        the values array must be empty. This array is replaced during a strategic
+                                                        merge patch.
+                                                      items:
+                                                        type: string
+                                                      type: array
+                                                      x-kubernetes-list-type: atomic
+                                                  required:
+                                                  - key
+                                                  - operator
+                                                  type: object
+                                                type: array
+                                                x-kubernetes-list-type: atomic
+                                              matchLabels:
+                                                additionalProperties:
+                                                  type: string
+                                                description: |-
+                                                  matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                                  map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                                  operator is "In", and the values array contains only "value". The requirements are ANDed.
+                                                type: object
+                                            type: object
+                                            x-kubernetes-map-type: atomic
+                                          name:
+                                            description: |-
+                                              Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+                                              with signerName and labelSelector.
+                                            type: string
+                                          optional:
+                                            description: |-
+                                              If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+                                              aren't available.  If using name, then the named ClusterTrustBundle is
+                                              allowed not to exist.  If using signerName, then the combination of
+                                              signerName and labelSelector is allowed to match zero
+                                              ClusterTrustBundles.
+                                            type: boolean
+                                          path:
+                                            description: Relative path from the volume
+                                              root to write the bundle.
+                                            type: string
+                                          signerName:
+                                            description: |-
+                                              Select all ClusterTrustBundles that match this signer name.
+                                              Mutually-exclusive with name.  The contents of all selected
+                                              ClusterTrustBundles will be unified and deduplicated.
+                                            type: string
+                                        required:
+                                        - path
+                                        type: object
                                       configMap:
                                         description: configMap information about the
                                           configMap data to project
@@ -1346,11 +1469,17 @@ spec:
                                               - path
                                               type: object
                                             type: array
+                                            x-kubernetes-list-type: atomic
                                           name:
+                                            default: ""
                                             description: |-
                                               Name of the referent.
-                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
                                               TODO: Add other useful fields. apiVersion, kind, uid?
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                             type: string
                                           optional:
                                             description: optional specify whether
@@ -1373,8 +1502,8 @@ spec:
                                                 fieldRef:
                                                   description: 'Required: Selects
                                                     a field of the pod: only annotations,
-                                                    labels, name and namespace are
-                                                    supported.'
+                                                    labels, name, namespace and uid
+                                                    are supported.'
                                                   properties:
                                                     apiVersion:
                                                       description: Version of the
@@ -1440,6 +1569,7 @@ spec:
                                               - path
                                               type: object
                                             type: array
+                                            x-kubernetes-list-type: atomic
                                         type: object
                                       secret:
                                         description: secret information about the
@@ -1483,11 +1613,17 @@ spec:
                                               - path
                                               type: object
                                             type: array
+                                            x-kubernetes-list-type: atomic
                                           name:
+                                            default: ""
                                             description: |-
                                               Name of the referent.
-                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
                                               TODO: Add other useful fields. apiVersion, kind, uid?
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                             type: string
                                           optional:
                                             description: optional field specify whether
@@ -1526,6 +1662,7 @@ spec:
                                         type: object
                                     type: object
                                   type: array
+                                  x-kubernetes-list-type: atomic
                               type: object
                             quobyte:
                               description: quobyte represents a Quobyte mount on the
@@ -1596,6 +1733,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 pool:
                                   description: |-
                                     pool is the rados pool name.
@@ -1616,10 +1754,15 @@ spec:
                                     More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -1663,10 +1806,15 @@ spec:
                                     sensitive information. If this is not provided, Login operation will fail.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -1751,6 +1899,7 @@ spec:
                                     - path
                                     type: object
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 optional:
                                   description: optional field specify whether the
                                     Secret or its keys must be defined
@@ -1782,10 +1931,15 @@ spec:
                                     credentials.  If not specified, default values will be attempted.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -1970,6 +2124,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 path:
                                   description: 'path is Optional: Used as the mounted
                                     root, rather than the full Ceph tree, default
@@ -1992,10 +2147,15 @@ spec:
                                     More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -2031,10 +2191,15 @@ spec:
                                     to OpenStack.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -2099,11 +2264,17 @@ spec:
                                     - path
                                     type: object
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 name:
+                                  default: ""
                                   description: |-
                                     Name of the referent.
-                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
                                     TODO: Add other useful fields. apiVersion, kind, uid?
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                   type: string
                                 optional:
                                   description: optional specify whether the ConfigMap
@@ -2136,10 +2307,15 @@ spec:
                                     secret object contains more than one secret, all secret references are passed.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -2184,8 +2360,8 @@ spec:
                                     properties:
                                       fieldRef:
                                         description: 'Required: Selects a field of
-                                          the pod: only annotations, labels, name
-                                          and namespace are supported.'
+                                          the pod: only annotations, labels, name,
+                                          namespace and uid are supported.'
                                         properties:
                                           apiVersion:
                                             description: Version of the schema the
@@ -2246,6 +2422,7 @@ spec:
                                     - path
                                     type: object
                                   type: array
+                                  x-kubernetes-list-type: atomic
                               type: object
                             emptyDir:
                               description: |-
@@ -2368,6 +2545,7 @@ spec:
                                           items:
                                             type: string
                                           type: array
+                                          x-kubernetes-list-type: atomic
                                         dataSource:
                                           description: |-
                                             dataSource field can be used to specify either:
@@ -2456,34 +2634,6 @@ spec:
                                             status field of the claim.
                                             More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
                                           properties:
-                                            claims:
-                                              description: |-
-                                                Claims lists the names of resources, defined in spec.resourceClaims,
-                                                that are used by this container.
-
-
-                                                This is an alpha field and requires enabling the
-                                                DynamicResourceAllocation feature gate.
-
-
-                                                This field is immutable. It can only be set for containers.
-                                              items:
-                                                description: ResourceClaim references
-                                                  one entry in PodSpec.ResourceClaims.
-                                                properties:
-                                                  name:
-                                                    description: |-
-                                                      Name must match the name of one entry in pod.spec.resourceClaims of
-                                                      the Pod where this field is used. It makes that resource available
-                                                      inside a container.
-                                                    type: string
-                                                required:
-                                                - name
-                                                type: object
-                                              type: array
-                                              x-kubernetes-list-map-keys:
-                                              - name
-                                              x-kubernetes-list-type: map
                                             limits:
                                               additionalProperties:
                                                 anyOf:
@@ -2541,11 +2691,13 @@ spec:
                                                     items:
                                                       type: string
                                                     type: array
+                                                    x-kubernetes-list-type: atomic
                                                 required:
                                                 - key
                                                 - operator
                                                 type: object
                                               type: array
+                                              x-kubernetes-list-type: atomic
                                             matchLabels:
                                               additionalProperties:
                                                 type: string
@@ -2560,6 +2712,21 @@ spec:
                                           description: |-
                                             storageClassName is the name of the StorageClass required by the claim.
                                             More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
+                                          type: string
+                                        volumeAttributesClassName:
+                                          description: |-
+                                            volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+                                            If specified, the CSI driver will create or update the volume with the attributes defined
+                                            in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+                                            it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+                                            will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+                                            If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+                                            will be set by the persistentvolume controller if it exists.
+                                            If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+                                            set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+                                            exists.
+                                            More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+                                            (Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.
                                           type: string
                                         volumeMode:
                                           description: |-
@@ -2602,6 +2769,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 wwids:
                                   description: |-
                                     wwids Optional: FC volume world wide identifiers (wwids)
@@ -2609,6 +2777,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                               type: object
                             flexVolume:
                               description: |-
@@ -2645,10 +2814,15 @@ spec:
                                     scripts.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -2829,6 +3003,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 readOnly:
                                   description: |-
                                     readOnly here will force the ReadOnly setting in VolumeMounts.
@@ -2839,10 +3014,15 @@ spec:
                                     target and initiator authentication
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -2962,6 +3142,103 @@ spec:
                                     description: Projection that may be projected
                                       along with other supported volume types
                                     properties:
+                                      clusterTrustBundle:
+                                        description: |-
+                                          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+                                          of ClusterTrustBundle objects in an auto-updating file.
+
+
+                                          Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+
+                                          ClusterTrustBundle objects can either be selected by name, or by the
+                                          combination of signer name and a label selector.
+
+
+                                          Kubelet performs aggressive normalization of the PEM contents written
+                                          into the pod filesystem.  Esoteric PEM features such as inter-block
+                                          comments and block headers are stripped.  Certificates are deduplicated.
+                                          The ordering of certificates within the file is arbitrary, and Kubelet
+                                          may change the order over time.
+                                        properties:
+                                          labelSelector:
+                                            description: |-
+                                              Select all ClusterTrustBundles that match this label selector.  Only has
+                                              effect if signerName is set.  Mutually-exclusive with name.  If unset,
+                                              interpreted as "match nothing".  If set but empty, interpreted as "match
+                                              everything".
+                                            properties:
+                                              matchExpressions:
+                                                description: matchExpressions is a
+                                                  list of label selector requirements.
+                                                  The requirements are ANDed.
+                                                items:
+                                                  description: |-
+                                                    A label selector requirement is a selector that contains values, a key, and an operator that
+                                                    relates the key and values.
+                                                  properties:
+                                                    key:
+                                                      description: key is the label
+                                                        key that the selector applies
+                                                        to.
+                                                      type: string
+                                                    operator:
+                                                      description: |-
+                                                        operator represents a key's relationship to a set of values.
+                                                        Valid operators are In, NotIn, Exists and DoesNotExist.
+                                                      type: string
+                                                    values:
+                                                      description: |-
+                                                        values is an array of string values. If the operator is In or NotIn,
+                                                        the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                                        the values array must be empty. This array is replaced during a strategic
+                                                        merge patch.
+                                                      items:
+                                                        type: string
+                                                      type: array
+                                                      x-kubernetes-list-type: atomic
+                                                  required:
+                                                  - key
+                                                  - operator
+                                                  type: object
+                                                type: array
+                                                x-kubernetes-list-type: atomic
+                                              matchLabels:
+                                                additionalProperties:
+                                                  type: string
+                                                description: |-
+                                                  matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                                  map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                                  operator is "In", and the values array contains only "value". The requirements are ANDed.
+                                                type: object
+                                            type: object
+                                            x-kubernetes-map-type: atomic
+                                          name:
+                                            description: |-
+                                              Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+                                              with signerName and labelSelector.
+                                            type: string
+                                          optional:
+                                            description: |-
+                                              If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+                                              aren't available.  If using name, then the named ClusterTrustBundle is
+                                              allowed not to exist.  If using signerName, then the combination of
+                                              signerName and labelSelector is allowed to match zero
+                                              ClusterTrustBundles.
+                                            type: boolean
+                                          path:
+                                            description: Relative path from the volume
+                                              root to write the bundle.
+                                            type: string
+                                          signerName:
+                                            description: |-
+                                              Select all ClusterTrustBundles that match this signer name.
+                                              Mutually-exclusive with name.  The contents of all selected
+                                              ClusterTrustBundles will be unified and deduplicated.
+                                            type: string
+                                        required:
+                                        - path
+                                        type: object
                                       configMap:
                                         description: configMap information about the
                                           configMap data to project
@@ -3004,11 +3281,17 @@ spec:
                                               - path
                                               type: object
                                             type: array
+                                            x-kubernetes-list-type: atomic
                                           name:
+                                            default: ""
                                             description: |-
                                               Name of the referent.
-                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
                                               TODO: Add other useful fields. apiVersion, kind, uid?
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                             type: string
                                           optional:
                                             description: optional specify whether
@@ -3031,8 +3314,8 @@ spec:
                                                 fieldRef:
                                                   description: 'Required: Selects
                                                     a field of the pod: only annotations,
-                                                    labels, name and namespace are
-                                                    supported.'
+                                                    labels, name, namespace and uid
+                                                    are supported.'
                                                   properties:
                                                     apiVersion:
                                                       description: Version of the
@@ -3098,6 +3381,7 @@ spec:
                                               - path
                                               type: object
                                             type: array
+                                            x-kubernetes-list-type: atomic
                                         type: object
                                       secret:
                                         description: secret information about the
@@ -3141,11 +3425,17 @@ spec:
                                               - path
                                               type: object
                                             type: array
+                                            x-kubernetes-list-type: atomic
                                           name:
+                                            default: ""
                                             description: |-
                                               Name of the referent.
-                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
                                               TODO: Add other useful fields. apiVersion, kind, uid?
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                              TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                             type: string
                                           optional:
                                             description: optional field specify whether
@@ -3184,6 +3474,7 @@ spec:
                                         type: object
                                     type: object
                                   type: array
+                                  x-kubernetes-list-type: atomic
                               type: object
                             quobyte:
                               description: quobyte represents a Quobyte mount on the
@@ -3254,6 +3545,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 pool:
                                   description: |-
                                     pool is the rados pool name.
@@ -3274,10 +3566,15 @@ spec:
                                     More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -3326,10 +3623,15 @@ spec:
                                     sensitive information. If this is not provided, Login operation will fail.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -3414,6 +3716,7 @@ spec:
                                     - path
                                     type: object
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 optional:
                                   description: optional field specify whether the
                                     Secret or its keys must be defined
@@ -3445,10 +3748,15 @@ spec:
                                     credentials.  If not specified, default values will be attempted.
                                   properties:
                                     name:
+                                      default: ""
                                       description: |-
                                         Name of the referent.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
                                         TODO: Add other useful fields. apiVersion, kind, uid?
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -3566,6 +3874,7 @@ spec:
                                     items:
                                       type: string
                                     type: array
+                                    x-kubernetes-list-type: atomic
                                   dataSource:
                                     description: |-
                                       dataSource field can be used to specify either:
@@ -3654,34 +3963,6 @@ spec:
                                       status field of the claim.
                                       More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
                                     properties:
-                                      claims:
-                                        description: |-
-                                          Claims lists the names of resources, defined in spec.resourceClaims,
-                                          that are used by this container.
-
-
-                                          This is an alpha field and requires enabling the
-                                          DynamicResourceAllocation feature gate.
-
-
-                                          This field is immutable. It can only be set for containers.
-                                        items:
-                                          description: ResourceClaim references one
-                                            entry in PodSpec.ResourceClaims.
-                                          properties:
-                                            name:
-                                              description: |-
-                                                Name must match the name of one entry in pod.spec.resourceClaims of
-                                                the Pod where this field is used. It makes that resource available
-                                                inside a container.
-                                              type: string
-                                          required:
-                                          - name
-                                          type: object
-                                        type: array
-                                        x-kubernetes-list-map-keys:
-                                        - name
-                                        x-kubernetes-list-type: map
                                       limits:
                                         additionalProperties:
                                           anyOf:
@@ -3738,11 +4019,13 @@ spec:
                                               items:
                                                 type: string
                                               type: array
+                                              x-kubernetes-list-type: atomic
                                           required:
                                           - key
                                           - operator
                                           type: object
                                         type: array
+                                        x-kubernetes-list-type: atomic
                                       matchLabels:
                                         additionalProperties:
                                           type: string
@@ -3757,6 +4040,21 @@ spec:
                                     description: |-
                                       storageClassName is the name of the StorageClass required by the claim.
                                       More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
+                                    type: string
+                                  volumeAttributesClassName:
+                                    description: |-
+                                      volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+                                      If specified, the CSI driver will create or update the volume with the attributes defined
+                                      in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+                                      it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass
+                                      will be applied to the claim but it's not allowed to reset this field to empty string once it is set.
+                                      If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass
+                                      will be set by the persistentvolume controller if it exists.
+                                      If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+                                      set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+                                      exists.
+                                      More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
+                                      (Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.
                                     type: string
                                   volumeMode:
                                     description: |-
@@ -3781,6 +4079,7 @@ spec:
                                     items:
                                       type: string
                                     type: array
+                                    x-kubernetes-list-type: atomic
                                   allocatedResourceStatuses:
                                     additionalProperties:
                                       description: |-
@@ -3881,7 +4180,7 @@ spec:
                                   conditions:
                                     description: |-
                                       conditions is the current Condition of persistent volume claim. If underlying persistent volume is being
-                                      resized then the Condition will be set to 'ResizeStarted'.
+                                      resized then the Condition will be set to 'Resizing'.
                                     items:
                                       description: PersistentVolumeClaimCondition
                                         contains details about state of pvc
@@ -3905,7 +4204,7 @@ spec:
                                         reason:
                                           description: |-
                                             reason is a unique, this should be a short, machine understandable string that gives the reason
-                                            for condition's last transition. If it reports "ResizeStarted" that means the underlying
+                                            for condition's last transition. If it reports "Resizing" that means the underlying
                                             persistent volume is being resized.
                                           type: string
                                         status:
@@ -3919,6 +4218,46 @@ spec:
                                       - type
                                       type: object
                                     type: array
+                                    x-kubernetes-list-map-keys:
+                                    - type
+                                    x-kubernetes-list-type: map
+                                  currentVolumeAttributesClassName:
+                                    description: |-
+                                      currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
+                                      When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim
+                                      This is an alpha field and requires enabling VolumeAttributesClass feature.
+                                    type: string
+                                  modifyVolumeStatus:
+                                    description: |-
+                                      ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+                                      When this is unset, there is no ModifyVolume operation being attempted.
+                                      This is an alpha field and requires enabling VolumeAttributesClass feature.
+                                    properties:
+                                      status:
+                                        description: "status is the status of the
+                                          ControllerModifyVolume operation. It can
+                                          be in any of following states:\n - Pending\n
+                                          \  Pending indicates that the PersistentVolumeClaim
+                                          cannot be modified due to unmet requirements,
+                                          such as\n   the specified VolumeAttributesClass
+                                          not existing.\n - InProgress\n   InProgress
+                                          indicates that the volume is being modified.\n
+                                          - Infeasible\n  Infeasible indicates that
+                                          the request has been rejected as invalid
+                                          by the CSI driver. To\n\t  resolve the error,
+                                          a valid VolumeAttributesClass needs to be
+                                          specified.\nNote: New statuses can be added
+                                          in the future. Consumers should check for
+                                          unknown statuses and fail appropriately."
+                                        type: string
+                                      targetVolumeAttributesClassName:
+                                        description: targetVolumeAttributesClassName
+                                          is the name of the VolumeAttributesClass
+                                          the PVC currently being reconciled
+                                        type: string
+                                    required:
+                                    - status
+                                    type: object
                                   phase:
                                     description: phase represents the current phase
                                       of PersistentVolumeClaim.
