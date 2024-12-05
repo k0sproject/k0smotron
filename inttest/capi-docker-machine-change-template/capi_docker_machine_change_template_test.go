@@ -210,6 +210,16 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 		Into(&obj)
 	s.Require().NoError(err)
 	s.Require().Equal("docker-test-cp-template-new-2", obj.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation])
+
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		b, _ := s.client.RESTClient().
+			Get().
+			AbsPath("/healthz").
+			DoRaw(context.Background())
+
+		return string(b) == "ok", nil
+	})
+	s.Require().NoError(err)
 }
 
 func (s *CAPIDockerMachineChangeTemplate) applyClusterObjects() {
