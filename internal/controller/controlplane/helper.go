@@ -43,6 +43,7 @@ import (
 
 const (
 	etcdMemberConditionTypeJoined = "Joined"
+	generatedMachineRoleLabel     = "cluster.x-k8s.io/generateMachine-role"
 )
 
 func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
@@ -50,7 +51,7 @@ func (c *K0sController) createMachine(ctx context.Context, name string, cluster 
 	if err != nil {
 		return nil, fmt.Errorf("error generating machine: %w", err)
 	}
-	_ = ctrl.SetControllerReference(kcp, machine, c.Scheme)
+	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
 
 	return machine, c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
@@ -81,9 +82,9 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	v := kcp.Spec.Version
 
 	labels := map[string]string{
-		"cluster.x-k8s.io/cluster-name":         kcp.Name,
-		"cluster.x-k8s.io/control-plane":        "true",
-		"cluster.x-k8s.io/generateMachine-role": "control-plane",
+		clusterv1.ClusterNameLabel:         kcp.Name,
+		clusterv1.MachineControlPlaneLabel: "true",
+		generatedMachineRoleLabel:          "control-plane",
 	}
 
 	for _, arg := range kcp.Spec.K0sConfigSpec.Args {
@@ -210,7 +211,11 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 		return nil, err
 	}
 
-	_ = ctrl.SetControllerReference(kcp, unstructuredMachineTemplate, c.Scheme)
+	_ = ctrl.SetControllerReference(cluster, unstructuredMachineTemplate, c.Client.Scheme())
+	err = c.Client.Patch(ctx, unstructuredMachineTemplate, client.Merge, &client.PatchOptions{FieldManager: "k0smotron"})
+	if err != nil {
+		return nil, err
+	}
 
 	template, found, err := unstructured.NestedMap(unstructuredMachineTemplate.UnstructuredContent(), "spec", "template")
 	if !found {
