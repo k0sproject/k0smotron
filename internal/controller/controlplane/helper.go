@@ -286,6 +286,15 @@ func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clien
 	for _, condition := range conditions {
 		conditionMap := condition.(map[string]interface{})
 		if conditionMap["type"] == etcdMemberConditionTypeJoined && conditionMap["status"] == "False" {
+			err = clientset.RESTClient().
+				Delete().
+				AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
+				Do(ctx).
+				Into(&etcdMember)
+			if err != nil && !apierrors.IsNotFound(err) {
+				return false, fmt.Errorf("error deleting etcd member %s: %w", name, err)
+			}
+
 			return true, nil
 		}
 	}
