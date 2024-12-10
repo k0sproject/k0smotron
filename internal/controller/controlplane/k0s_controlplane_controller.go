@@ -191,7 +191,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	err = c.reconcile(ctx, cluster, kcp)
 	if err != nil {
 		if errors.Is(err, ErrNotReady) {
-			return ctrl.Result{RequeueAfter: 10, Requeue: true}, nil
+			return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
 		}
 		return res, err
 	}
