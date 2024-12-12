@@ -13,6 +13,18 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 CRDOC ?= $(LOCALBIN)/crdoc
+GINKGO ?= $(LOCALBIN)/ginkgo
+
+#
+# Ginkgo configuration.
+#
+GINKGO_POLL_PROGRESS_AFTER ?= 60m
+GINKGO_POLL_PROGRESS_INTERVAL ?= 5m
+GINKGO_TIMEOUT ?= 2h
+E2E_CONF_FILE ?= $(shell pwd)/e2e/config/docker.yaml
+SKIP_RESOURCE_CLEANUP ?= false
+# Artifacts folder generated for e2e tests
+ARTIFACTS ?= $(shell pwd)/_artifacts
 
 # Image URL to use all building/pushing image targets
 IMG ?= quay.io/k0sproject/k0smotron:latest
@@ -99,6 +111,17 @@ vet: ## Run go vet against code.
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $(GO_TEST_DIRS) -coverprofile cover.out
+
+.PHONY: test-e2e
+test-e2e: $(GINKGO) ## Run the end-to-end tests
+	$(GINKGO) -v --trace \
+		-poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
+		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) \
+		--timeout=$(GINKGO_TIMEOUT) \
+		--output-dir="$(ARTIFACTS)" $(shell pwd)/e2e -- \
+	    -e2e.artifacts-folder="$(ARTIFACTS)" \
+	    -e2e.config="$(E2E_CONF_FILE)" \
+	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP)
 
 ##@ Build
 
@@ -207,6 +230,11 @@ $(CONTROLLER_GEN): Makefile.variables | $(LOCALBIN)
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+
+.PHONY: ginkgo
+ginkgo: $(GINKGO) ## Download ginkgo locally if necessary.
+$(GINKGO): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo
 
 .PHONY: docs
 docs:

@@ -32,3 +32,6 @@ k0smotron-image-bundle.tar
 *.swp
 *.swo
 *~
+
+# test results
+_artifacts
