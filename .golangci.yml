@@ -18,3 +18,13 @@ linters:
     - goheader     # Checks is file headers matche a given pattern
     - revive       # Stricter drop-in replacement for golint
     - ginkgolinter # Enforces standards of using ginkgo and gomega
+
+issues:
+  # Dot imports for gomega and ginkgo are allowed
+  # within e2e test files and test utils.
+  exclude-rules:
+  - linters:
+    - revive
+    - stylecheck
+    path: e2e/.*\.go
+    text: should not use dot imports
