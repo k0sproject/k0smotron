@@ -14,6 +14,12 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 CRDOC ?= $(LOCALBIN)/crdoc
 
+## e2e configuration
+E2E_CONF_FILE ?= $(shell pwd)/e2e/config/docker.yaml
+SKIP_RESOURCE_CLEANUP ?= false
+# Artifacts folder generated for e2e tests
+ARTIFACTS ?= $(shell pwd)/_artifacts
+
 # Image URL to use all building/pushing image targets
 IMG ?= quay.io/k0sproject/k0smotron:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
@@ -99,6 +105,14 @@ vet: ## Run go vet against code.
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $(GO_TEST_DIRS) -coverprofile cover.out
+
+.PHONY: e2e
+e2e: ## Run the end-to-end tests
+	go test -v ./e2e -tags e2e \
+	    -artifacts-folder="$(ARTIFACTS)" \
+	    -config="$(E2E_CONF_FILE)" \
+	    -skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
+		-timeout=30m
 
 ##@ Build
 
