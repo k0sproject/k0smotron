@@ -160,6 +160,7 @@ jobs:
           - check-capi-controlplane-docker-tunneling-proxy
           - check-capi-controlplane-docker-worker
           - check-capi-docker-machine-change-template
+          - check-capi-controlplane-remediation
           - check-capi-remote-machine-template-update
           - check-capi-docker-machine-template-update
           - check-capi-docker-machine-template-update-recreate

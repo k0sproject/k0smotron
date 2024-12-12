@@ -39,6 +39,11 @@ const (
 const (
 	// ControlPlaneReadyCondition documents the status of the control plane
 	ControlPlaneReadyCondition clusterv1.ConditionType = "ControlPlaneReady"
+
+	// RemediationInProgressAnnotation is used to keep track that a remediation is in progress,
+	// and more specifically it tracks that the system is in between having deleted an unhealthy machine
+	// and recreating its replacement.
+	RemediationInProgressAnnotation = "controlplane.cluster.x-k8s.io/remediation-in-progress"
 )
 
 // +kubebuilder:object:root=true

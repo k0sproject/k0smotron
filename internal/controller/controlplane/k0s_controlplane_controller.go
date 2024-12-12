@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
@@ -271,6 +272,11 @@ func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluste
 		return fmt.Errorf("error reconciling kubeconfig secret: %w", err)
 	}
 
+	err = c.reconcileUnhealthyMachines(ctx, cluster, kcp)
+	if err != nil {
+		return err
+	}
+
 	err = c.reconcileMachines(ctx, cluster, kcp)
 	if err != nil {
 		return err
@@ -417,58 +423,66 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	if len(machineNamesToDelete) > 0 {
 		logger.Info("Found machines to delete", "count", len(machineNamesToDelete))
-		kubeClient, err := c.getKubeClient(ctx, cluster)
-		if err != nil {
-			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
-		}
 
 		// Remove the oldest machine abd wait for the machine to be deleted to avoid etcd issues
-		machine := machines.Filter(func(m *clusterv1.Machine) bool {
+		machineToDelete := machines.Filter(func(m *clusterv1.Machine) bool {
 			return machineNamesToDelete[m.Name]
 		}).Oldest()
-		logger.Info("Found oldest machine to delete", "machine", machine.Name)
-		if machine.Status.Phase == string(clusterv1.MachinePhaseDeleting) {
-			logger.Info("Machine is being deleted, waiting for it to be deleted", "machine", machine.Name)
+		logger.Info("Found oldest machine to delete", "machine", machineToDelete.Name)
+		if machineToDelete.Status.Phase == string(clusterv1.MachinePhaseDeleting) {
+			logger.Info("Machine is being deleted, waiting for it to be deleted", "machine", machineToDelete.Name)
 			return fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		name := machine.Name
-
-		waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-		defer cancel()
-		err = wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
-			if err := c.markChildControlNodeToLeave(fctx, name, kubeClient); err != nil {
-				return false, fmt.Errorf("error marking controlnode to leave: %w", err)
-			}
-
-			ok, err := c.checkMachineLeft(fctx, name, kubeClient)
-			if err != nil {
-				logger.Error(err, "Error checking machine left", "machine", name)
-			}
-			return ok, err
-		})
+		err := c.runMachineDeletionSequence(ctx, logger, cluster, kcp, machineToDelete)
 		if err != nil {
-			return fmt.Errorf("error checking machine left: %w", err)
+			return err
 		}
 
-		if err := c.deleteControlNode(ctx, name, kubeClient); err != nil {
-			return fmt.Errorf("error deleting controlnode: %w", err)
-		}
-
-		if err := c.deleteBootstrapConfig(ctx, name, kcp); err != nil {
-			return fmt.Errorf("error deleting machine from template: %w", err)
-		}
-
-		if err := c.deleteMachineFromTemplate(ctx, name, cluster, kcp); err != nil {
-			return fmt.Errorf("error deleting machine from template: %w", err)
-		}
-
-		if err := c.deleteMachine(ctx, name, kcp); err != nil {
-			return fmt.Errorf("error deleting machine from template: %w", err)
-		}
-
-		logger.Info("Deleted machine", "machine", name)
+		logger.Info("Deleted machine", "machine", machineToDelete.Name)
 	}
+	return nil
+}
+
+func (c *K0sController) runMachineDeletionSequence(ctx context.Context, logger logr.Logger, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+	kubeClient, err := c.getKubeClient(ctx, cluster)
+	if err != nil {
+		return fmt.Errorf("error getting cluster client set for deletion: %w", err)
+	}
+
+	waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	err = wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
+		if err := c.markChildControlNodeToLeave(fctx, machine.Name, kubeClient); err != nil {
+			return false, fmt.Errorf("error marking controlnode to leave: %w", err)
+		}
+
+		ok, err := c.checkMachineLeft(fctx, machine.Name, kubeClient)
+		if err != nil {
+			logger.Error(err, "Error checking machine left", "machine", machine.Name)
+		}
+		return ok, err
+	})
+	if err != nil {
+		return fmt.Errorf("error checking machine left: %w", err)
+	}
+
+	if err := c.deleteControlNode(ctx, machine.Name, kubeClient); err != nil {
+		return fmt.Errorf("error deleting controlnode: %w", err)
+	}
+
+	if err := c.deleteBootstrapConfig(ctx, machine.Name, kcp); err != nil {
+		return fmt.Errorf("error deleting machine from template: %w", err)
+	}
+
+	if err := c.deleteMachineFromTemplate(ctx, machine.Name, cluster, kcp); err != nil {
+		return fmt.Errorf("error deleting machine from template: %w", err)
+	}
+
+	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
+		return fmt.Errorf("error deleting machine from template: %w", err)
+	}
+
 	return nil
 }
 
