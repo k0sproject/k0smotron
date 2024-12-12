@@ -58,6 +58,16 @@ func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc 
 		return err
 	}
 
+	err = InstallCertManager(ctx, kc, rc)
+	if err != nil {
+		return err
+	}
+
+	err = WaitForDeployment(ctx, kc, "cert-manager-webhook", "cert-manager")
+	if err != nil {
+		return err
+	}
+
 	return CreateFromYAML(ctx, kc, rc, os.Getenv("K0SMOTRON_INSTALL_YAML"))
 }
 
@@ -73,6 +83,10 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 	}
 
 	return CreateFromYAML(ctx, kc, rc, installFileName)
+}
+
+func InstallCertManager(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
+	return CreateFromYAML(ctx, kc, rc, os.Getenv("CERT_MANAGER_INSTALL_YAML"))
 }
 
 func InstallLocalPathStorage(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
