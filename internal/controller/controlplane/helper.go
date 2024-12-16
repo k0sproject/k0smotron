@@ -52,9 +52,18 @@ func (c *K0sController) createMachine(ctx context.Context, name string, cluster 
 	}
 	_ = ctrl.SetControllerReference(kcp, machine, c.Scheme)
 
-	return machine, c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
+	err = c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
 	})
+	if err != nil {
+		return machine, err
+	}
+
+	// Remove the annotation tracking that a remediation is in progress.
+	// A remediation is completed when the replacement machine has been created above.
+	delete(kcp.Annotations, cpv1beta1.RemediationInProgressAnnotation)
+
+	return machine, nil
 }
 
 func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
