@@ -123,7 +123,10 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 					Name:       name,
 				},
 			},
-			InfrastructureRef: infraRef,
+			InfrastructureRef:       infraRef,
+			NodeDrainTimeout:        kcp.Spec.MachineTemplate.NodeDrainTimeout,
+			NodeDeletionTimeout:     kcp.Spec.MachineTemplate.NodeDeletionTimeout,
+			NodeVolumeDetachTimeout: kcp.Spec.MachineTemplate.NodeVolumeDetachTimeout,
 		},
 	}
 
