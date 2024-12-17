@@ -47,6 +47,7 @@ import (
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -169,8 +170,10 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 	log = log.WithValues("cluster", cluster.Name)
 
+	// TODO: Use paused.EnsurePausedCondition from "sigs.k8s.io/cluster-api/util/paused" when upgrading to v1.9.0.
 	if annotations.IsPaused(cluster, kcp) {
 		log.Info("Reconciliation is paused for this object or owning cluster")
+		conditions.MarkTrue(kcp, cpv1beta1.ControlPlanePausedCondition)
 		return ctrl.Result{}, nil
 	}
 
