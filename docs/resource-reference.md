@@ -1703,6 +1703,32 @@ offered by an infrastructure provider.<br/>
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>nodeDeletionTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
+hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+If no value is provided, the default value for this property of the Machine resource will be used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeDrainTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
+The default value is 0, meaning that the node can be drained without any time limitations.
+NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeVolumeDetachTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
+to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -2560,6 +2586,32 @@ offered by an infrastructure provider.<br/>
         <td>
           Standard object's metadata.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeDeletionTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
+hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+If no value is provided, the default value for this property of the Machine resource will be used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeDrainTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
+The default value is 0, meaning that the node can be drained without any time limitations.
+NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeVolumeDetachTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
+to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
