@@ -45,6 +45,7 @@ import (
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
@@ -201,26 +202,58 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 }
 
 func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
+
 	if cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		return fmt.Errorf("control plane endpoint is not set: %w", ErrNotReady)
 	}
 
-	secretName := secret.Name(cluster.Name, secret.Kubeconfig)
-	err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &corev1.Secret{})
+	kubeconfigSecrets := []*corev1.Secret{}
+
+	// Always rotate certificates if needed.
+	defer func() {
+		for _, kc := range kubeconfigSecrets {
+			needsRotation, err := kubeconfig.NeedsClientCertRotation(kc, certs.ClientCertificateRenewalDuration)
+			if err != nil {
+				logger.Error(err, "Failed to check if certificate needs rotation.")
+				return
+			}
+
+			if needsRotation {
+				logger.Info("Rotating kubeconfig secret", "Secret", kc.GetName())
+				if err := c.regenerateKubeconfigSecret(ctx, kc); err != nil {
+					logger.Error(err, "Failed to regenerate kubeconfig")
+					return
+				}
+			}
+		}
+	}()
+
+	workloadClusterKubeconfigSecret, err := secret.GetFromNamespacedName(ctx, c.Client, capiutil.ObjectKey(cluster), secret.Kubeconfig)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return kubeconfig.CreateSecret(ctx, c.Client, cluster)
 		}
+
 		return err
 	}
+	kubeconfigSecrets = append(kubeconfigSecrets, workloadClusterKubeconfigSecret)
 
 	if kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
+		clusterKey := client.ObjectKey{
+			Name:      cluster.GetName(),
+			Namespace: cluster.GetNamespace(),
+		}
+
 		if kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
+
 			secretName := secret.Name(cluster.Name+"-proxied", secret.Kubeconfig)
-			err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &corev1.Secret{})
+
+			proxiedKubeconfig := &corev1.Secret{}
+			err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, proxiedKubeconfig)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					kc, err := c.generateKubeconfig(ctx, cluster, fmt.Sprintf("https://%s", cluster.Spec.ControlPlaneEndpoint.String()))
+					kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s", cluster.Spec.ControlPlaneEndpoint.String()))
 					if err != nil {
 						return err
 					}
@@ -236,12 +269,16 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 				}
 				return err
 			}
+			kubeconfigSecrets = append(kubeconfigSecrets, proxiedKubeconfig)
+
 		} else {
 			secretName := secret.Name(cluster.Name+"-tunneled", secret.Kubeconfig)
-			err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &corev1.Secret{})
+
+			tunneledKubeconfig := &corev1.Secret{}
+			err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, tunneledKubeconfig)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					kc, err := c.generateKubeconfig(ctx, cluster, fmt.Sprintf("https://%s:%d", kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))
+					kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s:%d", kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))
 					if err != nil {
 						return err
 					}
@@ -253,6 +290,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 				}
 				return err
 			}
+			kubeconfigSecrets = append(kubeconfigSecrets, tunneledKubeconfig)
 		}
 	}
 
