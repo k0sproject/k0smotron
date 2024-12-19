@@ -207,14 +207,14 @@ func (r *ClusterReconciler) reconcileEtcdStatefulSet(ctx context.Context, kmc *k
 		}
 	}
 
-	statefulSet := r.generateEtcdStatefulSet(kmc, desiredReplicas)
+	statefulSet := r.generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas)
 
 	_ = ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
 
 	return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 }
 
-func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas int32) apps.StatefulSet {
+func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32) apps.StatefulSet {
 	labels := labelsForEtcdCluster(kmc)
 
 	size := kmc.Spec.Etcd.Persistence.Size
@@ -329,7 +329,7 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, replicas in
 					SecurityContext: &v1.PodSecurityContext{
 						FSGroup: ptr.To(int64(1001)),
 					},
-					InitContainers: r.generateEtcdInitContainers(kmc),
+					InitContainers: r.generateEtcdInitContainers(kmc, existingSts),
 					Containers: []v1.Container{{
 						Name:            "etcd",
 						Image:           kmc.Spec.Etcd.Image,
@@ -393,13 +393,22 @@ func (r *ClusterReconciler) initialCluster(kmc *km.Cluster, replicas int32) stri
 	return strings.Join(members, ",")
 }
 
-func (r *ClusterReconciler) generateEtcdInitContainers(kmc *km.Cluster) []v1.Container {
+func (r *ClusterReconciler) generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet) []v1.Container {
+	checkImage := kmc.Spec.GetImage()
+	if existingSts != nil {
+		for _, c := range existingSts.Spec.Template.Spec.InitContainers {
+			if c.Name == "dns-check" {
+				checkImage = c.Image
+				break
+			}
+		}
+	}
 	return []v1.Container{
 		{
 			// Wait for the pods dns name is resolvable, since it takes some time after the pod is created
 			// and etcd tries to connect to the other members using the dns names
 			Name:            "dns-check",
-			Image:           kmc.Spec.GetImage(),
+			Image:           checkImage,
 			ImagePullPolicy: v1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c"},
 			Args:            []string{"getent ahostsv4 ${HOSTNAME}.${SVC_NAME}." + kmc.Namespace + ".svc"},
@@ -480,7 +489,7 @@ set -eu
 
 export ETCDCTL_ENDPOINTS=https://${SVC_NAME}:2379
 
-if [[ ! -f /var/lib/k0s/etcd/snap/db ]]; then
+if [[ ! -f /var/lib/k0s/etcd/member/snap/db ]]; then
   echo "Checking if cluster is functional"
   if etcdctl member list; then
     echo "Cluster is functional"

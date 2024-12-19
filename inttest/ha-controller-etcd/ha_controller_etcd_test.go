@@ -18,14 +18,22 @@ package hacontrolleretcd
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"testing"
+	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	"github.com/k0sproject/k0smotron/inttest/util"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+
+	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
 type HAControllerEtcdSuite struct {
@@ -77,6 +85,20 @@ func (s *HAControllerEtcdSuite) TestK0sGetsUp() {
 	s.Require().NoError(err)
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 
+	s.T().Log("update cluster")
+	s.updateK0smotronCluster(s.Context(), rc)
+
+	err = wait.PollUntilContextCancel(s.Context(), 5*time.Second, true, func(ctx context.Context) (bool, error) {
+		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(s.Context(), "kmc-kmc-test", metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+
+		return sts.Spec.Template.Spec.Containers[0].Image == "k0sproject/k0s:v1.28.3-k0s.0", nil
+	})
+	s.Require().NoError(err)
+
+	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 }
 
 func TestHAControllerEtcdSuite(t *testing.T) {
@@ -110,6 +132,7 @@ func (s *HAControllerEtcdSuite) createK0smotronCluster(ctx context.Context, kc *
 		},
 		"spec": {
 		    "replicas": 3,
+			"version": "v1.27.2-k0s.0",
 			"service":{
 				"type": "NodePort"
 			},
@@ -125,6 +148,26 @@ func (s *HAControllerEtcdSuite) createK0smotronCluster(ctx context.Context, kc *
 `)
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
+	s.Require().NoError(res.Error())
+}
+
+func (s *HAControllerEtcdSuite) updateK0smotronCluster(ctx context.Context, rc *rest.Config) {
+	crdConfig := *rc
+	crdConfig.ContentConfig.GroupVersion = &km.GroupVersion
+	crdConfig.APIPath = "/apis"
+	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
+	crdConfig.UserAgent = rest.DefaultKubernetesUserAgent()
+	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
+	s.Require().NoError(err)
+
+	patch := `[{"op": "replace", "path": "/spec/version", "value": "v1.28.3-k0s.0"}]`
+	res := crdRestClient.
+		Patch(types.JSONPatchType).
+		Resource("clusters").
+		Name("kmc-test").
+		Namespace("kmc-test").
+		Body([]byte(patch)).
+		Do(ctx)
 	s.Require().NoError(res.Error())
 }
 

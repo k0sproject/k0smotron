@@ -82,7 +82,7 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
 			r := new(ClusterReconciler)
-			sts := r.generateEtcdStatefulSet(tc.cluster, 1)
+			sts := r.generateEtcdStatefulSet(tc.cluster, nil, 1)
 			for _, w := range tc.want {
 				assert.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
 			}
