@@ -44,6 +44,9 @@ const (
 	// and more specifically it tracks that the system is in between having deleted an unhealthy machine
 	// and recreating its replacement.
 	RemediationInProgressAnnotation = "controlplane.cluster.x-k8s.io/remediation-in-progress"
+
+	// ControlPlanePausedCondition documents the reconciliation of the control plane is paused.
+	ControlPlanePausedCondition clusterv1.ConditionType = "Paused"
 )
 
 // +kubebuilder:object:root=true
