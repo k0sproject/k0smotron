@@ -26,6 +26,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"k8s.io/utils/ptr"
 
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -51,8 +52,8 @@ func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet 
 
 func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
 
-	labels := labelsForCluster(kmc)
-	annotations := annotationsForCluster(kmc)
+	labels := kcontrollerutil.LabelsForK0smotronControlPlane(kmc)
+	annotations := kcontrollerutil.AnnotationsForK0smotronCluster(kmc)
 
 	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
@@ -83,7 +84,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 								PodAffinityTerm: v1.PodAffinityTerm{
 									TopologyKey: "topology.kubernetes.io/zone",
 									LabelSelector: &metav1.LabelSelector{
-										MatchLabels: defaultClusterLabels(kmc),
+										MatchLabels: kcontrollerutil.DefaultK0smotronClusterLabels(kmc),
 									},
 								},
 							},
@@ -92,7 +93,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 								PodAffinityTerm: v1.PodAffinityTerm{
 									TopologyKey: "kubernetes.io/hostname",
 									LabelSelector: &metav1.LabelSelector{
-										MatchLabels: defaultClusterLabels(kmc),
+										MatchLabels: kcontrollerutil.DefaultK0smotronClusterLabels(kmc),
 									},
 								},
 							},

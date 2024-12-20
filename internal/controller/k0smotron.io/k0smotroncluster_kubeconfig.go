@@ -20,6 +20,7 @@ import (
 	"context"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/exec"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,8 +54,8 @@ func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc k
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetAdminConfigSecretName(),
 			Namespace:   kmc.Namespace,
-			Labels:      labelsForCluster(&kmc),
-			Annotations: annotationsForCluster(&kmc),
+			Labels:      kcontrollerutil.LabelsForK0smotronCluster(&kmc),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(&kmc),
 		},
 		StringData: map[string]string{"value": output},
 		Type:       clusterv1.ClusterSecretType,

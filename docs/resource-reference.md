@@ -11555,12 +11555,52 @@ will pick it automatically.<br/>
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>readyReplicas</b></td>
+        <td>integer</td>
+        <td>
+          readyReplicas is the total number of fully running and ready control plane pods.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          replicas is the total number of pods targeted by this control plane<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>unavailableReplicas</b></td>
+        <td>integer</td>
+        <td>
+          unavailableReplicas is the total number of unavailable pods targeted by this control plane.
+This is the total number of pods with Condition Ready = false.
+They may either be pods that are running but not yet ready.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>updatedReplicas</b></td>
+        <td>integer</td>
+        <td>
+          updatedReplicas is the total number of pods targeted by this control plane
+that have the desired version.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          <br/>
+          version represents the minimum Kubernetes version for the control plane pods
+in the cluster.<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

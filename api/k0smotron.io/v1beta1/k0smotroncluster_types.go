@@ -116,7 +116,7 @@ type Mount struct {
 const (
 	defaultK0SImage   = "k0sproject/k0s"
 	defaultK0SVersion = "v1.27.9-k0s.0"
-	defaultK0SSuffix  = "k0s.0"
+	DefaultK0SSuffix  = "k0s.0"
 )
 
 func (c *ClusterSpec) GetImage() string {
@@ -126,7 +126,7 @@ func (c *ClusterSpec) GetImage() string {
 	}
 
 	if !strings.Contains(k0sVersion, "-k0s.") {
-		k0sVersion = fmt.Sprintf("%s-%s", k0sVersion, defaultK0SSuffix)
+		k0sVersion = fmt.Sprintf("%s-%s", k0sVersion, DefaultK0SSuffix)
 	}
 
 	if c.Image == "" {
