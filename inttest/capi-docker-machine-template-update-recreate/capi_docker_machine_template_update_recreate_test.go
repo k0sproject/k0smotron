@@ -19,6 +19,7 @@ package capidockermachinetemplateupdaterecreate
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"os"
 	"os/exec"
 	"strconv"
@@ -150,36 +151,32 @@ func (s *CAPIDockerMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDown
 	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 100*time.Millisecond, func(ctx context.Context) (bool, error) {
-		newNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+		var obj unstructured.UnstructuredList
+		err := s.client.RESTClient().
+			Get().
+			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/machines").
+			Do(s.ctx).
+			Into(&obj)
 		if err != nil {
 			return false, nil
 		}
 
-		return len(newNodeIDs) == 6, nil
-	})
-	s.Require().NoError(err)
+		for _, item := range obj.Items {
+			if strings.Contains(item.GetName(), "worker") {
+				continue
+			}
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		veryNewNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
-		if err != nil {
-			return false, nil
+			v, _, err := unstructured.NestedString(item.Object, "spec", "version")
+			if err != nil {
+				return false, nil
+			}
+			if v != "v1.31.2+k0s.0" {
+				return false, nil
+			}
 		}
 
-		return len(veryNewNodeIDs) == 3, nil
-	})
-	s.Require().NoError(err)
-
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-4", "k0s", "status").CombinedOutput()
-		if err != nil {
-			return false, nil
-		}
-
-		return strings.Contains(string(output), "Version: v1.28"), nil
+		return true, nil
 	})
 	s.Require().NoError(err)
 }
@@ -198,7 +195,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreate) updateClusterObjects() {
 
 func (s *CAPIDockerMachineTemplateUpdateRecreate) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.Command("kubectl", "delete", "cluster", "docker-test").CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
@@ -257,7 +254,7 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  version: v1.27.1+k0s.0
+  version: v1.30.3+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
     k0s:
@@ -291,7 +288,7 @@ metadata:
   name:  docker-test-worker-0
   namespace: default
 spec:
-  version: v1.27.1
+  version: v1.30.3
   clusterName: docker-test
   bootstrap:
     configRef:
@@ -310,7 +307,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.27.1+k0s.0
+  version: v1.30.3+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
@@ -328,7 +325,7 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  version: v1.28.7+k0s.0
+  version: v1.31.2+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
     k0s:

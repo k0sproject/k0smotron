@@ -314,15 +314,18 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	desiredMachineNames := make(map[string]bool)
 
 	var clusterIsUpdating bool
+	var clusterIsMutating bool
 	for _, m := range machines.SortedByCreationTimestamp() {
 		if m.Spec.Version == nil || (!versionMatches(m, kcp.Spec.Version)) {
 			clusterIsUpdating = true
+			clusterIsMutating = true
 			if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
 				desiredMachineNames[m.Name] = true
 			} else {
 				machineNamesToDelete[m.Name] = true
 			}
 		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) {
+			clusterIsMutating = true
 			machineNamesToDelete[m.Name] = true
 		} else if machines.Len() > int(kcp.Spec.Replicas)+len(machineNamesToDelete) {
 			machineNamesToDelete[m.Name] = true
@@ -356,75 +359,15 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
-	i := 0
-	for len(desiredMachineNames) < int(kcp.Spec.Replicas) {
-		name := machineName(kcp.Name, i)
-		log.Log.Info("desire machine", "name", len(desiredMachineNames))
-		_, ok := machineNamesToDelete[name]
-		if !ok {
-			_, exists := machines[name]
-			desiredMachineNames[name] = exists
-		}
-		i++
-	}
-	log.Log.Info("Desired machines", "count", len(desiredMachineNames))
+	if len(machineNamesToDelete)+len(desiredMachineNames) > int(kcp.Spec.Replicas) {
 
-	for name, exists := range desiredMachineNames {
-		if !exists || kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
-
-			// Wait for the previous machine to be created to avoid etcd issues if cluster if updating
-			// OR
-			// Wait for the first controller to start before creating the next one
-			// Some providers don't publish failure domains immediately, so wait for the first machine to be ready
-			// It's not slowing down the process overall, as we wait to the first machine anyway to create join tokens
-			if clusterIsUpdating || (machines.Len() == 1 && kcp.Spec.Replicas > 1) {
-				err := c.checkMachineIsReady(ctx, machines.Newest().Name, cluster)
-				if err != nil {
-					return err
-				}
-			}
-
-			machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
-			if err != nil {
-				return fmt.Errorf("error creating machine from template: %w", err)
-			}
-
-			infraRef := corev1.ObjectReference{
-				APIVersion: machineFromTemplate.GetAPIVersion(),
-				Kind:       machineFromTemplate.GetKind(),
-				Name:       machineFromTemplate.GetName(),
-				Namespace:  kcp.Namespace,
-			}
-
-			selectedFailureDomain := failuredomains.PickFewest(ctx, cluster.Status.FailureDomains.FilterControlPlane(), machines)
-			machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
-			if err != nil {
-				return fmt.Errorf("error creating machine: %w", err)
-			}
-			machines[machine.Name] = machine
-		}
-
-		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name])
+		m := machines.Newest().Name
+		err := c.checkMachineIsReady(ctx, m, cluster)
 		if err != nil {
-			return fmt.Errorf("error creating bootstrap config: %w", err)
+			logger.Error(err, "Error checking machine left", "machine", m)
+			return err
 		}
-	}
 
-	if len(machineNamesToDelete) > 0 {
-		for m := range machines {
-			if machineNamesToDelete[m] {
-				continue
-			}
-
-			err := c.checkMachineIsReady(ctx, m, cluster)
-			if err != nil {
-				logger.Error(err, "Error checking machine left", "machine", m)
-				return err
-			}
-		}
-	}
-
-	if len(machineNamesToDelete) > 0 {
 		logger.Info("Found machines to delete", "count", len(machineNamesToDelete))
 
 		// Remove the oldest machine abd wait for the machine to be deleted to avoid etcd issues
@@ -437,13 +380,62 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		err := c.runMachineDeletionSequence(ctx, logger, cluster, kcp, machineToDelete)
+		err = c.runMachineDeletionSequence(ctx, logger, cluster, kcp, machineToDelete)
 		if err != nil {
 			return err
 		}
 
 		logger.Info("Deleted machine", "machine", machineToDelete.Name)
 	}
+
+	if len(desiredMachineNames) < int(kcp.Spec.Replicas) {
+
+		name := machineName(kcp, machineNamesToDelete, desiredMachineNames)
+		log.Log.Info("desire machine", "name", len(desiredMachineNames))
+
+		// Wait for the previous machine to be created to avoid etcd issues if cluster if updating
+		// OR
+		// Wait for the first controller to start before creating the next one
+		// Some providers don't publish failure domains immediately, so wait for the first machine to be ready
+		// It's not slowing down the process overall, as we wait to the first machine anyway to create join tokens
+		if clusterIsMutating || (machines.Len() == 1 && kcp.Spec.Replicas > 1) {
+			err := c.checkMachineIsReady(ctx, machines.Newest().Name, cluster)
+			if err != nil {
+				return err
+			}
+		}
+
+		machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
+		if err != nil {
+			return fmt.Errorf("error creating machine from template: %w", err)
+		}
+
+		infraRef := corev1.ObjectReference{
+			APIVersion: machineFromTemplate.GetAPIVersion(),
+			Kind:       machineFromTemplate.GetKind(),
+			Name:       machineFromTemplate.GetName(),
+			Namespace:  kcp.Namespace,
+		}
+
+		selectedFailureDomain := failuredomains.PickFewest(ctx, cluster.Status.FailureDomains.FilterControlPlane(), machines)
+		machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
+		if err != nil {
+			return fmt.Errorf("error creating machine: %w", err)
+		}
+		machines[machine.Name] = machine
+		desiredMachineNames[machine.Name] = true
+		//}
+
+		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name])
+		if err != nil {
+			return fmt.Errorf("error creating bootstrap config: %w", err)
+		}
+	}
+
+	if len(desiredMachineNames) < int(kcp.Spec.Replicas) {
+		return ErrNewMachinesNotReady
+	}
+
 	return nil
 }
 
@@ -833,8 +825,26 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 	})
 }
 
-func machineName(base string, i int) string {
-	return fmt.Sprintf("%s-%d", base, i)
+func machineName(kcp *cpv1beta1.K0sControlPlane, machineToDelete, desiredMachines map[string]bool) string {
+	if len(machineToDelete) == 0 {
+		return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines))
+	}
+
+	f := false
+	for i := 0; i < int(kcp.Spec.Replicas); i++ {
+		name := fmt.Sprintf("%s-%d", kcp.Name, i)
+		_, ok := machineToDelete[name]
+		if ok {
+			f = true
+		}
+	}
+
+	if f {
+		return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines)+int(kcp.Spec.Replicas))
+	}
+	return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines))
+
+	//return fmt.Sprintf("%s-0", kcp.Name)
 }
 
 // SetupWithManager sets up the controller with the Manager.
