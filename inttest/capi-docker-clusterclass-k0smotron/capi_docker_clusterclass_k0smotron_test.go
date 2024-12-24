@@ -21,10 +21,15 @@ import (
 	"os"
 	"os/exec"
 	"testing"
+	"time"
 
+	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -87,6 +92,32 @@ func (s *CAPIDockerClusterClassK0smotronSuite) TestCAPIDocker() {
 	// Wait for the cluster to be ready
 	// Wait to see the CP pods ready
 	s.Require().NoError(util.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test-cluster", "default"))
+
+	crdConfig := *s.restConfig
+	crdConfig.ContentConfig.GroupVersion = &controlplanev1beta1.GroupVersion
+	crdConfig.APIPath = "/apis"
+	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
+	crdConfig.UserAgent = rest.DefaultKubernetesUserAgent()
+	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
+	s.Require().NoError(err)
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		var kcps controlplanev1beta1.K0smotronControlPlaneList
+		err = crdRestClient.Get().Resource("k0smotroncontrolplanes").Namespace("default").Do(ctx).Into(&kcps)
+		if err != nil || len(kcps.Items) == 0 {
+			return false, nil
+		}
+
+		kcp := kcps.Items[0]
+
+		ready := kcp.Status.ReadyReplicas == 2 &&
+			kcp.Status.UnavailableReplicas == 0 &&
+			kcp.Status.Ready &&
+			kcp.Status.UpdatedReplicas == 2 &&
+			kcp.Status.Version == "v1.27.2+k0s.0"
+
+		return ready, nil
+	})
+	s.Require().NoError(err)
 }
 
 func (s *CAPIDockerClusterClassK0smotronSuite) applyClusterObjects() {
@@ -116,6 +147,8 @@ spec:
   topology:
     class: k0smotron-cluster-class
     version: v1.27.2
+    controlPlane:
+      replicas: 2
     workers:
       machineDeployments:
       - class: docker-test-default-worker

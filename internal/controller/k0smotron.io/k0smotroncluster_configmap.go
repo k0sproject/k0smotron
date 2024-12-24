@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/util"
 )
 
@@ -99,8 +100,8 @@ func (r *ClusterReconciler) generateConfig(kmc *km.Cluster, sans []string) (v1.C
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetConfigMapName(),
 			Namespace:   kmc.Namespace,
-			Labels:      labelsForCluster(kmc),
-			Annotations: annotationsForCluster(kmc),
+			Labels:      kcontrollerutil.LabelsForK0smotronCluster(kmc),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Data: map[string]string{
 			"K0SMOTRON_K0S_YAML": string(b),

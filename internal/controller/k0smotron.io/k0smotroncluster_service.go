@@ -24,6 +24,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -89,7 +90,7 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 
 	// Copy both Cluster level labels and Service labels
 	labels := map[string]string{}
-	for k, v := range labelsForCluster(kmc) {
+	for k, v := range kcontrollerutil.LabelsForK0smotronCluster(kmc) {
 		labels[k] = v
 	}
 	for k, v := range kmc.Spec.Service.Labels {
@@ -98,7 +99,7 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 
 	// Copy both Cluster level annotations and Service annotations
 	annotations := map[string]string{}
-	for k, v := range annotationsForCluster(kmc) {
+	for k, v := range kcontrollerutil.AnnotationsForK0smotronCluster(kmc) {
 		annotations[k] = v
 	}
 	for k, v := range kmc.Spec.Service.Annotations {

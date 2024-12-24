@@ -18,11 +18,14 @@ package controlplane
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -45,6 +48,8 @@ import (
 
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/exec"
+	"github.com/k0sproject/version"
 )
 
 type K0smotronController struct {
@@ -107,6 +112,26 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	// 	return ctrl.Result{}, nil
 	// }
 
+	defer func() {
+		derr := c.updateStatus(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, kcp)
+		if derr != nil {
+			if errors.Is(derr, ErrNotReady) {
+				res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
+			} else {
+				log.Error(derr, "Failed to update K0smotronContorlPlane status")
+				err = derr
+				return
+			}
+		}
+
+		derr = c.Status().Patch(ctx, kcp, client.Merge)
+		if derr != nil {
+			log.Error(derr, "Failed to patch K0smotronContorlPlane status")
+			err = derr
+			return
+		}
+	}()
+
 	res, ready, err := c.reconcile(ctx, cluster, kcp)
 	if err != nil {
 		log.Error(err, "Reconciliation failed")
@@ -147,7 +172,6 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	kcp.Status.ExternalManagedControlPlane = true
 	kcp.Status.Inititalized = true
 	kcp.Status.ControlPlaneReady = true
-	kcp.Status.Version = kcp.Spec.Version
 	err = c.Status().Update(ctx, kcp)
 
 	return res, err
@@ -298,6 +322,99 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 func (c *K0smotronController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
 	return certificates.LookupOrGenerate(ctx, c.Client, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0smotronControlPlane")))
+}
+
+func (c *K0smotronController) updateStatus(ctx context.Context, cluster types.NamespacedName, kcp *cpv1beta1.K0smotronControlPlane) error {
+	var kmc kapi.Cluster
+	err := c.Client.Get(ctx, cluster, &kmc)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// The cluster is not yet created.
+			return nil
+		}
+
+		return err
+	}
+
+	contolPlanePods := &corev1.PodList{}
+	opts := &client.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			"cluster.x-k8s.io/cluster-name":  cluster.Name,
+			"cluster.x-k8s.io/control-plane": "true",
+		}),
+	}
+	err = c.List(ctx, contolPlanePods, opts)
+	if err != nil {
+		return err
+	}
+
+	kcp.Status.Replicas = int32(len(contolPlanePods.Items))
+
+	var (
+		updatedReplicas, readyReplicas, unavailableReplicas int
+	)
+
+	desiredVersionStr := kcp.Spec.Version
+	if !strings.Contains(desiredVersionStr, "+") {
+		desiredVersionStr = fmt.Sprintf("%s+%s", desiredVersionStr, kapi.DefaultK0SSuffix)
+	}
+	desiredVersion, err := version.NewVersion(desiredVersionStr)
+	if err != nil {
+		return err
+	}
+	minimumVersion := *desiredVersion
+
+	for _, pod := range contolPlanePods.Items {
+		isPodReady := false
+		for _, c := range pod.Status.Conditions {
+			// readiness probe in pod will propagate pod status Ready = True if k0s service is running successfully.
+			if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+				isPodReady = true
+				break
+			}
+		}
+		if isPodReady {
+			readyReplicas++
+		} else {
+			unavailableReplicas++
+			// if pod is unavailable subsequent checks do not apply
+			continue
+		}
+
+		currentVersionOutput, err := exec.PodExecCmdOutput(ctx, c.ClientSet, c.RESTConfig, pod.GetName(), pod.GetNamespace(), "k0s version")
+		if err != nil {
+			return err
+		}
+		currentVersionStr, _ := strings.CutSuffix(currentVersionOutput, "\n")
+		currentVersion, err := version.NewVersion(currentVersionStr)
+		if err != nil {
+			return err
+		}
+
+		if desiredVersion.Equal(currentVersion) {
+			updatedReplicas++
+		}
+
+		if currentVersion.LessThan(&minimumVersion) {
+			minimumVersion = *currentVersion
+		}
+	}
+
+	kcp.Status.UpdatedReplicas = int32(updatedReplicas)
+	kcp.Status.ReadyReplicas = int32(readyReplicas)
+	kcp.Status.UnavailableReplicas = int32(unavailableReplicas)
+
+	if kcp.Status.ReadyReplicas > 0 {
+		kcp.Status.Version = minimumVersion.String()
+	}
+
+	// if no replicas are yet available or the desired version is not in the current state of the
+	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
+	if kcp.Status.UnavailableReplicas > 0 || desiredVersion.String() != kcp.Status.Version {
+		return ErrNotReady
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

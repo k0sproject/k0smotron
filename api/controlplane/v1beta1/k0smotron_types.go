@@ -50,9 +50,27 @@ type K0smotronControlPlaneList struct {
 
 type K0smotronControlPlaneStatus struct {
 	// Ready denotes that the control plane is ready
-	Ready                       bool   `json:"ready"`
-	ControlPlaneReady           bool   `json:"controlPlaneReady"`
-	Inititalized                bool   `json:"initialized"`
-	ExternalManagedControlPlane bool   `json:"externalManagedControlPlane"`
-	Version                     string `json:"version"`
+	Ready                       bool `json:"ready"`
+	ControlPlaneReady           bool `json:"controlPlaneReady"`
+	Inititalized                bool `json:"initialized"`
+	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
+	// version represents the minimum Kubernetes version for the control plane pods
+	// in the cluster.
+	// +optional
+	Version string `json:"version"`
+	// replicas is the total number of pods targeted by this control plane
+	// +optional
+	Replicas int32 `json:"replicas"`
+	// updatedReplicas is the total number of pods targeted by this control plane
+	// that have the desired version.
+	// +optional
+	UpdatedReplicas int32 `json:"updatedReplicas"`
+	// readyReplicas is the total number of fully running and ready control plane pods.
+	// +optional
+	ReadyReplicas int32 `json:"readyReplicas"`
+	// unavailableReplicas is the total number of unavailable pods targeted by this control plane.
+	// This is the total number of pods with Condition Ready = false.
+	// They may either be pods that are running but not yet ready.
+	// +optional
+	UnavailableReplicas int32 `json:"unavailableReplicas"`
 }

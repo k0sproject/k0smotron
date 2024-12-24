@@ -27,6 +27,7 @@ import (
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -66,7 +67,7 @@ func (r *ClusterReconciler) reconcileEtcd(ctx context.Context, kmc *km.Cluster) 
 }
 
 func (r *ClusterReconciler) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) error {
-	labels := labelsForEtcdCluster(kmc)
+	labels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 
 	svc := v1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -77,7 +78,7 @@ func (r *ClusterReconciler) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluste
 			Name:        kmc.GetEtcdServiceName(),
 			Namespace:   kmc.Namespace,
 			Labels:      labels,
-			Annotations: annotationsForCluster(kmc),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Spec: v1.ServiceSpec{
 			Type:                     v1.ServiceTypeClusterIP,
@@ -105,7 +106,7 @@ func (r *ClusterReconciler) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluste
 }
 
 func (r *ClusterReconciler) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Cluster) error {
-	labels := labelsForEtcdCluster(kmc)
+	labels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 
 	cronJob := batchv1.CronJob{
 		TypeMeta: metav1.TypeMeta{
@@ -116,7 +117,7 @@ func (r *ClusterReconciler) reconcileEtcdDefragJob(ctx context.Context, kmc *km.
 			Name:        kmc.GetEtcdDefragJobName(),
 			Namespace:   kmc.Namespace,
 			Labels:      labels,
-			Annotations: annotationsForCluster(kmc),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Spec: batchv1.CronJobSpec{
 			Schedule:          kmc.Spec.Etcd.DefragJob.Schedule,
@@ -215,7 +216,7 @@ func (r *ClusterReconciler) reconcileEtcdStatefulSet(ctx context.Context, kmc *k
 }
 
 func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32) apps.StatefulSet {
-	labels := labelsForEtcdCluster(kmc)
+	labels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 
 	size := kmc.Spec.Etcd.Persistence.Size
 
@@ -255,7 +256,7 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, existingSts
 			Name:        kmc.GetEtcdStatefulSetName(),
 			Namespace:   kmc.Namespace,
 			Labels:      labels,
-			Annotations: annotationsForCluster(kmc),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Spec: apps.StatefulSetSpec{
 			ServiceName: kmc.GetEtcdServiceName(),
@@ -277,7 +278,7 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, existingSts
 								PodAffinityTerm: v1.PodAffinityTerm{
 									TopologyKey: "topology.kubernetes.io/zone",
 									LabelSelector: &metav1.LabelSelector{
-										MatchLabels: labelsForEtcdCluster(kmc),
+										MatchLabels: kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc),
 									},
 								},
 							},
@@ -286,7 +287,7 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, existingSts
 								PodAffinityTerm: v1.PodAffinityTerm{
 									TopologyKey: "kubernetes.io/hostname",
 									LabelSelector: &metav1.LabelSelector{
-										MatchLabels: labelsForEtcdCluster(kmc),
+										MatchLabels: kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc),
 									},
 								},
 							},
