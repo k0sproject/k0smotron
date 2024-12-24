@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/imdario/mergo"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -39,9 +40,8 @@ func (c *K0sController) getMachineTemplate(ctx context.Context, kcp *cpv1beta1.K
 	return machineTemplate, nil
 }
 
-func (c *K0sController) generateKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, endpoint string) (*api.Config, error) {
-	clusterName := util.ObjectKey(cluster)
-	clusterCA, err := secret.GetFromNamespacedName(ctx, c.Client, clusterName, secret.ClusterCA)
+func (c *K0sController) generateKubeconfig(ctx context.Context, clusterKey client.ObjectKey, endpoint string) (*api.Config, error) {
+	clusterCA, err := secret.GetFromNamespacedName(ctx, c.Client, clusterKey, secret.ClusterCA)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, kubeconfig.ErrDependentCertificateNotFound
@@ -63,7 +63,7 @@ func (c *K0sController) generateKubeconfig(ctx context.Context, cluster *cluster
 		return nil, fmt.Errorf("CA private key not found: %w", err)
 	}
 
-	cfg, err := kubeconfig.New(clusterName.Name, endpoint, cert, key)
+	cfg, err := kubeconfig.New(clusterKey.Name, endpoint, cert, key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate a kubeconfig: %w", err)
 	}
@@ -90,6 +90,49 @@ func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Con
 	kcSecret.Name = secretName
 
 	return c.Create(ctx, kcSecret)
+}
+
+func (c *K0sController) regenerateKubeconfigSecret(ctx context.Context, kubeconfigSecret *v1.Secret) error {
+	clusterName, _, err := secret.ParseSecretName(kubeconfigSecret.Name)
+	if err != nil {
+		return fmt.Errorf("failed to parse secret name: %w", err)
+	}
+	data, ok := kubeconfigSecret.Data[secret.KubeconfigDataName]
+	if !ok {
+		return fmt.Errorf("missing key %q in secret data: %w", secret.KubeconfigDataName, err)
+	}
+
+	oldConfig, err := clientcmd.Load(data)
+	if err != nil {
+		return fmt.Errorf("failed to convert kubeconfig Secret into a clientcmdapi.Config: %w", err)
+	}
+
+	endpoint := oldConfig.Clusters[clusterName].Server
+
+	clusterKey := client.ObjectKey{
+		Name: clusterName,
+		// The namespace of the current kubeconfig secret can be used, as it is always
+		// created in the cluster's namespace.
+		Namespace: kubeconfigSecret.Namespace,
+	}
+	newConfig, err := c.generateKubeconfig(ctx, clusterKey, endpoint)
+	if err != nil {
+		return err
+	}
+
+	// The proxy URL needs to be set for the new secret using the old value. That way we
+	// cover cases when tunneling mode = "proxy" and proxy url exists.
+	for cn := range newConfig.Clusters {
+		newConfig.Clusters[cn].ProxyURL = oldConfig.Clusters[clusterName].ProxyURL
+	}
+
+	out, err := clientcmd.Write(*newConfig)
+	if err != nil {
+		return fmt.Errorf("failed to serialize config to yaml: %w", err)
+	}
+	kubeconfigSecret.Data[secret.KubeconfigDataName] = out
+
+	return c.Update(ctx, kubeconfigSecret)
 }
 
 func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
