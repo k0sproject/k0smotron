@@ -132,9 +132,12 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	})
 	s.Require().NoError(err)
 
-	for i := 0; i < 3; i++ {
+	nodes, err := util.GetControlPlaneNodesIDs("docker-test-")
+	s.Require().NoError(err)
+
+	for _, node := range nodes {
 		err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-			output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-%d", i), "k0s", "status").Output()
+			output, err := exec.Command("docker", "exec", node, "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
@@ -151,65 +154,56 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	s.updateClusterObjects()
 
 	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
-		newNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
+		var obj unstructured.UnstructuredList
+		err := s.client.RESTClient().
+			Get().
+			AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines").
+			Do(s.ctx).
+			Into(&obj)
 		if err != nil {
 			return false, nil
 		}
 
-		return len(newNodeIDs) == 6, nil
-	})
-	s.Require().NoError(err)
-
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		veryNewNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
-		if err != nil {
-			return false, nil
+		for _, item := range obj.Items {
+			if strings.Contains(item.GetName(), "worker") {
+				continue
+			}
+			if item.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation] != "docker-test-cp-template-new" {
+				return false, nil
+			}
 		}
 
-		return len(veryNewNodeIDs) == 3, nil
+		return true, nil
 	})
 	s.Require().NoError(err)
 
-	var obj unstructured.Unstructured
-	err = s.client.RESTClient().
-		Get().
-		AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines/docker-test-4").
-		Do(s.ctx).
-		Into(&obj)
-	s.Require().NoError(err)
-	s.Require().Equal("docker-test-cp-template-new", obj.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation])
-
-	time.Sleep(time.Minute)
 	s.T().Log("updating cluster objects again")
 	s.updateClusterObjectsAgain()
 
 	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
-		newNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
+		var obj unstructured.UnstructuredList
+		err := s.client.RESTClient().
+			Get().
+			AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines").
+			Do(s.ctx).
+			Into(&obj)
 		if err != nil {
 			return false, nil
 		}
 
-		return len(newNodeIDs) == 6, nil
-	})
-	s.Require().NoError(err)
+		for _, item := range obj.Items {
+			if strings.Contains(item.GetName(), "worker") {
+				continue
+			}
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		veryNewNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
-		if err != nil {
-			return false, nil
+			if item.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation] != "docker-test-cp-template-new-2" {
+				return false, nil
+			}
 		}
 
-		return len(veryNewNodeIDs) == 3, nil
+		return true, nil
 	})
 	s.Require().NoError(err)
-
-	err = s.client.RESTClient().
-		Get().
-		AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines/docker-test-2").
-		Do(s.ctx).
-		Into(&obj)
-	s.Require().NoError(err)
-	s.Require().Equal("docker-test-cp-template-new-2", obj.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation])
 
 	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
@@ -242,7 +236,8 @@ func (s *CAPIDockerMachineChangeTemplate) updateClusterObjectsAgain() {
 
 func (s *CAPIDockerMachineChangeTemplate) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.Command("kubectl", "delete", "cluster", "docker-test").CombinedOutput()
+	//out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
