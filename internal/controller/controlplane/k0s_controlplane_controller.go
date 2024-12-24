@@ -213,17 +213,11 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 	err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &corev1.Secret{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return kubeconfig.CreateSecret(ctx, c.Client, cluster)
-		}
-		return err
-	}
-
-	if kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
-		if kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
-			secretName := secret.Name(cluster.Name+"-proxied", secret.Kubeconfig)
-			err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &corev1.Secret{})
-			if err != nil {
-				if apierrors.IsNotFound(err) {
+			if !kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
+				return kubeconfig.CreateSecret(ctx, c.Client, cluster)
+			} else {
+				secretName := secret.Name(cluster.Name, secret.Kubeconfig)
+				if kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
 					kc, err := c.generateKubeconfig(ctx, cluster, fmt.Sprintf("https://%s", cluster.Spec.ControlPlaneEndpoint.String()))
 					if err != nil {
 						return err
@@ -237,14 +231,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 					if err != nil {
 						return err
 					}
-				}
-				return err
-			}
-		} else {
-			secretName := secret.Name(cluster.Name+"-tunneled", secret.Kubeconfig)
-			err := c.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, &corev1.Secret{})
-			if err != nil {
-				if apierrors.IsNotFound(err) {
+				} else {
 					kc, err := c.generateKubeconfig(ctx, cluster, fmt.Sprintf("https://%s:%d", kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))
 					if err != nil {
 						return err
@@ -255,9 +242,9 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 						return err
 					}
 				}
-				return err
 			}
 		}
+		return err
 	}
 
 	return nil
