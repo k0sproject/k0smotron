@@ -29,7 +29,7 @@ import (
 	"github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
 
-// +kubebuilder:webhook:path=/validate-v1beta1-k0scontrolplane,mutating=false,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0scontolplanes,verbs=create;update,versions=v1beta1,name=validate-k0scontolplane-v1beta1.k0smotron.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-controlplane-cluster-x-k8s-io-v1beta1-k0scontrolplane,mutating=false,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=create;update,versions=v1beta1,name=validate-k0scontrolplane-v1beta1.k0smotron.io,admissionReviewVersions=v1
 
 // K0sControlPlaneValidator struct is responsible for validating the K0sControlPlane resource when it is created, updated, or deleted.
 //
@@ -87,6 +87,35 @@ func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ runtime.O
 }
 
 func validateK0sControlPlane(kcp *v1beta1.K0sControlPlane) error {
+	if err := denyUncompatibleK0sVersions(kcp); err != nil {
+		return err
+	}
+
+	// nolint:revive
+	if err := denyRecreateOnSingleClusters(kcp); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func denyUncompatibleK0sVersions(kcp *v1beta1.K0sControlPlane) error {
+	var uncomaptibleVersions = map[string]string{
+		"v1.31.1": "v1.31.2+",
+	}
+	v, err := version.NewVersion(kcp.Spec.Version)
+	if err != nil {
+		return fmt.Errorf("failed to parse version: %v", err)
+	}
+
+	if vv, ok := uncomaptibleVersions[v.Core().String()]; ok {
+		return fmt.Errorf("version %s is not compatible with K0sControlPlane, use %s", kcp.Spec.Version, vv)
+	}
+
+	return nil
+}
+
+func denyRecreateOnSingleClusters(kcp *v1beta1.K0sControlPlane) error {
 	if kcp.Spec.UpdateStrategy == v1beta1.UpdateRecreate {
 
 		// If the cluster is running in single mode, we can't use the Recreate strategy
@@ -104,7 +133,8 @@ func validateK0sControlPlane(kcp *v1beta1.K0sControlPlane) error {
 
 // SetupK0sControlPlaneWebhookWithManager registers the webhook for K0sControlPlane in the manager.
 func (v *K0sControlPlaneValidator) SetupK0sControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&v1beta1.K0sControlPlane{}).
-		WithValidator(&K0sControlPlaneValidator{}).
+	return ctrl.NewWebhookManagedBy(mgr).
+		For(&v1beta1.K0sControlPlane{}).
+		WithValidator(v).
 		Complete()
 }
