@@ -255,6 +255,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	commands = append(commands, downloadCommands...)
 	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
 	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
+	commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
 	commands = append(commands, installCmd, "k0s start")
 	commands = append(commands, config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
@@ -426,7 +427,7 @@ data:
     server_addr = %s
     server_port = %d
     token = %s
-    
+
     [kube-apiserver]
     type = tcp
     local_ip = %s
@@ -745,6 +746,103 @@ name="k0sleave"
 description="k0s etcd leave service"
 command="/etc/bin/k0sleave.sh"
 		`,
+		},
+		{
+			Path:        "/k0s/k0sleave-sysv",
+			Permissions: "0644",
+			Content: `#!/bin/sh
+# For RedHat and cousins:
+# chkconfig: - 99 01
+# description: k0s etcd leave service
+# processname: k0sleave
+
+### BEGIN INIT INFO
+# Provides:          k0sleave
+# Required-Start:
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: k0s etcd leave service
+# Description:       Handles etcd leave operations for k0s.
+### END INIT INFO
+
+cmd="/etc/bin/k0sleave.sh"
+
+name="k0sleave"
+pid_file="/var/run/$name.pid"
+stdout_log="/var/log/$name.log"
+stderr_log="/var/log/$name.err"
+
+get_pid() {
+    [ -f "$pid_file" ] && cat "$pid_file"
+}
+
+is_running() {
+    [ -f "$pid_file" ] && ps $(get_pid) > /dev/null 2>&1
+}
+
+case "$1" in
+    start)
+        if is_running; then
+            echo "Already started"
+        else
+            echo "Starting $name"
+            $cmd >> "$stdout_log" 2>> "$stderr_log" &
+            echo $! > "$pid_file"
+            if ! is_running; then
+                echo "Unable to start, see $stdout_log and $stderr_log"
+                exit 1
+            fi
+        fi
+    ;;
+    stop)
+        if is_running; then
+            echo -n "Stopping $name.."
+            kill $(get_pid)
+            for i in $(seq 1 10)
+            do
+                if ! is_running; then
+                    break
+                fi
+                echo -n "."
+                sleep 1
+            done
+            echo
+            if is_running; then
+                echo "Not stopped; may still be shutting down or shutdown may have failed"
+                exit 1
+            else
+                echo "Stopped"
+                if [ -f "$pid_file" ]; then
+                    rm "$pid_file"
+                fi
+            fi
+        else
+            echo "Not running"
+        fi
+    ;;
+    restart)
+        $0 stop
+        if is_running; then
+            echo "Unable to stop, will not attempt to start"
+            exit 1
+        fi
+        $0 start
+    ;;
+    status)
+        if is_running; then
+            echo "Running"
+        else
+            echo "Stopped"
+            exit 1
+        fi
+    ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+    ;;
+esac
+exit 0`,
 		},
 	}
 }
