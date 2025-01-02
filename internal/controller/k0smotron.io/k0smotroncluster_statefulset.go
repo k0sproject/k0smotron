@@ -484,11 +484,18 @@ func (r *ClusterReconciler) addMonitoringStack(kmc *km.Cluster, statefulSet *app
 		}},
 	})
 
-	statefulSet.Spec.Template.Annotations = map[string]string{
+	monitoringAnnotations := map[string]string{
 		"prometheus.io/scrape": "true",
 		"prometheus.io/port":   "8090",
 		"prometheus.io/path":   "/metrics",
 	}
+	if statefulSet.Spec.Template.Annotations == nil {
+		statefulSet.Spec.Template.Annotations = make(map[string]string)
+	}
+	for k, v := range monitoringAnnotations {
+		statefulSet.Spec.Template.Annotations[k] = v
+	}
+
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
 		Name: kmc.GetMonitoringConfigMapName(),
 		VolumeSource: v1.VolumeSource{
