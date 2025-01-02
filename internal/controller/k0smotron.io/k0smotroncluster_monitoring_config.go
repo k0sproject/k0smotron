@@ -22,6 +22,7 @@ import (
 	"text/template"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -56,8 +57,8 @@ func (r *ClusterReconciler) generateMonitoringCM(kmc *km.Cluster) (v1.ConfigMap,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetMonitoringConfigMapName(),
 			Namespace:   kmc.Namespace,
-			Labels:      labelsForCluster(kmc),
-			Annotations: annotationsForCluster(kmc),
+			Labels:      kcontrollerutil.LabelsForK0smotronCluster(kmc),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Data: map[string]string{
 			"prometheus.yml": entrypointBuf.String(),
