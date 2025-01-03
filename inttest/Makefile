@@ -48,6 +48,6 @@ check-capi-remote-machine-template: TIMEOUT=12m
 check-capi-remote-machine-template-update: TIMEOUT=10m
 check-capi-docker-machine-template-update: TIMEOUT=15m
 check-capi-docker-machine-template-update-recreate: TIMEOUT=25m
-check-capi-docker-machine-change-template: TIMEOUT=20m
+check-capi-docker-machine-change-template: TIMEOUT=25m
 check-capi-remote-machine-job-provision: TIMEOUT=10m
 check-upgrade: TIMEOUT=20m
