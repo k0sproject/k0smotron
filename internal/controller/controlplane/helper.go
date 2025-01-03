@@ -89,11 +89,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
 	v := kcp.Spec.Version
 
-	labels := map[string]string{
-		"cluster.x-k8s.io/cluster-name":         kcp.Name,
-		"cluster.x-k8s.io/control-plane":        "true",
-		"cluster.x-k8s.io/generateMachine-role": "control-plane",
-	}
+	labels := controlPlaneCommonLabelsForCluster(kcp, cluster.Name)
 
 	for _, arg := range kcp.Spec.K0sConfigSpec.Args {
 		if arg == "--enable-worker" || arg == "--enable-worker=true" {
@@ -102,15 +98,23 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 		}
 	}
 
+	annotations := map[string]string{}
+	// Add the annotations from the MachineTemplate.
+	// Note: we intentionally don't use the map directly to ensure we don't modify the map in KCP.
+	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Annotations {
+		annotations[k] = v
+	}
+
 	machine := &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: clusterv1.GroupVersion.String(),
 			Kind:       "Machine",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: kcp.Namespace,
-			Labels:    labels,
+			Name:        name,
+			Namespace:   kcp.Namespace,
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: clusterv1.MachineSpec{
 			Version:       &v,
@@ -149,34 +153,34 @@ func (c *K0sController) getInfraMachines(ctx context.Context, machines collectio
 }
 
 func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
-	machineFromTemplate, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
+	infraMachine, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
 	if err != nil {
 		return nil, err
 	}
 
-	existingMachineFromTemplate := &unstructured.Unstructured{}
-	existingMachineFromTemplate.SetAPIVersion(machineFromTemplate.GetAPIVersion())
-	existingMachineFromTemplate.SetKind(machineFromTemplate.GetKind())
-	err = c.Get(ctx, client.ObjectKey{Namespace: machineFromTemplate.GetNamespace(), Name: machineFromTemplate.GetName()}, existingMachineFromTemplate)
+	existingInfraMachine := &unstructured.Unstructured{}
+	existingInfraMachine.SetAPIVersion(infraMachine.GetAPIVersion())
+	existingInfraMachine.SetKind(infraMachine.GetKind())
+	err = c.Get(ctx, client.ObjectKey{Namespace: infraMachine.GetNamespace(), Name: infraMachine.GetName()}, existingInfraMachine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			if err = c.Client.Patch(ctx, machineFromTemplate, client.Apply, &client.PatchOptions{
+			if err = c.Client.Patch(ctx, infraMachine, client.Apply, &client.PatchOptions{
 				FieldManager: "k0smotron",
 			}); err != nil {
 				return nil, fmt.Errorf("error apply patching: %w", err)
 			}
-			return machineFromTemplate, nil
+			return infraMachine, nil
 		}
 
 		return nil, fmt.Errorf("error getting machine implementation: %w", err)
 	}
 
-	err = mergo.Merge(existingMachineFromTemplate, machineFromTemplate, mergo.WithSliceDeepCopy)
+	err = mergo.Merge(existingInfraMachine, infraMachine, mergo.WithSliceDeepCopy)
 	if err != nil {
 		return nil, err
 	}
 
-	spec, _, _ := unstructured.NestedMap(existingMachineFromTemplate.Object, "spec")
+	spec, _, _ := unstructured.NestedMap(existingInfraMachine.Object, "spec")
 	patch := unstructured.Unstructured{Object: map[string]interface{}{
 		"spec": spec,
 	}}
@@ -186,30 +190,30 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 	}
 
 	pluralName := ""
-	resList, _ := c.ClientSet.Discovery().ServerResourcesForGroupVersion(existingMachineFromTemplate.GetAPIVersion())
+	resList, _ := c.ClientSet.Discovery().ServerResourcesForGroupVersion(existingInfraMachine.GetAPIVersion())
 	for _, apiRes := range resList.APIResources {
-		if apiRes.Kind == existingMachineFromTemplate.GetKind() && !strings.Contains(apiRes.Name, "/") {
+		if apiRes.Kind == existingInfraMachine.GetKind() && !strings.Contains(apiRes.Name, "/") {
 			pluralName = apiRes.Name
 			break
 		}
 	}
 	req := c.ClientSet.RESTClient().Patch(types.MergePatchType).
 		Body(data).
-		AbsPath("apis", machineFromTemplate.GetAPIVersion(), "namespaces", machineFromTemplate.GetNamespace(), pluralName, machineFromTemplate.GetName())
+		AbsPath("apis", infraMachine.GetAPIVersion(), "namespaces", infraMachine.GetNamespace(), pluralName, infraMachine.GetName())
 	_, err = req.DoRaw(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error patching: %w", err)
 	}
-	return machineFromTemplate, nil
+	return infraMachine, nil
 }
 
 func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
-	machineFromTemplate, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
+	infraMachine, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
 	if err != nil {
 		return err
 	}
 
-	err = c.Client.Delete(ctx, machineFromTemplate)
+	err = c.Client.Delete(ctx, infraMachine)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("error deleting machine implementation: %w", err)
 	}
@@ -217,46 +221,43 @@ func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name stri
 }
 
 func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
-	unstructuredMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
+	infraMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = ctrl.SetControllerReference(kcp, unstructuredMachineTemplate, c.Scheme)
+	_ = ctrl.SetControllerReference(kcp, infraMachineTemplate, c.Scheme)
 
-	template, found, err := unstructured.NestedMap(unstructuredMachineTemplate.UnstructuredContent(), "spec", "template")
+	template, found, err := unstructured.NestedMap(infraMachineTemplate.UnstructuredContent(), "spec", "template")
 	if !found {
-		return nil, fmt.Errorf("missing spec.template on %v %q", unstructuredMachineTemplate.GroupVersionKind(), unstructuredMachineTemplate.GetName())
+		return nil, fmt.Errorf("missing spec.template on %v %q", infraMachineTemplate.GroupVersionKind(), infraMachineTemplate.GetName())
 	} else if err != nil {
-		return nil, fmt.Errorf("error getting spec.template map on %v %q: %w", unstructuredMachineTemplate.GroupVersionKind(), unstructuredMachineTemplate.GetName(), err)
+		return nil, fmt.Errorf("error getting spec.template map on %v %q: %w", infraMachineTemplate.GroupVersionKind(), infraMachineTemplate.GetName(), err)
 	}
 
-	machine := &unstructured.Unstructured{Object: template}
-	machine.SetName(name)
-	machine.SetNamespace(kcp.Namespace)
+	infraMachine := &unstructured.Unstructured{Object: template}
+	infraMachine.SetName(name)
+	infraMachine.SetNamespace(kcp.Namespace)
 
 	annotations := map[string]string{}
 	for key, value := range kcp.Annotations {
 		annotations[key] = value
 	}
-	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.Name
-	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
-	machine.SetAnnotations(annotations)
 
-	labels := map[string]string{}
-	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Labels {
-		labels[k] = v
+	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Annotations {
+		annotations[k] = v
 	}
 
-	labels[clusterv1.ClusterNameLabel] = cluster.GetName()
-	labels[clusterv1.MachineControlPlaneLabel] = ""
-	labels[clusterv1.MachineControlPlaneNameLabel] = kcp.Name
-	machine.SetLabels(labels)
+	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.Name
+	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
+	infraMachine.SetAnnotations(annotations)
 
-	machine.SetAPIVersion(unstructuredMachineTemplate.GetAPIVersion())
-	machine.SetKind(strings.TrimSuffix(unstructuredMachineTemplate.GetKind(), clusterv1.TemplateSuffix))
+	infraMachine.SetLabels(controlPlaneCommonLabelsForCluster(kcp, cluster.GetName()))
 
-	return machine, nil
+	infraMachine.SetAPIVersion(infraMachineTemplate.GetAPIVersion())
+	infraMachine.SetKind(strings.TrimSuffix(infraMachineTemplate.GetKind(), clusterv1.TemplateSuffix))
+
+	return infraMachine, nil
 }
 
 func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {

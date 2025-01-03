@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
+	"sigs.k8s.io/cluster-api/util/labels/format"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -26,18 +27,18 @@ import (
 func (c *K0sController) getMachineTemplate(ctx context.Context, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
 	infRef := kcp.Spec.MachineTemplate.InfrastructureRef
 
-	machineTemplate := new(unstructured.Unstructured)
-	machineTemplate.SetAPIVersion(infRef.APIVersion)
-	machineTemplate.SetKind(infRef.Kind)
-	machineTemplate.SetName(infRef.Name)
+	infraMachineTemplate := new(unstructured.Unstructured)
+	infraMachineTemplate.SetAPIVersion(infRef.APIVersion)
+	infraMachineTemplate.SetKind(infRef.Kind)
+	infraMachineTemplate.SetName(infRef.Name)
 
 	key := client.ObjectKey{Name: infRef.Name, Namespace: infRef.Namespace}
 
-	err := c.Get(ctx, key, machineTemplate)
+	err := c.Get(ctx, key, infraMachineTemplate)
 	if err != nil {
 		return nil, err
 	}
-	return machineTemplate, nil
+	return infraMachineTemplate, nil
 }
 
 func (c *K0sController) generateKubeconfig(ctx context.Context, clusterKey client.ObjectKey, endpoint string) (*api.Config, error) {
@@ -169,4 +170,21 @@ func enrichK0sConfigWithClusterData(cluster *clusterv1.Cluster, k0sConfig *unstr
 
 	err := mergo.Merge(&k0sConfig.Object, clusterValues)
 	return k0sConfig, err
+}
+
+func controlPlaneCommonLabelsForCluster(kcp *cpv1beta1.K0sControlPlane, clusterName string) map[string]string {
+	labels := map[string]string{}
+
+	// Add the labels from the MachineTemplate.
+	// Note: we intentionally don't use the map directly to ensure we don't modify the map in KCP.
+	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Labels {
+		labels[k] = v
+	}
+
+	// Always force these labels over the ones coming from the spec.
+	labels[clusterv1.ClusterNameLabel] = clusterName
+	labels[clusterv1.MachineControlPlaneLabel] = "true"
+	// Note: MustFormatValue is used here as the label value can be a hash if the control plane name is longer than 63 characters.
+	labels[clusterv1.MachineControlPlaneNameLabel] = format.MustFormatValue(kcp.Name)
+	return labels
 }

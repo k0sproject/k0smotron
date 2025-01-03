@@ -443,15 +443,15 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			}
 		}
 
-		machineFromTemplate, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
+		infraMachine, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
 		if err != nil {
 			return fmt.Errorf("error creating machine from template: %w", err)
 		}
 
 		infraRef := corev1.ObjectReference{
-			APIVersion: machineFromTemplate.GetAPIVersion(),
-			Kind:       machineFromTemplate.GetKind(),
-			Name:       machineFromTemplate.GetName(),
+			APIVersion: infraMachine.GetAPIVersion(),
+			Kind:       infraMachine.GetKind(),
+			Name:       infraMachine.GetName(),
 			Namespace:  kcp.Namespace,
 		}
 
@@ -463,7 +463,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		machines[machine.Name] = machine
 		desiredMachineNames[machine.Name] = true
 
-		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name])
+		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name], cluster.Name)
 		if err != nil {
 			return fmt.Errorf("error creating bootstrap config: %w", err)
 		}
@@ -518,15 +518,17 @@ func (c *K0sController) runMachineDeletionSequence(ctx context.Context, logger l
 	return nil
 }
 
-func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
 	controllerConfig := bootstrapv1.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
 			Kind:       "K0sControllerConfig",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: kcp.Namespace,
+			Name:        name,
+			Namespace:   kcp.Namespace,
+			Labels:      controlPlaneCommonLabelsForCluster(kcp, clusterName),
+			Annotations: kcp.Spec.MachineTemplate.ObjectMeta.Annotations,
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         machine.APIVersion,
 				Kind:               machine.Kind,
