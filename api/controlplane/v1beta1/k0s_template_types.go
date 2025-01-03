@@ -3,6 +3,7 @@ package v1beta1
 import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 func init() {
@@ -31,14 +32,44 @@ type K0sControlPlaneTemplateResource struct {
 }
 
 type K0sControlPlaneTemplateResourceSpec struct {
-	K0sConfigSpec   bootstrapv1.K0sConfigSpec       `json:"k0sConfigSpec"`
-	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate,omitempty"`
-	Version         string                          `json:"version,omitempty"`
+	K0sConfigSpec   bootstrapv1.K0sConfigSpec               `json:"k0sConfigSpec"`
+	MachineTemplate *K0sControlPlaneTemplateMachineTemplate `json:"machineTemplate,omitempty"`
+	Version         string                                  `json:"version,omitempty"`
 	// UpdateStrategy defines the strategy to use when updating the control plane.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:validation:Enum=InPlace;Recreate
 	//+kubebuilder:default=InPlace
 	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
+}
+
+// K0sControlPlaneTemplateMachineTemplate defines the template for Machines
+// in a K0sControlPlaneMachineTemplate object.
+// NOTE: K0sControlPlaneTemplateMachineTemplate is similar to K0sControlPlaneMachineTemplate but
+// omits ObjectMeta and InfrastructureRef fields. These fields do not make sense on the K0sControlPlaneTemplate,
+// because they are calculated by the Cluster topology reconciler during reconciliation and thus cannot
+// be configured on the K0sControlPlaneTemplate.
+type K0sControlPlaneTemplateMachineTemplate struct {
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
+
+	// NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
+	// The default value is 0, meaning that the node can be drained without any time limitations.
+	// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
+	// +optional
+	NodeDrainTimeout *metav1.Duration `json:"nodeDrainTimeout,omitempty"`
+
+	// NodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
+	// to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.
+	// +optional
+	NodeVolumeDetachTimeout *metav1.Duration `json:"nodeVolumeDetachTimeout,omitempty"`
+
+	// NodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
+	// hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+	// If no value is provided, the default value for this property of the Machine resource will be used.
+	// +optional
+	NodeDeletionTimeout *metav1.Duration `json:"nodeDeletionTimeout,omitempty"`
 }
 
 // +kubebuilder:object:root=true

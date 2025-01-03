@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
+	"sigs.k8s.io/cluster-api/util/labels/format"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -169,4 +170,21 @@ func enrichK0sConfigWithClusterData(cluster *clusterv1.Cluster, k0sConfig *unstr
 
 	err := mergo.Merge(&k0sConfig.Object, clusterValues)
 	return k0sConfig, err
+}
+
+func controlPlaneCommonLabelsForCluster(kcp *cpv1beta1.K0sControlPlane, clusterName string) map[string]string {
+	labels := map[string]string{}
+
+	// Add the labels from the MachineTemplate.
+	// Note: we intentionally don't use the map directly to ensure we don't modify the map in KCP.
+	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Labels {
+		labels[k] = v
+	}
+
+	// Always force these labels over the ones coming from the spec.
+	labels[clusterv1.ClusterNameLabel] = clusterName
+	labels[clusterv1.MachineControlPlaneLabel] = ""
+	// Note: MustFormatValue is used here as the label value can be a hash if the control plane name is longer than 63 characters.
+	labels[clusterv1.MachineControlPlaneNameLabel] = format.MustFormatValue(kcp.Name)
+	return labels
 }

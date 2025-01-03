@@ -442,7 +442,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			machines[machine.Name] = machine
 		}
 
-		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name])
+		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name], cluster.Name)
 		if err != nil {
 			return fmt.Errorf("error creating bootstrap config: %w", err)
 		}
@@ -527,7 +527,7 @@ func (c *K0sController) runMachineDeletionSequence(ctx context.Context, logger l
 	return nil
 }
 
-func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
 	controllerConfig := bootstrapv1.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
@@ -536,6 +536,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: kcp.Namespace,
+			Labels:    controlPlaneCommonLabelsForCluster(kcp, clusterName),
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         machine.APIVersion,
 				Kind:               machine.Kind,
