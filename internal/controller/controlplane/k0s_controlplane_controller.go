@@ -424,7 +424,6 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 		machines[machine.Name] = machine
 		desiredMachineNames[machine.Name] = true
-		//}
 
 		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name])
 		if err != nil {
@@ -827,24 +826,24 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 
 func machineName(kcp *cpv1beta1.K0sControlPlane, machineToDelete, desiredMachines map[string]bool) string {
 	if len(machineToDelete) == 0 {
-		return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines))
+		for i := 0; i < int(kcp.Spec.Replicas); i++ {
+			name := fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines)-i)
+			_, ok := desiredMachines[name]
+			if !ok {
+				return name
+			}
+		}
 	}
 
-	f := false
 	for i := 0; i < int(kcp.Spec.Replicas); i++ {
 		name := fmt.Sprintf("%s-%d", kcp.Name, i)
 		_, ok := machineToDelete[name]
 		if ok {
-			f = true
+			return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines)+int(kcp.Spec.Replicas))
 		}
 	}
 
-	if f {
-		return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines)+int(kcp.Spec.Replicas))
-	}
 	return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines))
-
-	//return fmt.Sprintf("%s-0", kcp.Name)
 }
 
 // SetupWithManager sets up the controller with the Manager.
