@@ -89,11 +89,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
 	v := kcp.Spec.Version
 
-	labels := map[string]string{
-		"cluster.x-k8s.io/cluster-name":         kcp.Name,
-		"cluster.x-k8s.io/control-plane":        "true",
-		"cluster.x-k8s.io/generateMachine-role": "control-plane",
-	}
+	labels := controlPlaneCommonLabelsForCluster(kcp, cluster.Name)
 
 	for _, arg := range kcp.Spec.K0sConfigSpec.Args {
 		if arg == "--enable-worker" || arg == "--enable-worker=true" {
