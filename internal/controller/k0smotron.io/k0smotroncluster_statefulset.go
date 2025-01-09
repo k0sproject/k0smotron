@@ -432,7 +432,7 @@ func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet)
 		Command: []string{
 			"sh",
 			"-c",
-			"mkdir -p /var/lib/k0s/pki && cp /certs-init/*.* /var/lib/k0s/pki/",
+			"mkdir -p /var/lib/k0s/pki && rm -rf /var/lib/k0s/pki/server.* && cp /certs-init/*.* /var/lib/k0s/pki/",
 		},
 		VolumeMounts: []v1.VolumeMount{
 			{
