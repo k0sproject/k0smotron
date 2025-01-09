@@ -146,7 +146,11 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		Cluster:     cluster,
 	}
 
-	// TODO Check if the secret is already present etc. to bail out early
+	if scope.Config.Status.Ready {
+		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
+		log.Info("Bootstrapdata already created, reconciled succesfully")
+		return ctrl.Result{}, nil
+	}
 
 	log.Info("Finding the token secret")
 	// Get the token from a secret
@@ -184,7 +188,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	commands = append(commands, installCmd, startCmd)
 	commands = append(commands, config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
-	// https://cluster-api.sigs.k8s.io/developer/providers/bootstrap.html#sentinel-file
+	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
 
 	ci := &cloudinit.CloudInit{

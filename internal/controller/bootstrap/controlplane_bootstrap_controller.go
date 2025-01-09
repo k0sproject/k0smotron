@@ -149,7 +149,11 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	}
 
-	// TODO Check if the secret is already present etc. to bail out early
+	if scope.Config.Status.Ready {
+		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
+		log.Info("Bootstrapdata already created, reconciled succesfully")
+		return ctrl.Result{}, nil
+	}
 
 	log.Info("Creating bootstrap data")
 	var (
@@ -195,10 +199,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Content:     string(k0sConfigBytes),
 		})
 		config.Spec.Args = append(config.Spec.Args, "--config", "/etc/k0s.yaml")
-	}
-
-	if config.Status.Ready {
-		return ctrl.Result{}, nil
 	}
 
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
@@ -258,7 +258,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	commands = append(commands, installCmd, "k0s start")
 	commands = append(commands, config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
-	// https://cluster-api.sigs.k8s.io/developer/providers/bootstrap.html#sentinel-file
+	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
 
 	ci := &cloudinit.CloudInit{
