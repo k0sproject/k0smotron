@@ -166,26 +166,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.ClusterReconciler{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		ClientSet:  clientSet,
-		RESTConfig: restConfig,
-		Recorder:   mgr.GetEventRecorderFor("cluster-reconciler"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "K0smotronCluster")
-		os.Exit(1)
-	}
-
-	if err = (&controller.JoinTokenRequestReconciler{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		ClientSet:  clientSet,
-		RESTConfig: restConfig,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "JoinTokenRequest")
-		os.Exit(1)
-	}
 	//+kubebuilder:scaffold:builder
 
 	if isControllerEnabled(bootstrapController) {
@@ -218,6 +198,27 @@ func main() {
 	}
 
 	if isControllerEnabled(controlPlaneController) {
+		if err = (&controller.ClusterReconciler{
+			Client:     mgr.GetClient(),
+			Scheme:     mgr.GetScheme(),
+			ClientSet:  clientSet,
+			RESTConfig: restConfig,
+			Recorder:   mgr.GetEventRecorderFor("cluster-reconciler"),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "K0smotronCluster")
+			os.Exit(1)
+		}
+
+		if err = (&controller.JoinTokenRequestReconciler{
+			Client:     mgr.GetClient(),
+			Scheme:     mgr.GetScheme(),
+			ClientSet:  clientSet,
+			RESTConfig: restConfig,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "JoinTokenRequest")
+			os.Exit(1)
+		}
+
 		if err = (&controlplane.K0smotronController{
 			Client:     mgr.GetClient(),
 			Scheme:     mgr.GetScheme(),
