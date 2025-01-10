@@ -249,7 +249,10 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	return ctrl.Result{}, nil
 }
 
-const startCommandTemplate = `(command -v systemctl > /dev/null 2>&1 && systemctl start %s) || (command -v rc-service > /dev/null 2>&1 && rc-service %s start) || (echo "Not a supported init system"; false)`
+const startCommandTemplate = `(command -v systemctl > /dev/null 2>&1 && systemctl start %s) || ` + // systemd
+	`(command -v rc-service > /dev/null 2>&1 && rc-service %s start) || ` + // OpenRC
+	`(command -v service > /dev/null 2>&1 && service %s start) || ` + // SysV
+	`(echo "Not a supported init system"; false)`
 
 const ctrlService = "k0scontroller"
 const workerService = "k0sworker"
@@ -257,9 +260,9 @@ const workerService = "k0sworker"
 func getStartCommand(role string) (string, error) {
 	switch role {
 	case "controller":
-		return fmt.Sprintf(startCommandTemplate, ctrlService, ctrlService), nil
+		return fmt.Sprintf(startCommandTemplate, ctrlService, ctrlService, ctrlService), nil
 	case "worker":
-		return fmt.Sprintf(startCommandTemplate, workerService, workerService), nil
+		return fmt.Sprintf(startCommandTemplate, workerService, workerService, workerService), nil
 	default:
 		return "", fmt.Errorf("unknown role %s", role)
 	}

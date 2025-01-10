@@ -39,7 +39,10 @@ type SSHProvisioner struct {
 	log           logr.Logger
 }
 
-const stopCommandTemplate = `(command -v systemctl > /dev/null 2>&1 && systemctl stop %s) || (command -v rc-service > /dev/null 2>&1 && rc-service %s stop) || (echo "Not a supported init system"; false)`
+const stopCommandTemplate = `(command -v systemctl > /dev/null 2>&1 && systemctl stop %s) || ` + // systemd
+	`(command -v rc-service > /dev/null 2>&1 && rc-service %s stop) || ` + // OpenRC
+	`(command -v service > /dev/null 2>&1 && service %s stop) || ` + // SysV
+	`(echo "Not a supported init system"; false)`
 
 const (
 	ctrlService   = "k0scontroller"
@@ -139,9 +142,9 @@ func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) erro
 	var cmds []string
 	if mode == ModeController {
 		cmds = append(cmds, "k0s etcd leave")
-		cmds = append(cmds, fmt.Sprintf(stopCommandTemplate, ctrlService, ctrlService))
+		cmds = append(cmds, fmt.Sprintf(stopCommandTemplate, ctrlService, ctrlService, ctrlService))
 	} else {
-		cmds = append(cmds, fmt.Sprintf(stopCommandTemplate, workerService, workerService))
+		cmds = append(cmds, fmt.Sprintf(stopCommandTemplate, workerService, workerService, ctrlService))
 	}
 	cmds = append(cmds, "k0s reset")
 
