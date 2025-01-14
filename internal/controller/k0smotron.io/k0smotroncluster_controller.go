@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -51,6 +52,11 @@ type ClusterReconciler struct {
 	RESTConfig *rest.Config
 	Recorder   record.EventRecorder
 }
+
+const (
+	clusterUIDLabel  = "k0smotron.io/cluster-uid"
+	clusterFinalizer = "k0smotron.io/finalizer"
+)
 
 //+kubebuilder:rbac:groups=k0smotron.io,resources=clusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=k0smotron.io,resources=clusters/status,verbs=get;update;patch
@@ -90,7 +96,39 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	logger.Info("Reconciling")
 
 	if !kmc.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info("Cluster is being deleted, no action needed")
+		logger.Info("Cluster is being deleted")
+		if controllerutil.ContainsFinalizer(&kmc, clusterFinalizer) {
+			// Even if there is an error the finalizer must be removed for a complete removal of the
+			// cluster resource. In the worst case, the associated JointTokenRequest is not deleted.
+			defer func() {
+				controllerutil.RemoveFinalizer(&kmc, clusterFinalizer)
+				if err := r.Update(ctx, &kmc); err != nil {
+					logger.Error(err, "Error removing cluster finalizer")
+				}
+			}()
+
+			// Once the cluster enters Terminating state, we ensure that the resources dependent on it
+			// are also removed.
+			// Note: owner references cannot be used in this case because JoinTokenRequest can be in a
+			// different namespace.
+			jtrl := &km.JoinTokenRequestList{}
+			err := r.List(ctx, jtrl,
+				client.MatchingLabels{
+					clusterUIDLabel: string(kmc.GetUID()),
+				})
+			if err != nil {
+				logger.Error(err, "Error retrieving JoinTokenRequests resources related to cluster")
+				return ctrl.Result{}, nil
+			}
+			for i := range jtrl.Items {
+				err := r.Delete(ctx, &jtrl.Items[i])
+				if err != nil {
+					logger.Error(err, "Error removing JoinTokenRequests")
+					return ctrl.Result{}, nil
+				}
+			}
+		}
+
 		return ctrl.Result{}, nil
 	}
 

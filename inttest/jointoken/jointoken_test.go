@@ -19,12 +19,14 @@ package jointoken
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	"github.com/k0sproject/k0s/pkg/kubernetes/watch"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
@@ -61,6 +63,20 @@ func (s *JoinTokenSuite) TestK0sGetsUp() {
 	s.createJoinTokenRequest(s.Context(), kc)
 
 	s.Require().NoError(s.WaitForSecret(s.Context(), kc, "jtr-test", "jtr-test"))
+
+	s.T().Log("removing cluster")
+	s.deleteK0smotronCluster(s.Context(), kc)
+
+	s.T().Log("checking if JoinTokenRequest is deleted")
+	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+		res := kc.RESTClient().Get().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/jtr-test/jointokenrequests/jtr-test").Do(s.Context())
+
+		var statusCode int
+		res.StatusCode(&statusCode)
+
+		return statusCode == 404, nil
+	})
+	s.Require().NoError(err)
 }
 
 func TestJoinTokenSuite(t *testing.T) {
@@ -132,6 +148,11 @@ func (s *JoinTokenSuite) createJoinTokenRequest(ctx context.Context, kc *kuberne
 	}`)
 
 	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/jtr-test/jointokenrequests").Body(jtr).Do(ctx)
+	s.Require().NoError(res.Error())
+}
+
+func (s *JoinTokenSuite) deleteK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
+	res := kc.RESTClient().Delete().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters/kmc-test").Do(ctx)
 	s.Require().NoError(res.Error())
 }
 
