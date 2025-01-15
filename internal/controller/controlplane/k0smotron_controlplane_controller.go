@@ -355,8 +355,8 @@ func (c *K0smotronController) updateStatus(ctx context.Context, cluster types.Na
 	)
 
 	desiredVersionStr := kcp.Spec.Version
-	if !strings.Contains(desiredVersionStr, "+") {
-		desiredVersionStr = fmt.Sprintf("%s+%s", desiredVersionStr, kapi.DefaultK0SSuffix)
+	if !strings.Contains(desiredVersionStr, "-") {
+		desiredVersionStr = fmt.Sprintf("%s-%s", desiredVersionStr, kapi.DefaultK0SSuffix)
 	}
 	desiredVersion, err := version.NewVersion(desiredVersionStr)
 	if err != nil {
@@ -381,12 +381,7 @@ func (c *K0smotronController) updateStatus(ctx context.Context, cluster types.Na
 			continue
 		}
 
-		currentVersionOutput, err := exec.PodExecCmdOutput(ctx, c.ClientSet, c.RESTConfig, pod.GetName(), pod.GetNamespace(), "k0s version")
-		if err != nil {
-			return err
-		}
-		currentVersionStr, _ := strings.CutSuffix(currentVersionOutput, "\n")
-		currentVersion, err := version.NewVersion(currentVersionStr)
+		currentVersion, err := c.getComparableK0sVersionRunningInPod(ctx, &pod)
 		if err != nil {
 			return err
 		}
@@ -415,6 +410,19 @@ func (c *K0smotronController) updateStatus(ctx context.Context, cluster types.Na
 	}
 
 	return nil
+}
+
+func (c *K0smotronController) getComparableK0sVersionRunningInPod(ctx context.Context, pod *corev1.Pod) (*version.Version, error) {
+	currentVersionOutput, err := exec.PodExecCmdOutput(ctx, c.ClientSet, c.RESTConfig, pod.GetName(), pod.GetNamespace(), "k0s version")
+	if err != nil {
+		return nil, err
+	}
+	currentVersionStr, _ := strings.CutSuffix(currentVersionOutput, "\n")
+	// In order to compare the version reported by the 'k0s version' command executed in the pod running
+	// the controlplane with the version declared in K0smotronControlPlane.spec this transformation is
+	// necessary to match their format.
+	currentVersionStr = strings.Replace(currentVersionStr, "+", "-", 1)
+	return version.NewVersion(currentVersionStr)
 }
 
 // SetupWithManager sets up the controller with the Manager.
