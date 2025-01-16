@@ -14,47 +14,49 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package capicontolplanedockerdownscaling
+package capidockermachinetemplateupdaterecreatekine
 
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
-type CAPIControlPlaneDockerDownScalingSuite struct {
+type CAPIDockerMachineTemplateUpdateRecreateKine struct {
+	//type CAPIDockerMachineTemplateUpdateRecreateKine struct {
 	suite.Suite
-	client                       *kubernetes.Clientset
-	restConfig                   *rest.Config
-	clusterYamlsPath             string
-	clusterYamlsUpdatePath       string
-	clusterYamlsSecondUpdatePath string
-	ctx                          context.Context
+	client                 *kubernetes.Clientset
+	restConfig             *rest.Config
+	clusterYamlsPath       string
+	clusterYamlsUpdatePath string
+	ctx                    context.Context
 }
 
-func TestCAPIControlPlaneDockerDownScalingSuite(t *testing.T) {
-	s := CAPIControlPlaneDockerDownScalingSuite{}
+func TestCAPIDockerMachineTemplateUpdateRecreateKine(t *testing.T) {
+	s := CAPIDockerMachineTemplateUpdateRecreateKine{}
 	suite.Run(t, &s)
 }
 
-func (s *CAPIControlPlaneDockerDownScalingSuite) SetupSuite() {
+func (s *CAPIDockerMachineTemplateUpdateRecreateKine) SetupSuite() {
 	kubeConfigPath := os.Getenv("KUBECONFIG")
 	s.Require().NotEmpty(kubeConfigPath, "KUBECONFIG env var must be set and point to kind cluster")
 	// Get kube client from kubeconfig
@@ -69,18 +71,21 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) SetupSuite() {
 	s.Require().NotNil(kubeClient)
 	s.client = kubeClient
 
+	postgressAddress, err := getPostgresAddress()
+	s.Require().NoError(err)
+
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(fmt.Sprintf(dockerClusterYaml, postgressAddress)), 0644))
 	s.clusterYamlsUpdatePath = tmpDir + "/update.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, []byte(controlPlaneUpdate), 0644))
-	s.clusterYamlsSecondUpdatePath = tmpDir + "/update2.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsSecondUpdatePath, []byte(controlPlaneSecondUpdate), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, []byte(fmt.Sprintf(controlPlaneUpdate, postgressAddress)), 0644))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
 
-func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownScaling() {
+func (s *CAPIDockerMachineTemplateUpdateRecreateKine) TestCAPIControlPlaneDockerDownScaling() {
+
+	s.installPostgres()
 
 	// Apply the child cluster objects
 	s.applyClusterObjects()
@@ -118,10 +123,22 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	})
 	s.Require().NoError(err)
 
+	var nodeIDs []string
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		var err error
+		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
+
+		if err != nil {
+			return false, nil
+		}
+
+		return len(nodeIDs) == 3, nil
+	})
+	s.Require().NoError(err)
+
 	for i := 0; i < 3; i++ {
 		err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-			nodeName := fmt.Sprintf("docker-test-%d", i)
-			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
+			output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-%d", i), "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
@@ -131,85 +148,76 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 		s.Require().NoError(err)
 	}
 
-	var cnList autopilot.ControlNodeList
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		err = kmcKC.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes").Do(ctx).Into(&cnList)
-		if err != nil {
-			return false, nil
-		}
-
-		return len(cnList.Items) == 3, nil
-	})
-	s.Require().NoError(err)
-
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
+	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
 	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-0", "k0s", "status").CombinedOutput()
+
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+		var obj unstructured.UnstructuredList
+		err := s.client.RESTClient().
+			Get().
+			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/machines").
+			Do(s.ctx).
+			Into(&obj)
 		if err != nil {
 			return false, nil
 		}
 
-		return strings.Contains(string(output), "Version: v1.30.2"), nil
-	})
+		for _, item := range obj.Items {
+			if strings.Contains(item.GetName(), "worker") {
+				continue
+			}
 
-	s.Require().NoError(err)
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		var existingPlan unstructured.Unstructured
-		err = kmcKC.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/plans/autopilot").Do(ctx).Into(&existingPlan)
-		if err != nil {
-			return false, nil
+			v, _, err := unstructured.NestedString(item.Object, "spec", "version")
+			if err != nil {
+				return false, nil
+			}
+			if v != "v1.28.7+k0s.0" {
+				return false, nil
+			}
 		}
 
-		state, _, err := unstructured.NestedString(existingPlan.Object, "status", "state")
-		if err != nil {
-			return false, nil
-		}
-
-		return state == "Completed", nil
-	})
-	s.Require().NoError(err)
-
-	s.T().Log("updating cluster objects again")
-	s.updateClusterObjectsAgain()
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-0", "k0s", "status").CombinedOutput()
-		if err != nil {
-			return false, nil
-		}
-
-		return strings.Contains(string(output), "Version: v1.31"), nil
+		return true, nil
 	})
 	s.Require().NoError(err)
-
-	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 }
 
-func (s *CAPIControlPlaneDockerDownScalingSuite) applyClusterObjects() {
+func (s *CAPIDockerMachineTemplateUpdateRecreateKine) installPostgres() {
+	// Exec via kubectl
+	out, err := exec.Command("kubectl", "apply", "-f", "./postgresql.yaml").CombinedOutput()
+	s.Require().NoError(err, "failed to apply postgres: %s", string(out))
+}
+
+func (s *CAPIDockerMachineTemplateUpdateRecreateKine) applyClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
-func (s *CAPIControlPlaneDockerDownScalingSuite) updateClusterObjects() {
+func (s *CAPIDockerMachineTemplateUpdateRecreateKine) updateClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
-func (s *CAPIControlPlaneDockerDownScalingSuite) updateClusterObjectsAgain() {
-	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsSecondUpdatePath).CombinedOutput()
-	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
-}
-
-func (s *CAPIControlPlaneDockerDownScalingSuite) deleteCluster() {
+func (s *CAPIDockerMachineTemplateUpdateRecreateKine) deleteCluster() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
+}
+
+func getPostgresAddress() (string, error) {
+	b, err := exec.Command("docker", "inspect", "kind-control-plane", "--format", "{{json .NetworkSettings.Networks.kind.IPAddress}}").Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get inspect info from container kind-control-plane: %w", err)
+	}
+
+	re := regexp.MustCompile("[0-9.]+")
+	address := re.FindString(string(b))
+
+	return net.JoinHostPort(address, "32001"), nil
 }
 
 func getLBPort(name string) (int, error) {
@@ -267,20 +275,19 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  version: v1.30.1+k0s.0
+  version: v1.27.1+k0s.0
+  updateStrategy: Recreate
   k0sConfigSpec:
-    postStartCommands:
-    - sed -i 's/RestartSec=120/RestartSec=1/' /etc/systemd/system/k0scontroller.service
-    - systemctl daemon-reload
-    args:
-      - --enable-worker
-      - --no-taints
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig
       metadata:
         name: k0s
       spec:
+        storage:
+          type: kine
+          kine: 
+            datasource: postgres://postgres:postgres@%s/kine?sslmode=disable
         api:
           extraArgs:
             anonymous-auth: "true"
@@ -306,7 +313,7 @@ metadata:
   name:  docker-test-worker-0
   namespace: default
 spec:
-  version: v1.30.1
+  version: v1.27.1
   clusterName: docker-test
   bootstrap:
     configRef:
@@ -325,7 +332,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.30.1+k0s.0
+  version: v1.27.1+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
@@ -343,48 +350,19 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  version: v1.30.2+k0s.0
+  version: v1.28.7+k0s.0
+  updateStrategy: Recreate
   k0sConfigSpec:
-    args:
-      - --enable-worker
-      - --no-taints
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig
       metadata:
         name: k0s
       spec:
-        api:
-          extraArgs:
-            anonymous-auth: "true"
-        telemetry:
-          enabled: false
-  machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
-      name: docker-test-cp-template
-      namespace: default
-`
-
-var controlPlaneSecondUpdate = `
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-kind: K0sControlPlane
-metadata:
-  name: docker-test
-spec:
-  replicas: 3
-  version: v1.31.2+k0s.0
-  k0sConfigSpec:
-    args:
-      - --enable-worker
-      - --no-taints
-    k0s:
-      apiVersion: k0s.k0sproject.io/v1beta1
-      kind: ClusterConfig
-      metadata:
-        name: k0s
-      spec:
+        storage:
+          type: kine
+          kine: 
+            datasource: postgres://postgres:postgres@%s/kine?sslmode=disable
         api:
           extraArgs:
             anonymous-auth: "true"
