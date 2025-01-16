@@ -380,7 +380,12 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 		if state == "Schedulable" || state == "SchedulableWait" {
 			// it is necessary to check if the current autopilot process corresponds to a previous update by comparing the current
 			// version of the resource with the desired one. If that is the case, the state is not yet ready to proceed with a new plan.
-			version, found, err := unstructured.NestedString(existingPlan.Object, "spec", "commands", "0", "k0supdate", "version")
+			commands, found, err := unstructured.NestedSlice(existingPlan.Object, "spec", "commands")
+			if err != nil || !found || len(commands) == 0 {
+				return fmt.Errorf("error getting current autopilot plan's commands: %w", err)
+			}
+
+			version, found, err := unstructured.NestedString(commands[0].(map[string]interface{}), "k0supdate", "version")
 			if err != nil || !found {
 				return fmt.Errorf("error getting current autopilot plan's version: %w", err)
 			}
