@@ -410,6 +410,13 @@ If empty, k0smotron will use the default one.<br/>
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0scontrollerconfigstatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Conditions defines current service state of the K0sControllerConfig.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>dataSecretName</b></td>
         <td>string</td>
         <td>
@@ -421,6 +428,79 @@ If empty, k0smotron will use the default one.<br/>
         <td>boolean</td>
         <td>
           Ready indicates the Bootstrapdata field is ready to be consumed<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.status.conditions[index]
+<sup><sup>[↩ Parent](#k0scontrollerconfigstatus)</sup></sup>
+
+
+
+Condition defines an observation of a Cluster API resource operational state.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          Last time the condition transitioned from one status to another.
+This should be when the underlying condition changed. If that is not known, then using the time when
+the API field changed is acceptable.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Status of the condition, one of True, False, Unknown.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type of condition in CamelCase or in foo.example.com/CamelCase.
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          A human readable message indicating details about the transition.
+This field may be empty.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          The reason for the condition's last transition in CamelCase.
+The specific API may choose whether or not this field is considered a guaranteed API.
+This field may not be empty.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>severity</b></td>
+        <td>string</td>
+        <td>
+          Severity provides an explicit classification of Reason code, so the users or machines can immediately
+understand the current situation and act accordingly.
+The Severity field MUST be set only when Status=False.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -775,6 +855,13 @@ This should be only set in the case you want to use a pre-generated join token.
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0sworkerconfigstatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Conditions defines current service state of the K0sWorkerConfig.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>dataSecretName</b></td>
         <td>string</td>
         <td>
@@ -786,6 +873,79 @@ This should be only set in the case you want to use a pre-generated join token.
         <td>boolean</td>
         <td>
           Ready indicates the Bootstrapdata field is ready to be consumed<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfig.status.conditions[index]
+<sup><sup>[↩ Parent](#k0sworkerconfigstatus)</sup></sup>
+
+
+
+Condition defines an observation of a Cluster API resource operational state.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          Last time the condition transitioned from one status to another.
+This should be when the underlying condition changed. If that is not known, then using the time when
+the API field changed is acceptable.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Status of the condition, one of True, False, Unknown.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type of condition in CamelCase or in foo.example.com/CamelCase.
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          A human readable message indicating details about the transition.
+This field may be empty.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          The reason for the condition's last transition in CamelCase.
+The specific API may choose whether or not this field is considered a guaranteed API.
+This field may not be empty.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>severity</b></td>
+        <td>string</td>
+        <td>
+          Severity provides an explicit classification of Reason code, so the users or machines can immediately
+understand the current situation and act accordingly.
+The Severity field MUST be set only when Status=False.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
