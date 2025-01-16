@@ -74,7 +74,23 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		r.updateStatus(ctx, jtr, "Failed getting cluster")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
-	jtr.Status.ClusterUID = cluster.GetUID()
+	clusterUID := cluster.GetUID()
+	jtr.Status.ClusterUID = clusterUID
+
+	if !controllerutil.ContainsFinalizer(&cluster, clusterFinalizer) {
+		cluster.Finalizers = append(cluster.Finalizers, clusterFinalizer)
+	}
+	err = r.Update(ctx, &cluster)
+	if err != nil {
+		logger.Error(err, "unable to add finalizer to cluster for JoinTokenRequest resource removal")
+	}
+
+	jtr.SetLabels(map[string]string{clusterUIDLabel: string(clusterUID)})
+	err = r.Update(ctx, &jtr)
+	if err != nil {
+		r.updateStatus(ctx, jtr, "Failed update JoinTokenRequest with cluster UID label")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	}
 
 	logger.Info("Reconciling")
 	pod, err := util.FindStatefulSetPod(ctx, r.ClientSet, km.GetStatefulSetName(jtr.Spec.ClusterRef.Name), jtr.Spec.ClusterRef.Namespace)
