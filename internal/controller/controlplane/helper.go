@@ -344,6 +344,44 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 	return nil
 }
 
+func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster) error {
+	kubeClient, err := c.getKubeClient(ctx, cluster)
+	if err != nil {
+		return fmt.Errorf("error getting kube client: %w", err)
+	}
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
+	if err != nil {
+		return fmt.Errorf("error getting all machines: %w", err)
+	}
+
+	var controlNodeList unstructured.UnstructuredList
+	err = kubeClient.RESTClient().
+		Get().
+		AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes").
+		Do(ctx).
+		Into(&controlNodeList)
+
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	existingMachineNames := make(map[string]struct{})
+	for _, n := range machines.Names() {
+		existingMachineNames[n] = struct{}{}
+	}
+
+	for _, controlNode := range controlNodeList.Items {
+		if _, ok := existingMachineNames[controlNode.GetName()]; !ok {
+			err := c.deleteControlNode(ctx, controlNode.GetName(), kubeClient)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (c *K0sController) deleteControlNode(ctx context.Context, name string, clientset *kubernetes.Clientset) error {
 	if clientset == nil {
 		return nil

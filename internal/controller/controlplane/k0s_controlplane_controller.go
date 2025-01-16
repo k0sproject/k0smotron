@@ -373,6 +373,13 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	}
 	log.Log.Info("Collected machines", "count", machines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachineNames)
 
+	go func() {
+		err = c.deleteOldControlNodes(ctx, cluster)
+		if err != nil {
+			logger.Error(err, "Error deleting old control nodes")
+		}
+	}()
+
 	if clusterIsUpdating {
 		log.Log.Info("Cluster is updating", "currentVersion", currentVersion, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
 		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
@@ -497,10 +504,6 @@ func (c *K0sController) runMachineDeletionSequence(ctx context.Context, logger l
 	})
 	if err != nil {
 		return fmt.Errorf("error checking machine left: %w", err)
-	}
-
-	if err := c.deleteControlNode(ctx, machine.Name, kubeClient); err != nil {
-		return fmt.Errorf("error deleting controlnode: %w", err)
 	}
 
 	if err := c.deleteBootstrapConfig(ctx, machine.Name, kcp); err != nil {
