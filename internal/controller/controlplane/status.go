@@ -106,6 +106,11 @@ func computeStatus(machines collections.Machines, kcp *cpv1beta1.K0sControlPlane
 		}
 	}
 
+	// If some machines are missing, count them as unavailable
+	if int(kcp.Spec.Replicas) > machines.Len() {
+		unavailableReplicas += int(kcp.Spec.Replicas) - machines.Len()
+	}
+
 	kcp.Status.ReadyReplicas = int32(readyReplicas)
 	kcp.Status.UpdatedReplicas = int32(updatedReplicas)
 	kcp.Status.UnavailableReplicas = int32(unavailableReplicas)
