@@ -329,20 +329,19 @@ func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluste
 func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
 	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
 
-	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
+	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
 	if err != nil {
 		return fmt.Errorf("error collecting machines: %w", err)
 	}
-	if machines == nil {
-		return fmt.Errorf("machines collection is nil")
-	}
+	activeMachines := allMachines.Filter(collections.ActiveMachines)
+	deletedMachines := allMachines.Filter(collections.HasDeletionTimestamp)
 
-	infraMachines, err := c.getInfraMachines(ctx, machines)
+	infraMachines, err := c.getInfraMachines(ctx, activeMachines)
 	if err != nil {
 		return fmt.Errorf("error getting infra machines: %w", err)
 	}
 
-	currentVersion, err := minVersion(machines)
+	currentVersion, err := minVersion(activeMachines)
 	if err != nil {
 		return fmt.Errorf("error getting current cluster version from machines: %w", err)
 	}
@@ -353,7 +352,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	var clusterIsUpdating bool
 	var clusterIsMutating bool
-	for _, m := range machines.SortedByCreationTimestamp() {
+	for _, m := range activeMachines.SortedByCreationTimestamp() {
 		if m.Spec.Version == nil || (!versionMatches(m, kcp.Spec.Version)) {
 			clusterIsUpdating = true
 			clusterIsMutating = true
@@ -365,13 +364,13 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) {
 			clusterIsMutating = true
 			machineNamesToDelete[m.Name] = true
-		} else if machines.Len() > int(kcp.Spec.Replicas)+len(machineNamesToDelete) {
+		} else if activeMachines.Len() > int(kcp.Spec.Replicas)+len(machineNamesToDelete) {
 			machineNamesToDelete[m.Name] = true
 		} else {
 			desiredMachineNames[m.Name] = true
 		}
 	}
-	log.Log.Info("Collected machines", "count", machines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachineNames)
+	log.Log.Info("Collected machines", "count", activeMachines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachineNames)
 
 	go func() {
 		err = c.deleteOldControlNodes(ctx, cluster)
@@ -406,7 +405,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	if len(machineNamesToDelete)+len(desiredMachineNames) > int(kcp.Spec.Replicas) {
 
-		m := machines.Newest().Name
+		m := activeMachines.Newest().Name
 		err := c.checkMachineIsReady(ctx, m, cluster)
 		if err != nil {
 			logger.Error(err, "Error checking machine left", "machine", m)
@@ -416,7 +415,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		logger.Info("Found machines to delete", "count", len(machineNamesToDelete))
 
 		// Remove the oldest machine abd wait for the machine to be deleted to avoid etcd issues
-		machineToDelete := machines.Filter(func(m *clusterv1.Machine) bool {
+		machineToDelete := activeMachines.Filter(func(m *clusterv1.Machine) bool {
 			return machineNamesToDelete[m.Name]
 		}).Oldest()
 		logger.Info("Found oldest machine to delete", "machine", machineToDelete.Name)
@@ -438,13 +437,19 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		name := machineName(kcp, machineNamesToDelete, desiredMachineNames)
 		log.Log.Info("desire machine", "name", len(desiredMachineNames))
 
+		for _, mn := range deletedMachines.Names() {
+			if name == mn {
+				logger.Info("machine is being deleted, requeue", "machine", mn)
+				return ErrNotReady
+			}
+		}
 		// Wait for the previous machine to be created to avoid etcd issues if cluster if updating
 		// OR
 		// Wait for the first controller to start before creating the next one
 		// Some providers don't publish failure domains immediately, so wait for the first machine to be ready
 		// It's not slowing down the process overall, as we wait to the first machine anyway to create join tokens
-		if clusterIsMutating || (machines.Len() == 1 && kcp.Spec.Replicas > 1) {
-			err := c.checkMachineIsReady(ctx, machines.Newest().Name, cluster)
+		if clusterIsMutating || (activeMachines.Len() == 1 && kcp.Spec.Replicas > 1) {
+			err := c.checkMachineIsReady(ctx, activeMachines.Newest().Name, cluster)
 			if err != nil {
 				return err
 			}
@@ -462,15 +467,15 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			Namespace:  kcp.Namespace,
 		}
 
-		selectedFailureDomain := failuredomains.PickFewest(ctx, cluster.Status.FailureDomains.FilterControlPlane(), machines)
+		selectedFailureDomain := failuredomains.PickFewest(ctx, cluster.Status.FailureDomains.FilterControlPlane(), activeMachines)
 		machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
 		if err != nil {
 			return fmt.Errorf("error creating machine: %w", err)
 		}
-		machines[machine.Name] = machine
+		activeMachines[machine.Name] = machine
 		desiredMachineNames[machine.Name] = true
 
-		err = c.createBootstrapConfig(ctx, name, cluster, kcp, machines[name], cluster.Name)
+		err = c.createBootstrapConfig(ctx, name, cluster, kcp, activeMachines[name], cluster.Name)
 		if err != nil {
 			return fmt.Errorf("error creating bootstrap config: %w", err)
 		}
