@@ -9,7 +9,9 @@
   {
     "version": "v1.4.0",
     "title": "v1.4.0",
-    "aliases": []
+    "aliases": [
+      "stable"
+    ]
   },
   {
     "version": "v1.4.0-rc.0",
@@ -19,9 +21,7 @@
   {
     "version": "v1.3.0",
     "title": "v1.3.0",
-    "aliases": [
-      "stable"
-    ]
+    "aliases": []
   },
   {
     "version": "v1.3.0-rc.0",
