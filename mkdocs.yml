@@ -31,6 +31,7 @@ nav:
       - Examples:
         - Software prerequisites: capi-examples.md
         - AWS (HCP): capi-aws.md
+        - AWS (VMs): capi-aws-vm.md
         - Hetzner Cloud (HCP): capi-hetzner.md
         - OpenStack (HCP): capi-openstack.md
         - Docker (HCP): capi-docker.md
