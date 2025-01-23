@@ -44,11 +44,13 @@ import (
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
@@ -65,6 +67,15 @@ type ControlPlaneController struct {
 const joinTokenFilePath = "/etc/k0s.token"
 
 var minVersionForETCDName = version.MustParse("v1.31.1+k0s.0")
+var errInitialControllerMachineNotInitialize = errors.New("initial controller machine has not completed its initialization")
+
+type ControllerScope struct {
+	Config        *bootstrapv1.K0sControllerConfig
+	ConfigOwner   *bsutil.ConfigOwner
+	Cluster       *clusterv1.Cluster
+	WorkerEnabled bool
+	machines      collections.Machines
+}
 
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs/status,verbs=get;list;watch;create;update;patch;delete
@@ -155,123 +166,53 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	log.Info("Creating bootstrap data")
-	var (
-		files      []cloudinit.File
-		installCmd string
-	)
+	defer func() {
+		// Always report the status of the bootsrap data secret generation.
+		conditions.SetSummary(config,
+			conditions.WithConditions(
+				bootstrapv1.DataSecretAvailableCondition,
+			),
+		)
 
-	currentKCPVersion, err := version.NewVersion(config.Spec.Version)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("error parsing k0s version: %w", err)
-	}
-	if currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
-		if config.Spec.K0s == nil {
-			config.Spec.K0s = &unstructured.Unstructured{
-				Object: make(map[string]interface{}),
-			}
+		if err := c.Status().Update(ctx, config); err != nil {
+			log.Error(err, "Failed to patch K0sControllerConfig status")
 		}
-		// If it is not explicitly indicated to use Kine storage, we use the machine name to name the ETCD member.
-		kineStorage, found, err := unstructured.NestedString(config.Spec.K0s.Object, "spec", "storage", "kine", "dataSource")
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error retrieving storage.kine.datasource: %w", err)
-		}
-		if !found || kineStorage == "" {
-			err = unstructured.SetNestedMap(config.Spec.K0s.Object, map[string]interface{}{}, "spec", "storage", "etcd", "extraArgs")
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("error ensuring intermediate maps spec.storage.etcd.extraArgs: %w", err)
-			}
-			err = unstructured.SetNestedField(config.Spec.K0s.Object, machine.Name, "spec", "storage", "etcd", "extraArgs", "name")
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("error setting storage.etcd.extraArgs.name: %w", err)
-			}
-		}
-	}
-
-	if config.Spec.K0s != nil {
-		k0sConfigBytes, err := config.Spec.K0s.MarshalJSON()
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error marshalling k0s config: %v", err)
-		}
-		files = append(files, cloudinit.File{
-			Path:        "/etc/k0s.yaml",
-			Permissions: "0644",
-			Content:     string(k0sConfigBytes),
-		})
-		config.Spec.Args = append(config.Spec.Args, "--config", "/etc/k0s.yaml")
-	}
+	}()
 
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		log.Info("control plane endpoint is not set")
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForControlPlaneInitializationReason, clusterv1.ConditionSeverityInfo, "")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
 	}
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("error collecting machines: %w", err)
+		err = fmt.Errorf("error collecting machines: %w", err)
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
+		return ctrl.Result{}, err
 	}
 
 	if machines.Len() == 0 {
 		log.Info("No control plane machines found, waiting for machines to be created")
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForInfrastructureInitializationReason, clusterv1.ConditionSeverityInfo, "")
 		return ctrl.Result{Requeue: true}, nil
 	}
+	scope.machines = machines
 
-	if machines.Oldest().Name == config.Name {
-		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error generating initial control plane files: %v", err)
-		}
-		installCmd = createCPInstallCmd(scope)
-	} else {
-		oldest := getFirstRunningMachineWithLatestVersion(machines)
-		if oldest == nil {
-			log.Info("wait for initial control plane provisioning")
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
-		}
-		files, err = c.genControlPlaneJoinFiles(ctx, scope, files, oldest)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error generating control plane join files: %v", err)
-		}
-		installCmd = createCPInstallCmdWithJoinToken(scope, joinTokenFilePath)
-	}
-	if config.Spec.Tunneling.Enabled {
-		tunnelingFiles, err := c.genTunnelingFiles(ctx, scope)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error generating tunneling files: %v", err)
-		}
-		files = append(files, tunnelingFiles...)
-	}
-
-	resolvedFiles, err := resolveFiles(ctx, c.Client, scope.Cluster, config.Spec.Files)
+	bootstrapData, err := c.generataBootsrapDataForController(ctx, log, scope)
 	if err != nil {
+		// if the bootstrap data generation corresponds to a controller that is not the initial one, it is common to try to obtain
+		// the IP of the first controller when has not yet been surfaced. This is required to create a join token. It is needed to
+		// wait for the addresses to be set.
+		if errors.Is(err, errInitialControllerMachineNotInitialize) {
+			conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForInfrastructureInitializationReason, clusterv1.ConditionSeverityInfo, "")
+			return ctrl.Result{RequeueAfter: time.Second * 30}, nil
+		}
+
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, err
 	}
-	files = append(files, resolvedFiles...)
-	files = append(files, genShutdownServiceFiles()...)
 
-	downloadCommands := createCPDownloadCommands(config)
-
-	commands := config.Spec.PreStartCommands
-	commands = append(commands, downloadCommands...)
-	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
-	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
-	commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
-	commands = append(commands, installCmd, "k0s start")
-	commands = append(commands, config.Spec.PostStartCommands...)
-	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
-	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
-	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
-
-	ci := &cloudinit.CloudInit{
-		Files:   files,
-		RunCmds: commands,
-	}
-
-	// Create the bootstrap data
-	bootstrapData, err := ci.AsBytes()
-	if err != nil {
-		return ctrl.Result{}, err
-	}
 	// Create the secret containing the bootstrap data
 	bootstrapSecret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -287,7 +228,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: bootstrapv1.GroupVersion.String(),
-					Kind:       "K0sControllerConfig",
+					Kind:       config.Kind,
 					Name:       config.Name,
 					UID:        config.UID,
 					Controller: ptr.To(true),
@@ -302,9 +243,10 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	if err := c.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, err
 	}
-
+	conditions.MarkTrue(config, bootstrapv1.DataSecretAvailableCondition)
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
 
 	// Set the status to ready
@@ -323,6 +265,108 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	log.Info("Reconciled succesfully")
 
 	return ctrl.Result{}, nil
+}
+
+func (c *ControlPlaneController) generataBootsrapDataForController(ctx context.Context, log logr.Logger, scope *ControllerScope) ([]byte, error) {
+	var (
+		files      []cloudinit.File
+		installCmd string
+		err        error
+	)
+
+	currentKCPVersion, err := version.NewVersion(scope.Config.Spec.Version)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing k0s version: %w", err)
+	}
+	if currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
+		if scope.Config.Spec.K0s == nil {
+			scope.Config.Spec.K0s = &unstructured.Unstructured{
+				Object: make(map[string]interface{}),
+			}
+		}
+		// If it is not explicitly indicated to use Kine storage, we use the machine name to name the ETCD member.
+		kineStorage, found, err := unstructured.NestedString(scope.Config.Spec.K0s.Object, "spec", "storage", "kine", "dataSource")
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving storage.kine.datasource: %w", err)
+		}
+		if !found || kineStorage == "" {
+			err = unstructured.SetNestedMap(scope.Config.Spec.K0s.Object, map[string]interface{}{}, "spec", "storage", "etcd", "extraArgs")
+			if err != nil {
+				return nil, fmt.Errorf("error ensuring intermediate maps spec.storage.etcd.extraArgs: %w", err)
+			}
+			err = unstructured.SetNestedField(scope.Config.Spec.K0s.Object, scope.ConfigOwner.GetName(), "spec", "storage", "etcd", "extraArgs", "name")
+			if err != nil {
+				return nil, fmt.Errorf("error setting storage.etcd.extraArgs.name: %w", err)
+			}
+		}
+	}
+
+	if scope.Config.Spec.K0s != nil {
+		k0sConfigBytes, err := scope.Config.Spec.K0s.MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("error marshalling k0s config: %v", err)
+		}
+		files = append(files, cloudinit.File{
+			Path:        "/etc/k0s.yaml",
+			Permissions: "0644",
+			Content:     string(k0sConfigBytes),
+		})
+		scope.Config.Spec.Args = append(scope.Config.Spec.Args, "--config", "/etc/k0s.yaml")
+	}
+
+	if scope.machines.Oldest().Name == scope.Config.Name {
+		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
+		if err != nil {
+			return nil, fmt.Errorf("error generating initial control plane files: %v", err)
+		}
+		installCmd = createCPInstallCmd(scope)
+	} else {
+		oldest := getFirstRunningMachineWithLatestVersion(scope.machines)
+		if oldest == nil {
+			log.Info("wait for initial control plane provisioning")
+			return nil, err
+		}
+		files, err = c.genControlPlaneJoinFiles(ctx, scope, files, oldest)
+		if err != nil {
+			return nil, err
+		}
+		installCmd = createCPInstallCmdWithJoinToken(scope, joinTokenFilePath)
+	}
+
+	if scope.Config.Spec.Tunneling.Enabled {
+		tunnelingFiles, err := c.genTunnelingFiles(ctx, scope)
+		if err != nil {
+			return nil, fmt.Errorf("error generating tunneling files: %v", err)
+		}
+		files = append(files, tunnelingFiles...)
+	}
+
+	resolvedFiles, err := resolveFiles(ctx, c.Client, scope.Cluster, scope.Config.Spec.Files)
+	if err != nil {
+		return nil, fmt.Errorf("error extracting the contents of the provided extra files: %w", err)
+	}
+	files = append(files, resolvedFiles...)
+	files = append(files, genShutdownServiceFiles()...)
+
+	downloadCommands := createCPDownloadCommands(scope.Config)
+
+	commands := scope.Config.Spec.PreStartCommands
+	commands = append(commands, downloadCommands...)
+	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
+	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
+	commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
+	commands = append(commands, installCmd, "k0s start")
+	commands = append(commands, scope.Config.Spec.PostStartCommands...)
+	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
+	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
+	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
+
+	ci := &cloudinit.CloudInit{
+		Files:   files,
+		RunCmds: commands,
+	}
+
+	return ci.AsBytes()
 }
 
 func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *ControllerScope, files []cloudinit.File) ([]cloudinit.File, error) {
@@ -679,7 +723,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 		return intAddr, nil
 	}
 
-	return "", fmt.Errorf("no address found for machine %s", name)
+	return "", fmt.Errorf("no address found for machine %s: %w", name, errInitialControllerMachineNotInitialize)
 }
 
 func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, machine *clusterv1.Machine) (*unstructured.Unstructured, error) {

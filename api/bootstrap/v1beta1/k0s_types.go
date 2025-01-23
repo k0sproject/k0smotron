@@ -20,6 +20,8 @@ import (
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -41,6 +43,14 @@ type K0sWorkerConfig struct {
 
 	Spec   K0sWorkerConfigSpec   `json:"spec,omitempty"`
 	Status K0sWorkerConfigStatus `json:"status,omitempty"`
+}
+
+func (k *K0sWorkerConfig) GetConditions() clusterv1.Conditions {
+	return k.Status.Conditions
+}
+
+func (k *K0sWorkerConfig) SetConditions(conditions clusterv1.Conditions) {
+	k.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true
@@ -108,7 +118,10 @@ type K0sWorkerConfigStatus struct {
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional
 	DataSecretName *string `json:"dataSecretName,omitempty"`
-	// TODO Conditions etc
+
+	// Conditions defines current service state of the K0sWorkerConfig.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -131,6 +144,18 @@ type K0sControllerConfigStatus struct {
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional
 	DataSecretName *string `json:"dataSecretName,omitempty"`
+
+	// Conditions defines current service state of the K0sControllerConfig.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+}
+
+func (k *K0sControllerConfig) GetConditions() clusterv1.Conditions {
+	return k.Status.Conditions
+}
+
+func (k *K0sControllerConfig) SetConditions(conditions clusterv1.Conditions) {
+	k.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true

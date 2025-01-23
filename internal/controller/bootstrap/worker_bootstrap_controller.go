@@ -35,11 +35,13 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
@@ -62,13 +64,6 @@ type Scope struct {
 	Config      *bootstrapv1.K0sWorkerConfig
 	ConfigOwner *bsutil.ConfigOwner
 	Cluster     *clusterv1.Cluster
-}
-
-type ControllerScope struct {
-	Config        *bootstrapv1.K0sControllerConfig
-	ConfigOwner   *bsutil.ConfigOwner
-	Cluster       *clusterv1.Cluster
-	WorkerEnabled bool
 }
 
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -152,55 +147,32 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{}, nil
 	}
 
-	log.Info("Finding the token secret")
-	// Get the token from a secret
-	token, err := r.getK0sToken(ctx, scope)
+	defer func() {
+		// Always report the status of the bootsrap data secret generation.
+		conditions.SetSummary(config,
+			conditions.WithConditions(
+				bootstrapv1.DataSecretAvailableCondition,
+			),
+		)
+
+		if err := r.Status().Update(ctx, config); err != nil {
+			log.Error(err, "Failed to patch K0sWorkerConfig status")
+		}
+	}()
+
+	// Control plane needs to be ready because worker needs to use controlplane API to retrieve a join token.
+	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() || !scope.Cluster.Status.ControlPlaneReady {
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForControlPlaneInitializationReason, clusterv1.ConditionSeverityInfo, "")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
+	}
+
+	log.Info("Generating bootstrap data")
+	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope)
 	if err != nil {
-		log.Error(err, "Failed to get token")
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, err
 	}
 
-	log.Info("Creating bootstrap data")
-
-	// Create the bootstrap data
-	files := []cloudinit.File{
-		{
-			Path:        "/etc/k0s.token",
-			Permissions: "0644",
-			Content:     token,
-		},
-	}
-
-	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, config.Spec.Files)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	files = append(files, resolvedFiles...)
-	downloadCommands := createDownloadCommands(config)
-	installCmd := createInstallCmd(scope)
-
-	commands := config.Spec.PreStartCommands
-	commands = append(commands, downloadCommands...)
-	startCmd, err := getStartCommand("worker") // The bootstrap controller only supports worker nodes currently
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	commands = append(commands, installCmd, startCmd)
-	commands = append(commands, config.Spec.PostStartCommands...)
-	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
-	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
-	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
-
-	ci := &cloudinit.CloudInit{
-		Files:   files,
-		RunCmds: commands,
-	}
-
-	// Create the bootstrap data
-	bootstrapData, err := ci.AsBytes()
-	if err != nil {
-		return ctrl.Result{}, err
-	}
 	// Create the secret containing the bootstrap data
 	bootstrapSecret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -216,7 +188,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: bootstrapv1.GroupVersion.String(),
-					Kind:       "K0sWorkerConfig",
+					Kind:       scope.Config.Kind,
 					Name:       scope.Config.Name,
 					UID:        scope.Config.UID,
 					Controller: ptr.To(true),
@@ -231,9 +203,10 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	if err := r.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, err
 	}
-
+	conditions.MarkTrue(config, bootstrapv1.DataSecretAvailableCondition)
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
 
 	// Set the status to ready
@@ -249,30 +222,53 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	return ctrl.Result{}, nil
 }
 
-const startCommandTemplate = `(command -v systemctl > /dev/null 2>&1 && systemctl start %s) || ` + // systemd
-	`(command -v rc-service > /dev/null 2>&1 && rc-service %s start) || ` + // OpenRC
-	`(command -v service > /dev/null 2>&1 && service %s start) || ` + // SysV
-	`(echo "Not a supported init system"; false)`
-
-const ctrlService = "k0scontroller"
-const workerService = "k0sworker"
-
-func getStartCommand(role string) (string, error) {
-	switch role {
-	case "controller":
-		return fmt.Sprintf(startCommandTemplate, ctrlService, ctrlService, ctrlService), nil
-	case "worker":
-		return fmt.Sprintf(startCommandTemplate, workerService, workerService, workerService), nil
-	default:
-		return "", fmt.Errorf("unknown role %s", role)
+func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log logr.Logger, scope *Scope) ([]byte, error) {
+	log.Info("Finding the token secret")
+	token, err := r.getK0sToken(ctx, scope)
+	if err != nil {
+		log.Error(err, "Failed to get token")
+		return nil, err
 	}
+
+	files := []cloudinit.File{
+		{
+			Path:        "/etc/k0s.token",
+			Permissions: "0644",
+			Content:     token,
+		},
+	}
+
+	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, scope.Config.Spec.Files)
+	if err != nil {
+		return nil, err
+	}
+	files = append(files, resolvedFiles...)
+
+	downloadCommands := createDownloadCommands(scope.Config)
+	installCmd := createInstallCmd(scope)
+
+	startCmd := `(command -v systemctl > /dev/null 2>&1 && systemctl start k0sworker) || ` + // systemd
+		`(command -v rc-service > /dev/null 2>&1 && rc-service k0sworker start) || ` + // OpenRC
+		`(command -v service > /dev/null 2>&1 && service k0sworker start) || ` + // SysV
+		`(echo "Not a supported init system"; false)`
+
+	commands := scope.Config.Spec.PreStartCommands
+	commands = append(commands, downloadCommands...)
+	commands = append(commands, installCmd, startCmd)
+	commands = append(commands, scope.Config.Spec.PostStartCommands...)
+	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
+	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
+	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
+
+	ci := &cloudinit.CloudInit{
+		Files:   files,
+		RunCmds: commands,
+	}
+
+	return ci.AsBytes()
 }
 
 func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
-	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
-		return "", errors.New("control plane endpoint is not set")
-
-	}
 	childClient, err := remote.NewClusterClient(ctx, "k0smotron", r.Client, capiutil.ObjectKey(scope.Cluster))
 	if err != nil {
 		return "", fmt.Errorf("failed to create child cluster client: %w", err)
