@@ -521,14 +521,6 @@ If specified the version field is ignored and what ever version is downloaded fr
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0sworkerconfigspecjointokensecretref">joinTokenSecretRef</a></b></td>
-        <td>object</td>
-        <td>
-          JoinTokenSecretRef is a reference to a secret that contains the join token.
-This should be only set in the case you want to use a pre-generated join token.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
@@ -717,41 +709,6 @@ SecretRef is a reference to a secret that contains the content.
         <td>string</td>
         <td>
           Name is the name of the source<br/>
-        </td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-### K0sWorkerConfig.spec.joinTokenSecretRef
-<sup><sup>[↩ Parent](#k0sworkerconfigspec)</sup></sup>
-
-
-
-JoinTokenSecretRef is a reference to a secret that contains the join token.
-This should be only set in the case you want to use a pre-generated join token.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>key</b></td>
-        <td>string</td>
-        <td>
-          Key is the key in the secret that contains the join token<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name is the name of the secret<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -995,14 +952,6 @@ If specified the version field is ignored and what ever version is downloaded fr
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecjointokensecretref">joinTokenSecretRef</a></b></td>
-        <td>object</td>
-        <td>
-          JoinTokenSecretRef is a reference to a secret that contains the join token.
-This should be only set in the case you want to use a pre-generated join token.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
@@ -1191,41 +1140,6 @@ SecretRef is a reference to a secret that contains the content.
         <td>string</td>
         <td>
           Name is the name of the source<br/>
-        </td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-### K0sWorkerConfigTemplate.spec.template.spec.joinTokenSecretRef
-<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespec)</sup></sup>
-
-
-
-JoinTokenSecretRef is a reference to a secret that contains the join token.
-This should be only set in the case you want to use a pre-generated join token.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>key</b></td>
-        <td>string</td>
-        <td>
-          Key is the key in the secret that contains the join token<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name is the name of the secret<br/>
         </td>
         <td>true</td>
       </tr></tbody>

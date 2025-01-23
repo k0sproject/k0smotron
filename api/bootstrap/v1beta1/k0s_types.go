@@ -52,11 +52,6 @@ type K0sWorkerConfigList struct {
 }
 
 type K0sWorkerConfigSpec struct {
-	// JoinTokenSecretRef is a reference to a secret that contains the join token.
-	// This should be only set in the case you want to use a pre-generated join token.
-	// +kubebuilder:validation:Optional
-	JoinTokenSecretRef *JoinTokenSecretRef `json:"joinTokenSecretRef,omitempty"`
-
 	// Version is the version of k0s to use. In case this is not set, k0smotron will use
 	// a version field of the Machine object. If it's empty, the latest version is used.
 	// Make sure the version is compatible with the k0s version running on the control plane.

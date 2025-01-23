@@ -102,22 +102,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              joinTokenSecretRef:
-                description: |-
-                  JoinTokenSecretRef is a reference to a secret that contains the join token.
-                  This should be only set in the case you want to use a pre-generated join token.
-                properties:
-                  key:
-                    description: Key is the key in the secret that contains the join
-                      token
-                    type: string
-                  name:
-                    description: Name is the name of the secret
-                    type: string
-                required:
-                - key
-                - name
-                type: object
               postStartCommands:
                 description: PostStartCommands specifies commands to be run after
                   starting k0s worker.
