@@ -1313,6 +1313,15 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
+  <a href="#run-local-verifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run local verifications
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#commit-and-push" class="md-nav__link">
     <span class="md-ellipsis">
       Commit and push
@@ -1330,6 +1339,24 @@ You are not currently viewing the documentation for the current stable release o
   
     <nav class="md-nav" aria-label="Open pull request">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#draft-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Draft mode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-requisites-for-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre-requisites for merge
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#wait-for-code-review" class="md-nav__link">
@@ -1360,6 +1387,15 @@ You are not currently viewing the documentation for the current stable release o
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cleanup-local-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cleanup local workspace
+    </span>
+  </a>
   
 </li>
       
@@ -1558,6 +1594,15 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
+  <a href="#run-local-verifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run local verifications
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#commit-and-push" class="md-nav__link">
     <span class="md-ellipsis">
       Commit and push
@@ -1575,6 +1620,24 @@ You are not currently viewing the documentation for the current stable release o
   
     <nav class="md-nav" aria-label="Open pull request">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#draft-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Draft mode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-requisites-for-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre-requisites for merge
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#wait-for-code-review" class="md-nav__link">
@@ -1605,6 +1668,15 @@ You are not currently viewing the documentation for the current stable release o
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cleanup-local-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cleanup local workspace
+    </span>
+  </a>
   
 </li>
       
@@ -1681,6 +1753,38 @@ The <code>git pull</code> command performs a merge, which leaves merge commits.
 Too many commits make the history messy and violate the principle
 that commits ought to be individually understandable and useful.</p>
 </div>
+<h2 id="run-local-verifications">Run local verifications<a class="headerlink" href="#run-local-verifications" title="Permanent link">#</a></h2>
+<p>Run the following style and formatting commands to fix or check-in the changes:</p>
+<ol>
+<li>
+<p>Verify code style using <a href="https://golangci-lint.run/"><code>golangci-lint</code></a>. In the root directory of the repository run:
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>lint
+</code></pre></div>
+The build system automatically installs <code>golangci-lint</code>.</p>
+</li>
+<li>
+<p>Format Go source code using the <code>go fmt</code> command:
+<div class="highlight"><pre><span></span><code>go<span class="w"> </span>fmt<span class="w"> </span>./...
+</code></pre></div></p>
+</li>
+<li>
+<p>Check documentation.</p>
+<p>The Dockerized setup is used to locally perform documentation tests.
+ Run <code>make docs-serve-dev</code> to build documentation on http://localhost:8000.</p>
+<p>If your port <code>8000</code> is busy, run <code>make docs-serve-dev DOCS_DEV_PORT=9999</code>.
+ The documentation page will be available on http://localhost:9999.</p>
+</li>
+<li>
+<p>Pre-submit flight checks.</p>
+<p>In the repository root directory, ensure that the following commands are successfully run:</p>
+<p>* <code>make build &amp;&amp; git diff --exit-code</code>
+    This command verifies that the build is working
+    and that the generated source code matches the code checked into source control.
+  * <code>make test</code>
+    This command verifies that all the unit tests pass.</p>
+<p>Once all tests have passed, you can open a pull request upstream.</p>
+</li>
+</ol>
 <h2 id="commit-and-push">Commit and push<a class="headerlink" href="#commit-and-push" title="Permanent link">#</a></h2>
 <p>Commit and sign your changes:</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>commit<span class="w"> </span>--signoff
@@ -1709,6 +1813,17 @@ Push your changes to your fork's repository:</p>
 </code></pre></div>
 <h2 id="open-pull-request">Open pull request<a class="headerlink" href="#open-pull-request" title="Permanent link">#</a></h2>
 <p>Refer to the official GitHub documentation <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork">Creating a pull request from a fork</a>.</p>
+<h3 id="draft-mode">Draft mode<a class="headerlink" href="#draft-mode" title="Permanent link">#</a></h3>
+<p>If you open a pull request in draft mode, it will only go through the automated testing.
+Once you decide the PR is ready for review, transition it out of draft mode to notify the k0smotron team.</p>
+<h3 id="pre-requisites-for-merge">Pre-requisites for merge<a class="headerlink" href="#pre-requisites-for-merge" title="Permanent link">#</a></h3>
+<p>In order for a pull request to be merged, the following conditions should be met:</p>
+<ol>
+<li>The PR has passed all the automated tests (style, build and conformance tests).</li>
+<li>All the PR commits have been signed with the <code>--signoff</code> option.</li>
+<li>The PR has been reviewed and approved by a code owner.</li>
+<li>The PR has been rebased against upstream main branch.</li>
+</ol>
 <h3 id="wait-for-code-review">Wait for code review<a class="headerlink" href="#wait-for-code-review" title="Permanent link">#</a></h3>
 <p>The k0smotron team will review your pull request and leave comments.
 Commit changes made in response to review comments should be added to the same branch on your fork.</p>
@@ -1723,6 +1838,13 @@ To do that, perform an interactive rebase.</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>--force
 </code></pre></div>
 <p>If necessary, you can run multiple iteration of <code>rebase</code>/<code>push -f</code>.</p>
+<h2 id="cleanup-local-workspace">Cleanup local workspace<a class="headerlink" href="#cleanup-local-workspace" title="Permanent link">#</a></h2>
+<p>Run <code>make clean</code> to remove all the intermediate files and directories created
+locally during the k0smotron build.
+You cannot use <code>git clean -X</code> or <code>rm -rf</code>, since the Go modules
+cache sets all of its subdirectories to read-only.
+If you encounter problems during a deletion process,
+run <code>chmod -R u+w /path/to/workspace &amp;&amp; rm -rf /path/to/workspace</code>.</p>
 
 
 
