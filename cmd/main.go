@@ -231,7 +231,6 @@ func main() {
 
 		if err = (&controlplane.K0sController{
 			Client:     mgr.GetClient(),
-			Scheme:     mgr.GetScheme(),
 			ClientSet:  clientSet,
 			RESTConfig: restConfig,
 		}).SetupWithManager(mgr); err != nil {

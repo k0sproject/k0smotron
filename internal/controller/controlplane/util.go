@@ -137,6 +137,10 @@ func (c *K0sController) regenerateKubeconfigSecret(ctx context.Context, kubeconf
 }
 
 func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
+	if c.workloadClusterKubeClient != nil {
+		return c.workloadClusterKubeClient, nil
+	}
+
 	return k0smoutil.GetKubeClient(ctx, c.Client, cluster)
 }
 
