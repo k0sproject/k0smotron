@@ -226,7 +226,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 
 			if needsRotation {
 				logger.Info("Rotating kubeconfig secret", "Secret", kc.GetName())
-				if err := c.regenerateKubeconfigSecret(ctx, kc); err != nil {
+				if err := c.regenerateKubeconfigSecret(ctx, kc, cluster.Name); err != nil {
 					logger.Error(err, "Failed to regenerate kubeconfig")
 					return
 				}

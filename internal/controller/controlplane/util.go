@@ -93,14 +93,10 @@ func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Con
 	return c.Create(ctx, kcSecret)
 }
 
-func (c *K0sController) regenerateKubeconfigSecret(ctx context.Context, kubeconfigSecret *v1.Secret) error {
-	clusterName, _, err := secret.ParseSecretName(kubeconfigSecret.Name)
-	if err != nil {
-		return fmt.Errorf("failed to parse secret name: %w", err)
-	}
+func (c *K0sController) regenerateKubeconfigSecret(ctx context.Context, kubeconfigSecret *v1.Secret, clusterName string) error {
 	data, ok := kubeconfigSecret.Data[secret.KubeconfigDataName]
 	if !ok {
-		return fmt.Errorf("missing key %q in secret data: %w", secret.KubeconfigDataName, err)
+		return fmt.Errorf("missing key %q in secret data", secret.KubeconfigDataName)
 	}
 
 	oldConfig, err := clientcmd.Load(data)
