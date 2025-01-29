@@ -16,4 +16,5 @@ jobs:
           remove-issue-stale-when-updated: true
           remove-pr-stale-when-updated: true
           labels-to-remove-when-unstale: "stale"
-          exempt-issue-labels: "enhancement"
+          exempt-pr-labels: "keep"
+          exempt-issue-labels: "keep"
