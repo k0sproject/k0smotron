@@ -118,7 +118,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 						Name:            "controller",
 						Image:           kmc.Spec.GetImage(),
 						ImagePullPolicy: v1.PullIfNotPresent,
-						Args:            []string{"/k0smotron-entrypoint.sh"},
+						Args:            []string{"/bin/sh", "-c", "/k0smotron-entrypoint.sh"},
 						Ports: []v1.ContainerPort{
 							{
 								Name:          "api",
