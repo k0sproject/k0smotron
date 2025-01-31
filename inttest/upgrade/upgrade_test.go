@@ -202,6 +202,7 @@ metadata:
 		  "namespace": "kmc-test"
 		},
 		"spec": {
+   			"version": "v1.31.5-k0s.0",
 			"service":{
 				"type": "NodePort"
 			},

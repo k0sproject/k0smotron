@@ -134,6 +134,7 @@ func (s *MonitoringSuite) createK0smotronCluster(ctx context.Context, kc *kubern
 		  "namespace": "kmc-test"
 		},
 		"spec": {
+   			"version": "v1.31.5-k0s.0",
 			"monitoring": {
 				"enabled": true
 			},

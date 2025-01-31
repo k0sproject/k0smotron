@@ -163,6 +163,7 @@ func (s *PVCSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Cl
 		  "namespace": "kmc-test"
 		},
 		"spec": {
+   			"version": "v1.31.5-k0s.0",
 			"etcd":{
 				"persistence": {"size": "50Mi", "storageClass": "seaweedfs-storage"}
 			},
