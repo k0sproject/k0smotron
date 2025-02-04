@@ -149,6 +149,7 @@ func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx contex
 		},
 		"spec": {
 			"replicas": 3,
+			"version": "v1.31.5-k0s.0",
 			"service":{
 				"type": "NodePort"
 			},

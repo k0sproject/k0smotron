@@ -114,6 +114,7 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 		},
 		"spec": {
 		    "replicas": 3,
+			"version": "v1.31.5",
 			"service":{
 				"type": "NodePort"
 			},

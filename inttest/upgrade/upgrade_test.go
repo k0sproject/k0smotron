@@ -93,6 +93,8 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	s.forceControllerRecreation(s.Context(), pod.Name, kc)
 	s.checkStatePersists(s.Context(), pod.Spec.Containers[0].VolumeMounts[1].MountPath, kc, rc)
 
+	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
+
 	s.T().Log("Starting portforward")
 	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 30443)
 	s.Require().NoError(err)
@@ -107,9 +109,16 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", localPort)
 	s.Require().NoError(err)
 
-	_, err = kmcKC.CoreV1().Namespaces().Get(s.Context(), "test-ns-cm", metav1.GetOptions{})
+	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {
+		_, err = kmcKC.CoreV1().Namespaces().Get(s.Context(), "test-ns-cm", metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+		return true, nil
+	})
 	s.Require().NoError(err)
 
+	time.Sleep(time.Second)
 	_, err = kmcKC.CoreV1().ConfigMaps("default").Get(s.Context(), "test-old-cm", metav1.GetOptions{})
 	s.Require().NoError(err)
 
@@ -202,6 +211,7 @@ metadata:
 		  "namespace": "kmc-test"
 		},
 		"spec": {
+   			"version": "v1.31.5-k0s.0",
 			"service":{
 				"type": "NodePort"
 			},

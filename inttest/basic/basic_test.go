@@ -114,6 +114,7 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", localPort)
 	s.Require().NoError(err)
 
+	s.Require().NoError(common.WaitForPod(s.Context(), kc, "kmc-kmc-test-0", "kmc-test"))
 	s.Require().NoError(s.WaitForNodeReady(s.K0smotronNode(0), kmcKC))
 
 	s.T().Log("Verifying manifest is applied")
@@ -241,6 +242,7 @@ metadata:
 			"service":{
 				"type": "NodePort"
 			},
+			"version": "v1.31.5",
 			"etcd": {
 				"defragJob": {
 					"enabled": true,
