@@ -172,7 +172,7 @@ jobs:
     with:
       smoke-suite: ${{ matrix.smoke-suite }}
   e2e-migration:
-    name: E2E migration (WIP)
+    name: E2E
     needs: build
 
     runs-on: ubuntu-latest
