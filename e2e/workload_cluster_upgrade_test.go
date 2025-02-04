@@ -56,7 +56,7 @@ func TestWorkloadClusterUpgrade(t *testing.T) {
 		ClusterctlConfigPath: clusterctlConfigPath,
 		KubeconfigPath:       managementClusterProxy.GetKubeconfigPath(),
 		// select cluster templates
-		Flavor: "ooc",
+		Flavor: "out-of-cluster",
 
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,

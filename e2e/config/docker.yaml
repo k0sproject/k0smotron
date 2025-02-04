@@ -34,7 +34,7 @@ providers:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
     files:
-      - sourcePath: "../data/infrastructure-docker/cluster-template-ooc.yaml"
+      - sourcePath: "../data/infrastructure-docker/cluster-template-out-of-cluster.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:

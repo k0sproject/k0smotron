@@ -1,3 +1,5 @@
+# This cluster template is used when a cluster needs to be deployed using the Out-Of-Cluster mode, 
+# i.e. the control plane is running on CAPI managed Machines.
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
