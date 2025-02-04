@@ -54,12 +54,12 @@ func waitForClusterDeleted(ctx context.Context, input capiframework.WaitForClust
 	fmt.Printf("Waiting for cluster %s to be deleted", klog.KObj(input.Cluster))
 
 	clusterName := input.Cluster.GetName()
-	clusgerNamespace := input.Cluster.GetNamespace()
+	clusterNamespace := input.Cluster.GetNamespace()
 	// Note: dumpArtifactsOnDeletionTimeout is passed in as a func so it gets only executed if and after the Eventually failed.
 	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
 		cluster := &clusterv1.Cluster{}
 		key := client.ObjectKey{
-			Namespace: clusgerNamespace,
+			Namespace: clusterNamespace,
 			Name:      clusterName,
 		}
 
@@ -70,7 +70,7 @@ func waitForClusterDeleted(ctx context.Context, input capiframework.WaitForClust
 			// Dump all Cluster API related resources to artifacts.
 			capiframework.DumpAllResources(ctx, capiframework.DumpAllResourcesInput{
 				Lister:    input.Client,
-				Namespace: clusgerNamespace,
+				Namespace: clusterNamespace,
 				LogPath:   filepath.Join(input.ArtifactFolder, "clusters-afterDeletionTimedOut", clusterName, "resources"),
 			})
 		}
