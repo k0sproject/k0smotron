@@ -98,17 +98,6 @@ func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input Upgrad
 		return fmt.Errorf("failed to patch the new kubernetes version to controlplane %s: %w", klog.KObj(input.ControlPlane), err)
 	}
 
-	// TODO: avoid check node conditions because "NodeHealthy" is "False" due to
-	// NodeMemoryPressure and NodePIDPressure is False
-
-	// Logf("Waiting for control-plane machines to have the upgraded kubernetes version")
-	//capiframework.WaitForControlPlaneMachinesToBeUpgraded(ctx, capiframework.WaitForControlPlaneMachinesToBeUpgradedInput{
-	// 	Lister:                   mgmtClient,
-	// 	Cluster:                  input.Cluster,
-	// 	MachineCount:             int(input.ControlPlane.Spec.Replicas),
-	// 	KubernetesUpgradeVersion: input.KubernetesUpgradeVersion,
-	// }, "10m")
-
 	controlplaneObjectKey := crclient.ObjectKey{
 		Name:      input.ControlPlane.Name,
 		Namespace: input.ControlPlane.Namespace,
