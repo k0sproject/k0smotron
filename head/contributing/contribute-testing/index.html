@@ -1365,6 +1365,21 @@ You are not currently viewing the documentation for the current stable release o
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="E2E testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-e2e" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run E2E
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1533,6 +1548,21 @@ You are not currently viewing the documentation for the current stable release o
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="E2E testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-e2e" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run E2E
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1568,7 +1598,30 @@ You are not currently viewing the documentation for the current stable release o
 </li>
 </ul>
 <h2 id="e2e-testing">E2E testing<a class="headerlink" href="#e2e-testing" title="Permanent link">#</a></h2>
-<p>TBD</p>
+<p>K0smotron's end-to-end (E2E) testing leverages the <a href="https://pkg.go.dev/sigs.k8s.io/cluster-api/test/framework">CAPI E2E framework</a> to provide configurability and utilities that support various phases of E2E testing, including the creation and configuration of the management cluster, waiting for specific resources, log dumping, and more.</p>
+<p>To fully utilize CAPI's E2E framework, it is necessary to integrate <a href="https://onsi.github.io/ginkgo/">Ginkgo</a> into the project. However, in K0smotron, we intentionally avoid using this testing framework for several reasons, primarily to maintain a unified approach to writing tests using standard Go testing conventions. As a result, certain methods from CAPI's E2E framework have been reimplemented within K0smotron to remove their direct dependency on Ginkgo.</p>
+<h3 id="run-e2e">Run E2E<a class="headerlink" href="#run-e2e" title="Permanent link">#</a></h3>
+<p>You can run the tests using the command:</p>
+<div class="highlight"><pre><span></span><code>make e2e
+</code></pre></div>
+<p>This will perform the following actions:</p>
+<ol>
+<li>Deploy a local cluster using <a href="https://github.com/kubernetes-sigs/kind">Kind</a> as the management cluster.</li>
+<li>
+<p>Install the desired providers. Basically the same achieved by executing the command <code>clusterctl init ...</code>, by including:</p>
+<ul>
+<li>Cluster API for core components.</li>
+<li>k0smotron as controlplane and bootstrap provider.</li>
+<li>Configurable infrastructure provider (currently only docker supported). </li>
+</ul>
+</li>
+<li>
+<p>Execute the E2E test suite.</p>
+</li>
+</ol>
+<blockquote>
+<p>NOTE: This command will run the tests using docker as infrastructure provider but it is intended to make use of the configurability offered by the CAPI E2E framework to add other infrastructure providers that can be used in e2e testing.</p>
+</blockquote>
 
 
 
