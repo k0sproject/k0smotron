@@ -19,4 +19,27 @@ K0smotron uses [go test](https://pkg.go.dev/testing) as the foundation for all o
   Following the best practices suggested in the [Cluster API documentation](https://cluster-api.sigs.k8s.io/developer/core/testing), integration tests are written using [**generic infrastructure providers**](https://cluster-api.sigs.k8s.io/developer/core/testing#generic-providers) rather than a specific provider. This ensures that tests remain agnostic and reusable across different infrastructures, fostering better maintainability and adaptability.
 
 ## E2E testing
-TBD
+
+K0smotron's end-to-end (E2E) testing leverages the [CAPI E2E framework](https://pkg.go.dev/sigs.k8s.io/cluster-api/test/framework) to provide configurability and utilities that support various phases of E2E testing, including the creation and configuration of the management cluster, waiting for specific resources, log dumping, and more.
+
+To fully utilize CAPI's E2E framework, it is necessary to integrate [Ginkgo](https://onsi.github.io/ginkgo/) into the project. However, in K0smotron, we intentionally avoid using this testing framework for several reasons, primarily to maintain a unified approach to writing tests using standard Go testing conventions. As a result, certain methods from CAPI's E2E framework have been reimplemented within K0smotron to remove their direct dependency on Ginkgo.
+
+### Run E2E
+
+You can run the tests using the command:
+
+``` cmd
+make e2e
+```
+
+This will perform the following actions:
+
+1. Deploy a local cluster using [Kind](https://github.com/kubernetes-sigs/kind) as the management cluster.
+2. Install the desired providers. Basically the same achieved by executing the command `clusterctl init ...`, by including:
+  - Cluster API for core components.
+  - k0smotron as controlplane and bootstrap provider.
+  - Configurable infrastructure provider (currently only docker supported). 
+  
+1. Execute the E2E test suite.
+
+> NOTE: This command will run the tests using docker as infrastructure provider but it is intended to make use of the configurability offered by the CAPI E2E framework to add other infrastructure providers that can be used in e2e testing.

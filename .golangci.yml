@@ -17,4 +17,3 @@ linters:
     - gofmt        # Checks whether code was gofmt-ed
     - goheader     # Checks is file headers matche a given pattern
     - revive       # Stricter drop-in replacement for golint
-    - ginkgolinter # Enforces standards of using ginkgo and gomega
