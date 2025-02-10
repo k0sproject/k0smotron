@@ -58,6 +58,8 @@ type Controller struct {
 	Scheme     *runtime.Scheme
 	ClientSet  *kubernetes.Clientset
 	RESTConfig *rest.Config
+	// workloadClusterClient is used during testing to inject a fake client
+	workloadClusterClient client.Client
 }
 
 type Scope struct {
@@ -269,16 +271,19 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 }
 
 func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
-	childClient, err := remote.NewClusterClient(ctx, "k0smotron", r.Client, capiutil.ObjectKey(scope.Cluster))
-	if err != nil {
-		return "", fmt.Errorf("failed to create child cluster client: %w", err)
+	if r.workloadClusterClient == nil {
+		var err error
+		r.workloadClusterClient, err = remote.NewClusterClient(ctx, "k0smotron", r.Client, capiutil.ObjectKey(scope.Cluster))
+		if err != nil {
+			return "", fmt.Errorf("failed to create child cluster client: %w", err)
+		}
 	}
 
 	// Create the token using the child cluster client
 	tokenID := kutil.RandomString(6)
 	tokenSecret := kutil.RandomString(16)
 	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
-	if err := childClient.Create(ctx, &corev1.Secret{
+	if err := r.workloadClusterClient.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("bootstrap-token-%s", tokenID),
 			Namespace: "kube-system",
@@ -340,47 +345,6 @@ func createDownloadCommands(config *bootstrapv1.K0sWorkerConfig) []string {
 	}
 
 	return []string{"curl -sSfL https://get.k0s.sh | sh"}
-}
-
-func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, filesToResolve []bootstrapv1.File) ([]cloudinit.File, error) {
-	var files []cloudinit.File
-	for _, file := range filesToResolve {
-		if file.ContentFrom != nil {
-			switch {
-			case file.ContentFrom.SecretRef != nil:
-				s := &corev1.Secret{}
-				err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: file.ContentFrom.SecretRef.Name}, s)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get file content from source: %w", err)
-				}
-
-				content, ok := s.Data[file.ContentFrom.SecretRef.Key]
-				if !ok {
-					return nil, fmt.Errorf("failed to get file content from source: key not found in secret")
-				}
-				file.Content = string(content)
-			case file.ContentFrom.ConfigMapRef != nil:
-				cfg := &corev1.ConfigMap{}
-				err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: file.ContentFrom.ConfigMapRef.Name}, cfg)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get file content from source: %w", err)
-				}
-
-				content, ok := cfg.Data[file.ContentFrom.SecretRef.Key]
-				if !ok {
-					return nil, fmt.Errorf("failed to get file content from source: key not found in configmap")
-				}
-				file.Content = content
-			default:
-				return nil, fmt.Errorf("failed to get file content from source: no source specified")
-			}
-
-			file.ContentFrom = nil
-		}
-
-		files = append(files, file.File)
-	}
-	return files, nil
 }
 
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {
