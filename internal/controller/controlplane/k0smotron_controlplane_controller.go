@@ -172,7 +172,6 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	kcp.Status.ExternalManagedControlPlane = true
 	kcp.Status.Inititalized = true
 	kcp.Status.ControlPlaneReady = true
-	err = c.Status().Update(ctx, kcp)
 
 	return res, err
 
