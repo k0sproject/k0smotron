@@ -29,4 +29,4 @@ termcolor==2.5.0
 urllib3==2.3.0
 verspec==0.1.0
 watchdog==6.0.0
-mkdocs-ezglossary-plugin==1.7.1
+mkdocs-ezglossary-plugin==2.0.0
