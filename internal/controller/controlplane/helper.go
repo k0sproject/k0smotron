@@ -419,24 +419,31 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 		return fmt.Errorf("error getting autopilot plan's state: %w", err)
 	}
 	if found {
+		commands, found, err := unstructured.NestedSlice(existingPlan.Object, "spec", "commands")
+		if err != nil || !found || len(commands) == 0 {
+			return fmt.Errorf("error getting current autopilot plan's commands: %w", err)
+		}
+
+		version, found, err := unstructured.NestedString(commands[0].(map[string]interface{}), "k0supdate", "version")
+		if err != nil || !found {
+			return fmt.Errorf("error getting current autopilot plan's version: %w", err)
+		}
 		if state == "Schedulable" || state == "SchedulableWait" {
 			// it is necessary to check if the current autopilot process corresponds to a previous update by comparing the current
 			// version of the resource with the desired one. If that is the case, the state is not yet ready to proceed with a new plan.
-			commands, found, err := unstructured.NestedSlice(existingPlan.Object, "spec", "commands")
-			if err != nil || !found || len(commands) == 0 {
-				return fmt.Errorf("error getting current autopilot plan's commands: %w", err)
-			}
-
-			version, found, err := unstructured.NestedString(commands[0].(map[string]interface{}), "k0supdate", "version")
-			if err != nil || !found {
-				return fmt.Errorf("error getting current autopilot plan's version: %w", err)
-			}
-
 			if version != kcp.Spec.Version {
 				return fmt.Errorf("previous autopilot is not finished: %w", ErrNotReady)
 			}
 
 			return nil
+		}
+
+		if state == "Completed" {
+			// If the state is completed, it is necessary to check if the current version of the resource corresponds to the desired one.
+			// If that is the case, it is not necessary to proceed with a new plan.
+			if version == kcp.Spec.Version {
+				return nil
+			}
 		}
 	}
 
