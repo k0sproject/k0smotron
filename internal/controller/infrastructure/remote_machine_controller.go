@@ -263,7 +263,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		return r.Status().Patch(ctx, m, client.Merge)
+		return r.Status().Patch(ctx, m, client.MergeFrom(machine))
 	})
 	if err != nil {
 		log.Error(err, "Failed to update Machine")
