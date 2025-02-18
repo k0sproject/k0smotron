@@ -149,6 +149,13 @@ func (in *ClusterSpec) DeepCopyInto(out *ClusterSpec) {
 	}
 	out.Monitoring = in.Monitoring
 	in.Etcd.DeepCopyInto(&out.Etcd)
+	if in.TopologySpreadConstraints != nil {
+		in, out := &in.TopologySpreadConstraints, &out.TopologySpreadConstraints
+		*out = make([]v1.TopologySpreadConstraint, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	in.Resources.DeepCopyInto(&out.Resources)
 }
 

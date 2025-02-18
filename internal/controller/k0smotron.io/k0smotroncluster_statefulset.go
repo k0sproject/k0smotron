@@ -181,6 +181,10 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		r.mountSecrets(kmc, &statefulSet)
 	}
 
+	if kmc.Spec.TopologySpreadConstraints != nil {
+		statefulSet.Spec.Template.Spec.TopologySpreadConstraints = kmc.Spec.TopologySpreadConstraints
+	}
+
 	switch kmc.Spec.Persistence.Type {
 	case "hostPath":
 		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{

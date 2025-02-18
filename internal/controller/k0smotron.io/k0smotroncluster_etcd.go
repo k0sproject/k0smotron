@@ -375,6 +375,10 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, existingSts
 		},
 	}
 
+	if kmc.Spec.TopologySpreadConstraints != nil {
+		statefulSet.Spec.Template.Spec.TopologySpreadConstraints = kmc.Spec.TopologySpreadConstraints
+	}
+
 	if kmc.Spec.Etcd.AutoDeletePVCs {
 		statefulSet.Spec.PersistentVolumeClaimRetentionPolicy = &apps.StatefulSetPersistentVolumeClaimRetentionPolicy{
 			WhenDeleted: apps.DeletePersistentVolumeClaimRetentionPolicyType,
