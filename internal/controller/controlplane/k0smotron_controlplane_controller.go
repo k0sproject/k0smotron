@@ -144,6 +144,8 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
+	// Just a bogus comment to test the pipeline
+
 	if ready {
 		remoteClient, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
 		if err != nil {
