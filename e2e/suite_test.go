@@ -33,9 +33,9 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 
-	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0sproject/k0smotron/e2e/mothership"
-	"github.com/k0sproject/k0smotron/e2e/util"
+	controlplanev1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0smotron/k0smotron/e2e/mothership"
+	"github.com/k0smotron/k0smotron/e2e/util"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"

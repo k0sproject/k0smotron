@@ -19,7 +19,7 @@ package bootstrap
 import (
 	"testing"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"

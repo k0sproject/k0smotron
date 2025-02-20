@@ -17,7 +17,7 @@ limitations under the License.
 package bootstrap
 
 import (
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

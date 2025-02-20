@@ -1,6 +1,6 @@
 package util
 
-import km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+import km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
 
 func DefaultK0smotronClusterLabels(kmc *km.Cluster) map[string]string {
 	return map[string]string{

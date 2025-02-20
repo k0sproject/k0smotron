@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
 )
 
 func TestEtcd_calculateDesiredReplicas(t *testing.T) {

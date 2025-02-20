@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/k0sproject/k0smotron/internal/test/envtest"
+	"github.com/k0smotron/k0smotron/internal/test/envtest"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 

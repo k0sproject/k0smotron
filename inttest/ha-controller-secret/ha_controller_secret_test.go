@@ -28,8 +28,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/k0smotron/k0smotron/inttest/util"
 	"github.com/k0sproject/k0s/inttest/common"
-	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
 type HAControllerSecretSuite struct {

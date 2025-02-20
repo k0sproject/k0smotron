@@ -19,8 +19,8 @@ package controlplane
 import (
 	"testing"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
+	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
