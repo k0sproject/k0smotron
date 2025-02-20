@@ -46,9 +46,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/exec"
+	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
+	kapi "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0smotron/k0smotron/internal/exec"
 	"github.com/k0sproject/version"
 )
 

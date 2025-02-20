@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	k0smoutil "github.com/k0smotron/k0smotron/internal/controller/util"
 )
 
 type ProviderIDController struct {

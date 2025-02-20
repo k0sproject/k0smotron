@@ -36,7 +36,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/k0sproject/k0smotron/inttest/util"
+	"github.com/k0smotron/k0smotron/inttest/util"
 )
 
 type CAPIControlPlaneDockerDownScalingSuite struct {

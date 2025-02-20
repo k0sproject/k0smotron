@@ -79,7 +79,7 @@ jobs:
           push: true
 
       - name: Create install files
-        if: github.repository == 'k0sproject/k0smotron'
+        if: github.repository == 'k0smotron/k0smotron'
         run: |
           make bootstrap-components.yaml IMG=quay.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
           make control-plane-components.yaml IMG=quay.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}

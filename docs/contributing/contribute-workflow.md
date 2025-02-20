@@ -1,10 +1,10 @@
 # k0smotron GitHub workflow
 
-Create pull requests to contribute to [k0smotron GitHub repository](http://github.com/k0sproject/k0smotron).
+Create pull requests to contribute to [k0smotron GitHub repository](http://github.com/k0smotron/k0smotron).
 
 ## Fork the project
 
-1. Go to [k0smotron GitHub repository](http://github.com/k0sproject/k0smotron).
+1. Go to [k0smotron GitHub repository](http://github.com/k0smotron/k0smotron).
 2. In the top right-hand corner, click "Fork" and select your username for the fork destination.
 
 ## Configure remote repository
@@ -36,7 +36,7 @@ Create pull requests to contribute to [k0smotron GitHub repository](http://githu
     The origin branch should have `no_push` next to it:
     
     ```shell
-    origin  https://github.com/k0sproject/k0smotron (fetch)
+    origin  https://github.com/k0smotron/k0smotron (fetch)
     origin  no_push (push)
     my_fork git@github.com:{ github_username }/k0smotron.git (fetch)
     my_fork git@github.com:{ github_username }/k0smotron.git (push)
@@ -123,7 +123,7 @@ Description that briefly explains the problem your commit is solving.
 Focus on why you are making this change as opposed to how.
 Are there any consequences of this change? Here you can include them.
 
-Fixes: https://github.com/k0sproject/k0smotron/issues/373
+Fixes: https://github.com/k0smotron/k0smotron/issues/373
 
 Signed-off-by: Name Lastname <user@example.com>
 ```

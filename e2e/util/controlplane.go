@@ -26,7 +26,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

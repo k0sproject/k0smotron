@@ -36,7 +36,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/k0sproject/k0smotron/inttest/util"
+	"github.com/k0smotron/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +46,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 )
 
 type CAPIDockerClusterClassSuite struct {

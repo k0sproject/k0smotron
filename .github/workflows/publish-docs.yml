@@ -66,7 +66,7 @@ jobs:
           K0SMOTRON_VERSION="$VERSION" mike deploy --push "$VERSION"
 
       - name: Update mike version aliases
-        if: github.repository == 'k0sproject/k0smotron'
+        if: github.repository == 'k0smotron/k0smotron'
         id: set_versions
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,7 +86,7 @@ jobs:
       # Finally pushes if there are unpushed commits
       - name: Create install files
         if: >-
-          github.repository == 'k0sproject/k0smotron' &&
+          github.repository == 'k0smotron/k0smotron' &&
           github.event_name == 'release' &&
           github.event.action == 'published' &&
           !github.event.release.draft &&

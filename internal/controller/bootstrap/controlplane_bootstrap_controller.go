@@ -51,9 +51,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
-	kutil "github.com/k0sproject/k0smotron/internal/util"
+	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
+	"github.com/k0smotron/k0smotron/internal/cloudinit"
+	kutil "github.com/k0smotron/k0smotron/internal/util"
 	"github.com/k0sproject/version"
 )
 
