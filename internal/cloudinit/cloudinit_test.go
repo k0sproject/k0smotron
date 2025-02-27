@@ -52,6 +52,43 @@ runcmd:
 `, s)
 }
 
+func TestCustomCloudInit(t *testing.T) {
+	c := &CloudInit{
+		Files: []File{
+			{
+				Path:        "/etc/hosts",
+				Content:     "foobar",
+				Permissions: "0644",
+			},
+		},
+		RunCmds: []string{
+			"echo 'hello world'",
+		},
+		CustomCloudInit: `runcmd:
+  - echo 'custom cloud init'
+`,
+	}
+
+	b, err := c.AsBytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s := string(b)
+	assert.Equal(t, `#cloud-config
+write_files:
+  - path: /etc/hosts
+    content: foobar
+    permissions: "0644"
+runcmd:
+  - echo 'hello world'
+
+#cloud-config
+runcmd:
+  - echo 'custom cloud init'
+`, s)
+}
+
 func TestPermissions(t *testing.T) {
 	f := File{
 		Path:        "/etc/hosts",

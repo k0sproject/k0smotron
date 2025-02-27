@@ -19,40 +19,47 @@ var (
 	errExtractingFileContent = errors.New("failed to get file content from source")
 )
 
+func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, contentFrom *bootstrapv1.ContentSource) (string, error) {
+	switch {
+	case contentFrom.SecretRef != nil:
+		s := &corev1.Secret{}
+		err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: contentFrom.SecretRef.Name}, s)
+		if err != nil {
+			return "", fmt.Errorf("%w: %v", errExtractingFileContent, err)
+		}
+
+		content, ok := s.Data[contentFrom.SecretRef.Key]
+		if !ok {
+			return "", fmt.Errorf("%w: key not found in secret", errExtractingFileContent)
+		}
+		return string(content), nil
+	case contentFrom.ConfigMapRef != nil:
+		cfg := &corev1.ConfigMap{}
+		err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: contentFrom.ConfigMapRef.Name}, cfg)
+		if err != nil {
+			return "", fmt.Errorf("%w: %v", errExtractingFileContent, err)
+		}
+
+		content, ok := cfg.Data[contentFrom.ConfigMapRef.Key]
+		if !ok {
+			return "", fmt.Errorf("%w: key not found in configmap", errExtractingFileContent)
+		}
+		return content, nil
+	default:
+		return "", fmt.Errorf("%w: no source specified", errExtractingFileContent)
+	}
+}
+
 // resolveFiles extracts the content from the given source (ConfigMap or Secret) and returns a list of cloudinit.File containing the extracted data.
 func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, filesToResolve []bootstrapv1.File) ([]cloudinit.File, error) {
 	var files []cloudinit.File
 	for _, file := range filesToResolve {
 		if file.ContentFrom != nil {
-			switch {
-			case file.ContentFrom.SecretRef != nil:
-				s := &corev1.Secret{}
-				err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: file.ContentFrom.SecretRef.Name}, s)
-				if err != nil {
-					return nil, fmt.Errorf("%w: %v", errExtractingFileContent, err)
-				}
-
-				content, ok := s.Data[file.ContentFrom.SecretRef.Key]
-				if !ok {
-					return nil, fmt.Errorf("%w: key not found in secret", errExtractingFileContent)
-				}
-				file.Content = string(content)
-			case file.ContentFrom.ConfigMapRef != nil:
-				cfg := &corev1.ConfigMap{}
-				err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: file.ContentFrom.ConfigMapRef.Name}, cfg)
-				if err != nil {
-					return nil, fmt.Errorf("%w: %v", errExtractingFileContent, err)
-				}
-
-				content, ok := cfg.Data[file.ContentFrom.ConfigMapRef.Key]
-				if !ok {
-					return nil, fmt.Errorf("%w: key not found in configmap", errExtractingFileContent)
-				}
-				file.Content = content
-			default:
-				return nil, fmt.Errorf("%w: no source specified", errExtractingFileContent)
+			content, err := resolveContentFromFile(ctx, cli, cluster, file.ContentFrom)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve file content: %w", err)
 			}
-
+			file.Content = content
 			file.ContentFrom = nil
 		}
 

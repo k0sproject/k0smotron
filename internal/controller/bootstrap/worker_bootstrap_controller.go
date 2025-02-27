@@ -265,6 +265,14 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 		RunCmds: commands,
 	}
 
+	if scope.Config.Spec.CustomUserDataRef != nil {
+		customCloudInit, err := resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
+		if err != nil {
+			return nil, fmt.Errorf("error extracting the contents of the provided custom worker user data: %w", err)
+		}
+		ci.CustomCloudInit = customCloudInit
+	}
+
 	return ci.AsBytes()
 }
 

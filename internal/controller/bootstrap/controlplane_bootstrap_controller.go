@@ -365,6 +365,13 @@ func (c *ControlPlaneController) generataBootsrapDataForController(ctx context.C
 		Files:   files,
 		RunCmds: commands,
 	}
+	if scope.Config.Spec.CustomUserDataRef != nil {
+		customCloudInit, err := resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
+		if err != nil {
+			return nil, fmt.Errorf("error extracting the contents of the provided custom controller user data: %w", err)
+		}
+		ci.CustomCloudInit = customCloudInit
+	}
 
 	return ci.AsBytes()
 }
