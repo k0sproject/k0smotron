@@ -2,158 +2,158 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.k0smotron.io/head/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-aws-vm/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-aws/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-bootstrap/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-clusterclass/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-controlplane-bootstrap/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-controlplane/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-docker/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-examples/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-hetzner/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-kubevirt/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-openstack/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-remote/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-remotemachine-okta-asa/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-remotemachine-teleport/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/capi-vsphere/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/cluster-api/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/cluster/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/commercial-support/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/configuration/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/etcd/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/faq/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/ha/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/install/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/join-nodes/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/known-limitations/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/monitoring/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/resource-reference/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/status/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/terminology/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/troubleshooting/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/usage-overview/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/contributing/contribute-overview/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/contributing/contribute-testing/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/contributing/contribute-workflow/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/contributing/dev-environment/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/update/update-capi-cluster/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/update/update-cluster-pod/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/update/update-standalone/</loc>
-         <lastmod>2025-02-21</lastmod>
+         <lastmod>2025-02-27</lastmod>
     </url>
 </urlset>
