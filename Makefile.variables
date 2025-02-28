@@ -5,5 +5,6 @@ GOLANGCILINT_VERSION ?= 1.52.2
 CRDOC_VERSION ?= v0.6.2
 
 e2esuite := \
+    controlplane-remediation \
     workload-cluster-inplace-upgrade \
     workload-cluster-recreate-upgrade \

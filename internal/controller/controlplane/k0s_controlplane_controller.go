@@ -358,18 +358,15 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	desiredMachineNamesSlice := []string{}
 
 	var clusterIsUpdating bool
-	var clusterIsMutating bool
 	for _, m := range activeMachines.SortedByCreationTimestamp() {
 		if m.Spec.Version == nil || (!versionMatches(m, kcp.Spec.Version)) {
 			clusterIsUpdating = true
-			clusterIsMutating = true
 			if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
 				desiredMachineNamesSlice = append(desiredMachineNamesSlice, m.Name)
 			} else {
 				machineNamesToDelete[m.Name] = true
 			}
 		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) {
-			clusterIsMutating = true
 			machineNamesToDelete[m.Name] = true
 		} else {
 			desiredMachineNamesSlice = append(desiredMachineNamesSlice, m.Name)
@@ -458,12 +455,11 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				return ErrNotReady
 			}
 		}
-		// Wait for the previous machine to be created to avoid etcd issues if cluster if updating
-		// OR
-		// Wait for the first controller to start before creating the next one
-		// Some providers don't publish failure domains immediately, so wait for the first machine to be ready
-		// It's not slowing down the process overall, as we wait to the first machine anyway to create join tokens
-		if clusterIsMutating || (activeMachines.Len() == 1 && kcp.Spec.Replicas > 1) {
+		// If it is not the first machine to create, wait for the previous machine to be created to avoid etcd issues
+		// if cluster if updating. Some providers don't publish failure domains immediately, so wait for the first
+		// machine to be ready It's not slowing down the process overall, as we wait to the first machine anyway to
+		// create join tokens.
+		if activeMachines.Len() >= 1 {
 			err := c.checkMachineIsReady(ctx, activeMachines.Newest().Name, cluster)
 			if err != nil {
 				return err

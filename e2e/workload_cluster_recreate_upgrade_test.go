@@ -33,7 +33,7 @@ import (
 )
 
 func TestWorkloadClusterRecreateUpgrade(t *testing.T) {
-	setup(t, workloadClusterRecreateUpgradeSpec)
+	setupAndRun(t, workloadClusterRecreateUpgradeSpec)
 }
 
 // Validation of the correct operation of k0smotron when the

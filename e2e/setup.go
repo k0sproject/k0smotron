@@ -96,7 +96,7 @@ func init() {
 	flag.BoolVar(&useExistingCluster, "use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 }
 
-func setup(t *testing.T, test func(t *testing.T)) {
+func setupAndRun(t *testing.T, test func(t *testing.T)) {
 	ctrl.SetLogger(klog.Background())
 	flag.Parse()
 
