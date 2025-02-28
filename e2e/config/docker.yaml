@@ -35,6 +35,7 @@ providers:
             new: "imagePullPolicy: IfNotPresent"
     files:
       - sourcePath: "../data/infrastructure-docker/cluster-template-out-of-cluster.yaml"
+      - sourcePath: "../data/infrastructure-docker/cluster-template-remediation.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -93,7 +94,7 @@ intervals:
   node-drain/wait-deployment-available: ["3m", "10s"]
   node-drain/wait-control-plane: ["15m", "10s"]
   node-drain/wait-machine-deleted: ["2m", "10s"]
-  #  Giving a bit more time during upgrade tests
+  kcp-remediation/wait-machines: ["5m", "10s"]
   workload-upgrade/wait-cluster: ["10m", "10s"]
   workload-upgrade/wait-control-plane: ["20m", "10s"]
   workload-upgrade/wait-worker-nodes: ["20m", "10s"]
