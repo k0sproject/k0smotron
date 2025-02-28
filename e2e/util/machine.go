@@ -21,9 +21,9 @@ package util
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -35,8 +35,8 @@ type WaitForMachinesInput struct {
 	Namespace                string
 	ClusterName              string
 	ExpectedReplicas         int
-	ExpectedOldMachines      []string
-	ExpectedDeletedMachines  []string
+	ExpectedOldMachines      map[string]string
+	ExpectedDeletedMachines  map[string]string
 	WaitForMachinesIntervals Interval
 }
 
@@ -50,10 +50,8 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 		clusterv1.MachineControlPlaneLabel: "true",
 	}
 
-	expectedOldMachines := sets.Set[string]{}.Insert(input.ExpectedOldMachines...)
-	expectedDeletedMachines := sets.Set[string]{}.Insert(input.ExpectedDeletedMachines...)
-	allMachines := sets.Set[string]{}
-	newMachines := sets.Set[string]{}
+	allMachines := make(map[string]string)
+	newMachines := make(map[string]string)
 	machineList := &clusterv1.MachineList{}
 
 	// Waits for the desired set of machines to exist.
@@ -63,44 +61,53 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 			return false, err
 		}
 
-		allMachines = sets.Set[string]{}
+		allMachines = make(map[string]string)
 		for i := range machineList.Items {
-			allMachines.Insert(machineList.Items[i].Name)
+			allMachines[string(machineList.Items[i].GetUID())] = machineList.Items[i].Name
 		}
 
 		// Compute new machines (all - old - to be deleted)
-		newMachines = allMachines.Clone()
-		newMachines.Delete(expectedOldMachines.UnsortedList()...)
-		newMachines.Delete(expectedDeletedMachines.UnsortedList()...)
-
-		fmt.Printf(" - expected %d, got %d: %s, of which new %s, must have check: %t, must not have check: %t\n", input.ExpectedReplicas, allMachines.Len(), allMachines.UnsortedList(), newMachines.UnsortedList(), allMachines.HasAll(expectedOldMachines.UnsortedList()...), !allMachines.HasAny(expectedDeletedMachines.UnsortedList()...))
+		newMachines = make(map[string]string)
+		for k, v := range allMachines {
+			newMachines[k] = v
+		}
+		for k := range input.ExpectedOldMachines {
+			delete(newMachines, k)
+		}
+		for k := range input.ExpectedDeletedMachines {
+			delete(newMachines, k)
+		}
 
 		// Ensures all the expected old machines are still there.
-		if !allMachines.HasAll(expectedOldMachines.UnsortedList()...) {
-			return false, fmt.Errorf("Got machines: %s, must contain all of: %s", allMachines.UnsortedList(), expectedOldMachines.UnsortedList())
+		for k := range input.ExpectedOldMachines {
+			if _, ok := allMachines[k]; !ok {
+				return false, nil
+			}
 		}
 
 		// Ensures none of the machines to be deleted is still there.
-		if allMachines.HasAny(expectedDeletedMachines.UnsortedList()...) {
-			return false, fmt.Errorf("Got machines: %s, must not contain any of: %s", allMachines.UnsortedList(), expectedDeletedMachines.UnsortedList())
+		for k := range input.ExpectedDeletedMachines {
+			if _, ok := allMachines[k]; ok {
+				return false, nil
+			}
 		}
 
 		if len(allMachines) != input.ExpectedReplicas {
-			return false, fmt.Errorf("Got %d machines, must be %d", len(allMachines), input.ExpectedReplicas)
+			return false, nil
 		}
 
 		return true, nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to get the expected list of machines: got %s (expected %d machines, must have %s, must not have %s)",
-			allMachines.UnsortedList(), input.ExpectedReplicas, expectedOldMachines.UnsortedList(), expectedDeletedMachines.UnsortedList())
+		return nil, nil, fmt.Errorf("Failed to get the expected list of machines: got %v (expected %d machines, must have %v, must not have %v)",
+			allMachines, input.ExpectedReplicas, input.ExpectedOldMachines, input.ExpectedDeletedMachines)
 	}
 
-	fmt.Printf("Got %d machines: %s\n", allMachines.Len(), allMachines.UnsortedList())
+	fmt.Printf("Got %d machines: %v\n", len(allMachines), allMachines)
 
 	// Ensures the desired set of machines is stable (no further machines are created or deleted).
 	fmt.Printf("Checking the list of machines is stable\n")
-	allMachinesNow := sets.Set[string]{}
+	allMachinesNow := make(map[string]string)
 
 	now := time.Now()
 	timeForConsideredStable := 30 * time.Second
@@ -111,14 +118,24 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 			return nil, nil, err
 		}
 
-		allMachinesNow = sets.Set[string]{}
+		allMachinesNow = make(map[string]string)
 		for i := range machineList.Items {
-			allMachinesNow.Insert(machineList.Items[i].Name)
+			allMachinesNow[string(machineList.Items[i].GetUID())] = machineList.Items[i].Name
 		}
 
-		if !allMachines.Equal(allMachinesNow) {
-			return nil, nil, fmt.Errorf("Expected list of machines is not stable: got %s, expected %s", allMachinesNow.UnsortedList(), allMachines.UnsortedList())
+		if !reflect.DeepEqual(allMachines, allMachinesNow) {
+			return nil, nil, fmt.Errorf("Expected list of machines is not stable: got %v, expected %v", allMachinesNow, allMachines)
 		}
 	}
-	return allMachines.UnsortedList(), newMachines.UnsortedList(), nil
+
+	allMachinesNames := []string{}
+	for _, v := range allMachines {
+		allMachinesNames = append(allMachinesNames, v)
+	}
+
+	newMachinesNames := []string{}
+	for _, v := range newMachines {
+		newMachinesNames = append(newMachinesNames, v)
+	}
+	return allMachinesNames, newMachinesNames, nil
 }

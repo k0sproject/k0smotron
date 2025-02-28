@@ -180,6 +180,7 @@ jobs:
       fail-fast: false
       matrix:
         e2e-suite:
+          - controlplane-remediation
           - workload-cluster-inplace-upgrade
           - workload-cluster-recreate-upgrade
 

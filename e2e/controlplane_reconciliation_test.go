@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/k0smotron/k0smotron/e2e/util"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -49,12 +50,14 @@ const (
 )
 
 func TestControlPlaneReconciliation(t *testing.T) {
-	setup(t, controlplaneReconciliationSpec)
+	setupAndRun(t, controlplaneReconciliationSpec)
 }
 
 // Verifies KCP to properly adopt existing control plane Machines.
 func controlplaneReconciliationSpec(t *testing.T) {
-	testName := "controlplane-remediation"
+	testName := "kcp-remediation"
+
+	require.NoError(t, errors.New("test"))
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 	namespace, _ := util.SetupSpecNamespace(ctx, testName, managementClusterProxy, artifactFolder)
@@ -102,12 +105,14 @@ func controlplaneReconciliationSpec(t *testing.T) {
 
 	fmt.Println("Wait for the cluster to get stuck with the first CP machine not completing the bootstrap")
 
+	waitMachineInterval := util.GetInterval(e2eConfig, testName, "wait-machines")
+
 	allMachines, newMachines, err := util.WaitForMachines(ctx, util.WaitForMachinesInput{
 		Lister:                   managementClusterProxy.GetClient(),
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
 		ExpectedReplicas:         1,
-		WaitForMachinesIntervals: util.GetInterval(e2eConfig, testName, "wait-machines"),
+		WaitForMachinesIntervals: waitMachineInterval,
 	})
 	require.NoError(t, err)
 	require.Len(t, allMachines, 1)
@@ -128,19 +133,19 @@ func controlplaneReconciliationSpec(t *testing.T) {
 
 	fmt.Println("REMEDIATING FIRST CONTROL PLANE MACHINE")
 
-	fmt.Printf("Add mhc-test:fail label to machine %s so it will be immediately remediated", firstMachineName)
+	fmt.Printf("Add mhc-test:fail label to machine %s so it will be immediately remediated\n", firstMachineName)
 	firstMachineWithLabel := firstMachine.DeepCopy()
 	firstMachineWithLabel.Labels["mhc-test"] = failLabelValue
 	require.NoError(t, managementClusterProxy.GetClient().Patch(ctx, firstMachineWithLabel, client.MergeFrom(firstMachine)), "Failed to patch machine %d", firstMachineName)
 
-	fmt.Printf("Wait for the first CP machine to be remediated, and the replacement machine to come up, but again get stuck with the Machine not completing the bootstrap")
+	fmt.Printf("Wait for the first CP machine to be remediated, and the replacement machine to come up, but again get stuck with the Machine not completing the bootstrap\n")
 	allMachines, newMachines, err = util.WaitForMachines(ctx, util.WaitForMachinesInput{
 		Lister:                   managementClusterProxy.GetClient(),
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
 		ExpectedReplicas:         1,
-		ExpectedDeletedMachines:  []string{firstMachineName},
-		WaitForMachinesIntervals: util.GetInterval(e2eConfig, testName, "wait-machines"),
+		ExpectedDeletedMachines:  map[string]string{string(firstMachine.GetUID()): firstMachineName},
+		WaitForMachinesIntervals: waitMachineInterval,
 	})
 	require.NoError(t, err)
 	require.Len(t, allMachines, 1)
@@ -160,7 +165,101 @@ func controlplaneReconciliationSpec(t *testing.T) {
 	// In order to test remediation of other machine while provisioning we unblock bootstrap of the first CP replacement
 	// and wait for the second cp machine to come up.
 
-	fmt.Println("aaa")
+	fmt.Println("FIRST CONTROL PLANE MACHINE SUCCESSFULLY REMEDIATED!")
+
+	fmt.Printf("Unblock bootstrap for Machine %s and wait for it to be provisioned\n", firstMachineReplacementName)
+	sendSignalToBootstrappingMachine(ctx, t, sendSignalToBootstrappingMachineInput{
+		Client:    managementClusterProxy.GetClient(),
+		Namespace: namespace.Name,
+		Machine:   firstMachineReplacementName,
+		Signal:    "pass",
+	})
+	fmt.Printf("Waiting for Machine %s to be provisioned\n", firstMachineReplacementName)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.NoError(c, managementClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(firstMachineReplacement), firstMachineReplacement))
+		assert.NotNil(c, firstMachineReplacement.Status.NodeRef)
+	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", firstMachineReplacementName)
+
+	fmt.Println("FIRST CONTROL PLANE MACHINE UP AND RUNNING!")
+	fmt.Println("START PROVISIONING OF SECOND CONTROL PLANE MACHINE!")
+
+	fmt.Println("Wait for the cluster to get stuck with the second CP machine not completing the bootstrap")
+	allMachines, newMachines, err = util.WaitForMachines(ctx, util.WaitForMachinesInput{
+		Lister:                   managementClusterProxy.GetClient(),
+		Namespace:                namespace.Name,
+		ClusterName:              clusterName,
+		ExpectedReplicas:         2,
+		ExpectedDeletedMachines:  map[string]string{},
+		ExpectedOldMachines:      map[string]string{string(firstMachineReplacement.GetUID()): firstMachineReplacementName},
+		WaitForMachinesIntervals: waitMachineInterval,
+	})
+	require.NoError(t, err)
+	require.Len(t, allMachines, 2)
+	require.Len(t, newMachines, 1)
+	secondMachineName := newMachines[0]
+	secondMachine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secondMachineName,
+			Namespace: namespace.Name,
+		},
+	}
+	require.NoError(t, managementClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(secondMachine), secondMachine), "Failed to get machine %d", secondMachineName)
+	require.Nil(t, secondMachine.Status.NodeRef)
+	fmt.Printf("Machine %s is up but still bootstrapping\n", secondMachineName)
+
+	// Intentionally trigger remediation on the second CP and validate that also this one is deleted and a replacement should come up.
+
+	fmt.Println("REMEDIATING SECOND CONTROL PLANE MACHINE")
+
+	fmt.Printf("Add mhc-test:fail label to machine %s so it will be immediately remediated\n", firstMachineName)
+	secondMachineWithLabel := secondMachine.DeepCopy()
+	secondMachineWithLabel.Labels["mhc-test"] = failLabelValue
+	require.NoError(t, managementClusterProxy.GetClient().Patch(ctx, secondMachineWithLabel, client.MergeFrom(secondMachine)), "Failed to patch machine %d", secondMachineName)
+
+	fmt.Printf("Wait for the second CP machine to be remediated, and the replacement machine to come up, but again get stuck with the Machine not completing the bootstrap\n")
+	allMachines, newMachines, err = util.WaitForMachines(ctx, util.WaitForMachinesInput{
+		Lister:                   managementClusterProxy.GetClient(),
+		Namespace:                namespace.Name,
+		ClusterName:              clusterName,
+		ExpectedReplicas:         2,
+		ExpectedDeletedMachines:  map[string]string{string(secondMachine.GetUID()): secondMachineName},
+		ExpectedOldMachines:      map[string]string{string(firstMachineReplacement.GetUID()): firstMachineName},
+		WaitForMachinesIntervals: waitMachineInterval,
+	})
+	require.NoError(t, err)
+	require.Len(t, allMachines, 2)
+	require.Len(t, newMachines, 1)
+	secondMachineReplacementName := newMachines[0]
+	secondMachineReplacement := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secondMachineReplacementName,
+			Namespace: namespace.Name,
+		},
+	}
+	require.NoError(t, managementClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(secondMachineReplacement), secondMachineReplacement), "Failed to get machine %d", secondMachineReplacementName)
+	require.Nil(t, secondMachineReplacement.Status.NodeRef)
+	fmt.Printf("Machine %s is up but still bootstrapping\n", secondMachineReplacementName)
+
+	// The secondMachine replacement is up, meaning that the test validated that remediation of the second CP machine works (note: this test remediation after the cluster is initialized, but not yet fully provisioned).
+	// In order to test remediation after provisioning we unblock bootstrap of the second CP replacement as well as for the third CP machine.
+	// and wait for the second cp machine to come up.
+
+	fmt.Println("SECOND CONTROL PLANE MACHINE SUCCESSFULLY REMEDIATED!")
+
+	fmt.Printf("Unblock bootstrap for Machine %s and wait for it to be provisioned\n", secondMachineReplacementName)
+	sendSignalToBootstrappingMachine(ctx, t, sendSignalToBootstrappingMachineInput{
+		Client:    managementClusterProxy.GetClient(),
+		Namespace: namespace.Name,
+		Machine:   secondMachineReplacementName,
+		Signal:    "pass",
+	})
+	fmt.Printf("Waiting for Machine %s to be provisioned\n", secondMachineReplacementName)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.NoError(c, managementClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(secondMachineReplacement), secondMachineReplacement))
+		assert.NotNil(c, secondMachineReplacement.Status.NodeRef)
+	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", secondMachineReplacementName)
+
+	fmt.Println("ALL THE CONTROL PLANE MACHINES SUCCESSFULLY REMEDIATED AND PROVISIONED!")
 }
 
 // getServerAddr returns the address to be used for accessing the management cluster from a workload cluster.
@@ -274,4 +373,46 @@ func createConfigMapForMachinesBootstrapSignal(ctx context.Context, writer clien
 		},
 	}
 	return writer.Create(ctx, cm)
+}
+
+type sendSignalToBootstrappingMachineInput struct {
+	Client    client.Client
+	Namespace string
+	Machine   string
+	Signal    string
+}
+
+// sendSignalToBootstrappingMachine sends a signal to a machine stuck during bootstrap.
+func sendSignalToBootstrappingMachine(ctx context.Context, t *testing.T, input sendSignalToBootstrappingMachineInput) {
+	fmt.Printf("Sending bootstrap signal %s to Machine %s\n", input.Signal, input.Machine)
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: input.Namespace,
+		},
+	}
+	require.NoError(t, input.Client.Get(ctx, client.ObjectKeyFromObject(cm), cm), "failed to get mhc-test config map")
+
+	cmWithSignal := cm.DeepCopy()
+	cmWithSignal.Data[configMapDataKey] = input.Signal
+	require.NoError(t, input.Client.Patch(ctx, cmWithSignal, client.MergeFrom(cm)), "failed to patch mhc-test config map")
+
+	fmt.Printf("Waiting for Machine %s to acknowledge signal %s has been received\n", input.Machine, input.Signal)
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.NoError(c, input.Client.Get(ctx, client.ObjectKeyFromObject(cmWithSignal), cmWithSignal))
+		assert.Equal(c, cmWithSignal.Data[configMapDataKey], fmt.Sprintf("ack-%s", input.Signal))
+	}, time.Minute, 10*time.Second, "Failed to get ack signal from machine %s", input.Machine)
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      input.Machine,
+			Namespace: input.Namespace,
+		},
+	}
+	require.NoError(t, input.Client.Get(ctx, client.ObjectKeyFromObject(machine), machine))
+
+	// Resetting the signal in the config map
+	cmWithSignal.Data[configMapDataKey] = "hold"
+	require.NoError(t, input.Client.Patch(ctx, cmWithSignal, client.MergeFrom(cm)), "failed to patch mhc-test config map")
 }
