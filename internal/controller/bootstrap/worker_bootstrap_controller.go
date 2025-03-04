@@ -36,6 +36,7 @@ import (
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -147,6 +148,11 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{}, nil
 	}
 
+	patchHelper, err := patch.NewHelper(config, r.Client)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
 		conditions.SetSummary(config,
@@ -155,7 +161,8 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 			),
 		)
 
-		if err := r.Status().Update(ctx, config); err != nil {
+		err := patchHelper.Patch(ctx, config)
+		if err != nil {
 			log.Error(err, "Failed to patch K0sWorkerConfig status")
 		}
 	}()
@@ -212,10 +219,6 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	// Set the status to ready
 	scope.Config.Status.Ready = true
 	scope.Config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
-	if err := r.Status().Update(ctx, scope.Config); err != nil {
-		log.Error(err, "Failed to patch config status")
-		return ctrl.Result{}, err
-	}
 
 	log.Info("Reconciled succesfully")
 

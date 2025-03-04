@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	pod, err := r.findStatefulSetPod(ctx, kmc.GetStatefulSetName(), kmc.Namespace)
 
@@ -54,14 +54,14 @@ func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc k
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetAdminConfigSecretName(),
 			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronCluster(&kmc),
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(&kmc),
+			Labels:      kcontrollerutil.LabelsForK0smotronCluster(kmc),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		StringData: map[string]string{"value": output},
 		Type:       clusterv1.ClusterSecretType,
 	}
 
-	if err = ctrl.SetControllerReference(&kmc, &secret, r.Scheme); err != nil {
+	if err = ctrl.SetControllerReference(kmc, &secret, r.Scheme); err != nil {
 		return err
 	}
 

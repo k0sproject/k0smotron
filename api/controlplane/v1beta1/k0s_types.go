@@ -127,15 +127,55 @@ type K0sControlPlaneList struct {
 
 type K0sControlPlaneStatus struct {
 	// Ready denotes that the control plane is ready
-	Ready                       bool   `json:"ready"`
-	Inititalized                bool   `json:"initialized"`
-	ExternalManagedControlPlane bool   `json:"externalManagedControlPlane"`
-	Replicas                    int32  `json:"replicas"`
-	Version                     string `json:"version"`
-	Selector                    string `json:"selector"`
-	UnavailableReplicas         int32  `json:"unavailableReplicas"`
-	ReadyReplicas               int32  `json:"readyReplicas"`
-	UpdatedReplicas             int32  `json:"updatedReplicas"`
+	// +optional
+	Ready bool `json:"ready"`
+
+	// initialized denotes that the KubeadmControlPlane API Server is initialized and thus
+	// it can accept requests.
+	// NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
+	// The value of this field is never updated after provisioning is completed. Please use conditions
+	// to check the operational state of the control plane.
+	// +optional
+	Inititalized bool `json:"initialized"`
+
+	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
+	// +optional
+	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
+
+	// replicas is the total number of non-terminated machines targeted by this control plane
+	// (their labels match the selector).
+	// +optional
+	Replicas int32 `json:"replicas"`
+
+	// version represents the minimum Kubernetes version for the control plane machines
+	// in the cluster.
+	// +optional
+	Version string `json:"version"`
+
+	// selector is the label selector in string format to avoid introspection
+	// by clients, and is used to provide the CRD-based integration for the
+	// scale subresource and additional integrations for things like kubectl
+	// describe.. The string will be in the same format as the query-param syntax.
+	// More info about label selectors: http://kubernetes.io/docs/user-guide/labels#label-selectors
+	// +optional
+	Selector string `json:"selector"`
+
+	// unavailableReplicas is the total number of unavailable machines targeted by this control plane.
+	// This is the total number of machines that are still required for
+	// the deployment to have 100% available capacity. They may either
+	// be machines that are running but not yet ready or machines
+	// that still have not been created.
+	// +optional
+	UnavailableReplicas int32 `json:"unavailableReplicas"`
+
+	// readyReplicas is the total number of fully running and ready control plane machines.
+	// +optional
+	ReadyReplicas int32 `json:"readyReplicas"`
+
+	// updatedReplicas is the total number of non-terminated machines targeted by this control plane
+	// that have the desired template spec.
+	// +optional
+	UpdatedReplicas int32 `json:"updatedReplicas"`
 
 	// Conditions defines current service state of the K0sControlPlane.
 	// +optional

@@ -531,10 +531,10 @@ func (r *ClusterReconciler) addMonitoringStack(kmc *km.Cluster, statefulSet *app
 	})
 }
 
-func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling statefulset")
-	statefulSet, err := r.generateStatefulSet(&kmc)
+	statefulSet, err := r.generateStatefulSet(kmc)
 	if err != nil {
 		return fmt.Errorf("failed to generate statefulset: %w", err)
 	}
@@ -548,7 +548,7 @@ func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc km.Clu
 		}
 
 		if foundStatefulSet.Status.ReadyReplicas == kmc.Spec.Replicas {
-			r.updateReadiness(ctx, kmc, true)
+			kmc.Status.Ready = true
 		}
 
 		return nil

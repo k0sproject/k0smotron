@@ -70,11 +70,11 @@ func (r *ClusterReconciler) generateMonitoringCM(kmc *km.Cluster) (v1.ConfigMap,
 	return cm, nil
 }
 
-func (r *ClusterReconciler) reconcileMonitoringCM(ctx context.Context, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileMonitoringCM(ctx context.Context, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling monitoring configmap")
 
-	cm, err := r.generateMonitoringCM(&kmc)
+	cm, err := r.generateMonitoringCM(kmc)
 	if err != nil {
 		return err
 	}

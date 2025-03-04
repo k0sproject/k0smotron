@@ -4528,11 +4528,17 @@ spec:
             type: object
           status:
             properties:
-              controlPlaneReady:
-                type: boolean
               externalManagedControlPlane:
+                description: externalManagedControlPlane is a bool that should be
+                  set to true if the Node objects do not exist in the cluster.
                 type: boolean
               initialized:
+                description: |-
+                  initialized denotes that the KubeadmControlPlane API Server is initialized and thus
+                  it can accept requests.
+                  NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
+                  The value of this field is never updated after provisioning is completed. Please use conditions
+                  to check the operational state of the control plane.
                 type: boolean
               ready:
                 description: Ready denotes that the control plane is ready
@@ -4565,11 +4571,6 @@ spec:
                   version represents the minimum Kubernetes version for the control plane pods
                   in the cluster.
                 type: string
-            required:
-            - controlPlaneReady
-            - externalManagedControlPlane
-            - initialized
-            - ready
             type: object
         type: object
     served: true

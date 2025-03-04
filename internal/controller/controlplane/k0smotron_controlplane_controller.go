@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -40,6 +40,7 @@ import (
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -99,6 +100,18 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
+	// Configure patch helpers for resources updated during the reconcile loop.
+	kcpPatchHelper, err := patch.NewHelper(kcp, c.Client)
+	if err != nil {
+		log.Error(err, "Failed to configure K0smotronControlPlane patch helper")
+		return ctrl.Result{Requeue: true}, nil
+	}
+	clusterPatchHelper, err := patch.NewHelper(cluster, c.Client)
+	if err != nil {
+		log.Error(err, "Failed to configure Cluster patch helper")
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	log = log.WithValues("cluster", cluster.Name)
 
 	if annotations.IsPaused(cluster, kcp) {
@@ -106,14 +119,8 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	// TODO: This is in pretty much all CAPI controllers, but AFAIK we do not need this as we're running stuff on mothership
-	// if !cluster.Status.InfrastructureReady {
-	// 	log.Info("Waiting for Cluster Infrastructure to be ready")
-	// 	return ctrl.Result{}, nil
-	// }
-
 	defer func() {
-		derr := c.updateStatus(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, kcp)
+		derr := c.computeStatus(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, kcp)
 		if derr != nil {
 			if errors.Is(derr, ErrNotReady) {
 				res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
@@ -124,11 +131,16 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			}
 		}
 
-		derr = c.Status().Patch(ctx, kcp, client.Merge)
+		derr = kcpPatchHelper.Patch(ctx, kcp)
 		if derr != nil {
-			log.Error(derr, "Failed to patch K0smotronContorlPlane status")
-			err = derr
-			return
+			log.Error(derr, "Failed to patch K0smotronContorlPlane")
+			err = kerrors.NewAggregate([]error{err, derr})
+		}
+
+		derr = clusterPatchHelper.Patch(ctx, cluster)
+		if err != nil {
+			log.Error(err, "Failed to update Cluster endpoint")
+			err = kerrors.NewAggregate([]error{err, derr})
 		}
 	}()
 
@@ -137,8 +149,14 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Error(err, "Reconciliation failed")
 		return res, err
 	}
+	// Requeue is needed when the k0smotron Cluster has just been created. k0smotron Cluster controller needs to take action
+	// before the ControlPlane reconciliation can continue.
+	if !res.IsZero() {
+		return res, err
+	}
+
 	if !ready {
-		err = c.waitExternalAddress(ctx, cluster, kcp)
+		err = c.waitExternalAddress(ctx, cluster)
 		if err != nil {
 			return res, err
 		}
@@ -162,23 +180,18 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		annotations.AddAnnotations(cluster, map[string]string{
 			cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
 		})
-		if err := c.Client.Patch(ctx, cluster, client.Merge); err != nil {
-			return res, fmt.Errorf("failed to patch cluster: %w", err)
-		}
 	}
 
-	// TODO: We need to have bit more detailed status and conditions handling
 	kcp.Status.Ready = ready
 	kcp.Status.ExternalManagedControlPlane = true
 	kcp.Status.Inititalized = true
-	kcp.Status.ControlPlaneReady = true
 
 	return res, err
 
 }
 
 // watchExternalAddress watches the external address of the control plane and updates the status accordingly
-func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *clusterv1.Cluster, _ *cpv1beta1.K0smotronControlPlane) error {
+func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *clusterv1.Cluster) error {
 	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 	log.Info("Waiting for external address to be set")
 	err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 3*time.Minute, true, func(ctx context.Context) (done bool, err error) {
@@ -221,10 +234,7 @@ func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *
 			log.Info("Updated infrastructure cluster", "host", host, "port", port)
 			cluster.Spec.ControlPlaneEndpoint.Host = host
 			cluster.Spec.ControlPlaneEndpoint.Port = int32(port)
-			if err := c.Client.Update(ctx, cluster); err != nil {
-				log.Error(err, "Failed to update Cluster endpoint")
-				return false, err
-			}
+
 			return true, nil
 		}
 		return true, nil
@@ -238,6 +248,7 @@ func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *
 }
 
 func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) (ctrl.Result, bool, error) {
+	logger := log.FromContext(ctx)
 	if kcp.Spec.CertificateRefs == nil {
 		kcp.Spec.CertificateRefs = []kapi.CertificateRef{
 			{
@@ -295,27 +306,19 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	var foundCluster kapi.Cluster
 	err = c.Client.Get(ctx, types.NamespacedName{Name: kcluster.Name, Namespace: kcluster.Namespace}, &foundCluster)
 	if err != nil && apierrors.IsNotFound(err) {
-		if err := c.Client.Patch(ctx, &kcluster, client.Apply, &client.PatchOptions{
-			FieldManager: "k0smotron",
-		}); err != nil {
-			return ctrl.Result{}, false, err
-		}
-	} else if err == nil {
-		if kcp.Spec.ExternalAddress == "" {
-			kcp.Spec.ExternalAddress = foundCluster.Spec.ExternalAddress
-		}
-		if !reflect.DeepEqual(foundCluster.Spec, kcp.Spec) {
-			err := c.Client.Patch(ctx, &kcluster, client.Apply, &client.PatchOptions{
-				FieldManager: "k0smotron",
-			})
-
+		if err := c.Client.Create(ctx, &kcluster); err != nil {
 			return ctrl.Result{}, false, err
 		}
 
-		return ctrl.Result{}, foundCluster.Status.Ready, nil
+		logger.Info("Requeuing because k0smotron Cluster has just been created")
+		return ctrl.Result{RequeueAfter: 5 * time.Second, Requeue: true}, false, nil
 	}
 
-	return ctrl.Result{}, false, err
+	if kcp.Spec.ExternalAddress == "" {
+		kcp.Spec.ExternalAddress = foundCluster.Spec.ExternalAddress
+	}
+
+	return ctrl.Result{}, foundCluster.Status.Ready, nil
 }
 
 func (c *K0smotronController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) error {
@@ -323,7 +326,7 @@ func (c *K0smotronController) ensureCertificates(ctx context.Context, cluster *c
 	return certificates.LookupOrGenerate(ctx, c.Client, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0smotronControlPlane")))
 }
 
-func (c *K0smotronController) updateStatus(ctx context.Context, cluster types.NamespacedName, kcp *cpv1beta1.K0smotronControlPlane) error {
+func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.NamespacedName, kcp *cpv1beta1.K0smotronControlPlane) error {
 	var kmc kapi.Cluster
 	err := c.Client.Get(ctx, cluster, &kmc)
 	if err != nil {

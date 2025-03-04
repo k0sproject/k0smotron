@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -111,6 +112,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, nil
 	}
 
+	kcpPatchHelper, err := patch.NewHelper(kcp, c.Client)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	log.Info("Reconciling K0sControlPlane", "version", kcp.Spec.Version)
 
 	if kcp.Spec.Version == "" {
@@ -129,6 +135,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	if cluster == nil {
 		log.Info("Waiting for Cluster Controller to set OwnerRef on K0sControlPlane")
 		return ctrl.Result{}, nil
+	}
+
+	clusterPatchHelper, err := patch.NewHelper(cluster, c.Client)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	if annotations.IsPaused(cluster, kcp) {
@@ -157,10 +168,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			return
 		}
 
-		// // Patch the status with server-side apply
-		// kcp.ObjectMeta.ManagedFields = nil // Remove managed fields when doing server-side apply
-		// derr = c.Status().Patch(ctx, kcp, client.Apply, client.FieldOwner(fieldOwner))
-		derr = c.Status().Patch(ctx, kcp, client.Merge)
+		derr = kcpPatchHelper.Patch(ctx, kcp)
 		if derr != nil {
 			log.Error(derr, "Failed to patch status")
 			res = ctrl.Result{}
@@ -170,7 +178,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		log.Info("Status updated successfully")
 
 		if kcp.Status.Ready {
-			if perr := c.Client.Patch(ctx, cluster, client.Merge); perr != nil {
+			if perr := clusterPatchHelper.Patch(ctx, cluster); perr != nil {
 				err = fmt.Errorf("failed to patch cluster: %w", perr)
 			}
 		}
@@ -647,7 +655,7 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 			sans := []string{cluster.Spec.ControlPlaneEndpoint.Host}
 			existingSANs, sansFound, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
 			if err == nil && sansFound {
-				sans = append(sans, existingSANs...)
+				sans = util.AddToExistingSans(existingSANs, sans)
 			}
 			err = unstructured.SetNestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
 			if err != nil {
@@ -656,12 +664,12 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 		}
 
 		if kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress != "" {
-			sans, _, err := unstructured.NestedSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
+			sans, _, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
 			if err != nil {
 				return fmt.Errorf("error getting sans from config: %v", err)
 			}
-			sans = append(sans, kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress)
-			err = unstructured.SetNestedSlice(kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
+			sans = util.AddToExistingSans(sans, []string{kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress})
+			err = unstructured.SetNestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
 			if err != nil {
 				return fmt.Errorf("error setting sans to the config: %v", err)
 			}

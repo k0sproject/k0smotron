@@ -60,7 +60,7 @@ func (r *ClusterReconciler) generateConfig(kmc *km.Cluster, sans []string) (v1.C
 		case "k0s.k0sproject.io/v1beta1":
 			existingSANs, found, err := unstructured.NestedStringSlice(unstructuredConfig, "spec", "api", "sans")
 			if err == nil && found {
-				sans = append(sans, existingSANs...)
+				sans = kcontrollerutil.AddToExistingSans(existingSANs, sans)
 			}
 			k0smotronValues["spec"] = getV1Beta1Spec(kmc, sans)
 
@@ -226,13 +226,17 @@ func (r *ClusterReconciler) genSANs(kmc *km.Cluster) ([]string, error) {
 }
 
 func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
+	iSliceSans := make([]interface{}, len(sans))
+	for i, s := range sans {
+		iSliceSans[i] = s
+	}
 	v1beta1Spec := map[string]interface{}{
 		"api": map[string]interface{}{
-			"port": kmc.Spec.Service.APIPort,
-			"sans": sans,
+			"port": int64(kmc.Spec.Service.APIPort),
+			"sans": iSliceSans,
 		},
 		"konnectivity": map[string]interface{}{
-			"agentPort": kmc.Spec.Service.KonnectivityPort,
+			"agentPort": int64(kmc.Spec.Service.KonnectivityPort),
 		},
 	}
 	if kmc.Spec.KineDataSourceURL != "" {
@@ -247,7 +251,7 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
 			"type": "etcd",
 			"etcd": map[string]interface{}{
 				"externalCluster": map[string]interface{}{
-					"endpoints":      []string{fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
+					"endpoints":      []interface{}{fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
 					"etcdPrefix":     kmc.GetName(),
 					"caFile":         "/var/lib/k0s/pki/etcd-ca.crt",
 					"clientCertFile": "/var/lib/k0s/pki/apiserver-etcd-client.crt",

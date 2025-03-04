@@ -371,38 +371,59 @@ spec:
                   type: object
                 type: array
               externalManagedControlPlane:
+                description: externalManagedControlPlane is a bool that should be
+                  set to true if the Node objects do not exist in the cluster.
                 type: boolean
               initialized:
+                description: |-
+                  initialized denotes that the KubeadmControlPlane API Server is initialized and thus
+                  it can accept requests.
+                  NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
+                  The value of this field is never updated after provisioning is completed. Please use conditions
+                  to check the operational state of the control plane.
                 type: boolean
               ready:
                 description: Ready denotes that the control plane is ready
                 type: boolean
               readyReplicas:
+                description: readyReplicas is the total number of fully running and
+                  ready control plane machines.
                 format: int32
                 type: integer
               replicas:
+                description: |-
+                  replicas is the total number of non-terminated machines targeted by this control plane
+                  (their labels match the selector).
                 format: int32
                 type: integer
               selector:
+                description: |-
+                  selector is the label selector in string format to avoid introspection
+                  by clients, and is used to provide the CRD-based integration for the
+                  scale subresource and additional integrations for things like kubectl
+                  describe.. The string will be in the same format as the query-param syntax.
+                  More info about label selectors: http://kubernetes.io/docs/user-guide/labels#label-selectors
                 type: string
               unavailableReplicas:
+                description: |-
+                  unavailableReplicas is the total number of unavailable machines targeted by this control plane.
+                  This is the total number of machines that are still required for
+                  the deployment to have 100% available capacity. They may either
+                  be machines that are running but not yet ready or machines
+                  that still have not been created.
                 format: int32
                 type: integer
               updatedReplicas:
+                description: |-
+                  updatedReplicas is the total number of non-terminated machines targeted by this control plane
+                  that have the desired template spec.
                 format: int32
                 type: integer
               version:
+                description: |-
+                  version represents the minimum Kubernetes version for the control plane machines
+                  in the cluster.
                 type: string
-            required:
-            - externalManagedControlPlane
-            - initialized
-            - ready
-            - readyReplicas
-            - replicas
-            - selector
-            - unavailableReplicas
-            - updatedReplicas
-            - version
             type: object
         type: object
     served: true
