@@ -38,7 +38,7 @@ jobs:
         uses: supplypike/setup-bin@v4
         with:
           name: kind
-          version: v0.24.0
+          version: v0.27.0
           uri: https://github.com/kubernetes-sigs/kind/releases/download/v0.24.0/kind-linux-amd64
 
       - name: Install support-bundle
