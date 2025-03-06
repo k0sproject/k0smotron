@@ -157,12 +157,18 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	postStartFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/post-start")
 	s.Require().NoError(err)
 	s.Require().Equal("post-start", postStartFile)
+	customFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/custom")
+	s.Require().NoError(err)
+	s.Require().Equal("custom", customFile)
 	extraFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
 	extraFileFromSecret, err := getDockerNodeFile("docker-test-cluster-docker-test-0", "/tmp/test-file-secret")
 	s.Require().NoError(err)
 	s.Require().Equal("test", extraFileFromSecret)
+	customControllerFile, err := getDockerNodeFile("docker-test-cluster-docker-test-0", "/tmp/custom")
+	s.Require().NoError(err)
+	s.Require().Equal("custom", customControllerFile)
 	extraFileFromSecret, err = getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file-secret")
 	s.Require().NoError(err)
 	s.Require().Equal("test", extraFileFromSecret)
@@ -261,6 +267,7 @@ apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
 metadata:
   name: docker-test
+  namespace: default
 spec:
   replicas: 3
   version: v1.27.2+k0s.0
@@ -285,12 +292,26 @@ spec:
         secretRef: 
           name: test-file-secret
           key: value
+    customUserDataRef: 
+      configMapRef:
+        name: custom-user-data
+        key: customUserData
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: DockerMachineTemplate
       name: docker-test-cp-template
       namespace: default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-user-data
+  namespace: default
+data:
+  customUserData: |
+   runcmd:
+     - echo -n "custom" > /tmp/custom
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
@@ -339,6 +360,10 @@ spec:
         secretRef: 
           name: test-file-secret
           key: value
+  customUserDataRef: 
+    configMapRef:
+      name: custom-user-data
+      key: customUserData
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
