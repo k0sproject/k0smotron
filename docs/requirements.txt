@@ -4,7 +4,7 @@ click==8.1.8
 colorama==0.4.6
 ghp-import==2.1.0
 idna==3.10
-Jinja2==3.1.5
+Jinja2==3.1.6
 Markdown==3.7
 MarkupSafe==3.0.2
 mdx-truly-sane-lists==1.3
