@@ -19,6 +19,7 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	"k8s.io/client-go/tools/record"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -49,6 +50,7 @@ type RemoteMachineController struct {
 	Scheme     *runtime.Scheme
 	ClientSet  *kubernetes.Clientset
 	RESTConfig *rest.Config
+	Recorder   record.EventRecorder
 }
 
 type RemoteMachineMode int
@@ -314,6 +316,8 @@ func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *
 		}
 	}
 
+	r.Recorder.Eventf(rm, v1.EventTypeNormal, "Reserved", "Reserved machine %s from pool %s", foundPooledMachine.Name, foundPooledMachine.Spec.Pool)
+
 	rm.Spec.Address = foundPooledMachine.Spec.Machine.Address
 	rm.Spec.Port = foundPooledMachine.Spec.Machine.Port
 	rm.Spec.User = foundPooledMachine.Spec.Machine.User
@@ -347,6 +351,9 @@ func (r *RemoteMachineController) returnMachineToPool(ctx context.Context, rm *i
 			if err := r.Status().Update(ctx, &pooledMachine); err != nil {
 				return fmt.Errorf("failed to update pooled machine: %w", err)
 			}
+
+			r.Recorder.Eventf(rm, v1.EventTypeNormal, "Returned", "Returned machine %s to pool %s", pooledMachine.Name, pool)
+
 			return nil
 		}
 	}

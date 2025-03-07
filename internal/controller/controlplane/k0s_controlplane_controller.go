@@ -26,6 +26,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -77,6 +78,7 @@ type K0sController struct {
 	client.Client
 	ClientSet  *kubernetes.Clientset
 	RESTConfig *rest.Config
+	Recorder   record.EventRecorder
 	// workloadClusterKubeClient is used during testing to inject a fake client
 	workloadClusterKubeClient *kubernetes.Clientset
 }
@@ -86,6 +88,7 @@ type K0sController struct {
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 
 func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
@@ -173,6 +176,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			if perr := c.Client.Patch(ctx, cluster, client.Merge); perr != nil {
 				err = fmt.Errorf("failed to patch cluster: %w", perr)
 			}
+
+			// If the control plane became ready, emit an event
+			if existingStatus.Ready != kcp.Status.Ready {
+				c.Recorder.Eventf(kcp, corev1.EventTypeNormal, "ControlPlaneReady", "K0sControlPlane %s is ready", kcp.Name)
+			}
 		}
 
 		// Requeue the reconciliation if the status is not ready
@@ -236,6 +244,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 					logger.Error(err, "Failed to regenerate kubeconfig")
 					return
 				}
+				c.Recorder.Eventf(kcp, corev1.EventTypeNormal, "Provisioning", "Kubeconfig for control plane %s regenerated", kcp.Name)
 			}
 		}
 	}()

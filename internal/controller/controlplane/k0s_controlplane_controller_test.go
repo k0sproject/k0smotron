@@ -710,7 +710,8 @@ func TestReconcileKubeconfigCertsRotation(t *testing.T) {
 		require.NoError(t, cc.LookupOrGenerate(ctx, testEnv, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane"))))
 
 		r := &K0sController{
-			Client: testEnv,
+			Client:   testEnv,
+			Recorder: testEnv.GetEventRecorderFor("k0smotron"),
 		}
 		err = r.reconcileKubeconfig(ctx, cluster, kcp)
 		require.NoError(t, err)

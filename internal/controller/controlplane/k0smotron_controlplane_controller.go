@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -57,6 +58,7 @@ type K0smotronController struct {
 	Scheme     *runtime.Scheme
 	ClientSet  *kubernetes.Clientset
 	RESTConfig *rest.Config
+	Recorder   record.EventRecorder
 }
 
 type Scope struct {
@@ -166,6 +168,8 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			return res, fmt.Errorf("failed to patch cluster: %w", err)
 		}
 	}
+
+	c.Recorder.Eventf(kcp, corev1.EventTypeNormal, "Reconciled", "K0smotronControlPlane reconciled")
 
 	// TODO: We need to have bit more detailed status and conditions handling
 	kcp.Status.Ready = ready
@@ -314,6 +318,8 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 
 		return ctrl.Result{}, foundCluster.Status.Ready, nil
 	}
+
+	c.Recorder.Event(kcp, corev1.EventTypeNormal, "Reconciling", "Reconciling K0smotronControlPlane")
 
 	return ctrl.Result{}, false, err
 }
