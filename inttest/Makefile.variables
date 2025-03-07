@@ -21,7 +21,6 @@ smoketests := \
     check-capi-controlplane-docker-worker \
     check-capi-controlplane-docker-tunneling \
     check-capi-controlplane-docker-tunneling-proxy \
-    check-capi-controlplane-remediation \
     check-monitoring \
     check-capi-docker-machinedeployment \
     check-capi-docker-clusterclass \

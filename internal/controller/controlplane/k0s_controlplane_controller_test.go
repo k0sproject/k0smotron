@@ -946,10 +946,6 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 
 	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane"))
 
-	r := &K0sController{
-		Client: testEnv,
-	}
-
 	firstMachineRelatedToControlPlane := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
@@ -1012,6 +1008,24 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineNotRelatedToControlPlane))
+
+	frt := &fakeRoundTripper{}
+	fakeClient := &restfake.RESTClient{
+		Client: restfake.CreateHTTPClient(frt.run),
+	}
+
+	restClient, _ := rest.RESTClientFor(&rest.Config{
+		ContentConfig: rest.ContentConfig{
+			NegotiatedSerializer: scheme.Codecs,
+			GroupVersion:         &metav1.SchemeGroupVersion,
+		},
+	})
+	restClient.Client = fakeClient.Client
+
+	r := &K0sController{
+		Client:                    testEnv,
+		workloadClusterKubeClient: kubernetes.New(restClient),
+	}
 
 	require.Eventually(t, func() bool {
 		return r.reconcileMachines(ctx, cluster, kcp) == nil

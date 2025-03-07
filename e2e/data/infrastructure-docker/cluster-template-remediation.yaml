@@ -1,0 +1,135 @@
+# This cluster template is used when a cluster needs to be deployed along a MHC.
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+      - 10.128.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane
+    name: ${CLUSTER_NAME}-docker-test
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: DockerCluster
+    name: docker-test
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: docker-test-cp-template
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      customImage: kindest/node:v1.31.0
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-docker-test
+  namespace: ${NAMESPACE}
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: v1.30.1+k0s.0
+  updateStrategy: Recreate
+  k0sConfigSpec:
+    args:
+    - --enable-worker
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+        telemetry:
+          enabled: false
+        network:
+          controlPlaneLoadBalancing:
+            enabled: false 
+    files:
+    - path: /tmp/test-file-secret
+      contentFrom: 
+        secretRef: 
+          name: test-file-secret
+          key: value
+    - path: /wait-signal.sh
+      content: |
+        #!/bin/bash
+
+        set -o errexit
+        set -o pipefail
+
+        echo "Waiting for signal..."
+
+        TOKEN=$1
+        SERVER=$2
+        NAMESPACE=$3
+
+        while true;
+        do
+          sleep 1s
+
+          signal=$(curl -k -s --header "Authorization: Bearer $TOKEN" $SERVER/api/v1/namespaces/$NAMESPACE/configmaps/mhc-test | jq -r .data.signal?)
+          echo "signal $signal"
+
+          if [ "$signal" == "pass" ]; then
+            curl -k -s --header "Authorization: Bearer $TOKEN" -XPATCH -H "Content-Type: application/strategic-merge-patch+json" --data '{"data": {"signal": "ack-pass"}}' $SERVER/api/v1/namespaces/$NAMESPACE/configmaps/mhc-test
+            exit 0
+          fi
+        done
+      permissions: "0777"
+    preStartCommands:
+    - ./wait-signal.sh "${TOKEN}" "${SERVER}" "${NAMESPACE}"
+      
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DockerMachineTemplate
+      name: docker-test-cp-template
+      namespace: ${NAMESPACE}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerCluster
+metadata:
+  name: docker-test
+  namespace: ${NAMESPACE}
+spec:
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-file-secret
+  namespace: ${NAMESPACE}
+type: Opaque
+data:
+  value: dGVzdA==
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ${CLUSTER_NAME}-mhc-0
+  namespace: ${NAMESPACE}
+spec:
+  clusterName: ${CLUSTER_NAME}
+  maxUnhealthy: 100%
+  nodeStartupTimeout: 60s
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/control-plane: "true"
+      mhc-test: fail
+  unhealthyConditions:
+  - status: "False"
+    timeout: 10s
+    type: e2e.remediation.condition
