@@ -169,8 +169,11 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	// Fetch the bootstrap data
 	bootstrapData, err := r.getBootstrapData(ctx, machine)
 	if err != nil {
-		log.Error(err, "Failed to get bootstrap data")
-		return ctrl.Result{}, err
+		// If the bootstrap data secret is not found AND the machine is being deleted, don't requeue
+		if !(apierrors.IsNotFound(err) && !machine.ObjectMeta.DeletionTimestamp.IsZero()) {
+			log.Error(err, "Failed to get bootstrap data")
+			return ctrl.Result{}, err
+		}
 	}
 
 	var p Provisioner
