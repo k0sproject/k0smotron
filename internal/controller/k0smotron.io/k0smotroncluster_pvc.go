@@ -17,7 +17,7 @@ import (
 	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
 )
 
-func (r *ClusterReconciler) reconcilePVC(ctx context.Context, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcilePVC(ctx context.Context, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling PVC")
 
@@ -36,7 +36,7 @@ func (r *ClusterReconciler) reconcilePVC(ctx context.Context, kmc km.Cluster) er
 	return nil
 }
 
-func (r *ClusterReconciler) reconcileControlPlanePVC(ctx context.Context, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileControlPlanePVC(ctx context.Context, kmc *km.Cluster) error {
 	// Do nothing if the persistence type is not PVC
 	if kmc.Spec.Persistence.Type != "pvc" {
 		return nil
@@ -49,11 +49,11 @@ func (r *ClusterReconciler) reconcileControlPlanePVC(ctx context.Context, kmc km
 	return r.resizeStatefulSetAndPVC(ctx, kmc, *kmc.Spec.Persistence.PersistentVolumeClaim.Spec.Resources.Requests.Storage(), kmc.Spec.Replicas, kmc.GetStatefulSetName(), kmc.Spec.Persistence.PersistentVolumeClaim.Name)
 }
 
-func (r *ClusterReconciler) reconcileEtcdPVC(ctx context.Context, kmc km.Cluster) error {
-	return r.resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Etcd.Persistence.Size, calculateDesiredReplicas(&kmc), kmc.GetEtcdStatefulSetName(), "etcd-data")
+func (r *ClusterReconciler) reconcileEtcdPVC(ctx context.Context, kmc *km.Cluster) error {
+	return r.resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Etcd.Persistence.Size, calculateDesiredReplicas(kmc), kmc.GetEtcdStatefulSetName(), "etcd-data")
 }
 
-func (r *ClusterReconciler) resizeStatefulSetAndPVC(ctx context.Context, kmc km.Cluster, desiredStorageSize resource.Quantity, replicas int32, stsName, vctName string) error {
+func (r *ClusterReconciler) resizeStatefulSetAndPVC(ctx context.Context, kmc *km.Cluster, desiredStorageSize resource.Quantity, replicas int32, stsName, vctName string) error {
 	var sts appsv1.StatefulSet
 	err := r.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: stsName}, &sts)
 	if err != nil {
@@ -114,7 +114,7 @@ func (r *ClusterReconciler) resizeStatefulSetAndPVC(ctx context.Context, kmc km.
 			}
 		} else {
 			// Do not check other PVCs if expansion is not allowed and just write an event
-			r.Recorder.Eventf(&kmc, corev1.EventTypeWarning, "PVCExpansionNotAllowed", "PVC expansion is not allowed for the storage class %s", *pvc.Spec.StorageClassName)
+			r.Recorder.Eventf(kmc, corev1.EventTypeWarning, "PVCExpansionNotAllowed", "PVC expansion is not allowed for the storage class %s", *pvc.Spec.StorageClassName)
 
 			break
 		}

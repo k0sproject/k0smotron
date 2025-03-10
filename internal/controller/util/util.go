@@ -33,3 +33,20 @@ func LabelsForEtcdK0smotronCluster(kmc *km.Cluster) map[string]string {
 func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 	return kmc.Annotations
 }
+
+// AddToExistingSans merges original sans list with a new sans slice avoiding duplicated values.
+func AddToExistingSans(existing []string, new []string) []string {
+	uniques := make(map[string]struct{})
+	for _, val := range existing {
+		uniques[val] = struct{}{}
+	}
+	for _, val := range new {
+		uniques[val] = struct{}{}
+	}
+	finalSans := make([]string, 0, len(uniques))
+	for key := range uniques {
+		finalSans = append(finalSans, key)
+	}
+
+	return finalSans
+}

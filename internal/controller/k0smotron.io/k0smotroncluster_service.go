@@ -131,13 +131,13 @@ func (r *ClusterReconciler) generateService(kmc *km.Cluster) v1.Service {
 	return svc
 }
 
-func (r *ClusterReconciler) reconcileServices(ctx context.Context, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileServices(ctx context.Context, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	// Depending on ingress configuration create nodePort service.
 	logger.Info("Reconciling services")
-	svc := r.generateService(&kmc)
+	svc := r.generateService(kmc)
 
-	_ = ctrl.SetControllerReference(&kmc, &svc, r.Scheme)
+	_ = ctrl.SetControllerReference(kmc, &svc, r.Scheme)
 
 	if err := r.Client.Patch(ctx, &svc, client.Apply, patchOpts...); err != nil {
 		return err
@@ -159,7 +159,7 @@ func (r *ClusterReconciler) reconcileServices(ctx context.Context, kmc km.Cluste
 				}
 				logger.Info("Loadbalancer address available, updating Cluster object", "address", kmc.Spec.ExternalAddress)
 
-				err := r.Client.Update(ctx, &kmc)
+				err := r.Client.Update(ctx, kmc)
 				if err != nil {
 					return false, err
 				}
@@ -178,9 +178,6 @@ func (r *ClusterReconciler) reconcileServices(ctx context.Context, kmc km.Cluste
 			return err
 		}
 		kmc.Spec.ExternalAddress = util.FindNodeAddress(nodes)
-		if err := r.Client.Update(ctx, &kmc); err != nil {
-			return err
-		}
 	}
 
 	return nil

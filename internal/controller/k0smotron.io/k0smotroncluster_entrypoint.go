@@ -68,11 +68,11 @@ func (r *ClusterReconciler) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap,
 	return cm, nil
 }
 
-func (r *ClusterReconciler) reconcileEntrypointCM(ctx context.Context, kmc km.Cluster) error {
+func (r *ClusterReconciler) reconcileEntrypointCM(ctx context.Context, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling entrypoint configmap")
 
-	cm, err := r.generateEntrypointCM(&kmc)
+	cm, err := r.generateEntrypointCM(kmc)
 	if err != nil {
 		return err
 	}

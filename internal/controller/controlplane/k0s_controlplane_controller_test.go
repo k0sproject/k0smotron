@@ -26,6 +26,7 @@ import (
 	"io"
 	"math/big"
 	"net/http"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -815,7 +816,7 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, expectedk0sConfig, kcp.Spec.K0sConfigSpec.K0s)
+	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.K0s))
 }
 
 func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
@@ -868,7 +869,7 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, expectedk0sConfig, kcp.Spec.K0sConfigSpec.K0s)
+	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.K0s))
 }
 
 func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
@@ -925,7 +926,7 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, expectedk0sConfig, kcp.Spec.K0sConfigSpec.K0s)
+	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.K0s))
 }
 
 func TestReconcileMachinesScaleUp(t *testing.T) {
@@ -1495,7 +1496,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, client.ObjectKey{Name: kcp.Name, Namespace: kcp.Namespace}, kcp))
 	require.NotEmpty(t, kcp.Status.Selector)
-	require.Equal(t, fmt.Sprintf("%s+%s", kcp.Spec.Version, defaultK0sSuffix), kcp.Status.Version)
+	require.Equal(t, "v1.30.0+k0s.0", kcp.Status.Version)
 	require.Equal(t, kcp.Status.Replicas, int32(1))
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(gmt), gmt))
 	require.Contains(t, gmt.GetOwnerReferences(), metav1.OwnerReference{
@@ -1547,7 +1548,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	require.Len(t, machineList.Items, 1)
 	machine := machineList.Items[0]
 	require.True(t, strings.HasPrefix(machine.Name, kcp.Name))
-	require.Equal(t, fmt.Sprintf("%s+%s", kcp.Spec.Version, defaultK0sSuffix), *machine.Spec.Version)
+	require.Equal(t, "v1.30.0+k0s.0", *machine.Spec.Version)
 	// Newly cloned infra objects should have the infraref annotation.
 	infraObj, err := external.Get(ctx, r.Client, &machine.Spec.InfrastructureRef, machine.Spec.InfrastructureRef.Namespace)
 	require.NoError(t, err)
@@ -1780,4 +1781,28 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		},
 	}
 	return cluster, kcp, genericMachineTemplate
+}
+
+// normalizeUnstructured normalizes an unstructured object by sorting the "sans" field
+func normalizeUnstructured(obj *unstructured.Unstructured) *unstructured.Unstructured {
+	normalized := obj.DeepCopy()
+
+	sans, found, err := unstructured.NestedSlice(normalized.Object, "spec", "api", "sans")
+	if err == nil && found {
+		strSans := make([]string, len(sans))
+		for i, v := range sans {
+			strSans[i] = v.(string)
+		}
+
+		sort.Strings(strSans)
+
+		sortedSans := make([]interface{}, len(strSans))
+		for i, v := range strSans {
+			sortedSans[i] = v
+		}
+
+		_ = unstructured.SetNestedSlice(normalized.Object, sortedSans, "spec", "api", "sans")
+	}
+
+	return normalized
 }

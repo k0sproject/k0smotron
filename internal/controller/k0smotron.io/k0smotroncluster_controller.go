@@ -27,9 +27,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/retry"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -85,8 +85,8 @@ const (
 func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var kmc km.Cluster
-	if err := r.Get(ctx, req.NamespacedName, &kmc); err != nil {
+	kmc := &km.Cluster{}
+	if err := r.Get(ctx, req.NamespacedName, kmc); err != nil {
 		logger.Error(err, "unable to fetch Cluster")
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
@@ -97,12 +97,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if !kmc.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Cluster is being deleted")
-		if controllerutil.ContainsFinalizer(&kmc, clusterFinalizer) {
+		if controllerutil.ContainsFinalizer(kmc, clusterFinalizer) {
 			// Even if there is an error the finalizer must be removed for a complete removal of the
 			// cluster resource. In the worst case, the associated JointTokenRequest is not deleted.
 			defer func() {
-				controllerutil.RemoveFinalizer(&kmc, clusterFinalizer)
-				if err := r.Update(ctx, &kmc); err != nil {
+				controllerutil.RemoveFinalizer(kmc, clusterFinalizer)
+				if err := r.Update(ctx, kmc); err != nil {
 					logger.Error(err, "Error removing cluster finalizer")
 				}
 			}()
@@ -132,31 +132,44 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
+	patchHelper, err := patch.NewHelper(kmc, r.Client)
+	if err != nil {
+		logger.Error(err, "Failed to configure the patch helper")
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	defer func() {
+		err = patchHelper.Patch(ctx, kmc)
+		if err != nil {
+			logger.Error(err, "Unable to update k0smotron Cluster")
+		}
+	}()
+
 	logger.Info("Reconciling services")
 	if err := r.reconcileServices(ctx, kmc); err != nil {
-		r.updateStatus(ctx, kmc, "Failed reconciling services")
+		kmc.Status.ReconciliationStatus = "Failed reconciling services"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	if err := r.reconcileK0sConfig(ctx, &kmc); err != nil {
-		r.updateStatus(ctx, kmc, "Failed reconciling configmap")
+	if err := r.reconcileK0sConfig(ctx, kmc); err != nil {
+		kmc.Status.ReconciliationStatus = "Failed reconciling configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if err := r.reconcileEntrypointCM(ctx, kmc); err != nil {
-		r.updateStatus(ctx, kmc, "Failed reconciling entrypoint configmap")
+		kmc.Status.ReconciliationStatus = "Failed reconciling entrypoint configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if kmc.Spec.Monitoring.Enabled {
 		if err := r.reconcileMonitoringCM(ctx, kmc); err != nil {
-			r.updateStatus(ctx, kmc, "Failed reconciling prometheus configmap")
+			kmc.Status.ReconciliationStatus = "Failed reconciling prometheus configmap"
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
 	}
 
 	if kmc.Spec.CertificateRefs == nil {
-		if err := r.ensureCertificates(ctx, &kmc); err != nil {
+		if err := r.ensureCertificates(ctx, kmc); err != nil {
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
 		kmc.Spec.CertificateRefs = []km.CertificateRef{
@@ -179,62 +192,50 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 	if kmc.Spec.KineDataSourceURL == "" {
-		logger.Info("Reconciling etcd certs")
-		err := r.ensureEtcdCertificates(ctx, &kmc)
-		if err != nil {
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating etcd certificates: %w", err)
+		isAPIServerEtcdClientCertRef := false
+		for _, cr := range kmc.Spec.CertificateRefs {
+			if cr.Type == string(secret.APIServerEtcdClient) {
+				isAPIServerEtcdClientCertRef = true
+				break
+			}
 		}
-		kmc.Spec.CertificateRefs = append(kmc.Spec.CertificateRefs, km.CertificateRef{
-			Type: string(secret.APIServerEtcdClient),
-			Name: secret.Name(kmc.Name, secret.APIServerEtcdClient),
-		})
+		if !isAPIServerEtcdClientCertRef {
+			logger.Info("Reconciling etcd certs")
+			err := r.ensureEtcdCertificates(ctx, kmc)
+			if err != nil {
+				return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating etcd certificates: %w", err)
+			}
+			kmc.Spec.CertificateRefs = append(kmc.Spec.CertificateRefs, km.CertificateRef{
+				Type: string(secret.APIServerEtcdClient),
+				Name: secret.Name(kmc.Name, secret.APIServerEtcdClient),
+			})
+		}
 	}
 
 	if err := r.reconcilePVC(ctx, kmc); err != nil {
-		r.updateStatus(ctx, kmc, "Failed reconciling PVCs")
+		kmc.Status.ReconciliationStatus = "Failed reconciling PVCs"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling etcd")
-	if err := r.reconcileEtcd(ctx, &kmc); err != nil {
-		r.updateStatus(ctx, kmc, fmt.Sprintf("Failed reconciling etcd, %+v", err))
+	if err := r.reconcileEtcd(ctx, kmc); err != nil {
+		kmc.Status.ReconciliationStatus = fmt.Sprintf("Failed reconciling etcd, %+v", err)
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling statefulset")
 	if err := r.reconcileStatefulSet(ctx, kmc); err != nil {
-		r.updateStatus(ctx, kmc, fmt.Sprintf("Failed reconciling statefulset, %+v", err))
+		kmc.Status.ReconciliationStatus = fmt.Sprintf("Failed reconciling statefulset, %+v", err)
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if err := r.reconcileKubeConfigSecret(ctx, kmc); err != nil {
-		r.updateStatus(ctx, kmc, "Failed reconciling secret")
+		kmc.Status.ReconciliationStatus = "Failed reconciling secret"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	r.updateStatus(ctx, kmc, "Reconciliation successful")
+	kmc.Status.ReconciliationStatus = "Reconciliation successful"
 	return ctrl.Result{}, nil
-}
-
-func (r *ClusterReconciler) updateStatus(ctx context.Context, kmc km.Cluster, status string) {
-	logger := log.FromContext(ctx)
-	kmc.Status.ReconciliationStatus = status
-	err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
-		return true
-	}, func() error {
-		return r.Status().Patch(ctx, &kmc, client.Merge)
-	})
-	if err != nil {
-		logger.Error(err, fmt.Sprintf("Unable to update status: %s", status))
-	}
-}
-
-func (r *ClusterReconciler) updateReadiness(ctx context.Context, kmc km.Cluster, ready bool) {
-	logger := log.FromContext(ctx)
-	kmc.Status.Ready = ready
-	if err := r.Status().Patch(ctx, &kmc, client.Merge); err != nil {
-		logger.Error(err, fmt.Sprintf("Unable to update readiness: %v", ready))
-	}
 }
 
 func (r *ClusterReconciler) ensureCertificates(ctx context.Context, kmc *km.Cluster) error {

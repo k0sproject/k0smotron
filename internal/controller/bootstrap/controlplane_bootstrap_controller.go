@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/util/retry"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -45,6 +44,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -166,6 +166,11 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
+	patchHelper, err := patch.NewHelper(config, c.Client)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
 		conditions.SetSummary(config,
@@ -174,7 +179,8 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			),
 		)
 
-		if err := c.Status().Update(ctx, config); err != nil {
+		err := patchHelper.Patch(ctx, config)
+		if err != nil {
 			log.Error(err, "Failed to patch K0sControllerConfig status")
 		}
 	}()
@@ -252,15 +258,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	// Set the status to ready
 	config.Status.Ready = true
 	config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
-
-	err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		config.ObjectMeta.ResourceVersion = ""
-		return c.Status().Patch(ctx, config, client.Merge)
-	})
-	if err != nil {
-		log.Error(err, "Failed to patch config status")
-		return ctrl.Result{}, err
-	}
 
 	log.Info("Reconciled succesfully")
 

@@ -2399,81 +2399,96 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0scontrolplanestatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Conditions defines current service state of the K0sControlPlane.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>externalManagedControlPlane</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>initialized</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          initialized denotes that the KubeadmControlPlane API Server is initialized and thus
+it can accept requests.
+NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
+The value of this field is never updated after provisioning is completed. Please use conditions
+to check the operational state of the control plane.<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
           Ready denotes that the control plane is ready<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>readyReplicas</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          readyReplicas is the total number of fully running and ready control plane machines.<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>replicas</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          replicas is the total number of non-terminated machines targeted by this control plane
+(their labels match the selector).<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>selector</b></td>
         <td>string</td>
         <td>
-          <br/>
+          selector is the label selector in string format to avoid introspection
+by clients, and is used to provide the CRD-based integration for the
+scale subresource and additional integrations for things like kubectl
+describe.. The string will be in the same format as the query-param syntax.
+More info about label selectors: http://kubernetes.io/docs/user-guide/labels#label-selectors<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>unavailableReplicas</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          unavailableReplicas is the total number of unavailable machines targeted by this control plane.
+This is the total number of machines that are still required for
+the deployment to have 100% available capacity. They may either
+be machines that are running but not yet ready or machines
+that still have not been created.<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>updatedReplicas</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          updatedReplicas is the total number of non-terminated machines targeted by this control plane
+that have the desired template spec.<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b><a href="#k0scontrolplanestatusconditionsindex">conditions</a></b></td>
-        <td>[]object</td>
-        <td>
-          Conditions defines current service state of the K0sControlPlane.<br/>
+          version represents the minimum Kubernetes version for the control plane machines
+in the cluster.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12339,33 +12354,30 @@ merge patch.<br/>
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>controlPlaneReady</b></td>
-        <td>boolean</td>
-        <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>externalManagedControlPlane</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>initialized</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          initialized denotes that the KubeadmControlPlane API Server is initialized and thus
+it can accept requests.
+NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
+The value of this field is never updated after provisioning is completed. Please use conditions
+to check the operational state of the control plane.<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
           Ready denotes that the control plane is ready<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b>readyReplicas</b></td>
         <td>integer</td>
