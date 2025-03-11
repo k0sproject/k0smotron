@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -280,7 +281,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		return ctrl.Result{}, false, fmt.Errorf("failed to enrich k0s config with cluster data for K0smotronControlPlane %s/%s", kcp.Namespace, kcp.Name)
 	}
 
-	kcluster := kapi.Cluster{
+	desiredK0smotronCluster := kapi.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kapi.GroupVersion.String(),
 			Kind:       "Cluster",
@@ -304,9 +305,9 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	}
 
 	var foundCluster kapi.Cluster
-	err = c.Client.Get(ctx, types.NamespacedName{Name: kcluster.Name, Namespace: kcluster.Namespace}, &foundCluster)
+	err = c.Client.Get(ctx, types.NamespacedName{Name: desiredK0smotronCluster.Name, Namespace: desiredK0smotronCluster.Namespace}, &foundCluster)
 	if err != nil && apierrors.IsNotFound(err) {
-		if err := c.Client.Create(ctx, &kcluster); err != nil {
+		if err := c.Client.Create(ctx, &desiredK0smotronCluster); err != nil {
 			return ctrl.Result{}, false, err
 		}
 
@@ -316,6 +317,19 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 
 	if kcp.Spec.ExternalAddress == "" {
 		kcp.Spec.ExternalAddress = foundCluster.Spec.ExternalAddress
+	}
+
+	// It is needed to update cluster spec if the controlplane specification has new changes.
+	if !reflect.DeepEqual(foundCluster.Spec, kcp.Spec) {
+		patchHelper, err := patch.NewHelper(&foundCluster, c.Client)
+		if err != nil {
+			return ctrl.Result{}, false, err
+		}
+
+		// Modidy current Cluster specification with the desired one.
+		foundCluster.Spec = kcp.Spec
+
+		return ctrl.Result{}, false, patchHelper.Patch(ctx, &foundCluster)
 	}
 
 	return ctrl.Result{}, foundCluster.Status.Ready, nil
