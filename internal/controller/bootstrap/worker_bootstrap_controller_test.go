@@ -613,14 +613,19 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, caCertSecret))
 
 	// Cluster.Spec.ControlPlaneEndpoint is not initialize by infra provider
-	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
-	require.NoError(t, err)
-	require.Equal(t, ctrl.Result{}, result)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
+		assert.NoError(c, err)
+		assert.Equal(c, ctrl.Result{}, result)
 
-	updatedK0sWorkerConfig := &bootstrapv1.K0sWorkerConfig{}
-	require.NoError(t, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
+		updatedK0sWorkerConfig := &bootstrapv1.K0sWorkerConfig{}
+		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
 
-	require.True(t, updatedK0sWorkerConfig.Status.Ready)
-	require.Equal(t, *updatedK0sWorkerConfig.Status.DataSecretName, updatedK0sWorkerConfig.Name)
-	require.True(t, conditions.IsTrue(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
+		assert.True(c, updatedK0sWorkerConfig.Status.Ready)
+		assert.NotNil(c, updatedK0sWorkerConfig.Status.DataSecretName)
+		if updatedK0sWorkerConfig.Status.DataSecretName != nil {
+			assert.Equal(c, *updatedK0sWorkerConfig.Status.DataSecretName, updatedK0sWorkerConfig.Name)
+			assert.True(c, conditions.IsTrue(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
+		}
+	}, 20*time.Second, 100*time.Millisecond)
 }
