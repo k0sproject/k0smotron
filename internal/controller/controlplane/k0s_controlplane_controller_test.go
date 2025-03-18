@@ -49,10 +49,8 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmConfig "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
-	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -65,6 +63,7 @@ import (
 	"github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
+	kubeadmConfig "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 )
 
 func TestK0sConfigEnrichment(t *testing.T) {
@@ -266,7 +265,8 @@ func TestReconcileReturnErrorWhenOwnerClusterIsMissing(t *testing.T) {
 	}(kcp, gmt, cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
 	}
 
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
@@ -375,8 +375,9 @@ func TestReconcileTunneling(t *testing.T) {
 	require.NoError(t, err)
 
 	r := &K0sController{
-		Client:    testEnv,
-		ClientSet: clientSet,
+		Client:              testEnv,
+		ClientSet:           clientSet,
+		SecretCachingClient: secretCachingClient,
 	}
 	err = r.reconcileTunneling(ctx, cluster, kcp)
 	require.NoError(t, err)
@@ -415,7 +416,8 @@ func TestReconcileKubeconfigEmptyAPIEndpoints(t *testing.T) {
 	}(kcp, cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
 	}
 	err = r.reconcileKubeconfig(ctx, cluster, kcp)
 	require.Error(t, err)
@@ -425,7 +427,7 @@ func TestReconcileKubeconfigEmptyAPIEndpoints(t *testing.T) {
 		Namespace: cluster.Namespace,
 		Name:      secret.Name(cluster.Name, secret.Kubeconfig),
 	}
-	require.ErrorContains(t, testEnv.GetAPIReader().Get(ctx, secretKey, kubeconfigSecret), "not found")
+	require.ErrorContains(t, testEnv.Get(ctx, secretKey, kubeconfigSecret), "not found")
 }
 
 func TestReconcileKubeconfigMissingCACertificate(t *testing.T) {
@@ -441,18 +443,22 @@ func TestReconcileKubeconfigMissingCACertificate(t *testing.T) {
 	}(kcp, cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
 	}
 
-	err = r.reconcileKubeconfig(ctx, cluster, kcp)
-	require.Error(t, err)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		err = r.reconcileKubeconfig(ctx, cluster, kcp)
+		assert.Error(c, err)
 
-	kubeconfigSecret := &corev1.Secret{}
-	secretKey := client.ObjectKey{
-		Namespace: cluster.Namespace,
-		Name:      secret.Name(cluster.Name, secret.Kubeconfig),
-	}
-	require.ErrorContains(t, testEnv.GetAPIReader().Get(ctx, secretKey, kubeconfigSecret), "not found")
+		kubeconfigSecret := &corev1.Secret{}
+		secretKey := client.ObjectKey{
+			Namespace: cluster.Namespace,
+			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+		}
+		assert.ErrorContains(c, testEnv.Get(ctx, secretKey, kubeconfigSecret), "not found")
+	}, 10*time.Second, 100*time.Millisecond)
+
 }
 
 func TestReconcileKubeconfigTunnelingModeNotEnabled(t *testing.T) {
@@ -487,11 +493,14 @@ func TestReconcileKubeconfigTunnelingModeNotEnabled(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, kubeconfigSecret))
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
 	}
 
-	err = r.reconcileKubeconfig(ctx, cluster, kcp)
-	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		return r.reconcileKubeconfig(ctx, cluster, kcp) == nil
+	}, 5*time.Second, 100*time.Millisecond)
+
 }
 
 func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
@@ -540,25 +549,28 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, caCertSecret))
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
 	}
 
-	err = r.reconcileKubeconfig(ctx, cluster, kcp)
-	require.Error(t, err)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		err = r.reconcileKubeconfig(ctx, cluster, kcp)
+		assert.Error(c, err)
 
-	secretKey := client.ObjectKey{
-		Namespace: cluster.Namespace,
-		Name:      secret.Name(cluster.Name+"-proxied", secret.Kubeconfig),
-	}
+		secretKey := client.ObjectKey{
+			Namespace: cluster.Namespace,
+			Name:      secret.Name(cluster.Name+"-proxied", secret.Kubeconfig),
+		}
 
-	kubeconfigProxiedSecret := &corev1.Secret{}
-	require.NoError(t, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
+		kubeconfigProxiedSecret := &corev1.Secret{}
+		assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
 
-	kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
-	for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
-		require.Equal(t, "https://test.endpoint:6443", v.Server)
-		require.Equal(t, "http://test.com:9999", v.ProxyURL)
-	}
+		kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
+		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
+			assert.Equal(c, "https://test.endpoint:6443", v.Server)
+			assert.Equal(c, "http://test.com:9999", v.ProxyURL)
+		}
+	}, 10*time.Second, 100*time.Millisecond)
 }
 
 func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
@@ -607,23 +619,27 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, caCertSecret))
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
 	}
 
-	err = r.reconcileKubeconfig(ctx, cluster, kcp)
-	require.Error(t, err)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		err = r.reconcileKubeconfig(ctx, cluster, kcp)
+		assert.Error(c, err)
 
-	secretKey := client.ObjectKey{
-		Namespace: cluster.Namespace,
-		Name:      secret.Name(cluster.Name+"-tunneled", secret.Kubeconfig),
-	}
-	kubeconfigProxiedSecret := &corev1.Secret{}
-	require.NoError(t, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
+		secretKey := client.ObjectKey{
+			Namespace: cluster.Namespace,
+			Name:      secret.Name(cluster.Name+"-tunneled", secret.Kubeconfig),
+		}
+		kubeconfigProxiedSecret := &corev1.Secret{}
+		assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
 
-	kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
-	for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
-		require.Equal(t, "https://test.com:9999", v.Server)
-	}
+		kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
+		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
+			assert.Equal(c, "https://test.com:9999", v.Server)
+		}
+	}, 10*time.Second, 100*time.Millisecond)
+
 }
 
 func TestReconcileKubeconfigCertsRotation(t *testing.T) {
@@ -708,26 +724,30 @@ func TestReconcileKubeconfigCertsRotation(t *testing.T) {
 				KeyFile:  "ca.key",
 			},
 		}
-		require.NoError(t, cc.LookupOrGenerate(ctx, testEnv, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane"))))
+		require.NoError(t, cc.LookupOrGenerateCached(ctx, secretCachingClient, testEnv, util.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane"))))
 
 		r := &K0sController{
-			Client: testEnv,
+			Client:              testEnv,
+			SecretCachingClient: secretCachingClient,
 		}
-		err = r.reconcileKubeconfig(ctx, cluster, kcp)
-		require.NoError(t, err)
 
-		for _, s := range secretsWithCertsToRotate {
-			secretKey := client.ObjectKey{
-				Namespace: s.Namespace,
-				Name:      s.Name,
+		require.EventuallyWithT(t, func(c *assert.CollectT) {
+			err = r.reconcileKubeconfig(ctx, cluster, kcp)
+			assert.NoError(c, err)
+
+			for _, s := range secretsWithCertsToRotate {
+				secretKey := client.ObjectKey{
+					Namespace: s.Namespace,
+					Name:      s.Name,
+				}
+				kubeconfigSecret := &corev1.Secret{}
+				assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigSecret))
+
+				needsRotation, err := kubeconfig.NeedsClientCertRotation(kubeconfigSecret, certs.ClientCertificateRenewalDuration)
+				assert.NoError(c, err)
+				assert.False(c, needsRotation)
 			}
-			kubeconfigSecret := &corev1.Secret{}
-			require.NoError(t, testEnv.Get(ctx, secretKey, kubeconfigSecret))
-
-			needsRotation, err := kubeconfig.NeedsClientCertRotation(kubeconfigSecret, certs.ClientCertificateRenewalDuration)
-			require.NoError(t, err)
-			require.False(t, needsRotation)
-		}
+		}, 10*time.Second, 100*time.Millisecond)
 
 		require.NoError(t, testEnv.Delete(ctx, kubeconfigSecret))
 		require.NoError(t, testEnv.Delete(ctx, tunneledKubeconfigSecret))
@@ -1490,6 +1510,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	r := &K0sController{
 		Client:                    testEnv,
 		workloadClusterKubeClient: kubernetes.New(restClient),
+		SecretCachingClient:       secretCachingClient,
 	}
 
 	_, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
