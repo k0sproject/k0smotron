@@ -35,9 +35,7 @@ import (
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type K0sControlPlaneValidator struct {
-	//TODO(user): Add more fields as needed for validation
-}
+type K0sControlPlaneValidator struct{}
 
 var _ webhook.CustomValidator = &K0sControlPlaneValidator{}
 
