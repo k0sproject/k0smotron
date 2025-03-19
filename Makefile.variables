@@ -8,3 +8,5 @@ e2esuite := \
     controlplane-remediation \
     workload-cluster-inplace-upgrade \
     workload-cluster-recreate-upgrade \
+    admission-webhook-t1 \
+    admission-webhook-t2 \
