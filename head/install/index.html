@@ -1607,6 +1607,10 @@ You are not currently viewing the documentation for the current stable release o
 <p>This section describes how to install k0smotron on top of an existing k0s
 Kubernetes cluster that allows for creation and management of the k0s
 control plane.</p>
+<div class="admonition warning">
+<p class="admonition-title">Pre-requisites</p>
+<p>Before installing k0smotron, ensure that you have <a href="https://cert-manager.io/docs/installation/">cert-manager</a> installed</p>
+</div>
 <div class="admonition note">
 <p class="admonition-title">TL;DR</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/None/install.yaml
@@ -1640,6 +1644,7 @@ workloads, see <a href="https://docs.k0sproject.io/stable/system-requirements/">
   For Cluster API integration, you can use a
   <a href="https://cluster-api.sigs.k8s.io/reference/glossary.html#management-cluster">Cluster API cluster</a>.</li>
 <li><code>kubectl</code> installed locally.</li>
+<li><a href="https://cert-manager.io/docs/installation/">cert-manager</a> installed in the management cluster.</li>
 <li>
 <p>For Cluster API integration:</p>
 <ul>
