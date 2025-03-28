@@ -19,7 +19,6 @@ package capidockermachinetemplateupdaterecreatekine
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net"
 	"os"
 	"os/exec"
@@ -28,6 +27,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -98,7 +99,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateKine) TestCAPIControlPlaneDocker
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.deleteCluster()
+		s.Require().NoError(util.DeleteCluster("docker-test"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -200,12 +201,6 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateKine) updateClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
-}
-
-func (s *CAPIDockerMachineTemplateUpdateRecreateKine) deleteCluster() {
-	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
-	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
 func getPostgresAddress() (string, error) {

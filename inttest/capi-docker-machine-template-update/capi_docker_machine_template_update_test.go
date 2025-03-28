@@ -93,7 +93,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.deleteCluster()
+		s.Require().NoError(util.DeleteCluster("docker-test"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -204,12 +204,6 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) updateClusterObjectsAgain() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsSecondUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
-}
-
-func (s *CAPIControlPlaneDockerDownScalingSuite) deleteCluster() {
-	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
-	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
 func getLBPort(name string) (int, error) {

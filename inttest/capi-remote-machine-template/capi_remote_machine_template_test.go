@@ -133,7 +133,7 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.deleteCluster()
+		s.Require().NoError(util.DeleteCluster("remote-test-cluster"))
 	}()
 
 	s.createCluster()
@@ -204,11 +204,6 @@ func (s *RemoteMachineTemplateSuite) deleteRemoteMachine(name string, namespace 
 	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/%s/remotemachines/%s", namespace, name)
 	_, err := s.client.RESTClient().Delete().AbsPath(apiPath).DoRaw(s.Context())
 	return err
-}
-
-func (s *RemoteMachineTemplateSuite) deleteCluster() {
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
-	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
 func (s *RemoteMachineTemplateSuite) createCluster() {
