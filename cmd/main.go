@@ -21,8 +21,9 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"k8s.io/client-go/discovery"
 	"os"
+
+	"k8s.io/client-go/discovery"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -33,8 +34,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -169,7 +168,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	restConfig, err := loadRestConfig()
+	restConfig, err := ctrl.GetConfig()
 	if err != nil {
 		setupLog.Error(err, "unable to get cluster config")
 		os.Exit(1)
@@ -330,14 +329,6 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
-}
-
-// loadRestConfig loads the rest config from the KUBECONFIG env var or from the in-cluster config
-func loadRestConfig() (*rest.Config, error) {
-	if os.Getenv("KUBECONFIG") != "" {
-		return clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
-	}
-	return rest.InClusterConfig()
 }
 
 func isControllerEnabled(controllerName string) bool {
