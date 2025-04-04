@@ -44,7 +44,7 @@ func TestRetryWatchErrors_syscalls(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ecb := RetryWatchErrors(func(format string, args ...any) {})
+			ecb := RetryWatchErrors(func(_ string, _ ...any) {})
 			retryDelay, err := ecb(test.err)
 
 			assert.Equal(t, test.expectedDelay, retryDelay)

@@ -94,7 +94,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 		localPort, _ = getLBPort("docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
@@ -104,7 +104,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
@@ -114,7 +114,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	})
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "status").Output()
 		if err != nil {
 			return false, nil
@@ -141,7 +141,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(err)
 
 	s.T().Log("check for node to be ready via tunnel")
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 		resp, err := tunneledKmcKC.RESTClient().
 			Get().
 			AbsPath("/healthz").

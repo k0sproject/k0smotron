@@ -18,9 +18,10 @@ package hacontrolleretcd
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0s/inttest/common"
@@ -88,7 +89,7 @@ func (s *HAControllerEtcdSuite) TestK0sGetsUp() {
 	s.T().Log("update cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
 
-	err = wait.PollUntilContextCancel(s.Context(), 5*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.Context(), 5*time.Second, true, func(_ context.Context) (bool, error) {
 		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(s.Context(), "kmc-kmc-test", metav1.GetOptions{})
 		if err != nil {
 			return false, nil

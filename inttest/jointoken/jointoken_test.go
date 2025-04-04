@@ -68,7 +68,7 @@ func (s *JoinTokenSuite) TestK0sGetsUp() {
 	s.deleteK0smotronCluster(s.Context(), kc)
 
 	s.T().Log("checking if JoinTokenRequest is deleted")
-	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
 		res := kc.RESTClient().Get().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/jtr-test/jointokenrequests/jtr-test").Do(s.Context())
 
 		var statusCode int

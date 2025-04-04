@@ -93,10 +93,10 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		}
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
 			rc, err := controller.newReplicasStatusComputer(ctx, cluster, kcp)
-			assert.NoError(t, err)
+			assert.NoError(c, err)
 			ps, ok := rc.(*planStatus)
-			assert.True(t, ok)
-			assert.Equal(t, expectedPlanStatusComputer.plan.Name, ps.plan.Name)
+			assert.True(c, ok)
+			assert.Equal(c, expectedPlanStatusComputer.plan.Name, ps.plan.Name)
 		}, 10*time.Second, 100*time.Millisecond)
 
 	})
@@ -160,11 +160,11 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
 			rc, err := controller.newReplicasStatusComputer(ctx, cluster, kcp)
-			assert.NoError(t, err)
+			assert.NoError(c, err)
 			ms, ok := rc.(*machineStatus)
-			assert.True(t, ok)
-			assert.Len(t, ms.machines, 1)
-			assert.Equal(t, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
+			assert.True(c, ok)
+			assert.Len(c, ms.machines, 1)
+			assert.Equal(c, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
 		}, 10*time.Second, 100*time.Millisecond)
 
 	})
@@ -212,11 +212,11 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		}
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
 			rc, err := controller.newReplicasStatusComputer(ctx, cluster, kcp)
-			assert.NoError(t, err)
+			assert.NoError(c, err)
 			ms, ok := rc.(*machineStatus)
-			assert.True(t, ok)
-			assert.Len(t, ms.machines, 1)
-			assert.Equal(t, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
+			assert.True(c, ok)
+			assert.Len(c, ms.machines, 1)
+			assert.Equal(c, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
 		}, 10*time.Second, 100*time.Millisecond)
 	})
 }

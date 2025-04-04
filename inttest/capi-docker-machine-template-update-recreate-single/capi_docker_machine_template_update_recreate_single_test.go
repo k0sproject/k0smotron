@@ -96,7 +96,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 
 	var localPort int
 	// nolint:staticcheck
-	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		localPort, _ = getLBPort("docker-test-lb")
 		return localPort > 0, nil
 	})
@@ -107,7 +107,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
@@ -118,7 +118,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		output, err := exec.Command("docker", "exec", "docker-test-0", "k0s", "status").Output()
 		if err != nil {
 			return false, nil
@@ -135,7 +135,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 	s.updateClusterObjects()
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 100*time.Millisecond, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 100*time.Millisecond, func(_ context.Context) (bool, error) {
 		var err error
 		newNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
 
@@ -148,7 +148,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		var err error
 		nodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-")
 
@@ -161,7 +161,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		output, err := exec.Command("docker", "exec", "docker-test-1", "k0s", "status").CombinedOutput()
 		if err != nil {
 			return false, nil

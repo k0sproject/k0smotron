@@ -19,14 +19,15 @@ package capicontolplanedocker
 import (
 	"context"
 	"fmt"
-	controlplanev1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	"os"
 	"os/exec"
-	"sigs.k8s.io/cluster-api/api/v1beta1"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	controlplanev1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
+	"sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"github.com/k0smotron/k0smotron/inttest/util"
 
@@ -94,7 +95,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 
 	var localPort int
 	// nolint:staticcheck
-	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		localPort, _ = getLBPort("docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
@@ -104,7 +105,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
@@ -129,7 +130,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 
 	for i := 0; i < 3; i++ {
 		// nolint:staticcheck
-		err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 			nodeName := fmt.Sprintf("docker-test-cluster-docker-test-%d", i)
 			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
 			if err != nil {

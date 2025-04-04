@@ -75,7 +75,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	node := nodes.Items[0]
 	if node.Spec.ProviderID == "" {
 		node.Spec.ProviderID = *machine.Spec.ProviderID
-		err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		err = retry.OnError(retry.DefaultBackoff, func(_ error) bool {
 			return true
 		}, func() error {
 			_, upErr := childClient.CoreV1().Nodes().Update(context.Background(), &node, metav1.UpdateOptions{})

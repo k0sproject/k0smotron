@@ -180,7 +180,7 @@ func CreateResources(ctx context.Context, resources []*unstructured.Unstructured
 			Duration: 1 * time.Second,
 			Factor:   1.0,
 			Jitter:   0.1,
-		}, func(err error) bool {
+		}, func(_ error) bool {
 			return true
 		}, func() error {
 			mapping, err := mapper.RESTMapping(
@@ -218,7 +218,7 @@ func applyResources(ctx context.Context, resources []*unstructured.Unstructured,
 			Duration: 1 * time.Second,
 			Factor:   1.0,
 			Jitter:   0.1,
-		}, func(err error) bool {
+		}, func(_ error) bool {
 			return true
 		}, func() error {
 			mapping, err := mapper.RESTMapping(
@@ -300,7 +300,7 @@ func WaitForSecret(ctx context.Context, kc *kubernetes.Clientset, name string, n
 	// Use apimachinery wait directly as the k0s common polls bit too much and sometimes it results into client side throttling
 	// Since it's marked deprecated in a wrong way, there's no replacement for it yet, we'll disable the linter for now
 	// nolint:staticcheck
-	return wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	return wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		secret, err := kc.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 
 		if err != nil && !apierrors.IsNotFound(err) {
