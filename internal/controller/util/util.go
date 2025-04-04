@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"sort"
 
 	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -54,6 +55,9 @@ func AddToExistingSans(existing []string, new []string) []string {
 	for key := range uniques {
 		finalSans = append(finalSans, key)
 	}
+
+	// Sort the sans to ensure stable output order
+	sort.Strings(finalSans)
 
 	return finalSans
 }
