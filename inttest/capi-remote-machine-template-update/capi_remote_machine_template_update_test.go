@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"os"
 	"os/exec"
 	"strconv"
@@ -34,6 +33,8 @@ import (
 	"testing"
 	"text/template"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	infra "github.com/k0smotron/k0smotron/api/infrastructure/v1beta1"
 	"github.com/k0smotron/k0smotron/inttest/util"
@@ -142,7 +143,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 	var localPort int
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		localPort, _ = getLBPort("TestRemoteMachineSuite-k0smotron0")
 		return localPort > 0, nil
 	})
@@ -156,7 +157,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 
 	var rmName string
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		rm, err := s.findRemoteMachines("default")
 		if err != nil {
 			return false, err
@@ -172,7 +173,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		rm, err := s.getRemoteMachine(rmName, "default")
 		if err != nil {
 			return false, err
@@ -189,7 +190,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.T().Log("update cluster")
 	s.updateCluster()
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		output, err := exec.Command("docker", "exec", "TestRemoteMachineSuite-k0smotron0", "k0s", "status").Output()
 		if err != nil {
 			return false, nil

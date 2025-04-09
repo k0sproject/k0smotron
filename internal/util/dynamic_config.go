@@ -39,7 +39,7 @@ func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli clie
 		Duration: 100 * time.Millisecond,
 		Factor:   5.0,
 		Jitter:   0.5,
-	}, func(err error) bool {
+	}, func(_ error) bool {
 		return true
 	}, func() error {
 		return chCS.Patch(ctx, &u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)

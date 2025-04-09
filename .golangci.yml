@@ -13,7 +13,6 @@ run:
 
 linters:
   enable:
-    - depguard     # Checks if package imports are in a list of acceptable packages
     - gofmt        # Checks whether code was gofmt-ed
     - goheader     # Checks is file headers matche a given pattern
     - revive       # Stricter drop-in replacement for golint

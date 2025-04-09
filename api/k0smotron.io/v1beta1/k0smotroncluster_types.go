@@ -32,6 +32,9 @@ import (
 
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
+	// ClusterProfileRef is the reference to the cluster profile.
+	//+kubebuilder:validation:Optional
+	ClusterProfileRef *ClusterProfileRef `json:"clusterProfileRef,omitempty"`
 	// Replicas is the desired number of replicas of the k0s control planes.
 	// If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
 	// Recommended value is 3.
@@ -311,6 +314,16 @@ type CertificateRef struct {
 	Type string `json:"type"`
 	//+kubebuilder:validation:Optional
 	Name string `json:"name,omitempty"`
+}
+
+type ClusterProfileRef struct {
+	// Name is the name of the cluster profile.
+	//+kubebuilder:validation:Required
+	Name string `json:"name"`
+	// InventoryConsumerName is the name of the inventory consumer for a ClusterProfile.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=k0smotron
+	InventoryConsumerName string `json:"inventoryConsumerName,omitempty"`
 }
 
 func init() {

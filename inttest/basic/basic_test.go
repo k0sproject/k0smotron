@@ -81,7 +81,7 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.updateK0smotronCluster(s.Context(), rc)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.Context(), 100*time.Millisecond, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.Context(), 100*time.Millisecond, func(_ context.Context) (bool, error) {
 		pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), "kmc-kmc-test-0", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
