@@ -18,6 +18,7 @@ package bootstrap
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -635,8 +636,13 @@ func mergeControllerExtraArgs(scope *ControllerScope) []string {
 }
 
 func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv1.Machine) (string, error) {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{
+		// Since we are using self-signed certificates, we need to skip the verification
+		InsecureSkipVerify: true,
+	}
 	httpClient := &http.Client{
-		Transport: c.RESTConfig.Transport,
+		Transport: transport,
 		Timeout:   time.Second,
 	}
 
@@ -644,8 +650,8 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 	port := "9443"
 	host := fmt.Sprintf("https://%s:%s", scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
 
-	resp, err := httpClient.Get(fmt.Sprintf("%s/v1beta1/ca", host))
-	if err == nil && resp.StatusCode == http.StatusOK {
+	_, err := httpClient.Get(fmt.Sprintf("%s/v1beta1/ca", host))
+	if err == nil {
 		return host, nil
 	}
 
