@@ -31,6 +31,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -46,9 +47,10 @@ type Provisioner interface {
 
 type RemoteMachineController struct {
 	client.Client
-	Scheme     *runtime.Scheme
-	ClientSet  *kubernetes.Clientset
-	RESTConfig *rest.Config
+	SecretCachingClient client.Client
+	Scheme              *runtime.Scheme
+	ClientSet           *kubernetes.Clientset
+	RESTConfig          *rest.Config
 }
 
 type RemoteMachineMode int
@@ -108,10 +110,15 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 	log = log.WithValues("machine", machine.Name)
 
+	rmPatchHelper, err := patch.NewHelper(rm, r.Client)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	if rm.ObjectMeta.DeletionTimestamp.IsZero() {
 		defer func() {
 			// Always update the RemoteMachine status with the phase the state machine is in
-			if err := r.Status().Update(ctx, rm); err != nil {
+			if err := rmPatchHelper.Patch(ctx, rm); err != nil {
 				log.Error(err, "Failed to update RemoteMachine status")
 			}
 		}()
@@ -127,7 +134,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 				rm.Status.FailureReason = "MissingFields"
 				rm.Status.FailureMessage = "If pool is empty, following fields are required: address, sshKeyRef"
 				rm.Status.Ready = false
-				if err := r.Status().Update(ctx, rm); err != nil {
+				if err := rmPatchHelper.Patch(ctx, rm); err != nil {
 					log.Error(err, "Failed to update RemoteMachine status")
 				}
 				return ctrl.Result{Requeue: true}, nil
@@ -215,10 +222,14 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 				}
 			}
 			controllerutil.RemoveFinalizer(rm, RemoteMachineFinalizer)
-			if err := r.Update(ctx, rm); err != nil {
+			if err := rmPatchHelper.Patch(ctx, rm); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
+		return ctrl.Result{}, nil
+	}
+
+	if rm.Status.Ready {
 		return ctrl.Result{}, nil
 	}
 
@@ -238,8 +249,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 			rm.Status.Ready = true
 		}
 		log.Info(fmt.Sprintf("Updating RemoteMachine status: %+v", rm.Status))
-		// Always update the RemoteMachine status with the phase the state machine is in
-		if err := r.Status().Update(ctx, rm); err != nil {
+		if err := rmPatchHelper.Patch(ctx, rm); err != nil {
 			log.Error(err, "Failed to update RemoteMachine status")
 		}
 	}()
@@ -251,11 +261,6 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	rm.Spec.ProviderID = fmt.Sprintf("remote-machine://%s:%d", rm.Spec.Address, rm.Spec.Port)
-
-	if err := r.Update(ctx, rm); err != nil {
-		log.Error(err, "Failed to update RemoteMachine")
-		return ctrl.Result{}, err
-	}
 
 	m := machine.DeepCopy()
 	m.Status.Addresses = []clusterv1.MachineAddress{
@@ -384,7 +389,7 @@ func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine 
 		Name:      *machine.Spec.Bootstrap.DataSecretName,
 	}
 
-	if err := r.Client.Get(ctx, key, secret); err != nil {
+	if err := r.SecretCachingClient.Get(ctx, key, secret); err != nil {
 		return nil, err
 	}
 

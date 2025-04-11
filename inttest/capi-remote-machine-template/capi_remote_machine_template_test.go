@@ -26,13 +26,14 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"os"
 	"os/exec"
 	"strconv"
 	"testing"
 	"text/template"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	infra "github.com/k0smotron/k0smotron/api/infrastructure/v1beta1"
 	"github.com/k0smotron/k0smotron/inttest/util"
@@ -150,8 +151,7 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 	kmcKC, err := util.GetKMCClientSet(ctx, s.client, "remote-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
-	// Verify the RemoteMachine is at expected state
-
+	s.T().Log("verify the RemoteMachine is at expected state")
 	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
