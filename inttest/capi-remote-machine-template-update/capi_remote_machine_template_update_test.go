@@ -135,7 +135,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.deleteCluster()
+		s.Require().NoError(util.DeleteCluster("remote-test-cluster"))
 	}()
 
 	s.createCluster()
@@ -227,11 +227,6 @@ func (s *RemoteMachineTemplateUpdateSuite) getRemoteMachine(name string, namespa
 		return nil, err
 	}
 	return rm, nil
-}
-
-func (s *RemoteMachineTemplateUpdateSuite) deleteCluster() {
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
-	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) updateCluster() {

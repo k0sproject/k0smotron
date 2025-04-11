@@ -19,14 +19,15 @@ package capidockermachinechangetemplate
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"os"
 	"os/exec"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"github.com/k0smotron/k0smotron/inttest/util"
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
@@ -94,7 +95,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.deleteCluster()
+		s.Require().NoError(util.DeleteCluster("docker-test"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -232,13 +233,6 @@ func (s *CAPIDockerMachineChangeTemplate) updateClusterObjectsAgain() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsSecondUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
-}
-
-func (s *CAPIDockerMachineChangeTemplate) deleteCluster() {
-	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "cluster", "docker-test").CombinedOutput()
-	//out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
-	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
 func getLBPort(name string) (int, error) {

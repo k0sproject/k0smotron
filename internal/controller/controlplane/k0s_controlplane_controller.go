@@ -36,6 +36,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -53,6 +54,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
@@ -108,9 +110,8 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, err
 	}
 
-	if !kcp.ObjectMeta.DeletionTimestamp.IsZero() {
-		log.Info("K0sControlPlane is being deleted, no action needed")
-		return ctrl.Result{}, nil
+	if finalizerAdded, err := util.EnsureFinalizer(ctx, c.Client, kcp, cpv1beta1.K0sControlPlaneFinalizer); err != nil || finalizerAdded {
+		return ctrl.Result{}, err
 	}
 
 	kcpPatchHelper, err := patch.NewHelper(kcp, c.Client)
@@ -152,21 +153,29 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	defer func() {
 		log.Info("Updating status")
 		existingStatus := kcp.Status.DeepCopy()
-		// Separate var for status update errors to avoid shadowing err
-		derr := c.updateStatus(ctx, kcp, cluster)
-		if derr != nil {
-			if !errors.Is(derr, errUpgradeNotCompleted) {
-				log.Error(derr, "Failed to update status")
+
+		// When controlplane is being deleted, we don't update the status to avoid requests workload API
+		// because it is terminating so machines probably are terminating too.
+		// TODO: maybe updateStatus method should be refactored to at least report unavailable machines,
+		// which not requires to call workload API.
+		var derr error
+		if kcp.DeletionTimestamp.IsZero() {
+			// Separate var for status update errors to avoid shadowing err
+			derr = c.updateStatus(ctx, kcp, cluster)
+			if derr != nil {
+				if !errors.Is(derr, errUpgradeNotCompleted) {
+					log.Error(derr, "Failed to update status")
+					return
+				}
+
+				if res.IsZero() {
+					res = ctrl.Result{RequeueAfter: 10 * time.Second}
+				}
+			}
+
+			if errors.Is(err, ErrNotReady) || reflect.DeepEqual(existingStatus, kcp.Status) {
 				return
 			}
-
-			if res.IsZero() {
-				res = ctrl.Result{RequeueAfter: 10 * time.Second}
-			}
-		}
-
-		if errors.Is(err, ErrNotReady) || reflect.DeepEqual(existingStatus, kcp.Status) {
-			return
 		}
 
 		derr = kcpPatchHelper.Patch(ctx, kcp)
@@ -191,6 +200,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		}
 
 	}()
+
+	if !kcp.ObjectMeta.DeletionTimestamp.IsZero() {
+		log.Info("Reconcile K0sControlPlane deletion")
+		return c.reconcileDelete(ctx, cluster, kcp)
+	}
 
 	log = log.WithValues("cluster", cluster.Name)
 
@@ -846,6 +860,45 @@ token = ` + frpToken + `
 	}
 
 	return nil
+}
+
+func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get machines: %w", err)
+	}
+
+	cpMachines := allMachines.Filter(collections.ControlPlaneMachines(cluster.Name))
+
+	if len(cpMachines) == 0 {
+		// No machines left, we can finally delete the K0sControlPlane by removing the finalizer.
+		controllerutil.RemoveFinalizer(kcp, cpv1beta1.K0sControlPlaneFinalizer)
+		return ctrl.Result{}, nil
+	}
+
+	// Wait for removing worker machines first to avoid possible issues removing worker nodes without a controlplane running.
+	if allMachines.Len() != cpMachines.Len() {
+		logger.Info("Waiting for worker nodes to be deleted first")
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	var errs []error
+	for _, m := range cpMachines {
+		if !m.DeletionTimestamp.IsZero() {
+			// Machine is already being deleted.
+			continue
+		}
+
+		err := c.Delete(ctx, m)
+		if err != nil && !apierrors.IsNotFound(err) {
+			errs = append(errs, fmt.Errorf("failed to delete control plane Machine '%s': %w", m.Name, err))
+		}
+	}
+
+	// Requeue to wait for the machines and their dependencies to be deleted.
+	return ctrl.Result{RequeueAfter: 10 * time.Second}, kerrors.NewAggregate(errs)
 }
 
 func (c *K0sController) detectNodeIP(ctx context.Context, _ *cpv1beta1.K0sControlPlane) (string, error) {

@@ -19,14 +19,15 @@ package capicontolplanedocker
 import (
 	"context"
 	"fmt"
-	controlplanev1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	"os"
 	"os/exec"
-	"sigs.k8s.io/cluster-api/api/v1beta1"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	controlplanev1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
+	"sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"github.com/k0smotron/k0smotron/inttest/util"
 
@@ -88,7 +89,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.deleteCluster()
+		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -178,12 +179,6 @@ func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
-}
-
-func (s *CAPIControlPlaneDockerSuite) deleteCluster() {
-	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
-	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
 func getDockerNodeFile(nodeName string, path string) (string, error) {

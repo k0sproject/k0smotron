@@ -24,6 +24,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -44,7 +45,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 
-	"github.com/k0smotron/k0smotron/internal/exec"
+	kexec "github.com/k0smotron/k0smotron/internal/exec"
 
 	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	"github.com/k0smotron/k0smotron/inttest/util/watch"
@@ -249,7 +250,7 @@ func applyResources(ctx context.Context, resources []*unstructured.Unstructured,
 }
 
 func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namespace string) (string, error) {
-	output, err := exec.PodExecCmdOutput(context.TODO(), kc, rc, name, namespace, "k0s token create --role=worker")
+	output, err := kexec.PodExecCmdOutput(context.TODO(), kc, rc, name, namespace, "k0s token create --role=worker")
 	if err != nil {
 		return "", fmt.Errorf("failed to get join token: %s", err)
 	}
@@ -385,6 +386,15 @@ func WaitForRolloutCompleted(ctx context.Context, kc *kubernetes.Clientset, name
 
 			return allReplicasAvailable && rolloutApplied, nil
 		})
+}
+
+func DeleteCluster(clusterName string) error {
+	out, err := exec.Command("kubectl", "delete", "cluster", clusterName).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to delete cluster objects: %s", string(out))
+	}
+
+	return nil
 }
 
 func dowloadStableK0smotronOperator() (string, error) {

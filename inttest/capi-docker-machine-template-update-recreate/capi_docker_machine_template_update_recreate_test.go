@@ -19,13 +19,14 @@ package capidockermachinetemplateupdaterecreate
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/k0smotron/k0smotron/inttest/util"
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
@@ -91,7 +92,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDown
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.deleteCluster()
+		s.Require().NoError(util.DeleteCluster("docker-test"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -189,12 +190,6 @@ func (s *CAPIDockerMachineTemplateUpdateRecreate) updateClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
-}
-
-func (s *CAPIDockerMachineTemplateUpdateRecreate) deleteCluster() {
-	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "cluster", "docker-test").CombinedOutput()
-	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
 func getLBPort(name string) (int, error) {

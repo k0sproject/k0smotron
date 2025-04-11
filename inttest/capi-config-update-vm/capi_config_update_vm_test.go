@@ -89,7 +89,7 @@ func (s *CAPIConfigUpdateVMSuite) TestCAPIConfigUpdateVMWorker() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.deleteCluster()
+		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -153,12 +153,6 @@ func (s *CAPIConfigUpdateVMSuite) updateClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.updateClusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
-}
-
-func (s *CAPIConfigUpdateVMSuite) deleteCluster() {
-	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "cluster", "docker-test-cluster").CombinedOutput()
-	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 }
 
 func getLBPort(name string) (int, error) {

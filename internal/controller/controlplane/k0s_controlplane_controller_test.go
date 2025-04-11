@@ -35,7 +35,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,7 +59,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	kubeadmConfig "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
@@ -69,12 +67,12 @@ import (
 func TestK0sConfigEnrichment(t *testing.T) {
 	var testCases = []struct {
 		cluster *clusterv1.Cluster
-		kcp     *v1beta1.K0sControlPlane
+		kcp     *cpv1beta1.K0sControlPlane
 		want    *unstructured.Unstructured
 	}{
 		{
 			cluster: &clusterv1.Cluster{},
-			kcp:     &v1beta1.K0sControlPlane{},
+			kcp:     &cpv1beta1.K0sControlPlane{},
 			want:    nil,
 		},
 		{
@@ -90,7 +88,7 @@ func TestK0sConfigEnrichment(t *testing.T) {
 					},
 				},
 			},
-			kcp: &v1beta1.K0sControlPlane{},
+			kcp: &cpv1beta1.K0sControlPlane{},
 			want: &unstructured.Unstructured{Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
@@ -112,8 +110,8 @@ func TestK0sConfigEnrichment(t *testing.T) {
 					},
 				},
 			},
-			kcp: &v1beta1.K0sControlPlane{
-				Spec: v1beta1.K0sControlPlaneSpec{
+			kcp: &cpv1beta1.K0sControlPlane{
+				Spec: cpv1beta1.K0sControlPlaneSpec{
 					K0sConfigSpec: bootstrapv1.K0sConfigSpec{
 						K0s: &unstructured.Unstructured{Object: map[string]interface{}{
 							"spec": map[string]interface{}{
@@ -139,7 +137,7 @@ func TestK0sConfigEnrichment(t *testing.T) {
 					},
 				},
 			},
-			kcp: &v1beta1.K0sControlPlane{},
+			kcp: &cpv1beta1.K0sControlPlane{},
 			want: &unstructured.Unstructured{Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
@@ -236,11 +234,11 @@ func Test_machineName(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		kcp := &v1beta1.K0sControlPlane{
+		kcp := &cpv1beta1.K0sControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test",
 			},
-			Spec: v1beta1.K0sControlPlaneSpec{
+			Spec: cpv1beta1.K0sControlPlaneSpec{
 				Replicas: tc.replicas,
 			},
 		}
@@ -980,7 +978,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: v1.ObjectReference{
+			InfrastructureRef: corev1.ObjectReference{
 				Kind:       "GenericInfrastructureMachineTemplate",
 				Namespace:  ns.Name,
 				Name:       gmt.GetName(),
@@ -1004,7 +1002,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: v1.ObjectReference{
+			InfrastructureRef: corev1.ObjectReference{
 				Kind:       "GenericInfrastructureMachineTemplate",
 				Namespace:  ns.Name,
 				Name:       gmt.GetName(),
@@ -1116,7 +1114,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: v1.ObjectReference{
+			InfrastructureRef: corev1.ObjectReference{
 				Kind:       "GenericInfrastructureMachineTemplate",
 				Namespace:  ns.Name,
 				Name:       gmt.GetName(),
@@ -1156,7 +1154,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: v1.ObjectReference{
+			InfrastructureRef: corev1.ObjectReference{
 				Kind:       "GenericInfrastructureMachineTemplate",
 				Namespace:  ns.Name,
 				Name:       gmt.GetName(),
@@ -1196,7 +1194,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: v1.ObjectReference{
+			InfrastructureRef: corev1.ObjectReference{
 				Kind:       "GenericInfrastructureMachineTemplate",
 				Namespace:  ns.Name,
 				Name:       gmt.GetName(),
@@ -1341,7 +1339,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.29.0"),
-			InfrastructureRef: v1.ObjectReference{
+			InfrastructureRef: corev1.ObjectReference{
 				Kind:       "GenericInfrastructureMachineTemplate",
 				Namespace:  ns.Name,
 				Name:       gmt.GetName(),
@@ -1380,7 +1378,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: v1.ObjectReference{
+			InfrastructureRef: corev1.ObjectReference{
 				Kind:       "GenericInfrastructureMachineTemplate",
 				Namespace:  ns.Name,
 				Name:       gmt.GetName(),
@@ -1418,7 +1416,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.29.0"),
-			InfrastructureRef: v1.ObjectReference{
+			InfrastructureRef: corev1.ObjectReference{
 				Kind:       "GenericInfrastructureMachineTemplate",
 				Namespace:  ns.Name,
 				Name:       gmt.GetName(),
@@ -1476,6 +1474,93 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 			assert.True(c, metav1.IsControlledBy(kc, m))
 		}
 	}, 5*time.Second, 100*time.Millisecond)
+}
+
+func TestReconcileDeleteControlPlanes(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-delete-controlplane")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, kcp))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, cluster, gmt, ns)
+
+	r := &K0sController{
+		Client: testEnv,
+	}
+
+	// All control plane machines are already deleted.
+	res, err := r.reconcileDelete(ctx, cluster, kcp)
+	require.NoError(t, err)
+	require.True(t, res.IsZero())
+
+	clusterOwnerRef := *metav1.NewControllerRef(kcp, clusterv1.GroupVersion.WithKind("Cluster"))
+
+	workerMachine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
+			Namespace: ns.Name,
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: cluster.Name,
+			},
+		},
+		Spec: clusterv1.MachineSpec{
+			ClusterName: cluster.Name,
+			Version:     ptr.To("v1.30.0"),
+			InfrastructureRef: corev1.ObjectReference{
+				Kind:       "GenericInfrastructureMachineTemplate",
+				Namespace:  ns.Name,
+				Name:       gmt.GetName(),
+				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			},
+		},
+	}
+	workerMachine.SetOwnerReferences([]metav1.OwnerReference{clusterOwnerRef})
+	require.NoError(t, testEnv.Create(ctx, workerMachine))
+
+	controlplaneMachine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
+			Namespace: ns.Name,
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel:             cluster.Name,
+				clusterv1.MachineControlPlaneLabel:     "true",
+				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
+			},
+		},
+		Spec: clusterv1.MachineSpec{
+			ClusterName: cluster.Name,
+			Version:     ptr.To("v1.30.0"),
+			InfrastructureRef: corev1.ObjectReference{
+				Kind:       "GenericInfrastructureMachineTemplate",
+				Namespace:  ns.Name,
+				Name:       gmt.GetName(),
+				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			},
+		},
+	}
+	controlplaneMachine.SetOwnerReferences([]metav1.OwnerReference{clusterOwnerRef})
+	require.NoError(t, testEnv.Create(ctx, controlplaneMachine))
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		// Worker machines needs to be deleted first.
+		res, err = r.reconcileDelete(ctx, cluster, kcp)
+		assert.NoError(c, err)
+		assert.False(c, res.IsZero())
+	}, 10*time.Second, 100*time.Millisecond)
+
+	require.NoError(t, testEnv.Delete(ctx, workerMachine))
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		// Control plane machine can be deleted.
+		res, err = r.reconcileDelete(ctx, cluster, kcp)
+		assert.NoError(c, err)
+		assert.False(c, res.IsZero())
+	}, 10*time.Second, 100*time.Millisecond)
+
 }
 
 func TestReconcileInitializeControlPlanes(t *testing.T) {
@@ -1713,16 +1798,16 @@ func newCluster(namespacedName *types.NamespacedName) *clusterv1.Cluster {
 	}
 }
 
-func createNode() *v1.Node {
-	return &v1.Node{
+func createNode() *corev1.Node {
+	return &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "foo",
 			Labels: map[string]string{"node-role.kubernetes.io/control-plane": ""},
 		},
-		Status: v1.NodeStatus{
-			Addresses: []v1.NodeAddress{
+		Status: corev1.NodeStatus{
+			Addresses: []corev1.NodeAddress{
 				{
-					Type:    v1.NodeExternalIP,
+					Type:    corev1.NodeExternalIP,
 					Address: "1.1.1.1",
 				},
 			},
@@ -1735,7 +1820,7 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 
 	cluster := newCluster(&types.NamespacedName{Name: kcpName, Namespace: namespace})
 	cluster.Spec = clusterv1.ClusterSpec{
-		ControlPlaneRef: &v1.ObjectReference{
+		ControlPlaneRef: &corev1.ObjectReference{
 			Kind:       "K0sControlPlane",
 			Namespace:  namespace,
 			Name:       kcpName,
@@ -1764,10 +1849,11 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 					UID:        "1",
 				},
 			},
+			Finalizers: []string{cpv1beta1.K0sControlPlaneFinalizer},
 		},
-		Spec: v1beta1.K0sControlPlaneSpec{
-			MachineTemplate: &v1beta1.K0sControlPlaneMachineTemplate{
-				InfrastructureRef: v1.ObjectReference{
+		Spec: cpv1beta1.K0sControlPlaneSpec{
+			MachineTemplate: &cpv1beta1.K0sControlPlaneMachineTemplate{
+				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "GenericInfrastructureMachineTemplate",
 					Namespace:  namespace,
 					Name:       "infra-foo",

@@ -47,6 +47,10 @@ const (
 
 	// ControlPlanePausedCondition documents the reconciliation of the control plane is paused.
 	ControlPlanePausedCondition clusterv1.ConditionType = "Paused"
+
+	// K0sControlPlaneFinalizer is the finalizer applied to KubeadmControlPlane resources
+	// by its managing controller.
+	K0sControlPlaneFinalizer = "k0s.controlplane.cluster.x-k8s.io"
 )
 
 // +kubebuilder:object:root=true
