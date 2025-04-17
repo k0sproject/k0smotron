@@ -460,7 +460,7 @@ func isClusterSpecEqual(spec1, spec2 kapi.ClusterSpec) bool {
 	}
 	spec2.CertificateRefs = spec2Certs
 
-	return reflect.DeepEqual(spec1.CertificateRefs, spec2.CertificateRefs)
+	return reflect.DeepEqual(spec1, spec2)
 }
 
 // SetupWithManager sets up the controller with the Manager.
