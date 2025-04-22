@@ -154,6 +154,8 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		kmc.Status.ReconciliationStatus = "Failed reconciling services"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
+	// Update orig spec to the current one again, since we updated it in the reconcileServices()
+	origKMCSpec = kmc.Spec.DeepCopy()
 
 	if err := r.reconcileK0sConfig(ctx, kmc); err != nil {
 		kmc.Status.ReconciliationStatus = "Failed reconciling configmap"
