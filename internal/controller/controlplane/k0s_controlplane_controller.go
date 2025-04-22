@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/k0smotron/k0smotron/internal/controller/util"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -38,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
@@ -459,7 +457,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		err = c.runMachineDeletionSequence(ctx, logger, cluster, kcp, machineToDelete)
+		err = c.runMachineDeletionSequence(ctx, cluster, kcp, machineToDelete)
 		if err != nil {
 			return err
 		}
@@ -522,44 +520,29 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	return nil
 }
 
-func (c *K0sController) runMachineDeletionSequence(ctx context.Context, logger logr.Logger, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
-	if kcp.Status.Ready {
-		kubeClient, err := c.getKubeClient(ctx, cluster)
-		if err != nil {
-			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
-		}
-
-		waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-		defer cancel()
-		err = wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
-			if err := c.markChildControlNodeToLeave(fctx, machine.Name, kubeClient); err != nil {
-				return false, fmt.Errorf("error marking controlnode to leave: %w", err)
-			}
-
-			ok, err := c.checkMachineLeft(fctx, machine.Name, kubeClient)
-			if err != nil {
-				logger.Error(err, "Error checking machine left", "machine", machine.Name)
-			}
-			return ok, err
-		})
-		if err != nil {
-			return fmt.Errorf("error checking machine left: %w", err)
-		}
-	}
-
+func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
 	if err := c.deleteBootstrapConfig(ctx, machine.Name, kcp); err != nil {
 		return fmt.Errorf("error deleting machine from template: %w", err)
 	}
 
-	if err := c.deleteMachineFromTemplate(ctx, machine.Name, cluster, kcp); err != nil {
-		return fmt.Errorf("error deleting machine from template: %w", err)
+	bootstrapConfig := &bootstrapv1.K0sControllerConfig{}
+	if err := c.Client.Get(ctx, client.ObjectKey{Namespace: kcp.Namespace, Name: kcp.Name}, bootstrapConfig); err != nil {
+		if apierrors.IsNotFound(err) {
+			if err := c.deleteMachineFromTemplate(ctx, machine.Name, cluster, kcp); err != nil {
+				return fmt.Errorf("error deleting machine from template: %w", err)
+			}
+
+			if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
+				return fmt.Errorf("error deleting machine from template: %w", err)
+			}
+
+			return nil
+		}
+
+		return err
 	}
 
-	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
-		return fmt.Errorf("error deleting machine from template: %w", err)
-	}
-
-	return nil
+	return fmt.Errorf("waiting for bootstrap config to be deleted first: %w", ErrNotReady)
 }
 
 func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
@@ -891,8 +874,8 @@ func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.
 			continue
 		}
 
-		err := c.Delete(ctx, m)
-		if err != nil && !apierrors.IsNotFound(err) {
+		err = c.runMachineDeletionSequence(ctx, cluster, kcp, m)
+		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to delete control plane Machine '%s': %w", m.Name, err))
 		}
 	}

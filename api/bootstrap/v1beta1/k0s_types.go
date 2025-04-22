@@ -32,6 +32,12 @@ func init() {
 	SchemeBuilder.Register(&K0sControllerConfig{}, &K0sControllerConfigList{})
 }
 
+const (
+	// K0sControllerConfigFinalizer is the finalizer applied to K0sControllerConfig resources
+	// by its managing controller.
+	K0sControllerConfigFinalizer = "k0s.controllerconfig.cluster.x-k8s.io"
+)
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"

@@ -36,13 +36,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/collections"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
-)
-
-const (
-	etcdMemberConditionTypeJoined = "Joined"
 )
 
 func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
@@ -278,74 +273,6 @@ func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructur
 
 	return clonedFromName == kcp.Spec.MachineTemplate.InfrastructureRef.Name &&
 		clonedFromGroupKind == kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
-}
-
-func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clientset *kubernetes.Clientset) (bool, error) {
-	var etcdMember unstructured.Unstructured
-	err := clientset.RESTClient().
-		Get().
-		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
-		Do(ctx).
-		Into(&etcdMember)
-
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return true, nil
-		}
-		return false, fmt.Errorf("error getting etcd member: %w", err)
-	}
-
-	conditions, _, err := unstructured.NestedSlice(etcdMember.Object, "status", "conditions")
-	if err != nil {
-		return false, fmt.Errorf("error getting etcd member conditions: %w", err)
-	}
-
-	for _, condition := range conditions {
-		conditionMap := condition.(map[string]interface{})
-		if conditionMap["type"] == etcdMemberConditionTypeJoined && conditionMap["status"] == "False" {
-			err = clientset.RESTClient().
-				Delete().
-				AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
-				Do(ctx).
-				Into(&etcdMember)
-			if err != nil && !apierrors.IsNotFound(err) {
-				return false, fmt.Errorf("error deleting etcd member %s: %w", name, err)
-			}
-
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name string, clientset *kubernetes.Clientset) error {
-	if clientset == nil {
-		return nil
-	}
-
-	logger := log.FromContext(ctx).WithValues("controlNode", name)
-
-	err := clientset.RESTClient().
-		Patch(types.MergePatchType).
-		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
-		Body([]byte(`{"spec":{"leave":true}, "metadata": {"annotations": {"k0smotron.io/marked-to-leave-at": "` + time.Now().String() + `"}}}`)).
-		Do(ctx).
-		Error()
-	if err != nil {
-		logger.Error(err, "error marking etcd member to leave. Trying to mark control node to leave")
-		err := clientset.RESTClient().
-			Patch(types.MergePatchType).
-			AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + name).
-			Body([]byte(`{"metadata":{"annotations":{"k0smotron.io/leave":"true"}}}`)).
-			Do(ctx).
-			Error()
-		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("error marking control node to leave: %w", err)
-		}
-	}
-	logger.Info("marked etcd to leave")
-
-	return nil
 }
 
 func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster) error {

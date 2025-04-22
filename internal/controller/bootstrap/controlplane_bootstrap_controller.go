@@ -49,11 +49,14 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0smotron/k0smotron/internal/cloudinit"
+	"github.com/k0smotron/k0smotron/internal/controller/util"
+	k0smoutil "github.com/k0smotron/k0smotron/internal/controller/util"
 	kutil "github.com/k0smotron/k0smotron/internal/util"
 	"github.com/k0sproject/version"
 )
@@ -143,6 +146,10 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, err
 	}
 
+	if finalizerAdded, err := util.EnsureFinalizer(ctx, c.Client, config, bootstrapv1.K0sControllerConfigFinalizer); err != nil || finalizerAdded {
+		return ctrl.Result{}, err
+	}
+
 	if annotations.IsPaused(cluster, config) {
 		log.Info("Reconciliation is paused for this object")
 		return ctrl.Result{}, nil
@@ -160,12 +167,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			scope.WorkerEnabled = true
 			break
 		}
-	}
-
-	if scope.Config.Status.Ready {
-		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
-		log.Info("Bootstrapdata already created, reconciled succesfully")
-		return ctrl.Result{}, nil
 	}
 
 	patchHelper, err := patch.NewHelper(config, c.Client)
@@ -186,6 +187,22 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			log.Error(err, "Failed to patch K0sControllerConfig status")
 		}
 	}()
+
+	if !config.ObjectMeta.DeletionTimestamp.IsZero() {
+		err := c.reconcileDelete(ctx, log, cluster, machine)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		controllerutil.RemoveFinalizer(config, bootstrapv1.K0sControllerConfigFinalizer)
+		return ctrl.Result{}, nil
+	}
+
+	if scope.Config.Status.Ready {
+		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
+		log.Info("Bootstrapdata already created, reconciled succesfully")
+		return ctrl.Result{}, nil
+	}
 
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		log.Info("control plane endpoint is not set")
@@ -752,6 +769,19 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, m
 		return nil, fmt.Errorf("error getting machine implementation object: %w", err)
 	}
 	return machineImpl, nil
+}
+
+func (c *ControlPlaneController) reconcileDelete(ctx context.Context, logger logr.Logger, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+	if cluster.Status.ControlPlaneReady {
+		kubeClient, err := k0smoutil.GetKubeClient(ctx, c.SecretCachingClient, cluster)
+		if err != nil {
+			return err
+		}
+
+		return util.DeleteK0sNodeResources(ctx, logger, kubeClient, machine)
+	}
+
+	return nil
 }
 
 func genShutdownServiceFiles() []cloudinit.File {
