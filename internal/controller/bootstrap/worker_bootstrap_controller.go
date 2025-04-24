@@ -283,9 +283,11 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 }
 
 func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
-	if r.workloadClusterClient == nil {
+	// Check if the workload cluster client is already set. This client is used for testing purposes to inject a fake client.
+	client := r.workloadClusterClient
+	if client == nil {
 		var err error
-		r.workloadClusterClient, err = remote.NewClusterClient(ctx, "k0smotron", r.Client, capiutil.ObjectKey(scope.Cluster))
+		client, err = remote.NewClusterClient(ctx, "k0smotron", r.Client, capiutil.ObjectKey(scope.Cluster))
 		if err != nil {
 			return "", fmt.Errorf("failed to create child cluster client: %w", err)
 		}
@@ -295,7 +297,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	tokenID := kutil.RandomString(6)
 	tokenSecret := kutil.RandomString(16)
 	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
-	if err := r.workloadClusterClient.Create(ctx, &corev1.Secret{
+	if err := client.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("bootstrap-token-%s", tokenID),
 			Namespace: "kube-system",
