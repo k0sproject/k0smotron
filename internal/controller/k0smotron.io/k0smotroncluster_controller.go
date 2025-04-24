@@ -139,7 +139,10 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	origKMCSpec := kmc.Spec.DeepCopy()
 	defer func() {
+		// We need to update only status fields, so we copy the original spec
+		kmc.Spec = *origKMCSpec
 		err = patchHelper.Patch(ctx, kmc)
 		if err != nil {
 			logger.Error(err, "Unable to update k0smotron Cluster")
@@ -151,6 +154,8 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		kmc.Status.ReconciliationStatus = "Failed reconciling services"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
+	// Update orig spec to the current one again, since we updated it in the reconcileServices()
+	origKMCSpec = kmc.Spec.DeepCopy()
 
 	if err := r.reconcileK0sConfig(ctx, kmc); err != nil {
 		kmc.Status.ReconciliationStatus = "Failed reconciling configmap"
@@ -200,12 +205,13 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				break
 			}
 		}
+		logger.Info("Reconciling etcd certs")
+		err := r.ensureEtcdCertificates(ctx, kmc)
+		if err != nil {
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating etcd certificates: %w", err)
+		}
+
 		if !isAPIServerEtcdClientCertRef {
-			logger.Info("Reconciling etcd certs")
-			err := r.ensureEtcdCertificates(ctx, kmc)
-			if err != nil {
-				return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating etcd certificates: %w", err)
-			}
 			kmc.Spec.CertificateRefs = append(kmc.Spec.CertificateRefs, km.CertificateRef{
 				Type: string(secret.APIServerEtcdClient),
 				Name: secret.Name(kmc.Name, secret.APIServerEtcdClient),
