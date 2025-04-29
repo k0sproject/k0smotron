@@ -371,6 +371,11 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		return fmt.Errorf("error getting infra machines: %w", err)
 	}
 
+	bootstrapConfigs, err := c.getBootstrapConfigs(ctx, activeMachines)
+	if err != nil {
+		return fmt.Errorf("error getting bootstrap configs: %w", err)
+	}
+
 	currentVersion, err := minVersion(activeMachines)
 	if err != nil {
 		return fmt.Errorf("error getting current cluster version from machines: %w", err)
@@ -389,7 +394,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			} else {
 				machineNamesToDelete[m.Name] = true
 			}
-		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) {
+		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) || c.hasControllerConfigChanged(bootstrapConfigs, kcp, m) {
 			machineNamesToDelete[m.Name] = true
 		} else {
 			desiredMachineNamesSlice = append(desiredMachineNamesSlice, m.Name)
