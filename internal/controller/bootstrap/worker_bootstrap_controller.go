@@ -192,17 +192,37 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}
 
 	// Create the secret containing the bootstrap data
+
+	// Initialize labels with cluster-name label
+	labels := map[string]string{
+		clusterv1.ClusterNameLabel: scope.Cluster.Name,
+	}
+
+	// Copy labels from secretMetadata if specified
+	if scope.Config.Spec.SecretMetadata != nil && scope.Config.Spec.SecretMetadata.Labels != nil {
+		for k, v := range scope.Config.Spec.SecretMetadata.Labels {
+			labels[k] = v
+		}
+	}
+
+	// Copy annotations from secretMetadata if specified
+	annotations := map[string]string{}
+	if scope.Config.Spec.SecretMetadata != nil && scope.Config.Spec.SecretMetadata.Annotations != nil {
+		for k, v := range scope.Config.Spec.SecretMetadata.Annotations {
+			annotations[k] = v
+		}
+	}
+
 	bootstrapSecret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Secret",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.Name,
-			Namespace: config.Namespace,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: scope.Cluster.Name,
-			},
+			Name:        config.Name,
+			Namespace:   config.Namespace,
+			Labels:      labels,
+			Annotations: annotations,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: bootstrapv1.GroupVersion.String(),
