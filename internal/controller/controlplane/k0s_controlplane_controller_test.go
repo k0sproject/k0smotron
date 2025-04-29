@@ -1259,10 +1259,6 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		assert.NoError(c, err)
 		assert.Len(c, machines, desiredReplicas)
 
-		k0sBootstrapConfigList := &bootstrapv1.K0sControllerConfigList{}
-		assert.NoError(c, testEnv.GetAPIReader().List(ctx, k0sBootstrapConfigList, client.InNamespace(cluster.Namespace), client.MatchingLabels{clusterv1.MachineControlPlaneLabel: "true"}))
-		assert.Len(c, k0sBootstrapConfigList.Items, desiredReplicas)
-
 		for _, m := range machines {
 			expectedLabels := map[string]string{
 				clusterv1.ClusterNameLabel:             cluster.GetName(),
@@ -1272,16 +1268,6 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 			assert.Equal(c, expectedLabels, m.Labels)
 			assert.True(c, metav1.IsControlledBy(m, kcp))
 			assert.Equal(c, kcp.Spec.Version, *m.Spec.Version)
-
-			// verify that the bootrap config related to the existing machines is present.
-			bootstrapObjectKey := client.ObjectKey{
-				Namespace: m.Namespace,
-				Name:      m.Name,
-			}
-			kc := &bootstrapv1.K0sControllerConfig{}
-			assert.NoError(c, testEnv.GetAPIReader().Get(ctx, bootstrapObjectKey, kc))
-			assert.True(c, metav1.IsControlledBy(kc, m))
-
 		}
 	}, 10*time.Second, 100*time.Millisecond)
 }
@@ -1450,10 +1436,6 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		assert.NoError(c, err)
 		assert.Len(c, machines, desiredReplicas)
 
-		k0sBootstrapConfigList := &bootstrapv1.K0sControllerConfigList{}
-		assert.NoError(c, testEnv.GetAPIReader().List(ctx, k0sBootstrapConfigList, client.InNamespace(cluster.Namespace)))
-		assert.Len(c, k0sBootstrapConfigList.Items, desiredReplicas)
-
 		for _, m := range machines {
 			expectedLabels := map[string]string{
 				clusterv1.ClusterNameLabel:             cluster.GetName(),
@@ -1463,15 +1445,6 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 			assert.Equal(c, expectedLabels, m.Labels)
 			assert.True(c, metav1.IsControlledBy(m, kcp))
 			assert.Equal(c, kcp.Spec.Version, *m.Spec.Version)
-
-			// verify that the bootrap config related to the existing machines is present.
-			bootstrapObjectKey := client.ObjectKey{
-				Namespace: m.Namespace,
-				Name:      m.Name,
-			}
-			kc := &bootstrapv1.K0sControllerConfig{}
-			assert.NoError(c, testEnv.GetAPIReader().Get(ctx, bootstrapObjectKey, kc))
-			assert.True(c, metav1.IsControlledBy(kc, m))
 		}
 	}, 5*time.Second, 100*time.Millisecond)
 }

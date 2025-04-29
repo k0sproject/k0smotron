@@ -51,6 +51,11 @@ const (
 	// K0sControlPlaneFinalizer is the finalizer applied to KubeadmControlPlane resources
 	// by its managing controller.
 	K0sControlPlaneFinalizer = "k0s.controlplane.cluster.x-k8s.io"
+
+	// K0ControlPlanePreTerminateHookCleanupAnnotation is the annotation used to mark the Machine associated with
+	// the K0sControlPlane for k0s node resources cleanup: controlnode and etcdmember. This annotation will prevent
+	// Machine controller from deleting the Machine before the cleanup is done.
+	K0ControlPlanePreTerminateHookCleanupAnnotation = clusterv1.PreTerminateDeleteHookAnnotationPrefix + "/kcp-cleanup"
 )
 
 // +kubebuilder:object:root=true

@@ -98,7 +98,9 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 		}
 	}
 
-	annotations := map[string]string{}
+	annotations := map[string]string{
+		cpv1beta1.K0ControlPlanePreTerminateHookCleanupAnnotation: "",
+	}
 	// Add the annotations from the MachineTemplate.
 	// Note: we intentionally don't use the map directly to ensure we don't modify the map in KCP.
 	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Annotations {
