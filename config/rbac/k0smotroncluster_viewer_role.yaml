@@ -25,3 +25,13 @@ rules:
   - k0smotronclusters/status
   verbs:
   - get
+- apiGroups:
+  - exp.cluster.x-k8s.io
+  - cluster.x-k8s.io
+  resources:
+  - machinepools
+  - machinepools/status
+  verbs:
+  - get
+  - list
+  - watch
