@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/k0smotron/k0smotron/internal/controller/util"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -366,6 +365,20 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	activeMachines := allMachines.Filter(collections.ActiveMachines)
 	deletedMachines := allMachines.Filter(collections.HasDeletionTimestamp)
 
+	if deletedMachines.Len() > 0 {
+		var errs []error
+		for _, m := range deletedMachines.SortedByCreationTimestamp() {
+			err := c.deleteK0sNodeResources(ctx, cluster, kcp, m)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("error deleting k0s node resources: %w", err))
+			}
+		}
+
+		if len(errs) > 0 {
+			return kerrors.NewAggregate(errs)
+		}
+	}
+
 	infraMachines, err := c.getInfraMachines(ctx, activeMachines)
 	if err != nil {
 		return fmt.Errorf("error getting infra machines: %w", err)
@@ -459,7 +472,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		err = c.runMachineDeletionSequence(ctx, logger, cluster, kcp, machineToDelete)
+		err = c.runMachineDeletionSequence(ctx, cluster, kcp, machineToDelete)
 		if err != nil {
 			return err
 		}
@@ -522,7 +535,22 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	return nil
 }
 
-func (c *K0sController) runMachineDeletionSequence(ctx context.Context, logger logr.Logger, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+	err := c.deleteK0sNodeResources(ctx, cluster, kcp, machine)
+	if err != nil {
+		return fmt.Errorf("error deleting k0s node resources: %w", err)
+	}
+
+	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
+		return fmt.Errorf("error deleting machine from template: %w", err)
+	}
+
+	return nil
+}
+
+func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+	logger := log.FromContext(ctx)
+
 	if kcp.Status.Ready {
 		kubeClient, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
@@ -555,8 +583,8 @@ func (c *K0sController) runMachineDeletionSequence(ctx context.Context, logger l
 		return fmt.Errorf("error deleting machine from template: %w", err)
 	}
 
-	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
-		return fmt.Errorf("error deleting machine from template: %w", err)
+	if err := c.removePreTerminateHookAnnotationFromMachine(ctx, machine); err != nil {
+		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", machine.Name, err)
 	}
 
 	return nil
@@ -891,6 +919,11 @@ func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.
 			continue
 		}
 
+		if err := c.removePreTerminateHookAnnotationFromMachine(ctx, m); err != nil {
+			errs = append(errs, fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", m.Name, err))
+			continue
+		}
+
 		err := c.Delete(ctx, m)
 		if err != nil && !apierrors.IsNotFound(err) {
 			errs = append(errs, fmt.Errorf("failed to delete control plane Machine '%s': %w", m.Name, err))
@@ -899,6 +932,24 @@ func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.
 
 	// Requeue to wait for the machines and their dependencies to be deleted.
 	return ctrl.Result{RequeueAfter: 10 * time.Second}, kerrors.NewAggregate(errs)
+}
+
+func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.Context, machine *clusterv1.Machine) error {
+	if _, exists := machine.Annotations[cpv1beta1.K0ControlPlanePreTerminateHookCleanupAnnotation]; !exists {
+		// Nothing to do, the annotation is not set (anymore) on the Machine
+		return nil
+	}
+
+	log := log.FromContext(ctx)
+	log.Info("Removing pre-terminate hook from control plane Machine")
+
+	machineOriginal := machine.DeepCopy()
+	delete(machine.Annotations, cpv1beta1.K0ControlPlanePreTerminateHookCleanupAnnotation)
+	if err := c.Client.Patch(ctx, machine, client.MergeFrom(machineOriginal)); err != nil {
+		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine: %w", err)
+	}
+
+	return nil
 }
 
 func (c *K0sController) detectNodeIP(ctx context.Context, _ *cpv1beta1.K0sControlPlane) (string, error) {

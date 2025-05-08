@@ -109,7 +109,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 
 	// After checks, remediation can be carried out.
 
-	if err := c.runMachineDeletionSequence(ctx, log, cluster, kcp, machineToBeRemediated); err != nil {
+	if err := c.runMachineDeletionSequence(ctx, cluster, kcp, machineToBeRemediated); err != nil {
 		conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return errors.Wrapf(err, "failed to delete unhealthy machine %s", machineToBeRemediated.Name)
 	}
