@@ -21,11 +21,28 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"k8s.io/client-go/discovery"
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/selection"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
@@ -35,21 +52,6 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
 	"github.com/k0sproject/k0smotron/internal/controller/infrastructure"
 	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/selection"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -189,9 +191,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Absent CAPI Machine kind means we are not running in a CAPI environment, so we don't need to run CAPI controllers.
+	var runCAPIControllers bool
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
+	if err != nil {
+		setupLog.Error(err, "unable to create discovery client")
+		os.Exit(1)
+	}
+
+	resources, err := discoveryClient.ServerResourcesForGroupVersion(schema.GroupVersion{Group: "cluster.x-k8s.io", Version: "v1beta1"}.String())
+	if err == nil && len(resources.APIResources) > 0 {
+		runCAPIControllers = true
+	} else {
+		mgr.GetLogger().Info("Cluster API v1beta1 not installed, skipping cluster-api controllers setup")
+	}
+
 	//+kubebuilder:scaffold:builder
 
-	if isControllerEnabled(bootstrapController) {
+	if isControllerEnabled(bootstrapController) && runCAPIControllers {
 		if err = (&bootstrap.Controller{
 			Client:              mgr.GetClient(),
 			SecretCachingClient: secretCachingClient,
@@ -244,34 +261,36 @@ func main() {
 			os.Exit(1)
 		}
 
-		if err = (&controlplane.K0smotronController{
-			Client:              mgr.GetClient(),
-			SecretCachingClient: secretCachingClient,
-			Scheme:              mgr.GetScheme(),
-			ClientSet:           clientSet,
-			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "K0smotronControlPlane")
-			os.Exit(1)
-		}
+		if runCAPIControllers {
+			if err = (&controlplane.K0smotronController{
+				Client:              mgr.GetClient(),
+				SecretCachingClient: secretCachingClient,
+				Scheme:              mgr.GetScheme(),
+				ClientSet:           clientSet,
+				RESTConfig:          restConfig,
+			}).SetupWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "K0smotronControlPlane")
+				os.Exit(1)
+			}
 
-		if err = (&controlplane.K0sController{
-			Client:              mgr.GetClient(),
-			SecretCachingClient: secretCachingClient,
-			ClientSet:           clientSet,
-			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "K0sController")
-			os.Exit(1)
-		}
+			if err = (&controlplane.K0sController{
+				Client:              mgr.GetClient(),
+				SecretCachingClient: secretCachingClient,
+				ClientSet:           clientSet,
+				RESTConfig:          restConfig,
+			}).SetupWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "K0sController")
+				os.Exit(1)
+			}
 
-		if err = (&controlplane.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
-			os.Exit(1)
+			if err = (&controlplane.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
+				os.Exit(1)
+			}
 		}
 	}
 
-	if isControllerEnabled(infrastructureController) {
+	if isControllerEnabled(infrastructureController) && runCAPIControllers {
 		if err = (&infrastructure.RemoteMachineController{
 			Client:              mgr.GetClient(),
 			SecretCachingClient: secretCachingClient,
