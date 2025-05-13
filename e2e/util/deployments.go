@@ -34,7 +34,7 @@ import (
 // WaitForDeploymentsAvailable waits until the Deployment has status.Available = True, that signals that
 // all the desired replicas are in place.
 func WaitForDeploymentsAvailable(ctx context.Context, input framework.WaitForDeploymentsAvailableInput, interval Interval) error {
-	fmt.Printf("Waiting for deployment %s to be available", klog.KObj(input.Deployment))
+	fmt.Printf("Waiting for deployment %s to be available\n", klog.KObj(input.Deployment))
 	deployment := &appsv1.Deployment{}
 	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
 		key := client.ObjectKey{
