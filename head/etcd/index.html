@@ -583,6 +583,15 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#resource-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resource Requirements
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1555,6 +1564,15 @@ You are not currently viewing the documentation for the current stable release o
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#resource-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resource Requirements
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1572,7 +1590,7 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="etcd-configuration">Etcd configuration<a class="headerlink" href="#etcd-configuration" title="Permanent link">#</a></h1>
-<p>k0smotron in HCP mode deploys an etcd cluster to store the state of the control plane. 
+<p>k0smotron in HCP mode deploys an etcd cluster to store the state of the control plane.
 The etcd cluster is deployed as a StatefulSet with odd number of replicas to ensure quorum.
 For example:</p>
 <table>
@@ -1648,7 +1666,7 @@ For example:</p>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--snapshot-count=20000</span>
 </code></pre></div>
 <h2 id="defragmentation">Defragmentation<a class="headerlink" href="#defragmentation" title="Permanent link">#</a></h2>
-<p>k0smotron supports running etcd defragmentation job periodically. The defragmentation job is disabled by default. 
+<p>k0smotron supports running etcd defragmentation job periodically. The defragmentation job is disabled by default.
 To enable the defragmentation job, set the <code>spec.etcd.defragJob.enabled</code> field to <code>true</code> in the <code>Cluster</code> resource.
 If enabled, by default the defragmentation job runs every day at 12:00. You can customize the schedule and the rule for the defragmentation job by setting the <code>spec.etcd.defragJob.schedule</code> and <code>spec.etcd.defragJob.rule</code> fields in the <code>Cluster</code> resource. For example:</p>
 <p>The feature is based on the <strong>etcd-defrag</strong> tool. For more information, see the <a href="https://github.com/ahrtr/etcd-defrag">etcd-defrag repo</a>.</p>
@@ -1663,6 +1681,24 @@ If enabled, by default the defragmentation job runs every day at 12:00. You can 
 <span class="w">      </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0</span><span class="nv"> </span><span class="s">0</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span><span class="w"> </span><span class="c1"># Default: 0 12 * * *</span>
 <span class="w">      </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dbQuotaUsage</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">0.5</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">dbSize</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">dbSizeInUse</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">200*1024*1024&quot;</span><span class="w"> </span><span class="c1"># Default: dbQuotaUsage &gt; 0.8 || dbSize - dbSizeInUse &gt; 200*1024*1024</span>
 </code></pre></div>
+<h2 id="resource-requirements">Resource Requirements<a class="headerlink" href="#resource-requirements" title="Permanent link">#</a></h2>
+<p>k0smotron supports setting resource requirements (requests and limits) for the etcd StatefulSet pods. By default, etcd pods are created with no specific resource requirements. To set resource requirements, use the <code>spec.etcd.resources</code> field in the <code>Cluster</code> resource:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">etcd</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/k0sproject/etcd:v3.5.13</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100m</span>
+<span class="w">        </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128Mi</span>
+<span class="w">      </span><span class="nt">limits</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200m</span>
+<span class="w">        </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256Mi</span>
+</code></pre></div>
+<p>This configuration allows you to ensure etcd has appropriate resources allocated, which is especially important for production environments or clusters with high load. The resource requirements follow standard Kubernetes resource specification format.</p>
 
 
 
