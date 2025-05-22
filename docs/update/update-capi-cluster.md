@@ -207,21 +207,21 @@ For the example below, k0smotron will create 3 new machines for the control plan
    spec:
      replicas: 3
      version: v1.31.2+k0s.0 # updated version
-     k0sConfigSpec:
-        args:
-          - --enable-worker
-        k0s:
-          apiVersion: k0s.k0sproject.io/v1beta1
-          kind: ClusterConfig
-          metadata:
-            name: k0s
-          spec:
-            api:
-              extraArgs:
-                anonymous-auth: "true" # anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz
-            telemetry:
-              enabled: true
      updateStrategy: Recreate
+     k0sConfigSpec:
+      args:
+        - --enable-worker
+      k0s:
+        apiVersion: k0s.k0sproject.io/v1beta1
+        kind: ClusterConfig
+        metadata:
+          name: k0s
+        spec:
+          api:
+            extraArgs:
+              anonymous-auth: "true" # anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz
+          telemetry:
+            enabled: true
      machineTemplate:
        infrastructureRef:
          apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
