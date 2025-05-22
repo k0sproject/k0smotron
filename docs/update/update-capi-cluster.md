@@ -48,7 +48,7 @@ where deploying the new control plane is followed by decommissioning of the old 
       name: docker-test-cp
     spec:
       replicas: 3
-      version: v1.31.1+k0s.0
+      version: v1.31.2+k0s.0
       updateStrategy: InPlace
       k0sConfigSpec:
         args:
@@ -90,7 +90,7 @@ where deploying the new control plane is followed by decommissioning of the old 
      name: docker-test-cp
    spec:
      replicas: 3
-     version: v1.31.2+k0s.0 # updated version
+     version: v1.31.3+k0s.0 # updated version
      updateStrategy: InPlace
      k0sConfigSpec:
       args:
@@ -164,7 +164,7 @@ For the example below, k0smotron will create 3 new machines for the control plan
       name: docker-test-cp
     spec:
       replicas: 3
-      version: v1.31.1+k0s.0
+      version: v1.31.2+k0s.0
       updateStrategy: Recreate
       k0sConfigSpec:
         args:
@@ -206,7 +206,7 @@ For the example below, k0smotron will create 3 new machines for the control plan
      name: docker-test-cp
    spec:
      replicas: 3
-     version: v1.31.2+k0s.0 # updated version
+     version: v1.31.3+k0s.0 # updated version
      updateStrategy: Recreate
      k0sConfigSpec:
       args:
