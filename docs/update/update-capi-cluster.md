@@ -42,6 +42,13 @@ where deploying the new control plane is followed by decommissioning of the old 
         kind: DockerCluster
         name: docker-test
     ---
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: DockerCluster
+    metadata:
+      name: docker-test
+      namespace: default
+    spec:
+    ---
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: K0sControlPlane
     metadata:
@@ -78,7 +85,8 @@ where deploying the new control plane is followed by decommissioning of the old 
       namespace: default
     spec:
       template:
-        spec: {}
+        spec:
+          customImage: kindest/node:v1.31.0
     ```
 
 2. Change the k0s version to [the target one](https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model). For example:
@@ -158,6 +166,13 @@ For the example below, k0smotron will create 3 new machines for the control plan
         kind: DockerCluster
         name: docker-test
     ---
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: DockerCluster
+    metadata:
+      name: docker-test
+      namespace: default
+    spec:
+    ---
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: K0sControlPlane
     metadata:
@@ -194,7 +209,8 @@ For the example below, k0smotron will create 3 new machines for the control plan
       namespace: default
     spec:
       template:
-        spec: {}
+        spec:
+          customImage: kindest/node:v1.31.0
     ```
 
 2. Change the k0s version to [the target one](https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model). For example:
@@ -245,6 +261,7 @@ the worker nodes. For example, `--enable-worker` flag was used during
 the control plane deployment. The bug is fixed in the latest patch versions of k0s.
 
 To fix this issue:
+
 - Check the current node that is being updated from the `kubectl get plan autopilot -o yaml` output.
 - Manually drain the node.
 - In `Controlnode` object patch the corresponding `k0sproject.io/autopilot-signal-data` annotation:
