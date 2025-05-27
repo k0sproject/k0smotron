@@ -149,6 +149,9 @@ spec:
 
 Then you can use the `RemoteMachineTemplate` in the `machineTemplate` of `K0sControlPlane`:
 
+!!! warning "Control plane endpoint"
+    When using `RemoteMachine`s for control planes, `Cluster.spec.controlPlaneEndpoint` **must** be set.
+
 ```yaml
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
@@ -174,6 +177,32 @@ spec:
       name: remote-test-template
       namespace: default
 ---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: remote-test
+  namespace: default
+spec:
+  controlPlaneEndpoint: # required for K0sControlPlane
+    host: 1.2.3.4
+    port: 6443
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 192.168.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+        - 10.128.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane
+    name: remote-test
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: RemoteCluster
+    name: remote-test
+
 … # other objects omitted for brevity
 ```
 
