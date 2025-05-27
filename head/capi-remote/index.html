@@ -1744,6 +1744,10 @@ Since k0smotron remote machine provider can't create machines on its own, it wor
 <span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">footloose-key-1</span>
 </code></pre></div>
 <p>Then you can use the <code>RemoteMachineTemplate</code> in the <code>machineTemplate</code> of <code>K0sControlPlane</code>:</p>
+<div class="admonition warning">
+<p class="admonition-title">Control plane endpoint</p>
+<p>When using <code>RemoteMachine</code>s for control planes, <code>Cluster.spec.controlPlaneEndpoint</code> <strong>must</strong> be set.</p>
+</div>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1768,6 +1772,32 @@ Since k0smotron remote machine provider can't create machines on its own, it wor
 <span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remote-test-template</span>
 <span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remote-test</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">controlPlaneEndpoint</span><span class="p">:</span><span class="w"> </span><span class="c1"># required for K0sControlPlane</span>
+<span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2.3.4</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.0.0/16</span>
+<span class="w">    </span><span class="nt">serviceDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.local</span>
+<span class="w">    </span><span class="nt">services</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.128.0.0/12</span>
+<span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remote-test</span>
+<span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteCluster</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remote-test</span>
+
 <span class="l l-Scalar l-Scalar-Plain">…</span><span class="w"> </span><span class="c1"># other objects omitted for brevity</span>
 </code></pre></div>
 <p>When CAPI controller creates a <code>RemoteMachine</code> from template object for the <code>K0sControlPlane</code>, k0smotron will pick one of the <code>PooledRemoteMachine</code> objects and use it's values for the <code>RemoteMachine</code> object.</p>
