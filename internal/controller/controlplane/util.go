@@ -32,7 +32,7 @@ func (c *K0sController) getMachineTemplate(ctx context.Context, kcp *cpv1beta1.K
 	infraMachineTemplate.SetKind(infRef.Kind)
 	infraMachineTemplate.SetName(infRef.Name)
 
-	key := client.ObjectKey{Name: infRef.Name, Namespace: infRef.Namespace}
+	key := client.ObjectKey{Name: infRef.Name, Namespace: kcp.Namespace}
 
 	err := c.Get(ctx, key, infraMachineTemplate)
 	if err != nil {

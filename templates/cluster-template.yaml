@@ -1,0 +1,88 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ${POD_CIDR:=["192.168.0.0/16"]}
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks: ${SERVICE_CIDR:=["10.128.0.0/12"]}
+  controlPlaneEndpoint:
+    host: ${CONTROL_PLANE_ENDPOINT_HOST}
+    port: ${CONTROL_PLANE_ENDPOINT_PORT}
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane
+    name: ${CLUSTER_NAME}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: RemoteCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: ${KUBERNETES_VERSION}+k0s.0
+  k0sConfigSpec:
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+        telemetry:
+          enabled: false
+    args:
+      - --enable-worker
+      - --no-taints
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: RemoteMachineTemplate
+      name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  template:
+    spec: 
+      pool: ${POOL_NAME:=default}
+---
+# It is necessary to have previously created a control plane node since k0smotron does not take care of its creation.
+# More about Remote Machine provider: https://docs.k0smotron.io/stable/capi-remote/#cluster-api-remote-machine-provider
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: PooledRemoteMachine
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  pool: ${POOL_NAME:=default}
+  machine:
+    address: ${POOLED_REMOTE_MACHINE_ADDRESS}
+    port: ${POOLED_REMOTE_MACHINE_PORT:-22}
+    user: ${POOLED_REMOTE_MACHINE_USER:-root}
+    sshKeyRef:
+      name: ${CLUSTER_NAME}-ssh-key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name:  ${CLUSTER_NAME}-ssh-key
+data:
+   value: ${SSH_PRIVATE_KEY}
+type: Opaque
