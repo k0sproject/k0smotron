@@ -1666,14 +1666,35 @@ where deploying the new control plane is followed by decommissioning of the old 
 <span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerCluster</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
 <span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerCluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.28.7+k0s.0</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.2+k0s.0</span>
 <span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">InPlace</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-worker</span>
+<span class="w">    </span><span class="nt">k0s</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s.k0sproject.io/v1beta1</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterConfig</span>
+<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
+<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">api</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">extraArgs</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="c1"># anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz</span>
+<span class="w">        </span><span class="nt">telemetry</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
@@ -1688,7 +1709,8 @@ where deploying the new control plane is followed by decommissioning of the old 
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">customImage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kindest/node:v1.31.0</span>
 </code></pre></div>
 </li>
 <li>
@@ -1699,8 +1721,22 @@ where deploying the new control plane is followed by decommissioning of the old 
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.29.2+k0s.0</span><span class="w"> </span><span class="c1"># updated version</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.3+k0s.0</span><span class="w"> </span><span class="c1"># updated version</span>
 <span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">InPlace</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">   </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-worker</span>
+<span class="w">   </span><span class="nt">k0s</span><span class="p">:</span>
+<span class="w">     </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s.k0sproject.io/v1beta1</span>
+<span class="w">     </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterConfig</span>
+<span class="w">     </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">       </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
+<span class="w">     </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">       </span><span class="nt">api</span><span class="p">:</span>
+<span class="w">         </span><span class="nt">extraArgs</span><span class="p">:</span>
+<span class="w">           </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="c1"># anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz</span>
+<span class="w">       </span><span class="nt">telemetry</span><span class="p">:</span>
+<span class="w">         </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
@@ -1716,11 +1752,11 @@ where deploying the new control plane is followed by decommissioning of the old 
 </li>
 </ol>
 <h2 id="updating-the-control-plane-using-the-cluster-api-workflow">Updating the control plane using the Cluster API workflow<a class="headerlink" href="#updating-the-control-plane-using-the-cluster-api-workflow" title="Permanent link">#</a></h2>
-<p>In case <code>K0sControlPlane</code> is created with <code>spec.updateStrategy=Recreate</code>, k0smotron uses the Cluster API workflow to update the control plane, 
+<p>In case <code>K0sControlPlane</code> is created with <code>spec.updateStrategy=Recreate</code>, k0smotron uses the Cluster API workflow to update the control plane,
 which involves creating a new machines for control plane and decommissioning the old ones.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The <code>Recreate</code> update strategy is not supported for k0s clusters running in <code>--single</code> mode. </p>
+<p>The <code>Recreate</code> update strategy is not supported for k0s clusters running in <code>--single</code> mode.</p>
 </div>
 <p>For the example below, k0smotron will create 3 new machines for the control plane, ensure that the new control plane nodes are online, and then remove the old machines.</p>
 <ol>
@@ -1749,14 +1785,35 @@ which involves creating a new machines for control plane and decommissioning the
 <span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerCluster</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
 <span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerCluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.28.7+k0s.0</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.2+k0s.0</span>
 <span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-worker</span>
+<span class="w">    </span><span class="nt">k0s</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s.k0sproject.io/v1beta1</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterConfig</span>
+<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
+<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">api</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">extraArgs</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="c1"># anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz</span>
+<span class="w">        </span><span class="nt">telemetry</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
@@ -1771,7 +1828,8 @@ which involves creating a new machines for control plane and decommissioning the
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">customImage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kindest/node:v1.31.0</span>
 </code></pre></div>
 </li>
 <li>
@@ -1782,8 +1840,22 @@ which involves creating a new machines for control plane and decommissioning the
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.29.2+k0s.0</span><span class="w"> </span><span class="c1"># updated version</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.3+k0s.0</span><span class="w"> </span><span class="c1"># updated version</span>
 <span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">   </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-worker</span>
+<span class="w">   </span><span class="nt">k0s</span><span class="p">:</span>
+<span class="w">     </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s.k0sproject.io/v1beta1</span>
+<span class="w">     </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterConfig</span>
+<span class="w">     </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">       </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
+<span class="w">     </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">       </span><span class="nt">api</span><span class="p">:</span>
+<span class="w">         </span><span class="nt">extraArgs</span><span class="p">:</span>
+<span class="w">           </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="c1"># anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz</span>
+<span class="w">       </span><span class="nt">telemetry</span><span class="p">:</span>
+<span class="w">         </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
@@ -1804,12 +1876,14 @@ the control plane upgrade may get stuck on the <code>Cordoning</code> stage
 if the control plane is running on the same node as
 the worker nodes. For example, <code>--enable-worker</code> flag was used during
 the control plane deployment. The bug is fixed in the latest patch versions of k0s.</p>
-<p>To fix this issue:
-- Check the current node that is being updated from the <code>kubectl get plan autopilot -o yaml</code> output.
-- Manually drain the node.
-- In <code>Controlnode</code> object patch the corresponding <code>k0sproject.io/autopilot-signal-data</code> annotation:
-  change the <code>status</code> field in the JSON from <code>Cordoning</code> to <code>ApplyingUpdate</code>.
-- Repeat the steps for all the nodes that are being updated.</p>
+<p>To fix this issue:</p>
+<ul>
+<li>Check the current node that is being updated from the <code>kubectl get plan autopilot -o yaml</code> output.</li>
+<li>Manually drain the node.</li>
+<li>In <code>Controlnode</code> object patch the corresponding <code>k0sproject.io/autopilot-signal-data</code> annotation:
+  change the <code>status</code> field in the JSON from <code>Cordoning</code> to <code>ApplyingUpdate</code>.</li>
+<li>Repeat the steps for all the nodes that are being updated.</li>
+</ul>
 
 
 
