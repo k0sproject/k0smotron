@@ -1,0 +1,81 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ${POD_CIDR:=["192.168.0.0/16"]}
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks: ${SERVICE_CIDR:=["10.128.0.0/12"]}
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0smotronControlPlane
+    name: ${CLUSTER_NAME}-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: RemoteCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: ${KUBERNETES_VERSION}-k0s.0
+  persistence:
+    type: emptyDir
+  service:
+    type: NodePort
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteCluster
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+---
+# It is necessary to have previously created a worker node since k0smotron does not take care of its creation.
+# More about Remote Machine provider: https://docs.k0smotron.io/stable/capi-remote/#cluster-api-remote-machine-provider
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Machine
+metadata:
+  name:  ${CLUSTER_NAME}
+spec:
+  clusterName: ${CLUSTER_NAME}
+  bootstrap:
+    configRef:
+      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      kind: K0sWorkerConfig
+      name: ${CLUSTER_NAME}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: RemoteMachine
+    name: ${CLUSTER_NAME}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfig
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  version: ${KUBERNETES_VERSION}+k0s.0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteMachine
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  address: ${REMOTE_MACHINE_ADDRESS}
+  port: ${REMOTE_MACHINE_USER:-22}
+  user: ${REMOTE_MACHINE_USER:-root}
+  sshKeyRef:
+    name: ${CLUSTER_NAME}-ssh-key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name:  ${CLUSTER_NAME}-ssh-key
+data:
+   value: ${SSH_PRIVATE_KEY}
+type: Opaque
