@@ -372,6 +372,10 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			if err != nil {
 				errs = append(errs, fmt.Errorf("error deleting k0s node resources: %w", err))
 			}
+
+			if err := c.removePreTerminateHookAnnotationFromMachine(ctx, m); err != nil {
+				return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", m.Name, err)
+			}
 		}
 
 		if len(errs) > 0 {
@@ -424,13 +428,6 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		machineNamesToDelete[desiredMachineNamesSlice[0]] = true
 	}
 	log.Log.Info("Collected machines", "count", activeMachines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachineNames)
-
-	go func() {
-		err = c.deleteOldControlNodes(ctx, cluster)
-		if err != nil {
-			logger.Error(err, "Error deleting old control nodes")
-		}
-	}()
 
 	if clusterIsUpdating {
 		log.Log.Info("Cluster is updating", "currentVersion", currentVersion, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
@@ -546,6 +543,10 @@ func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster 
 		return fmt.Errorf("error deleting k0s node resources: %w", err)
 	}
 
+	if err := c.removePreTerminateHookAnnotationFromMachine(ctx, machine); err != nil {
+		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", machine.Name, err)
+	}
+
 	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
 		return fmt.Errorf("error deleting machine from template: %w", err)
 	}
@@ -578,18 +579,11 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 		if err != nil {
 			return fmt.Errorf("error checking machine left: %w", err)
 		}
-	}
 
-	if err := c.deleteBootstrapConfig(ctx, machine.Name, kcp); err != nil {
-		return fmt.Errorf("error deleting machine from template: %w", err)
-	}
-
-	if err := c.deleteMachineFromTemplate(ctx, machine.Name, cluster, kcp); err != nil {
-		return fmt.Errorf("error deleting machine from template: %w", err)
-	}
-
-	if err := c.removePreTerminateHookAnnotationFromMachine(ctx, machine); err != nil {
-		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", machine.Name, err)
+		err = c.deleteControlNode(ctx, machine.Name, kubeClient)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -652,25 +646,6 @@ func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName str
 		return ErrNewMachinesNotReady
 	}
 
-	return nil
-}
-
-func (c *K0sController) deleteBootstrapConfig(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
-	controllerConfig := bootstrapv1.K0sControllerConfig{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
-			Kind:       "K0sControllerConfig",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: kcp.Namespace,
-		},
-	}
-
-	err := c.Client.Delete(ctx, &controllerConfig)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return fmt.Errorf("error deleting K0sControllerConfig: %w", err)
-	}
 	return nil
 }
 
