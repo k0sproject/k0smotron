@@ -74,7 +74,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/k0smotron/k0smotron:${{ needs.release.outputs.image_tag }}
+            ghcr.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
             quay.io/k0sproject/k0smotron:${{ needs.release.outputs.image_tag }}
           push: true
 
