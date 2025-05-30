@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
 
 // +kubebuilder:webhook:path=/validate-controlplane-cluster-x-k8s-io-v1beta1-k0scontrolplane,mutating=false,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=create;update,versions=v1beta1,name=validate-k0scontrolplane-v1beta1.k0smotron.io,admissionReviewVersions=v1

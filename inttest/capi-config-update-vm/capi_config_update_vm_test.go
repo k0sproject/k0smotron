@@ -28,7 +28,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/k0smotron/k0smotron/inttest/util"
+	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/util/json"

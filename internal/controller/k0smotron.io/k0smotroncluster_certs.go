@@ -33,7 +33,7 @@ import (
 	"github.com/cloudflare/cfssl/signer/local"
 	"sigs.k8s.io/cluster-api/util/secret"
 
-	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
 
 func (r *ClusterReconciler) ensureEtcdCertificates(ctx context.Context, kmc *km.Cluster) error {

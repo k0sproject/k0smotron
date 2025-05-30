@@ -20,13 +20,14 @@ package e2e
 
 import (
 	"fmt"
-	"github.com/k0smotron/k0smotron/e2e/util"
+	"path/filepath"
+	"testing"
+
+	"github.com/k0sproject/k0smotron/e2e/util"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
-	"path/filepath"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	capiutil "sigs.k8s.io/cluster-api/util"
-	"testing"
 )
 
 func TestAdmissionWebhookT1(t *testing.T) {

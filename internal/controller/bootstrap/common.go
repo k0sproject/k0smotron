@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0smotron/k0smotron/internal/cloudinit"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"

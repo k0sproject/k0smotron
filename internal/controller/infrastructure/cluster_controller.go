@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	infrastructure "github.com/k0smotron/k0smotron/api/infrastructure/v1beta1"
+	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 )
 
 type ClusterController struct {

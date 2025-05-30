@@ -183,7 +183,7 @@ spec:
 ```
 
 More information about Teleport's Machine ID and how to set it up with Kubernetes can be found [here](https://goteleport.com/docs/machine-id/deployment/kubernetes/).
-Also, you can use [this example](https://github.com/k0smotron/k0smotron/blob/{{{ extra.k0smotron_version }}}/config/samples/capi/remotemachine/capi-remotemachine-teleport.yaml) as a reference.
+Also, you can use [this example](https://github.com/k0sproject/k0smotron/blob/{{{ extra.k0smotron_version }}}/config/samples/capi/remotemachine/capi-remotemachine-teleport.yaml) as a reference.
 
 ## Create a RemoteMachine
 

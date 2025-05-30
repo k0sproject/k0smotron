@@ -19,9 +19,9 @@ package k0smotronio
 import (
 	"context"
 
-	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
-	kcontrollerutil "github.com/k0smotron/k0smotron/internal/controller/util"
-	"github.com/k0smotron/k0smotron/internal/exec"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/internal/exec"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

@@ -37,9 +37,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
-	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/k0sproject/version"
 )
 
