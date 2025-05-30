@@ -32,9 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
-	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
-	kcontrollerutil "github.com/k0smotron/k0smotron/internal/controller/util"
-	"github.com/k0smotron/k0smotron/internal/util"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/internal/util"
 )
 
 const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDER__"

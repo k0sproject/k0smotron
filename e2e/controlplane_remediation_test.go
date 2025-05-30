@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/k0smotron/k0smotron/e2e/util"
+	"github.com/k0sproject/k0smotron/e2e/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	authenticationv1 "k8s.io/api/authentication/v1"

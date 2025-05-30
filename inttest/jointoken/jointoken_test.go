@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/k0smotron/k0smotron/inttest/util"
+	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
 type JoinTokenSuite struct {

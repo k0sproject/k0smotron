@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	infrastructure "github.com/k0smotron/k0smotron/api/infrastructure/v1beta1"
+	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

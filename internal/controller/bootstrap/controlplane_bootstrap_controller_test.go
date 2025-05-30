@@ -17,12 +17,13 @@ limitations under the License.
 package bootstrap
 
 import (
-	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
+	"testing"
+
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
-	"testing"
 )
 
 func Test_createCPInstallCmd(t *testing.T) {

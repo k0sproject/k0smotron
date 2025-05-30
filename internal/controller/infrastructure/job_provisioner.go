@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/logr"
-	"github.com/k0smotron/k0smotron/internal/cloudinit"
+	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	"gopkg.in/yaml.v3"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrastructure "github.com/k0smotron/k0smotron/api/infrastructure/v1beta1"
+	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 )
 
 var patchOpts []client.PatchOption = []client.PatchOption{

@@ -34,8 +34,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 
-	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
-	"github.com/k0smotron/k0smotron/inttest/util"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
 type PVCSuite struct {

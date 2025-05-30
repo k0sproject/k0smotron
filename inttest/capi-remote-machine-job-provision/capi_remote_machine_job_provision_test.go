@@ -28,9 +28,9 @@ import (
 	"testing"
 	"text/template"
 
-	infra "github.com/k0smotron/k0smotron/api/infrastructure/v1beta1"
-	"github.com/k0smotron/k0smotron/inttest/util"
 	"github.com/k0sproject/k0s/inttest/common"
+	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

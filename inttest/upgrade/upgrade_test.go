@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/k0smotron/k0smotron/internal/exec"
-	"github.com/k0smotron/k0smotron/inttest/util"
 	"github.com/k0sproject/k0s/inttest/common"
+	"github.com/k0sproject/k0smotron/internal/exec"
+	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +35,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
-	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
 
 type UpgradeSuite struct {

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0smotron/k0smotron/internal/cloudinit"
-	"github.com/k0smotron/k0smotron/internal/util"
+	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/cloudinit"
+	"github.com/k0sproject/k0smotron/internal/util"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -27,8 +27,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/k0smotron/k0smotron/inttest/util"
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
+	"github.com/k0sproject/k0smotron/inttest/util"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/stretchr/testify/suite"

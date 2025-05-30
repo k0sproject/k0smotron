@@ -19,7 +19,7 @@ package k0smotronio
 import (
 	"testing"
 
-	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/stretchr/testify/assert"
 )
 

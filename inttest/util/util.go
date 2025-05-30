@@ -45,10 +45,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 
-	kexec "github.com/k0smotron/k0smotron/internal/exec"
+	kexec "github.com/k0sproject/k0smotron/internal/exec"
 
-	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0smotron/k0smotron/inttest/util/watch"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/inttest/util/watch"
 	"github.com/sirupsen/logrus"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )

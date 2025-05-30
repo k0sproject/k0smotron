@@ -39,8 +39,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
 
 const (

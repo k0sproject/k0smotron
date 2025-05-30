@@ -21,17 +21,18 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"sigs.k8s.io/cluster-api/api/v1beta1"
 	"strings"
 	"testing"
 	"time"
 
-	controlplanev1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
+	"sigs.k8s.io/cluster-api/api/v1beta1"
+
+	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 
-	"github.com/k0smotron/k0smotron/inttest/util"
+	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

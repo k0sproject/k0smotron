@@ -58,9 +58,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	kubeadmConfig "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 )
 

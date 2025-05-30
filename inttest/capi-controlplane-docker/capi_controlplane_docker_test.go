@@ -26,10 +26,10 @@ import (
 	"testing"
 	"time"
 
-	controlplanev1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
+	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"sigs.k8s.io/cluster-api/api/v1beta1"
 
-	"github.com/k0smotron/k0smotron/inttest/util"
+	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
