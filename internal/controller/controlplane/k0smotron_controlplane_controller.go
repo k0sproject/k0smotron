@@ -18,7 +18,6 @@ package controlplane
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -519,21 +518,14 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 	if !found || currentReady != ready {
 		log.Info("Patching Infrastructure object status", "ready", ready)
 
-		// Convert patch to JSON
-		b, err := json.Marshal(map[string]any{
-			"status": map[string]any{
-				"ready": ready,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to marshal patch data: %w", err)
-		}
-
 		// Apply the patch
 		err = c.Client.Status().Patch(
 			ctx,
 			infraObj,
-			client.RawPatch(types.MergePatchType, b),
+			client.RawPatch(
+				types.MergePatchType,
+				fmt.Appendf(nil, `{"status": {"ready": %t}}`, ready),
+			),
 		)
 		if err != nil {
 			return fmt.Errorf("failed to patch Infrastructure object: %w", err)
