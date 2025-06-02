@@ -6,7 +6,7 @@ We look forward to working with you to grow and enhance the product.
 ## Report issue
 
 Before making your k0mostron contribution, open a GitHub issue in
-[the k0smotron project](https://github.com/k0smotron/k0smotron/issues)
+[the k0smotron project](https://github.com/k0sproject/k0smotron/issues)
 to discuss your idea.
 
 Subscribe to an issue to receive notifications and stay up to date.

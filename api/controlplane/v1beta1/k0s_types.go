@@ -19,7 +19,7 @@ package v1beta1
 import (
 	"slices"
 
-	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/k0smotron/k0smotron/e2e/util"
+	"github.com/k0sproject/k0smotron/e2e/util"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"

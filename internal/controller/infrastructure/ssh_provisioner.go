@@ -26,8 +26,8 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/logr"
-	api "github.com/k0smotron/k0smotron/api/infrastructure/v1beta1"
-	"github.com/k0smotron/k0smotron/internal/cloudinit"
+	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	"github.com/k0sproject/rig"
 	"gopkg.in/yaml.v3"
 )

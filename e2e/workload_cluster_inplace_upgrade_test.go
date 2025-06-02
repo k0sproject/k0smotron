@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/k0smotron/k0smotron/e2e/util"
+	"github.com/k0sproject/k0smotron/e2e/util"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"

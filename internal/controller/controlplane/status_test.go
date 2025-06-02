@@ -20,10 +20,10 @@ import (
 	"testing"
 	"time"
 
-	bootstrapv1 "github.com/k0smotron/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

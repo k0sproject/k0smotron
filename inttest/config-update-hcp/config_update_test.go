@@ -18,14 +18,15 @@ package configupdate
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"testing"
 	"time"
 
-	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
-	"github.com/k0smotron/k0smotron/inttest/util"
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/k0sproject/k0s/inttest/common"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"

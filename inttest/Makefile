@@ -34,7 +34,7 @@ $(smoketests): ../k0smotron-image-bundle.tar ../install.yaml .footloose-alpine.s
 	LOCAL_STORAGE_INSTALL_YAML='$(LOCAL_STORAGE_INSTALL_YAML)' \
 	CERT_MANAGER_INSTALL_YAML='$(CERT_MANAGER_INSTALL_YAML)' \
 	K0S_USE_DEFAULT_K0S_BINARIES=$(K0S_USE_DEFAULT_K0S_BINARIES) \
-	go test -count=1 -v -timeout $(TIMEOUT) github.com/k0smotron/k0smotron/inttest/$(TEST_PACKAGE)
+	go test -count=1 -v -timeout $(TIMEOUT) github.com/k0sproject/k0smotron/inttest/$(TEST_PACKAGE)
 
 clean:
 	rm -rf .*.stamp

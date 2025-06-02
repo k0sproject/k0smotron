@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	km "github.com/k0smotron/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
 
 func (r *ClusterReconciler) reconcilePVC(ctx context.Context, kmc *km.Cluster) error {

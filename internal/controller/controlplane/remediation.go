@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	cpv1beta1 "github.com/k0smotron/k0smotron/api/controlplane/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/pkg/errors"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

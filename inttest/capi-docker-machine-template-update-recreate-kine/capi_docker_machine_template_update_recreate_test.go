@@ -38,8 +38,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/k0smotron/k0smotron/inttest/util"
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
+	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
 type CAPIDockerMachineTemplateUpdateRecreateKine struct {
