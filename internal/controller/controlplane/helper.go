@@ -227,19 +227,6 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 	return infraMachine, nil
 }
 
-func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
-	infraMachine, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
-	if err != nil {
-		return err
-	}
-
-	err = c.Client.Delete(ctx, infraMachine)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return fmt.Errorf("error deleting machine implementation: %w", err)
-	}
-	return nil
-}
-
 func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
 	infraMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
 	if err != nil {
@@ -398,44 +385,6 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 		}
 	}
 	logger.Info("marked etcd to leave")
-
-	return nil
-}
-
-func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster) error {
-	kubeClient, err := c.getKubeClient(ctx, cluster)
-	if err != nil {
-		return fmt.Errorf("error getting kube client: %w", err)
-	}
-	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
-	if err != nil {
-		return fmt.Errorf("error getting all machines: %w", err)
-	}
-
-	var controlNodeList unstructured.UnstructuredList
-	err = kubeClient.RESTClient().
-		Get().
-		AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes").
-		Do(ctx).
-		Into(&controlNodeList)
-
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
-
-	existingMachineNames := make(map[string]struct{})
-	for _, n := range machines.Names() {
-		existingMachineNames[n] = struct{}{}
-	}
-
-	for _, controlNode := range controlNodeList.Items {
-		if _, ok := existingMachineNames[controlNode.GetName()]; !ok {
-			err := c.deleteControlNode(ctx, controlNode.GetName(), kubeClient)
-			if err != nil {
-				return err
-			}
-		}
-	}
 
 	return nil
 }

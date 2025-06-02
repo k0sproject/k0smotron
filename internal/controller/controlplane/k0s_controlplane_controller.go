@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -368,7 +369,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	if deletedMachines.Len() > 0 {
 		var errs []error
 		for _, m := range deletedMachines.SortedByCreationTimestamp() {
-			err := c.deleteK0sNodeResources(ctx, cluster, kcp, m)
+			err := c.reconcileMachineDeletion(ctx, cluster, kcp, m)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("error deleting k0s node resources: %w", err))
 			}
@@ -425,13 +426,6 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	}
 	log.Log.Info("Collected machines", "count", activeMachines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachineNames)
 
-	go func() {
-		err = c.deleteOldControlNodes(ctx, cluster)
-		if err != nil {
-			logger.Error(err, "Error deleting old control nodes")
-		}
-	}()
-
 	if clusterIsUpdating {
 		log.Log.Info("Cluster is updating", "currentVersion", currentVersion, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
 		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
@@ -477,9 +471,8 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		err = c.runMachineDeletionSequence(ctx, cluster, kcp, machineToDelete)
-		if err != nil {
-			return err
+		if err := c.deleteMachine(ctx, machineToDelete.Name, kcp); err != nil {
+			return fmt.Errorf("error deleting machine from template: %w", err)
 		}
 
 		logger.Info("Deleted machine", "machine", machineToDelete.Name)
@@ -540,21 +533,48 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	return nil
 }
 
-func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
-	err := c.deleteK0sNodeResources(ctx, cluster, kcp, machine)
-	if err != nil {
-		return fmt.Errorf("error deleting k0s node resources: %w", err)
-	}
-
-	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
-		return fmt.Errorf("error deleting machine from template: %w", err)
-	}
-
-	return nil
-}
-
-func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+// reconcileMachineDeletion removes k0s controller-associated resources, coordinating the deletion
+// process with the machine controller. The coordination sequence (triggered by Machine deletion) is as follows:
+//
+//  1. K0smotron waits for the machine controller to complete its pre-terminate actions, such as draining the node
+//     and detaching volumes (if configured—refer to the Cluster API documentation for details).
+//  2. The pre-terminate annotation used for lifecycle hooks is removed from the Machine, allowing the machine
+//     controller to proceed with the deletion of the associated InfraMachine and BootstrapConfig (which triggers
+//     virtual machine deletion).
+//  3. K0s controller-associated resources are cleaned up. This involves deleting the EtcdMember and ControlNode
+//     resources linked to the Machine being removed.
+//
+// For more information on the Machine deletion process, see:
+// https://cluster-api.sigs.k8s.io/tasks/automated-machine-management/machine_deletions
+func (c *K0sController) reconcileMachineDeletion(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
 	logger := log.FromContext(ctx)
+
+	waitCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	err := wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
+		m, err := capiutil.GetMachineByName(ctx, c.Client, kcp.Namespace, machine.Name)
+		if err != nil {
+			return false, err
+		}
+
+		// In order to ensure machine controller has done everything on his side, we check if draning and volume detach logic is finished.
+		preTerminateActionFromMachineControllerIsDone := !conditions.IsFalse(m, clusterv1.DrainingSucceededCondition) &&
+			!conditions.IsFalse(m, clusterv1.VolumeDetachSucceededCondition)
+		if preTerminateActionFromMachineControllerIsDone {
+			return true, nil
+		}
+
+		return false, err
+	})
+	if err != nil {
+		return fmt.Errorf("error checking machine controller has finished pre terminate machine deletion actions: %w", err)
+	}
+
+	// removing pre-terminate hook annotation allows machine controller and infra provider to finally remove kubernetes node
+	// and node infrastructure (including InfraCluster updates like removing kube-apiserver from LB).
+	if err := c.removePreTerminateHookAnnotationFromMachine(ctx, machine); err != nil {
+		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", machine.Name, err)
+	}
 
 	if kcp.Status.Ready {
 		kubeClient, err := c.getKubeClient(ctx, cluster)
@@ -562,13 +582,15 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
 		}
 
-		waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+		if err := c.markChildControlNodeToLeave(ctx, machine.Name, kubeClient); err != nil {
+			return fmt.Errorf("error marking controlnode to leave: %w", err)
+		}
+
+		// We give more time to EtcdMember to leave the etcd cluster because if member to leave is the leader it could take
+		// some time to switch leadership.
+		waitCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 		defer cancel()
 		err = wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
-			if err := c.markChildControlNodeToLeave(fctx, machine.Name, kubeClient); err != nil {
-				return false, fmt.Errorf("error marking controlnode to leave: %w", err)
-			}
-
 			ok, err := c.checkMachineLeft(fctx, machine.Name, kubeClient)
 			if err != nil {
 				logger.Error(err, "Error checking machine left", "machine", machine.Name)
@@ -578,18 +600,11 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 		if err != nil {
 			return fmt.Errorf("error checking machine left: %w", err)
 		}
-	}
 
-	if err := c.deleteBootstrapConfig(ctx, machine.Name, kcp); err != nil {
-		return fmt.Errorf("error deleting machine from template: %w", err)
-	}
-
-	if err := c.deleteMachineFromTemplate(ctx, machine.Name, cluster, kcp); err != nil {
-		return fmt.Errorf("error deleting machine from template: %w", err)
-	}
-
-	if err := c.removePreTerminateHookAnnotationFromMachine(ctx, machine); err != nil {
-		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", machine.Name, err)
+		err = c.deleteControlNode(ctx, machine.Name, kubeClient)
+		if err != nil {
+			return fmt.Errorf("error deleting control node: %w", err)
+		}
 	}
 
 	return nil
@@ -652,25 +667,6 @@ func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName str
 		return ErrNewMachinesNotReady
 	}
 
-	return nil
-}
-
-func (c *K0sController) deleteBootstrapConfig(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
-	controllerConfig := bootstrapv1.K0sControllerConfig{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
-			Kind:       "K0sControllerConfig",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: kcp.Namespace,
-		},
-	}
-
-	err := c.Client.Delete(ctx, &controllerConfig)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return fmt.Errorf("error deleting K0sControllerConfig: %w", err)
-	}
 	return nil
 }
 
