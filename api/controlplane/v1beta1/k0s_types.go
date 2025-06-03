@@ -145,7 +145,7 @@ type K0sControlPlaneStatus struct {
 	// The value of this field is never updated after provisioning is completed. Please use conditions
 	// to check the operational state of the control plane.
 	// +optional
-	Inititalized bool `json:"initialized"`
+	Initialized bool `json:"initialized"`
 
 	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
 	// +optional
