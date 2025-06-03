@@ -297,6 +297,17 @@ kind-deploy-k0smotron: release k0smotron-image-bundle.tar
 	kubectl apply --server-side=true -f install.yaml
 	kubectl rollout restart -n k0smotron deployment/k0smotron-controller-manager
 
+.PHONY: kind-capi-k0smotron
+kind-capi-k0smotron: ## Setup complete kind environment with CAPI and k0smotron
+	@echo "Setting up kind cluster with CAPI and k0smotron..."
+	$(MAKE) kind-cluster
+	@echo "✓ Kind cluster created"
+	$(MAKE) kind-deploy-capi
+	@echo "✓ CAPI deployed"
+	$(MAKE) kind-deploy-k0smotron
+	@echo "✓ k0smotron deployed"
+	@echo "Setup complete!"
+
 sbom/spdx.json: go.mod
 	mkdir -p -- '$(dir $@)'
 	docker run --rm \
