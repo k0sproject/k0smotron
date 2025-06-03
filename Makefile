@@ -269,6 +269,39 @@ docs-generate-k0smotron: $(CRDOC) ## Generate docs for k0smotron CRDs
 # Generate docs for all CRDs apis
 docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron
 
+.PHONY: generate-all
+generate-all: ## Generate all code, manifests, documentation, and release artifacts
+	@echo "=========================================="
+	@echo "Starting complete code generation..."
+	@echo "=========================================="
+	@echo "[1/6] Cleaning previous artifacts..."
+	@$(MAKE) clean
+	@echo "✓ Clean completed"
+	@echo ""
+	@echo "[2/6] Generating deepcopy methods..."
+	@$(MAKE) generate
+	@echo "✓ Code generation completed"
+	@echo ""
+	@echo "[3/6] Generating CRDs and manifests..."
+	@$(MAKE) manifests
+	@echo "✓ CRDs and manifests generated"
+	@echo ""
+	@echo "[4/6] Generating cluster API manifests..."
+	@$(MAKE) clusterapi-manifests
+	@echo "✓ Cluster API manifests generated"
+	@echo ""
+	@echo "[5/6] Generating documentation reference..."
+	@$(MAKE) docs-generate-reference
+	@echo "✓ Documentation generated"
+	@echo ""
+	@echo "[6/6] Building release artifacts..."
+	@$(MAKE) release
+	@echo "✓ Release artifacts built"
+	@echo ""
+	@echo "=========================================="
+	@echo "✅ All code generation completed successfully!"
+	@echo "=========================================="
+
 .PHONY: $(smoketests)
 $(smoketests): release k0smotron-image-bundle.tar
 	$(MAKE) -C inttest $@
