@@ -195,7 +195,8 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 // watchExternalAddress watches the external address of the control plane and updates the status accordingly
 func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *clusterv1.Cluster) error {
 	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
-	log.Info("Waiting for external address to be set")
+	log.Info("Starting to wait for external address")
+	startTime := time.Now()
 	err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 3*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		k0smoCluster := &kapi.Cluster{}
 		if err := c.Client.Get(ctx, capiutil.ObjectKey(cluster), k0smoCluster); err != nil {
@@ -203,9 +204,11 @@ func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *
 			return false, err
 		}
 		if k0smoCluster.Spec.ExternalAddress == "" {
-			log.Info("Waiting for external address to be set")
+			elapsed := time.Since(startTime).Round(time.Second)
+			log.Info("External address not yet available", "elapsed", elapsed)
 			return false, nil
 		}
+		log.Info("External address found", "address", k0smoCluster.Spec.ExternalAddress, "elapsed", time.Since(startTime).Round(time.Second))
 		// Get the external address of the control plane
 		host := k0smoCluster.Spec.ExternalAddress
 		port := k0smoCluster.Spec.Service.APIPort
