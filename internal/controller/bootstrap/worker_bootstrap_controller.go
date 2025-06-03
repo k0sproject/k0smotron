@@ -115,8 +115,14 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(configOwner.Object, machine); err != nil {
 		return ctrl.Result{}, fmt.Errorf("error converting %s to Machine: %w", configOwner.GetKind(), err)
 	}
+
+	// If the K0sWorkerConfig does not have a version set, use the machine's version.
 	if config.Spec.Version == "" && machine.Spec.Version != nil {
-		config.Spec.Version = fmt.Sprintf("%s+%s", *machine.Spec.Version, defaultK0sSuffix)
+		config.Spec.Version = *machine.Spec.Version
+	}
+	// If the version does not contain the k0s suffix, append it.
+	if config.Spec.Version != "" && !strings.Contains(config.Spec.Version, "+k0s.") {
+		config.Spec.Version = fmt.Sprintf("%s+%s", config.Spec.Version, defaultK0sSuffix)
 	}
 
 	// Lookup the cluster the config owner is associated with
