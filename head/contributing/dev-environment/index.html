@@ -1540,11 +1540,6 @@ For more complicated changes that require running CAPI (Common Application Progr
 tests, follow the steps below to configure your environment:</p>
 <ol>
 <li>
-<p>Create Docker network:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>network<span class="w"> </span>create<span class="w"> </span>kind<span class="w"> </span>--opt<span class="w"> </span>com.docker.network.bridge.enable_ip_masquerade<span class="o">=</span><span class="nb">true</span>
-</code></pre></div>
-</li>
-<li>
 <p>Use KinD (Kubernetes in Docker) to create a Kubernetes cluster based on the
 provided configuration file:</p>
 <div class="highlight"><pre><span></span><code>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--config<span class="w"> </span>config/samples/capi/docker/kind.yaml

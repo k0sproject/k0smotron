@@ -967,15 +967,6 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-the-docker-kind-network" class="md-nav__link">
-    <span class="md-ellipsis">
-      Create the Docker Kind Network
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#creating-a-child-cluster" class="md-nav__link">
     <span class="md-ellipsis">
       Creating a child cluster
@@ -1615,15 +1606,6 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-the-docker-kind-network" class="md-nav__link">
-    <span class="md-ellipsis">
-      Create the Docker Kind Network
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#creating-a-child-cluster" class="md-nav__link">
     <span class="md-ellipsis">
       Creating a child cluster
@@ -1670,16 +1652,11 @@ You are not currently viewing the documentation for the current stable release o
 <p>This example demonstrates how k0smotron can be used with CAPD (Cluster API Provider Docker).</p>
 <p>Please note, CAPD should only be used for development purposes and not for production environments.</p>
 <h2 id="preparations">Preparations<a class="headerlink" href="#preparations" title="Permanent link">#</a></h2>
-<p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>. </p>
+<p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>.</p>
 <p>To initialize the management cluster with Docker infrastrcture provider you can run:</p>
 <div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--core<span class="w"> </span>cluster-api<span class="w"> </span>--infrastructure<span class="w"> </span>docker
 </code></pre></div>
 <p>For more details on Cluster API Provider Docker see it's <a href="https://github.com/kubernetes-sigs/cluster-api/tree/main/test/infrastructure/docker">docs</a>.</p>
-<h2 id="create-the-docker-kind-network">Create the Docker Kind Network<a class="headerlink" href="#create-the-docker-kind-network" title="Permanent link">#</a></h2>
-<p>The Cluster API Provider Docker (CAPD) utilizes a network named kind as the default network for certain components it deploys, such as HAProxy. To establish this network, perform the following step:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>network<span class="w"> </span>create<span class="w"> </span>kind<span class="w"> </span>--opt<span class="w"> </span>com.docker.network.bridge.enable_ip_masquerade<span class="o">=</span><span class="nb">true</span>
-</code></pre></div>
-<p>By executing this command, you are creating a Docker network named 'kind' with IP masquerade enabled, which is necessary for the proper operation of certain CAPD-deployed components.</p>
 <h2 id="creating-a-child-cluster">Creating a child cluster<a class="headerlink" href="#creating-a-child-cluster" title="Permanent link">#</a></h2>
 <p>Once all the controllers are up and running, you can apply the cluster manifests containing the specifications of the cluster you want to provision.</p>
 <p>Here is an example:</p>
@@ -1783,7 +1760,7 @@ You are not currently viewing the documentation for the current stable release o
 <p>After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:</p>
 <div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
 NAME<span class="w">                                   </span>PHASE<span class="w">         </span>AGE<span class="w">     </span>VERSION
-cluster.cluster.x-k8s.io/docker-test<span class="w">   </span>Provisioned<span class="w">   </span>3m51s<span class="w">   </span>
+cluster.cluster.x-k8s.io/docker-test<span class="w">   </span>Provisioned<span class="w">   </span>3m51s
 
 NAME<span class="w">                                        </span>CLUSTER<span class="w">       </span>NODENAME<span class="w">   </span>PROVIDERID<span class="w">          </span>PHASE<span class="w">         </span>AGE<span class="w">     </span>VERSION
 machine.cluster.x-k8s.io/docker-test-md-0<span class="w">   </span>docker-test<span class="w">                                  </span>Provisioned<span class="w">   </span>3m50s
