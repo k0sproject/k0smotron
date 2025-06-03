@@ -6,7 +6,7 @@ Please note, CAPD should only be used for development purposes and not for produ
 
 ## Preparations
 
-Before starting this example, ensure that you have met the [general prerequisites](capi-examples.md#prerequisites). 
+Before starting this example, ensure that you have met the [general prerequisites](capi-examples.md#prerequisites).
 
 To initialize the management cluster with Docker infrastrcture provider you can run:
 
@@ -15,16 +15,6 @@ clusterctl init --core cluster-api --infrastructure docker
 ```
 
 For more details on Cluster API Provider Docker see it's [docs](https://github.com/kubernetes-sigs/cluster-api/tree/main/test/infrastructure/docker).
-
-## Create the Docker Kind Network
-
-The Cluster API Provider Docker (CAPD) utilizes a network named kind as the default network for certain components it deploys, such as HAProxy. To establish this network, perform the following step:
-
-```bash
-docker network create kind --opt com.docker.network.bridge.enable_ip_masquerade=true
-```
-
-By executing this command, you are creating a Docker network named 'kind' with IP masquerade enabled, which is necessary for the proper operation of certain CAPD-deployed components.
 
 ## Creating a child cluster
 
@@ -136,7 +126,7 @@ After applying the manifests to the management cluster and confirming the infras
 ```bash
 % kubectl get cluster,machine
 NAME                                   PHASE         AGE     VERSION
-cluster.cluster.x-k8s.io/docker-test   Provisioned   3m51s   
+cluster.cluster.x-k8s.io/docker-test   Provisioned   3m51s
 
 NAME                                        CLUSTER       NODENAME   PROVIDERID          PHASE         AGE     VERSION
 machine.cluster.x-k8s.io/docker-test-md-0   docker-test                                  Provisioned   3m50s

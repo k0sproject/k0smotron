@@ -281,7 +281,6 @@ lint: hack/lint/.golangci-lint.stamp
 # KinD helpers
 .PHONY: kind-cluster
 kind-cluster:
-	docker create network kind --opt com.docker.network.bridge.enable_ip_masquerade=true || true
 	kind create cluster --name k0smotron --config config/samples/capi/docker/kind.yaml
 
 .PHONY: kind-deploy-capi
