@@ -268,6 +268,8 @@ spec:
       type: sa
     - name: docker-test-etcd
       type: etcd
+  etcd:
+    autoDeletePVCs: true
   persistence:
     type: pvc
     persistentVolumeClaim:
