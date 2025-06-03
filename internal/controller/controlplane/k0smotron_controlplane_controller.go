@@ -140,8 +140,8 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 
 		derr = clusterPatchHelper.Patch(ctx, cluster)
-		if err != nil {
-			log.Error(err, "Failed to update Cluster endpoint")
+		if derr != nil {
+			log.Error(derr, "Failed to update Cluster endpoint")
 			err = kerrors.NewAggregate([]error{err, derr})
 		}
 	}()
