@@ -284,7 +284,12 @@ kind-cluster:
 	kind create cluster --name k0smotron --config config/samples/capi/docker/kind.yaml
 
 .PHONY: kind-deploy-capi
-	clusterctl init --infrastructure docker
+kind-deploy-capi:
+	export EXP_MACHINE_POOL=true && \
+	export CLUSTER_TOPOLOGY="true" && \
+	export EXP_RUNTIME_SDK="true" && \
+	export EXP_MACHINE_SET_PREFLIGHT_CHECKS="true" && \
+	clusterctl init --core cluster-api --infrastructure docker
 
 .PHONY: kind-deploy-k0smotron
 kind-deploy-k0smotron: release k0smotron-image-bundle.tar
