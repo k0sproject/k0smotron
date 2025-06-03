@@ -62,13 +62,13 @@ type K0smotronControlPlaneStatus struct {
 	// Ready denotes that the control plane is ready
 	// +optional
 	Ready bool `json:"ready"`
-	// initialized denotes that the KubeadmControlPlane API Server is initialized and thus
+	// initialized denotes that the K0smotronControlPlane API Server is initialized and thus
 	// it can accept requests.
 	// NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
 	// The value of this field is never updated after provisioning is completed. Please use conditions
 	// to check the operational state of the control plane.
 	// +optional
-	Inititalized bool `json:"initialized"`
+	Initialized bool `json:"initialized"`
 	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
 	// +optional
 	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
