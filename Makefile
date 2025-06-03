@@ -269,6 +269,10 @@ docs-generate-k0smotron: $(CRDOC) ## Generate docs for k0smotron CRDs
 # Generate docs for all CRDs apis
 docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron
 
+## Generate all code, manifests, documentation, and release artifacts
+.PHONY: generate-all
+generate-all: clean generate manifests clusterapi-manifests docs-generate-reference release
+
 .PHONY: $(smoketests)
 $(smoketests): release k0smotron-image-bundle.tar
 	$(MAKE) -C inttest $@
