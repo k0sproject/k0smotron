@@ -22,6 +22,8 @@ import (
 	"time"
 
 	apps "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -38,6 +40,8 @@ import (
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
+
+const serviceAccountName = "k0smotron-hcp"
 
 var patchOpts []client.PatchOption = []client.PatchOption{
 	client.FieldOwner("k0smotron-operator"),
@@ -62,6 +66,9 @@ const (
 //+kubebuilder:rbac:groups=k0smotron.io,resources=clusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=k0smotron.io,resources=clusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=k0smotron.io,resources=clusters/finalizers,verbs=update
+// +kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
@@ -132,6 +139,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 
 		return ctrl.Result{}, nil
+	}
+
+	err := r.ensureServiceAccountRoleAndBinding(ctx, kmc)
+	if err != nil {
+		logger.Error(err, "Failed to ensure ServiceAccount, Role and RoleBinding")
+		return ctrl.Result{}, err
 	}
 
 	patchHelper, err := patch.NewHelper(kmc, r.Client)
@@ -244,6 +257,75 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	kmc.Status.ReconciliationStatus = "Reconciliation successful"
 	return ctrl.Result{}, nil
+}
+
+func (r *ClusterReconciler) ensureServiceAccountRoleAndBinding(ctx context.Context, kmc *km.Cluster) error {
+	sa := &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ServiceAccount",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceAccountName,
+			Namespace: kmc.Namespace,
+		},
+	}
+	err := r.Client.Patch(ctx, sa, client.Apply, patchOpts...)
+	if err != nil {
+		return fmt.Errorf("failed to patch ServiceAccount %s/%s: %w", sa.Namespace, sa.Name, err)
+	}
+
+	role := &rbacv1.Role{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "Role",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceAccountName,
+			Namespace: kmc.Namespace,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{""},
+				Resources: []string{"pods", "services", "configmaps"},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+		},
+	}
+
+	err = r.Client.Patch(ctx, role, client.Apply, patchOpts...)
+	if err != nil {
+		return fmt.Errorf("failed to patch Role %s/%s: %w", sa.Namespace, sa.Name, err)
+	}
+
+	roleBinding := &rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "RoleBinding",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceAccountName,
+			Namespace: kmc.Namespace,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: kmc.Namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     serviceAccountName,
+		},
+	}
+	err = r.Client.Patch(ctx, roleBinding, client.Apply, patchOpts...)
+	if err != nil {
+		return fmt.Errorf("failed to patch RoleBindingb %s/%s: %w", sa.Namespace, sa.Name, err)
+	}
+
+	return nil
 }
 
 func (r *ClusterReconciler) ensureCertificates(ctx context.Context, kmc *km.Cluster) error {

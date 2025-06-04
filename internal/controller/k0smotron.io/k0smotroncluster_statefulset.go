@@ -76,6 +76,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 					Annotations: annotations,
 				},
 				Spec: v1.PodSpec{
+					ServiceAccountName:           serviceAccountName,
 					AutomountServiceAccountToken: ptr.To(false),
 					Affinity: &v1.Affinity{PodAntiAffinity: &v1.PodAntiAffinity{
 						PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{

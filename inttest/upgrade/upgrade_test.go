@@ -118,8 +118,13 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	})
 	s.Require().NoError(err)
 
-	time.Sleep(time.Second)
-	_, err = kmcKC.CoreV1().ConfigMaps("default").Get(s.Context(), "test-old-cm", metav1.GetOptions{})
+	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {
+		_, err = kmcKC.CoreV1().ConfigMaps("default").Get(s.Context(), "test-old-cm", metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+		return true, nil
+	})
 	s.Require().NoError(err)
 
 	result, err := kc.RESTClient().Get().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters/kmc-test").DoRaw(s.Context())
