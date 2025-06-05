@@ -39,6 +39,7 @@ import (
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -123,6 +124,11 @@ func TestCAPIDockerClusterClassSuite(t *testing.T) {
 func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.ctx, _ = util.NewSuiteContext(s.T())
 
+	// Log test timeout information
+	if deadline, ok := s.ctx.Deadline(); ok {
+		s.T().Logf("Test context deadline: %v (remaining: %v)", deadline, time.Until(deadline))
+	}
+
 	// Push public key to worker authorized_keys
 	workerSSH, err := s.SSH(s.ctx, s.K0smotronNode(0))
 	s.Require().NoError(err)
@@ -146,36 +152,73 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
-		return localPort > 0, nil
+	s.T().Log("waiting for load balancer port to be available")
+	err = wait.PollUntilContextTimeout(s.ctx, 1*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
+		var err error
+		localPort, err = getLBPort("docker-test-cluster-lb")
+		if err != nil {
+			s.T().Logf("Failed to get LB port: %v", err)
+			return false, nil // retryable error
+		}
+		if localPort > 0 {
+			s.T().Logf("Load balancer port available: %d", localPort)
+			return true, nil
+		}
+		return false, nil
 	})
-	s.Require().NoError(err)
+	s.Require().NoError(err, "timed out waiting for load balancer port")
 
 	s.T().Log("waiting to see admin kubeconfig secret")
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for control-plane")
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		b, _ := s.client.RESTClient().
+	err = wait.PollUntilContextTimeout(s.ctx, 1*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
+		b, err := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
-		return string(b) == "ok", nil
+		if err != nil {
+			s.T().Logf("Failed to check control-plane health: %v", err)
+			return false, nil // retryable error
+		}
+
+		health := string(b)
+		if health != "ok" {
+			s.T().Logf("Control-plane health check: %s", health)
+		}
+		return health == "ok", nil
 	})
-	s.Require().NoError(err)
+	s.Require().NoError(err, "timed out waiting for control-plane to be healthy")
 
 	s.T().Log("waiting for worker nodes")
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		nodes, _ := kmcKC.CoreV1().Nodes().List(s.ctx, metav1.ListOptions{})
-		return len(nodes.Items) == 3, nil
+	err = wait.PollUntilContextTimeout(s.ctx, 1*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
+		nodes, err := kmcKC.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			s.T().Logf("Failed to list nodes: %v", err)
+			return false, nil // retryable error
+		}
+
+		currentCount := len(nodes.Items)
+		if currentCount != 3 {
+			s.T().Logf("Waiting for nodes: current=%d, expected=3", currentCount)
+			// Log detailed node status
+			for _, node := range nodes.Items {
+				ready := false
+				for _, cond := range node.Status.Conditions {
+					if cond.Type == corev1.NodeReady && cond.Status == corev1.ConditionTrue {
+						ready = true
+						break
+					}
+				}
+				s.T().Logf("  Node %s: Ready=%v, Phase=%s", node.Name, ready, node.Status.Phase)
+			}
+		}
+
+		return currentCount == 3, nil
 	})
-	s.Require().NoError(err)
+	s.Require().NoError(err, "timed out waiting for 3 worker nodes")
 }
 
 func (s *CAPIDockerClusterClassSuite) createCluster() {
@@ -246,7 +289,22 @@ func getLBPort(name string) (int, error) {
 		return 0, fmt.Errorf("failed to unmarshal inspect info from container %s: %w", name, err)
 	}
 
-	return strconv.Atoi(ports["6443/tcp"][0]["HostPort"])
+	portMappings, ok := ports["6443/tcp"]
+	if !ok || len(portMappings) == 0 {
+		return 0, fmt.Errorf("no port mapping found for 6443/tcp on container %s", name)
+	}
+
+	hostPort, ok := portMappings[0]["HostPort"]
+	if !ok || hostPort == "" {
+		return 0, fmt.Errorf("no host port found for 6443/tcp on container %s", name)
+	}
+
+	port, err := strconv.Atoi(hostPort)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse host port %s: %w", hostPort, err)
+	}
+
+	return port, nil
 }
 
 var clusterYaml = `
@@ -385,7 +443,7 @@ metadata:
   namespace: default
 spec:
   template:
-    spec: 
+    spec:
       pool: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
