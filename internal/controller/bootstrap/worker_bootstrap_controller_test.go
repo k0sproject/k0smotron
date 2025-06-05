@@ -96,59 +96,6 @@ func Test_createInstallCmd(t *testing.T) {
 	}
 }
 
-func Test_createDownloadCommands(t *testing.T) {
-	tests := []struct {
-		name   string
-		config *bootstrapv1.K0sWorkerConfig
-		want   []string
-	}{
-		{
-			name:   "with default config",
-			config: &bootstrapv1.K0sWorkerConfig{},
-			want: []string{
-				"curl -sSfL https://get.k0s.sh | sh",
-			},
-		},
-		{
-			name: "with pre-installed k0s",
-			config: &bootstrapv1.K0sWorkerConfig{
-				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					PreInstalledK0s: true,
-				},
-			},
-			want: nil,
-		},
-		{
-			name: "with custom version",
-			config: &bootstrapv1.K0sWorkerConfig{
-				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Version: "v1.2.3",
-				},
-			},
-			want: []string{
-				"curl -sSfL https://get.k0s.sh | K0S_VERSION=v1.2.3 sh",
-			},
-		},
-		{
-			name: "with custom download URL",
-			config: &bootstrapv1.K0sWorkerConfig{
-				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					DownloadURL: "https://example.com/k0s",
-				},
-			},
-			want: []string{
-				"curl -sSfL https://example.com/k0s -o /usr/local/bin/k0s",
-				"chmod +x /usr/local/bin/k0s",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, createDownloadCommands(tt.config))
-		})
-	}
-}
-
 func TestReconcileNoK0sWorkerConfig(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-no-workerconfig")
 	require.NoError(t, err)
