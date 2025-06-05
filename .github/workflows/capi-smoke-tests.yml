@@ -78,6 +78,8 @@ jobs:
           sed -e 's#%pwd%#'`pwd`'#g' ./hack/capi-ci/config.yaml > config.yaml
 
       - name: Install cluster api components
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           CLUSTER_TOPOLOGY=true clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure k0sproject-k0smotron,docker --config config.yaml
           kubectl wait --for=condition=available -n cert-manager deployment/cert-manager-webhook --timeout=300s
@@ -122,4 +124,4 @@ jobs:
             /tmp/${{ inputs.smoke-suite }}-k0smotron-*.log
             /tmp/${{ inputs.smoke-suite }}-support-bundle.tar.gz
             /tmp/${{ inputs.smoke-suite }}-docker-*.log
-    
+
