@@ -45,6 +45,7 @@ import (
 	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 )
 
@@ -251,7 +252,7 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	}
 	files = append(files, resolvedFiles...)
 
-	downloadCommands := createDownloadCommands(scope.Config)
+	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
 	installCmd := createInstallCmd(scope)
 
 	startCmd := `(command -v systemctl > /dev/null 2>&1 && systemctl start k0sworker) || ` + // systemd
@@ -340,26 +341,6 @@ func createInstallCmd(scope *Scope) string {
 	}
 	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
 	return strings.Join(installCmd, " ")
-}
-
-func createDownloadCommands(config *bootstrapv1.K0sWorkerConfig) []string {
-	if config.Spec.PreInstalledK0s {
-		return nil
-	}
-
-	if config.Spec.DownloadURL != "" {
-		return []string{
-			fmt.Sprintf("curl -sSfL %s -o /usr/local/bin/k0s", config.Spec.DownloadURL),
-			"chmod +x /usr/local/bin/k0s",
-		}
-	}
-
-	// Figure out version to download if download URL is not set
-	if config.Spec.Version != "" {
-		return []string{fmt.Sprintf("curl -sSfL https://get.k0s.sh | K0S_VERSION=%s sh", config.Spec.Version)}
-	}
-
-	return []string{"curl -sSfL https://get.k0s.sh | sh"}
 }
 
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {

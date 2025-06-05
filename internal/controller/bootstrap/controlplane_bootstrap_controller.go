@@ -54,6 +54,7 @@ import (
 	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 	"github.com/k0sproject/version"
 )
@@ -349,7 +350,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	files = append(files, resolvedFiles...)
 	files = append(files, genShutdownServiceFiles()...)
 
-	downloadCommands := createCPDownloadCommands(scope.Config)
+	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
 
 	commands := scope.Config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
@@ -585,26 +586,6 @@ func (c *ControlPlaneController) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&bootstrapv1.K0sControllerConfig{}).
 		Complete(c)
-}
-
-func createCPDownloadCommands(config *bootstrapv1.K0sControllerConfig) []string {
-	if config.Spec.PreInstalledK0s {
-		return nil
-	}
-
-	if config.Spec.DownloadURL != "" {
-		return []string{
-			fmt.Sprintf("curl -sSfL %s -o /usr/local/bin/k0s", config.Spec.DownloadURL),
-			"chmod +x /usr/local/bin/k0s",
-		}
-	}
-
-	// Figure out version to download if download URL is not set
-	if config.Spec.Version != "" {
-		return []string{fmt.Sprintf("curl -sSfL https://get.k0s.sh | K0S_VERSION=%s sh", config.Spec.Version)}
-	}
-
-	return []string{"curl -sSfL https://get.k0s.sh | sh"}
 }
 
 func createCPInstallCmd(scope *ControllerScope) string {
