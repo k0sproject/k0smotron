@@ -243,6 +243,27 @@ $(CRDOC): Makefile.variables | $(LOCALBIN)
 docs-generate-reference: $(CRDOC)
 	$(CRDOC) --resources config/crd/bases/ --output docs/resource-reference.md
 
+.PHONY: generate-all
+generate-all: ## Generate all code, manifests, and documentation
+	@echo "=========================================="
+	@echo "Starting complete code generation..."
+	@echo "=========================================="
+	@echo "[1/3] Generating CRDs and manifests..."
+	@$(MAKE) manifests
+	@echo "✓ CRDs and manifests generated"
+	@echo ""
+	@echo "[2/3] Generating deepcopy methods and cluster API manifests..."
+	@$(MAKE) generate
+	@echo "✓ Code and cluster API manifests generated"
+	@echo ""
+	@echo "[3/3] Generating documentation reference..."
+	@$(MAKE) docs-generate-reference
+	@echo "✓ Documentation generated"
+	@echo ""
+	@echo "=========================================="
+	@echo "✅ All code generation completed successfully!"
+	@echo "=========================================="
+
 .PHONY: $(smoketests)
 $(smoketests): release k0smotron-image-bundle.tar
 	$(MAKE) -C inttest $@
