@@ -55,6 +55,14 @@ import (
 	"github.com/k0sproject/version"
 )
 
+const (
+	// AnnotationKeyManagedBy is the annotation key that indicates which controller manages the infrastructure object
+	AnnotationKeyManagedBy = "cluster.x-k8s.io/managed-by"
+
+	// AnnotationValueManagedByK0smotron is the value for the managed-by annotation
+	AnnotationValueManagedByK0smotron = "k0smotron"
+)
+
 type K0smotronController struct {
 	client.Client
 	SecretCachingClient client.Client
@@ -75,7 +83,6 @@ type Scope struct {
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;patch
 
 func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
-
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
 	log.Info("Reconciling K0smotronControlPlane")
 
@@ -142,7 +149,19 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		derr = clusterPatchHelper.Patch(ctx, cluster)
 		if derr != nil {
-			log.Error(derr, "Failed to update Cluster endpoint")
+			log.Error(err, "Failed to update Cluster endpoint")
+			err = kerrors.NewAggregate([]error{err, derr})
+		}
+
+		if err != nil {
+			// We shouldn't proceed with Infrastructure patching
+			// if we couldn't update the Cluster, K0smotronContorlPlane object(s)
+			return
+		}
+
+		derr = c.patchInfrastructureStatus(ctx, cluster, kcp.Status.Ready)
+		if derr != nil {
+			log.Error(derr, "Failed to patch Infrastructure object status")
 			err = kerrors.NewAggregate([]error{err, derr})
 		}
 	}()
@@ -190,7 +209,6 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	kcp.Status.Initialized = true
 
 	return res, err
-
 }
 
 // watchExternalAddress watches the external address of the control plane and updates the status accordingly
@@ -245,7 +263,6 @@ func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *
 		}
 		return true, nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -391,9 +408,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.N
 
 	kcp.Status.Replicas = int32(len(contolPlanePods.Items))
 
-	var (
-		updatedReplicas, readyReplicas, unavailableReplicas int
-	)
+	var updatedReplicas, readyReplicas, unavailableReplicas int
 
 	desiredVersionStr := kcp.Spec.Version
 	if !strings.Contains(desiredVersionStr, "-") {
@@ -464,6 +479,62 @@ func (c *K0smotronController) getComparableK0sVersionRunningInPod(ctx context.Co
 	// necessary to match their format.
 	currentVersionStr = strings.Replace(currentVersionStr, "+", "-", 1)
 	return version.NewVersion(currentVersionStr)
+}
+
+// patchInfrastructureStatus updates the ready status of the infrastructure object referenced by the cluster
+func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, cluster *clusterv1.Cluster, ready bool) error {
+	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
+
+	// Skip if no infrastructure reference exists
+	if cluster.Spec.InfrastructureRef == nil {
+		return nil
+	}
+
+	// Get the infrastructure object
+	infraObj := &unstructured.Unstructured{}
+	infraObj.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
+	infraObjKey := types.NamespacedName{
+		Namespace: cluster.Spec.InfrastructureRef.Namespace,
+		Name:      cluster.Spec.InfrastructureRef.Name,
+	}
+
+	if err := c.Client.Get(ctx, infraObjKey, infraObj); err != nil {
+		return fmt.Errorf("failed to get Infrastructure object: %w", err)
+	}
+
+	// Check if the object has the required annotation
+	annotations := infraObj.GetAnnotations()
+	if annotations == nil || annotations[AnnotationKeyManagedBy] != AnnotationValueManagedByK0smotron {
+		return nil
+	}
+
+	// Check current status.ready value
+	currentReady, found, err := unstructured.NestedBool(infraObj.Object, "status", "ready")
+	if err != nil {
+		return fmt.Errorf("failed to get ready status: %w", err)
+	}
+
+	// Only patch if status is not set or different from desired value
+	if !found || currentReady != ready {
+		log.Info("Patching Infrastructure object status", "ready", ready)
+
+		// Apply the patch
+		err = c.Client.Status().Patch(
+			ctx,
+			infraObj,
+			client.RawPatch(
+				types.MergePatchType,
+				fmt.Appendf(nil, `{"status": {"ready": %t}}`, ready),
+			),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to patch Infrastructure object: %w", err)
+		}
+
+		log.Info("Successfully patched Infrastructure object status")
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
