@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -44,6 +45,8 @@ const (
 	clusterLabel          = "k0smotron.io/cluster"
 	statefulSetAnnotation = "k0smotron.io/statefulset-hash"
 )
+
+var versionRegex = regexp.MustCompile(`v\d+.\d+.\d+-k0s.\d+`)
 
 // findStatefulSetPod returns a first running pod from a StatefulSet
 func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
@@ -543,6 +546,8 @@ func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc *km.Cl
 	if err != nil && apierrors.IsNotFound(err) {
 		return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 	} else if err == nil {
+		detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
+
 		if !isStatefulSetsEqual(&statefulSet, foundStatefulSet) {
 			return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 		}
@@ -555,6 +560,16 @@ func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc *km.Cl
 	}
 
 	return err
+}
+
+// If the version is empty from the spec, we try to detect it from the statefulset image.
+func detectAndSetCurrentClusterVersion(foundStatefulSet *apps.StatefulSet, kmc *km.Cluster) {
+	if kmc.Spec.Version == "" {
+		imageParts := strings.Split(foundStatefulSet.Spec.Template.Spec.Containers[0].Image, ":")
+		if len(imageParts) > 1 && versionRegex.Match([]byte(imageParts[1])) {
+			kmc.Spec.Version = imageParts[1]
+		}
+	}
 }
 
 func isStatefulSetsEqual(new, old *apps.StatefulSet) bool {
