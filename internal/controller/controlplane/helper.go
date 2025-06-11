@@ -227,19 +227,6 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 	return infraMachine, nil
 }
 
-func (c *K0sController) deleteMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
-	infraMachine, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
-	if err != nil {
-		return err
-	}
-
-	err = c.Client.Delete(ctx, infraMachine)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return fmt.Errorf("error deleting machine implementation: %w", err)
-	}
-	return nil
-}
-
 func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
 	infraMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
 	if err != nil {

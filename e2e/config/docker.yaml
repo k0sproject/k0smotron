@@ -12,8 +12,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: v1.8.5
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.5/core-components.yaml
+      - name: v1.10.2
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.2/core-components.yaml
         type: url
         contract: v1beta1
         files:
@@ -24,8 +24,8 @@ providers:
   - name: docker
     type: InfrastructureProvider
     versions:
-      - name: v1.8.1
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.1/infrastructure-components-development.yaml
+      - name: v1.10.2
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.2/infrastructure-components-development.yaml
         type: url
         contract: v1beta1
         files:
@@ -38,6 +38,7 @@ providers:
       - sourcePath: "../data/infrastructure-docker/cluster-template-remediation.yaml"
       - sourcePath: "../data/infrastructure-docker/cluster-template-admission-webhook-t1.yaml"
       - sourcePath: "../data/infrastructure-docker/cluster-template-admission-webhook-t2.yaml"
+      - sourcePath: "../data/infrastructure-docker/cluster-template-custom-haproxy.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -72,8 +73,6 @@ variables:
   KUBERNETES_VERSION_SECOND_UPGRADE_TO: "v1.31.2+k0s.0"
   IP_FAMILY: "IPv4"
   KIND_IMAGE_VERSION: "v1.30.0"
-  # Used during clusterctl upgrade test
-  CAPI_CORE_VERSION: "1.8.5"
   # Enabling the feature flags by setting the env variables.
   CLUSTER_TOPOLOGY: "true"
   EXP_MACHINE_POOL: "true"
