@@ -107,7 +107,7 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 }
 
 func InstallWebhookChecker(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
-	return CreateFromYAML(ctx, kc, rc, os.Getenv("WEBHOOK_CHECKEr_INSTALL_YAML"))
+	return CreateFromYAML(ctx, kc, rc, os.Getenv("WEBHOOK_CHECKER_INSTALL_YAML"))
 }
 
 func InstallCertManager(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {

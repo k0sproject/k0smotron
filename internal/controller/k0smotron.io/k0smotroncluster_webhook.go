@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,8 +22,22 @@ func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error 
 		return fmt.Errorf("expected a Cluster object but got %T", obj)
 	}
 
+	if kmc.Spec.Replicas == 0 {
+		kmc.Spec.Replicas = 1
+	}
+
 	if kmc.Spec.Version == "" {
 		kmc.Spec.Version = km.DefaultK0SVersion
+	}
+
+	if kmc.Spec.Service.Type == "" {
+		kmc.Spec.Service.Type = corev1.ServiceTypeClusterIP
+		kmc.Spec.Service.APIPort = 30443
+		kmc.Spec.Service.KonnectivityPort = 30132
+	}
+
+	if kmc.Spec.Etcd.Image == "" {
+		kmc.Spec.Etcd.Image = km.DefaultEtcdImage
 	}
 
 	return nil
