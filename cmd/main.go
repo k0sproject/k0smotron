@@ -234,6 +234,11 @@ func main() {
 			os.Exit(1)
 		}
 
+		if err = (&controller.ClusterDefaulter{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "k0smotron.Cluster")
+			os.Exit(1)
+		}
+
 		if err = (&controller.JoinTokenRequestReconciler{
 			Client:     mgr.GetClient(),
 			Scheme:     mgr.GetScheme(),
