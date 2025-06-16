@@ -28,8 +28,10 @@ import (
 	"github.com/go-logr/logr"
 	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
-	"github.com/k0sproject/rig"
+	rig "github.com/k0sproject/rig/v2"
+	rigssh "github.com/k0sproject/rig/v2/protocol/ssh"
 	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type SSHProvisioner struct {
@@ -55,7 +57,9 @@ const (
 // 2. Execute the bootstrap script
 // 3. Check sentinel file at /run/cluster-api/bootstrap-success.complete
 // 4. success
-func (p *SSHProvisioner) Provision(_ context.Context) error {
+func (p *SSHProvisioner) Provision(ctx context.Context) error {
+	log := log.FromContext(ctx).WithValues("remotemachine", p.machine.Name)
+
 	// Parse the bootstrap data
 	cloudInit := &cloudinit.CloudInit{}
 	err := yaml.Unmarshal(p.bootstrapData, cloudInit)
@@ -63,45 +67,52 @@ func (p *SSHProvisioner) Provision(_ context.Context) error {
 		return fmt.Errorf("failed to parse bootstrap data: %w", err)
 	}
 
-	authM, err := rig.ParseSSHPrivateKey([]byte(p.sshKey), nil)
+	authM, err := rigssh.ParseSSHPrivateKey(p.sshKey, nil)
 	if err != nil {
 		return fmt.Errorf("failed to parse ssh key: %w", err)
 	}
 
-	connection := &rig.Connection{
-		SSH: &rig.SSH{
-			Address:     p.machine.Spec.Address,
-			Port:        p.machine.Spec.Port,
-			User:        p.machine.Spec.User,
-			AuthMethods: authM,
-		},
+	config := rigssh.Config{
+		Address:     p.machine.Spec.Address,
+		Port:        p.machine.Spec.Port,
+		User:        p.machine.Spec.User,
+		AuthMethods: authM,
+	}
+	rigClient, err := rig.NewClient(rig.WithConnectionConfigurer(&config))
+	if err != nil {
+		return fmt.Errorf("failed to create SSH client: %w", err)
 	}
 
-	if err := connection.Connect(); err != nil {
+	err = rigClient.Connect(ctx)
+	if err != nil {
 		return fmt.Errorf("failed to connect to host: %w", err)
 	}
+	defer rigClient.Disconnect()
 
-	defer connection.Disconnect()
+	if p.machine.Spec.UseSudo {
+		// If sudo is required, wrap the client with sudo capabilities
+		rigClient = rigClient.Sudo()
+	}
 
 	// Write files first
 	for _, file := range cloudInit.Files {
-		if err := p.uploadFile(connection, file); err != nil {
+		if err := p.uploadFile(rigClient, file); err != nil {
 			return fmt.Errorf("failed to upload file: %w", err)
 		}
 	}
 
 	// Execute the bootstrap script commands
 	for _, cmd := range cloudInit.RunCmds {
-		output, err := connection.ExecOutput(cmd)
+		output, err := rigClient.ExecOutput(cmd)
 		if err != nil {
 			p.log.Error(err, "failed to run command", "output", output)
 			return fmt.Errorf("failed to run command: %w", err)
 		}
+		log.Info("executed command", "command", cmd, "output", output)
 	}
 
 	// Check for sentinel file
-	fsys := connection.SudoFsys()
-	if _, err := fsys.Stat("/run/cluster-api/bootstrap-success.complete"); err != nil {
+	if _, err := rigClient.Sudo().FS().Stat("/run/cluster-api/bootstrap-success.complete"); err != nil {
 		return errors.New("bootstrap sentinel file not found")
 	}
 
@@ -114,30 +125,38 @@ func (p *SSHProvisioner) Provision(_ context.Context) error {
 // 2. Stops k0s
 // 3. Removes node from etcd
 // 4. Runs k0s reset
-func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) error {
+func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) error {
 	if mode == ModeNonK0s {
 		return nil
 	}
 
-	authM, err := rig.ParseSSHPrivateKey(p.sshKey, nil)
+	authM, err := rigssh.ParseSSHPrivateKey(p.sshKey, nil)
 	if err != nil {
 		return fmt.Errorf("failed to parse ssh key: %w", err)
 	}
 
-	connection := &rig.Connection{
-		SSH: &rig.SSH{
-			Address:     p.machine.Spec.Address,
-			Port:        p.machine.Spec.Port,
-			User:        p.machine.Spec.User,
-			AuthMethods: authM,
-		},
+	config := rigssh.Config{
+		Address:     p.machine.Spec.Address,
+		Port:        p.machine.Spec.Port,
+		User:        p.machine.Spec.User,
+		AuthMethods: authM,
 	}
 
-	if err := connection.Connect(); err != nil {
-		p.log.Error(err, "failed to connect to host")
+	rigClient, err := rig.NewClient(rig.WithConnectionConfigurer(&config))
+	if err != nil {
+		return fmt.Errorf("failed to create SSH client: %w", err)
 	}
 
-	defer connection.Disconnect()
+	err = rigClient.Connect(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to connect to host: %w", err)
+	}
+	defer rigClient.Disconnect()
+
+	if p.machine.Spec.UseSudo {
+		// If sudo is required, wrap the client with sudo capabilities
+		rigClient = rigClient.Sudo()
+	}
 
 	var cmds []string
 	if mode == ModeController {
@@ -149,7 +168,7 @@ func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) erro
 	cmds = append(cmds, "k0s reset")
 
 	for _, cmd := range cmds {
-		output, err := connection.ExecOutput(cmd)
+		output, err := rigClient.ExecOutput(cmd)
 		if err != nil {
 			p.log.Error(err, "failed to run command", "output", output)
 		}
@@ -158,15 +177,16 @@ func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) erro
 	return nil
 }
 
-func (p *SSHProvisioner) uploadFile(conn *rig.Connection, file cloudinit.File) error {
-	fsys := conn.SudoFsys()
+func (p *SSHProvisioner) uploadFile(client *rig.Client, file cloudinit.File) error {
+	fsys := client.Sudo().FS()
 	// Ensure base dir exists for target
 	dir := filepath.Dir(file.Path)
 	perms, err := file.PermissionsAsInt()
 	if err != nil {
 		return fmt.Errorf("failed to parse permissions: %w", err)
 	}
-	if err := fsys.MkDirAll(dir, fs.FileMode(perms)); err != nil {
+
+	if err := fsys.MkdirAll(dir, fs.FileMode(perms)); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
