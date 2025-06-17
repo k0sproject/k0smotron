@@ -23,3 +23,7 @@ import (
 func Nodes(client Provider[*corev1.NodeList]) *Watcher[corev1.Node] {
 	return FromClient[*corev1.NodeList, corev1.Node](client)
 }
+
+func Pods(client Provider[*corev1.PodList]) *Watcher[corev1.Pod] {
+	return FromClient[*corev1.PodList, corev1.Pod](client)
+}

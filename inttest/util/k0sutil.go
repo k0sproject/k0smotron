@@ -142,6 +142,25 @@ func RetryWatchErrors(logf LogfFn) watch.ErrorCallback {
 	}
 }
 
+func WaitForPod(ctx context.Context, kc *kubernetes.Clientset, name, namespace string) error {
+	return watch.Pods(kc.CoreV1().Pods(namespace)).
+		WithObjectName(name).
+		WithErrorCallback(RetryWatchErrors(logfFrom(ctx))).
+		Until(ctx, func(pod *corev1.Pod) (bool, error) {
+			for _, cond := range pod.Status.Conditions {
+				if cond.Type == corev1.PodReady {
+					if cond.Status == corev1.ConditionTrue {
+						return true, nil
+					}
+
+					break
+				}
+			}
+
+			return false, nil
+		})
+}
+
 // WaitForDeployment waits for the Deployment with the given name to become
 // available as long as the given context isn't canceled.
 func WaitForDeployment(ctx context.Context, kc *kubernetes.Clientset, name, namespace string) error {

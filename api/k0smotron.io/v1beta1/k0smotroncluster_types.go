@@ -121,14 +121,15 @@ type Mount struct {
 
 const (
 	defaultK0SImage   = "k0sproject/k0s"
-	defaultK0SVersion = "v1.27.9-k0s.0"
+	DefaultK0SVersion = "v1.27.9-k0s.0"
 	DefaultK0SSuffix  = "k0s.0"
+	DefaultEtcdImage  = "quay.io/k0sproject/etcd:v3.5.13"
 )
 
 func (c *ClusterSpec) GetImage() string {
 	k0sVersion := c.Version
 	if k0sVersion == "" {
-		k0sVersion = defaultK0SVersion
+		k0sVersion = DefaultK0SVersion
 	}
 
 	if !strings.Contains(k0sVersion, "-k0s.") {
