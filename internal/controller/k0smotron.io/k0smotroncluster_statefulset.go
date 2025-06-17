@@ -163,6 +163,10 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 				}},
 		}}
 
+	if kmc.Spec.ServiceAccount != "" {
+		statefulSet.Spec.Template.Spec.ServiceAccountName = kmc.Spec.ServiceAccount
+	}
+
 	if kmc.Spec.Monitoring.Enabled {
 		if kmc.Spec.Persistence.Type == "" {
 			kmc.Spec.Persistence.Type = "emptyDir"

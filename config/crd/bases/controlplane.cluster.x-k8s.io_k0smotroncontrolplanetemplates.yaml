@@ -4439,6 +4439,10 @@ spec:
                         required:
                         - type
                         type: object
+                      serviceAccount:
+                        description: ServiceAccount defines the service account to
+                          be used by both k0s and etcd StatefulSets.
+                        type: string
                       topologySpreadConstraints:
                         description: |-
                           TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.

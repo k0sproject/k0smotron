@@ -42,6 +42,9 @@ type ClusterSpec struct {
 	// will pick it automatically. Must not include the image tag.
 	//+kubebuilder:default=k0sproject/k0s
 	Image string `json:"image,omitempty"`
+	// ServiceAccount defines the service account to be used by both k0s and etcd StatefulSets.
+	//+kubebuilder:validation:Optional
+	ServiceAccount string `json:"serviceAccount,omitempty"`
 	// Version defines the k0s version to be deployed. If empty k0smotron
 	// will pick it automatically.
 	//+kubebuilder:validation:Optional

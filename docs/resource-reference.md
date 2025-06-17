@@ -3512,6 +3512,13 @@ Recommended value is 3.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>serviceAccount</b></td>
+        <td>string</td>
+        <td>
+          ServiceAccount defines the service account to be used by both k0s and etcd StatefulSets.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespectopologyspreadconstraintsindex">topologySpreadConstraints</a></b></td>
         <td>[]object</td>
         <td>
@@ -12828,6 +12835,13 @@ Recommended value is 3.<br/>
           Service defines the service configuration.<br/>
           <br/>
             <i>Default</i>: map[apiPort:30443 konnectivityPort:30132 type:ClusterIP]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serviceAccount</b></td>
+        <td>string</td>
+        <td>
+          ServiceAccount defines the service account to be used by both k0s and etcd StatefulSets.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -39085,6 +39099,13 @@ Recommended value is 3.<br/>
           Service defines the service configuration.<br/>
           <br/>
             <i>Default</i>: map[apiPort:30443 konnectivityPort:30132 type:ClusterIP]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serviceAccount</b></td>
+        <td>string</td>
+        <td>
+          ServiceAccount defines the service account to be used by both k0s and etcd StatefulSets.<br/>
         </td>
         <td>false</td>
       </tr><tr>

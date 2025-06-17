@@ -376,6 +376,10 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, existingSts
 		},
 	}
 
+	if kmc.Spec.ServiceAccount != "" {
+		statefulSet.Spec.Template.Spec.ServiceAccountName = kmc.Spec.ServiceAccount
+	}
+
 	if kmc.Spec.TopologySpreadConstraints != nil {
 		statefulSet.Spec.Template.Spec.TopologySpreadConstraints = kmc.Spec.TopologySpreadConstraints
 	}
