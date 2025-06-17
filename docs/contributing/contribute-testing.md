@@ -22,8 +22,6 @@ K0smotron uses [go test](https://pkg.go.dev/testing) as the foundation for all o
 
 K0smotron's end-to-end (E2E) testing leverages the [CAPI E2E framework](https://pkg.go.dev/sigs.k8s.io/cluster-api/test/framework) to provide configurability and utilities that support various phases of E2E testing, including the creation and configuration of the management cluster, waiting for specific resources, log dumping, and more.
 
-To fully utilize CAPI's E2E framework, it is necessary to integrate [Ginkgo](https://onsi.github.io/ginkgo/) into the project. However, in K0smotron, we intentionally avoid using this testing framework for several reasons, primarily to maintain a unified approach to writing tests using standard Go testing conventions. As a result, certain methods from CAPI's E2E framework have been reimplemented within K0smotron to remove their direct dependency on Ginkgo.
-
 ### Run E2E
 
 You can run the tests using the command:
