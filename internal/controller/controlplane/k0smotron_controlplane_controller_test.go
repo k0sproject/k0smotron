@@ -45,6 +45,7 @@ func TestIsClusterSpecSynced(t *testing.T) {
 								"externalAddress": "172.18.0.2",
 								"port":            int64(30443),
 								"sans": []interface{}{
+									"custom.sans.domain",
 									"10.96.138.152",
 									"172.18.0.2",
 									"kmc-docker-test-nodeport",
@@ -85,6 +86,13 @@ func TestIsClusterSpecSynced(t *testing.T) {
 							"namespace": "kube-system",
 						},
 						"spec": map[string]interface{}{
+							"api": map[string]interface{}{
+								"externalAddress": "172.18.0.2",
+								"port":            int64(30443),
+								"sans": []interface{}{
+									"custom.sans.domain",
+								},
+							},
 							"network": map[string]interface{}{
 								"clusterDomain": "cluster.local",
 								"podCIDR":       "192.168.0.0/16",

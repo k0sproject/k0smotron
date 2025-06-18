@@ -374,6 +374,18 @@ func isClusterSpecSynced(kmcSpec, kcpSpec kapi.ClusterSpec) (bool, error) {
 	// certificate references based on the original Cluster definition.
 	overridenKmcSpec.CertificateRefs = kmcSpec.CertificateRefs
 
+	// K0smotron Cluster controller will add additional SANs, such as those related to the externaladdress or to the service that exposes the controlplanes.
+	// Therefore, we explicitly reset the SANs references based on the original Cluster definition.
+	if kmcSpec.K0sConfig != nil {
+		kmcSans, found, err := unstructured.NestedSlice(kmcSpec.K0sConfig.Object, "spec", "api", "sans")
+		if found && err == nil {
+			err = unstructured.SetNestedField(overridenKmcSpec.K0sConfig.Object, kmcSans, "spec", "api", "sans")
+			if err != nil {
+				return false, fmt.Errorf("failed to set api.sans in K0smotronCluster spec: %w", err)
+			}
+		}
+	}
+
 	return reflect.DeepEqual(kmcSpec, *overridenKmcSpec), nil
 }
 
