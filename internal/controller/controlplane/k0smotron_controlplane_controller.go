@@ -468,12 +468,12 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.N
 	kcp.Status.UnavailableReplicas = int32(unavailableReplicas)
 
 	if kcp.Status.ReadyReplicas > 0 {
-		kcp.Status.Version = minimumVersion.String()
+		kcp.Status.Version = fmt.Sprintf("v%s", minimumVersion.Core().String())
 	}
 
 	// if no replicas are yet available or the desired version is not in the current state of the
 	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
-	if kcp.Status.UnavailableReplicas > 0 || desiredVersion.String() != kcp.Status.Version {
+	if kcp.Status.UnavailableReplicas > 0 || fmt.Sprintf("v%s", desiredVersion.Core().String()) != kcp.Status.Version {
 		return ErrNotReady
 	}
 
