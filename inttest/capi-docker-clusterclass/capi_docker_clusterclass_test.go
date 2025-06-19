@@ -64,9 +64,85 @@ func (s *CAPIDockerClusterClassSuite) SetupSuite() {
 }
 
 func (s *CAPIDockerClusterClassSuite) TearDownSuite() {
-	// Custom teardown with better error handling for log collection
 	s.T().Log("Starting custom teardown")
 
+	// Dump Kubernetes cluster state for debugging
+	s.dumpClusterState()
+
+	// Collect node logs if available
+	s.collectNodeLogs()
+
+	// Call the parent teardown
+	s.FootlooseSuite.TearDownSuite()
+}
+
+func (s *CAPIDockerClusterClassSuite) dumpClusterState() {
+	s.T().Log("=== Dumping Kubernetes Cluster State ===")
+
+	// 1. Nodes
+	s.T().Log("=== Dumping all Nodes ===")
+	s.dumpResource("nodes", "", "")
+
+	// 2. Pods (all namespaces)
+	s.T().Log("=== Dumping all Pods ===")
+	s.dumpResource("pods", "", "-A")
+
+	// 3. Cluster API resources
+	s.T().Log("=== Dumping Cluster API Resources ===")
+
+	// Clusters
+	s.dumpResource("clusters.cluster.x-k8s.io", "", "-A")
+
+	// Machines
+	s.dumpResource("machines.cluster.x-k8s.io", "", "-A")
+
+	// MachineSets
+	s.dumpResource("machinesets.cluster.x-k8s.io", "", "-A")
+
+	// MachineDeployments
+	s.dumpResource("machinedeployments.cluster.x-k8s.io", "", "-A")
+
+	// K0sControlPlanes
+	s.dumpResource("k0scontrolplanes.controlplane.cluster.x-k8s.io", "", "-A")
+
+	// K0smotronClusters
+	s.dumpResource("clusters.k0smotron.io", "", "-A")
+
+	// DockerMachines (infrastructure provider specific)
+	s.dumpResource("dockermachines.infrastructure.cluster.x-k8s.io", "", "-A")
+
+	// DockerClusters
+	s.dumpResource("dockerclusters.infrastructure.cluster.x-k8s.io", "", "-A")
+
+	// RemoteMachines
+	s.dumpResource("remotemachines.infrastructure.cluster.x-k8s.io", "", "-A")
+
+	// PooledRemoteMachines
+	s.dumpResource("pooledremotemachines.infrastructure.cluster.x-k8s.io", "", "-A")
+}
+
+func (s *CAPIDockerClusterClassSuite) dumpResource(resource, name, flags string) {
+	args := []string{"get", resource}
+	if name != "" {
+		args = append(args, name)
+	}
+	if flags != "" {
+		args = append(args, flags)
+	}
+	args = append(args, "-o", "yaml")
+
+	out, err := exec.Command("kubectl", args...).CombinedOutput()
+	if err != nil {
+		s.T().Logf("Failed to get %s: %v", resource, err)
+		if len(out) > 0 {
+			s.T().Logf("Output: %s", string(out))
+		}
+	} else {
+		s.T().Logf("\n=== %s ===\n%s", resource, string(out))
+	}
+}
+
+func (s *CAPIDockerClusterClassSuite) collectNodeLogs() {
 	// Try to collect logs if available, but don't fail if they're not
 	if s.K0smotronWorkerCount > 0 {
 		for i := 0; i < s.K0smotronWorkerCount; i++ {
@@ -100,9 +176,6 @@ func (s *CAPIDockerClusterClassSuite) TearDownSuite() {
 			ssh.Disconnect()
 		}
 	}
-
-	// Call the parent teardown
-	s.FootlooseSuite.TearDownSuite()
 }
 
 //func TestCAPIDockerClusterClassSuite(t *testing.T) {
