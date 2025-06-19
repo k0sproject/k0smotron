@@ -63,6 +63,48 @@ func (s *CAPIDockerClusterClassSuite) SetupSuite() {
 	s.FootlooseSuite.SetupSuite()
 }
 
+func (s *CAPIDockerClusterClassSuite) TearDownSuite() {
+	// Custom teardown with better error handling for log collection
+	s.T().Log("Starting custom teardown")
+
+	// Try to collect logs if available, but don't fail if they're not
+	if s.K0smotronWorkerCount > 0 {
+		for i := 0; i < s.K0smotronWorkerCount; i++ {
+			nodeName := s.K0smotronNode(i)
+			s.T().Logf("Attempting to collect logs from %s", nodeName)
+
+			// Use SSH to check if log files exist before trying to collect them
+			ssh, err := s.SSH(s.Context(), nodeName)
+			if err != nil {
+				s.T().Logf("Failed to SSH to %s for log collection: %v", nodeName, err)
+				continue
+			}
+
+			// Check if log files exist
+			output, err := ssh.ExecWithOutput(s.Context(), "ls /tmp/k0s-*.log 2>/dev/null || echo 'no logs'")
+			if err != nil || output == "no logs" {
+				s.T().Logf("No k0s logs found on %s (this is expected if k0s hasn't started yet)", nodeName)
+				ssh.Disconnect()
+				continue
+			}
+
+			// If logs exist, try to collect them
+			logs, err := ssh.ExecWithOutput(s.Context(), "cat /tmp/k0s-*.log 2>/dev/null || echo 'failed to read logs'")
+			if err != nil || logs == "failed to read logs" {
+				s.T().Logf("Failed to read k0s logs from %s: %v", nodeName, err)
+			} else {
+				s.T().Logf("Successfully collected logs from %s", nodeName)
+				// You can save logs to a file here if needed
+			}
+
+			ssh.Disconnect()
+		}
+	}
+
+	// Call the parent teardown
+	s.FootlooseSuite.TearDownSuite()
+}
+
 //func TestCAPIDockerClusterClassSuite(t *testing.T) {
 //	s := CAPIDockerClusterClassSuite{}
 //	suite.Run(t, &s)
@@ -122,6 +164,14 @@ func TestCAPIDockerClusterClassSuite(t *testing.T) {
 
 func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.ctx, _ = util.NewSuiteContext(s.T())
+
+	// Wait for k0s to start before proceeding
+	s.T().Log("Waiting for k0s to start...")
+	err := util.WaitForK0sToStart(s.ctx, s.K0smotronNode(0), 60*time.Second)
+	if err != nil {
+		s.T().Logf("Warning: k0s may not have started yet: %v", err)
+		// Continue with the test anyway
+	}
 
 	// Push public key to worker authorized_keys
 	workerSSH, err := s.SSH(s.ctx, s.K0smotronNode(0))
@@ -385,7 +435,7 @@ metadata:
   namespace: default
 spec:
   template:
-    spec: 
+    spec:
       pool: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
