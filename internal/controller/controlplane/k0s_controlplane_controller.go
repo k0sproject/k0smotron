@@ -24,9 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
@@ -1001,13 +998,6 @@ func machineName(kcp *cpv1beta1.K0sControlPlane, machineToDelete, desiredMachine
 // SetupWithManager sets up the controller with the Manager.
 func (c *K0sController) SetupWithManager(mgr ctrl.Manager) error {
 	// Check if the cluster.x-k8s.io API is available and if not, don't try to watch for Machine objects
-	_, err := c.RESTMapper().KindsFor(schema.GroupVersionResource{Group: "cluster.x-k8s.io", Version: "v1beta1"})
-	if errors.Is(err, &meta.NoResourceMatchError{}) {
-		return ctrl.NewControllerManagedBy(mgr).
-			For(&cpv1beta1.K0sControlPlane{}).
-			Complete(c)
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cpv1beta1.K0sControlPlane{}).
 		Owns(&clusterv1.Machine{}).
