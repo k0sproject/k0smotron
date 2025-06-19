@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"syscall"
 	"testing"
@@ -30,6 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
@@ -191,4 +193,36 @@ func WaitForStatefulSet(ctx context.Context, kc *kubernetes.Clientset, name, nam
 		Until(ctx, func(s *appsv1.StatefulSet) (bool, error) {
 			return s.Status.ReadyReplicas == *s.Spec.Replicas, nil
 		})
+}
+
+// WaitForDeploymentsInNamespace waits for all Deployments in the given namespace to become available
+func WaitForDeploymentsInNamespace(ctx context.Context, kc *kubernetes.Clientset, namespace string) error {
+	deployments, err := kc.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list deployments: %w", err)
+	}
+
+	for _, deployment := range deployments.Items {
+		if err := WaitForDeployment(ctx, kc, deployment.Name, namespace); err != nil {
+			return fmt.Errorf("failed waiting for deployment %s: %w", deployment.Name, err)
+		}
+	}
+
+	return nil
+}
+
+// WaitForStatefulSetsInNamespace waits for all StatefulSets in the given namespace to become ready
+func WaitForStatefulSetsInNamespace(ctx context.Context, kc *kubernetes.Clientset, namespace string) error {
+	statefulSets, err := kc.AppsV1().StatefulSets(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list statefulsets: %w", err)
+	}
+
+	for _, statefulSet := range statefulSets.Items {
+		if err := WaitForStatefulSet(ctx, kc, statefulSet.Name, namespace); err != nil {
+			return fmt.Errorf("failed waiting for statefulset %s: %w", statefulSet.Name, err)
+		}
+	}
+
+	return nil
 }

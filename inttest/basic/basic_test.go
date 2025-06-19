@@ -65,6 +65,9 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.createK0smotronCluster(s.Context(), kc)
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
+	s.T().Log("waiting for all deployments in kmc-test namespace to be ready")
+	s.Require().NoError(util.WaitForDeploymentsInNamespace(s.Context(), kc, "kmc-test"))
+
 	pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), "kmc-kmc-test-0", metav1.GetOptions{})
 	s.Require().NoError(err)
 	s.Require().Equal("100m", pod.Spec.Containers[0].Resources.Requests.Cpu().String())
@@ -74,8 +77,6 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().NoError(err)
 	s.Require().True(strings.Contains(configMap.Data["K0SMOTRON_K0S_YAML"], "kmc-kmc-test-nodeport.kmc-test.svc.cluster.local"))
 	s.Require().True(strings.Contains(configMap.Data["K0SMOTRON_K0S_YAML"], "externalAddress:"))
-
-	time.Sleep(time.Second * 30)
 
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
@@ -100,6 +101,19 @@ func (s *BasicSuite) TestK0sGetsUp() {
 
 	s.T().Log("joining worker to k0smotron cluster")
 	s.Require().NoError(s.RunWithToken(s.K0smotronNode(0), token))
+
+	s.T().Log("waiting for k0smotron pod to be fully ready")
+	// Wait for the pod to be ready before attempting port forwarding
+	s.Require().NoError(common.WaitForPod(s.Context(), kc, "kmc-kmc-test-0", "kmc-test"))
+
+	// Also ensure all deployments and statefulsets in the namespace are ready
+	s.T().Log("waiting for all deployments and statefulsets in kmc-test namespace to be ready")
+	s.Require().NoError(util.WaitForDeploymentsInNamespace(s.Context(), kc, "kmc-test"))
+	s.Require().NoError(util.WaitForStatefulSetsInNamespace(s.Context(), kc, "kmc-test"))
+
+	// Give k0s a bit more time to fully initialize
+	s.T().Log("waiting for k0s to fully initialize")
+	time.Sleep(10 * time.Second)
 
 	s.T().Log("Starting portforward")
 	fw, err := util.GetPortForwarder(rc, "kmc-kmc-test-0", "kmc-test", 30443)
