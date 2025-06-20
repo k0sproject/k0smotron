@@ -139,3 +139,53 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 	}
 	return allMachinesNames, newMachinesNames, nil
 }
+
+type WaitForWorkersMachineInput struct {
+	Lister                   framework.Lister
+	ExpectedWorkers          int
+	Namespace                string
+	ClusterName              string
+	WaitForMachinesIntervals Interval
+}
+
+// WaitForMachine waits for worker machine to join the cluster. Checks machine.spec has the proper providerId set.
+func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput) error {
+	inClustersNamespaceListOption := client.InNamespace(input.Namespace)
+	matchClusterGetOption := client.MatchingLabels{
+		clusterv1.ClusterNameLabel: input.ClusterName,
+	}
+
+	machineList := &clusterv1.MachineList{}
+
+	// Waits for the desired worker machine to exist.
+	err := wait.PollUntilContextTimeout(ctx, input.WaitForMachinesIntervals.tick, input.WaitForMachinesIntervals.timeout, true, func(ctx context.Context) (done bool, err error) {
+		// Gets the worker machine
+		if err := input.Lister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterGetOption); err != nil {
+			return false, err
+		}
+
+		currentWorkerMachines := 0
+		for _, m := range machineList.Items {
+			isWorker := true
+			for k, _ := range m.GetLabels() {
+				if k == clusterv1.MachineControlPlaneLabel {
+					isWorker = false
+					break
+				}
+			}
+			if isWorker && *m.Spec.ProviderID != "" {
+				currentWorkerMachines += 1
+			}
+		}
+		if input.ExpectedWorkers != currentWorkerMachines {
+			return false, fmt.Errorf("expected worker machines is %d but got %d", input.ExpectedWorkers, currentWorkerMachines)
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to get the expected worker machine: %w", err)
+	}
+
+	return nil
+}

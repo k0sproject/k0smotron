@@ -90,10 +90,18 @@ var (
 )
 
 func init() {
+
 	flag.StringVar(&configPath, "config", "", "path to the e2e config file")
 	flag.BoolVar(&skipCleanup, "skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
 	flag.StringVar(&artifactFolder, "artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.BoolVar(&useExistingCluster, "use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
+
+	// On the k0smotron side we avoid using Gomega for assertions but since we want to use the
+	// cluster-api framework as much as possible, the framework assertions require registering
+	// a fail handler beforehand.
+	gomega.RegisterFailHandler(func(message string, callerSkip ...int) {
+		panic(message)
+	})
 }
 
 func setupAndRun(t *testing.T, test func(t *testing.T)) {
@@ -105,14 +113,6 @@ func setupAndRun(t *testing.T, test func(t *testing.T)) {
 			tearDown(bootstrapClusterProvider, bootstrapClusterProxy)
 		}
 	}()
-
-	// On the k0smotron side we avoid using Gomega for assertions but since we want to use the
-	// cluster-api framework as much as possible, the framework assertions require registering
-	// a fail handler beforehand.
-	gomega.RegisterFailHandler(func(message string, callerSkip ...int) {
-		panic(message)
-	})
-
 	err := setupMothership()
 	if err != nil {
 		panic(err)
