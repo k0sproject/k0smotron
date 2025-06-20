@@ -96,6 +96,134 @@ func Test_createInstallCmd(t *testing.T) {
 	}
 }
 
+func Test_createBootstrapSecret(t *testing.T) {
+	tests := []struct {
+		name                string
+		scope               *Scope
+		bootstrapData       []byte
+		expectedLabels      map[string]string
+		expectedAnnotations map[string]string
+	}{
+		{
+			name: "with custom metadata",
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-config",
+						Namespace: "test-ns",
+						UID:       "test-uid",
+					},
+					TypeMeta: metav1.TypeMeta{
+						Kind: "K0sWorkerConfig",
+					},
+					Spec: bootstrapv1.K0sWorkerConfigSpec{
+						SecretMetadata: &bootstrapv1.SecretMetadata{
+							Labels: map[string]string{
+								"custom-label": "foo",
+							},
+							Annotations: map[string]string{
+								"custom-anno": "bar",
+							},
+						},
+					},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-cluster",
+					},
+				},
+			},
+			bootstrapData: []byte("test-bootstrap-data"),
+			expectedLabels: map[string]string{
+				"custom-label":             "foo",
+				clusterv1.ClusterNameLabel: "test-cluster",
+			},
+			expectedAnnotations: map[string]string{
+				"custom-anno": "bar",
+			},
+		},
+		{
+			name: "without custom metadata",
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-config",
+						Namespace: "test-ns",
+						UID:       "test-uid",
+					},
+					TypeMeta: metav1.TypeMeta{
+						Kind: "K0sWorkerConfig",
+					},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-cluster",
+					},
+				},
+			},
+			bootstrapData: []byte("test-bootstrap-data"),
+			expectedLabels: map[string]string{
+				clusterv1.ClusterNameLabel: "test-cluster",
+			},
+			expectedAnnotations: map[string]string{},
+		},
+		{
+			name: "with nil secret metadata",
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-config",
+						Namespace: "test-ns",
+						UID:       "test-uid",
+					},
+					TypeMeta: metav1.TypeMeta{
+						Kind: "K0sWorkerConfig",
+					},
+					Spec: bootstrapv1.K0sWorkerConfigSpec{
+						SecretMetadata: nil,
+					},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-cluster",
+					},
+				},
+			},
+			bootstrapData: []byte("test-bootstrap-data"),
+			expectedLabels: map[string]string{
+				clusterv1.ClusterNameLabel: "test-cluster",
+			},
+			expectedAnnotations: map[string]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			secret := createBootstrapSecret(tt.scope, tt.bootstrapData)
+
+			// Check basic properties
+			require.Equal(t, tt.scope.Config.Name, secret.Name)
+			require.Equal(t, tt.scope.Config.Namespace, secret.Namespace)
+			require.Equal(t, clusterv1.ClusterSecretType, secret.Type)
+			require.Equal(t, tt.bootstrapData, secret.Data["value"])
+
+			// Check labels
+			require.Equal(t, tt.expectedLabels, secret.Labels)
+
+			// Check annotations
+			require.Equal(t, tt.expectedAnnotations, secret.Annotations)
+
+			// Check owner references
+			require.Len(t, secret.OwnerReferences, 1)
+			require.Equal(t, bootstrapv1.GroupVersion.String(), secret.OwnerReferences[0].APIVersion)
+			require.Equal(t, tt.scope.Config.Kind, secret.OwnerReferences[0].Kind)
+			require.Equal(t, tt.scope.Config.Name, secret.OwnerReferences[0].Name)
+			require.Equal(t, tt.scope.Config.UID, secret.OwnerReferences[0].UID)
+			require.True(t, *secret.OwnerReferences[0].Controller)
+		})
+	}
+}
+
 func TestReconcileNoK0sWorkerConfig(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-no-workerconfig")
 	require.NoError(t, err)
@@ -403,10 +531,9 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-control-plane-not-ready")
 	require.NoError(t, err)
 
-	cluster := newCluster(ns.Name)
-	// Cluster.Spec.ControlPlaneEndpoint is not set by infra provider
-	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{}
+	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, kcp))
 
 	machineForWorkerConfig := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -484,8 +611,9 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-generate-bootstrap-data")
 	require.NoError(t, err)
 
-	cluster := newCluster(ns.Name)
+	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, kcp))
 
 	cluster.Status.ControlPlaneReady = true
 	require.NoError(t, testEnv.Status().Update(ctx, cluster))
@@ -529,7 +657,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 
 	defer func(do ...client.Object) {
 		require.NoError(t, testEnv.Cleanup(ctx, do...))
-	}(k0sWorkerConfig, cluster, machineForWorkerConfig, ns)
+	}(k0sWorkerConfig, cluster, machineForWorkerConfig, kcp, ns)
 
 	workloadClient, _ := fakeremote.NewClusterClient(ctx, "", testEnv, types.NamespacedName{})
 	r := &Controller{
@@ -538,12 +666,6 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 		SecretCachingClient:   secretCachingClient,
 	}
 
-	kcp := &cpv1beta1.K0sControlPlane{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "my-kcp",
-			UID:  "1",
-		},
-	}
 	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
 	require.NoError(t, clusterCerts.Generate())
 	caCert := clusterCerts.GetByPurpose(secret.ClusterCA)
@@ -579,4 +701,79 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 			assert.NotEmpty(c, secretObj.Data["value"])
 		}
 	}, 20*time.Second, 100*time.Millisecond)
+}
+
+func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta1.K0sControlPlane, *unstructured.Unstructured) {
+	kcpName := fmt.Sprintf("kcp-foo-%s", util.RandomString(6))
+
+	cluster := newCluster(namespace)
+	cluster.Spec = clusterv1.ClusterSpec{
+		ControlPlaneRef: &corev1.ObjectReference{
+			Kind:       "K0sControlPlane",
+			Namespace:  namespace,
+			Name:       kcpName,
+			APIVersion: cpv1beta1.GroupVersion.String(),
+		},
+		ControlPlaneEndpoint: clusterv1.APIEndpoint{
+			Host: "test.endpoint",
+			Port: 6443,
+		},
+	}
+
+	kcp := &cpv1beta1.K0sControlPlane{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: cpv1beta1.GroupVersion.String(),
+			Kind:       "K0sControlPlane",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      kcpName,
+			Namespace: namespace,
+			UID:       "1",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind:       "Cluster",
+					APIVersion: clusterv1.GroupVersion.String(),
+					Name:       kcpName,
+					UID:        "1",
+				},
+			},
+			Finalizers: []string{cpv1beta1.K0sControlPlaneFinalizer},
+		},
+		Spec: cpv1beta1.K0sControlPlaneSpec{
+			MachineTemplate: &cpv1beta1.K0sControlPlaneMachineTemplate{
+				InfrastructureRef: corev1.ObjectReference{
+					Kind:       "GenericInfrastructureMachineTemplate",
+					Namespace:  namespace,
+					Name:       "infra-foo",
+					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+				},
+			},
+			UpdateStrategy: cpv1beta1.UpdateRecreate,
+			Replicas:       int32(1),
+			Version:        "v1.30.0",
+		},
+	}
+
+	genericMachineTemplate := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"kind":       "GenericInfrastructureMachineTemplate",
+			"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta1",
+			"metadata": map[string]interface{}{
+				"name":      "infra-foo",
+				"namespace": namespace,
+				"annotations": map[string]interface{}{
+					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.InfrastructureRef.Name,
+					clusterv1.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String(),
+				},
+			},
+			"spec": map[string]interface{}{
+				"template": map[string]interface{}{
+					"spec": map[string]interface{}{
+						"hello": "world",
+					},
+				},
+			},
+		},
+	}
+	return cluster, kcp, genericMachineTemplate
 }

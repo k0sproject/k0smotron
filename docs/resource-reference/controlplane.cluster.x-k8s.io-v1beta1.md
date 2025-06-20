@@ -1842,6 +1842,14 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespeckubeconfigref">kubeconfigRef</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindex">manifests</a></b></td>
         <td>[]object</td>
         <td>
@@ -2209,6 +2217,50 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.kubeconfigRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
+          <br/>
+            <i>Default</i>: value<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -11289,6 +11341,14 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespeckubeconfigref">kubeconfigRef</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">manifests</a></b></td>
         <td>[]object</td>
         <td>
@@ -11656,6 +11716,50 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.kubeconfigRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
+          <br/>
+            <i>Default</i>: value<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

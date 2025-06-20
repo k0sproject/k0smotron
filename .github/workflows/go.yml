@@ -188,6 +188,7 @@ jobs:
           - admission-webhook-k0s-not-compatible
           - k0smotron-upgrade
           - machinedeployment
+          - remote-hosted-control-planes
 
     steps:
       - name: Check out code into the Go module directory

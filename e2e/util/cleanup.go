@@ -39,7 +39,7 @@ func deleteClusterAndWait(ctx context.Context, input capiframework.DeleteCluster
 		return fmt.Errorf("error deleting cluster %s: %w", input.Cluster.Name, err)
 	}
 
-	fmt.Printf("Waiting for the Cluster %s to be deleted", klog.KObj(input.Cluster))
+	fmt.Printf("Waiting for the Cluster %s to be deleted\n", klog.KObj(input.Cluster))
 	waitForClusterDeleted(ctx, capiframework.WaitForClusterDeletedInput{
 		Client:         input.Client,
 		Cluster:        input.Cluster,
@@ -51,8 +51,6 @@ func deleteClusterAndWait(ctx context.Context, input capiframework.DeleteCluster
 
 // waitForClusterDeleted waits until the cluster object has been deleted.
 func waitForClusterDeleted(ctx context.Context, input capiframework.WaitForClusterDeletedInput, interval Interval) {
-	fmt.Printf("Waiting for cluster %s to be deleted", klog.KObj(input.Cluster))
-
 	clusterName := input.Cluster.GetName()
 	clusterNamespace := input.Cluster.GetNamespace()
 	// Note: dumpArtifactsOnDeletionTimeout is passed in as a func so it gets only executed if and after the Eventually failed.
