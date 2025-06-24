@@ -2196,6 +2196,13 @@ If specified the version field is ignored and what ever version is downloaded fr
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0sworkerconfigspecsecretmetadata">secretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>useSystemHostname</b></td>
         <td>boolean</td>
         <td>
@@ -2434,6 +2441,35 @@ See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html</p>
           Name is the name of the source<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0sworkerconfigspecsecretmetadata">K0sWorkerConfig.spec.secretMetadata<a class="headerlink" href="#k0sworkerconfigspecsecretmetadata" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0sworkerconfigspec">↩ Parent</a></sup></sup></p>
+<p>SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -2742,6 +2778,13 @@ If specified the version field is ignored and what ever version is downloaded fr
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecsecretmetadata">secretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>useSystemHostname</b></td>
         <td>boolean</td>
         <td>
@@ -2980,6 +3023,35 @@ See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html</p>
           Name is the name of the source<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0sworkerconfigtemplatespectemplatespecsecretmetadata">K0sWorkerConfigTemplate.spec.template.spec.secretMetadata<a class="headerlink" href="#k0sworkerconfigtemplatespectemplatespecsecretmetadata" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0sworkerconfigtemplatespectemplatespec">↩ Parent</a></sup></sup></p>
+<p>SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
