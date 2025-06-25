@@ -60,7 +60,6 @@ spec:
         # Replace with your AMI ID
         id: ami-046da914e42bb0388 # Ubuntu 22.04 in eu-west-1
       instanceType: t3.large
-      publicIP: true
       iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io # Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`
       cloudInit:
         # Makes CAPA use k0s bootstrap cloud-init directly and not via SSM
