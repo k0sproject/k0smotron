@@ -1,6 +1,6 @@
 # Cluster API - AWS on ec2 instances
 
-This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy 
+This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy
 a cluster with hosted control plane and workers in AWS.
 
 ## Prerequisites
@@ -19,7 +19,7 @@ Once all the controllers are up and running, you can apply the cluster manifests
 
 !!! warning "AWS limits userdata to 16kb"
     AWS has a limit of 16kb for userdata. As k0smotron generates certificates and other files it might reach the limit, so you may need to compress it.
-    This can be done by setting `AWSMachineTemplate.spec.template.spec.uncompressedUserData` to `false` in the AWSMachineTemplate manifest. 
+    This can be done by setting `AWSMachineTemplate.spec.template.spec.uncompressedUserData` to `false` in the AWSMachineTemplate manifest.
 
 Here is an example:
 
@@ -55,7 +55,7 @@ metadata:
 spec:
   template:
     spec:
-      uncompressedUserData: false 
+      uncompressedUserData: false
       ami:
         # Replace with your AMI ID
         id: ami-046da914e42bb0388 # Ubuntu 22.04 in eu-west-1
@@ -74,7 +74,7 @@ metadata:
   name: aws-test
 spec:
   replicas: 3
-  version: v1.30.3+k0s.0
+  version: v1.33.2+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
     args:
@@ -118,11 +118,10 @@ spec:
 ```shell
 % kubectl get cluster,machine
 NAME                                        CLUSTERCLASS   PHASE         AGE   VERSION
-cluster.cluster.x-k8s.io/aws-test-cluster                  Provisioned   24h   
+cluster.cluster.x-k8s.io/aws-test-cluster                  Provisioned   24h
 
 NAME                                     CLUSTER            NODENAME        PROVIDERID                              PHASE      AGE    VERSION
-machine.cluster.x-k8s.io/aws-test-0      aws-test-cluster   aws-test-0      aws:///eu-west-1c/i-04ea1b27f52210bec   Running    24h    v1.30.3+k0s.0
-machine.cluster.x-k8s.io/aws-test-1      aws-test-cluster   aws-test-1      aws:///eu-west-1a/i-0c34ca4e0450acd64   Running    23h    v1.30.3+k0s.0
-machine.cluster.x-k8s.io/aws-test-2      aws-test-cluster   aws-test-2      aws:///eu-west-1b/i-0ac2d7fb7ad92dff6   Running    23h    v1.30.3+k0s.0
-   
+machine.cluster.x-k8s.io/aws-test-0      aws-test-cluster   aws-test-0      aws:///eu-west-1c/i-04ea1b27f52210bec   Running    24h    v1.33.2+k0s.0
+machine.cluster.x-k8s.io/aws-test-1      aws-test-cluster   aws-test-1      aws:///eu-west-1a/i-0c34ca4e0450acd64   Running    23h    v1.33.2+k0s.0
+machine.cluster.x-k8s.io/aws-test-2      aws-test-cluster   aws-test-2      aws:///eu-west-1b/i-0ac2d7fb7ad92dff6   Running    23h    v1.33.2+k0s.0
 ```
