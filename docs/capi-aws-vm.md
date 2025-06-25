@@ -112,6 +112,45 @@ spec:
         protocol: tcp
         fromPort: 9443
         toPort: 9443
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: k0s-aws-test-md
+  namespace: default
+spec:
+  clusterName: aws-test-cluster
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: aws-test-cluster
+      pool: worker-pool-1
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: aws-test-cluster
+        pool: worker-pool-1
+    spec:
+      clusterName: aws-test-cluster
+      failureDomain: eu-west-1
+      bootstrap:
+        configRef: # This triggers our controller to create cloud-init secret
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: K0sWorkerConfigTemplate
+          name: k0s-aws-test-machine-config
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        name: k0s-aws-test-mt
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: k0s-aws-test-machine-config
+spec:
+  template:
+    spec:
+      version: v1.33.2+k0s.0
 ```
 
 ```shell
