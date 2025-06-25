@@ -106,6 +106,7 @@ spec:
   region: eu-west-1
   sshKeyName: <your-ssh-key-name>
   controlPlaneLoadBalancer:
+    loadBalancerType: nlb
     healthCheckProtocol: TCP
   network:
     additionalControlPlaneIngressRules:
