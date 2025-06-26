@@ -38,7 +38,7 @@ spec:
 
 This configuration sets up a `Machine` object that will trigger the k0smotron controller to create a cloud-init secret and prepare the machine for bootstrapping. Note that the specific parameters in the `K0sWorkerConfig` spec will depend on your worker node configuration requirements.
 
-For reference on what can be configured via `K0sWorkerConfig` see the [reference docs](resource-reference.md#bootstrapclusterx-k8siov1beta1).
+For reference on what can be configured via `K0sWorkerConfig` see the [reference docs](resource-reference/bootstrap.cluster.x-k8s.io-v1beta1.md).
 
 The `infrastructureRef` in the `Machine` object specifies a reference to the provider-specific infrastructure required for the operation of the machine. In the above example, the kind `AWSMachine` indicates that the machine will be run on AWS. The parameters within `infrastructureRef` will be provider-specific and vary based on your chosen infrastructure.
 
