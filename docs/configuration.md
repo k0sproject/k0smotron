@@ -19,7 +19,7 @@ spec:
     type: emptyDir
 ```
 
-For full reference of the fields check out the [reference docs](resource-reference.md#cluster).
+For full reference of the fields check out the [reference docs](resource-reference/k0smotron.io-v1beta1.md#cluster).
 
 ## Persistence
 
@@ -27,7 +27,7 @@ K0smotron persists data related to each Cluster. Specifically, it persists the `
 
 The `/var/lib/k0s` directory contains essential data for the operation of the k0s controller, but its growth over time is primarily driven by the addition of small [manifest](https://docs.k0sproject.io/stable/manifests/) files. Since these manifests are lightweight and in text format, the directory tends to grow gradually and not excessively. Typically, 250 MB of space is sufficient to handle its growth, as the main additions are these small manifests, keeping the overall size manageable.
 
-The type of persistence used for this can be configurable via `spec.persistence`. For more information, check out the [reference docs](resource-reference.md/#clusterspecpersistence) on Cluster persistence.
+The type of persistence used for this can be configurable via `spec.persistence`. For more information, check out the [reference docs](resource-reference/k0smotron.io-v1beta1.md#clusterspecpersistence) on Cluster persistence.
 
 ## K0s configuration
 
