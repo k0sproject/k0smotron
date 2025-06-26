@@ -41,4 +41,4 @@ spec:
 
 Check the [examples](capi-examples.md) pages for more detailed examples how k0smotron can be used with various Cluster API infrastructure providers.
 
-For a full reference on `K0smotronControlPlane` configurability see the [reference docs](resource-reference.md#controlplaneclusterx-k8siov1beta1).
+For a full reference on `K0smotronControlPlane` configurability see the [reference docs](resource-reference/controlplane.cluster.x-k8s.io-v1beta1.md).

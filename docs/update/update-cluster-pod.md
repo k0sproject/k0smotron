@@ -36,7 +36,7 @@ the k0s version and machine names in the YAML configuration file:
     spec:
       version: v1.27.2-k0s.0
     ```
-2. Make sure that the [persistence](https://docs.k0smotron.io/stable/resource-reference/#clusterspecpersistence) is configured
+2. Make sure that the [persistence](../resource-reference/k0smotron.io-v1beta1.md#clusterspecpersistence) is configured
 to prevent data loss. For example:
 
    ```yaml

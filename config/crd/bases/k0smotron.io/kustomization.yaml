@@ -1,0 +1,3 @@
+resources:
+  - k0smotron.io_clusters.yaml
+  - k0smotron.io_jointokenrequests.yaml

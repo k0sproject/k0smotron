@@ -2,19 +2,10 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/k0smotron.io_clusters.yaml
-- bases/k0smotron.io_jointokenrequests.yaml
-- bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigs.yaml
-- bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
-- bases/bootstrap.cluster.x-k8s.io_k0scontrollerconfigs.yaml
-- bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
-- bases/controlplane.cluster.x-k8s.io_k0scontrolplanetemplates.yaml
-- bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
-- bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanetemplates.yaml
-- bases/infrastructure.cluster.x-k8s.io_remoteclusters.yaml
-- bases/infrastructure.cluster.x-k8s.io_remotemachines.yaml
-- bases/infrastructure.cluster.x-k8s.io_remotemachinetemplates.yaml
-- bases/infrastructure.cluster.x-k8s.io_pooledremotemachines.yaml
+- bases/bootstrap
+- bases/controlplane
+- bases/infrastructure
+- bases/k0smotron.io
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:
