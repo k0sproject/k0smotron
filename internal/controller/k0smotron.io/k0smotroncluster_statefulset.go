@@ -25,6 +25,7 @@ import (
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
 
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
@@ -36,7 +37,6 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var entrypointDefaultMode = int32(0744)
@@ -49,11 +49,11 @@ const (
 var versionRegex = regexp.MustCompile(`v\d+.\d+.\d+-k0s.\d+`)
 
 // findStatefulSetPod returns a first running pod from a StatefulSet
-func (r *ClusterReconciler) findStatefulSetPod(ctx context.Context, statefulSet string, namespace string) (*v1.Pod, error) {
-	return util.FindStatefulSetPod(ctx, r.ClientSet, statefulSet, namespace)
+func findStatefulSetPod(ctx context.Context, statefulSet string, namespace string, clientSet *kubernetes.Clientset) (*v1.Pod, error) {
+	return util.FindStatefulSetPod(ctx, clientSet, statefulSet, namespace)
 }
 
-func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
+func (scope *kmcScope) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
 
 	labels := kcontrollerutil.LabelsForK0smotronControlPlane(kmc)
 	annotations := kcontrollerutil.AnnotationsForK0smotronCluster(kmc)
@@ -171,7 +171,7 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		if kmc.Spec.Persistence.Type == "" {
 			kmc.Spec.Persistence.Type = "emptyDir"
 		}
-		r.addMonitoringStack(kmc, &statefulSet)
+		addMonitoringStack(kmc, &statefulSet)
 	}
 
 	if kmc.Spec.KineDataSourceSecretName != "" {
@@ -184,8 +184,8 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 		})
 	}
 	// Mount certificates if they are provided
-	if kmc.Spec.CertificateRefs != nil && len(kmc.Spec.CertificateRefs) > 0 {
-		r.mountSecrets(kmc, &statefulSet)
+	if len(kmc.Spec.CertificateRefs) > 0 {
+		mountSecrets(kmc, &statefulSet)
 	}
 
 	if kmc.Spec.TopologySpreadConstraints != nil {
@@ -297,10 +297,9 @@ data:
 `,
 		},
 	}
-	if err := ctrl.SetControllerReference(kmc, cm, r.Scheme); err != nil {
-		return apps.StatefulSet{}, err
-	}
-	if err := r.Client.Patch(context.Background(), cm, client.Apply, patchOpts...); err != nil {
+	_ = ctrl.SetControllerReference(kmc, cm, scope.client.Scheme())
+
+	if err := scope.client.Patch(context.Background(), cm, client.Apply, patchOpts...); err != nil {
 		return apps.StatefulSet{}, err
 	}
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
@@ -318,7 +317,7 @@ data:
 		ReadOnly:  true,
 	})
 
-	err := ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
+	_ = ctrl.SetControllerReference(kmc, &statefulSet, scope.client.Scheme())
 
 	statefulSet.Annotations = map[string]string{
 		statefulSetAnnotation: controller.ComputeHash(&statefulSet.Spec.Template, statefulSet.Status.CollisionCount),
@@ -327,12 +326,12 @@ data:
 		statefulSet.Annotations[k] = v
 	}
 
-	return statefulSet, err
+	return statefulSet, nil
 }
 
 // mountSecrets mounts the certificates as secrets to the controller and creates
 // an init container that copies the certificates to the correct location
-func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
+func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 	projectedSecrets := []v1.VolumeProjection{}
 
 	for _, cert := range kmc.Spec.CertificateRefs {
@@ -458,7 +457,7 @@ func (r *ClusterReconciler) mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet)
 	})
 }
 
-func (r *ClusterReconciler) addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
+func addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
 	nginxConfCMName := kmc.GetMonitoringNginxConfigMapName()
 	statefulSet.Spec.Template.Spec.Containers = append(statefulSet.Spec.Template.Spec.Containers, v1.Container{
 		Name:            "monitoring-agent",
@@ -538,32 +537,33 @@ func (r *ClusterReconciler) addMonitoringStack(kmc *km.Cluster, statefulSet *app
 	})
 }
 
-func (r *ClusterReconciler) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster) error {
-	logger := log.FromContext(ctx)
-	logger.Info("Reconciling statefulset")
-	statefulSet, err := r.generateStatefulSet(kmc)
+func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster) error {
+	statefulSet, err := scope.generateStatefulSet(kmc)
 	if err != nil {
 		return fmt.Errorf("failed to generate statefulset: %w", err)
 	}
 
-	foundStatefulSet, err := r.ClientSet.AppsV1().StatefulSets(statefulSet.Namespace).Get(ctx, statefulSet.Name, metav1.GetOptions{})
-	if err != nil && apierrors.IsNotFound(err) {
-		return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
-	} else if err == nil {
-		detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
-
-		if !isStatefulSetsEqual(&statefulSet, foundStatefulSet) {
-			return r.Client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+	foundStatefulSet := &apps.StatefulSet{}
+	err = scope.client.Get(ctx, client.ObjectKey{Namespace: statefulSet.Namespace, Name: statefulSet.Name}, foundStatefulSet)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 		}
 
-		if foundStatefulSet.Status.ReadyReplicas == kmc.Spec.Replicas {
-			kmc.Status.Ready = true
-		}
+		return err
+	}
+	detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
 
-		return nil
+	if !isStatefulSetsEqual(&statefulSet, foundStatefulSet) {
+		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 	}
 
-	return err
+	if foundStatefulSet.Status.ReadyReplicas == 0 {
+		return fmt.Errorf("%w: no replicas ready yet for statefulset '%s' (%d/%d)", ErrNotReady, foundStatefulSet.GetName(), foundStatefulSet.Status.ReadyReplicas, kmc.Spec.Replicas)
+	}
+
+	kmc.Status.Ready = true
+	return nil
 }
 
 // If the version is empty from the spec, we try to detect it from the statefulset image.
@@ -576,10 +576,9 @@ func detectAndSetCurrentClusterVersion(foundStatefulSet *apps.StatefulSet, kmc *
 	}
 }
 
-func isStatefulSetsEqual(new, old *apps.StatefulSet) bool {
-	return *new.Spec.Replicas == *old.Spec.Replicas &&
-		new.Annotations[statefulSetAnnotation] == old.Annotations[statefulSetAnnotation] &&
-		reflect.DeepEqual(new.Spec.Selector, old.Spec.Selector) &&
-		equality.Semantic.DeepDerivative(new.Spec.VolumeClaimTemplates, old.Spec.VolumeClaimTemplates)
-
+func isStatefulSetsEqual(newSts, oldSts *apps.StatefulSet) bool {
+	return *newSts.Spec.Replicas == *oldSts.Spec.Replicas &&
+		newSts.Annotations[statefulSetAnnotation] == oldSts.Annotations[statefulSetAnnotation] &&
+		reflect.DeepEqual(newSts.Spec.Selector, oldSts.Spec.Selector) &&
+		equality.Semantic.DeepDerivative(newSts.Spec.VolumeClaimTemplates, oldSts.Spec.VolumeClaimTemplates)
 }

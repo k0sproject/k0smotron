@@ -10,3 +10,4 @@ e2esuite := \
     workload-cluster-recreate-upgrade \
     admission-webhook-recreate-strategy-in-single-mode \
     admission-webhook-k0s-not-compatible \
+    remote-hosted-control-planes \
