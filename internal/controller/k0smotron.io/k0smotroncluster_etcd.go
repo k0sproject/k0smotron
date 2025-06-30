@@ -85,6 +85,7 @@ func (r *ClusterReconciler) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluste
 			ClusterIP:                v1.ClusterIPNone,
 			Selector:                 labels,
 			PublishNotReadyAddresses: true,
+			TrafficDistribution:      ptr.To("PreferClose"),
 			Ports: []v1.ServicePort{
 				{
 					Name:       "client",
