@@ -558,6 +558,29 @@ You are not currently viewing the documentation for the current stable release o
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hcp-autoscaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Autoscaling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12899,6 +12922,13 @@ to check the operational state of the control plane.<br/>
           replicas is the total number of pods targeted by this control plane<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>selector</b></td>
+        <td>string</td>
+        <td>
+          selector is the label selector for pods that should match the replicas count.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -45194,6 +45224,22 @@ merge patch.<br/>
         <td>boolean</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>selector</b></td>
+        <td>string</td>
+        <td>
+          selector is the label selector for pods that should match the replicas count.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

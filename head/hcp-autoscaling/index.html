@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/usage-overview/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/hcp-autoscaling/">
       
       
-        <link rel="prev" href="../install/">
+        <link rel="prev" href="../ha/">
       
       
-        <link rel="next" href="../cluster/">
+        <link rel="next" href="../cluster-api/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Overview - Documentation</title>
+        <title>Autoscaling - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#usage" class="md-skip">
+        <a href="#using-horizontal-pod-autoscaler-hpa-for-k0smotroniocluster" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              Autoscaling
             
           </span>
         </div>
@@ -388,19 +388,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../usage-overview/" class="md-nav__link">
         
   
   
@@ -411,7 +402,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
     </li>
   
 
@@ -421,18 +411,20 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
         
           
           <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
@@ -448,7 +440,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             Standalone
@@ -574,10 +566,32 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../hcp-autoscaling/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Autoscaling
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -588,6 +602,95 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step-by-Step Guide
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-Step Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-install-metrics-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Install Metrics Server
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-define-resource-requests-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Define Resource Requests and Limits
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-an-hpa" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Create an HPA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-verify-hpa" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Verify HPA
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1541,6 +1644,83 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step-by-Step Guide
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-Step Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-install-metrics-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Install Metrics Server
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-define-resource-requests-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Define Resource Requests and Limits
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-an-hpa" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Create an HPA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-verify-hpa" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Verify HPA
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1555,50 +1735,77 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">#</a></h1>
-<p>Users can use k0smotron in two distinct ways:</p>
-<dl>
-<dt><strong>Standalone</strong></dt>
-<dd>
-<p>In this mode, standalone k0smotron manages only k0s control planes
-running in the management cluster offering streamlined control and
-monitoring capabilities for k0s clusters.</p>
-</dd>
-<dt><strong>Cluster API integration</strong></dt>
-<dd>
-<p>Alternatively, users can opt for k0smotron integration with Cluster API,
-enabling k0smotron to manage Kubernetes clusters across various infrastructure
-providers. This integration extends k0smotron management capabilities to a broader
-range of Kubernetes deployments.</p>
-<p>Within the context of Cluster API, k0smotron can serve several roles:</p>
-<ul>
-<li>Control plane provider: k0smotron manages the control plane within the management cluster.
-  It orchestrates the creation, scaling, and management of the Kubernetes control plane
-  components, ensuring their proper functioning and high availability.</li>
-</ul>
-<ul>
-<li>Control plane bootstrap provider: k0smotron acts as a bootstrap provider for <code>Machine</code>
-  resources that run the control plane components. It handles the initialization and
-  configuration of these machines, ensuring they are properly set up to serve as part
-  of the cluster control plane.</li>
-</ul>
-<ul>
-<li>Bootstrap provider: k0smotron serves as the bootstrap provider for worker machines.
-  It manages provisioning and configuring worker nodes, ensuring they are ready
-  to run containerized workloads within the Kubernetes cluster.</li>
-</ul>
-<ul>
-<li>Remote machine provider: k0smotron acts as an infrastructure provider, enabling
-  the configuration of <code>Machine</code> resources on existing infrastructure over SSH.
-  This enables users to leverage their existing infrastructure resources while
-  still benefiting from the management capabilities provided by ClusterAPI and k0smotron.</li>
-</ul>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">See also</p>
-<p><a href="../install/">k0smotron installation</a></p>
+<h1 id="using-horizontal-pod-autoscaler-hpa-for-k0smotroniocluster">Using Horizontal Pod Autoscaler (HPA) for k0smotron.io/Cluster<a class="headerlink" href="#using-horizontal-pod-autoscaler-hpa-for-k0smotroniocluster" title="Permanent link">#</a></h1>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">#</a></h2>
+<p>Horizontal Pod Autoscaler (HPA) automatically scales the number of pods in a Kubernetes cluster based on observed CPU utilization (or other select metrics). This guide will walk you through the steps to set up and use HPA for <code>k0smotron.io/Cluster</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Due to etcd maintanance challenges, k0smotron <strong>never</strong> scales etcd statefulsets down, only up. 
+This means that HPA will scale up both control-plane and etcd, but scale down only control-plane pods.</p>
 </div>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
+<ul>
+<li>A running Kubernetes cluster</li>
+<li><code>kubectl</code> command-line tool installed and configured</li>
+<li>Metrics Server installed in your cluster</li>
+</ul>
+<h2 id="step-by-step-guide">Step-by-Step Guide<a class="headerlink" href="#step-by-step-guide" title="Permanent link">#</a></h2>
+<h3 id="1-install-metrics-server">1. Install Metrics Server<a class="headerlink" href="#1-install-metrics-server" title="Permanent link">#</a></h3>
+<p>Metrics Server is a cluster-wide aggregator of resource usage data. It is required for HPA to function.
+<a href="https://k0sproject.io/">k0s</a> brings metrics-server by default, but you can install it manually if needed.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+</code></pre></div>
+<h3 id="2-define-resource-requests-and-limits">2. Define Resource Requests and Limits<a class="headerlink" href="#2-define-resource-requests-and-limits" title="Permanent link">#</a></h3>
+<p>Ensure your k0smotron.io/Cluster has CPU and/or memory requests and limits defined. HPA uses these values to make scaling decisions.  Example k0smotron.io/Cluster definition:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example-cluster</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.31.5-k0s.0&quot;</span>
+<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NodePort</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100m&quot;</span>
+<span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100Mi&quot;</span>
+</code></pre></div>
+<h3 id="3-create-an-hpa">3. Create an HPA<a class="headerlink" href="#3-create-an-hpa" title="Permanent link">#</a></h3>
+<p>Create an HPA resource to automatically scale your k0smotron.io/Cluster based on CPU utilization.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autoscaling/v2beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HorizontalPodAutoscaler</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example-hpa</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scaleTargetRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example-cluster</span>
+<span class="w">  </span><span class="nt">minReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">maxReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">  </span><span class="nt">metrics</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resource</span>
+<span class="w">    </span><span class="nt">resource</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpu</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Utilization</span>
+<span class="w">        </span><span class="nt">averageUtilization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+</code></pre></div>
+<p>Apply the HPA:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>hpa<span class="w"> </span>-n<span class="w"> </span>default
+</code></pre></div>
+<h3 id="4-verify-hpa">4. Verify HPA<a class="headerlink" href="#4-verify-hpa" title="Permanent link">#</a></h3>
+<p>Check the status of your HPA to ensure it is working correctly.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>hpa<span class="w"> </span>-n<span class="w"> </span>default
+</code></pre></div>
+<p>You should see output similar to:</p>
+<div class="highlight"><pre><span></span><code>NAME<span class="w">         </span>REFERENCE<span class="w">               </span>TARGETS<span class="w">   </span>MINPODS<span class="w">   </span>MAXPODS<span class="w">   </span>REPLICAS<span class="w">   </span>AGE
+example-hpa<span class="w">  </span>Cluster/example-cluster<span class="w">  </span><span class="m">10</span>%/50%<span class="w">    </span><span class="m">1</span><span class="w">         </span><span class="m">10</span><span class="w">        </span><span class="m">1</span><span class="w">          </span>1m
+</code></pre></div>
+<p>You have successfully set up Horizontal Pod Autoscaler (HPA) for your k0smotron.io/Cluster. HPA will now automatically adjust the number of pods in your cluster based on the specified metrics.  For more information, refer to the <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Kubernetes HPA documentation</a>.</p>
 
 
 
