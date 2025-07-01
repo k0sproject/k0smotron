@@ -62,25 +62,30 @@ help: ## Display this help.
 
 ##@ Development
 
-### manifests
-manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_k0sconfigs.yaml
-config/crd/bases/bootstrap.cluster.x-k8s.io_k0sconfigs.yaml: $(CONTROLLER_GEN)
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+### CRD manifests (one per API group)
+.PHONY: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-k0smotron
+manifests-bootstrap: $(CONTROLLER_GEN) ## Generate CRDs for bootstrap.cluster.x-k8s.io
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
+	  paths="./api/bootstrap/..." \
+	  output:crd:artifacts:config=config/crd/bases/bootstrap
 
-manifests_targets += config/crd/bases/k0smotron.io_clusters.yaml
-manifests_targets += config/crd/bases/k0smotron.io_jointokenrequests.yaml
-manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_k0sconfigs.yaml
-manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigs.yaml
-manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
-manifests_targets += config/crd/bases/bootstrap.cluster.x-k8s.io_k0scontrollerconfigs.yaml
-manifests_targets += config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
-manifests_targets += config/crd/bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
-manifests_targets += config/crd/bases/infrastructure.cluster.x-k8s.io_remoteclusters.yaml
-manifests_targets += config/crd/bases/infrastructure.cluster.x-k8s.io_remotemachines.yaml
-config/crd/bases/k0smotron.io_clusters.yaml: $(CONTROLLER_GEN) api/k0smotron.io/v1beta1/k0smotroncluster_types.go
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+manifests-controlplane: $(CONTROLLER_GEN) ## Generate CRDs for controlplane.cluster.x-k8s.io
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
+	  paths="./api/controlplane/..." \
+	  output:crd:artifacts:config=config/crd/bases/controlplane
 
-manifests: $(manifests_targets) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+manifests-infrastructure: $(CONTROLLER_GEN) ## Generate CRDs for infrastructure.cluster.x-k8s.io
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
+	  paths="./api/infrastructure/..." \
+	  output:crd:artifacts:config=config/crd/bases/infrastructure
+
+manifests-k0smotron: $(CONTROLLER_GEN) ## Generate CRDs for k0smotron.io
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
+	  paths="./api/k0smotron.io/..." \
+	  output:crd:artifacts:config=config/crd/bases/k0smotron.io
+
+.PHONY: manifests
+manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-k0smotron ## Generate all CRD YAMLs per group
 
 ### generate
 generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
@@ -248,9 +253,21 @@ crdoc: $(CRDOC) ## Download crdoc locally if necessary. If wrong version is inst
 $(CRDOC): Makefile.variables | $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install fybrik.io/crdoc@$(CRDOC_VERSION)
 
-.PHONY: docs-generate-reference
-docs-generate-reference: $(CRDOC)
-	$(CRDOC) --resources config/crd/bases/ --output docs/resource-reference.md
+.PHONY: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron docs-generate-reference
+docs-generate-bootstrap: $(CRDOC) ## Generate docs for bootstrap CRDs
+	$(CRDOC) --resources config/crd/bases/bootstrap --output docs/resource-reference/bootstrap.cluster.x-k8s.io-v1beta1.md
+
+docs-generate-controlplane: $(CRDOC) ## Generate docs for controlplane CRDs
+	$(CRDOC) --resources config/crd/bases/controlplane --output docs/resource-reference/controlplane.cluster.x-k8s.io-v1beta1.md
+
+docs-generate-infrastructure: $(CRDOC) ## Generate docs for infrastructure CRDs
+	$(CRDOC) --resources config/crd/bases/infrastructure --output docs/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1.md
+
+docs-generate-k0smotron: $(CRDOC) ## Generate docs for k0smotron CRDs
+	$(CRDOC) --resources config/crd/bases/k0smotron.io --output docs/resource-reference/k0smotron.io-v1beta1.md
+
+# Generate docs for all CRDs apis
+docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron
 
 .PHONY: $(smoketests)
 $(smoketests): release k0smotron-image-bundle.tar

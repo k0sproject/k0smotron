@@ -28,7 +28,7 @@ and control plane, allowing the node to join the cluster as worker.
     !!! tip Token expiry configuration
 
         The `expiry` field defines the expiration time of the token.
-        Refer to [API reference: JoinTokenRequest.spec](resource-reference.md#JoinTokenRequest.spec)
+        Refer to [API reference: JoinTokenRequest.spec](resource-reference/k0smotron.io-v1beta1.md#JoinTokenRequest.spec)
         for the configuration details.
 
        k0smotron processes the `JoinTokenRequest` resource and creates
@@ -85,4 +85,4 @@ and control plane, allowing the node to join the cluster as worker.
 
 !!! note See also
 
-    [API reference: JoinTokenRequest.spec](resource-reference.md#JoinTokenRequest.spec)
+    [API reference: JoinTokenRequest.spec](resource-reference/k0smotron.io-v1beta1.md#JoinTokenRequest.spec)

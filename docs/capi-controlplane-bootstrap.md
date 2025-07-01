@@ -62,7 +62,7 @@ spec:
 
 By applying this yaml, k0smotron will create 3 machines based on the `MachineTemplate` configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.
 
-For a full reference on `K0sControlPlane` configurability see the [reference docs](resource-reference.md#controlplaneclusterx-k8siov1beta1).
+For a full reference on `K0sControlPlane` configurability see the [reference docs](resource-reference/controlplane.cluster.x-k8s.io-v1beta1.md).
 
 ## Downscaling the control plane
 
