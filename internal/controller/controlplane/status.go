@@ -245,7 +245,7 @@ func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 	// If kcp has suffix but machines don't, we need to add it to minVersion
 	// Otherwise CAPI topology will not be able to match the versions and might try to recreate the machines
 	// or restrict the upgrade path
-	if strings.Contains(kcp.Spec.Version, "+") && !strings.Contains(lowestMachineVersion, "+") {
+	if strings.Contains(kcp.Spec.Version, "+") && !strings.Contains(lowestMachineVersion, "+") && lowestMachineVersion != "" {
 		// Get the suffix from kcp version
 		suffix := strings.Split(kcp.Spec.Version, "+")[1]
 		kcp.Status.Version = kcp.Status.Version + "+" + suffix
