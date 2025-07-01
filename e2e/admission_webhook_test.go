@@ -42,13 +42,13 @@ func admissionWebhookRecreateStrategyInSingleModeSpec(t *testing.T) {
 	testName := "admission-webhook-recreate-single-mode"
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
-	namespace, _ := util.SetupSpecNamespace(ctx, testName, managementClusterProxy, artifactFolder)
+	namespace, _ := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
 
 	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
 		ClusterctlConfigPath: clusterctlConfigPath,
-		KubeconfigPath:       managementClusterProxy.GetKubeconfigPath(),
+		KubeconfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
 		// select cluster templates
 		Flavor: "webhook-recreate-in-single-mode",
 
@@ -58,7 +58,7 @@ func admissionWebhookRecreateStrategyInSingleModeSpec(t *testing.T) {
 		ControlPlaneMachineCount: ptr.To[int64](3),
 		// TODO: make infra provider configurable
 		InfrastructureProvider: "docker",
-		LogFolder:              filepath.Join(artifactFolder, "clusters", managementClusterProxy.GetName()),
+		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME": clusterName,
 			"NAMESPACE":    namespace.Name,
@@ -66,7 +66,7 @@ func admissionWebhookRecreateStrategyInSingleModeSpec(t *testing.T) {
 	})
 	require.NotNil(t, workloadClusterTemplate)
 
-	err := managementClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate)
+	err := bootstrapClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode")
 }
@@ -75,13 +75,13 @@ func admissionWebhookK0sVersionNotCompatibleSpec(t *testing.T) {
 	testName := "admission-webhook-k0s-not-compatible"
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
-	namespace, _ := util.SetupSpecNamespace(ctx, testName, managementClusterProxy, artifactFolder)
+	namespace, _ := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
 
 	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
 		ClusterctlConfigPath: clusterctlConfigPath,
-		KubeconfigPath:       managementClusterProxy.GetKubeconfigPath(),
+		KubeconfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
 		// select cluster templates
 		Flavor: "webhook-k0s-not-compatible",
 
@@ -91,7 +91,7 @@ func admissionWebhookK0sVersionNotCompatibleSpec(t *testing.T) {
 		ControlPlaneMachineCount: ptr.To[int64](3),
 		// TODO: make infra provider configurable
 		InfrastructureProvider: "docker",
-		LogFolder:              filepath.Join(artifactFolder, "clusters", managementClusterProxy.GetName()),
+		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME":    clusterName,
 			"NAMESPACE":       namespace.Name,
@@ -100,7 +100,7 @@ func admissionWebhookK0sVersionNotCompatibleSpec(t *testing.T) {
 	})
 	require.NotNil(t, workloadClusterTemplate)
 
-	err := managementClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate)
+	err := bootstrapClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "version v1.31.1+k0s.0 is not compatible with K0sControlPlane, use v1.31.2+")
 }
