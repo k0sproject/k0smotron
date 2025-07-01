@@ -361,6 +361,8 @@ spec:
             - machineTemplate
             type: object
           status:
+            default:
+              version: ""
             properties:
               conditions:
                 description: Conditions defines current service state of the K0sControlPlane.

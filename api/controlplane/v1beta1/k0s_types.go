@@ -77,7 +77,9 @@ type K0sControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   K0sControlPlaneSpec   `json:"spec,omitempty"`
+	Spec K0sControlPlaneSpec `json:"spec,omitempty"`
+
+	// +kubebuilder:default:={version:""}
 	Status K0sControlPlaneStatus `json:"status,omitempty"`
 }
 
