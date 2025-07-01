@@ -251,11 +251,8 @@ func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 		kcp.Status.Version = kcp.Status.Version + "+" + suffix
 	}
 
-	// If the controlplane spec does NOT have workers enabled
-	// we need to mark the controlplane as externally managed
-	// Otherwise CAPI assumes it'll find node objects for the machines
-	// TODO Check with upstream CAPI folks whether this is the correct approach in this case when
-	// we still run the controlplane on Machines
+	// Set ExternalManagedControlPlane based on WorkerEnabled setting.
+	// When WorkerEnabled is false, control plane nodes don't appear as Node objects in the cluster
 	if !kcp.WorkerEnabled() {
 		kcp.Status.ExternalManagedControlPlane = true
 	}
