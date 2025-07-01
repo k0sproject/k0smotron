@@ -196,6 +196,8 @@ jobs:
           go-version-file: go.mod
 
       - name: Run e2e test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export TEST_NAME=Test$(echo "${{ matrix.e2e-suite }}" | awk -F'-' '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1' OFS='')
           echo "Running E2E tests with TEST_NAME=$TEST_NAME"
