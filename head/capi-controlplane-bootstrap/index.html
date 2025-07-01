@@ -1535,9 +1535,20 @@ You are not currently viewing the documentation for the current stable release o
   
   
   
-    <li class="md-nav__item">
-      <a href="../resource-reference/" class="md-nav__link">
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_1" id="__nav_11_1_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
@@ -1546,7 +1557,111 @@ You are not currently viewing the documentation for the current stable release o
   </span>
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_1">
+            <span class="md-nav__icon md-icon"></span>
+            Custom resources
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    bootstrap.cluster.x-k8s.io/v1beta1
+    
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    controlplane.cluster.x-k8s.io/v1beta1
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    infrastructure.cluster.x-k8s.io/v1beta1
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    k0smotron.io/v1beta1
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1706,7 +1821,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 </code></pre></div>
 <p>By applying this yaml, k0smotron will create 3 machines based on the <code>MachineTemplate</code> configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.</p>
-<p>For a full reference on <code>K0sControlPlane</code> configurability see the <a href="../resource-reference/#controlplaneclusterx-k8siov1beta1">reference docs</a>.</p>
+<p>For a full reference on <code>K0sControlPlane</code> configurability see the <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/">reference docs</a>.</p>
 <h2 id="downscaling-the-control-plane">Downscaling the control plane<a class="headerlink" href="#downscaling-the-control-plane" title="Permanent link">#</a></h2>
 <p><strong>WARNING: Downscaling is a potentially dangerous operation.</strong></p>
 <p>Kubernetes using etcd as its backing store. It's crucial to have a quorum of etcd nodes available at all times. Always run etcd as a cluster of <strong>odd</strong> members.</p>

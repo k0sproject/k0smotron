@@ -1526,9 +1526,20 @@ You are not currently viewing the documentation for the current stable release o
   
   
   
-    <li class="md-nav__item">
-      <a href="../resource-reference/" class="md-nav__link">
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_1" id="__nav_11_1_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
@@ -1537,7 +1548,111 @@ You are not currently viewing the documentation for the current stable release o
   </span>
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_1">
+            <span class="md-nav__icon md-icon"></span>
+            Custom resources
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    bootstrap.cluster.x-k8s.io/v1beta1
+    
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    controlplane.cluster.x-k8s.io/v1beta1
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    infrastructure.cluster.x-k8s.io/v1beta1
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    k0smotron.io/v1beta1
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1650,11 +1765,11 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
 </code></pre></div>
-<p>For full reference of the fields check out the <a href="../resource-reference/#cluster">reference docs</a>.</p>
+<p>For full reference of the fields check out the <a href="../resource-reference/k0smotron.io-v1beta1/#cluster">reference docs</a>.</p>
 <h2 id="persistence">Persistence<a class="headerlink" href="#persistence" title="Permanent link">#</a></h2>
 <p>K0smotron persists data related to each Cluster. Specifically, it persists the <code>/var/lib/k0s</code> directory of the k0s controller which is the default data directory used by k0s. </p>
 <p>The <code>/var/lib/k0s</code> directory contains essential data for the operation of the k0s controller, but its growth over time is primarily driven by the addition of small <a href="https://docs.k0sproject.io/stable/manifests/">manifest</a> files. Since these manifests are lightweight and in text format, the directory tends to grow gradually and not excessively. Typically, 250 MB of space is sufficient to handle its growth, as the main additions are these small manifests, keeping the overall size manageable.</p>
-<p>The type of persistence used for this can be configurable via <code>spec.persistence</code>. For more information, check out the <a href="../resource-reference/#clusterspecpersistence">reference docs</a> on Cluster persistence.</p>
+<p>The type of persistence used for this can be configurable via <code>spec.persistence</code>. For more information, check out the <a href="../resource-reference/k0smotron.io-v1beta1/#clusterspecpersistence">reference docs</a> on Cluster persistence.</p>
 <h2 id="k0s-configuration">K0s configuration<a class="headerlink" href="#k0s-configuration" title="Permanent link">#</a></h2>
 <p>K0smotron allows you to configure k0s via <code>spec.k0sConfig</code> field. If empty, the default configuration will be used.</p>
 <p>Refer to <a href="https://docs.k0sproject.io/stable/configuration/">k0s docs</a> for a reference on k0s configuration.</p>

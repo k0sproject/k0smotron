@@ -113,10 +113,6 @@
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://docs.k0smotron.io/head/resource-reference/</loc>
-         <lastmod>2025-07-01</lastmod>
-    </url>
-    <url>
          <loc>https://docs.k0smotron.io/head/status/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
@@ -146,6 +142,22 @@
     </url>
     <url>
          <loc>https://docs.k0smotron.io/head/contributing/dev-environment/</loc>
+         <lastmod>2025-07-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/</loc>
+         <lastmod>2025-07-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/resource-reference/controlplane.cluster.x-k8s.io-v1beta1/</loc>
+         <lastmod>2025-07-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/</loc>
+         <lastmod>2025-07-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/resource-reference/k0smotron.io-v1beta1/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
