@@ -1,3 +1,5 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 # Adds namespace to all resources.
 namespace: k0smotron
 
@@ -25,9 +27,9 @@ resources:
 # Protect the /metrics endpoint by putting it behind auth.
 # If you want your controller-manager to expose the /metrics
 # endpoint w/o any authn/z, please comment the following line.
-patchesStrategicMerge:
-- manager_webhook_patch.yaml
-- webhookcainjection_patch.yaml
+patches:
+- path: manager_webhook_patch.yaml
+- path: webhookcainjection_patch.yaml
 
 replacements:
 - source:
@@ -122,5 +124,3 @@ replacements:
       group: cert-manager.io
       kind: Certificate
       version: v1
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
