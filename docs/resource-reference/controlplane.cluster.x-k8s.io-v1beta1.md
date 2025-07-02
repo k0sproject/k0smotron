@@ -1717,6 +1717,8 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
         <td>object</td>
         <td>
           <br/>
+          <br/>
+            <i>Default</i>: map[version:]<br/>
         </td>
         <td>false</td>
       </tr></tbody>

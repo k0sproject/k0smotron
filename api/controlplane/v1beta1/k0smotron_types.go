@@ -47,6 +47,7 @@ type K0smotronControlPlane struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              kmapi.ClusterSpec `json:"spec,omitempty"`
 
+	// +kubebuilder:default:={version:""}
 	Status K0smotronControlPlaneStatus `json:"status,omitempty"`
 }
 
