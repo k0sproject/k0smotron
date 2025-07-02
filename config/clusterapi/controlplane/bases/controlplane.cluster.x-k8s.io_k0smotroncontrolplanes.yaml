@@ -4587,6 +4587,8 @@ spec:
                 type: string
             type: object
           status:
+            default:
+              version: ""
             properties:
               externalManagedControlPlane:
                 description: externalManagedControlPlane is a bool that should be
