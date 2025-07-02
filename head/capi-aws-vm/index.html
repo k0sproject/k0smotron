@@ -1781,7 +1781,7 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="cluster-api-aws-on-ec2-instances">Cluster API - AWS on ec2 instances<a class="headerlink" href="#cluster-api-aws-on-ec2-instances" title="Permanent link">#</a></h1>
-<p>This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy 
+<p>This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy
 a cluster with hosted control plane and workers in AWS.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
 <p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>. In addition to those, you should also have appropriate AWS credentials available and the AWS CLI configured on your local machine.</p>
@@ -1793,7 +1793,7 @@ a cluster with hosted control plane and workers in AWS.</p>
 <div class="admonition warning">
 <p class="admonition-title">AWS limits userdata to 16kb</p>
 <p>AWS has a limit of 16kb for userdata. As k0smotron generates certificates and other files it might reach the limit, so you may need to compress it.
-This can be done by setting <code>AWSMachineTemplate.spec.template.spec.uncompressedUserData</code> to <code>false</code> in the AWSMachineTemplate manifest. </p>
+This can be done by setting <code>AWSMachineTemplate.spec.template.spec.uncompressedUserData</code> to <code>false</code> in the AWSMachineTemplate manifest.</p>
 </div>
 <p>Here is an example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
@@ -1827,12 +1827,11 @@ This can be done by setting <code>AWSMachineTemplate.spec.template.spec.uncompre
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">uncompressedUserData</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"> </span>
+<span class="w">      </span><span class="nt">uncompressedUserData</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">      </span><span class="nt">ami</span><span class="p">:</span>
 <span class="w">        </span><span class="c1"># Replace with your AMI ID</span>
-<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0008aa5cb0cde3400</span><span class="w"> </span><span class="c1"># Ubuntu 20.04 in eu-west-1</span>
+<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-046da914e42bb0388</span><span class="w"> </span><span class="c1"># Ubuntu 22.04 in eu-west-1</span>
 <span class="w">      </span><span class="nt">instanceType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.large</span>
-<span class="w">      </span><span class="nt">publicIP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">      </span><span class="nt">iamInstanceProfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nodes.cluster-api-provider-aws.sigs.k8s.io</span><span class="w"> </span><span class="c1"># Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`</span>
 <span class="w">      </span><span class="nt">cloudInit</span><span class="p">:</span>
 <span class="w">        </span><span class="c1"># Makes CAPA use k0s bootstrap cloud-init directly and not via SSM</span>
@@ -1846,7 +1845,7 @@ This can be done by setting <code>AWSMachineTemplate.spec.template.spec.uncompre
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-test</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.30.3+k0s.0</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.33.2+k0s.0</span>
 <span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
 <span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">args</span><span class="p">:</span>
@@ -1885,15 +1884,54 @@ This can be done by setting <code>AWSMachineTemplate.spec.template.spec.uncompre
 <span class="w">        </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
 <span class="w">        </span><span class="nt">fromPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9443</span>
 <span class="w">        </span><span class="nt">toPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9443</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineDeployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-md</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-test-cluster</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-test-cluster</span>
+<span class="w">      </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-test-cluster</span>
+<span class="w">        </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-test-cluster</span>
+<span class="w">      </span><span class="nt">failureDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-west-1</span>
+<span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">configRef</span><span class="p">:</span><span class="w"> </span><span class="c1"># This triggers our controller to create cloud-init secret</span>
+<span class="w">          </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
+<span class="w">          </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-machine-config</span>
+<span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
+<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSMachineTemplate</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-mt</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-machine-config</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.33.2+k0s.0</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
 NAME<span class="w">                                        </span>CLUSTERCLASS<span class="w">   </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
-cluster.cluster.x-k8s.io/aws-test-cluster<span class="w">                  </span>Provisioned<span class="w">   </span>24h<span class="w">   </span>
+cluster.cluster.x-k8s.io/aws-test-cluster<span class="w">                  </span>Provisioned<span class="w">   </span>24h
 
 NAME<span class="w">                                     </span>CLUSTER<span class="w">            </span>NODENAME<span class="w">        </span>PROVIDERID<span class="w">                              </span>PHASE<span class="w">      </span>AGE<span class="w">    </span>VERSION
-machine.cluster.x-k8s.io/aws-test-0<span class="w">      </span>aws-test-cluster<span class="w">   </span>aws-test-0<span class="w">      </span>aws:///eu-west-1c/i-04ea1b27f52210bec<span class="w">   </span>Running<span class="w">    </span>24h<span class="w">    </span>v1.30.3+k0s.0
-machine.cluster.x-k8s.io/aws-test-1<span class="w">      </span>aws-test-cluster<span class="w">   </span>aws-test-1<span class="w">      </span>aws:///eu-west-1a/i-0c34ca4e0450acd64<span class="w">   </span>Running<span class="w">    </span>23h<span class="w">    </span>v1.30.3+k0s.0
-machine.cluster.x-k8s.io/aws-test-2<span class="w">      </span>aws-test-cluster<span class="w">   </span>aws-test-2<span class="w">      </span>aws:///eu-west-1b/i-0ac2d7fb7ad92dff6<span class="w">   </span>Running<span class="w">    </span>23h<span class="w">    </span>v1.30.3+k0s.0
+machine.cluster.x-k8s.io/aws-test-0<span class="w">      </span>aws-test-cluster<span class="w">   </span>aws-test-0<span class="w">      </span>aws:///eu-west-1c/i-04ea1b27f52210bec<span class="w">   </span>Running<span class="w">    </span>24h<span class="w">    </span>v1.33.2+k0s.0
+machine.cluster.x-k8s.io/aws-test-1<span class="w">      </span>aws-test-cluster<span class="w">   </span>aws-test-1<span class="w">      </span>aws:///eu-west-1a/i-0c34ca4e0450acd64<span class="w">   </span>Running<span class="w">    </span>23h<span class="w">    </span>v1.33.2+k0s.0
+machine.cluster.x-k8s.io/aws-test-2<span class="w">      </span>aws-test-cluster<span class="w">   </span>aws-test-2<span class="w">      </span>aws:///eu-west-1b/i-0ac2d7fb7ad92dff6<span class="w">   </span>Running<span class="w">    </span>23h<span class="w">    </span>v1.33.2+k0s.0
 </code></pre></div>
 
 
