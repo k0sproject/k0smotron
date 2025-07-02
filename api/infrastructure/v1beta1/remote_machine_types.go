@@ -175,6 +175,9 @@ type PooledMachineSpec struct {
 	// +kubebuilder:default=22
 	Port int `json:"port"`
 
+	// +kubebuilder:validation:Optional
+	UseSudo bool `json:"useSudo,omitempty"`
+
 	// User is the user to use when connecting to the remote machine.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="root"

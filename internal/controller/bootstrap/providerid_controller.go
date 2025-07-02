@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,14 +10,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
 type ProviderIDController struct {
@@ -59,32 +59,16 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, fmt.Errorf("can't get cluster %s/%s: %w", machine.Namespace, machine.Spec.ClusterName, err)
 	}
 
-	childClient, err := k0smoutil.GetKubeClient(context.Background(), p.Client, cluster)
+	childClient, err := util.GetKubeClient(context.Background(), p.Client, cluster)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("can't get kube client for cluster %s/%s: %w. may not be created yet", machine.Namespace, machine.Spec.ClusterName, err)
 	}
 
-	nodes, err := childClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", machineNameNodeLabel, machine.GetName()),
-	})
-	if err != nil || len(nodes.Items) == 0 {
+	opts := metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", machineNameNodeLabel, machine.GetName())}
+	err = util.SetNodeProviderId(ctx, childClient, *machine.Spec.ProviderID, opts)
+	if errors.Is(err, util.ErrNodeNotReady) {
 		log.Info("waiting for node to be available for machine " + machine.Name)
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 10}, nil
-	}
-
-	node := nodes.Items[0]
-	if node.Spec.ProviderID == "" {
-		node.Spec.ProviderID = *machine.Spec.ProviderID
-		err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
-			return true
-		}, func() error {
-			_, upErr := childClient.CoreV1().Nodes().Update(context.Background(), &node, metav1.UpdateOptions{})
-			return upErr
-		})
-
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to update node '%s' with providerID: %w", node.Name, err)
-		}
 	}
 
 	return ctrl.Result{}, nil

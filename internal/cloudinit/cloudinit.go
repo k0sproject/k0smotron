@@ -74,6 +74,9 @@ func (c *CloudInit) AsBytes() ([]byte, error) {
 }
 
 func (f File) PermissionsAsInt() (int64, error) {
+	if f.Permissions == "" {
+		f.Permissions = "0644"
+	}
 
 	return strconv.ParseInt(f.Permissions, 8, 32)
 }

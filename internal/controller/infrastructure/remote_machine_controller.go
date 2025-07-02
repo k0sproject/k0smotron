@@ -18,14 +18,18 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -164,6 +168,25 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		if rm.Spec.ProviderID != "" {
+
+			// When bootstrap provider is not K0s, we need to set the providerId on the workload cluster node.
+			if mode == ModeNonK0s {
+
+				childClient, err := util.GetKubeClient(context.Background(), r.Client, cluster)
+				if err != nil {
+					return ctrl.Result{}, fmt.Errorf("can't get kube client for cluster %s/%s: %w. may not be created yet", machine.Namespace, machine.Spec.ClusterName, err)
+				}
+
+				opts := metav1.ListOptions{LabelSelector: fmt.Sprintf(
+					"%s=%s", clusterv1.ClusterNameLabel, cluster.GetName(),
+				)}
+				err = util.SetNodeProviderId(ctx, childClient, *machine.Spec.ProviderID, opts)
+				if errors.Is(err, util.ErrNodeNotReady) {
+					log.Info("waiting for node to be available for machine " + machine.Name)
+					return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 10}, nil
+				}
+			}
+
 			log.Info("RemoteMachine already has ProviderID, skipping reconciliation")
 			return ctrl.Result{}, nil
 		}
@@ -327,6 +350,7 @@ func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *
 	rm.Spec.Port = foundPooledMachine.Spec.Machine.Port
 	rm.Spec.User = foundPooledMachine.Spec.Machine.User
 	rm.Spec.SSHKeyRef = foundPooledMachine.Spec.Machine.SSHKeyRef
+	rm.Spec.UseSudo = foundPooledMachine.Spec.Machine.UseSudo
 
 	return nil
 }

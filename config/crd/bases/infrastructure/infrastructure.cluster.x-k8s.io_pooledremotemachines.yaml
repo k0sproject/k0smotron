@@ -61,6 +61,8 @@ spec:
                     required:
                     - name
                     type: object
+                  useSudo:
+                    type: boolean
                   user:
                     default: root
                     description: User is the user to use when connecting to the remote
