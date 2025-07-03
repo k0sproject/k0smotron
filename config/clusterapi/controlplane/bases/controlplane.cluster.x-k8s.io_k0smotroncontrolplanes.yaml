@@ -4588,6 +4588,8 @@ spec:
             type: object
           status:
             default:
+              initialized: false
+              ready: false
               version: ""
             properties:
               externalManagedControlPlane:
