@@ -303,7 +303,7 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
 	// Get the CAPI cluster accessor
-	client, err := remote.NewClusterClient(ctx, "", c.Client, util.ObjectKey(cluster))
+	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, util.ObjectKey(cluster))
 	if err != nil {
 		logger.Info("Failed to create cluster client", "error", err)
 		// Set a condition for this so we can determine later if we should requeue the reconciliation
