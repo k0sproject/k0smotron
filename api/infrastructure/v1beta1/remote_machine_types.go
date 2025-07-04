@@ -180,6 +180,9 @@ type PooledMachineSpec struct {
 	// +kubebuilder:default="root"
 	User string `json:"user"`
 
+	// +kubebuilder:validation:Optional
+	UseSudo bool `json:"useSudo,omitempty"`
+
 	// SSHKeyRef is a reference to a secret that contains the SSH private key.
 	// The key must be placed on the secret using the key "value".
 	// +kubebuilder:validation:Required
