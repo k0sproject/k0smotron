@@ -33,7 +33,7 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 
-	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/k0sproject/k0smotron/e2e/mothership"
 	"github.com/k0sproject/k0smotron/e2e/util"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -194,7 +194,7 @@ func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClust
 func initScheme() (*runtime.Scheme, error) {
 	s := runtime.NewScheme()
 	capiframework.TryAddDefaultSchemes(s)
-	err := controlplanev1beta1.AddToScheme(s)
+	err := cpv1beta1.AddToScheme(s)
 	if err != nil {
 		return nil, err
 	}

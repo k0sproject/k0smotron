@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 
 	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	infrastructurev1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -87,7 +87,7 @@ func init() {
 	utilruntime.Must(clusterv1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(k0smotronv1beta1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(bootstrapv1beta1.AddToScheme(scheme.Scheme))
-	utilruntime.Must(controlplanev1beta1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(cpv1beta1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme.Scheme))
 }
 
