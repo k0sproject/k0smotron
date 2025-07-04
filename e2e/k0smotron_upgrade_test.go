@@ -49,7 +49,7 @@ func TestK0smotronUpgrade(t *testing.T) {
 // Important: This version MUST match the ones set in the e2e config file because that guarantees that the clusterctl
 // local repository contains the required versions of the providers when running the upgrade tests. We should test
 // development version against the latests stable version of k0smotron.
-var k0smotronMinorVersionsToCheckUpgrades = []string{"1.4", "1.5"}
+var k0smotronMinorVersionsToCheckUpgrades = []string{"1.5"}
 
 func k0smotronUpgradeSpec(t *testing.T) {
 
@@ -58,7 +58,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 	initialK0smotronMinorVersion := k0smotronMinorVersionsToCheckUpgrades[0]
 
 	latestK0smotronStableMinor, _ := getStableReleaseOfMinor(context.Background(), initialK0smotronMinorVersion)
-	k0smotronVersion := []string{fmt.Sprintf("k0sproject-k0smotron:v%s", latestK0smotronStableMinor)}
+	k0smotronProvider := []string{fmt.Sprintf("k0sproject-k0smotron:v%s", latestK0smotronStableMinor)}
 
 	managementClusterName := fmt.Sprintf("%s-management-%s", testName, util.RandomString(6))
 	managementClusterLogFolder := filepath.Join(artifactFolder, "clusters", managementClusterName)
@@ -88,8 +88,8 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		ClusterctlConfigPath:     clusterctlConfigPath,
 		InfrastructureProviders:  e2eConfig.InfrastructureProviders(),
 		DisableMetricsCollection: true,
-		BootstrapProviders:       k0smotronVersion,
-		ControlPlaneProviders:    k0smotronVersion,
+		BootstrapProviders:       k0smotronProvider,
+		ControlPlaneProviders:    k0smotronProvider,
 		LogFolder:                managementClusterLogFolder,
 	}, e2eutil.GetInterval(e2eConfig, "bootstrap", "wait-deployment-available"))
 	require.NoError(t, err, "Failed to init management cluster")
@@ -117,10 +117,11 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		// no flavor specified, so it will use the default one "cluster-template"
 		Flavor: "",
 
-		Namespace:                workloadClusterNamespace,
-		ClusterName:              workloadClusterName,
-		KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: ptr.To[int64](1),
+		Namespace:         workloadClusterNamespace,
+		ClusterName:       workloadClusterName,
+		KubernetesVersion: e2eConfig.GetVariable(KubernetesVersion),
+		// TODO: make replicas value configurable
+		ControlPlaneMachineCount: ptr.To[int64](3),
 		// TODO: make infra provider configurable
 		InfrastructureProvider: "docker",
 		LogFolder:              filepath.Join(artifactFolder, "clusters", managementClusterProxy.GetName()),
@@ -172,6 +173,28 @@ func k0smotronUpgradeSpec(t *testing.T) {
 	err = e2eutil.WaitForControlPlaneToBeReady(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
 	require.NoError(t, err)
 
+	// Wait for the expected machine number
+	_, _, err = e2eutil.WaitForMachines(ctx, e2eutil.WaitForMachinesInput{
+		Lister:      managementClusterProxy.GetClient(),
+		ClusterName: workloadClusterName,
+		Namespace:   workloadClusterNamespace,
+		// TODO: make replicas value configurable
+		ExpectedReplicas:         3,
+		WaitForMachinesIntervals: e2eutil.GetInterval(e2eConfig, testName, "wait-machines"),
+	})
+	require.NoError(t, err)
+
+	// Get the machines before the management cluster is upgraded to make sure that the upgrade did not trigger
+	// any unexpected rollouts.
+	preUpgradeMachineList := &clusterv1.MachineList{}
+	err = managementClusterProxy.GetClient().List(
+		ctx,
+		preUpgradeMachineList,
+		client.InNamespace(workloadClusterNamespace),
+		client.MatchingLabels{clusterv1.ClusterNameLabel: workloadClusterName},
+	)
+	require.NoError(t, err)
+
 	for _, minor := range k0smotronMinorVersionsToCheckUpgrades[1:] {
 
 		latestK0smotronStableMinor, _ := getStableReleaseOfMinor(context.Background(), minor)
@@ -195,19 +218,19 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		err = e2eutil.WaitForControlPlaneToBeReady(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
 		require.NoError(t, err)
 
+		postUpgradeMachineList := &clusterv1.MachineList{}
+		err = managementClusterProxy.GetClient().List(
+			ctx,
+			postUpgradeMachineList,
+			client.InNamespace(workloadClusterNamespace),
+			client.MatchingLabels{clusterv1.ClusterNameLabel: workloadClusterName},
+		)
+		require.NoError(t, err)
+
+		require.True(t, validateMachineRollout(preUpgradeMachineList, postUpgradeMachineList), "The machines in the workload cluster have been rolled out unexpectedly")
+
 		fmt.Println(fmt.Sprintf("THE MANAGEMENT CLUSTER WITH '%s' VERSION OF K0SMOTRON PROVIDERS WORKS!", latestK0smotronStableMinor))
 	}
-
-	// Get the workloadCluster before the management cluster is upgraded with development version to make sure that the upgrade did not trigger
-	// any unexpected rollouts.
-	preUpgradeMachineList := &clusterv1.MachineList{}
-	err = managementClusterProxy.GetClient().List(
-		ctx,
-		preUpgradeMachineList,
-		client.InNamespace(workloadClusterNamespace),
-		client.MatchingLabels{clusterv1.ClusterNameLabel: workloadClusterName},
-	)
-	require.NoError(t, err)
 
 	fmt.Println("Upgrading the management cluster to development version of k0smotron")
 	// We apply development version of the providers to the management cluster.
@@ -220,7 +243,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 	}, e2eutil.GetInterval(e2eConfig, "bootstrap", "wait-deployment-available"))
 
 	// Wait a few minutes for any unexpected change in the development version to be applied in the workload cluster.
-	time.Sleep(3 * time.Minute)
+	time.Sleep(5 * time.Minute)
 
 	controlPlane, err = e2eutil.DiscoveryAndWaitForControlPlaneInitialized(ctx, capiframework.DiscoveryAndWaitForControlPlaneInitializedInput{
 		Lister:  managementClusterProxy.GetClient(),
@@ -245,8 +268,8 @@ func k0smotronUpgradeSpec(t *testing.T) {
 }
 
 // validateMachineRollout checks if the machines in the workload cluster have been rolled out correctly.
-// It compares the pre-upgrade and post-upgrade machine lists to ensure that the number of machines is the same
-// and that the machines have not been rolled out unexpectedly.
+// It compares the pre-upgrade and post-upgrade machine lists to ensure that the machines has not been rolled out after
+// upgrade k0smotron.
 //
 // TODO: Add more checks to ensure that the machines have not been rolled out unexpectedly like compare name. Actually, we
 // don't care about the machine names because there are pending issues to solve to change the machine naming strategy.
@@ -261,6 +284,17 @@ func validateMachineRollout(preMachineList, postMachineList *clusterv1.MachineLi
 
 	if len(preMachineList.Items) != len(postMachineList.Items) {
 		return false
+	}
+
+	preMachinesUUIDSet := make(map[string]struct{})
+	for _, m := range preMachineList.Items {
+		preMachinesUUIDSet[string(m.GetUID())] = struct{}{}
+	}
+
+	for _, m := range postMachineList.Items {
+		if _, ok := preMachinesUUIDSet[string(m.GetUID())]; !ok {
+			return false
+		}
 	}
 
 	return true
