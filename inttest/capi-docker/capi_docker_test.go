@@ -27,7 +27,7 @@ import (
 
 	"sigs.k8s.io/cluster-api/api/v1beta1"
 
-	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -180,7 +180,7 @@ func (s *CAPIDockerSuite) deleteCluster() {
 func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.Config) {
 
 	crdConfig := *rc
-	crdConfig.ContentConfig.GroupVersion = &controlplanev1beta1.GroupVersion
+	crdConfig.ContentConfig.GroupVersion = &cpv1beta1.GroupVersion
 	crdConfig.APIPath = "/apis"
 	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
 	crdConfig.UserAgent = rest.DefaultKubernetesUserAgent()
@@ -188,7 +188,7 @@ func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.
 	s.Require().NoError(err)
 
 	err = wait.PollUntilContextCancel(ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		var kcp controlplanev1beta1.K0smotronControlPlane
+		var kcp cpv1beta1.K0smotronControlPlane
 		err = crdRestClient.
 			Get().
 			Resource("k0smotroncontrolplanes").
@@ -213,7 +213,7 @@ func (s *CAPIDockerSuite) checkClusterIDAnnotation(ctx context.Context) {
 			Into(&cluster)
 
 		s.T().Log(cluster)
-		clusterIDAnnotation, found := cluster.GetAnnotations()[controlplanev1beta1.K0sClusterIDAnnotation]
+		clusterIDAnnotation, found := cluster.GetAnnotations()[cpv1beta1.K0sClusterIDAnnotation]
 		return found && strings.Contains(clusterIDAnnotation, "kube-system"), nil
 	})
 
