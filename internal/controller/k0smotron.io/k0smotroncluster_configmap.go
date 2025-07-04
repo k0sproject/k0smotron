@@ -145,8 +145,12 @@ func (r *ClusterReconciler) reconcileK0sConfig(ctx context.Context, kmc *km.Clus
 
 	err = r.reconcileDynamicConfig(ctx, kmc, unstructuredConfig)
 	if err != nil {
-		// Don't return error from dynamic config reconciliation, as it may not be created yet
-		logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
+		// Log as INFO during initialization, ERROR after initialization complete
+		if kmc.Status.Ready {
+			logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
+		} else {
+			logger.Info("failed to reconcile dynamic config during initialization, kubeconfig may not be available yet", "error", err)
+		}
 	}
 
 	return r.Client.Patch(ctx, &cm, client.Apply, patchOpts...)

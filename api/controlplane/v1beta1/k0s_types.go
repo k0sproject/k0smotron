@@ -79,7 +79,7 @@ type K0sControlPlane struct {
 
 	Spec K0sControlPlaneSpec `json:"spec,omitempty"`
 
-	// +kubebuilder:default:={version:""}
+	// +kubebuilder:default={version:"",ready:false,initialized:false,initialization:{controlPlaneInitialized:false},conditions: {{type: "ControlPlaneReady", status: "Unknown", reason:"ControlPlaneDoesNotExist", message:"Waiting for cluster topology to be reconciled", lastTransitionTime: "1970-01-01T00:00:00Z"}}}
 	Status K0sControlPlaneStatus `json:"status,omitempty"`
 }
 
@@ -136,6 +136,13 @@ type K0sControlPlaneList struct {
 	Items           []K0sControlPlane `json:"items"`
 }
 
+// Initialization represents the initialization status of the control plane
+type Initialization struct {
+	// controlPlaneInitialized indicates whether the control plane is initialized
+	// +optional
+	ControlPlaneInitialized bool `json:"controlPlaneInitialized"`
+}
+
 type K0sControlPlaneStatus struct {
 	// Ready denotes that the control plane is ready
 	// +optional
@@ -148,6 +155,10 @@ type K0sControlPlaneStatus struct {
 	// to check the operational state of the control plane.
 	// +optional
 	Initialized bool `json:"initialized"`
+
+	// initialization represents the initialization status of the control plane
+	// +optional
+	Initialization Initialization `json:"initialization,omitempty"`
 
 	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
 	// +optional

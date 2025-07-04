@@ -362,6 +362,16 @@ spec:
             type: object
           status:
             default:
+              conditions:
+              - lastTransitionTime: "1970-01-01T00:00:00Z"
+                message: Waiting for cluster topology to be reconciled
+                reason: ControlPlaneDoesNotExist
+                status: Unknown
+                type: ControlPlaneReady
+              initialization:
+                controlPlaneInitialized: false
+              initialized: false
+              ready: false
               version: ""
             properties:
               conditions:
@@ -413,6 +423,15 @@ spec:
                 description: externalManagedControlPlane is a bool that should be
                   set to true if the Node objects do not exist in the cluster.
                 type: boolean
+              initialization:
+                description: initialization represents the initialization status of
+                  the control plane
+                properties:
+                  controlPlaneInitialized:
+                    description: controlPlaneInitialized indicates whether the control
+                      plane is initialized
+                    type: boolean
+                type: object
               initialized:
                 description: |-
                   initialized denotes that the K0sControlPlane API Server is initialized and thus

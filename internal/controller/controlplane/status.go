@@ -60,7 +60,6 @@ func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sCont
 	logger := log.FromContext(ctx)
 
 	defer func() {
-		// The availability of a controlplane is computed in the same way regardless of the type of strategy followed for its upgrade.
 		c.computeAvailability(ctx, cluster, kcp, logger)
 	}()
 
@@ -297,19 +296,103 @@ func versionMatches(machine *clusterv1.Machine, ver string) bool {
 }
 
 func (c *K0sController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, logger logr.Logger) {
-	kcp.Status.Ready = false
-	logger.Info("Computed status", "status", kcp.Status)
-	// Check if the control plane is ready by connecting to the API server
-	// and checking if the control plane is initialized
-	logger.Info("Pinging the workload cluster API")
-	// Get the CAPI cluster accessor
-	client, err := remote.NewClusterClient(ctx, "", c.Client, util.ObjectKey(cluster))
-	if err != nil {
-		logger.Info("Failed to create cluster client", "error", err)
-		// Set a condition for this so we can determine later if we should requeue the reconciliation
-		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "Unable to connect to the workload cluster API", clusterv1.ConditionSeverityWarning, "Failed to create cluster client: %v", err)
-		return
+	statusAdapter := &K0sControlPlaneStatusAdapter{kcp: kcp}
+
+	computeAvailability(
+		ctx,
+		c.Client,
+		cluster,
+		kcp, // K0sControlPlane
+		nil, // K0smotronControlPlane (not used)
+		statusAdapter,
+		"k0smotron",
+		logger,
+	)
+}
+
+func getVersionSuffix(version string) string {
+	if strings.Contains(version, "+") {
+		return strings.Split(version, "+")[1]
 	}
+	return ""
+}
+
+// Status defines common status operations for control planes
+type Status interface {
+	SetReady(bool)
+	SetInitialized(bool)
+	SetControlPlaneInitialized(bool)
+	GetReady() bool
+	GetInitialized() bool
+	GetControlPlaneInitialized() bool
+}
+
+// K0sControlPlaneStatusAdapter adapts K0sControlPlane for common status operations
+type K0sControlPlaneStatusAdapter struct {
+	kcp *cpv1beta1.K0sControlPlane
+}
+
+func (a *K0sControlPlaneStatusAdapter) SetReady(ready bool) {
+	a.kcp.Status.Ready = ready
+}
+
+func (a *K0sControlPlaneStatusAdapter) SetInitialized(initialized bool) {
+	a.kcp.Status.Initialized = initialized
+}
+
+func (a *K0sControlPlaneStatusAdapter) SetControlPlaneInitialized(controlPlaneInitialized bool) {
+	a.kcp.Status.Initialization.ControlPlaneInitialized = controlPlaneInitialized
+}
+
+func (a *K0sControlPlaneStatusAdapter) GetReady() bool {
+	return a.kcp.Status.Ready
+}
+
+func (a *K0sControlPlaneStatusAdapter) GetInitialized() bool {
+	return a.kcp.Status.Initialized
+}
+
+func (a *K0sControlPlaneStatusAdapter) GetControlPlaneInitialized() bool {
+	return a.kcp.Status.Initialization.ControlPlaneInitialized
+}
+
+// K0smotronControlPlaneStatusAdapter adapts K0smotronControlPlane for common status operations
+type K0smotronControlPlaneStatusAdapter struct {
+	kcp *cpv1beta1.K0smotronControlPlane
+}
+
+func (a *K0smotronControlPlaneStatusAdapter) SetReady(ready bool) {
+	a.kcp.Status.Ready = ready
+}
+
+func (a *K0smotronControlPlaneStatusAdapter) SetInitialized(initialized bool) {
+	a.kcp.Status.Initialized = initialized
+}
+
+func (a *K0smotronControlPlaneStatusAdapter) SetControlPlaneInitialized(controlPlaneInitialized bool) {
+	a.kcp.Status.Initialization.ControlPlaneInitialized = controlPlaneInitialized
+}
+
+func (a *K0smotronControlPlaneStatusAdapter) GetReady() bool {
+	return a.kcp.Status.Ready
+}
+
+func (a *K0smotronControlPlaneStatusAdapter) GetInitialized() bool {
+	return a.kcp.Status.Initialized
+}
+
+func (a *K0smotronControlPlaneStatusAdapter) GetControlPlaneInitialized() bool {
+	return a.kcp.Status.Initialization.ControlPlaneInitialized
+}
+
+// checkAPIConnectivity performs the actual API connectivity check
+func checkAPIConnectivity(ctx context.Context, c client.Client, cluster *clusterv1.Cluster, clientNamespace string) (bool, *corev1.Namespace, error) {
+	// Get the CAPI cluster accessor
+	remoteClient, err := remote.NewClusterClient(ctx, clientNamespace, c, util.ObjectKey(cluster))
+	if err != nil {
+		return false, nil, err
+	}
+
 	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -319,26 +402,95 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 		Namespace: "",
 		Name:      "kube-system",
 	}
-	err = client.Get(pingCtx, nsKey, ns)
-	if err != nil {
-		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "Unable to connect to the workload cluster API", clusterv1.ConditionSeverityWarning, "Failed to get namespace: %v", err)
-		return
-	}
-	logger.Info("Successfully pinged the workload cluster API")
-	// Set the conditions
-	conditions.MarkTrue(kcp, cpv1beta1.ControlPlaneReadyCondition)
-	kcp.Status.Ready = true
-	kcp.Status.Initialized = true
 
-	// Set the k0s cluster ID annotation
-	annotations.AddAnnotations(cluster, map[string]string{
-		cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
-	})
+	err = remoteClient.Get(pingCtx, nsKey, ns)
+	if err != nil {
+		return false, nil, nil // API not available, but not an error
+	}
+
+	return true, ns, nil
 }
 
-func getVersionSuffix(version string) string {
-	if strings.Contains(version, "+") {
-		return strings.Split(version, "+")[1]
+// setConditionsOnControlPlane sets conditions on the appropriate control plane type
+func setConditionsOnControlPlane(k0sCP *cpv1beta1.K0sControlPlane, k0smotronCP *cpv1beta1.K0smotronControlPlane, conditionType clusterv1.ConditionType, status bool, reason, message string) {
+	if k0sCP != nil {
+		if status {
+			conditions.MarkTrue(k0sCP, conditionType)
+		} else {
+			conditions.MarkFalse(k0sCP, conditionType, reason, clusterv1.ConditionSeverityWarning, message)
+		}
+	} else if k0smotronCP != nil {
+		if status {
+			conditions.MarkTrue(k0smotronCP, conditionType)
+		} else {
+			conditions.MarkFalse(k0smotronCP, conditionType, reason, clusterv1.ConditionSeverityWarning, message)
+		}
 	}
-	return ""
+}
+
+// computeAvailability checks the API server availability and updates status accordingly
+// This function is shared between K0sControlPlane and K0smotronControlPlane controllers
+func computeAvailability(
+	ctx context.Context,
+	c client.Client,
+	cluster *clusterv1.Cluster,
+	k0sCP *cpv1beta1.K0sControlPlane,
+	k0smotronCP *cpv1beta1.K0smotronControlPlane,
+	statusAdapter Status,
+	clientNamespace string,
+	logger logr.Logger,
+) {
+	logger.Info("Checking workload cluster API availability")
+
+	// 1. First, check API connectivity and update conditions (v1beta2 spec: dynamic update)
+	apiAvailable, ns, err := checkAPIConnectivity(ctx, c, cluster, clientNamespace)
+
+	// Conditions are always updated (v1beta2 spec)
+	if err != nil {
+		logger.Info("Failed to create cluster client", "error", err)
+		setConditionsOnControlPlane(
+			k0sCP, k0smotronCP,
+			cpv1beta1.ControlPlaneReadyCondition,
+			false,
+			"ClusterClientCreationFailed",
+			fmt.Sprintf("Failed to create cluster client: %v", err),
+		)
+	} else if !apiAvailable {
+		logger.Info("Workload cluster API not accessible")
+		setConditionsOnControlPlane(
+			k0sCP, k0smotronCP,
+			cpv1beta1.ControlPlaneReadyCondition,
+			false,
+			"KubeSystemNamespaceNotAccessible",
+			"Failed to get kube-system namespace",
+		)
+	} else {
+		logger.Info("Successfully verified workload cluster API availability")
+		setConditionsOnControlPlane(
+			k0sCP, k0smotronCP,
+			cpv1beta1.ControlPlaneReadyCondition,
+			true,
+			"",
+			"",
+		)
+
+		// Set the k0s cluster ID annotation
+		annotations.AddAnnotations(cluster, map[string]string{
+			cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
+		})
+	}
+
+	// 2. Finally, update Ready/Initialized fields (write-once semantics) Once true, never change
+	if statusAdapter.GetReady() && statusAdapter.GetInitialized() && statusAdapter.GetControlPlaneInitialized() {
+		logger.Info("Control plane already ready and initialized (v1beta1 fields are write-once)")
+		return
+	}
+
+	// Only set v1beta1 fields to true if API is available
+	if apiAvailable {
+		statusAdapter.SetReady(true)
+		statusAdapter.SetInitialized(true)
+		// Set the new v1beta2 controlPlaneInitialized field to true
+		statusAdapter.SetControlPlaneInitialized(true)
+	}
 }

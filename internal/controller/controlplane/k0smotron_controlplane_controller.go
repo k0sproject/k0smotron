@@ -33,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -135,7 +134,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			if errors.Is(derr, ErrNotReady) {
 				res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
 			} else {
-				log.Error(derr, "Failed to update K0smotronContorlPlane status")
+				log.Error(derr, "Failed to update K0smotronControlPlane status")
 				err = derr
 				return
 			}
@@ -143,7 +142,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		derr = kcpPatchHelper.Patch(ctx, kcp)
 		if derr != nil {
-			log.Error(derr, "Failed to patch K0smotronContorlPlane")
+			log.Error(derr, "Failed to patch K0smotronControlPlane")
 			err = kerrors.NewAggregate([]error{err, derr})
 		}
 
@@ -155,7 +154,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		if err != nil {
 			// We shouldn't proceed with Infrastructure patching
-			// if we couldn't update the Cluster, K0smotronContorlPlane object(s)
+			// if we couldn't update the Cluster, K0smotronControlPlane object(s)
 			return
 		}
 
@@ -183,30 +182,6 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			return res, err
 		}
 	}
-
-	if ready {
-		remoteClient, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
-		if err != nil {
-			return res, fmt.Errorf("failed to create remote client: %w", err)
-		}
-
-		ns := &corev1.Namespace{}
-		err = remoteClient.Get(ctx, types.NamespacedName{Name: "kube-system", Namespace: ""}, ns)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
-			}
-			return res, fmt.Errorf("failed to get namespace: %w", err)
-		}
-
-		annotations.AddAnnotations(cluster, map[string]string{
-			cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
-		})
-	}
-
-	kcp.Status.Ready = ready
-	kcp.Status.ExternalManagedControlPlane = true
-	kcp.Status.Initialized = true
 
 	return res, err
 }
@@ -471,6 +446,13 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.N
 		kcp.Status.Version = minimumVersion.String()
 	}
 
+	clusterObj := &clusterv1.Cluster{}
+	err = c.Client.Get(ctx, cluster, clusterObj)
+	if err != nil {
+		return err
+	}
+	c.computeAvailability(ctx, clusterObj, kcp)
+
 	// if no replicas are yet available or the desired version is not in the current state of the
 	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
 	if kcp.Status.UnavailableReplicas > 0 || desiredVersion.String() != kcp.Status.Version {
@@ -478,6 +460,24 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.N
 	}
 
 	return nil
+}
+
+// computeAvailability checks if the control plane is ready by connecting to the API server
+// and checking if the control plane is initialized
+func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) {
+	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
+	statusAdapter := &K0smotronControlPlaneStatusAdapter{kcp: kcp}
+
+	computeAvailability(
+		ctx,
+		c.Client,
+		cluster,
+		nil, // K0sControlPlane (not used)
+		kcp, // K0smotronControlPlane
+		statusAdapter,
+		"k0smotron",
+		logger,
+	)
 }
 
 func (c *K0smotronController) getComparableK0sVersionRunningInPod(ctx context.Context, pod *corev1.Pod) (*version.Version, error) {
