@@ -292,17 +292,31 @@ func (c *K0sController) hasControllerConfigChanged(bootstrapConfigs map[string]b
 		return false
 	}
 
+	// Bootstrap controller did set config to the K0sControllerConfig, so we need to compare it with the same form in the K0sControlPlane
+	for _, arg := range bootstrapConfig.Spec.K0sConfigSpec.Args {
+		if arg == "/etc/k0s.yaml" {
+			kcp.Spec.K0sConfigSpec.Args = append(kcp.Spec.K0sConfigSpec.Args, "--config", "/etc/k0s.yaml")
+			break
+		}
+	}
+
 	// k0s config will be reconciled using dynamic config, so leave it out of the comparison
 	bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapConfig.Spec.K0sConfigSpec.K0s.Object, "spec", "api")
 	kcpAPIConfig, _, _ := unstructured.NestedMap(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api")
 	bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapConfig.Spec.K0sConfigSpec.K0s.Object, "spec", "storage")
 	kcpStorageConfig, _, _ := unstructured.NestedMap(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "storage")
+	// Bootstrap controller did set etcd name to the K0sControllerConfig, so we need to compare it with the name set in the K0sControlPlane
+	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "storage")
+	if kcpStorageConfigEtcdWithName == nil {
+		kcpStorageConfigEtcdWithName = make(map[string]interface{})
+	}
+	_ = unstructured.SetNestedField(kcpStorageConfigEtcdWithName, machine.Name, "etcd", "extraArgs", "name")
 	bootstrapConfig.Spec.K0sConfigSpec.K0s = kcp.Spec.K0sConfigSpec.K0s
 	// leave out the tunneling spec for the bootstrap config
 	bootstrapConfig.Spec.K0sConfigSpec.Tunneling = kcp.Spec.K0sConfigSpec.Tunneling
 	return !reflect.DeepEqual(kcp.Spec.K0sConfigSpec, *bootstrapConfig.Spec.K0sConfigSpec) ||
 		!reflect.DeepEqual(kcpAPIConfig, bootstrapAPIConfig) ||
-		!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig)
+		(!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig) && !reflect.DeepEqual(kcpStorageConfigEtcdWithName, bootstrapStorageConfig))
 }
 
 func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
