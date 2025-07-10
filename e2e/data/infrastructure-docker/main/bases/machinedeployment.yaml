@@ -1,8 +1,8 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: docker-md-test-no-suffix
-  namespace: default
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
 spec:
   clusterNetwork:
     pods:
@@ -15,18 +15,19 @@ spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: K0smotronControlPlane
-    name: docker-md-test-no-suffix
+    name: ${CLUSTER_NAME}
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DockerCluster
-    name: docker-md-test-no-suffix
+    name: ${CLUSTER_NAME}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0smotronControlPlane
 metadata:
-  name: docker-md-test-no-suffix
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
 spec:
-  version: v1.27.2
+  version: ${KUBERNETES_VERSION}
   persistence:
     type: emptyDir
   service:
@@ -35,56 +36,55 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
 metadata:
-  name: docker-md-test-no-suffix
-  namespace: default
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
 spec:
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-  name: docker-md-test-no-suffix
-  namespace: default
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
 spec:
   replicas: 2
-  clusterName: docker-md-test-no-suffix
+  clusterName: ${CLUSTER_NAME}
   selector:
     matchLabels:
-      cluster.x-k8s.io/cluster-name: docker-md-test-no-suffix
+      cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
       pool: worker-pool-1
   template:
     metadata:
       labels:
-        cluster.x-k8s.io/cluster-name: docker-md-test-no-suffix
+        cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
         pool: worker-pool-1
     spec:
-      version: v1.27.2
-      clusterName: docker-md-test-no-suffix
+      version: ${KUBERNETES_VERSION}
+      clusterName: ${CLUSTER_NAME}
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
           kind: K0sWorkerConfigTemplate
-          name: docker-md-test-no-suffix
+          name: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: DockerMachineTemplate
-        name: docker-md-test-no-suffix
+        name: ${CLUSTER_NAME}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: K0sWorkerConfigTemplate
 metadata:
-  name: docker-md-test-no-suffix
-  namespace: default
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
-      version: v1.27.2+k0s.0
+      version: ${KUBERNETES_VERSION}+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
-  name: docker-md-test-no-suffix
-  namespace: default
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec: {}
----

@@ -38,6 +38,7 @@ providers:
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-kcp-remediation.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-webhook-recreate-in-single-mode.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-webhook-k0s-not-compatible.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/cluster-template-machinedeployment.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -155,3 +156,6 @@ intervals:
   workload-inplace-upgrade/wait-cluster: ["10m", "10s"]
   workload-inplace-upgrade/wait-control-plane: ["20m", "10s"]
   workload-inplace-upgrade/wait-worker-nodes: ["20m", "10s"]
+  machinedeployment/wait-cluster: ["20m", "10s"]
+  machinedeployment/wait-control-plane: ["20m", "10s"]
+  machinedeployment/wait-delete-cluster: ["20m", "10s"]
