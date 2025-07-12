@@ -5,7 +5,7 @@
 # - control-plane k0smotron
 # - infrastructure docker
 images:
-  - name: quay.io/k0sproject/k0smotron
+  - name: quay.io/k0sproject/k0smotron:latest
     loadBehavior: mustLoad
 
 providers:
