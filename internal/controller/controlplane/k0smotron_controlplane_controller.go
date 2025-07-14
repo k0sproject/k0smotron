@@ -519,6 +519,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	logger.Info("Successfully pinged the workload cluster API")
 	kcp.Status.Ready = true
 	kcp.Status.Initialized = true
+	kcp.Status.Initialization.ControlPlaneInitialized = true
 
 	// Set the k0s cluster ID annotation
 	annotations.AddAnnotations(cluster, map[string]string{

@@ -47,7 +47,7 @@ type K0smotronControlPlane struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              kmapi.ClusterSpec `json:"spec,omitempty"`
 
-	// +kubebuilder:default:={version:"",ready:false,initialized:false}
+	// +kubebuilder:default:={version:"",ready:false,initialized:false,initialization:{controlPlaneInitialized:false}}
 	Status K0smotronControlPlaneStatus `json:"status,omitempty"`
 }
 
@@ -57,6 +57,13 @@ type K0smotronControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []K0smotronControlPlane `json:"items"`
+}
+
+// Initialization represents the initialization status of the control plane
+type Initialization struct {
+	// controlPlaneInitialized indicates whether the control plane is initialized
+	// +optional
+	ControlPlaneInitialized bool `json:"controlPlaneInitialized"`
 }
 
 type K0smotronControlPlaneStatus struct {
@@ -70,6 +77,11 @@ type K0smotronControlPlaneStatus struct {
 	// to check the operational state of the control plane.
 	// +optional
 	Initialized bool `json:"initialized"`
+
+	// initialization represents the initialization status of the control plane
+	// +optional
+	Initialization Initialization `json:"initialization,omitempty"`
+
 	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
 	// +optional
 	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`

@@ -4588,6 +4588,8 @@ spec:
             type: object
           status:
             default:
+              initialization:
+                controlPlaneInitialized: false
               initialized: false
               ready: false
               version: ""
@@ -4596,6 +4598,15 @@ spec:
                 description: externalManagedControlPlane is a bool that should be
                   set to true if the Node objects do not exist in the cluster.
                 type: boolean
+              initialization:
+                description: initialization represents the initialization status of
+                  the control plane
+                properties:
+                  controlPlaneInitialized:
+                    description: controlPlaneInitialized indicates whether the control
+                      plane is initialized
+                    type: boolean
+                type: object
               initialized:
                 description: |-
                   initialized denotes that the K0smotronControlPlane API Server is initialized and thus
