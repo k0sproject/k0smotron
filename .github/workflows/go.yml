@@ -181,6 +181,7 @@ jobs:
       matrix:
         e2e-suite:
           - controlplane-remediation
+          - controlplane-conditions
           - workload-cluster-inplace-upgrade
           - workload-cluster-recreate-upgrade
           - admission-webhook-recreate-strategy-in-single-mode
