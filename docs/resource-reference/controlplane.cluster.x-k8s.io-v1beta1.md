@@ -1752,7 +1752,7 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
         <td>
           <br/>
           <br/>
-            <i>Default</i>: map[initialization:map[controlPlaneInitialized:false] initialized:false ready:false version:]<br/>
+            <i>Default</i>: map[conditions:[map[lastTransitionTime:1970-01-01T00:00:00Z message:Waiting for cluster topology to be reconciled reason:ControlPlaneDoesNotExist status:Unknown type:ControlPlaneReady]] initialization:map[controlPlaneInitialized:false] initialized:false ready:false version:]<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10848,6 +10848,13 @@ merge patch.<br/>
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanestatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Conditions defines current service state of the K0smotronControlPlane.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>externalManagedControlPlane</b></td>
         <td>boolean</td>
         <td>
@@ -10931,6 +10938,79 @@ that have the desired version.<br/>
         <td>
           version represents the minimum Kubernetes version for the control plane pods
 in the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.status.conditions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanestatus)</sup></sup>
+
+
+
+Condition defines an observation of a Cluster API resource operational state.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          Last time the condition transitioned from one status to another.
+This should be when the underlying condition changed. If that is not known, then using the time when
+the API field changed is acceptable.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Status of the condition, one of True, False, Unknown.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type of condition in CamelCase or in foo.example.com/CamelCase.
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          A human readable message indicating details about the transition.
+This field may be empty.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          The reason for the condition's last transition in CamelCase.
+The specific API may choose whether or not this field is considered a guaranteed API.
+This field may not be empty.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>severity</b></td>
+        <td>string</td>
+        <td>
+          Severity provides an explicit classification of Reason code, so the users or machines can immediately
+understand the current situation and act accordingly.
+The Severity field MUST be set only when Status=False.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
