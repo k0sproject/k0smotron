@@ -131,7 +131,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	defer func() {
-		derr := c.computeStatus(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, kcp)
+		derr := c.computeStatus(ctx, cluster, kcp)
 		log.Info("Computed status", "status", kcp.Status)
 		if derr != nil {
 			if errors.Is(derr, ErrNotReady) {
@@ -391,9 +391,9 @@ func FormatStatusVersion(specVersion, statusVersion string) string {
 	return statusVersion
 }
 
-func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.NamespacedName, kcp *cpv1beta1.K0smotronControlPlane) error {
+func (c *K0smotronController) computeStatus(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) error {
 	var kmc kapi.Cluster
-	err := c.Client.Get(ctx, cluster, &kmc)
+	err := c.Client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &kmc)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// The cluster is not yet created.
@@ -470,12 +470,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.N
 		kcp.Status.Version = FormatStatusVersion(kcp.Spec.Version, statusVersion)
 	}
 
-	clusterObj := &clusterv1.Cluster{}
-	err = c.Client.Get(ctx, cluster, clusterObj)
-	if err != nil {
-		return err
-	}
-	c.computeAvailability(ctx, clusterObj, kcp)
+	c.computeAvailability(ctx, cluster, kcp)
 
 	// if no replicas are yet available or the desired version is not in the current state of the
 	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
