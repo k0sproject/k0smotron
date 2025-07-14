@@ -42,6 +42,7 @@ import (
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -131,6 +132,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	defer func() {
 		derr := c.computeStatus(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, kcp)
+		log.Info("Computed status", "status", kcp.Status)
 		if derr != nil {
 			if errors.Is(derr, ErrNotReady) {
 				res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
@@ -488,8 +490,6 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.N
 // and checking if the control plane is initialized
 func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) {
 	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
-	logger.Info("Computed status", "status", kcp.Status)
-
 	// Check if the control plane is ready by connecting to the API server
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
@@ -498,6 +498,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
 	if err != nil {
 		logger.Info("Failed to create cluster client", "error", err)
+		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "ClusterClientCreationFailed", clusterv1.ConditionSeverityWarning, "Failed to create cluster client: %v", err)
 		return
 	}
 
@@ -512,11 +513,16 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	}
 	err = client.Get(pingCtx, nsKey, ns)
 	if err != nil {
-		logger.Info("Failed to get namespace", "error", err)
+		logger.Info("Failed to get workload cluster namespace", "error", err)
+		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "KubeSystemNamespaceNotAccessible", clusterv1.ConditionSeverityWarning, "Failed to get kube-system namespace: %v", err)
 		return
 	}
 
-	logger.Info("Successfully pinged the workload cluster API")
+	logger.Info("Successfully verified workload cluster API availability")
+
+	// Set condition for successful API access
+	conditions.MarkTrue(kcp, cpv1beta1.ControlPlaneReadyCondition)
+
 	kcp.Status.Ready = true
 	kcp.Status.Initialized = true
 	kcp.Status.Initialization.ControlPlaneInitialized = true
