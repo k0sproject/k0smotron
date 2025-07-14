@@ -135,7 +135,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			if errors.Is(derr, ErrNotReady) {
 				res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
 			} else {
-				log.Error(derr, "Failed to update K0smotronContorlPlane status")
+				log.Error(derr, "Failed to update K0smotronControlPlane status")
 				err = derr
 				return
 			}
@@ -143,7 +143,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		derr = kcpPatchHelper.Patch(ctx, kcp)
 		if derr != nil {
-			log.Error(derr, "Failed to patch K0smotronContorlPlane")
+			log.Error(derr, "Failed to patch K0smotronControlPlane")
 			err = kerrors.NewAggregate([]error{err, derr})
 		}
 
@@ -155,7 +155,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		if err != nil {
 			// We shouldn't proceed with Infrastructure patching
-			// if we couldn't update the Cluster, K0smotronContorlPlane object(s)
+			// if we couldn't update the Cluster, K0smotronControlPlane object(s)
 			return
 		}
 

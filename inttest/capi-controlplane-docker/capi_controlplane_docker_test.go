@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	controlplanev1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
@@ -123,7 +123,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 			Do(ctx).
 			Into(&cluster)
 
-		clusterIDAnnotation, found := cluster.GetAnnotations()[controlplanev1beta1.K0sClusterIDAnnotation]
+		clusterIDAnnotation, found := cluster.GetAnnotations()[cpv1beta1.K0sClusterIDAnnotation]
 		return found && strings.Contains(clusterIDAnnotation, "kube-system"), nil
 	})
 	s.Require().NoError(err)
@@ -280,14 +280,14 @@ spec:
           enabled: false
         network:
           controlPlaneLoadBalancing:
-            enabled: false 
+            enabled: false
     files:
     - path: /tmp/test-file-secret
-      contentFrom: 
-        secretRef: 
+      contentFrom:
+        secretRef:
           name: test-file-secret
           key: value
-    customUserDataRef: 
+    customUserDataRef:
       configMapRef:
         name: custom-user-data
         key: customUserData
@@ -351,11 +351,11 @@ spec:
     - path: /tmp/test-file
       content: test-file
     - path: /tmp/test-file-secret
-      contentFrom: 
-        secretRef: 
+      contentFrom:
+        secretRef:
           name: test-file-secret
           key: value
-  customUserDataRef: 
+  customUserDataRef:
     configMapRef:
       name: custom-user-data
       key: customUserData
