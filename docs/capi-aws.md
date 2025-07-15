@@ -141,9 +141,7 @@ spec:
 ---
 ```
 
-As we are using self-managed infrastructure we need to manually mark the infrastructure ready. This can be accomplished using the following command: `kubectl patch AWSCluster k0s-aws-test --type=merge --subresource status --patch 'status: {ready: true}'.`
-
-After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:
+Once complete, your command line should display output similar to this:
 
 ```shell
 % kubectl get cluster,machine
