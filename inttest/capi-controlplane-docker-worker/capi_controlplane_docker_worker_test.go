@@ -111,10 +111,21 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDockerWorker() {
 		return string(b) == "ok", nil
 	})
 	s.Require().NoError(err)
-
+	controlPlaneMachineName := ""
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "status").Output()
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 1 {
+			return false, nil
+		}
+
+		controlPlaneMachineName = machines[0].GetName()
+
+		output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", machines[0].GetName()), "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
@@ -124,7 +135,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDockerWorker() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-0", corev1.ConditionTrue))
+	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, controlPlaneMachineName, corev1.ConditionTrue))
 }
 
 func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
