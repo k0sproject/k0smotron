@@ -184,7 +184,12 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
+
+	machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "remote-test", "default", s.client)
+	s.Require().NoError(err)
+	s.Require().Len(machines, 1, "Expected 1 machine for K0sControlPlane remote-test, got %d", len(machines))
+
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, machines[0].GetName(), corev1.ConditionTrue))
 
 	s.T().Log("update cluster")
 	s.updateCluster()
@@ -200,7 +205,11 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready in updated cluster")
-	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, "remote-test-0", corev1.ConditionTrue))
+	machines, err = util.GetControlPlaneMachinesByKcpName(ctx, "remote-test", "default", s.client)
+	s.Require().NoError(err)
+	s.Require().Len(machines, 1, "Expected 1 machine for K0sControlPlane remote-test, got %d", len(machines))
+
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, machines[0].GetName(), corev1.ConditionTrue))
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) findRemoteMachines(namespace string) ([]infra.RemoteMachine, error) {

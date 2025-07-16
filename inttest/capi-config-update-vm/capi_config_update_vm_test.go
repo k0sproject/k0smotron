@@ -106,9 +106,20 @@ func (s *CAPIConfigUpdateVMSuite) TestCAPIConfigUpdateVMWorker() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for cluster to be ready")
+	controlPlaneMachineName := ""
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "status").Output()
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 1 {
+			return false, nil
+		}
+
+		controlPlaneMachineName = machines[0].GetName()
+		output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", controlPlaneMachineName), "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
@@ -119,7 +130,7 @@ func (s *CAPIConfigUpdateVMSuite) TestCAPIConfigUpdateVMWorker() {
 
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "kc", "--kubeconfig=/var/lib/k0s/pki/admin.conf", "get", "clusterconfig", "-A").Output()
+		output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", controlPlaneMachineName), "k0s", "kc", "--kubeconfig=/var/lib/k0s/pki/admin.conf", "get", "clusterconfig", "-A").Output()
 		if err != nil {
 			return false, nil
 		}

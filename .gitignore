@@ -13,6 +13,7 @@ bin
 testbin/*
 Dockerfile.cross
 k0smotron-image-bundle.tar
+__debug_bin*
 
 # stamp files for docker images
 .*.stamp
