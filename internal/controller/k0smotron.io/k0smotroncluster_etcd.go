@@ -383,8 +383,37 @@ func (r *ClusterReconciler) generateEtcdStatefulSet(kmc *km.Cluster, existingSts
 		statefulSet.Spec.Template.Spec.ServiceAccountName = kmc.Spec.ServiceAccount
 	}
 
-	if kmc.Spec.TopologySpreadConstraints != nil {
+	// Apply etcd-specific scheduling and runtime configurations
+	if kmc.Spec.Etcd.RuntimeClass != nil {
+		statefulSet.Spec.Template.Spec.RuntimeClassName = kmc.Spec.Etcd.RuntimeClass
+	}
+
+	if kmc.Spec.Etcd.Tolerations != nil {
+		statefulSet.Spec.Template.Spec.Tolerations = kmc.Spec.Etcd.Tolerations
+	}
+
+	if kmc.Spec.Etcd.TopologySpreadConstraints != nil {
+		statefulSet.Spec.Template.Spec.TopologySpreadConstraints = kmc.Spec.Etcd.TopologySpreadConstraints
+	} else if kmc.Spec.TopologySpreadConstraints != nil {
+		// Fallback to cluster-level TopologySpreadConstraints if etcd-specific ones are not set
 		statefulSet.Spec.Template.Spec.TopologySpreadConstraints = kmc.Spec.TopologySpreadConstraints
+	}
+
+	if kmc.Spec.Etcd.NodeSelector != nil {
+		statefulSet.Spec.Template.Spec.NodeSelector = kmc.Spec.Etcd.NodeSelector
+	}
+
+	if kmc.Spec.Etcd.Affinity != nil {
+		// Use etcd-specific affinity, which will override the default PodAntiAffinity
+		statefulSet.Spec.Template.Spec.Affinity = kmc.Spec.Etcd.Affinity
+	}
+
+	if kmc.Spec.Etcd.ImagePullSecrets != nil {
+		statefulSet.Spec.Template.Spec.ImagePullSecrets = kmc.Spec.Etcd.ImagePullSecrets
+	}
+
+	if kmc.Spec.Etcd.PriorityClassName != "" {
+		statefulSet.Spec.Template.Spec.PriorityClassName = kmc.Spec.Etcd.PriorityClassName
 	}
 
 	if kmc.Spec.Etcd.AutoDeletePVCs {
