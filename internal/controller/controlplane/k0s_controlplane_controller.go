@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	utilrand "k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -59,8 +60,11 @@ import (
 )
 
 const (
-	defaultK0sSuffix  = "k0s.0"
-	defaultK0sVersion = "v1.27.9+k0s.0"
+	defaultK0sSuffix       = "k0s.0"
+	defaultK0sVersion      = "v1.27.9+k0s.0"
+	maxNameLength          = 63
+	randomLength           = 5
+	maxGeneratedNameLength = maxNameLength - randomLength
 )
 
 var (
@@ -484,7 +488,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	if len(desiredMachineNames) < int(kcp.Spec.Replicas) {
 
-		name := machineName(kcp, machineNamesToDelete, desiredMachineNames)
+		name := machineName(kcp)
 		log.Log.Info("desire machine", "name", len(desiredMachineNames))
 
 		for _, mn := range deletedMachines.Names() {
@@ -973,26 +977,15 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 	})
 }
 
-func machineName(kcp *cpv1beta1.K0sControlPlane, machineToDelete, desiredMachines map[string]bool) string {
-	if len(machineToDelete) == 0 {
-		for i := 0; i < int(kcp.Spec.Replicas); i++ {
-			name := fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines)-i)
-			_, ok := desiredMachines[name]
-			if !ok {
-				return name
-			}
-		}
+func machineName(kcp *cpv1beta1.K0sControlPlane) string {
+	randomSuffix := utilrand.String(randomLength)
+	name := fmt.Sprintf("%s-%s", kcp.Name, randomSuffix)
+
+	if len(name) > maxNameLength {
+		name = name[:maxGeneratedNameLength] + randomSuffix
 	}
 
-	for i := 0; i < int(kcp.Spec.Replicas); i++ {
-		name := fmt.Sprintf("%s-%d", kcp.Name, i)
-		_, ok := machineToDelete[name]
-		if ok {
-			return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines)+int(kcp.Spec.Replicas))
-		}
-	}
-
-	return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines))
+	return name
 }
 
 // SetupWithManager sets up the controller with the Manager.
