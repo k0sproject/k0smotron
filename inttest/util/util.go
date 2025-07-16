@@ -103,7 +103,18 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 		return err
 	}
 
-	return CreateFromYAML(ctx, kc, rc, installFileName)
+	if err := CreateFromYAML(ctx, kc, rc, installFileName); err != nil {
+		return err
+	}
+
+	if err := InstallWebhookChecker(ctx, kc, rc); err != nil {
+		return fmt.Errorf("failed to install webhook checker: %w", err)
+	}
+	if err := WaitForPod(ctx, kc, "webhook-checker", "k0smotron"); err != nil {
+		return fmt.Errorf("failed to wait for k0smotron webhook: %w", err)
+	}
+
+	return nil
 }
 
 func InstallWebhookChecker(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
