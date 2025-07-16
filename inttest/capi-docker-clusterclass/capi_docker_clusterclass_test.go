@@ -101,12 +101,12 @@ func TestCAPIDockerClusterClassSuite(t *testing.T) {
 	sshPublicKeyBytes := ssh.MarshalAuthorizedKey(sshPublicKey)
 
 	tmpDir := t.TempDir()
-	t.Log("111cluster objects applied, waiting for cluster to be ready")
+	t.Log("cluster objects applied, waiting for cluster to be ready")
 	s := CAPIDockerClusterClassSuite{
 		FootlooseSuite: common.FootlooseSuite{
 			ControllerCount:      0,
 			WorkerCount:          0,
-			K0smotronWorkerCount: 1,
+			K0smotronWorkerCount: 2,
 			K0smotronNetworks:    []string{"kind"},
 		},
 		client:                kubeClient,
@@ -130,6 +130,13 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.T().Log("Pushing public key to worker")
 	s.Require().NoError(workerSSH.Exec(s.Context(), "cat >>/root/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(s.publicKey)}))
 
+	// Push public key to controlplane authorized_keys
+	controlplaneSSH, err := s.SSH(s.ctx, s.K0smotronNode(1))
+	s.Require().NoError(err)
+	defer controlplaneSSH.Disconnect()
+	s.T().Log("Pushing public key to controlplane")
+	s.Require().NoError(controlplaneSSH.Exec(s.Context(), "cat >>/root/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(s.publicKey)}))
+
 	// Apply the child cluster objects
 	s.createCluster()
 	defer func() {
@@ -148,7 +155,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	var localPort int
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
+		localPort, _ = getLBPort("TestCAPIDockerClusterClassSuite-k0smotron0")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -173,7 +180,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		nodes, _ := kmcKC.CoreV1().Nodes().List(s.ctx, metav1.ListOptions{})
-		return len(nodes.Items) == 3, nil
+		return len(nodes.Items) == 2, nil
 	})
 	s.Require().NoError(err)
 }
@@ -181,36 +188,51 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 func (s *CAPIDockerClusterClassSuite) createCluster() {
 
 	// Get worker IP
-	workerIP := s.getWorkerIP()
+	workerIP := s.getNodeIP(1)
 	s.Require().NotEmpty(workerIP)
+	// Get controlplane IP
+	controlplaneIP := s.getNodeIP(0)
+	s.Require().NotEmpty(controlplaneIP)
 
-	// Get SSH key
-	machines, err := s.InspectMachines([]string{s.K0smotronNode(0)})
-	s.Require().NoError(err)
-	s.Require().NotEmpty(machines)
-
-	// Parse the cluster yaml as template
-	t, err := template.New("cluster").Parse(clusterClassYaml)
+	// Parse the clusterclass yaml as template
+	tClusterClass, err := template.New("cluster").Parse(clusterClassYaml)
 	s.Require().NoError(err)
 
 	// Execute the template to buffer
 	var clusterClassYaml bytes.Buffer
 
-	err = t.Execute(&clusterClassYaml, struct {
-		Address string
-		SSHKey  string
+	err = tClusterClass.Execute(&clusterClassYaml, struct {
+		AddressWorkerNode       string
+		AddressControlplaneNode string
+		SSHKey                  string
 	}{
-		Address: workerIP,
-		SSHKey:  base64.StdEncoding.EncodeToString(s.privateKey),
+		AddressWorkerNode:       workerIP,
+		AddressControlplaneNode: controlplaneIP,
+		SSHKey:                  base64.StdEncoding.EncodeToString(s.privateKey),
 	})
 	s.Require().NoError(err)
-	bytes := clusterClassYaml.Bytes()
+	clusterClassBytes := clusterClassYaml.Bytes()
 
-	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, bytes, 0644))
+	// Parse the cluster yaml as template
+	tCluster, err := template.New("cluster").Parse(clusterYaml)
+	s.Require().NoError(err)
+
+	// Execute the template to buffer
+	var clusterYaml bytes.Buffer
+
+	err = tCluster.Execute(&clusterYaml, struct {
+		AddressControlplaneNode string
+	}{
+		AddressControlplaneNode: controlplaneIP,
+	})
+	s.Require().NoError(err)
+	clusterBytes := clusterYaml.Bytes()
+
+	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, clusterClassBytes, 0644))
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, clusterBytes, 0644))
 	out, err = exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
@@ -223,8 +245,8 @@ func (s *CAPIDockerClusterClassSuite) deleteCluster() {
 	s.Require().NoError(err, "failed to delete cluster class objects: %s", string(out))
 }
 
-func (s *CAPIDockerClusterClassSuite) getWorkerIP() string {
-	nodeName := s.K0smotronNode(0)
+func (s *CAPIDockerClusterClassSuite) getNodeIP(idx int) string {
+	nodeName := s.K0smotronNode(idx)
 	ssh, err := s.SSH(s.Context(), nodeName)
 	s.Require().NoError(err)
 	defer ssh.Disconnect()
@@ -257,14 +279,14 @@ metadata:
   name: docker-test-cluster
   namespace: default
 spec:
+  controlPlaneEndpoint:
+    host: {{ .AddressControlplaneNode }}
+    port: 6443
   topology:
     class: k0smotron-clusterclass
-    version: v1.27.2
+    version: v1.27.2+k0s.0
     workers:
       machineDeployments:
-      - class: docker-test-default-worker
-        name: md
-        replicas: 1
       - class: remotemachine-test-default-worker
         name: rmd
         replicas: 1
@@ -273,22 +295,12 @@ spec:
 var clusterClassYaml = `
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerClusterTemplate
+kind: RemoteClusterTemplate
 metadata:
-  name: k0smotron-docker-cluster-tmpl
+  name: k0smotron-remote-cluster-tmpl
 spec:
   template:
     spec: {}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
-metadata:
-  name: docker-test-machine-template
-  namespace: default
-spec:
-  template:
-    spec:
-      customImage: kindest/node:v1.31.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlaneTemplate
@@ -337,32 +349,18 @@ spec:
       namespace: default
     machineInfrastructure:
       ref:
-        kind: DockerMachineTemplate
+        kind: RemoteMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        name: docker-test-machine-template
+        name: remote-test-machine-template
         namespace: default
   infrastructure:
     ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerClusterTemplate
-      name: k0smotron-docker-cluster-tmpl
+      kind: RemoteClusterTemplate
+      name: k0smotron-remote-cluster-tmpl
       namespace: default
   workers:
     machineDeployments:
-    - class: docker-test-default-worker
-      template:
-        bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-            kind: K0sWorkerConfigTemplate
-            name: docker-test-worker-template
-            namespace: default
-        infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: DockerMachineTemplate
-            name: docker-test-machine-template
-            namespace: default
     - class: remotemachine-test-default-worker
       template:
         bootstrap:
@@ -396,7 +394,21 @@ metadata:
 spec:
   pool: default
   machine:
-    address: {{ .Address }}
+    address: {{ .AddressWorkerNode }}
+    port: 22
+    user: root
+    sshKeyRef:
+      name: footloose-key
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: PooledRemoteMachine
+metadata:
+  name: remote-test-1
+  namespace: default
+spec:
+  pool: default
+  machine:
+    address: {{ .AddressControlplaneNode }}
     port: 22
     user: root
     sshKeyRef:

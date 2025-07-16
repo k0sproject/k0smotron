@@ -42,7 +42,8 @@ spec:
             description: RemoteClusterSpec defines the desired state of RemoteCluster
             properties:
               controlPlaneEndpoint:
-                description: APIEndpoint represents a reachable Kubernetes API endpoint.
+                description: ControlPlaneEndpoint represents the endpoint used to
+                  communicate with the control plane.
                 properties:
                   host:
                     description: The hostname on which the API server is serving.
@@ -55,8 +56,6 @@ spec:
                 - host
                 - port
                 type: object
-            required:
-            - controlPlaneEndpoint
             type: object
           status:
             description: RemoteClusterStatus defines the observed state of RemoteCluster
