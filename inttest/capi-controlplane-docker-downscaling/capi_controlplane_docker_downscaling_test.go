@@ -90,19 +90,19 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test"))
+		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
 	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-lb")
+		localPort, _ = getLBPort("docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting to see admin kubeconfig secret")
-	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
+	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
 	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
@@ -115,18 +115,30 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	})
 	s.Require().NoError(err)
 
-	for i := 0; i < 3; i++ {
-		err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-			nodeName := fmt.Sprintf("docker-test-%d", i)
-			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 3 {
+			return false, nil
+		}
+
+		for _, m := range machines {
+			output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", m.GetName()), "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
 
-			return strings.Contains(string(output), "Version:"), nil
-		})
-		s.Require().NoError(err)
-	}
+			if !strings.Contains(string(output), "Version:") {
+				return false, nil
+			}
+		}
+
+		return true, nil
+	})
+	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
@@ -148,8 +160,10 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 	s.T().Log("scaling down control plane")
 	s.updateClusterObjects()
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		ids, err := util.GetControlPlaneNodesIDs("docker-test")
+	scaleDownCtx, cancel := context.WithTimeout(s.ctx, 10*time.Minute)
+	defer cancel()
+	err = wait.PollUntilContextCancel(scaleDownCtx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		ids, err := util.GetControlPlaneNodesIDs("docker-test-cluster")
 		if err != nil {
 			return false, nil
 		}
@@ -190,7 +204,7 @@ var dockerClusterYaml = `
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: docker-test
+  name: docker-test-cluster
   namespace: default
 spec:
   clusterNetwork:
@@ -218,7 +232,7 @@ metadata:
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.31.0
+      customImage: kindest/node:v1.32.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
@@ -226,7 +240,7 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  version: v1.27.1+k0s.0
+  version: v1.32.2+k0s.0
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
@@ -259,8 +273,8 @@ metadata:
   name:  docker-test-worker-0
   namespace: default
 spec:
-  version: v1.27.1
-  clusterName: docker-test
+  version: v1.32.2
+  clusterName: docker-test-cluster
   bootstrap:
     configRef:
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -278,7 +292,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.27.1+k0s.0
+  version: v1.32.2+k0s.0
   args:
     - --labels=k0sproject.io/foo=bar
   preStartCommands:
@@ -295,7 +309,7 @@ metadata:
   name: docker-test-worker-0
   namespace: default
 spec:
-  customImage: kindest/node:v1.31.0
+  customImage: kindest/node:v1.32.0
 `
 
 var controlPlaneUpdate = `
@@ -305,7 +319,7 @@ metadata:
   name: docker-test
 spec:
   replicas: 1
-  version: v1.27.1+k0s.0
+  version: v1.32.2+k0s.0
   k0sConfigSpec:
     args:
       - --enable-worker

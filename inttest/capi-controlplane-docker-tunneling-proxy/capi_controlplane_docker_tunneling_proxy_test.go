@@ -115,7 +115,16 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(err)
 
 	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-cluster-docker-test-0", "k0s", "status").Output()
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 1 {
+			return false, nil
+		}
+
+		output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", machines[0].GetName()), "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
