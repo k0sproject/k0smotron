@@ -44,6 +44,12 @@ spec:
               address:
                 description: Address is the IP address or DNS name of the remote machine.
                 type: string
+              customCleanUpCommands:
+                description: CustomCleanUpCommands allow the user to run custom command
+                  for the clean up process of the machine.
+                items:
+                  type: string
+                type: array
               pool:
                 description: Pool is the name of the pool where the machine belongs
                   to.
