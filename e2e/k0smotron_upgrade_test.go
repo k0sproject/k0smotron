@@ -49,7 +49,7 @@ func TestK0smotronUpgrade(t *testing.T) {
 // Important: This version MUST match the ones set in the e2e config file because that guarantees that the clusterctl
 // local repository contains the required versions of the providers when running the upgrade tests. We should test
 // development version against the latests stable version of k0smotron.
-var k0smotronMinorVersionsToCheckUpgrades = []string{"1.5"}
+var k0smotronMinorVersionsToCheckUpgrades = []string{"1.5", "1.6"}
 
 func k0smotronUpgradeSpec(t *testing.T) {
 
@@ -270,10 +270,6 @@ func k0smotronUpgradeSpec(t *testing.T) {
 // validateMachineRollout checks if the machines in the workload cluster have been rolled out correctly.
 // It compares the pre-upgrade and post-upgrade machine lists to ensure that the machines has not been rolled out after
 // upgrade k0smotron.
-//
-// TODO: Add more checks to ensure that the machines have not been rolled out unexpectedly like compare name. Actually, we
-// don't care about the machine names because there are pending issues to solve to change the machine naming strategy.
-// https://github.com/k0sproject/k0smotron/issues/1022.
 func validateMachineRollout(preMachineList, postMachineList *clusterv1.MachineList) bool {
 	if preMachineList == nil && postMachineList == nil {
 		return true

@@ -92,7 +92,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDown
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test"))
+		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -100,7 +100,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDown
 	// nolint:staticcheck
 	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		var portErr error
-		localPort, portErr = getLBPort("docker-test-lb")
+		localPort, portErr = getLBPort("docker-test-cluster-lb")
 		if portErr != nil {
 			s.T().Logf("Waiting for load balancer port: %v", portErr)
 			return false, nil
@@ -110,7 +110,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDown
 	s.Require().NoError(err)
 
 	s.T().Log("waiting to see admin kubeconfig secret")
-	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
+	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
@@ -137,17 +137,30 @@ func (s *CAPIDockerMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDown
 	})
 	s.Require().NoError(err)
 
-	for i := 0; i < 3; i++ {
-		err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-			output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-%d", i), "k0s", "status").Output()
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 3 {
+			return false, nil
+		}
+
+		for _, m := range machines {
+			output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", m.GetName()), "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
 
-			return strings.Contains(string(output), "Version:"), nil
-		})
-		s.Require().NoError(err)
-	}
+			if !strings.Contains(string(output), "Version:") {
+				return false, nil
+			}
+		}
+
+		return true, nil
+	})
+	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
@@ -221,7 +234,7 @@ var dockerClusterYaml = `
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: docker-test
+  name: docker-test-cluster
   namespace: default
 spec:
   clusterNetwork:
@@ -292,7 +305,7 @@ metadata:
   namespace: default
 spec:
   version: v1.30.3
-  clusterName: docker-test
+  clusterName: docker-test-cluster
   bootstrap:
     configRef:
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1

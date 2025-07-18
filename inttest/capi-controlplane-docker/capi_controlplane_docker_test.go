@@ -128,25 +128,40 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	})
 	s.Require().NoError(err)
 
-	for i := 0; i < 3; i++ {
-		// nolint:staticcheck
-		err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-			nodeName := fmt.Sprintf("docker-test-cluster-docker-test-%d", i)
+	controlPlaneMachineName := ""
+	// nolint:staticcheck
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 3 {
+			return false, nil
+		}
+
+		for i := range machines {
+			nodeName := fmt.Sprintf("docker-test-cluster-%s", machines[i].GetName())
 			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
 
-			return strings.Contains(string(output), "Version:"), nil
-		})
-		s.Require().NoError(err)
-	}
+			if !strings.Contains(string(output), "Version:") {
+				return false, nil
+			}
+		}
+
+		controlPlaneMachineName = fmt.Sprintf("docker-test-cluster-%s", machines[0].GetName())
+		return true, nil
+	})
+	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready")
 	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
 	s.T().Log("verifying k0s.yaml")
-	k0sConfig, err := getDockerNodeFile("docker-test-cluster-docker-test-0", "/etc/k0s.yaml")
+	k0sConfig, err := getDockerNodeFile(controlPlaneMachineName, "/etc/k0s.yaml")
 	s.Require().NoError(err)
 	s.Require().True(strings.Contains(k0sConfig, "controlPlaneLoadBalancing"))
 	s.Require().True(strings.Contains(k0sConfig, "192.168.0.0/16"))
@@ -164,10 +179,10 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	extraFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
-	extraFileFromSecret, err := getDockerNodeFile("docker-test-cluster-docker-test-0", "/tmp/test-file-secret")
+	extraFileFromSecret, err := getDockerNodeFile(controlPlaneMachineName, "/tmp/test-file-secret")
 	s.Require().NoError(err)
 	s.Require().Equal("test", extraFileFromSecret)
-	customControllerFile, err := getDockerNodeFile("docker-test-cluster-docker-test-0", "/tmp/custom")
+	customControllerFile, err := getDockerNodeFile(controlPlaneMachineName, "/tmp/custom")
 	s.Require().NoError(err)
 	s.Require().Equal("custom", customControllerFile)
 	extraFileFromSecret, err = getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file-secret")
