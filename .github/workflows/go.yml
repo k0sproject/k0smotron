@@ -186,6 +186,7 @@ jobs:
           - admission-webhook-recreate-strategy-in-single-mode
           - admission-webhook-k0s-not-compatible
           - k0smotron-upgrade
+          - machinedeployment
 
     steps:
       - name: Check out code into the Go module directory

@@ -246,7 +246,16 @@ func getLBPort(name string) (int, error) {
 		return 0, fmt.Errorf("failed to unmarshal inspect info from container %s: %w", name, err)
 	}
 
-	return strconv.Atoi(ports["6443/tcp"][0]["HostPort"])
+	tcpPorts, exists := ports["6443/tcp"]
+	if !exists {
+		return 0, fmt.Errorf("port 6443/tcp not found in container %s, available ports: %+v", name, ports)
+	}
+
+	if len(tcpPorts) == 0 {
+		return 0, fmt.Errorf("no port mappings found for 6443/tcp in container %s, port config: %+v", name, tcpPorts)
+	}
+
+	return strconv.Atoi(tcpPorts[0]["HostPort"])
 }
 
 var clusterYaml = `
@@ -385,7 +394,7 @@ metadata:
   namespace: default
 spec:
   template:
-    spec: 
+    spec:
       pool: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
