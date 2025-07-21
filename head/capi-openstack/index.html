@@ -1971,10 +1971,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">network</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">YourNetworkID</span><span class="w"> </span><span class="c1"># this corresponds to the network with the cidr provided above a.b.c.d/24</span>
 </code></pre></div></p>
-<p>As we are using self-managed infrastructure we need to manually mark the infrastructure ready. This can be accomplished using the following command:</p>
-<p><div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>patch<span class="w"> </span>OpenStackCluster<span class="w"> </span>cluster-openstack<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>--subresource<span class="w"> </span>status<span class="w"> </span>--patch<span class="w"> </span><span class="s1">&#39;status: {ready: true}&#39;</span>.
-</code></pre></div>
-After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:</p>
+<p>Once complete, your command line should display output similar to this:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine,kmc<span class="w">                                                                                                                   </span>
 
 NAME<span class="w">                                   </span>CLUSTERCLASS<span class="w">   </span>PHASE<span class="w">         </span>AGE<span class="w">     </span>VERSION

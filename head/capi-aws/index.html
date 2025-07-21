@@ -1978,8 +1978,7 @@ This limitation is not applicable to the clusters on the VMs.</p>
 <span class="w">      </span><span class="c1"># More details of the worker configuration can be set here</span>
 <span class="nn">---</span>
 </code></pre></div>
-<p>As we are using self-managed infrastructure we need to manually mark the infrastructure ready. This can be accomplished using the following command: <code>kubectl patch AWSCluster k0s-aws-test --type=merge --subresource status --patch 'status: {ready: true}'.</code></p>
-<p>After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:</p>
+<p>Once complete, your command line should display output similar to this:</p>
 <div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
 NAME<span class="w">                                    </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
 cluster.cluster.x-k8s.io/k0s-aws-test<span class="w">   </span>Provisioned<span class="w">   </span>16m<span class="w">   </span>
