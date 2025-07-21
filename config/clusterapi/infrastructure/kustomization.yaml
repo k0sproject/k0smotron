@@ -22,6 +22,7 @@ resources:
 - ../../manager
 - ../k0smotron.io
 - ./bases/infrastructure.cluster.x-k8s.io_remoteclusters.yaml
+- ./bases/infrastructure.cluster.x-k8s.io_remoteclustertemplates.yaml
 - ./bases/infrastructure.cluster.x-k8s.io_remotemachines.yaml
 - ./bases/infrastructure.cluster.x-k8s.io_remotemachinetemplates.yaml
 - ./bases/infrastructure.cluster.x-k8s.io_pooledremotemachines.yaml

@@ -12,6 +12,8 @@ Resource Types:
 
 - [RemoteCluster](#remotecluster)
 
+- [RemoteClusterTemplate](#remoteclustertemplate)
+
 - [RemoteMachine](#remotemachine)
 
 - [RemoteMachineTemplate](#remotemachinetemplate)
@@ -336,9 +338,9 @@ RemoteClusterSpec defines the desired state of RemoteCluster
         <td><b><a href="#remoteclusterspeccontrolplaneendpoint">controlPlaneEndpoint</a></b></td>
         <td>object</td>
         <td>
-          APIEndpoint represents a reachable Kubernetes API endpoint.<br/>
+          ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -348,7 +350,7 @@ RemoteClusterSpec defines the desired state of RemoteCluster
 
 
 
-APIEndpoint represents a reachable Kubernetes API endpoint.
+ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 
 <table>
     <thead>
@@ -404,6 +406,264 @@ RemoteClusterStatus defines the observed state of RemoteCluster
             <i>Default</i>: false<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+## RemoteClusterTemplate
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+
+
+
+
+
+
+RemoteClusterTemplate is the Schema for the remoteclustertemplates API.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>RemoteClusterTemplate</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#remoteclustertemplatespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteClusterTemplate.spec
+<sup><sup>[↩ Parent](#remoteclustertemplate)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remoteclustertemplatespectemplate">template</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteClusterTemplateResource describes the data needed to create a RemoteCluster from a template.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteClusterTemplate.spec.template
+<sup><sup>[↩ Parent](#remoteclustertemplatespec)</sup></sup>
+
+
+
+RemoteClusterTemplateResource describes the data needed to create a RemoteCluster from a template.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remoteclustertemplatespectemplatespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteClusterSpec defines the desired state of RemoteCluster<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#remoteclustertemplatespectemplatemetadata">metadata</a></b></td>
+        <td>object</td>
+        <td>
+          ObjectMeta is metadata that all persisted resources must have, which includes all objects
+users must create. This is a copy of customizable fields from metav1.ObjectMeta.
+
+
+ObjectMeta is embedded in `Machine.Spec`, `MachineDeployment.Template` and `MachineSet.Template`,
+which are not top-level Kubernetes objects. Given that metav1.ObjectMeta has lots of special cases
+and read-only fields which end up in the generated CRD validation, having it as a subset simplifies
+the API and some issues that can impact user experience.
+
+
+During the [upgrade to controller-tools@v2](https://github.com/kubernetes-sigs/cluster-api/pull/1054)
+for v1alpha2, we noticed a failure would occur running Cluster API test suite against the new CRDs,
+specifically `spec.metadata.creationTimestamp in body must be of type string: "null"`.
+The investigation showed that `controller-tools@v2` behaves differently than its previous version
+when handling types from [metav1](k8s.io/apimachinery/pkg/apis/meta/v1) package.
+
+
+In more details, we found that embedded (non-top level) types that embedded `metav1.ObjectMeta`
+had validation properties, including for `creationTimestamp` (metav1.Time).
+The `metav1.Time` type specifies a custom json marshaller that, when IsZero() is true, returns `null`
+which breaks validation because the field isn't marked as nullable.
+
+
+In future versions, controller-tools@v2 might allow overriding the type and validation for embedded
+types. When that happens, this hack should be revisited.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteClusterTemplate.spec.template.spec
+<sup><sup>[↩ Parent](#remoteclustertemplatespectemplate)</sup></sup>
+
+
+
+RemoteClusterSpec defines the desired state of RemoteCluster
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remoteclustertemplatespectemplatespeccontrolplaneendpoint">controlPlaneEndpoint</a></b></td>
+        <td>object</td>
+        <td>
+          ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteClusterTemplate.spec.template.spec.controlPlaneEndpoint
+<sup><sup>[↩ Parent](#remoteclustertemplatespectemplatespec)</sup></sup>
+
+
+
+ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>host</b></td>
+        <td>string</td>
+        <td>
+          The hostname on which the API server is serving.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>
+          The port on which the API server is serving.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteClusterTemplate.spec.template.metadata
+<sup><sup>[↩ Parent](#remoteclustertemplatespectemplate)</sup></sup>
+
+
+
+ObjectMeta is metadata that all persisted resources must have, which includes all objects
+users must create. This is a copy of customizable fields from metav1.ObjectMeta.
+
+
+ObjectMeta is embedded in `Machine.Spec`, `MachineDeployment.Template` and `MachineSet.Template`,
+which are not top-level Kubernetes objects. Given that metav1.ObjectMeta has lots of special cases
+and read-only fields which end up in the generated CRD validation, having it as a subset simplifies
+the API and some issues that can impact user experience.
+
+
+During the [upgrade to controller-tools@v2](https://github.com/kubernetes-sigs/cluster-api/pull/1054)
+for v1alpha2, we noticed a failure would occur running Cluster API test suite against the new CRDs,
+specifically `spec.metadata.creationTimestamp in body must be of type string: "null"`.
+The investigation showed that `controller-tools@v2` behaves differently than its previous version
+when handling types from [metav1](k8s.io/apimachinery/pkg/apis/meta/v1) package.
+
+
+In more details, we found that embedded (non-top level) types that embedded `metav1.ObjectMeta`
+had validation properties, including for `creationTimestamp` (metav1.Time).
+The `metav1.Time` type specifies a custom json marshaller that, when IsZero() is true, returns `null`
+which breaks validation because the field isn't marked as nullable.
+
+
+In future versions, controller-tools@v2 might allow overriding the type and validation for embedded
+types. When that happens, this hack should be revisited.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations is an unstructured key value map stored with a resource that may be
+set by external tools to store and retrieve arbitrary metadata. They are not
+queryable and should be preserved when modifying objects.
+More info: http://kubernetes.io/docs/user-guide/annotations<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Map of string keys and values that can be used to organize and categorize
+(scope and select) objects. May match selectors of replication controllers
+and services.
+More info: http://kubernetes.io/docs/user-guide/labels<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
