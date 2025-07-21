@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -45,7 +45,7 @@ func TestEtcd_calculateDesiredReplicas(t *testing.T) {
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
 			got := calculateDesiredReplicas(tc.cluster, nil)
-			assert.Equal(t, tc.want, got)
+			require.Equal(t, tc.want, got)
 		})
 	}
 }
@@ -54,15 +54,10 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 	tests := []struct {
 		name    string
 		cluster *km.Cluster
-		want    func(t *testing.T, resources corev1.ResourceRequirements)
 	}{
 		{
 			name:    "Default - No resources specified",
 			cluster: &km.Cluster{}, // No Resources specified
-			want: func(t *testing.T, resources corev1.ResourceRequirements) {
-				assert.Empty(t, resources.Requests)
-				assert.Empty(t, resources.Limits)
-			},
 		},
 		{
 			name: "Resources specified - Requests only",
@@ -77,11 +72,6 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 						},
 					},
 				},
-			},
-			want: func(t *testing.T, resources corev1.ResourceRequirements) {
-				assert.Equal(t, resource.MustParse("100m"), *resources.Requests.Cpu())
-				assert.Equal(t, resource.MustParse("128Mi"), *resources.Requests.Memory())
-				assert.Empty(t, resources.Limits)
 			},
 		},
 		{
@@ -102,12 +92,6 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 					},
 				},
 			},
-			want: func(t *testing.T, resources corev1.ResourceRequirements) {
-				assert.Equal(t, resource.MustParse("100m"), *resources.Requests.Cpu())
-				assert.Equal(t, resource.MustParse("128Mi"), *resources.Requests.Memory())
-				assert.Equal(t, resource.MustParse("200m"), *resources.Limits.Cpu())
-				assert.Equal(t, resource.MustParse("256Mi"), *resources.Limits.Memory())
-			},
 		},
 	}
 
@@ -116,7 +100,21 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 			r := new(ClusterReconciler)
 			sts := r.generateEtcdStatefulSet(tc.cluster, nil, 1)
 			resources := sts.Spec.Template.Spec.Containers[0].Resources
-			tc.want(t, resources)
+
+			switch tc.name {
+			case "Default - No resources specified":
+				require.Empty(t, resources.Requests)
+				require.Empty(t, resources.Limits)
+			case "Resources specified - Requests only":
+				require.Equal(t, resource.MustParse("100m"), *resources.Requests.Cpu())
+				require.Equal(t, resource.MustParse("128Mi"), *resources.Requests.Memory())
+				require.Empty(t, resources.Limits)
+			case "Resources specified - Requests and limits":
+				require.Equal(t, resource.MustParse("100m"), *resources.Requests.Cpu())
+				require.Equal(t, resource.MustParse("128Mi"), *resources.Requests.Memory())
+				require.Equal(t, resource.MustParse("200m"), *resources.Limits.Cpu())
+				require.Equal(t, resource.MustParse("256Mi"), *resources.Limits.Memory())
+			}
 		})
 	}
 }
@@ -125,20 +123,10 @@ func TestEtcd_schedulingConfiguration(t *testing.T) {
 	tests := []struct {
 		name    string
 		cluster *km.Cluster
-		want    func(t *testing.T, sts *corev1.PodSpec)
 	}{
 		{
 			name:    "Default - No scheduling configuration",
 			cluster: &km.Cluster{},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.Nil(t, podSpec.RuntimeClassName)
-				assert.Nil(t, podSpec.Tolerations)
-				assert.Nil(t, podSpec.NodeSelector)
-				assert.Empty(t, podSpec.PriorityClassName)
-				// Default anti-affinity should be present
-				assert.NotNil(t, podSpec.Affinity)
-				assert.NotNil(t, podSpec.Affinity.PodAntiAffinity)
-			},
 		},
 		{
 			name: "RuntimeClass specified",
@@ -148,10 +136,6 @@ func TestEtcd_schedulingConfiguration(t *testing.T) {
 						RuntimeClass: ptr.To("kata-containers"),
 					},
 				},
-			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.RuntimeClassName)
-				assert.Equal(t, "kata-containers", *podSpec.RuntimeClassName)
 			},
 		},
 		{
@@ -169,14 +153,6 @@ func TestEtcd_schedulingConfiguration(t *testing.T) {
 						},
 					},
 				},
-			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.Tolerations)
-				assert.Len(t, podSpec.Tolerations, 1)
-				assert.Equal(t, "etcd", podSpec.Tolerations[0].Key)
-				assert.Equal(t, corev1.TolerationOpEqual, podSpec.Tolerations[0].Operator)
-				assert.Equal(t, "true", podSpec.Tolerations[0].Value)
-				assert.Equal(t, corev1.TaintEffectNoSchedule, podSpec.Tolerations[0].Effect)
 			},
 		},
 		{
@@ -197,13 +173,6 @@ func TestEtcd_schedulingConfiguration(t *testing.T) {
 					},
 				},
 			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.TopologySpreadConstraints)
-				assert.Len(t, podSpec.TopologySpreadConstraints, 1)
-				assert.Equal(t, int32(1), podSpec.TopologySpreadConstraints[0].MaxSkew)
-				assert.Equal(t, "topology.kubernetes.io/zone", podSpec.TopologySpreadConstraints[0].TopologyKey)
-				assert.Equal(t, corev1.DoNotSchedule, podSpec.TopologySpreadConstraints[0].WhenUnsatisfiable)
-			},
 		},
 		{
 			name: "NodeSelector specified",
@@ -216,11 +185,6 @@ func TestEtcd_schedulingConfiguration(t *testing.T) {
 						},
 					},
 				},
-			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.NodeSelector)
-				assert.Equal(t, "etcd", podSpec.NodeSelector["node-type"])
-				assert.Equal(t, "us-west-1a", podSpec.NodeSelector["zone"])
 			},
 		},
 		{
@@ -248,13 +212,6 @@ func TestEtcd_schedulingConfiguration(t *testing.T) {
 					},
 				},
 			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.Affinity)
-				assert.NotNil(t, podSpec.Affinity.NodeAffinity)
-				assert.NotNil(t, podSpec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
-				// Custom affinity should override default PodAntiAffinity
-				assert.Nil(t, podSpec.Affinity.PodAntiAffinity)
-			},
 		},
 		{
 			name: "PriorityClassName specified",
@@ -264,9 +221,6 @@ func TestEtcd_schedulingConfiguration(t *testing.T) {
 						PriorityClassName: "high-priority",
 					},
 				},
-			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.Equal(t, "high-priority", podSpec.PriorityClassName)
 			},
 		},
 		{
@@ -317,19 +271,6 @@ func TestEtcd_schedulingConfiguration(t *testing.T) {
 					},
 				},
 			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.RuntimeClassName)
-				assert.Equal(t, "kata-containers", *podSpec.RuntimeClassName)
-				assert.NotNil(t, podSpec.Tolerations)
-				assert.Len(t, podSpec.Tolerations, 1)
-				assert.NotNil(t, podSpec.TopologySpreadConstraints)
-				assert.Len(t, podSpec.TopologySpreadConstraints, 1)
-				assert.NotNil(t, podSpec.NodeSelector)
-				assert.Equal(t, "etcd", podSpec.NodeSelector["node-type"])
-				assert.NotNil(t, podSpec.Affinity)
-				assert.NotNil(t, podSpec.Affinity.NodeAffinity)
-				assert.Equal(t, "high-priority", podSpec.PriorityClassName)
-			},
 		},
 	}
 
@@ -338,7 +279,57 @@ func TestEtcd_schedulingConfiguration(t *testing.T) {
 			r := new(ClusterReconciler)
 			sts := r.generateEtcdStatefulSet(tc.cluster, nil, 1)
 			podSpec := &sts.Spec.Template.Spec
-			tc.want(t, podSpec)
+
+			switch tc.name {
+			case "Default - No scheduling configuration":
+				require.Nil(t, podSpec.RuntimeClassName)
+				require.Nil(t, podSpec.Tolerations)
+				require.Nil(t, podSpec.NodeSelector)
+				require.Empty(t, podSpec.PriorityClassName)
+				// Default anti-affinity should be present
+				require.NotNil(t, podSpec.Affinity)
+				require.NotNil(t, podSpec.Affinity.PodAntiAffinity)
+			case "RuntimeClass specified":
+				require.NotNil(t, podSpec.RuntimeClassName)
+				require.Equal(t, "kata-containers", *podSpec.RuntimeClassName)
+			case "Tolerations specified":
+				require.NotNil(t, podSpec.Tolerations)
+				require.Len(t, podSpec.Tolerations, 1)
+				require.Equal(t, "etcd", podSpec.Tolerations[0].Key)
+				require.Equal(t, corev1.TolerationOpEqual, podSpec.Tolerations[0].Operator)
+				require.Equal(t, "true", podSpec.Tolerations[0].Value)
+				require.Equal(t, corev1.TaintEffectNoSchedule, podSpec.Tolerations[0].Effect)
+			case "TopologySpreadConstraints specified":
+				require.NotNil(t, podSpec.TopologySpreadConstraints)
+				require.Len(t, podSpec.TopologySpreadConstraints, 1)
+				require.Equal(t, int32(1), podSpec.TopologySpreadConstraints[0].MaxSkew)
+				require.Equal(t, "topology.kubernetes.io/zone", podSpec.TopologySpreadConstraints[0].TopologyKey)
+				require.Equal(t, corev1.DoNotSchedule, podSpec.TopologySpreadConstraints[0].WhenUnsatisfiable)
+			case "NodeSelector specified":
+				require.NotNil(t, podSpec.NodeSelector)
+				require.Equal(t, "etcd", podSpec.NodeSelector["node-type"])
+				require.Equal(t, "us-west-1a", podSpec.NodeSelector["zone"])
+			case "Custom Affinity specified":
+				require.NotNil(t, podSpec.Affinity)
+				require.NotNil(t, podSpec.Affinity.NodeAffinity)
+				require.NotNil(t, podSpec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
+				// Custom affinity should override default PodAntiAffinity
+				require.Nil(t, podSpec.Affinity.PodAntiAffinity)
+			case "PriorityClassName specified":
+				require.Equal(t, "high-priority", podSpec.PriorityClassName)
+			case "All scheduling fields specified":
+				require.NotNil(t, podSpec.RuntimeClassName)
+				require.Equal(t, "kata-containers", *podSpec.RuntimeClassName)
+				require.NotNil(t, podSpec.Tolerations)
+				require.Len(t, podSpec.Tolerations, 1)
+				require.NotNil(t, podSpec.TopologySpreadConstraints)
+				require.Len(t, podSpec.TopologySpreadConstraints, 1)
+				require.NotNil(t, podSpec.NodeSelector)
+				require.Equal(t, "etcd", podSpec.NodeSelector["node-type"])
+				require.NotNil(t, podSpec.Affinity)
+				require.NotNil(t, podSpec.Affinity.NodeAffinity)
+				require.Equal(t, "high-priority", podSpec.PriorityClassName)
+			}
 		})
 	}
 }
@@ -347,14 +338,10 @@ func TestEtcd_imagePullConfiguration(t *testing.T) {
 	tests := []struct {
 		name    string
 		cluster *km.Cluster
-		want    func(t *testing.T, podSpec *corev1.PodSpec)
 	}{
 		{
 			name:    "Default - No ImagePullSecrets",
 			cluster: &km.Cluster{},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.Nil(t, podSpec.ImagePullSecrets)
-			},
 		},
 		{
 			name: "ImagePullSecrets specified - single secret",
@@ -366,11 +353,6 @@ func TestEtcd_imagePullConfiguration(t *testing.T) {
 						},
 					},
 				},
-			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.ImagePullSecrets)
-				assert.Len(t, podSpec.ImagePullSecrets, 1)
-				assert.Equal(t, "regcred", podSpec.ImagePullSecrets[0].Name)
 			},
 		},
 		{
@@ -386,13 +368,6 @@ func TestEtcd_imagePullConfiguration(t *testing.T) {
 					},
 				},
 			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.ImagePullSecrets)
-				assert.Len(t, podSpec.ImagePullSecrets, 3)
-				assert.Equal(t, "regcred", podSpec.ImagePullSecrets[0].Name)
-				assert.Equal(t, "another-secret", podSpec.ImagePullSecrets[1].Name)
-				assert.Equal(t, "third-secret", podSpec.ImagePullSecrets[2].Name)
-			},
 		},
 	}
 
@@ -401,7 +376,21 @@ func TestEtcd_imagePullConfiguration(t *testing.T) {
 			r := new(ClusterReconciler)
 			sts := r.generateEtcdStatefulSet(tc.cluster, nil, 1)
 			podSpec := &sts.Spec.Template.Spec
-			tc.want(t, podSpec)
+
+			switch tc.name {
+			case "Default - No ImagePullSecrets":
+				require.Nil(t, podSpec.ImagePullSecrets)
+			case "ImagePullSecrets specified - single secret":
+				require.NotNil(t, podSpec.ImagePullSecrets)
+				require.Len(t, podSpec.ImagePullSecrets, 1)
+				require.Equal(t, "regcred", podSpec.ImagePullSecrets[0].Name)
+			case "ImagePullSecrets specified - multiple secrets":
+				require.NotNil(t, podSpec.ImagePullSecrets)
+				require.Len(t, podSpec.ImagePullSecrets, 3)
+				require.Equal(t, "regcred", podSpec.ImagePullSecrets[0].Name)
+				require.Equal(t, "another-secret", podSpec.ImagePullSecrets[1].Name)
+				require.Equal(t, "third-secret", podSpec.ImagePullSecrets[2].Name)
+			}
 		})
 	}
 }
@@ -410,7 +399,6 @@ func TestEtcd_topologySpreadConstraintsFallback(t *testing.T) {
 	tests := []struct {
 		name    string
 		cluster *km.Cluster
-		want    func(t *testing.T, podSpec *corev1.PodSpec)
 	}{
 		{
 			name: "Etcd TopologySpreadConstraints takes precedence over cluster-level",
@@ -440,13 +428,6 @@ func TestEtcd_topologySpreadConstraintsFallback(t *testing.T) {
 					},
 				},
 			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.TopologySpreadConstraints)
-				assert.Len(t, podSpec.TopologySpreadConstraints, 1)
-				// Should use etcd-specific constraints, not cluster-level
-				assert.Equal(t, int32(1), podSpec.TopologySpreadConstraints[0].MaxSkew)
-				assert.Equal(t, "topology.kubernetes.io/zone", podSpec.TopologySpreadConstraints[0].TopologyKey)
-			},
 		},
 		{
 			name: "Fallback to cluster-level TopologySpreadConstraints when etcd-specific not set",
@@ -467,13 +448,6 @@ func TestEtcd_topologySpreadConstraintsFallback(t *testing.T) {
 					},
 				},
 			},
-			want: func(t *testing.T, podSpec *corev1.PodSpec) {
-				assert.NotNil(t, podSpec.TopologySpreadConstraints)
-				assert.Len(t, podSpec.TopologySpreadConstraints, 1)
-				// Should use cluster-level constraints
-				assert.Equal(t, int32(2), podSpec.TopologySpreadConstraints[0].MaxSkew)
-				assert.Equal(t, "kubernetes.io/hostname", podSpec.TopologySpreadConstraints[0].TopologyKey)
-			},
 		},
 	}
 
@@ -482,7 +456,21 @@ func TestEtcd_topologySpreadConstraintsFallback(t *testing.T) {
 			r := new(ClusterReconciler)
 			sts := r.generateEtcdStatefulSet(tc.cluster, nil, 1)
 			podSpec := &sts.Spec.Template.Spec
-			tc.want(t, podSpec)
+
+			switch tc.name {
+			case "Etcd TopologySpreadConstraints takes precedence over cluster-level":
+				require.NotNil(t, podSpec.TopologySpreadConstraints)
+				require.Len(t, podSpec.TopologySpreadConstraints, 1)
+				// Should use etcd-specific constraints, not cluster-level
+				require.Equal(t, int32(1), podSpec.TopologySpreadConstraints[0].MaxSkew)
+				require.Equal(t, "topology.kubernetes.io/zone", podSpec.TopologySpreadConstraints[0].TopologyKey)
+			case "Fallback to cluster-level TopologySpreadConstraints when etcd-specific not set":
+				require.NotNil(t, podSpec.TopologySpreadConstraints)
+				require.Len(t, podSpec.TopologySpreadConstraints, 1)
+				// Should use cluster-level constraints
+				require.Equal(t, int32(2), podSpec.TopologySpreadConstraints[0].MaxSkew)
+				require.Equal(t, "kubernetes.io/hostname", podSpec.TopologySpreadConstraints[0].TopologyKey)
+			}
 		})
 	}
 }
@@ -526,7 +514,7 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 			r := new(ClusterReconciler)
 			sts := r.generateEtcdStatefulSet(tc.cluster, nil, 1)
 			for _, w := range tc.want {
-				assert.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
+				require.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
 			}
 		})
 	}
