@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
-	"gopkg.in/yaml.v3"
+
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +31,7 @@ type JobProvisioner struct {
 	clientSet *kubernetes.Clientset
 
 	bootstrapData []byte
+	cloudInit     *cloudinit.CloudInit
 	machine       *v1beta1.Machine
 	remoteMachine *infrastructure.RemoteMachine
 	provisionJob  *infrastructure.ProvisionJob
@@ -39,11 +40,6 @@ type JobProvisioner struct {
 
 func (p *JobProvisioner) Provision(ctx context.Context) error {
 	// Parse the bootstrap data
-	cloudInit := &cloudinit.CloudInit{}
-	err := yaml.Unmarshal(p.bootstrapData, cloudInit)
-	if err != nil {
-		return fmt.Errorf("failed to parse bootstrap data: %w", err)
-	}
 
 	jb := p.provisionJob.JobTemplate
 	job := &batchv1.Job{
@@ -84,7 +80,7 @@ func (p *JobProvisioner) Provision(ctx context.Context) error {
 		},
 	}
 
-	volume, volumeMounts, secretData := p.extractCloudInit(cloudInit)
+	volume, volumeMounts, secretData := p.extractCloudInit(p.cloudInit)
 	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, volume)
 	job.Spec.Template.Spec.Containers[0].VolumeMounts = append(job.Spec.Template.Spec.Containers[0].VolumeMounts, volumeMounts...)
 	volume.Secret.SecretName = secret.Name

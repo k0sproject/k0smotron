@@ -19,7 +19,9 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	"github.com/k0sproject/k0smotron/internal/cloudinit"
 
+	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -184,10 +186,17 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}
 
+	cloudInit := &cloudinit.CloudInit{}
+	err = yaml.Unmarshal(bootstrapData, cloudInit)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to parse bootstrap data: %w", err)
+	}
+
 	var p Provisioner
 	if rm.Spec.ProvisionJob != nil {
 		p = &JobProvisioner{
 			bootstrapData: bootstrapData,
+			cloudInit:     cloudInit,
 			remoteMachine: rm,
 			machine:       machine,
 			provisionJob:  rm.Spec.ProvisionJob,
@@ -205,6 +214,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 		p = &SSHProvisioner{
 			bootstrapData: bootstrapData,
+			cloudInit:     cloudInit,
 			sshKey:        sshKey,
 			machine:       rm,
 			log:           log,
