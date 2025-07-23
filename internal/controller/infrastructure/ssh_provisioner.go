@@ -24,18 +24,22 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/go-logr/logr"
 	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	rig "github.com/k0sproject/rig/v2"
 	rigssh "github.com/k0sproject/rig/v2/protocol/ssh"
-	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+var regex = regexp.MustCompile(`--kubelet-root-dir[ =](/[/a-zA-Z0-9_-]+)+`)
+
 type SSHProvisioner struct {
 	bootstrapData []byte
+	cloudInit     *cloudinit.CloudInit
 	machine       *api.RemoteMachine
 	sshKey        []byte
 	log           logr.Logger
@@ -59,13 +63,6 @@ const (
 // 4. success
 func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	log := log.FromContext(ctx).WithValues("remotemachine", p.machine.Name)
-
-	// Parse the bootstrap data
-	cloudInit := &cloudinit.CloudInit{}
-	err := yaml.Unmarshal(p.bootstrapData, cloudInit)
-	if err != nil {
-		return fmt.Errorf("failed to parse bootstrap data: %w", err)
-	}
 
 	authM, err := rigssh.ParseSSHPrivateKey(p.sshKey, nil)
 	if err != nil {
@@ -95,14 +92,14 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	}
 
 	// Write files first
-	for _, file := range cloudInit.Files {
+	for _, file := range p.cloudInit.Files {
 		if err := p.uploadFile(rigClient, file); err != nil {
 			return fmt.Errorf("failed to upload file: %w", err)
 		}
 	}
 
 	// Execute the bootstrap script commands
-	for _, cmd := range cloudInit.RunCmds {
+	for _, cmd := range p.cloudInit.RunCmds {
 		output, err := rigClient.ExecOutput(cmd)
 		if err != nil {
 			p.log.Error(err, "failed to run command", "output", output)
@@ -165,7 +162,22 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 	} else {
 		cmds = append(cmds, fmt.Sprintf(stopCommandTemplate, workerService, workerService, ctrlService))
 	}
-	cmds = append(cmds, "k0s reset")
+
+	var kubeletRootDir string
+	for _, cmd := range p.cloudInit.RunCmds {
+		if strings.Contains(cmd, "--kubelet-root-dir") {
+			finds := regex.FindStringSubmatch(cmd)
+			if len(finds) > 1 {
+				kubeletRootDir = finds[1]
+				break
+			}
+		}
+	}
+	if kubeletRootDir == "" {
+		cmds = append(cmds, "k0s reset")
+	} else {
+		cmds = append(cmds, "k0s reset --kubelet-root-dir "+kubeletRootDir)
+	}
 
 	for _, cmd := range cmds {
 		output, err := rigClient.ExecOutput(cmd)
