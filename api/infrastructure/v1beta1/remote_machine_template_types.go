@@ -51,6 +51,8 @@ type RemoteMachineTemplateResource struct {
 
 type RemoteMachineTemplateResourceSpec struct {
 	Pool string `json:"pool"`
+	// ProvisionJob describes the kubernetes Job to use to provision the machine.
+	ProvisionJob *ProvisionJob `json:"provisionJob,omitempty"`
 }
 
 // +kubebuilder:object:root=true

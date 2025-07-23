@@ -132,7 +132,9 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 				log.Error(err, "Error reserving PooledMachine")
 				return ctrl.Result{Requeue: true}, err
 			}
-		} else if rm.Spec.ProvisionJob == nil {
+		}
+
+		if rm.Spec.ProvisionJob == nil {
 			if rm.Spec.Address == "" || rm.Spec.SSHKeyRef.Name == "" {
 				rm.Status.FailureReason = "MissingFields"
 				rm.Status.FailureMessage = "If pool is empty, following fields are required: address, sshKeyRef"
