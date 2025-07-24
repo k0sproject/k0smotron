@@ -396,6 +396,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	desiredMachineNamesSlice := []string{}
 
 	var clusterIsUpdating bool
+	var infraMachineMissing bool
 	for _, m := range activeMachines.SortedByCreationTimestamp() {
 		if m.Spec.Version == nil || (!versionMatches(m, kcp.Spec.Version)) {
 			clusterIsUpdating = true
@@ -405,6 +406,9 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				machineNamesToDelete[m.Name] = true
 			}
 		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) || c.hasControllerConfigChanged(bootstrapConfigs, kcp, m) {
+			if _, found := infraMachines[m.Name]; !found {
+				infraMachineMissing = true
+			}
 			machineNamesToDelete[m.Name] = true
 		} else {
 			desiredMachineNamesSlice = append(desiredMachineNamesSlice, m.Name)
@@ -453,8 +457,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
-	if len(machineNamesToDelete)+len(desiredMachineNames) > int(kcp.Spec.Replicas) {
-
+	if infraMachineMissing || (len(machineNamesToDelete)+len(desiredMachineNames) > int(kcp.Spec.Replicas)) {
 		m := activeMachines.Newest().Name
 		err := c.checkMachineIsReady(ctx, m, cluster)
 		if err != nil {

@@ -26,19 +26,19 @@ import (
 	"testing"
 	"time"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"sigs.k8s.io/cluster-api/api/v1beta1"
-
-	"github.com/k0sproject/k0smotron/inttest/util"
-
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/cluster-api/api/v1beta1"
+
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
 type CAPIControlPlaneDockerSuite struct {
@@ -173,6 +173,39 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	extraFileFromSecret, err = getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file-secret")
 	s.Require().NoError(err)
 	s.Require().Equal("test", extraFileFromSecret)
+
+	err = s.client.RESTClient().
+		Delete().
+		AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines/docker-test-2").
+		Do(s.ctx).
+		Error()
+
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+		var obj unstructured.UnstructuredList
+		err := s.client.RESTClient().
+			Get().
+			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/machines").
+			Do(s.ctx).
+			Into(&obj)
+		if err != nil {
+			return false, nil
+		}
+
+		// We expect 4 machines: 3 control plane and 1 worker
+		return len(obj.Items) == 4, nil
+	})
+	s.Require().NoError(err)
+
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		b, _ := s.client.RESTClient().
+			Get().
+			AbsPath("/healthz").
+			DoRaw(context.Background())
+
+		return string(b) == "ok", nil
+	})
+	s.Require().NoError(err)
+
 }
 
 func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
@@ -265,7 +298,7 @@ metadata:
   namespace: default
 spec:
   replicas: 3
-  version: v1.27.2+k0s.0
+  version: v1.33.3+k0s.0
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
@@ -321,7 +354,7 @@ metadata:
   name:  docker-test-worker-0
   namespace: default
 spec:
-  version: v1.27.1
+  version: v1.33.2
   clusterName: docker-test-cluster
   bootstrap:
     configRef:
@@ -340,7 +373,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.27.1+k0s.0
+  version: v1.33.2+k0s.0
   args:
     - --labels=k0sproject.io/foo=bar
   preStartCommands:
