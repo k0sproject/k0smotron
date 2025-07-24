@@ -183,6 +183,7 @@ metadata:
 spec:
   template:
     spec:
+      version: v1.27.2
       persistence:
         type: emptyDir
       service:
@@ -195,7 +196,8 @@ metadata:
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      version: v1.27.2
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
