@@ -93,7 +93,4 @@ type K0smotronControlPlaneStatus struct {
 	UnavailableReplicas int32 `json:"unavailableReplicas"`
 	// selector is the label selector for pods that should match the replicas count.
 	Selector string `json:"selector,omitempty"`
-	// K0sVersion represents the full k0s version string including build metadata
-	// +optional
-	K0sVersion string `json:"k0sVersion,omitempty"`
 }

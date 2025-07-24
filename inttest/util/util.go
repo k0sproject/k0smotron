@@ -499,12 +499,4 @@ func VerifyK0smotronControlPlaneVersionFormat(ctx context.Context, t *testing.T,
 	if status.Version != expectedSpecVersion {
 		t.Errorf("Expected version %s, but got: %s", expectedSpecVersion, status.Version)
 	}
-
-	// Verify k0sVersion always has suffix
-	if status.K0sVersion == "" {
-		t.Error("K0sVersion should not be empty")
-	}
-	if !strings.Contains(status.K0sVersion, "-k0s.") {
-		t.Errorf("K0sVersion should always contain '-k0s.' suffix, but got: %s", status.K0sVersion)
-	}
 }

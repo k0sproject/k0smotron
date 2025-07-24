@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -155,24 +154,8 @@ func verifyK0smotronControlPlaneVersionFormat(ctx context.Context, t *testing.T,
 			return false
 		}
 
-		k0sVersion, found, err := unstructured.NestedString(status, "k0sVersion")
-		if err != nil || !found {
-			return false
-		}
-
 		if version != "v1.32.2" {
 			t.Errorf("Expected version %s, but got: %s", "v1.32.2", version)
-			return false
-		}
-
-		expectedK0sVersion := "v1.32.2-k0s.0"
-		if k0sVersion != expectedK0sVersion {
-			t.Errorf("Expected k0sVersion %s, but got: %s", expectedK0sVersion, k0sVersion)
-			return false
-		}
-
-		if !strings.Contains(k0sVersion, "-k0s.") {
-			t.Errorf("K0sVersion should always contain '-k0s.' suffix, but got: %s", k0sVersion)
 			return false
 		}
 

@@ -486,8 +486,6 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.N
 
 	if kcp.Status.ReadyReplicas > 0 {
 		statusVersion := minimumVersion.String()
-		// Store the full k0s version
-		kcp.Status.K0sVersion = statusVersion
 		// Store the formatted version for Cluster API compatibility
 		kcp.Status.Version = FormatStatusVersion(kcp.Spec.Version, statusVersion)
 	}
