@@ -291,6 +291,11 @@ func main() {
 				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
 				os.Exit(1)
 			}
+
+			if err = (&controlplane.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0smotronControlPlaneValidator")
+				os.Exit(1)
+			}
 		}
 	}
 
