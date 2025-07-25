@@ -19,6 +19,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/k0sproject/version"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,6 +40,15 @@ type K0sControlPlaneValidator struct{}
 
 var _ webhook.CustomValidator = &K0sControlPlaneValidator{}
 
+// validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
+func (v *K0sControlPlaneValidator) validateVersionSuffix(version string) admission.Warnings {
+	warnings := admission.Warnings{}
+	if version != "" && !strings.Contains(version, "+k0s.") {
+		warnings = append(warnings, fmt.Sprintf("The specified version '%s' requires a k0s suffix (+k0s.<number>). Using '%s+k0s.0' instead.", version, version))
+	}
+	return warnings
+}
+
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
 func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	kcp, ok := obj.(*v1beta1.K0sControlPlane)
@@ -46,7 +56,8 @@ func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime
 		return nil, fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
 	}
 
-	return nil, validateK0sControlPlane(kcp)
+	warnings := v.validateVersionSuffix(kcp.Spec.Version)
+	return warnings, validateK0sControlPlane(kcp)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
@@ -60,23 +71,25 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, new
 		return nil, fmt.Errorf("expected a old K0sControlPlane object but got %T", oldObj)
 	}
 
+	warnings := v.validateVersionSuffix(newKCP.Spec.Version)
+
 	if oldKCP.Spec.Version != newKCP.Spec.Version {
 		oldV, err := version.NewVersion(oldKCP.Spec.Version)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse old version: %v", err)
+			return warnings, fmt.Errorf("failed to parse old version: %v", err)
 		}
 		newV, err := version.NewVersion(newKCP.Spec.Version)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse new version: %v", err)
+			return warnings, fmt.Errorf("failed to parse new version: %v", err)
 		}
 
 		// According to the Kubernetes skew policy, we can't upgrade more than one minor version at a time.
 		if newV.Core().Segments()[1]-oldV.Core().Segments()[1] > 1 {
-			return nil, fmt.Errorf("upgrading more than one minor version at a time is not allowed by the Kubernetes skew policy")
+			return warnings, fmt.Errorf("upgrading more than one minor version at a time is not allowed by the Kubernetes skew policy")
 		}
 	}
 
-	return nil, validateK0sControlPlane(newKCP)
+	return warnings, validateK0sControlPlane(newKCP)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
@@ -85,7 +98,7 @@ func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ runtime.O
 }
 
 func validateK0sControlPlane(kcp *v1beta1.K0sControlPlane) error {
-	if err := denyUncompatibleK0sVersions(kcp); err != nil {
+	if err := denyIncompatibleK0sVersions(kcp); err != nil {
 		return err
 	}
 
@@ -97,8 +110,8 @@ func validateK0sControlPlane(kcp *v1beta1.K0sControlPlane) error {
 	return nil
 }
 
-func denyUncompatibleK0sVersions(kcp *v1beta1.K0sControlPlane) error {
-	var uncomaptibleVersions = map[string]string{
+func denyIncompatibleK0sVersions(kcp *v1beta1.K0sControlPlane) error {
+	var incompatibleVersions = map[string]string{
 		"1.31.1": "v1.31.2+",
 	}
 	v, err := version.NewVersion(kcp.Spec.Version)
@@ -106,7 +119,7 @@ func denyUncompatibleK0sVersions(kcp *v1beta1.K0sControlPlane) error {
 		return fmt.Errorf("failed to parse version: %v", err)
 	}
 
-	if vv, ok := uncomaptibleVersions[v.Core().String()]; ok {
+	if vv, ok := incompatibleVersions[v.Core().String()]; ok {
 		return fmt.Errorf("version %s is not compatible with K0sControlPlane, use %s", kcp.Spec.Version, vv)
 	}
 

@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
@@ -247,4 +248,90 @@ func WaitForKubeProxyUpgrade(ctx context.Context, input WaitForKubeProxyUpgradeI
 
 		return false, nil
 	})
+}
+
+// K0smotronControlPlane helper functions
+
+func WaitForK0smotronControlPlaneToBeReady(ctx context.Context, client crclient.Client, clusterName, namespace string, interval Interval) error {
+	fmt.Println("Waiting for the K0smotronControlPlane to be ready")
+
+	controlplaneObjectKey := crclient.ObjectKey{
+		Name:      clusterName,
+		Namespace: namespace,
+	}
+
+	kcp := &unstructured.Unstructured{}
+	kcp.SetAPIVersion("controlplane.cluster.x-k8s.io/v1beta1")
+	kcp.SetKind("K0smotronControlPlane")
+
+	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
+		if err := client.Get(ctx, controlplaneObjectKey, kcp); err != nil {
+			return false, errors.Wrapf(err, "failed to get K0smotronControlPlane")
+		}
+
+		// Check if the control plane is ready
+		status, found, err := unstructured.NestedMap(kcp.Object, "status")
+		if err != nil || !found {
+			return false, nil
+		}
+
+		ready, found, err := unstructured.NestedBool(status, "ready")
+		if err != nil || !found {
+			return false, nil
+		}
+
+		return ready, nil
+	})
+	if err != nil {
+		return fmt.Errorf("K0smotronControlPlane failed to become ready: %w", err)
+	}
+
+	return nil
+}
+
+func DiscoveryAndWaitForK0smotronControlPlaneInitialized(ctx context.Context, input capiframework.DiscoveryAndWaitForControlPlaneInitializedInput, interval Interval) error {
+	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
+		exists, err := k0smotronControlPlaneExists(ctx, K0smotronControlPlaneExistsInput{
+			Lister:      input.Lister,
+			ClusterName: input.Cluster.Name,
+			Namespace:   input.Cluster.Namespace,
+		})
+		if err != nil {
+			return false, err
+		}
+
+		return exists, nil
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't get the K0smotronControlPlane for the cluster %s: %w", klog.KObj(input.Cluster), err)
+	}
+
+	fmt.Printf("K0smotronControlPlane found for cluster %s\n", klog.KObj(input.Cluster))
+	return nil
+}
+
+type K0smotronControlPlaneExistsInput struct {
+	Lister      capiframework.Lister
+	ClusterName string
+	Namespace   string
+}
+
+func k0smotronControlPlaneExists(ctx context.Context, input K0smotronControlPlaneExistsInput) (bool, error) {
+	kcpList := &unstructured.UnstructuredList{}
+	kcpList.SetAPIVersion("controlplane.cluster.x-k8s.io/v1beta1")
+	kcpList.SetKind("K0smotronControlPlaneList")
+
+	err := input.Lister.List(ctx, kcpList, byClusterOptions(input.ClusterName, input.Namespace)...)
+	if err != nil {
+		return false, err
+	}
+
+	// Check if we found any K0smotronControlPlane objects
+	for _, item := range kcpList.Items {
+		if item.GetName() == input.ClusterName && item.GetNamespace() == input.Namespace {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
