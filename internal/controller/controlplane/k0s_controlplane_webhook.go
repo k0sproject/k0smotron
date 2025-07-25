@@ -85,7 +85,7 @@ func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ runtime.O
 }
 
 func validateK0sControlPlane(kcp *v1beta1.K0sControlPlane) error {
-	if err := denyUncompatibleK0sVersions(kcp); err != nil {
+	if err := denyIncompatibleK0sVersions(kcp); err != nil {
 		return err
 	}
 
@@ -97,8 +97,8 @@ func validateK0sControlPlane(kcp *v1beta1.K0sControlPlane) error {
 	return nil
 }
 
-func denyUncompatibleK0sVersions(kcp *v1beta1.K0sControlPlane) error {
-	var uncomaptibleVersions = map[string]string{
+func denyIncompatibleK0sVersions(kcp *v1beta1.K0sControlPlane) error {
+	var incompatibleVersions = map[string]string{
 		"1.31.1": "v1.31.2+",
 	}
 	v, err := version.NewVersion(kcp.Spec.Version)
@@ -106,7 +106,7 @@ func denyUncompatibleK0sVersions(kcp *v1beta1.K0sControlPlane) error {
 		return fmt.Errorf("failed to parse version: %v", err)
 	}
 
-	if vv, ok := uncomaptibleVersions[v.Core().String()]; ok {
+	if vv, ok := incompatibleVersions[v.Core().String()]; ok {
 		return fmt.Errorf("version %s is not compatible with K0sControlPlane, use %s", kcp.Spec.Version, vv)
 	}
 
