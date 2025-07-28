@@ -89,7 +89,7 @@ jobs:
   smoketest:
     name: Smoke test
     needs: build
-    runs-on: ubuntu-22.04-8core
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     strategy:
       fail-fast: false
       matrix:
@@ -175,7 +175,7 @@ jobs:
   e2e:
     name: E2E test
     needs: build
-    runs-on: ubuntu-22.04-8core
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     strategy:
       fail-fast: false
       matrix:
