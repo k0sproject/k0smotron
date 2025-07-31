@@ -141,6 +141,13 @@ The key must be placed on the secret using the key "value".<br/>
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>customCleanUpCommands</b></td>
+        <td>[]string</td>
+        <td>
+          CustomCleanUpCommands allow the user to run custom command for the clean up process of the machine.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>port</b></td>
         <td>integer</td>
         <td>
@@ -742,6 +749,13 @@ RemoteMachineSpec defines the desired state of RemoteMachine
         <td>string</td>
         <td>
           Address is the IP address or DNS name of the remote machine.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>customCleanUpCommands</b></td>
+        <td>[]string</td>
+        <td>
+          CustomCleanUpCommands allow the user to run custom command for the clean up process of the machine.<br/>
         </td>
         <td>false</td>
       </tr><tr>

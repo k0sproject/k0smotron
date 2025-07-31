@@ -73,6 +73,10 @@ type RemoteMachineSpec struct {
 	// +kubebuilder:validation:Optional
 	SSHKeyRef SecretRef `json:"sshKeyRef,omitempty"`
 
+	// CustomCleanUpCommands allow the user to run custom command for the clean up process of the machine.
+	// +kubebuilder:validation:Optional
+	CustomCleanUpCommands []string `json:"customCleanUpCommands,omitempty"`
+
 	// ProvisionJob describes the kubernetes Job to use to provision the machine.
 	ProvisionJob *ProvisionJob `json:"provisionJob,omitempty"`
 }
@@ -147,6 +151,10 @@ type PooledMachineSpec struct {
 
 	// +kubebuilder:validation:Optional
 	UseSudo bool `json:"useSudo,omitempty"`
+
+	// CustomCleanUpCommands allow the user to run custom command for the clean up process of the machine.
+	// +kubebuilder:validation:Optional
+	CustomCleanUpCommands []string `json:"customCleanUpCommands,omitempty"`
 
 	// SSHKeyRef is a reference to a secret that contains the SSH private key.
 	// The key must be placed on the secret using the key "value".

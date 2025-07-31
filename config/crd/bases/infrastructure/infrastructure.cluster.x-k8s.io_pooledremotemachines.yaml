@@ -46,6 +46,12 @@ spec:
                     description: Address is the IP address or DNS name of the remote
                       machine.
                     type: string
+                  customCleanUpCommands:
+                    description: CustomCleanUpCommands allow the user to run custom
+                      command for the clean up process of the machine.
+                    items:
+                      type: string
+                    type: array
                   port:
                     default: 22
                     description: Port is the SSH port of the remote machine.

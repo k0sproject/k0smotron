@@ -123,10 +123,6 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 // 3. Removes node from etcd
 // 4. Runs k0s reset
 func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) error {
-	if mode == ModeNonK0s {
-		return nil
-	}
-
 	authM, err := rigssh.ParseSSHPrivateKey(p.sshKey, nil)
 	if err != nil {
 		return fmt.Errorf("failed to parse ssh key: %w", err)
@@ -155,6 +151,24 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 		rigClient = rigClient.Sudo()
 	}
 
+	// When k0s is not the bootstrap provider, the user can set custom commands for the clean up process.
+	if mode == ModeNonK0s {
+		if p.machine.Spec.CustomCleanUpCommands != nil {
+			p.log.Info("Cleaning up remote machine...")
+			for _, cmd := range p.machine.Spec.CustomCleanUpCommands {
+				output, err := rigClient.ExecOutput(cmd)
+				if err != nil {
+					p.log.Error(err, "failed to run command", "command", cmd, "output", output)
+				} else {
+					p.log.Info("executed command", "command", cmd, "output", output)
+				}
+			}
+		}
+
+		return nil
+	}
+
+	// k0s bootstrap provider used.
 	var cmds []string
 	if mode == ModeController {
 		cmds = append(cmds, "k0s etcd leave")
@@ -179,6 +193,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 		cmds = append(cmds, "k0s reset --kubelet-root-dir "+kubeletRootDir)
 	}
 
+	p.log.Info("Cleaning up remote machine...")
 	for _, cmd := range cmds {
 		output, err := rigClient.ExecOutput(cmd)
 		if err != nil {
