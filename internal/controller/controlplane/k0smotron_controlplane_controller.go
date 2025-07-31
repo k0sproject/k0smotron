@@ -42,6 +42,7 @@ import (
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -130,7 +131,8 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	defer func() {
-		derr := c.computeStatus(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, kcp)
+		derr := c.computeStatus(ctx, cluster, kcp)
+		log.Info("Computed status", "status", kcp.Status)
 		if derr != nil {
 			if errors.Is(derr, ErrNotReady) {
 				res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
@@ -184,29 +186,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	if ready {
-		remoteClient, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
-		if err != nil {
-			return res, fmt.Errorf("failed to create remote client: %w", err)
-		}
-
-		ns := &corev1.Namespace{}
-		err = remoteClient.Get(ctx, types.NamespacedName{Name: "kube-system", Namespace: ""}, ns)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
-			}
-			return res, fmt.Errorf("failed to get namespace: %w", err)
-		}
-
-		annotations.AddAnnotations(cluster, map[string]string{
-			cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
-		})
-	}
-
-	kcp.Status.Ready = ready
 	kcp.Status.ExternalManagedControlPlane = true
-	kcp.Status.Initialized = true
 
 	return res, err
 }
@@ -411,9 +391,9 @@ func FormatStatusVersion(specVersion, statusVersion string) string {
 	return statusVersion
 }
 
-func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.NamespacedName, kcp *cpv1beta1.K0smotronControlPlane) error {
+func (c *K0smotronController) computeStatus(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) error {
 	var kmc kapi.Cluster
-	err := c.Client.Get(ctx, cluster, &kmc)
+	err := c.Client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &kmc)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// The cluster is not yet created.
@@ -490,6 +470,8 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.N
 		kcp.Status.Version = FormatStatusVersion(kcp.Spec.Version, statusVersion)
 	}
 
+	c.computeAvailability(ctx, cluster, kcp)
+
 	// if no replicas are yet available or the desired version is not in the current state of the
 	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
 	if kcp.Status.UnavailableReplicas > 0 || FormatStatusVersion(kcp.Spec.Version, desiredVersion.String()) != kcp.Status.Version {
@@ -497,6 +479,53 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster types.N
 	}
 
 	return nil
+}
+
+// computeAvailability checks if the control plane is ready by connecting to the API server
+// and checking if the control plane is initialized
+func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) {
+	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
+	// Check if the control plane is ready by connecting to the API server
+	// and checking if the control plane is initialized
+	logger.Info("Pinging the workload cluster API")
+
+	// Get the CAPI cluster accessor
+	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
+	if err != nil {
+		logger.Info("Failed to create cluster client", "error", err)
+		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "ClusterClientCreationFailed", clusterv1.ConditionSeverityWarning, "Failed to create cluster client: %v", err)
+		return
+	}
+
+	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// If we can get 'kube-system' namespace, it's safe to say the API is up-and-running
+	ns := &corev1.Namespace{}
+	nsKey := types.NamespacedName{
+		Namespace: "",
+		Name:      "kube-system",
+	}
+	err = client.Get(pingCtx, nsKey, ns)
+	if err != nil {
+		logger.Info("Failed to get workload cluster namespace", "error", err)
+		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "KubeSystemNamespaceNotAccessible", clusterv1.ConditionSeverityWarning, "Failed to get kube-system namespace: %v", err)
+		return
+	}
+
+	logger.Info("Successfully verified workload cluster API availability")
+
+	// Set condition for successful API access
+	conditions.MarkTrue(kcp, cpv1beta1.ControlPlaneReadyCondition)
+
+	kcp.Status.Ready = true
+	kcp.Status.Initialized = true
+	kcp.Status.Initialization.ControlPlaneInitialized = true
+
+	// Set the k0s cluster ID annotation
+	annotations.AddAnnotations(cluster, map[string]string{
+		cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
+	})
 }
 
 func (c *K0smotronController) getComparableK0sVersionRunningInPod(ctx context.Context, pod *corev1.Pod) (*version.Version, error) {

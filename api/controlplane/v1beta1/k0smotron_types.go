@@ -19,6 +19,7 @@ package v1beta1
 import (
 	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 const K0smotronControlPlaneFinalizer = "k0smotron.controlplane.cluster.x-k8s.io"
@@ -47,6 +48,7 @@ type K0smotronControlPlane struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              kmapi.ClusterSpec `json:"spec,omitempty"`
 
+	// +kubebuilder:default={version:"",ready:false,initialized:false,initialization:{controlPlaneInitialized:false},conditions: {{type: "ControlPlaneReady", status: "Unknown", reason:"ControlPlaneDoesNotExist", message:"Waiting for cluster topology to be reconciled", lastTransitionTime: "1970-01-01T00:00:00Z"}}}
 	Status K0smotronControlPlaneStatus `json:"status,omitempty"`
 }
 
@@ -56,6 +58,13 @@ type K0smotronControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []K0smotronControlPlane `json:"items"`
+}
+
+// Initialization represents the initialization status of the control plane
+type Initialization struct {
+	// controlPlaneInitialized indicates whether the control plane is initialized
+	// +optional
+	ControlPlaneInitialized bool `json:"controlPlaneInitialized"`
 }
 
 type K0smotronControlPlaneStatus struct {
@@ -69,6 +78,11 @@ type K0smotronControlPlaneStatus struct {
 	// to check the operational state of the control plane.
 	// +optional
 	Initialized bool `json:"initialized"`
+
+	// initialization represents the initialization status of the control plane
+	// +optional
+	Initialization Initialization `json:"initialization,omitempty"`
+
 	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
 	// +optional
 	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
@@ -93,4 +107,16 @@ type K0smotronControlPlaneStatus struct {
 	UnavailableReplicas int32 `json:"unavailableReplicas"`
 	// selector is the label selector for pods that should match the replicas count.
 	Selector string `json:"selector,omitempty"`
+
+	// Conditions defines current service state of the K0smotronControlPlane.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+}
+
+func (k *K0smotronControlPlane) GetConditions() clusterv1.Conditions {
+	return k.Status.Conditions
+}
+
+func (k *K0smotronControlPlane) SetConditions(conditions clusterv1.Conditions) {
+	k.Status.Conditions = conditions
 }
