@@ -90,20 +90,20 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test"))
+		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
 	// nolint:staticcheck
 	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-lb")
+		localPort, _ = getLBPort("docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting to see admin kubeconfig secret")
-	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
+	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
@@ -119,7 +119,16 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-0", "k0s", "status").Output()
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 1 {
+			return false, nil
+		}
+
+		output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", machines[0].GetName()), "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
@@ -162,7 +171,16 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDock
 
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "docker-test-1", "k0s", "status").CombinedOutput()
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 1 {
+			return false, nil
+		}
+
+		output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", machines[0].GetName()), "k0s", "status").CombinedOutput()
 		if err != nil {
 			return false, nil
 		}
@@ -203,7 +221,7 @@ var dockerClusterYaml = `
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: docker-test
+  name: docker-test-cluster
   namespace: default
 spec:
   clusterNetwork:
@@ -279,7 +297,7 @@ metadata:
   namespace: default
 spec:
   version: v1.30.0
-  clusterName: docker-test
+  clusterName: docker-test-cluster
   bootstrap:
     configRef:
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1

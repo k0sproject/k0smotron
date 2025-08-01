@@ -427,6 +427,26 @@ func DeleteCluster(clusterName string) error {
 	return nil
 }
 
+func GetControlPlaneMachinesByKcpName(ctx context.Context, kcpName string, namespace string, c *kubernetes.Clientset) ([]clusterv1.Machine, error) {
+	apiPath := fmt.Sprintf("/apis/cluster.x-k8s.io/v1beta1/namespaces/%s/machines", namespace)
+	res, err := c.RESTClient().Get().AbsPath(apiPath).DoRaw(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ml := &clusterv1.MachineList{}
+	if err := yaml.Unmarshal(res, ml); err != nil {
+		return nil, err
+	}
+
+	var result []clusterv1.Machine
+	for _, m := range ml.Items {
+		if _, ok := m.Labels[clusterv1.MachineControlPlaneLabel]; ok && m.Labels[clusterv1.MachineControlPlaneNameLabel] == kcpName {
+			result = append(result, m)
+		}
+	}
+	return result, nil
+}
+
 func dowloadStableK0smotronOperator() (string, error) {
 	url := "https://docs.k0smotron.io/stable/install.yaml"
 
