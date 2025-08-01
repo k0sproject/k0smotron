@@ -605,15 +605,18 @@ func normalizeK0sConfigSpec(kcp *cpv1beta1.K0sControlPlane, bootstrapConfig boot
 	}
 
 	// Remove duplicated values generated bootstrap controller in order to compared it with kcp.
+	bootstrapConfig.Spec.K0sConfigSpec.Args = uniqueArgs(kcp.Spec.K0sConfigSpec.Args)
+}
+
+func uniqueArgs(args []string) []string {
 	uniqueArgsSlice := []string{}
 	uniqueArgsMap := make(map[string]struct{})
-	for _, arg := range bootstrapConfig.Spec.K0sConfigSpec.Args {
+	for _, arg := range args {
 		if _, exists := uniqueArgsMap[arg]; !exists {
 			uniqueArgsSlice = append(uniqueArgsSlice, arg)
 			uniqueArgsMap[arg] = struct{}{}
 		}
 	}
-	if len(uniqueArgsSlice) > 0 {
-		bootstrapConfig.Spec.K0sConfigSpec.Args = uniqueArgsSlice
-	}
+
+	return uniqueArgsSlice
 }

@@ -588,6 +588,9 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 }
 
 func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
+
+	kcp.Spec.K0sConfigSpec.Args = uniqueArgs(kcp.Spec.K0sConfigSpec.Args)
+
 	controllerConfig := bootstrapv1.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
