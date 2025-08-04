@@ -132,12 +132,12 @@ func (c *ClusterSpec) GetImage() string {
 		k0sVersion = DefaultK0SVersion
 	}
 
-	if !strings.Contains(k0sVersion, "-k0s.") {
-		k0sVersion = fmt.Sprintf("%s-%s", k0sVersion, DefaultK0SSuffix)
-	}
-
 	if c.Image == "" {
 		return fmt.Sprintf("%s:%s", defaultK0SImage, k0sVersion)
+	}
+
+	if c.Image == defaultK0SImage && !strings.Contains(k0sVersion, "-k0s.") {
+		k0sVersion = fmt.Sprintf("%s-%s", k0sVersion, DefaultK0SSuffix)
 	}
 
 	return fmt.Sprintf("%s:%s", c.Image, k0sVersion)
