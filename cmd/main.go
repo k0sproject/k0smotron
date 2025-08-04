@@ -287,8 +287,8 @@ func main() {
 				os.Exit(1)
 			}
 
-			if err = (&controlplane.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
-				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
+			if err = (&controlplane.K0sControlPlaneWebhook{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneWebhook")
 				os.Exit(1)
 			}
 

@@ -30,18 +30,30 @@ import (
 	"github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
 
-// +kubebuilder:webhook:path=/validate-controlplane-cluster-x-k8s-io-v1beta1-k0scontrolplane,mutating=false,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=create;update,versions=v1beta1,name=validate-k0scontrolplane-v1beta1.k0smotron.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-and-mutate-controlplane-cluster-x-k8s-io-v1beta1-k0scontrolplane,mutating=true,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=create;update,versions=v1beta1,name=validate-and-mutate-k0scontrolplane-v1beta1.k0smotron.io,admissionReviewVersions=v1
 
-// K0sControlPlaneValidator struct is responsible for validating the K0sControlPlane resource when it is created, updated, or deleted.
+// K0sControlPlaneWebhook struct is responsible for validating the K0sControlPlane resource when it is created, updated, or deleted.
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type K0sControlPlaneValidator struct{}
+type K0sControlPlaneWebhook struct{}
 
-var _ webhook.CustomValidator = &K0sControlPlaneValidator{}
+var _ webhook.CustomDefaulter = &K0sControlPlaneWebhook{}
+var _ webhook.CustomValidator = &K0sControlPlaneWebhook{}
+
+func (v *K0sControlPlaneWebhook) Default(_ context.Context, obj runtime.Object) error {
+	kcp, ok := obj.(*v1beta1.K0sControlPlane)
+	if !ok {
+		return fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
+	}
+
+	kcp.Spec.K0sConfigSpec.Args = uniqueArgs(kcp.Spec.K0sConfigSpec.Args)
+
+	return nil
+}
 
 // validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
-func (v *K0sControlPlaneValidator) validateVersionSuffix(version string) admission.Warnings {
+func (v *K0sControlPlaneWebhook) validateVersionSuffix(version string) admission.Warnings {
 	warnings := admission.Warnings{}
 	if version != "" && !strings.Contains(version, "+k0s.") {
 		warnings = append(warnings, fmt.Sprintf("The specified version '%s' requires a k0s suffix (+k0s.<number>). Using '%s+k0s.0' instead.", version, version))
@@ -50,7 +62,7 @@ func (v *K0sControlPlaneValidator) validateVersionSuffix(version string) admissi
 }
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *K0sControlPlaneWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	kcp, ok := obj.(*v1beta1.K0sControlPlane)
 	if !ok {
 		return nil, fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
@@ -61,7 +73,7 @@ func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *K0sControlPlaneWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	newKCP, ok := newObj.(*v1beta1.K0sControlPlane)
 	if !ok {
 		return nil, fmt.Errorf("expected a new K0sControlPlane object but got %T", newObj)
@@ -93,7 +105,7 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, new
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (v *K0sControlPlaneWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
@@ -143,9 +155,10 @@ func denyRecreateOnSingleClusters(kcp *v1beta1.K0sControlPlane) error {
 }
 
 // SetupK0sControlPlaneWebhookWithManager registers the webhook for K0sControlPlane in the manager.
-func (v *K0sControlPlaneValidator) SetupK0sControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
+func (v *K0sControlPlaneWebhook) SetupK0sControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&v1beta1.K0sControlPlane{}).
+		WithDefaulter(v).
 		WithValidator(v).
 		Complete()
 }
