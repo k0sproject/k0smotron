@@ -28,7 +28,7 @@ metadata:
     app.kubernetes.io/instance: release-name
 data:
   master.toml: |-
-    
+
     # Enter any extra configuration for master.toml here.
     # It may be a multi-line string.
 ---

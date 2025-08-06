@@ -56,7 +56,7 @@ nav:
       - Testing: contributing/contribute-testing.md
   - Known Limitations: known-limitations.md
   - Reference:
-    - Custom resources: 
+    - Custom resources:
       - bootstrap.cluster.x-k8s.io/v1beta1: resource-reference/bootstrap.cluster.x-k8s.io-v1beta1.md
       - controlplane.cluster.x-k8s.io/v1beta1: resource-reference/controlplane.cluster.x-k8s.io-v1beta1.md
       - infrastructure.cluster.x-k8s.io/v1beta1: resource-reference/infrastructure.cluster.x-k8s.io-v1beta1.md

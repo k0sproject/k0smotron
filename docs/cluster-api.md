@@ -31,7 +31,7 @@ k0smotron also provides a ClusterAPI provider to manage and bootstrap cluster `M
 
 !!! note "RBAC finetuning needed with Helm deployed autoscaler"
      The Helm chart does not take into account the need for autoscaler to access the implementation specific resources in `infrastructure.cluster.x-k8s.io` group. To fix that you need to modify* the `ClusterRole` to include e.g.
-     
+
      ```yaml
      - verbs:
         - get

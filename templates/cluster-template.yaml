@@ -61,7 +61,7 @@ metadata:
   name: ${CLUSTER_NAME}
 spec:
   template:
-    spec: 
+    spec:
       pool: ${POOL_NAME:=default}
 ---
 # It is necessary to have previously created a control plane node since k0smotron does not take care of its creation.

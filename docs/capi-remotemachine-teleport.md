@@ -44,7 +44,7 @@ roleRef:
 
 ## Creating Teleport Bot User
 
-Next, you need to create a Teleport Bot user for the service account. Since we use a `kubernetes` auth method for Teleport, first we need to figure out the cluster's JWKS. 
+Next, you need to create a Teleport Bot user for the service account. Since we use a `kubernetes` auth method for Teleport, first we need to figure out the cluster's JWKS.
 It will be used by the Teleport Cluster to verify the JWT tokens.
 
 ```bash

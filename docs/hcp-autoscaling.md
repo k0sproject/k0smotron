@@ -6,7 +6,7 @@ Horizontal Pod Autoscaler (HPA) automatically scales the number of pods in a Kub
 
 !!! warning
 
-    Due to etcd maintanance challenges, k0smotron **never** scales etcd statefulsets down, only up. 
+    Due to etcd maintanance challenges, k0smotron **never** scales etcd statefulsets down, only up.
     This means that HPA will scale up both control-plane and etcd, but scale down only control-plane pods.
 
 ## Prerequisites

@@ -16,7 +16,7 @@ Using k0smotron the clusters controlplane and workerplane are truly separated. T
 
 ### Bring your own workers
 
-With k0smotron you can connect worker nodes from ANY infrastructure to your cluster control plane. 
+With k0smotron you can connect worker nodes from ANY infrastructure to your cluster control plane.
 
 ## How does it work
 
@@ -34,7 +34,7 @@ Often when running integration and end-to-end testing for your software running 
 
 ### Edge
 
-Running Kubernetes on the network edge usually means running in low resource infrastructure. What this often means is that setting up the controlplane is either a challenge or a mission impossible. Running the controlplane on a existing cluster, on a separate dedicated infrastructure, removes that challenge and let's you focus on the real edge. 
+Running Kubernetes on the network edge usually means running in low resource infrastructure. What this often means is that setting up the controlplane is either a challenge or a mission impossible. Running the controlplane on a existing cluster, on a separate dedicated infrastructure, removes that challenge and let's you focus on the real edge.
 
 Running on the edge often also means large number of clusters to manage. Do you really want to dedicate nodes for each cluster controlplane and manage all the infrastructure for those?
 

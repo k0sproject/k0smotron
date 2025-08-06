@@ -22,7 +22,7 @@ To be able to provision the OpenStack provider infrastructre, you will need to s
 
 Download your “OpenStack clouds.yaml file” (Login -> API Access -> Download OpenStack clouds.yaml file)
 
-Add "verify: false" to your clouds.yaml to avoir having the "x509: certificate signed by unknown authority" error. 
+Add "verify: false" to your clouds.yaml to avoir having the "x509: certificate signed by unknown authority" error.
 
 More information here : [cluster-api-troubleshooting](https://cluster-api-openstack.sigs.k8s.io/topics/troubleshooting)
 
@@ -179,7 +179,7 @@ spec:
 Once complete, your command line should display output similar to this:
 
 ```shell
-kubectl get cluster,machine,kmc                                                                                                                   
+kubectl get cluster,machine,kmc
 
 NAME                                   CLUSTERCLASS   PHASE         AGE     VERSION
 cluster.cluster.x-k8s.io/cluster-openstack                     Provisioned   135m
@@ -192,13 +192,13 @@ machine.cluster.x-k8s.io/cluster-openstack-worker-vms-drjzw-7699d      cluster2 
 You can also check the status of the cluster deployment with `clusterctl`:
 ```shell
 ❯ clusterctl describe cluster cluster3
-NAME                                                                     READY  SEVERITY  REASON                       SINCE  MESSAGE                                                       
-Cluster/cluster3                                                         True                                          5d4h                                                                  
-├─ClusterInfrastructure - OpenStackCluster/cluster3                                                                                                                                          
-├─ControlPlane - K0smotronControlPlane/cluster3                                                                                                                                              
-└─Workers                                                                                                                                                           
-    └─Machine/cluster3-worker-vms-929sw-nkhht                            True                                          5d4h                                                                  
-      └─BootstrapConfig - K0sWorkerConfig/cluster3-machine-config-tlg78                                                        
+NAME                                                                     READY  SEVERITY  REASON                       SINCE  MESSAGE
+Cluster/cluster3                                                         True                                          5d4h
+├─ClusterInfrastructure - OpenStackCluster/cluster3
+├─ControlPlane - K0smotronControlPlane/cluster3
+└─Workers
+    └─Machine/cluster3-worker-vms-929sw-nkhht                            True                                          5d4h
+      └─BootstrapConfig - K0sWorkerConfig/cluster3-machine-config-tlg78
 ```
 
 

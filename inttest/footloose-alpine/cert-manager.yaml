@@ -13113,7 +13113,7 @@ spec:
           - --dynamic-serving-dns-names=cert-manager-webhook
           - --dynamic-serving-dns-names=cert-manager-webhook.$(POD_NAMESPACE)
           - --dynamic-serving-dns-names=cert-manager-webhook.$(POD_NAMESPACE).svc
-          
+
           ports:
           - name: https
             protocol: TCP

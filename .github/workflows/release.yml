@@ -129,7 +129,7 @@ jobs:
           asset_path: ./templates/cluster-template.yaml
           asset_name: cluster-template.yaml
           asset_content_type: application/octet-stream
-      
+
       - name: Upload Release Assets - cluster-template-hcp.yaml
         id: upload-release-asset-cluster-template-hcp
         uses: shogo82148/actions-upload-release-asset@v1.8.1

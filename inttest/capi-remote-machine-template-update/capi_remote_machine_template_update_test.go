@@ -364,7 +364,7 @@ metadata:
   namespace: default
 spec:
   template:
-    spec: 
+    spec:
       pool: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

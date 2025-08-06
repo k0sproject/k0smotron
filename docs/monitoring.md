@@ -18,7 +18,7 @@ metadata:
 spec:
   monitoring:
     enabled: true
-``` 
+```
 
 Once done, two sidecar containers are added to the control plane pods:
 

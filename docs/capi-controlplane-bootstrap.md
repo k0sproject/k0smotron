@@ -42,7 +42,7 @@ spec:
       spec:
         api:
           extraArgs:
-            anonymous-auth: "true" # anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz 
+            anonymous-auth: "true" # anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -69,7 +69,7 @@ For a full reference on `K0sControlPlane` configurability see the [reference doc
 **WARNING: Downscaling is a potentially dangerous operation.**
 
 Kubernetes using etcd as its backing store. It's crucial to have a quorum of etcd nodes available at all times. Always run etcd as a cluster of **odd** members.
-    
+
 When downscaling the control plane, you need firstly to deregister the node from the etcd cluster. k0smotron will do it automatically for you.
 
 **NOTE:** k0smotron gives node names sequentially and on downscaling it will remove the "latest" nodes. For instance, if you have `k0smotron-test` cluster of 5 nodes and you downscale to 3 nodes, the nodes `k0smotron-test-3` and `k0smotron-test-4` will be removed.

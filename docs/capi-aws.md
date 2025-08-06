@@ -1,6 +1,6 @@
 # Cluster API - AWS (Hosted Control Plane)
 
-This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy 
+This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy
 a cluster with hosted control plane and workers in AWS.
 
 ## Prerequisites
@@ -115,7 +115,7 @@ spec:
     spec:
       ami:
         # Replace with your AMI ID
-        id: ami-0989fb15ce71ba39e # Ubuntu 22.04 in eu-central-1 
+        id: ami-0989fb15ce71ba39e # Ubuntu 22.04 in eu-central-1
       instanceType: t3.large
       iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io # Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`
       cloudInit:
@@ -146,20 +146,20 @@ Once complete, your command line should display output similar to this:
 ```shell
 % kubectl get cluster,machine
 NAME                                    PHASE         AGE   VERSION
-cluster.cluster.x-k8s.io/k0s-aws-test   Provisioned   16m   
+cluster.cluster.x-k8s.io/k0s-aws-test   Provisioned   16m
 
 NAME                                         CLUSTER        NODENAME   PROVIDERID                                 PHASE         AGE   VERSION
-machine.cluster.x-k8s.io/k0s-aws-test-md-0   k0s-aws-test              aws:///eu-central-1a/i-05f2de7da41dc542a   Provisioned   16m   
+machine.cluster.x-k8s.io/k0s-aws-test-md-0   k0s-aws-test              aws:///eu-central-1a/i-05f2de7da41dc542a   Provisioned   16m
 ```
 
 You can also check the status of the cluster deployment with `clusterctl`:
 ```shell
-% clusterctl describe cluster  
-NAME                                                   READY  SEVERITY  REASON                    SINCE  MESSAGE          
-Cluster/k0s-aws-test                                   True                                       25m                      
-├─ClusterInfrastructure - AWSCluster/k0s-aws-test                                                                             
-├─ControlPlane - K0smotronControlPlane/k0s-aws-test-cp                                                                           
-└─Workers                                                                                                                  
+% clusterctl describe cluster
+NAME                                                   READY  SEVERITY  REASON                    SINCE  MESSAGE
+Cluster/k0s-aws-test                                   True                                       25m
+├─ClusterInfrastructure - AWSCluster/k0s-aws-test
+├─ControlPlane - K0smotronControlPlane/k0s-aws-test-cp
+└─Workers
   └─Other
 ```
 
@@ -169,7 +169,7 @@ k0smotron, running in a management cluster in AWS, supports flexible networking 
 If you prefer using an NLB instead of ELB, you must specify annotations for the Service in the `k0smotronControlPlane`. These annotations guide the AWS Cloud Controller Manager (CCM) or the AWS Load Balancer Controller to create the respective services.
 
 ```yaml
- [...] 
+ [...]
   service:
     type: LoadBalancer
     apiPort: 6443
@@ -184,7 +184,7 @@ For scenarios involving Classic ELBs or NLBs without special options, the AWS CC
 If you aim to use the NLB and set the schema to `internal`, the target group attribute `preserve_client_ip.enabled=false` is required due to "hairpinning" or "NAT loopback". In such cases, the AWS CCM cannot be used because it doesn't support setting Target Group Attributes. Therefore, the AWS Load Balancer Controller, which has the ability to set Target Group Attributes, becomes necessary. Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html) to install the AWS Load Balancer Controller.
 
 ```yaml
- [...] 
+ [...]
   service:
     type: LoadBalancer
     apiPort: 6443

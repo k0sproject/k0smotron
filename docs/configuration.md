@@ -23,7 +23,7 @@ For full reference of the fields check out the [reference docs](resource-referen
 
 ## Persistence
 
-K0smotron persists data related to each Cluster. Specifically, it persists the `/var/lib/k0s` directory of the k0s controller which is the default data directory used by k0s. 
+K0smotron persists data related to each Cluster. Specifically, it persists the `/var/lib/k0s` directory of the k0s controller which is the default data directory used by k0s.
 
 The `/var/lib/k0s` directory contains essential data for the operation of the k0s controller, but its growth over time is primarily driven by the addition of small [manifest](https://docs.k0sproject.io/stable/manifests/) files. Since these manifests are lightweight and in text format, the directory tends to grow gradually and not excessively. Typically, 250 MB of space is sufficient to handle its growth, as the main additions are these small manifests, keeping the overall size manageable.
 
@@ -37,11 +37,11 @@ Refer to [k0s docs](https://docs.k0sproject.io/stable/configuration/) for a refe
 
 **Note**: Some fields will be overwritten by k0smotron. K0smotron will set the following fields:
 
-- `spec.k0sConfig.spec.api.externalAddress` will be set to the value of `spec.externalAddress` if `spec.externalAddress` is set. 
-   If not, k0smotron will use load balancer IP or try to detect `externalAddress` out of nodes IP addresses. 
+- `spec.k0sConfig.spec.api.externalAddress` will be set to the value of `spec.externalAddress` if `spec.externalAddress` is set.
+   If not, k0smotron will use load balancer IP or try to detect `externalAddress` out of nodes IP addresses.
 - `spec.k0sConfig.spec.api.port` will be set to the value of `spec.service.apiPort`.
 - `spec.k0sConfig.spec.konnectivity.port` will be set to the value of `spec.service.konnectivityPort`.
-- `spec.k0sConfig.spec.storage.kine.dataSource` will be set to the value of `spec.kineDataSourceURL` if `spec.kineDataSourceURL` is set. 
+- `spec.k0sConfig.spec.storage.kine.dataSource` will be set to the value of `spec.kineDataSourceURL` if `spec.kineDataSourceURL` is set.
   `spec.k0sConfig.spec.storage.type` will be set to `kine`.
 
 

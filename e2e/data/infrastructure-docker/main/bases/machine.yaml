@@ -34,8 +34,8 @@ spec:
     - path: /tmp/test-file
       content: test-file
     - path: /tmp/test-file-secret
-      contentFrom: 
-        secretRef: 
+      contentFrom:
+        secretRef:
           name: test-file-secret
           key: value
 ---

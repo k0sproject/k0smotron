@@ -5,7 +5,7 @@ the k0s version and machine names in the YAML configuration file:
 
 1. Localize the configuration of deployed k0smotron cluster in your repository. For example:
 
-    ```yaml 
+    ```yaml
     apiVersion: cluster.x-k8s.io/v1beta1
     kind: Cluster
     metadata:
@@ -98,18 +98,18 @@ with the new names to create machines for the target k0smotron version. For exam
    spec:
      version: v1.28.7+k0s.0 # new version
    ```
- 
+
 5. Update the resources:
 
    ```bash
    kubectl apply -f ./path-to-file.yaml
    ```
 
-   
+
 6. Remove the machines running the old k0smotron version:
 
    ```bash
    kubectl delete machine docker-test-0
    ```
-   
+
 The update procedure is completed, you now have the target version of k0smotron.

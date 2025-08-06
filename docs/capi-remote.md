@@ -103,7 +103,7 @@ spec:
 
 ## Using `RemoteMachine`s in `machineTemplate`s of higher-level objects
 
-Objects like `K0sControlPlane` or `MachineDeployment` use `machineTemplate` to define the template for the `Machine` objects they create. 
+Objects like `K0sControlPlane` or `MachineDeployment` use `machineTemplate` to define the template for the `Machine` objects they create.
 Since k0smotron remote machine provider can't create machines on its own, it works with a pool of pre-created machines.
 
 ```yaml

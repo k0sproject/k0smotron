@@ -59,7 +59,7 @@ spec:
     apiPort: 6443
     konnectivityPort: 8132
     annotations:
-      load-balancer.hetzner.cloud/location: fsn1 
+      load-balancer.hetzner.cloud/location: fsn1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: HetznerCluster
@@ -134,7 +134,7 @@ spec:
 apiVersion: v1
 kind: Secret
 data:
-  hcloud: <base64 encoded token> 
+  hcloud: <base64 encoded token>
 metadata:
   name: hetzner
 ```
@@ -146,7 +146,7 @@ After applying the manifests to the management cluster and confirming the infras
 ```
 % kubectl get cluster,machine
 NAME                                   PHASE         AGE     VERSION
-cluster.cluster.x-k8s.io/hetzer-test   Provisioned   3m51s   
+cluster.cluster.x-k8s.io/hetzer-test   Provisioned   3m51s
 
 NAME                                         CLUSTER        NODENAME   PROVIDERID          PHASE         AGE     VERSION
 machine.cluster.x-k8s.io/hetzner-test-md-0   hetzner-test              hcloud://12345678   Provisioned   3m50s
