@@ -2033,12 +2033,12 @@ vim<span class="w"> </span>~/.cluster-api/clusterctl.yaml
 <span class="w">  </span><span class="nt">end</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.117.180</span>
 </code></pre></div>
 <ol>
-<li>Deploy the IPAM configuration: 
+<li>Deploy the IPAM configuration:
 <div class="highlight"><pre><span></span><code>kubectl apply -f capi-ipam.yaml
 </code></pre></div></li>
 </ol>
 <h2 id="optional-metallb-as-load-balancer-solution-in-the-management-cluster">(Optional) MetalLB as Load Balancer solution in the management cluster<a class="headerlink" href="#optional-metallb-as-load-balancer-solution-in-the-management-cluster" title="Permanent link">#</a></h2>
-<p>You may require to deploy MetalLB if you don't have Load Balancer solution in your management cluster. 
+<p>You may require to deploy MetalLB if you don't have Load Balancer solution in your management cluster.
 <em>NOTE:</em> Load Balancer service type will be used only for the scenario, when you put you k0s control plane in pods (see <a href="#control-plane-in-pods">Control plane in Pods</a> section)</p>
 <p>Classic vSphere does not have a built-in solution that can be leveraged on Kubernetes level to create LoadBalancer service type. In order to make it possible, one of the common solution is to use MetalLB (please find it's docs <a href="https://metallb.universe.tf/">here</a>)</p>
 <ol>
@@ -2071,12 +2071,12 @@ vim<span class="w"> </span>~/.cluster-api/clusterctl.yaml
 <h3 id="generate-a-child-cluster-definition-using-the-template">Generate a child cluster definition using the template<a class="headerlink" href="#generate-a-child-cluster-definition-using-the-template" title="Permanent link">#</a></h3>
 <p>There are two options for child cluster control plane with k0smotron:</p>
 <h4 id="control-plane-in-pods">Control plane in Pods:<a class="headerlink" href="#control-plane-in-pods" title="Permanent link">#</a></h4>
-<p>If you want to have child cluster <a href="https://docs.k0smotron.io/stable/capi-controlplane/">control plane in a Pods</a>, use the following <a href="../capi-vsphere-tmpl-cp-in-pods.yaml">template</a>: </p>
+<p>If you want to have child cluster <a href="https://docs.k0smotron.io/stable/capi-controlplane/">control plane in a Pods</a>, use the following <a href="../capi-vsphere-tmpl-cp-in-pods.yaml">template</a>:</p>
 <div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>generate<span class="w"> </span>cluster<span class="w"> </span>my-cluster<span class="w"> </span>--control-plane-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--worker-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--from<span class="w"> </span>k0scluster-tmpl-cp-in-pods.yaml<span class="w"> </span>&gt;<span class="w"> </span>my-cluster.yaml
 </code></pre></div>
 <h4 id="control-plane-in-vms">Control plane in VMs:<a class="headerlink" href="#control-plane-in-vms" title="Permanent link">#</a></h4>
 <p>If you want to have child cluster <a href="https://docs.k0smotron.io/stable/capi-controlplane-bootstrap/">control plane in separate VMs</a>, use the following <a href="../capi-vsphere-tmpl-cp-in-vms.yaml">template</a> (Control Plane will consist of 3 nodes):</p>
-<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>generate<span class="w"> </span>cluster<span class="w"> </span>my-cluster<span class="w"> </span>--worker-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--from<span class="w"> </span>k0scluster-tmpl-cp-in-vms.yaml<span class="w"> </span>&gt;<span class="w"> </span>my-cluster.yaml<span class="w"> </span>
+<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>generate<span class="w"> </span>cluster<span class="w"> </span>my-cluster<span class="w"> </span>--worker-machine-count<span class="w"> </span><span class="m">1</span><span class="w"> </span>--from<span class="w"> </span>k0scluster-tmpl-cp-in-vms.yaml<span class="w"> </span>&gt;<span class="w"> </span>my-cluster.yaml
 </code></pre></div>
 <h3 id="deploy-the-child-clusters">Deploy the child clusters<a class="headerlink" href="#deploy-the-child-clusters" title="Permanent link">#</a></h3>
 <ol>
@@ -2088,10 +2088,10 @@ vim<span class="w"> </span>~/.cluster-api/clusterctl.yaml
 </li>
 </ol>
 <h3 id="observe-the-child-cluster-objects">Observe the child cluster objects<a class="headerlink" href="#observe-the-child-cluster-objects" title="Permanent link">#</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># kubectl get cluster,machine,kmc                                                                                                                   </span>
+<div class="highlight"><pre><span></span><code><span class="c1"># kubectl get cluster,machine,kmc</span>
 
 NAME<span class="w">                                  </span>CLUSTERCLASS<span class="w">   </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
-cluster.cluster.x-k8s.io/my-cluster<span class="w">                  </span>Provisioned<span class="w">   </span>13h<span class="w">   </span>
+cluster.cluster.x-k8s.io/my-cluster<span class="w">                  </span>Provisioned<span class="w">   </span>13h
 
 NAME<span class="w">                                                   </span>CLUSTER<span class="w">      </span>NODENAME<span class="w">                      </span>PROVIDERID<span class="w">                                       </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
 machine.cluster.x-k8s.io/my-cluster-0<span class="w">                  </span>my-cluster<span class="w">                                 </span>vsphere://4215e794-c281-5cde-8193-95df9521cf08<span class="w">   </span>Provisioned<span class="w">   </span>13h<span class="w">   </span>v1.29.1
@@ -2101,15 +2101,15 @@ machine.cluster.x-k8s.io/my-cluster-md-0-vr6s6-ndl64<span class="w">   </span>my
 </code></pre></div>
 <p>You can also check the status of the cluster deployment with <code>clusterctl</code>:
 <div class="highlight"><pre><span></span><code><span class="c1"># clusterctl describe cluster my-cluster</span>
-NAME<span class="w">                                                        </span>READY<span class="w">  </span>SEVERITY<span class="w">  </span>REASON<span class="w">  </span>SINCE<span class="w">  </span>MESSAGE<span class="w">                             </span>
-Cluster/my-cluster<span class="w">                                          </span>True<span class="w">                     </span>13h<span class="w">                                         </span>
-├─ClusterInfrastructure<span class="w"> </span>-<span class="w"> </span>VSphereCluster/my-cluster<span class="w">         </span>True<span class="w">                     </span>13h<span class="w">                                         </span>
-├─ControlPlane<span class="w"> </span>-<span class="w"> </span>K0sControlPlane/my-cluster<span class="w">                                                                                      </span>
-│<span class="w"> </span>└─3<span class="w"> </span>Machines...<span class="w">                                           </span>True<span class="w">                     </span>13h<span class="w">    </span>See<span class="w"> </span>my-cluster-0,<span class="w"> </span>my-cluster-1,<span class="w"> </span>...<span class="w">  </span>
-└─Workers<span class="w">                                                                                                                        </span>
-<span class="w">  </span>└─MachineDeployment/my-cluster-md-0<span class="w">                       </span>True<span class="w">                     </span>12h<span class="w">                                         </span>
-<span class="w">    </span>└─Machine/my-cluster-md-0-vr6s6-ndl64<span class="w">                   </span>True<span class="w">                     </span>12h<span class="w">                                         </span>
-<span class="w">      </span>└─BootstrapConfig<span class="w"> </span>-<span class="w"> </span>K0sWorkerConfig/my-cluster-htrzb<span class="w">                                                          </span>
+NAME<span class="w">                                                        </span>READY<span class="w">  </span>SEVERITY<span class="w">  </span>REASON<span class="w">  </span>SINCE<span class="w">  </span>MESSAGE
+Cluster/my-cluster<span class="w">                                          </span>True<span class="w">                     </span>13h
+├─ClusterInfrastructure<span class="w"> </span>-<span class="w"> </span>VSphereCluster/my-cluster<span class="w">         </span>True<span class="w">                     </span>13h
+├─ControlPlane<span class="w"> </span>-<span class="w"> </span>K0sControlPlane/my-cluster
+│<span class="w"> </span>└─3<span class="w"> </span>Machines...<span class="w">                                           </span>True<span class="w">                     </span>13h<span class="w">    </span>See<span class="w"> </span>my-cluster-0,<span class="w"> </span>my-cluster-1,<span class="w"> </span>...
+└─Workers
+<span class="w">  </span>└─MachineDeployment/my-cluster-md-0<span class="w">                       </span>True<span class="w">                     </span>12h
+<span class="w">    </span>└─Machine/my-cluster-md-0-vr6s6-ndl64<span class="w">                   </span>True<span class="w">                     </span>12h
+<span class="w">      </span>└─BootstrapConfig<span class="w"> </span>-<span class="w"> </span>K0sWorkerConfig/my-cluster-htrzb
 </code></pre></div></p>
 <h3 id="deleting-the-child-cluster">Deleting the child cluster<a class="headerlink" href="#deleting-the-child-cluster" title="Permanent link">#</a></h3>
 <p>For cluster deletion, do <strong>NOT</strong> use <code>kubectl delete -f my-cluster.yaml</code> as that can result in orphan resources. Instead, delete the top level <code>Cluster</code> object. This approach ensures the proper sequence in deleting all child resources, effectively avoid orphan resources.</p>

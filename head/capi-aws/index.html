@@ -1847,7 +1847,7 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="cluster-api-aws-hosted-control-plane">Cluster API - AWS (Hosted Control Plane)<a class="headerlink" href="#cluster-api-aws-hosted-control-plane" title="Permanent link">#</a></h1>
-<p>This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy 
+<p>This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy
 a cluster with hosted control plane and workers in AWS.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
 <p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>. In addition to those, you should also have appropriate AWS credentials available and the AWS CLI configured on your local machine.</p>
@@ -1953,7 +1953,7 @@ This limitation is not applicable to the clusters on the VMs.</p>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">ami</span><span class="p">:</span>
 <span class="w">        </span><span class="c1"># Replace with your AMI ID</span>
-<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0989fb15ce71ba39e</span><span class="w"> </span><span class="c1"># Ubuntu 22.04 in eu-central-1 </span>
+<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0989fb15ce71ba39e</span><span class="w"> </span><span class="c1"># Ubuntu 22.04 in eu-central-1</span>
 <span class="w">      </span><span class="nt">instanceType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.large</span>
 <span class="w">      </span><span class="nt">iamInstanceProfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nodes.cluster-api-provider-aws.sigs.k8s.io</span><span class="w"> </span><span class="c1"># Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`</span>
 <span class="w">      </span><span class="nt">cloudInit</span><span class="p">:</span>
@@ -1981,24 +1981,24 @@ This limitation is not applicable to the clusters on the VMs.</p>
 <p>Once complete, your command line should display output similar to this:</p>
 <div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
 NAME<span class="w">                                    </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
-cluster.cluster.x-k8s.io/k0s-aws-test<span class="w">   </span>Provisioned<span class="w">   </span>16m<span class="w">   </span>
+cluster.cluster.x-k8s.io/k0s-aws-test<span class="w">   </span>Provisioned<span class="w">   </span>16m
 
 NAME<span class="w">                                         </span>CLUSTER<span class="w">        </span>NODENAME<span class="w">   </span>PROVIDERID<span class="w">                                 </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
-machine.cluster.x-k8s.io/k0s-aws-test-md-0<span class="w">   </span>k0s-aws-test<span class="w">              </span>aws:///eu-central-1a/i-05f2de7da41dc542a<span class="w">   </span>Provisioned<span class="w">   </span>16m<span class="w">   </span>
+machine.cluster.x-k8s.io/k0s-aws-test-md-0<span class="w">   </span>k0s-aws-test<span class="w">              </span>aws:///eu-central-1a/i-05f2de7da41dc542a<span class="w">   </span>Provisioned<span class="w">   </span>16m
 </code></pre></div>
 <p>You can also check the status of the cluster deployment with <code>clusterctl</code>:
-<div class="highlight"><pre><span></span><code>%<span class="w"> </span>clusterctl<span class="w"> </span>describe<span class="w"> </span>cluster<span class="w">  </span>
-NAME<span class="w">                                                   </span>READY<span class="w">  </span>SEVERITY<span class="w">  </span>REASON<span class="w">                    </span>SINCE<span class="w">  </span>MESSAGE<span class="w">          </span>
-Cluster/k0s-aws-test<span class="w">                                   </span>True<span class="w">                                       </span>25m<span class="w">                      </span>
-├─ClusterInfrastructure<span class="w"> </span>-<span class="w"> </span>AWSCluster/k0s-aws-test<span class="w">                                                                             </span>
-├─ControlPlane<span class="w"> </span>-<span class="w"> </span>K0smotronControlPlane/k0s-aws-test-cp<span class="w">                                                                           </span>
-└─Workers<span class="w">                                                                                                                  </span>
+<div class="highlight"><pre><span></span><code>%<span class="w"> </span>clusterctl<span class="w"> </span>describe<span class="w"> </span>cluster
+NAME<span class="w">                                                   </span>READY<span class="w">  </span>SEVERITY<span class="w">  </span>REASON<span class="w">                    </span>SINCE<span class="w">  </span>MESSAGE
+Cluster/k0s-aws-test<span class="w">                                   </span>True<span class="w">                                       </span>25m
+├─ClusterInfrastructure<span class="w"> </span>-<span class="w"> </span>AWSCluster/k0s-aws-test
+├─ControlPlane<span class="w"> </span>-<span class="w"> </span>K0smotronControlPlane/k0s-aws-test-cp
+└─Workers
 <span class="w">  </span>└─Other
 </code></pre></div></p>
 <h3 id="networking-options">Networking Options<a class="headerlink" href="#networking-options" title="Permanent link">#</a></h3>
 <p>k0smotron, running in a management cluster in AWS, supports flexible networking options, allowing you to choose between Network Load Balancers (NLB) and Classic Elastic Load Balancers (ELB) based on your requirements for exposing the Control Planes.</p>
 <p>If you prefer using an NLB instead of ELB, you must specify annotations for the Service in the <code>k0smotronControlPlane</code>. These annotations guide the AWS Cloud Controller Manager (CCM) or the AWS Load Balancer Controller to create the respective services.</p>
-<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w"> </span>
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">service</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
 <span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
@@ -2009,7 +2009,7 @@ Cluster/k0s-aws-test<span class="w">                                   </span>Tr
 <p>For scenarios involving Classic ELBs or NLBs without special options, the AWS CCM can be utilized.</p>
 <h4 id="internal-nlb">Internal NLB<a class="headerlink" href="#internal-nlb" title="Permanent link">#</a></h4>
 <p>If you aim to use the NLB and set the schema to <code>internal</code>, the target group attribute <code>preserve_client_ip.enabled=false</code> is required due to "hairpinning" or "NAT loopback". In such cases, the AWS CCM cannot be used because it doesn't support setting Target Group Attributes. Therefore, the AWS Load Balancer Controller, which has the ability to set Target Group Attributes, becomes necessary. Follow <a href="https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html">this guide</a> to install the AWS Load Balancer Controller.</p>
-<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w"> </span>
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">service</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
 <span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>

@@ -1807,7 +1807,7 @@ You are not currently viewing the documentation for the current stable release o
 <h1 id="cluster-api-kubevirt">Cluster API - Kubevirt<a class="headerlink" href="#cluster-api-kubevirt" title="Permanent link">#</a></h1>
 <p>This example demonstrates how k0smotron can be used with CAPK (Cluster API Provider Kubevirt).</p>
 <h2 id="preparations">Preparations<a class="headerlink" href="#preparations" title="Permanent link">#</a></h2>
-<p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>. </p>
+<p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>.</p>
 <p>To install the latest stable version of Kubevirt you can run:</p>
 <div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">VERSION</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt<span class="k">)</span>
 kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>https://github.com/kubevirt/kubevirt/releases/download/<span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span>/kubevirt-operator.yaml
@@ -1939,7 +1939,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> 
 <p>After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:</p>
 <div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
 NAME<span class="w">                                   </span>PHASE<span class="w">         </span>AGE<span class="w">     </span>VERSION
-cluster.cluster.x-k8s.io/kubevirt-test<span class="w"> </span>Provisioned<span class="w">   </span>22h<span class="w">   </span>
+cluster.cluster.x-k8s.io/kubevirt-test<span class="w"> </span>Provisioned<span class="w">   </span>22h
 
 NAME<span class="w">                                               </span>CLUSTER<span class="w">         </span>NODENAME<span class="w">                  </span>PROVIDERID<span class="w">                           </span>PHASE<span class="w">     </span>AGE<span class="w">     </span>VERSION
 machine.cluster.x-k8s.io/kubevirt-md-mdvns-l2rxb<span class="w">   </span>kubevirt-test<span class="w">   </span>kubevirt-md-mdvns-l2rxb<span class="w">   </span>kubevirt://kubevirt-md-mdvns-l2rxb<span class="w">   </span>Running<span class="w">   </span>22h<span class="w">     </span>v1.27.4

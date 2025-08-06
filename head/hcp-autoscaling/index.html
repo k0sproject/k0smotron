@@ -1855,7 +1855,7 @@ You are not currently viewing the documentation for the current stable release o
 <p>Horizontal Pod Autoscaler (HPA) automatically scales the number of pods in a Kubernetes cluster based on observed CPU utilization (or other select metrics). This guide will walk you through the steps to set up and use HPA for <code>k0smotron.io/Cluster</code>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Due to etcd maintanance challenges, k0smotron <strong>never</strong> scales etcd statefulsets down, only up. 
+<p>Due to etcd maintanance challenges, k0smotron <strong>never</strong> scales etcd statefulsets down, only up.
 This means that HPA will scale up both control-plane and etcd, but scale down only control-plane pods.</p>
 </div>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>

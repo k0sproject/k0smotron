@@ -1828,7 +1828,7 @@ You are not currently viewing the documentation for the current stable release o
 <p>To be able to provision the OpenStack provider infrastructre, you will need to setup your OpenStack tenant credentials.</p>
 <p><strong>Get the openstack Clouds.yaml</strong></p>
 <p>Download your “OpenStack clouds.yaml file” (Login -&gt; API Access -&gt; Download OpenStack clouds.yaml file)</p>
-<p>Add "verify: false" to your clouds.yaml to avoir having the "x509: certificate signed by unknown authority" error. </p>
+<p>Add "verify: false" to your clouds.yaml to avoir having the "x509: certificate signed by unknown authority" error.</p>
 <p>More information here : <a href="https://cluster-api-openstack.sigs.k8s.io/topics/troubleshooting">cluster-api-troubleshooting</a></p>
 <div class="highlight"><pre><span></span><code><span class="nt">clouds</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">openstack</span><span class="p">:</span>
@@ -1972,7 +1972,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">          </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">YourNetworkID</span><span class="w"> </span><span class="c1"># this corresponds to the network with the cidr provided above a.b.c.d/24</span>
 </code></pre></div></p>
 <p>Once complete, your command line should display output similar to this:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine,kmc<span class="w">                                                                                                                   </span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine,kmc
 
 NAME<span class="w">                                   </span>CLUSTERCLASS<span class="w">   </span>PHASE<span class="w">         </span>AGE<span class="w">     </span>VERSION
 cluster.cluster.x-k8s.io/cluster-openstack<span class="w">                     </span>Provisioned<span class="w">   </span>135m
@@ -1982,13 +1982,13 @@ machine.cluster.x-k8s.io/cluster-openstack-worker-vms-drjzw-7699d<span class="w"
 </code></pre></div>
 <p>You can also check the status of the cluster deployment with <code>clusterctl</code>:
 <div class="highlight"><pre><span></span><code>❯<span class="w"> </span>clusterctl<span class="w"> </span>describe<span class="w"> </span>cluster<span class="w"> </span>cluster3
-NAME<span class="w">                                                                     </span>READY<span class="w">  </span>SEVERITY<span class="w">  </span>REASON<span class="w">                       </span>SINCE<span class="w">  </span>MESSAGE<span class="w">                                                       </span>
-Cluster/cluster3<span class="w">                                                         </span>True<span class="w">                                          </span>5d4h<span class="w">                                                                  </span>
-├─ClusterInfrastructure<span class="w"> </span>-<span class="w"> </span>OpenStackCluster/cluster3<span class="w">                                                                                                                                          </span>
-├─ControlPlane<span class="w"> </span>-<span class="w"> </span>K0smotronControlPlane/cluster3<span class="w">                                                                                                                                              </span>
-└─Workers<span class="w">                                                                                                                                                           </span>
-<span class="w">    </span>└─Machine/cluster3-worker-vms-929sw-nkhht<span class="w">                            </span>True<span class="w">                                          </span>5d4h<span class="w">                                                                  </span>
-<span class="w">      </span>└─BootstrapConfig<span class="w"> </span>-<span class="w"> </span>K0sWorkerConfig/cluster3-machine-config-tlg78<span class="w">                                                        </span>
+NAME<span class="w">                                                                     </span>READY<span class="w">  </span>SEVERITY<span class="w">  </span>REASON<span class="w">                       </span>SINCE<span class="w">  </span>MESSAGE
+Cluster/cluster3<span class="w">                                                         </span>True<span class="w">                                          </span>5d4h
+├─ClusterInfrastructure<span class="w"> </span>-<span class="w"> </span>OpenStackCluster/cluster3
+├─ControlPlane<span class="w"> </span>-<span class="w"> </span>K0smotronControlPlane/cluster3
+└─Workers
+<span class="w">    </span>└─Machine/cluster3-worker-vms-929sw-nkhht<span class="w">                            </span>True<span class="w">                                          </span>5d4h
+<span class="w">      </span>└─BootstrapConfig<span class="w"> </span>-<span class="w"> </span>K0sWorkerConfig/cluster3-machine-config-tlg78
 </code></pre></div></p>
 <h2 id="accessing-the-workload-cluster">Accessing the workload cluster<a class="headerlink" href="#accessing-the-workload-cluster" title="Permanent link">#</a></h2>
 <p>To access the child cluster we can get the kubeconfig for it with <code>clusterctl get kubeconfig cluster-openstack</code>. You can then save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a>.</p>

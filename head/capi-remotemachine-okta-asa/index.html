@@ -1861,13 +1861,13 @@ You are not currently viewing the documentation for the current stable release o
 <span class="k">RUN</span><span class="w"> </span>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://dist.scaleft.com/GPG-KEY-OktaPAM-2023<span class="w"> </span><span class="p">|</span><span class="w"> </span>gpg<span class="w"> </span>--dearmor<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/usr/share/keyrings/oktapam-2023-archive-keyring.gpg<span class="w"> </span>&gt;<span class="w"> </span>/dev/null<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;deb [signed-by=/usr/share/keyrings/oktapam-2023-archive-keyring.gpg] https://dist.scaleft.com/repos/deb jammy okta&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/etc/apt/sources.list.d/oktapam-stable.list<span class="w"> </span><span class="err">\</span>
 
-<span class="c"># Install the Okta ASA agents    </span>
+<span class="c"># Install the Okta ASA agents</span>
 <span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span><span class="se">\</span>
 <span class="w">      </span>scaleft-client-tools<span class="w"> </span><span class="se">\</span>
 <span class="w">      </span>#<span class="w"> </span>Mute<span class="w"> </span>the<span class="w"> </span>error<span class="w"> </span>about<span class="w"> </span>missing<span class="w"> </span>systemd<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>post-install<span class="w"> </span>script
 <span class="w">      </span>scaleft-server-tools<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">true</span><span class="w"> </span><span class="err">\</span>
 
-<span class="c"># Configure the ssh client to use the proxy </span>
+<span class="c"># Configure the ssh client to use the proxy</span>
 <span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>~/.ssh/<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sft<span class="w"> </span>ssh-config<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/config
 
 <span class="c"># Add the entrypoint script.</span>
@@ -1880,7 +1880,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="k">ENTRYPOINT</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/entrypoint.sh&quot;</span><span class="p">]</span>
 </code></pre></div>
 <h2 id="server-enrollment">Server enrollment<a class="headerlink" href="#server-enrollment" title="Permanent link">#</a></h2>
-<p>Okta ASA agent needs to be enrolled to the Okta ASA service. To do that, first we need to run <code>sftd</code> once with the enrollment token. 
+<p>Okta ASA agent needs to be enrolled to the Okta ASA service. To do that, first we need to run <code>sftd</code> once with the enrollment token.
 The token can be <a href="https://help.okta.com/asa/en-us/content/topics/adv_server_access/docs/server-enroll-token.htm">obtained</a> from the Okta ASA console.
 In this example we put the token to the Kubernetes secret:</p>
 <div class="highlight"><pre><span></span><code><span class="nn">---</span>

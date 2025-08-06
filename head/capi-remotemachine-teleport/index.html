@@ -1841,7 +1841,7 @@ Also, you need to have <code>tctl</code> installed on your desktop.</p>
 <span class="w">  </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io</span>
 </code></pre></div>
 <h2 id="creating-teleport-bot-user">Creating Teleport Bot User<a class="headerlink" href="#creating-teleport-bot-user" title="Permanent link">#</a></h2>
-<p>Next, you need to create a Teleport Bot user for the service account. Since we use a <code>kubernetes</code> auth method for Teleport, first we need to figure out the cluster's JWKS. 
+<p>Next, you need to create a Teleport Bot user for the service account. Since we use a <code>kubernetes</code> auth method for Teleport, first we need to figure out the cluster's JWKS.
 It will be used by the Teleport Cluster to verify the JWT tokens.</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>proxy<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>
 $<span class="w"> </span>curl<span class="w"> </span>http://localhost:8080/openid/v1/jwks

@@ -1731,7 +1731,7 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="clusterclass">ClusterClass<a class="headerlink" href="#clusterclass" title="Permanent link">#</a></h1>
-<p>K0smotron supports ClusterClass, a simple way to create many clusters of a similar shape. </p>
+<p>K0smotron supports ClusterClass, a simple way to create many clusters of a similar shape.</p>
 <p>For instance, we will create a ClusterClass that will create a cluster running control plane and worker nodes on DockerMachines:</p>
 <div class="highlight"><pre><span></span><code><span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
@@ -1853,7 +1853,7 @@ Here is the example of <code>ClusterClass</code> that uses <code>K0smotronContro
 <span class="w">          </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">            </span><span class="nt">api</span><span class="p">:</span>
 <span class="w">              </span><span class="nt">extraArgs</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="c1"># anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz </span>
+<span class="w">                </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="c1"># anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>

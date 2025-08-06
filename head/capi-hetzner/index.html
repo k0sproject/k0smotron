@@ -1863,7 +1863,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
 <span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8132</span>
 <span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">load-balancer.hetzner.cloud/location</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span><span class="w"> </span>
+<span class="w">      </span><span class="nt">load-balancer.hetzner.cloud/location</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HetznerCluster</span>
@@ -1938,7 +1938,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
 <span class="nt">data</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">hcloud</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64 encoded token&gt;</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">hcloud</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64 encoded token&gt;</span>
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner</span>
 </code></pre></div>
@@ -1946,7 +1946,7 @@ You are not currently viewing the documentation for the current stable release o
 <p>After applying the manifests to the management cluster and confirming the infrastructure readiness, allow a few minutes for all components to provision. Once complete, your command line should display output similar to this:</p>
 <div class="highlight"><pre><span></span><code>% kubectl get cluster,machine
 NAME                                   PHASE         AGE     VERSION
-cluster.cluster.x-k8s.io/hetzer-test   Provisioned   3m51s   
+cluster.cluster.x-k8s.io/hetzer-test   Provisioned   3m51s
 
 NAME                                         CLUSTER        NODENAME   PROVIDERID          PHASE         AGE     VERSION
 machine.cluster.x-k8s.io/hetzner-test-md-0   hetzner-test              hcloud://12345678   Provisioned   3m50s
