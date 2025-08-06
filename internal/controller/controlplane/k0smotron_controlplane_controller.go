@@ -474,7 +474,11 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 
 	// if no replicas are yet available or the desired version is not in the current state of the
 	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
-	if kcp.Status.UnavailableReplicas > 0 || FormatStatusVersion(kcp.Spec.Version, desiredVersion.String()) != kcp.Status.Version {
+	// Additionally, if the ControlPlaneReadyCondition is false (e.g., due to DNS resolution failures),
+	// we should also requeue to retry the connection.
+	if kcp.Status.UnavailableReplicas > 0 ||
+		FormatStatusVersion(kcp.Spec.Version, desiredVersion.String()) != kcp.Status.Version ||
+		!conditions.IsTrue(kcp, cpv1beta1.ControlPlaneReadyCondition) {
 		return ErrNotReady
 	}
 
