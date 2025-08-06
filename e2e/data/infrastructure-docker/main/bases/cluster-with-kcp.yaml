@@ -56,11 +56,11 @@ spec:
           enabled: false
         network:
           controlPlaneLoadBalancing:
-            enabled: false 
+            enabled: false
     files:
     - path: /tmp/test-file-secret
-      contentFrom: 
-        secretRef: 
+      contentFrom:
+        secretRef:
           name: test-file-secret
           key: value
   machineTemplate:

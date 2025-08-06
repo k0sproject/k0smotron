@@ -12,7 +12,7 @@ spec:
       - 192.168.0.0/16
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    kind: K0smotronControlPlane 
+    kind: K0smotronControlPlane
     name: '${CLUSTER_NAME}'
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -144,7 +144,7 @@ spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: K0sWorkerConfigTemplate 
+          kind: K0sWorkerConfigTemplate
           name: '${CLUSTER_NAME}'
       clusterName: '${CLUSTER_NAME}'
       infrastructureRef:

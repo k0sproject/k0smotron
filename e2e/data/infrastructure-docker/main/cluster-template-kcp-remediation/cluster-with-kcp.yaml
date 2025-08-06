@@ -56,7 +56,7 @@ spec:
           enabled: false
         network:
           controlPlaneLoadBalancing:
-            enabled: false 
+            enabled: false
     files:
     - path: /wait-signal.sh
       content: |
@@ -86,7 +86,7 @@ spec:
       permissions: "0777"
     preStartCommands:
     - ./wait-signal.sh "${TOKEN}" "${SERVER}" "${NAMESPACE}"
-      
+
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

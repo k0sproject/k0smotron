@@ -12,7 +12,7 @@ spec:
       - 192.168.0.0/16
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    kind: K0sControlPlane 
+    kind: K0sControlPlane
     name: '${CLUSTER_NAME}'
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -103,7 +103,7 @@ kind: K0sControlPlane
 metadata:
   name: '${CLUSTER_NAME}'
 spec:
-  k0sVersion: '${K0S_VERSION}' 
+  k0sVersion: '${K0S_VERSION}'
   replicas: 3
   k0sConfigSpec:
     # Those args are mandatory since kube-vip should be running on controllers
@@ -124,7 +124,7 @@ spec:
           # WA for NLLB
             - ${CONTROL_PLANE_ENDPOINT_IP}
           extraArgs:
-            anonymous-auth: "true" 
+            anonymous-auth: "true"
         extensions:
           helm:
             repositories:
@@ -151,7 +151,7 @@ spec:
                   cp_enable: "true"                             # Enable control-plane mode
                   svc_enable: "true"                            # Enable service mode
                   svc_election: "true"                          # Enable service election
-                  vip_leaderelection: "true" 
+                  vip_leaderelection: "true"
                 extraArgs:
                   prometheusHTTPServer: "0.0.0.0:2112"
                 serviceAccount:
@@ -212,7 +212,7 @@ spec:
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: K0sWorkerConfigTemplate 
+          kind: K0sWorkerConfigTemplate
           name: '${CLUSTER_NAME}'
       clusterName: '${CLUSTER_NAME}'
       infrastructureRef:

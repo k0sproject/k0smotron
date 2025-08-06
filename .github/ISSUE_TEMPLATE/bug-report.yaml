@@ -11,7 +11,7 @@ body:
         Describe the bug in as much detail as possible.
     validations:
       required: true
-  
+
   - type: dropdown
     id: area
     attributes:
@@ -37,7 +37,7 @@ body:
         How can we reproduce it (as minimally and precisely as possible)?
     validations:
       required: true
-  
+
   - type: input
     id: k0smotron-version
     attributes:

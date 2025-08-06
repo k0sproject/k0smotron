@@ -112,6 +112,6 @@ spec:
     # More details about the aws machine template can be set here
 ```
 
-This example creates a `MachineDeployment` with 2 replicas, using k0smotron as the bootstrap provider. The `infrastructureRef` is used to specify the infrastructure requirements for the machines, in this case, AWS. 
+This example creates a `MachineDeployment` with 2 replicas, using k0smotron as the bootstrap provider. The `infrastructureRef` is used to specify the infrastructure requirements for the machines, in this case, AWS.
 
 Check the [examples](capi-examples.md) pages for more detailed examples how k0smotron can be used with various Cluster API infrastructure providers.

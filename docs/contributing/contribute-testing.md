@@ -14,7 +14,7 @@ K0smotron uses [go test](https://pkg.go.dev/testing) as the foundation for all o
 
 - **Unit Testing**: Focused on isolated components, unit tests validate the correctness of individual functions or methods in a controlled environment, ensuring they behave as expected.
 
-- **Integration Testing**: For integration testing, k0smotron uses [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest), which provides a lightweight Kubernetes control plane with the essential components needed to test interactions between the code and Kubernetes API. This approach allows us to validate the behavior of our controllers and other Kubernetes integrations in a reproducible and efficient manner without requiring a full cluster. 
+- **Integration Testing**: For integration testing, k0smotron uses [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest), which provides a lightweight Kubernetes control plane with the essential components needed to test interactions between the code and Kubernetes API. This approach allows us to validate the behavior of our controllers and other Kubernetes integrations in a reproducible and efficient manner without requiring a full cluster.
 
   Following the best practices suggested in the [Cluster API documentation](https://cluster-api.sigs.k8s.io/developer/core/testing), integration tests are written using [**generic infrastructure providers**](https://cluster-api.sigs.k8s.io/developer/core/testing#generic-providers) rather than a specific provider. This ensures that tests remain agnostic and reusable across different infrastructures, fostering better maintainability and adaptability.
 
@@ -36,8 +36,8 @@ This will perform the following actions:
 2. Install the desired providers. Basically the same achieved by executing the command `clusterctl init ...`, by including:
   - Cluster API for core components.
   - k0smotron as controlplane and bootstrap provider.
-  - Configurable infrastructure provider (currently only docker supported). 
-  
+  - Configurable infrastructure provider (currently only docker supported).
+
 1. Execute the E2E test suite.
 
 > NOTE: This command will run the tests using docker as infrastructure provider but it is intended to make use of the configurability offered by the CAPI E2E framework to add other infrastructure providers that can be used in e2e testing.

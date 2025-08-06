@@ -23,14 +23,14 @@ RUN apt-get update && apt-get install -y \
 # Obtain the Okta ASA agent key and add the repository
 RUN curl -fsSL https://dist.scaleft.com/GPG-KEY-OktaPAM-2023 | gpg --dearmor | tee /usr/share/keyrings/oktapam-2023-archive-keyring.gpg > /dev/null \
     && echo "deb [signed-by=/usr/share/keyrings/oktapam-2023-archive-keyring.gpg] https://dist.scaleft.com/repos/deb jammy okta" | tee /etc/apt/sources.list.d/oktapam-stable.list \
- 
-# Install the Okta ASA agents    
+
+# Install the Okta ASA agents
 RUN apt-get update && apt-get install -y \
       scaleft-client-tools \
       # Mute the error about missing systemd from the post-install script
       scaleft-server-tools | true \
 
-# Configure the ssh client to use the proxy 
+# Configure the ssh client to use the proxy
 RUN mkdir -p ~/.ssh/ && sft ssh-config >> ~/.ssh/config
 
 # Add the entrypoint script.
@@ -45,7 +45,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 ## Server enrollment
 
-Okta ASA agent needs to be enrolled to the Okta ASA service. To do that, first we need to run `sftd` once with the enrollment token. 
+Okta ASA agent needs to be enrolled to the Okta ASA service. To do that, first we need to run `sftd` once with the enrollment token.
 The token can be [obtained](https://help.okta.com/asa/en-us/content/topics/adv_server_access/docs/server-enroll-token.htm) from the Okta ASA console.
 In this example we put the token to the Kubernetes secret:
 

@@ -89,10 +89,10 @@ global:
 scrape_configs:
   - job_name: "k0smotron_cluster_metrics"
     scheme: https
-    tls_config: 
+    tls_config:
       insecure_skip_verify: true
       cert_file: /var/lib/k0s/pki/admin.crt
-      key_file: /var/lib/k0s/pki/admin.key 
+      key_file: /var/lib/k0s/pki/admin.key
     static_configs:
       - targets: ["localhost:{{ .Kmc.Spec.Service.APIPort }}"]
         labels:
@@ -108,7 +108,7 @@ scrape_configs:
           k0smotron_cluster: "{{ .Kmc.Name }}"
   - job_name: "k0smotron_etcd_metrics"
     scheme: https
-    tls_config: 
+    tls_config:
       insecure_skip_verify: true
       cert_file: /var/lib/k0s/pki/etcd-ca.crt
       key_file: /var/lib/k0s/pki/etcd-ca.key

@@ -105,14 +105,14 @@ spec:
   end: 192.168.117.180
 ```
 
-2. Deploy the IPAM configuration: 
+2. Deploy the IPAM configuration:
 ```
 kubectl apply -f capi-ipam.yaml
 ```
 
 ## (Optional) MetalLB as Load Balancer solution in the management cluster
 
-You may require to deploy MetalLB if you don't have Load Balancer solution in your management cluster. 
+You may require to deploy MetalLB if you don't have Load Balancer solution in your management cluster.
 *NOTE:* Load Balancer service type will be used only for the scenario, when you put you k0s control plane in pods (see [Control plane in Pods](#control-plane-in-pods) section)
 
 Classic vSphere does not have a built-in solution that can be leveraged on Kubernetes level to create LoadBalancer service type. In order to make it possible, one of the common solution is to use MetalLB (please find it's docs [here](https://metallb.universe.tf/))
@@ -154,7 +154,7 @@ There are two options for child cluster control plane with k0smotron:
 
 #### Control plane in Pods:
 
-If you want to have child cluster [control plane in a Pods](https://docs.k0smotron.io/stable/capi-controlplane/), use the following [template](capi-vsphere-tmpl-cp-in-pods.yaml): 
+If you want to have child cluster [control plane in a Pods](https://docs.k0smotron.io/stable/capi-controlplane/), use the following [template](capi-vsphere-tmpl-cp-in-pods.yaml):
 
 ```sh
 clusterctl generate cluster my-cluster --control-plane-machine-count 1 --worker-machine-count 1 --from k0scluster-tmpl-cp-in-pods.yaml > my-cluster.yaml
@@ -165,7 +165,7 @@ clusterctl generate cluster my-cluster --control-plane-machine-count 1 --worker-
 If you want to have child cluster [control plane in separate VMs](https://docs.k0smotron.io/stable/capi-controlplane-bootstrap/), use the following [template](capi-vsphere-tmpl-cp-in-vms.yaml) (Control Plane will consist of 3 nodes):
 
 ```sh
-clusterctl generate cluster my-cluster --worker-machine-count 1 --from k0scluster-tmpl-cp-in-vms.yaml > my-cluster.yaml 
+clusterctl generate cluster my-cluster --worker-machine-count 1 --from k0scluster-tmpl-cp-in-vms.yaml > my-cluster.yaml
 ```
 
 ### Deploy the child clusters
@@ -177,10 +177,10 @@ clusterctl generate cluster my-cluster --worker-machine-count 1 --from k0scluste
 ### Observe the child cluster objects
 
 ```shell
-# kubectl get cluster,machine,kmc                                                                                                                   
+# kubectl get cluster,machine,kmc
 
 NAME                                  CLUSTERCLASS   PHASE         AGE   VERSION
-cluster.cluster.x-k8s.io/my-cluster                  Provisioned   13h   
+cluster.cluster.x-k8s.io/my-cluster                  Provisioned   13h
 
 NAME                                                   CLUSTER      NODENAME                      PROVIDERID                                       PHASE         AGE   VERSION
 machine.cluster.x-k8s.io/my-cluster-0                  my-cluster                                 vsphere://4215e794-c281-5cde-8193-95df9521cf08   Provisioned   13h   v1.29.1
@@ -193,15 +193,15 @@ machine.cluster.x-k8s.io/my-cluster-md-0-vr6s6-ndl64   my-cluster   my-cluster-m
 You can also check the status of the cluster deployment with `clusterctl`:
 ```shell
 # clusterctl describe cluster my-cluster
-NAME                                                        READY  SEVERITY  REASON  SINCE  MESSAGE                             
-Cluster/my-cluster                                          True                     13h                                         
-├─ClusterInfrastructure - VSphereCluster/my-cluster         True                     13h                                         
-├─ControlPlane - K0sControlPlane/my-cluster                                                                                      
-│ └─3 Machines...                                           True                     13h    See my-cluster-0, my-cluster-1, ...  
-└─Workers                                                                                                                        
-  └─MachineDeployment/my-cluster-md-0                       True                     12h                                         
-    └─Machine/my-cluster-md-0-vr6s6-ndl64                   True                     12h                                         
-      └─BootstrapConfig - K0sWorkerConfig/my-cluster-htrzb                                                          
+NAME                                                        READY  SEVERITY  REASON  SINCE  MESSAGE
+Cluster/my-cluster                                          True                     13h
+├─ClusterInfrastructure - VSphereCluster/my-cluster         True                     13h
+├─ControlPlane - K0sControlPlane/my-cluster
+│ └─3 Machines...                                           True                     13h    See my-cluster-0, my-cluster-1, ...
+└─Workers
+  └─MachineDeployment/my-cluster-md-0                       True                     12h
+    └─Machine/my-cluster-md-0-vr6s6-ndl64                   True                     12h
+      └─BootstrapConfig - K0sWorkerConfig/my-cluster-htrzb
 ```
 
 ### Deleting the child cluster

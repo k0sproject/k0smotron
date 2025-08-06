@@ -4,7 +4,7 @@ This example demonstrates how k0smotron can be used with CAPK (Cluster API Provi
 
 ## Preparations
 
-Before starting this example, ensure that you have met the [general prerequisites](capi-examples.md#prerequisites). 
+Before starting this example, ensure that you have met the [general prerequisites](capi-examples.md#prerequisites).
 
 To install the latest stable version of Kubevirt you can run:
 
@@ -155,7 +155,7 @@ After applying the manifests to the management cluster and confirming the infras
 ```bash
 % kubectl get cluster,machine
 NAME                                   PHASE         AGE     VERSION
-cluster.cluster.x-k8s.io/kubevirt-test Provisioned   22h   
+cluster.cluster.x-k8s.io/kubevirt-test Provisioned   22h
 
 NAME                                               CLUSTER         NODENAME                  PROVIDERID                           PHASE     AGE     VERSION
 machine.cluster.x-k8s.io/kubevirt-md-mdvns-l2rxb   kubevirt-test   kubevirt-md-mdvns-l2rxb   kubevirt://kubevirt-md-mdvns-l2rxb   Running   22h     v1.27.4

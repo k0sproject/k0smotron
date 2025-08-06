@@ -21,9 +21,9 @@ Create pull requests to contribute to [k0smotron GitHub repository](http://githu
     ``` shell
     git remote set-url --push origin no_push
     ```
-   
+
 3. Set your fork remote as a default push target:
-    
+
     ``` shell
     git push --set-upstream my_fork main
     ```
@@ -34,7 +34,7 @@ Create pull requests to contribute to [k0smotron GitHub repository](http://githu
     git remote -v
     ```
     The origin branch should have `no_push` next to it:
-    
+
     ```shell
     origin  https://github.com/k0sproject/k0smotron (fetch)
     origin  no_push (push)
@@ -119,7 +119,7 @@ For example:
 ```text
 Title that summarizes changes in 50 characters or less
 
-Description that briefly explains the problem your commit is solving. 
+Description that briefly explains the problem your commit is solving.
 Focus on why you are making this change as opposed to how.
 Are there any consequences of this change? Here you can include them.
 

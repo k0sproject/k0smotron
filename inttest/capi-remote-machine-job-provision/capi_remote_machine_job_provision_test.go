@@ -337,9 +337,9 @@ spec:
                     readOnly: true
             volumes:
               - name: ssh-key
-                secret: 
+                secret:
                   secretName: footloose-key
-                  items: 
+                  items:
                     - key: id_rsa
                       path: id_rsa
                       mode: 0600

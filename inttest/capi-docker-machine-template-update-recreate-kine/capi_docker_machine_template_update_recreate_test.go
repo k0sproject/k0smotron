@@ -281,7 +281,7 @@ spec:
       spec:
         storage:
           type: kine
-          kine: 
+          kine:
             datasource: postgres://postgres:postgres@%s/kine?sslmode=disable
         api:
           extraArgs:
@@ -356,7 +356,7 @@ spec:
       spec:
         storage:
           type: kine
-          kine: 
+          kine:
             datasource: postgres://postgres:postgres@%s/kine?sslmode=disable
         api:
           extraArgs:
