@@ -69,7 +69,7 @@ kubectl apply -f - <<EOF
 apiVersion: k0smotron.io/v1beta1
 kind: Cluster
 metadata:
-name: my-k0smotron
+  name: my-k0smotron
 spec: {}
 EOF
 ```
