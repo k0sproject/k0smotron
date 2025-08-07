@@ -609,6 +609,12 @@ func normalizeK0sConfigSpec(kcp *cpv1beta1.K0sControlPlane, bootstrapConfig boot
 }
 
 func uniqueArgs(args []string) []string {
+	// DO NOT REMOVE THIS CHECK
+	// If the slice is empty, we return the slice as is to avoid any modifications.
+	// In callers, we may compare slices and in some cases it may end up in comparing empty and nil slices.
+	if len(args) == 0 {
+		return args
+	}
 	uniqueArgsSlice := []string{}
 	uniqueArgsMap := make(map[string]struct{})
 	for _, arg := range args {
