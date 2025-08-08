@@ -32,21 +32,21 @@ func TestClusterSpec_GetImage(t *testing.T) {
 		{
 			name: "Nothing given",
 			spec: &ClusterSpec{},
-			want: "k0sproject/k0s:v1.27.9-k0s.0",
+			want: "quay.io/k0sproject/k0s:v1.27.9-k0s.0",
 		},
 		{
 			name: "Only version given with suffix",
 			spec: &ClusterSpec{
 				Version: "v1.29.4-k0s.0",
 			},
-			want: "k0sproject/k0s:v1.29.4-k0s.0",
+			want: "quay.io/k0sproject/k0s:v1.29.4-k0s.0",
 		},
 		{
 			name: "Version given without suffix",
 			spec: &ClusterSpec{
 				Version: "v1.29.4",
 			},
-			want: "k0sproject/k0s:v1.29.4-k0s.0",
+			want: "quay.io/k0sproject/k0s:v1.29.4-k0s.0",
 		},
 		{
 			name: "Image given without version should use default version",
