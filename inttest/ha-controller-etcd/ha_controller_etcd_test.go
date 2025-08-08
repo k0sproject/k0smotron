@@ -95,7 +95,7 @@ func (s *HAControllerEtcdSuite) TestK0sGetsUp() {
 			return false, nil
 		}
 
-		return sts.Spec.Template.Spec.Containers[0].Image == "k0sproject/k0s:v1.31.5-k0s.0", nil
+		return sts.Spec.Template.Spec.Containers[0].Image == "quay.io/k0sproject/k0s:v1.31.5-k0s.0", nil
 	})
 	s.Require().NoError(err)
 
