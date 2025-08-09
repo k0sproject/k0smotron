@@ -128,7 +128,7 @@ Will be detected automatically for service type LoadBalancer.<br/>
           Image defines the k0s image to be deployed. If empty k0smotron
 will pick it automatically. Must not include the image tag.<br/>
           <br/>
-            <i>Default</i>: k0sproject/k0s<br/>
+            <i>Default</i>: quay.io/k0sproject/k0s<br/>
         </td>
         <td>false</td>
       </tr><tr>

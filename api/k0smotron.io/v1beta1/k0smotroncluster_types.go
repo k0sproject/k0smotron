@@ -40,7 +40,7 @@ type ClusterSpec struct {
 	Replicas int32 `json:"replicas,omitempty"`
 	// Image defines the k0s image to be deployed. If empty k0smotron
 	// will pick it automatically. Must not include the image tag.
-	//+kubebuilder:default=k0sproject/k0s
+	//+kubebuilder:default=quay.io/k0sproject/k0s
 	Image string `json:"image,omitempty"`
 	// ServiceAccount defines the service account to be used by both k0s and etcd StatefulSets.
 	//+kubebuilder:validation:Optional
@@ -120,7 +120,7 @@ type Mount struct {
 }
 
 const (
-	defaultK0SImage   = "k0sproject/k0s"
+	defaultK0SImage   = "quay.io/k0sproject/k0s"
 	DefaultK0SVersion = "v1.27.9-k0s.0"
 	DefaultK0SSuffix  = "k0s.0"
 	DefaultEtcdImage  = "quay.io/k0sproject/etcd:v3.5.13"
