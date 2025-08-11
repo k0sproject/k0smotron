@@ -12,7 +12,7 @@ in the YAML configuration file:
       name: k0smotron-test
     spec:
       replicas: 1
-      k0sImage: k0sproject/k0s
+      k0sImage: quay.io/k0sproject/k0s
       version: v1.27.1-k0s.0
     ```
 
@@ -25,7 +25,7 @@ in the YAML configuration file:
       name: k0smotron-test
     spec:
       replicas: 1
-      k0sImage: k0sproject/k0s
+      k0sImage: quay.io/k0sproject/k0s
       version: v1.28.7-k0s.0 # new k0s version
     ```
 
