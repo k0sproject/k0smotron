@@ -307,6 +307,7 @@ spec:
         name: k0s
       spec:
         api:
+          k0sApiPort: 14443
           extraArgs:
             anonymous-auth: "true"
         telemetry:
