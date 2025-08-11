@@ -1,6 +1,6 @@
 module github.com/k0sproject/k0smotron
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/cloudflare/cfssl v1.6.4
@@ -59,8 +59,8 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
-	golang.org/x/crypto v0.31.0
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/crypto v0.35.0
+	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/tools v0.24.0
 	helm.sh/helm/v3 v3.14.2 // indirect
 	k8s.io/kube-aggregator v0.27.2 // indirect
@@ -180,9 +180,9 @@ require (
 	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2 // indirect
