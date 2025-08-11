@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/netip"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -635,11 +636,17 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		Timeout:   time.Second,
 	}
 
-	// TODO: fix hardcoded port
 	port := "9443"
+	k0sAPIPort, found, err := unstructured.NestedInt64(scope.Config.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "k0sApiPort")
+	if err != nil {
+		return "", fmt.Errorf("error retrieving k0sAPIPort: %w", err)
+	}
+	if found && k0sAPIPort > 0 {
+		port = strconv.Itoa(int(k0sAPIPort))
+	}
 	host := fmt.Sprintf("https://%s:%s", scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
 
-	_, err := httpClient.Get(fmt.Sprintf("%s/v1beta1/ca", host))
+	_, err = httpClient.Get(fmt.Sprintf("%s/v1beta1/ca", host))
 	if err == nil {
 		return host, nil
 	}
