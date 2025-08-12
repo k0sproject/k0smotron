@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/contributing/dev-environment/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/contributing/release-process/">
       
       
-        <link rel="prev" href="../contribute-overview/">
+        <link rel="prev" href="../contribute-testing/">
       
       
-        <link rel="next" href="../contribute-workflow/">
+        <link rel="next" href="../../known-limitations/">
       
       
       <link rel="icon" href="../../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Development environment - Documentation</title>
+        <title>Release process - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#set-up-capi-development-environment" class="md-skip">
+        <a href="#release-process" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Development environment
+              Release process
             
           </span>
         </div>
@@ -1326,19 +1326,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../dev-environment/" class="md-nav__link">
         
   
   
@@ -1349,7 +1340,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
     </li>
   
 
@@ -1405,10 +1395,32 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../release-process/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Release process
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1419,6 +1431,71 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-git-tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a Git tag
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#draft-github-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      Draft GitHub Release
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#publish-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Publish documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-release-housekeeping" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-release housekeeping
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1679,6 +1756,59 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-git-tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a Git tag
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#draft-github-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      Draft GitHub Release
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#publish-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Publish documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-release-housekeeping" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-release housekeeping
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1693,57 +1823,57 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="set-up-capi-development-environment">Set up CAPI development environment<a class="headerlink" href="#set-up-capi-development-environment" title="Permanent link">#</a></h1>
-<p>To contribute to k0smotron, ensure you have set up the development environment properly.
-For simple development tasks, it is enough to install Go,
-and follow <a href="../contribute-workflow/">k0smotron GitHub workflow</a>.
-For more complicated changes that require running CAPI (Common Application Programming Interface)
-tests, follow the steps below to configure your environment:</p>
+<h1 id="release-process">Release process<a class="headerlink" href="#release-process" title="Permanent link">#</a></h1>
+<p>This document describes the steps required to make a new release of k0smotron. It covers tagging in Git, creating a GitHub Release, building and publishing assets (container images, CRD and install manifests) and publishing documentation.</p>
+<h2 id="preparation">Preparation<a class="headerlink" href="#preparation" title="Permanent link">#</a></h2>
+<p>Before starting a release, ensure that:</p>
 <ol>
-<li>
-<p>Use KinD (Kubernetes in Docker) to create a Kubernetes cluster based on the
-provided configuration file:</p>
-<div class="highlight"><pre><span></span><code>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--config<span class="w"> </span>config/samples/capi/docker/kind.yaml
-</code></pre></div>
-</li>
-<li>
-<p>Generate a custom image bundle and load it into the KinD cluster:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>k0smotron-image-bundle.tar<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>kind<span class="w"> </span>load<span class="w"> </span>image-archive<span class="w"> </span>k0smotron-image-bundle.tar
-</code></pre></div>
-</li>
-<li>
-<p>Release the necessary components and install them into the Kubernetes cluster:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>release<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>install.yaml
-</code></pre></div>
-</li>
-<li>
-<p>Initialize the cluster, patch configurations, and enable features:</p>
-<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--infrastructure<span class="w"> </span>docker
-<span class="w">          </span>kubectl<span class="w"> </span>patch<span class="w"> </span>-n<span class="w"> </span>capi-system<span class="w"> </span>deployment/capi-controller-manager<span class="w"> </span>-p<span class="w"> </span><span class="se">\</span>
-<span class="w">            </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;template&quot;:{&quot;spec&quot;:{&quot;containers&quot;:[{&quot;name&quot;:&quot;manager&quot;,&quot;args&quot;:[&quot;--leader-elect&quot;, &quot;--metrics-bind-addr=localhost:8080&quot;, &quot;--feature-gates=ClusterTopology=true&quot;]}]}}}}&#39;</span>
-<span class="w">          </span>kubectl<span class="w"> </span>patch<span class="w"> </span>-n<span class="w"> </span>capd-system<span class="w"> </span>deployment/capd-controller-manager<span class="w"> </span>-p<span class="w"> </span><span class="se">\</span>
-<span class="w">            </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;template&quot;:{&quot;spec&quot;:{&quot;containers&quot;:[{&quot;name&quot;:&quot;manager&quot;,&quot;args&quot;:[&quot;--leader-elect&quot;, &quot;--metrics-bind-addr=localhost:8080&quot;, &quot;--feature-gates=ClusterTopology=true&quot;]}]}}}}&#39;</span>
-</code></pre></div>
-</li>
-<li>
-<p>Deploy the Local Path Provisioner for storage provisioning:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
-</code></pre></div>
-</li>
-<li>
-<p>Extract the Kubernetes configuration for the KinD cluster and save it
-to a <code>kind.conf</code> file:</p>
-<div class="highlight"><pre><span></span><code>kind<span class="w"> </span>get<span class="w"> </span>kubeconfig<span class="w"> </span>&gt;<span class="w"> </span>kind.conf
-</code></pre></div>
-</li>
-<li>
-<p>Run tests using the following command:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-C<span class="w"> </span>inttest<span class="w"> </span>check-capi-controlplane-docker<span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span><span class="k">$(</span>realpath<span class="w"> </span>kind.conf<span class="k">)</span>
-</code></pre></div>
-<p>This command runs tests against the control plane of the Kubernetes cluster
- deployed using Docker. It uses the Kubernetes configuration from <code>kind.conf</code>.</p>
-</li>
+<li>All planned changes have been merged into the <code>main</code> branch.</li>
+<li>CI is passing and the <code>main</code> branch is green.</li>
+<li>The <a href="https://github.com/k0sproject/k0smotron/blob/main/metadata.yaml"><code>metadata.yaml</code></a> files have been updated for the new release series if you are making a new <strong>major</strong> or <strong>minor</strong> release.</li>
 </ol>
+<h2 id="create-a-git-tag">Create a Git tag<a class="headerlink" href="#create-a-git-tag" title="Permanent link">#</a></h2>
+<p>Tag the current <code>main</code> branch following semantic versioning (for example <code>v1.6.0</code>). Then push the tag to GitHub:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>main
+git<span class="w"> </span>pull<span class="w"> </span>--ff-only<span class="w"> </span>origin<span class="w"> </span>main
+git<span class="w"> </span>tag<span class="w"> </span>vX.Y.Z
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>vX.Y.Z
+</code></pre></div>
+<h2 id="draft-github-release">Draft GitHub Release<a class="headerlink" href="#draft-github-release" title="Permanent link">#</a></h2>
+<p>Pushing the tag triggers the GitHub Actions workflow defined in <a href="https://github.com/k0sproject/k0smotron/blob/main/.github/workflows/release.yml"><code>.github/workflows/release.yml</code></a>. This workflow:</p>
+<ul>
+<li>Creates a <strong>draft</strong> GitHub Release for the new tag.</li>
+<li>Builds and pushes multi-architecture container images to <code>quay.io/k0sproject/k0smotron</code> and <code>ghcr.io/k0sproject/k0smotron</code>.</li>
+<li>Generates and uploads release assets:<ul>
+<li><code>metadata.yaml</code></li>
+<li><code>bootstrap-components.yaml</code></li>
+<li><code>control-plane-components.yaml</code></li>
+<li><code>infrastructure-components.yaml</code></li>
+<li><code>cluster-template.yaml</code></li>
+<li><code>cluster-template-hcp.yaml</code></li>
+</ul>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Draft releases allow you to review and edit the release notes before publishing.</p>
+</div>
+<p>After the workflow completes, go to the draft release on GitHub, update the release notes (highlights, change log, known issues, etc.), and click <strong>Publish release</strong>.</p>
+<h2 id="publish-documentation">Publish documentation<a class="headerlink" href="#publish-documentation" title="Permanent link">#</a></h2>
+<p>Once the GitHub Release is published, the documentation workflow (<code>.github/workflows/publish-docs.yml</code>) will automatically:</p>
+<ol>
+<li>Build and deploy the site using <a href="https://github.com/jimporter/mike">mike</a>.</li>
+<li>Publish the newly tagged version.</li>
+<li>Update version aliases (<code>stable</code>, <code>main</code>) and set <code>stable</code> as the default.</li>
+<li>Update and commit the <code>install.yaml</code> in the <code>gh-pages</code> branch under the <code>stable/</code> directory.</li>
+</ol>
+<p>You can verify the documentation at https://docs.k0smotron.io/ after the workflow completes.</p>
+<h2 id="post-release-housekeeping">Post-release housekeeping<a class="headerlink" href="#post-release-housekeeping" title="Permanent link">#</a></h2>
+<p>If you are making a new <strong>major</strong> or <strong>minor</strong> release, after publishing the release, update the E2E upgrade test to reflect the new release version:</p>
+<ul>
+<li>Add new release in <code>k0smotronMinorVersionsToCheckUpgrades</code> in <a href="https://github.com/k0sproject/k0smotron/blob/main/e2e/k0smotron_upgrade_test.go"><code>e2e/k0smotron_upgrade_test.go</code></a>.</li>
+<li>Add the new release entry under the <code>k0sproject-k0smotron</code> provider in <a href="https://github.com/k0sproject/k0smotron/blob/main/e2e/config/docker.yaml"><code>e2e/config/docker.yaml</code></a> (including matching <code>control-plane-components.yaml</code> and <code>bootstrap-components.yaml</code> URLs).</li>
+</ul>
 
 
 
