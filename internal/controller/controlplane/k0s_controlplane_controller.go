@@ -35,6 +35,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
@@ -487,8 +488,8 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	if len(desiredMachineNames) < int(kcp.Spec.Replicas) {
 
-		name := machineName(kcp, machineNamesToDelete, desiredMachineNames)
-		log.Log.Info("desire machine", "name", len(desiredMachineNames))
+		name := names.SimpleNameGenerator.GenerateName(fmt.Sprintf("%s-", kcp.Name))
+		log.Log.Info("desire machine", "name", name)
 
 		for _, mn := range deletedMachines.Names() {
 			if name == mn {
@@ -978,28 +979,6 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 	return frpToken, c.Client.Patch(ctx, frpSecret, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
 	})
-}
-
-func machineName(kcp *cpv1beta1.K0sControlPlane, machineToDelete, desiredMachines map[string]bool) string {
-	if len(machineToDelete) == 0 {
-		for i := 0; i < int(kcp.Spec.Replicas); i++ {
-			name := fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines)-i)
-			_, ok := desiredMachines[name]
-			if !ok {
-				return name
-			}
-		}
-	}
-
-	for i := 0; i < int(kcp.Spec.Replicas); i++ {
-		name := fmt.Sprintf("%s-%d", kcp.Name, i)
-		_, ok := machineToDelete[name]
-		if ok {
-			return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines)+int(kcp.Spec.Replicas))
-		}
-	}
-
-	return fmt.Sprintf("%s-%d", kcp.Name, len(desiredMachines))
 }
 
 // SetupWithManager sets up the controller with the Manager.
