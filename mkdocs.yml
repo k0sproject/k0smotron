@@ -54,6 +54,7 @@ nav:
       - Development environment: contributing/dev-environment.md
       - Workflow: contributing/contribute-workflow.md
       - Testing: contributing/contribute-testing.md
+      - Release process: contributing/release-process.md
   - Known Limitations: known-limitations.md
   - Reference:
     - Custom resources:
