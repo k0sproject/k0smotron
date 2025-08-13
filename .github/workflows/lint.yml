@@ -51,6 +51,6 @@ jobs:
 
       - name: Run linter
         env:
-          GOLANGCI_LINT_FLAGS: --out-format=github-actions
+          GOLANGCI_LINT_FLAGS: --output.text.path=stdout
         run: |
           make lint

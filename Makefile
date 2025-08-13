@@ -307,7 +307,7 @@ lint: hack/lint/.golangci-lint.stamp
 	  --rm \
 	  -v "$(CURDIR):/go/src/github.com/k0sproject/k0smotron:ro" \
 	  -w /go/src/github.com/k0sproject/k0smotron \
-	  k0smotron.golangci-lint golangci-lint run $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS)
+	  k0smotron.golangci-lint golangci-lint run --config .golangci.yml $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS)
 
 # KinD helpers
 .PHONY: kind-cluster

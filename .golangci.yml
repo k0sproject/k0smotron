@@ -1,19 +1,57 @@
-# options for analysis running
+version: "2"
 run:
-  timeout: 8m
-
   build-tags:
     - hack
-  skip-dirs-use-default: false
-  skip-files:
-    - "zz_*"
-  tests: true
   modules-download-mode: readonly
+  tests: true
   allow-parallel-runners: true
-
 linters:
+  default: none 
   enable:
-    - depguard     # Checks if package imports are in a list of acceptable packages
-    - gofmt        # Checks whether code was gofmt-ed
-    - goheader     # Checks is file headers matche a given pattern
-    - revive       # Stricter drop-in replacement for golint
+    - depguard
+    - goheader
+    - revive
+  settings:
+    revive:
+      rules:
+        # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+  exclusions:
+    generated: strict
+    paths:
+      # Ignore issues in generated files.
+      - zz_generated.*\.go$
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: strict
+    paths:
+      - zz_generated.*\.go$
+# Warn only about new issues, not existing ones. 
+# TODO: Remove this filter at some point and ensure all old issues are fixed.
+issues:
+  new-from-merge-base: HEAD~
