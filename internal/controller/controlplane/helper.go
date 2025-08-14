@@ -292,24 +292,28 @@ func (c *K0sController) hasControllerConfigChanged(bootstrapConfigs map[string]b
 		return false
 	}
 
+	kcpK0sConfigSpecCopy := kcp.Spec.K0sConfigSpec.DeepCopy()
+	kcpK0sConfigSpecCopy.Args = uniqueArgs(kcpK0sConfigSpecCopy.Args)
+	bootstrapConfig.Spec.Args = uniqueArgs(bootstrapConfig.Spec.Args)
+
 	// remove data that should not be taken into account to check if the configuration has changed.
 	normalizeK0sConfigSpec(kcp, bootstrapConfig)
 
 	// k0s config will be reconciled using dynamic config, so leave it out of the comparison
 	bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapConfig.Spec.K0sConfigSpec.K0s.Object, "spec", "api")
-	kcpAPIConfig, _, _ := unstructured.NestedMap(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api")
+	kcpAPIConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "api")
 	bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapConfig.Spec.K0sConfigSpec.K0s.Object, "spec", "storage")
-	kcpStorageConfig, _, _ := unstructured.NestedMap(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "storage")
+	kcpStorageConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
 	// Bootstrap controller did set etcd name to the K0sControllerConfig, so we need to compare it with the name set in the K0sControlPlane
-	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "storage")
+	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
 	if kcpStorageConfigEtcdWithName == nil {
 		kcpStorageConfigEtcdWithName = make(map[string]interface{})
 	}
 	_ = unstructured.SetNestedField(kcpStorageConfigEtcdWithName, machine.Name, "etcd", "extraArgs", "name")
-	bootstrapConfig.Spec.K0sConfigSpec.K0s = kcp.Spec.K0sConfigSpec.K0s
+	bootstrapConfig.Spec.K0sConfigSpec.K0s = kcpK0sConfigSpecCopy.K0s
 	// leave out the tunneling spec for the bootstrap config
-	bootstrapConfig.Spec.K0sConfigSpec.Tunneling = kcp.Spec.K0sConfigSpec.Tunneling
-	return !reflect.DeepEqual(kcp.Spec.K0sConfigSpec, *bootstrapConfig.Spec.K0sConfigSpec) ||
+	bootstrapConfig.Spec.K0sConfigSpec.Tunneling = kcpK0sConfigSpecCopy.Tunneling
+	return !reflect.DeepEqual(kcpK0sConfigSpecCopy, *bootstrapConfig.Spec.K0sConfigSpec) ||
 		!reflect.DeepEqual(kcpAPIConfig, bootstrapAPIConfig) ||
 		(!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig) && !reflect.DeepEqual(kcpStorageConfigEtcdWithName, bootstrapStorageConfig))
 }
