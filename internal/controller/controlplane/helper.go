@@ -293,16 +293,17 @@ func (c *K0sController) hasControllerConfigChanged(bootstrapConfigs map[string]b
 	}
 
 	kcpK0sConfigSpecCopy := kcp.Spec.K0sConfigSpec.DeepCopy()
+	bootstrapConfigCopy := bootstrapConfig.DeepCopy()
 	kcpK0sConfigSpecCopy.Args = uniqueArgs(kcpK0sConfigSpecCopy.Args)
-	bootstrapConfig.Spec.Args = uniqueArgs(bootstrapConfig.Spec.Args)
 
 	// remove data that should not be taken into account to check if the configuration has changed.
-	normalizeK0sConfigSpec(kcp, bootstrapConfig)
+	normalizeK0sConfigSpec(kcp, bootstrapConfigCopy)
+	bootstrapConfigSpecCopy := bootstrapConfigCopy.Spec.K0sConfigSpec.DeepCopy()
 
 	// k0s config will be reconciled using dynamic config, so leave it out of the comparison
-	bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapConfig.Spec.K0sConfigSpec.K0s.Object, "spec", "api")
+	bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "api")
 	kcpAPIConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "api")
-	bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapConfig.Spec.K0sConfigSpec.K0s.Object, "spec", "storage")
+	bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "storage")
 	kcpStorageConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
 	// Bootstrap controller did set etcd name to the K0sControllerConfig, so we need to compare it with the name set in the K0sControlPlane
 	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
@@ -310,10 +311,12 @@ func (c *K0sController) hasControllerConfigChanged(bootstrapConfigs map[string]b
 		kcpStorageConfigEtcdWithName = make(map[string]interface{})
 	}
 	_ = unstructured.SetNestedField(kcpStorageConfigEtcdWithName, machine.Name, "etcd", "extraArgs", "name")
-	bootstrapConfig.Spec.K0sConfigSpec.K0s = kcpK0sConfigSpecCopy.K0s
+
+	bootstrapConfigCopy.Spec.K0sConfigSpec.K0s = kcpK0sConfigSpecCopy.K0s
+
 	// leave out the tunneling spec for the bootstrap config
 	bootstrapConfig.Spec.K0sConfigSpec.Tunneling = kcpK0sConfigSpecCopy.Tunneling
-	return !reflect.DeepEqual(kcpK0sConfigSpecCopy, *bootstrapConfig.Spec.K0sConfigSpec) ||
+	return !reflect.DeepEqual(kcpK0sConfigSpecCopy, *bootstrapConfigCopy.Spec.K0sConfigSpec) ||
 		!reflect.DeepEqual(kcpAPIConfig, bootstrapAPIConfig) ||
 		(!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig) && !reflect.DeepEqual(kcpStorageConfigEtcdWithName, bootstrapStorageConfig))
 }
@@ -591,7 +594,7 @@ func minVersion(machines collections.Machines) (string, error) {
 // when comparing if the k0s configuration has changed.
 // TODO: This method should be replaced with a more robust mechanism to prevent unexpected updates from
 // the bootstrap controller.
-func normalizeK0sConfigSpec(kcp *cpv1beta1.K0sControlPlane, bootstrapConfig bootstrapv1.K0sControllerConfig) {
+func normalizeK0sConfigSpec(kcp *cpv1beta1.K0sControlPlane, bootstrapConfig *bootstrapv1.K0sControllerConfig) {
 	isK0sConfigYAMLSet := false
 	for _, arg := range kcp.Spec.K0sConfigSpec.Args {
 		if arg == "/etc/k0s.yaml" {
@@ -613,12 +616,6 @@ func normalizeK0sConfigSpec(kcp *cpv1beta1.K0sControlPlane, bootstrapConfig boot
 }
 
 func uniqueArgs(args []string) []string {
-	// DO NOT REMOVE THIS CHECK
-	// If the slice is empty, we return the slice as is to avoid any modifications.
-	// In callers, we may compare slices and in some cases it may end up in comparing empty and nil slices.
-	if len(args) == 0 {
-		return args
-	}
 	uniqueArgsSlice := []string{}
 	uniqueArgsMap := make(map[string]struct{})
 	for _, arg := range args {
