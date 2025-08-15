@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
@@ -65,7 +66,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	nodes, err := childClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", machineNameNodeLabel, machine.GetName()),
+		LabelSelector: fmt.Sprintf("%s=%s", bootstrapv1.MachineNameNodeLabel, machine.GetName()),
 	})
 	if err != nil || len(nodes.Items) == 0 {
 		log.Info("waiting for node to be available for machine " + machine.Name)

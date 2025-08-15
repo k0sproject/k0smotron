@@ -32,6 +32,11 @@ func init() {
 	SchemeBuilder.Register(&K0sControllerConfig{}, &K0sControllerConfigList{})
 }
 
+const (
+	// MachineNameNodeLabel is Node's label that describes the machine name associated with the node
+	MachineNameNodeLabel = "k0smotron.io/machine-name"
+)
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"

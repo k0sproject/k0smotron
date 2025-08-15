@@ -72,7 +72,7 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 	var args []string
 	if isWorker {
 		args = []string{
-			"--labels=" + fmt.Sprintf("%s=%s", machineNameNodeLabel, configOwner.GetName()),
+			"--labels=" + fmt.Sprintf("%s=%s", bootstrapv1.MachineNameNodeLabel, configOwner.GetName()),
 		}
 	}
 

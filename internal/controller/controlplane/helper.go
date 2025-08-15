@@ -507,6 +507,32 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 		return fmt.Errorf("error getting control plane machines: %w", err)
 	}
 
+	machineNames := machines.Names()
+	// If the K0sControlPlane is using system hostname, we need to get node names from the Node resources
+	if kcp.Spec.K0sConfigSpec.UseSystemHostname {
+		machineNamesMap := make(map[string]struct{})
+		for _, name := range machineNames {
+			machineNamesMap[name] = struct{}{}
+		}
+		nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return fmt.Errorf("error listing nodes: %w", err)
+		}
+		for _, node := range nodes.Items {
+			if mn, ok := node.Labels[bootstrapv1.MachineNameNodeLabel]; ok {
+				if _, exists := machineNamesMap[mn]; exists {
+					delete(machineNamesMap, mn)
+					machineNamesMap[node.Name] = struct{}{}
+				}
+			}
+		}
+
+		machineNames = make([]string, 0, len(machineNamesMap))
+		for name := range machineNamesMap {
+			machineNames = append(machineNames, name)
+		}
+	}
+
 	amd64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-amd64`
 	arm64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm64`
 	armDownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm`
@@ -545,7 +571,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 						"controllers": {
 							"discovery": {
 							    "static": {
-									"nodes": ["` + strings.Join(machines.Names(), `","`) + `"]
+									"nodes": ["` + strings.Join(machineNames, `","`) + `"]
 								}
 							}
 						}
