@@ -51,8 +51,6 @@ import (
 
 const (
 	defaultK0sSuffix = "k0s.0"
-
-	machineNameNodeLabel = "k0smotron.io/machine-name"
 )
 
 type Controller struct {
