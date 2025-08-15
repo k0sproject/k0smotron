@@ -48,6 +48,11 @@ jobs:
         run: |
           make docker-build
 
+      - name: Publish the previously built imageto ttl.sh with the commit sha
+        run: |
+          docker tag quay.io/k0sproject/k0smotron:latest ttl.sh/k0smotron-${{ github.sha }}
+          docker push ttl.sh/k0smotron-${{ github.sha }}    
+
   generate-sbom:
     name: "Build :: SBOM"
     needs: [ build ]
