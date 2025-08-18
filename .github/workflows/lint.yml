@@ -1,10 +1,11 @@
 name: Go lint
+
 on:
   push:
-    branches:
+    branches: &protected_branches
       - main
       - release-*
-    paths-ignore:
+    paths-ignore: &common_ignores
       - 'docs/**'
       - 'examples/**'
       - '**.md'
@@ -12,16 +13,8 @@ on:
       - '.github/workflows/publish-docs.yml'
       - 'mkdocs.yml'
   pull_request:
-    branches:
-      - main
-      - release-*
-    paths-ignore:
-      - 'docs/**'
-      - 'examples/**'
-      - '**.md'
-      - '**.svg'
-      - '.github/workflows/publish-docs.yml'
-      - 'mkdocs.yml'
+    branches: *protected_branches
+    paths-ignore: *common_ignores
 
 jobs:
   lint:

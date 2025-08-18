@@ -108,7 +108,7 @@ vet: ## Run go vet against code.
 	go vet $(GO_PKGS)
 
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
+test: $(ENVTEST)
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $(GO_TEST_DIRS) -coverprofile cover.out
 
 DOCKER_TEMPLATES := e2e/data/infrastructure-docker
@@ -121,7 +121,7 @@ generate-e2e-templates-main: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-webhook-k0s-not-compatible --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-webhook-k0s-not-compatible.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment.yaml
 
-e2e: k0smotron-image-bundle.tar install.yaml kustomize generate-e2e-templates-main
+e2e: generate-e2e-templates-main
 	set +x;
 	PATH="${LOCALBIN}:${PATH}" go test -v -tags e2e -run '$(TEST_NAME)' ./e2e  \
 	    -artifacts-folder="$(ARTIFACTS)" \
@@ -132,7 +132,7 @@ e2e: k0smotron-image-bundle.tar install.yaml kustomize generate-e2e-templates-ma
 ##@ Build
 
 .PHONY: build
-build: manifests generate fmt vet ## Build manager binary.
+build:
 	go build -o bin/manager cmd/main.go
 
 .PHONY: run
@@ -143,7 +143,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
+docker-build:
 	docker build \
 	  -t ${IMG} \
 	  --build-arg BUILD_IMG=golang:$(GO_VERSION) \

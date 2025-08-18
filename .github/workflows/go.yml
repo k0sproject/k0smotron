@@ -2,10 +2,10 @@ name: Go build
 
 on:
   push:
-    branches:
+    branches: &protected_branches
       - main
       - release-*
-    paths-ignore:
+    paths-ignore: &common_ignores
       - 'config/**'
       - 'docs/**'
       - 'mkdocs.yml'
@@ -13,20 +13,12 @@ on:
       - LICENSE
       - '**.svg'
   pull_request:
-    branches:
-      - main
-      - release-*
-    paths-ignore:
-      - 'config/**'
-      - 'docs/**'
-      - 'mkdocs.yml'
-      - '**.md'
-      - LICENSE
-      - '**.svg'
+    branches: *protected_branches
+    paths-ignore: *common_ignores
 
 jobs:
   build:
-    name: Build
+    name: Build artifacts
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
@@ -43,33 +35,58 @@ jobs:
       - name: Build
         run: |
           make build
-
-      - name: Build image
-        run: |
-          make docker-build
-
-  generate-sbom:
-    name: "Build :: SBOM"
-    needs: [ build ]
-
-    runs-on: ubuntu-22.04
-
-    steps:
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
-
-      - name: Generate SBOM
-        run: |
-          mkdir -p sbom && chmod 777 sbom
-          make sbom/spdx.json
-
-      - uses: actions/upload-artifact@v4
+      
+      - name: Upload manager binary
+        uses: actions/upload-artifact@v4
         with:
-          name: spdx.json
-          path: sbom/spdx.json
+          name: manager-binary
+          path: bin/manager
+
+      - name: Build image bundle
+        run: |
+          # Build Docker image and create image bundle
+          make k0smotron-image-bundle.tar
+
+      - name: Upload image bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: k0smotron-image-bundle
+          path: k0smotron-image-bundle.tar
+
+      - name: Build cluster api components
+        run: |
+          make bootstrap-components.yaml control-plane-components.yaml infrastructure-components.yaml
+          mkdir -p v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/ k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/ k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+
+          mv bootstrap-components.yaml v0.0.0
+          mv control-plane-components.yaml v0.0.0
+          mv infrastructure-components.yaml v0.0.0
+          mv ./hack/capi-ci/metadata.yaml v0.0.0
+
+          cp -r v0.0.0 k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+
+      - name: Upload cluster api components
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-api-components
+          path: |
+            config.yaml
+            k0sproject-k0smotron/
+
+      - name: Generate install yaml
+        run: |
+          make release
+
+      - name: Upload install yaml
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-yaml
+          path: install.yaml
 
   unittest:
-    name: Unit test
+    name: Unit & Integration tests
     needs: build
     runs-on: ubuntu-latest
 
@@ -85,6 +102,37 @@ jobs:
       - name: Run unit tests
         run: |
           make test
+
+  generate-sbom:
+    name: "Build :: SBOM"
+    needs: [ build ]
+
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Download manager binary
+        uses: actions/download-artifact@v4
+        with:
+          name: manager-binary
+          path: bin
+
+      - name: Prepare embedded binary for SBOM
+        run: |
+          mkdir -p embedded-bins/staging/linux/bin
+          cp bin/manager embedded-bins/staging/linux/bin/manager
+
+      - name: Generate SBOM
+        run: |
+          mkdir -p sbom && chmod 777 sbom
+          make sbom/spdx.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spdx.json
+          path: sbom/spdx.json
 
   smoketest:
     name: Smoke test
@@ -115,10 +163,19 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Create image bundle
+      - name: Download image bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: k0smotron-image-bundle
+
+      - name: Download install manifest for k0smotron
+        uses: actions/download-artifact@v4
+        with:
+          name: install-yaml
+
+      - name: Load k0smotron image bundle
         run: |
-          make release
-          make k0smotron-image-bundle.tar
+          docker load -i k0smotron-image-bundle.tar
 
       - name: Run inttest
         run: |
@@ -198,11 +255,24 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Download image bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: k0smotron-image-bundle
+
+      - name: Load k0smotron image bundle
+        run: |
+          docker load -i k0smotron-image-bundle.tar
+
+      - name: Download install manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: install-yaml
+
       - name: Run e2e test
         run: |
           export TEST_NAME=Test$(echo "${{ matrix.e2e-suite }}" | awk -F'-' '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1' OFS='')
           echo "Running E2E tests with TEST_NAME=$TEST_NAME"
-          make release
           make e2e TEST_NAME="$TEST_NAME"
 
       - name: Archive artifacts
