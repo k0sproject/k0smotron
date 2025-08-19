@@ -68,12 +68,9 @@ type Controller struct {
 }
 
 type Scope struct {
-	Config      *bootstrapv1.K0sWorkerConfig
-	ConfigOwner *bsutil.ConfigOwner
-	Cluster     *clusterv1.Cluster
-}
-
-type hostingClusterScope struct {
+	Config              *bootstrapv1.K0sWorkerConfig
+	ConfigOwner         *bsutil.ConfigOwner
+	Cluster             *clusterv1.Cluster
 	client              client.Client
 	secretCachingClient client.Client
 }
@@ -154,13 +151,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{}, nil
 	}
 
-	scope := &Scope{
-		Config:      config,
-		ConfigOwner: configOwner,
-		Cluster:     cluster,
-	}
-
-	if scope.Config.Status.Ready {
+	if config.Status.Ready {
 		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
 		log.Info("Bootstrapdata already created, reconciled succesfully")
 		return ctrl.Result{}, nil
@@ -185,7 +176,12 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		}
 	}()
 
-	hcpClusterClient, err := r.getHostingClusterClient(ctx, cluster)
+	scope := &Scope{
+		Config:      config,
+		ConfigOwner: configOwner,
+		Cluster:     cluster,
+	}
+	err = r.setClientScope(ctx, cluster, scope)
 	if err != nil {
 		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, err
@@ -198,7 +194,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}
 
 	log.Info("Generating bootstrap data")
-	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope, hcpClusterClient)
+	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope)
 	if err != nil {
 		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, err
@@ -224,9 +220,9 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log logr.Logger, scope *Scope, hcpClusterScope *hostingClusterScope) ([]byte, error) {
+func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log logr.Logger, scope *Scope) ([]byte, error) {
 	log.Info("Finding the token secret")
-	token, err := r.getK0sToken(ctx, scope, hcpClusterScope)
+	token, err := r.getK0sToken(ctx, scope)
 	if err != nil {
 		log.Error(err, "Failed to get token")
 		return nil, err
@@ -278,7 +274,7 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	return ci.AsBytes()
 }
 
-func (r *Controller) getK0sToken(ctx context.Context, scope *Scope, hcpClusterScope *hostingClusterScope) (string, error) {
+func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
 	// Check if the workload cluster client is already set. This client is used for testing purposes to inject a fake client.
 	client := r.workloadClusterClient
 	if client == nil {
@@ -314,7 +310,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope, hcpClusterSc
 	}
 
 	certificates := secret.NewCertificatesForWorker("")
-	if err := certificates.LookupCached(ctx, hcpClusterScope.secretCachingClient, hcpClusterScope.client, capiutil.ObjectKey(scope.Cluster)); err != nil {
+	if err := certificates.LookupCached(ctx, scope.secretCachingClient, scope.client, capiutil.ObjectKey(scope.Cluster)); err != nil {
 		return "", fmt.Errorf("failed to lookup CA certificates: %w", err)
 	}
 	ca := certificates.GetByPurpose(secret.ClusterCA)
@@ -378,17 +374,17 @@ func createBootstrapSecret(scope *Scope, bootstrapData []byte) *corev1.Secret {
 	}
 }
 
-func (r *Controller) getHostingClusterClient(ctx context.Context, cluster *clusterv1.Cluster) (*hostingClusterScope, error) {
+// setClientScope set the cluster client scope depending on the control plane configuration. By default, it uses the management cluster
+// client if there is no external cluster reference provided.
+func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Cluster, scope *Scope) error {
 	log := log.FromContext(ctx)
+
+	scope.client = r.Client
+	scope.secretCachingClient = r.SecretCachingClient
 
 	uControlPlane, err := external.Get(ctx, r.Client, cluster.Spec.ControlPlaneRef, cluster.Namespace)
 	if err != nil {
-		return nil, err
-	}
-
-	hostingClusterScope := &hostingClusterScope{
-		client:              r.Client,
-		secretCachingClient: r.SecretCachingClient,
+		return err
 	}
 
 	// Only K0smotronControlPlane might store controlplane certificates in an external cluster. Otherwise, certificates are store in mothership.
@@ -400,21 +396,21 @@ func (r *Controller) getHostingClusterClient(ctx context.Context, cluster *clust
 		}
 		if err := r.Client.Get(ctx, key, kcp); err != nil {
 			log.Error(err, "Failed to get K0smotronControlPlane")
-			return nil, err
+			return err
 		}
 
 		if kcp.Spec.KubeconfigRef != nil {
 			var err error
-			hostingClusterScope.client, _, _, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kcp.Spec.KubeconfigRef)
+			scope.client, _, _, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kcp.Spec.KubeconfigRef)
 			if err != nil {
 				log.Error(err, "Error getting client from cluster kubeconfig reference")
-				return nil, err
+				return err
 			}
-			hostingClusterScope.secretCachingClient = hostingClusterScope.client
+			scope.secretCachingClient = scope.client
 		}
 	}
 
-	return hostingClusterScope, nil
+	return nil
 }
 
 func createInstallCmd(scope *Scope) string {
