@@ -24,15 +24,14 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Create image bundle
-        run: |
-          make release
-          make k0smotron-image-bundle.tar
+      - name: Download image bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: k0smotron-image-bundle
 
-      - name: Create kind network with IPv4 only
+      - name: Load k0smotron image bundle
         run: |
-          docker network create kind --opt com.docker.network.bridge.enable_ip_masquerade=true
-
+          docker load -i k0smotron-image-bundle.tar
 
       - name: Download kind
         uses: supplypike/setup-bin@v4
@@ -62,31 +61,28 @@ jobs:
           version: v1.4.3
           uri: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.3/clusterctl-linux-amd64
 
-      - name: Prepare cluster api components
-        run: |
-          make bootstrap-components.yaml control-plane-components.yaml infrastructure-components.yaml
-          mkdir -p v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/ k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/ k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
-
-          mv bootstrap-components.yaml v0.0.0
-          mv control-plane-components.yaml v0.0.0
-          mv infrastructure-components.yaml v0.0.0
-          mv ./hack/capi-ci/metadata.yaml v0.0.0
-
-          cp -r v0.0.0 k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/
-          cp -r v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/
-          cp -r v0.0.0 k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
-          sed -e 's#%pwd%#'`pwd`'#g' ./hack/capi-ci/config.yaml > config.yaml
+      - name: Download cluster-api components
+        uses: actions/download-artifact@v4
+        with:
+          name: cluster-api-components
+          path: .
 
       - name: Install cluster api components
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CLUSTER_TOPOLOGY=true clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure k0sproject-k0smotron,docker --config config.yaml
+          export CLUSTERCTL_REPOSITORY_PATH="$GITHUB_WORKSPACE"
+          CLUSTER_TOPOLOGY=true clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure k0sproject-k0smotron,docker --config ./hack/capi-ci/config.yaml
           kubectl wait --for=condition=available -n cert-manager deployment/cert-manager-webhook --timeout=300s
 
       - name: Install PVC provider
         run: |
           kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
+
+      - name: Download install manifest for k0smotron
+        uses: actions/download-artifact@v4
+        with:
+          name: install-yaml
 
       - name: Run inttest for CAPI with docker provider
         run: |
