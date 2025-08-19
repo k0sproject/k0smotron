@@ -142,18 +142,6 @@ func (r *ClusterReconciler) generateStatefulSet(kmc *km.Cluster) (apps.StatefulS
 							},
 						}},
 						Resources: kmc.Spec.Resources,
-						ReadinessProbe: &v1.Probe{
-							InitialDelaySeconds: 60,
-							PeriodSeconds:       10,
-							FailureThreshold:    15,
-							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
-						},
-						LivenessProbe: &v1.Probe{
-							InitialDelaySeconds: 90,
-							FailureThreshold:    10,
-							PeriodSeconds:       10,
-							ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
-						},
 						VolumeMounts: []v1.VolumeMount{{
 							Name:      kmc.GetEntrypointConfigMapName(),
 							MountPath: "/k0smotron-entrypoint.sh",
@@ -320,8 +308,25 @@ data:
 
 	err := ctrl.SetControllerReference(kmc, &statefulSet, r.Scheme)
 
+	// We calculate the hash of the statefulset template and store it in the annotations
+	// This is used to detect changes in the statefulset template and trigger a rollout
+	// We exclude some fields below from the hash calculation to avoid unnecessary rollouts
+	annotationHash := controller.ComputeHash(&statefulSet.Spec.Template, statefulSet.Status.CollisionCount)
+	statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
+		InitialDelaySeconds: 60,
+		PeriodSeconds:       10,
+		FailureThreshold:    15,
+		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+	}
+	statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
+		InitialDelaySeconds: 90,
+		FailureThreshold:    10,
+		PeriodSeconds:       10,
+		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+	}
+
 	statefulSet.Annotations = map[string]string{
-		statefulSetAnnotation: controller.ComputeHash(&statefulSet.Spec.Template, statefulSet.Status.CollisionCount),
+		statefulSetAnnotation: annotationHash,
 	}
 	for k, v := range annotations {
 		statefulSet.Annotations[k] = v
