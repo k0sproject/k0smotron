@@ -120,6 +120,8 @@ generate-e2e-templates-main: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-webhook-recreate-in-single-mode --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-webhook-recreate-in-single-mode.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-webhook-k0s-not-compatible --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-webhook-k0s-not-compatible.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment.yaml
+	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp.yaml
+
 
 e2e: generate-e2e-templates-main
 	set +x;

@@ -4,7 +4,9 @@ k0smotron can act as a [Cluster API](https://cluster-api.sigs.k8s.io/) provider 
 
 ## Control Plane provider - in-cluster
 
-When k0smotron acts as a [control plane provider](https://cluster-api.sigs.k8s.io/developer/architecture/controllers/control-plane.html) it will create and manage the cluster control plane within the management cluster, just as in the [standalone](cluster.md) case.
+When k0smotron acts as a [control plane provider](https://cluster-api.sigs.k8s.io/developer/architecture/controllers/control-plane.html) it will create and manage the cluster control plane within the management cluster , just as in the [standalone](cluster.md) case.
+
+By default k0smotron deploys control planes in the management cluster, but you can target an external cluster by providing a kubeconfig via [`kubeconfigRef`](/resource-reference/controlplane.cluster.x-k8s.io-v1beta1/#k0smotroncontrolplanespeckubeconfigref). When using an external cluster, the identity associated with that kubeconfig must have sufficient RBAC permissions for k0smotron to create and manage control plane resources. You can review the RBAC roles used by k0smotron [here](https://github.com/k0sproject/k0smotron/tree/main/config/rbac).
 
 ## Control Plane - out-of-cluster
 

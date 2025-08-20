@@ -222,6 +222,27 @@ spec:
               kineDataSourceURL:
                 description: KineDataSourceURL defines the kine datasource URL.
                 type: string
+              kubeconfigRef:
+                description: |-
+                  KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+                  This kubeconfig will be used to deploy the k0s control plane.
+                properties:
+                  key:
+                    default: value
+                    description: Key is the key in the secret containing the kubeconfig
+                      of the hosting cluster.
+                    type: string
+                  name:
+                    description: Name is the name of the secret containing the kubeconfig
+                      of the hosting cluster.
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the secret containing
+                      the kubeconfig of the hosting cluster.
+                    type: string
+                required:
+                - name
+                type: object
               manifests:
                 description: |-
                   Manifests allows to specify list of volumes with manifests to be

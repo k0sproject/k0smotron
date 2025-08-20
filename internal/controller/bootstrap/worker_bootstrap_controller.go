@@ -32,6 +32,7 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -44,6 +45,7 @@ import (
 
 	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
@@ -66,9 +68,11 @@ type Controller struct {
 }
 
 type Scope struct {
-	Config      *bootstrapv1.K0sWorkerConfig
-	ConfigOwner *bsutil.ConfigOwner
-	Cluster     *clusterv1.Cluster
+	Config              *bootstrapv1.K0sWorkerConfig
+	ConfigOwner         *bsutil.ConfigOwner
+	Cluster             *clusterv1.Cluster
+	client              client.Client
+	secretCachingClient client.Client
 }
 
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -147,13 +151,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{}, nil
 	}
 
-	scope := &Scope{
-		Config:      config,
-		ConfigOwner: configOwner,
-		Cluster:     cluster,
-	}
-
-	if scope.Config.Status.Ready {
+	if config.Status.Ready {
 		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
 		log.Info("Bootstrapdata already created, reconciled succesfully")
 		return ctrl.Result{}, nil
@@ -177,6 +175,17 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 			log.Error(err, "Failed to patch K0sWorkerConfig status")
 		}
 	}()
+
+	scope := &Scope{
+		Config:      config,
+		ConfigOwner: configOwner,
+		Cluster:     cluster,
+	}
+	err = r.setClientScope(ctx, cluster, scope)
+	if err != nil {
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
+		return ctrl.Result{}, err
+	}
 
 	// Control plane needs to be ready because worker needs to use controlplane API to retrieve a join token.
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() || !scope.Cluster.Status.ControlPlaneReady {
@@ -301,7 +310,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	}
 
 	certificates := secret.NewCertificatesForWorker("")
-	if err := certificates.LookupCached(ctx, r.SecretCachingClient, r.Client, capiutil.ObjectKey(scope.Cluster)); err != nil {
+	if err := certificates.LookupCached(ctx, scope.secretCachingClient, scope.client, capiutil.ObjectKey(scope.Cluster)); err != nil {
 		return "", fmt.Errorf("failed to lookup CA certificates: %w", err)
 	}
 	ca := certificates.GetByPurpose(secret.ClusterCA)
@@ -363,6 +372,45 @@ func createBootstrapSecret(scope *Scope, bootstrapData []byte) *corev1.Secret {
 		},
 		Type: clusterv1.ClusterSecretType,
 	}
+}
+
+// setClientScope set the cluster client scope depending on the control plane configuration. By default, it uses the management cluster
+// client if there is no external cluster reference provided.
+func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Cluster, scope *Scope) error {
+	log := log.FromContext(ctx)
+
+	scope.client = r.Client
+	scope.secretCachingClient = r.SecretCachingClient
+
+	uControlPlane, err := external.Get(ctx, r.Client, cluster.Spec.ControlPlaneRef, cluster.Namespace)
+	if err != nil {
+		return err
+	}
+
+	// Only K0smotronControlPlane might store controlplane certificates in an external cluster. Otherwise, certificates are store in mothership.
+	if uControlPlane.GetKind() == "K0smotronControlPlane" {
+		kcp := &cpv1beta1.K0smotronControlPlane{}
+		key := client.ObjectKey{
+			Namespace: uControlPlane.GetNamespace(),
+			Name:      uControlPlane.GetName(),
+		}
+		if err := r.Client.Get(ctx, key, kcp); err != nil {
+			log.Error(err, "Failed to get K0smotronControlPlane")
+			return err
+		}
+
+		if kcp.Spec.KubeconfigRef != nil {
+			var err error
+			scope.client, _, _, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kcp.Spec.KubeconfigRef)
+			if err != nil {
+				log.Error(err, "Error getting client from cluster kubeconfig reference")
+				return err
+			}
+			scope.secretCachingClient = scope.client
+		}
+	}
+
+	return nil
 }
 
 func createInstallCmd(scope *Scope) string {
