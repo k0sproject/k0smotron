@@ -18,6 +18,7 @@ package k0smotronio
 
 import (
 	"context"
+	"fmt"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
@@ -25,6 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -38,7 +40,8 @@ func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc *
 		return err
 	}
 
-	output, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, kmc.Namespace, "k0s kubeconfig create admin --groups system:masters")
+	cmd := buildKubeconfigCreateCmd(kmc.Name)
+	output, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, kmc.Namespace, cmd)
 	if err != nil {
 		return err
 	}
@@ -66,4 +69,10 @@ func (r *ClusterReconciler) reconcileKubeConfigSecret(ctx context.Context, kmc *
 	}
 
 	return r.Client.Patch(ctx, &secret, client.Apply, patchOpts...)
+}
+
+func buildKubeconfigCreateCmd(clusterName string) string {
+	contextName := secret.Name(clusterName, "k0s")
+	username := secret.Name(clusterName, "admin")
+	return fmt.Sprintf("k0s kubeconfig create %s --groups system:masters --context-name %s", username, contextName)
 }
