@@ -19,11 +19,18 @@ package k0smotronio
 import (
 	"context"
 
+	"fmt"
+
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/exec"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
+	kubeconfig "k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,6 +50,12 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 		return err
 	}
 
+	// Post-process: build a kubeconfig with desired names based on current-context
+	processedOutput, err := rewriteKubeconfigNames(output, kmc.Name)
+	if err != nil {
+		return err
+	}
+
 	logger.Info("Kubeconfig generated, creating the secret")
 
 	secret := v1.Secret{
@@ -57,11 +70,63 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 			Labels:      kcontrollerutil.LabelsForK0smotronCluster(kmc),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
-		StringData: map[string]string{"value": output},
+		StringData: map[string]string{"value": processedOutput},
 		Type:       clusterv1.ClusterSecretType,
 	}
 
 	_ = ctrl.SetControllerReference(kmc, &secret, managementClusterClient.Scheme())
 
 	return managementClusterClient.Patch(ctx, &secret, client.Apply, patchOpts...)
+}
+
+func rewriteKubeconfigNames(kubeconfigYAML string, clusterName string) (string, error) {
+	obj, err := k8sruntime.Decode(clientcmdlatest.Codec, []byte(kubeconfigYAML))
+	if err != nil {
+		return "", err
+	}
+	srcCfg, ok := obj.(*clientcmdapi.Config)
+	if !ok {
+		return "", fmt.Errorf("failed to decode kubeconfig")
+	}
+
+	if srcCfg.CurrentContext == "" {
+		return "", fmt.Errorf("current-context is empty")
+	}
+	srcCtx, ok := srcCfg.Contexts[srcCfg.CurrentContext]
+	if !ok {
+		return "", fmt.Errorf("current-context %q not found", srcCfg.CurrentContext)
+	}
+
+	srcCluster, ok := srcCfg.Clusters[srcCtx.Cluster]
+	if !ok {
+		return "", fmt.Errorf("cluster %q not found", srcCtx.Cluster)
+	}
+	srcUser, ok := srcCfg.AuthInfos[srcCtx.AuthInfo]
+	if !ok {
+		return "", fmt.Errorf("user %q not found", srcCtx.AuthInfo)
+	}
+
+	if srcCluster.Server == "" {
+		return "", fmt.Errorf("cluster server is empty")
+	}
+	if len(srcUser.ClientCertificateData) == 0 || len(srcUser.ClientKeyData) == 0 {
+		return "", fmt.Errorf("client certificate/key data not found in kubeconfig")
+	}
+
+	clusterKey := fmt.Sprintf("%s-k0s", clusterName)
+	userKey := fmt.Sprintf("%s-admin", clusterName)
+
+	newConfig := kubeconfig.CreateBasic(srcCluster.Server, clusterKey, userKey, srcCluster.CertificateAuthorityData)
+
+	newConfig.AuthInfos[userKey] = &clientcmdapi.AuthInfo{
+		ClientCertificateData: srcUser.ClientCertificateData,
+		ClientKeyData:         srcUser.ClientKeyData,
+	}
+
+	configBytes, err := clientcmd.Write(*newConfig)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize kubeconfig: %w", err)
+	}
+
+	return string(configBytes), nil
 }
