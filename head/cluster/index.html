@@ -1712,6 +1712,10 @@ section, you can start creating your Kubernetes control planes.</p>
 </code></pre></div>
 <p>This triggers the k0smotron controller manager to set up the control plane
  in pods.</p>
+<div class="admonition note">
+<p class="admonition-title">Use an external cluster to set up control plane in pods</p>
+<p>By default, control planes are deployed in the management cluster.  If you choose to deploy them in an external cluster via <a href="/resource-reference/k0smotron.io-v1beta1/#clusterspeckubeconfigref"><code>kubeconfigRef</code></a>, the identity in that kubeconfig must have sufficient RBAC permissions for k0smotron to create and manage control plane resources. You can review the roles used by k0smotron <a href="https://github.com/k0sproject/k0smotron/tree/main/config/rbac">here</a>.</p>
+</div>
 </li>
 <li>
 <p>Once k0smotron finishes setting up the cluster, obtain the admin access
