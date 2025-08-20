@@ -24,8 +24,7 @@ import (
 
 	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	apps "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
-	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -68,10 +67,8 @@ const (
 )
 
 type kmcScope struct {
-	// isClusterHCP indicates if the controlplane replicas run in the mothership cluster or in a different cluster
-	// (determined by the ClusterProfileRef).
-	// If 'true', the controlplane replicas run in the mothership cluster
-	inClusterHCP bool
+	// externalOwner is the owner object used to set the owner reference for the external cluster resources.
+	externalOwner client.Object
 	// client is the client used to interact with the cluster where the controlplane replicas run.
 	client client.Client
 	// clientSet is the clientset used to interact with the cluster where the controlplane replicas run.
@@ -132,6 +129,28 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
+	if kmc.Spec.KubeconfigRef != nil {
+		// We need to ensure that the external owner exists in the external cluster only if the K0smotron cluster
+		// is not being deleted. Otherwise, we would enter an infinite loop trying to ensure the external owner
+		// while the K0smotron cluster controller deletes the external owner.
+		if !kmc.ObjectMeta.DeletionTimestamp.IsZero() {
+			kmcScope.externalOwner, err = kutil.GetExternalOwner(ctx, kmc.Name, kmc.Namespace, kmcScope.client)
+			if err != nil {
+				if !apierrors.IsNotFound(err) {
+					logger.Error(err, "Error getting external owner")
+					return ctrl.Result{}, err
+				}
+			}
+		} else {
+			kmcScope.externalOwner, err = kutil.EnsureExternalOwner(ctx, kmc.Name, kmc.Namespace, kmcScope.client)
+			if err != nil {
+				logger.Error(err, "Error ensuring external owner")
+				return ctrl.Result{}, err
+			}
+		}
+
+	}
+
 	patchHelper, err := patch.NewHelper(kmc, r.Client)
 	if err != nil {
 		logger.Error(err, "Failed to configure the patch helper")
@@ -148,69 +167,40 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if !kmc.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Cluster is being deleted")
 		// If controlplanes run in a different cluster, we need to delete the resources associated with
-		// the k0smotron.Cluster. This is because the owner references cannot be used in this case.
-		if !kmcScope.inClusterHCP {
-			var errors []error
-			for _, descendant := range kmcScope.getDescendants(ctx, kmc) {
-				if !descendant.GetDeletionTimestamp().IsZero() {
-					continue
-				}
-
-				if err := kmcScope.client.Delete(ctx, descendant); err != nil {
-					errors = append(errors, fmt.Errorf("error deleting descendant resource %s: %w", descendant.GetName(), err))
-				}
-			}
-			if len(errors) > 0 {
-				return ctrl.Result{}, fmt.Errorf("error deleting descendant resources: %v", errors)
+		// the k0smotron.Cluster by deleting the external owner which owns all the resources associated
+		// with the k0smotron.Cluster.
+		if kmcScope.externalOwner != nil {
+			err := kmcScope.client.Delete(ctx, kmcScope.externalOwner)
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("error deleting root configmap: %v", err)
 			}
 		}
-		if controllerutil.ContainsFinalizer(kmc, clusterFinalizer) {
-			// Even if there is an error the finalizer must be removed for a complete removal of the
-			// cluster resource. In the worst case, the associated JointTokenRequest is not deleted.
-			defer func() {
-				controllerutil.RemoveFinalizer(kmc, clusterFinalizer)
-				if err := r.Update(ctx, kmc); err != nil {
-					logger.Error(err, "Error removing cluster finalizer")
-				}
-			}()
 
-			// Once the cluster enters Terminating state, we ensure that the resources dependent on it
-			// are also removed.
-			// Note: owner references cannot be used in this case because JoinTokenRequest can be in a
-			// different namespace.
-			jtrl := &km.JoinTokenRequestList{}
-			err := r.List(ctx, jtrl,
-				client.MatchingLabels{
-					clusterUIDLabel: string(kmc.GetUID()),
-				})
+		// Note: owner references cannot be used in this case because JoinTokenRequest can be in a
+		// different namespace so we need to list and delete them manually.
+		jtrl := &km.JoinTokenRequestList{}
+		err := r.List(ctx, jtrl,
+			client.MatchingLabels{
+				clusterUIDLabel: string(kmc.GetUID()),
+			})
+		if err != nil {
+			logger.Error(err, "Error retrieving JoinTokenRequests resources related to cluster")
+			return ctrl.Result{}, nil
+		}
+		for i := range jtrl.Items {
+			err := r.Delete(ctx, &jtrl.Items[i])
 			if err != nil {
-				logger.Error(err, "Error retrieving JoinTokenRequests resources related to cluster")
+				logger.Error(err, "Error removing JoinTokenRequests")
 				return ctrl.Result{}, nil
 			}
-			for i := range jtrl.Items {
-				err := r.Delete(ctx, &jtrl.Items[i])
-				if err != nil {
-					logger.Error(err, "Error removing JoinTokenRequests")
-					return ctrl.Result{}, nil
-				}
-			}
+		}
+
+		if updated := controllerutil.RemoveFinalizer(kmc, clusterFinalizer); updated {
+			logger.Info("Removed finalizer from k0smotron Cluster")
 		}
 
 		return ctrl.Result{}, nil
 	}
-
-	patchHelper, err = patch.NewHelper(kmc, r.Client)
-	if err != nil {
-		logger.Error(err, "Failed to configure the patch helper")
-		return ctrl.Result{Requeue: true}, nil
-	}
-
-	defer func() {
-		err = patchHelper.Patch(ctx, kmc)
-		if err != nil {
-			logger.Error(err, "Unable to update k0smotron Cluster")
-		}
-	}()
 
 	logger.Info("Reconciling services")
 	if err := kmcScope.reconcileServices(ctx, kmc); err != nil {
@@ -314,7 +304,13 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 func (scope *kmcScope) ensureCertificates(ctx context.Context, kmc *km.Cluster) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
-	err := certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc), *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")))
+
+	owner := *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster"))
+	if scope.externalOwner != nil {
+		owner = *kutil.GetExternalControllerRef(scope.externalOwner)
+	}
+
+	err := certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc), owner)
 	if err != nil {
 		return fmt.Errorf("error generating cluster certificates: %w", err)
 	}
@@ -328,7 +324,6 @@ func (r *ClusterReconciler) getKmcScope(ctx context.Context, kmc *km.Cluster) (*
 	// By default, the controlplane replicas run in the mothership cluster so we set the
 	// clients using the controller's clients.
 	kmcScope := &kmcScope{
-		inClusterHCP:        true,
 		client:              r.Client,
 		clienSet:            r.ClientSet,
 		restConfig:          r.RESTConfig,
@@ -336,74 +331,17 @@ func (r *ClusterReconciler) getKmcScope(ctx context.Context, kmc *km.Cluster) (*
 	}
 
 	if kmc.Spec.KubeconfigRef != nil {
-		kmcScope.inClusterHCP = false
 		var err error
 		kmcScope.client, kmcScope.clienSet, kmcScope.restConfig, err = kutil.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kmc.Spec.KubeconfigRef)
 		if err != nil {
 			logger.Error(err, "Error getting client from cluster kubeconfig reference")
 			return nil, err
 		}
+
 		kmcScope.secretCachingClient = kmcScope.client
 	}
 
 	return kmcScope, nil
-}
-
-// getDescendants returns the list of resources that are associated with the k0smotron.Cluster
-// and that must be deleted when the k0smotron.Cluster is deleted.
-func (scope *kmcScope) getDescendants(ctx context.Context, kmc *km.Cluster) []client.Object {
-	logger := log.FromContext(ctx)
-
-	descendants := make([]client.Object, 0)
-
-	lOpt := client.MatchingLabels(kutil.DefaultK0smotronClusterLabels(kmc))
-
-	cmList := &v1.ConfigMapList{}
-	err := scope.client.List(ctx, cmList, lOpt)
-	if err != nil {
-		logger.Error(err, "Error listing configmaps")
-	}
-	for _, cm := range cmList.Items {
-		descendants = append(descendants, &cm)
-	}
-
-	svcList := &v1.ServiceList{}
-	err = scope.client.List(ctx, svcList, lOpt)
-	if err != nil {
-		logger.Error(err, "Error listing services")
-	}
-	for _, svc := range svcList.Items {
-		descendants = append(descendants, &svc)
-	}
-
-	stsList := &apps.StatefulSetList{}
-	err = scope.client.List(ctx, stsList, lOpt)
-	if err != nil {
-		logger.Error(err, "Error listing statefulsets")
-	}
-	for _, sts := range stsList.Items {
-		descendants = append(descendants, &sts)
-	}
-
-	secretList := &v1.SecretList{}
-	err = scope.client.List(ctx, secretList, lOpt)
-	if err != nil {
-		logger.Error(err, "Error listing secrets")
-	}
-	for _, s := range secretList.Items {
-		descendants = append(descendants, &s)
-	}
-
-	cjList := &batchv1.CronJobList{}
-	err = scope.client.List(ctx, cjList, lOpt)
-	if err != nil {
-		logger.Error(err, "Error listing cronjobs")
-	}
-	for _, cj := range cjList.Items {
-		descendants = append(descendants, &cj)
-	}
-
-	return descendants
 }
 
 // SetupWithManager sets up the controller with the Manager.

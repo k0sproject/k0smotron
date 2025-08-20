@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util/secret"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -100,7 +99,7 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 		},
 	}
 
-	_ = ctrl.SetControllerReference(kmc, &svc, scope.client.Scheme())
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
 	return scope.client.Patch(ctx, &svc, client.Apply, patchOpts...)
 }
@@ -182,7 +181,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 		},
 	}
 
-	_ = ctrl.SetControllerReference(kmc, &cronJob, scope.client.Scheme())
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &cronJob, scope.client.Scheme(), scope.externalOwner)
 
 	return scope.client.Patch(ctx, &cronJob, client.Apply, patchOpts...)
 }
@@ -213,7 +212,7 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 
 	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas)
 
-	_ = ctrl.SetControllerReference(kmc, &statefulSet, scope.client.Scheme())
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
 	return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 }
