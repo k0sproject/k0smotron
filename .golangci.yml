@@ -6,11 +6,25 @@ run:
   tests: true
   allow-parallel-runners: true
 linters:
-  default: none 
+  default: none
   enable:
     - goheader
     - revive
   settings:
+    depguard:
+      rules:
+        main:
+          files:
+            - $all
+            - "!internal/controller/k0smotron.io/k0smotroncluster_kubeconfig.go"
+            - "!internal/controller/k0smotron.io/k0smotroncluster_kubeconfig_test.go"
+          deny:
+            - pkg: k8s.io/client-go/tools/clientcmd
+              desc: clientcmd is only allowed in specific files
+            - pkg: k8s.io/client-go/tools/clientcmd/api
+              desc: clientcmd is only allowed in specific files
+            - pkg: k8s.io/client-go/tools/clientcmd/api/latest
+              desc: clientcmd is only allowed in specific files
     revive:
       rules:
         # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
@@ -50,7 +64,7 @@ formatters:
     generated: strict
     paths:
       - zz_generated.*\.go$
-# Warn only about new issues, not existing ones. 
+# Warn only about new issues, not existing ones.
 # TODO: Remove this filter at some point and ensure all old issues are fixed.
 issues:
   new-from-merge-base: HEAD~
