@@ -28,7 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -136,7 +135,7 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 	logger.Info("Reconciling services")
 	svc := generateService(kmc)
 
-	_ = ctrl.SetControllerReference(kmc, &svc, scope.client.Scheme())
+	_ = util.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
 	if err := scope.client.Patch(ctx, &svc, client.Apply, patchOpts...); err != nil {
 		return err
