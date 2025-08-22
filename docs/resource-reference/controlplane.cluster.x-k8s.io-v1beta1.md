@@ -655,8 +655,7 @@ For example, if the object reference is to a container within a pod, this would 
 "spec.containers{name}" (where "name" refers to the name of the container that triggered
 the event) or if no container name is specified "spec.containers[2]" (container with
 index 2 in this pod). This syntax is chosen only to have some well-defined way of
-referencing a part of an object.
-TODO: this design is not final and this field is subject to change in the future.<br/>
+referencing a part of an object.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -724,7 +723,7 @@ More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-
         <td><b>annotations</b></td>
         <td>map[string]string</td>
         <td>
-          Annotations is an unstructured key value map stored with a resource that may be
+          annotations is an unstructured key value map stored with a resource that may be
 set by external tools to store and retrieve arbitrary metadata. They are not
 queryable and should be preserved when modifying objects.
 More info: http://kubernetes.io/docs/user-guide/annotations<br/>
@@ -895,14 +894,14 @@ the API field changed is acceptable.<br/>
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          status of the condition, one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          Type of condition in CamelCase or in foo.example.com/CamelCase.
+          type of condition in CamelCase or in foo.example.com/CamelCase.
 Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
 can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
         </td>
@@ -921,14 +920,14 @@ This field may be empty.<br/>
         <td>
           The reason for the condition's last transition in CamelCase.
 The specific API may choose whether or not this field is considered a guaranteed API.
-This field may not be empty.<br/>
+This field may be empty.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>severity</b></td>
         <td>string</td>
         <td>
-          Severity provides an explicit classification of Reason code, so the users or machines can immediately
+          severity provides an explicit classification of Reason code, so the users or machines can immediately
 understand the current situation and act accordingly.
 The Severity field MUST be set only when Status=False.<br/>
         </td>
@@ -1684,7 +1683,7 @@ More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-
         <td><b>annotations</b></td>
         <td>map[string]string</td>
         <td>
-          Annotations is an unstructured key value map stored with a resource that may be
+          annotations is an unstructured key value map stored with a resource that may be
 set by external tools to store and retrieve arbitrary metadata. They are not
 queryable and should be preserved when modifying objects.
 More info: http://kubernetes.io/docs/user-guide/annotations<br/>
@@ -2162,10 +2161,8 @@ Resources defines the compute resource requirements for the etcd container.
           Claims lists the names of resources, defined in spec.resourceClaims,
 that are used by this container.
 
-
 This is an alpha field and requires enabling the
 DynamicResourceAllocation feature gate.
-
 
 This field is immutable. It can only be set for containers.<br/>
         </td>
@@ -2217,6 +2214,15 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -2365,7 +2371,6 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -2376,16 +2381,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.<br/>
@@ -2448,10 +2450,27 @@ More info: https://examples.k8s.io/volumes/glusterfs/README.md<br/>
 machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindeximage">image</a></b></td>
+        <td>object</td>
+        <td>
+          image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2582,8 +2601,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2654,6 +2672,8 @@ azureDisk represents an Azure Data Disk mount on the host and bind mount to the 
           fsType is Filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+          <br/>
+            <i>Default</i>: ext4<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2669,6 +2689,8 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         <td>
           readOnly Defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2810,9 +2832,7 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -2902,9 +2922,7 @@ to OpenStack.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -2965,9 +2983,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -3126,9 +3142,7 @@ secret object contains more than one secret, all secret references are passed.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -3364,7 +3378,6 @@ ephemeral represents a volume that is handled by a cluster storage driver.
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -3375,16 +3388,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.
@@ -3410,7 +3420,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -3420,10 +3429,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.<br/>
         </td>
@@ -3445,7 +3452,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -3455,10 +3461,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.
 
@@ -3605,7 +3609,7 @@ If the resource referred to by volumeAttributesClass does not exist, this Persis
 set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
 exists.
 More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
-(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3954,8 +3958,7 @@ fc represents a Fibre Channel resource that is attached to a kubelet's host mach
         <td>
           fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
-Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4085,9 +4088,7 @@ scripts.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -4164,8 +4165,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
           fsType is filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4297,9 +4297,6 @@ machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.
 
 <table>
     <thead>
@@ -4326,6 +4323,62 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
           type for HostPath Volume
 Defaults to ""
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].image
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex)</sup></sup>
+
+
+
+image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pullPolicy</b></td>
+        <td>string</td>
+        <td>
+          Policy for pulling OCI objects. Possible values are:
+Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reference</b></td>
+        <td>string</td>
+        <td>
+          Required: Image or artifact reference to be used.
+Behaves in the same way as pod.spec.containers[*].image.
+Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+More info: https://kubernetes.io/docs/concepts/containers/images
+This field is optional to allow higher level config management to default or override
+container images in workload controllers like Deployments and StatefulSets.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -4395,8 +4448,7 @@ is other than default (typically TCP ports 860 and 3260).<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4414,6 +4466,8 @@ If initiatorName is specified with iscsiInterface simultaneously, new iSCSI inte
         <td>
           iscsiInterface is the interface Name that uses an iSCSI transport.
 Defaults to 'default' (tcp).<br/>
+          <br/>
+            <i>Default</i>: default<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4467,9 +4521,7 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -4676,7 +4728,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex">sources</a></b></td>
         <td>[]object</td>
         <td>
-          sources is the list of volume projections<br/>
+          sources is the list of volume projections. Each entry in this list
+handles one source.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -4688,7 +4741,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Projection that may be projected along with other supported volume types
+Projection that may be projected along with other supported volume types.
+Exactly one of these fields must be set.
 
 <table>
     <thead>
@@ -4706,13 +4760,10 @@ Projection that may be projected along with other supported volume types
           ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -4761,13 +4812,10 @@ may change the order over time.<br/>
 ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -4955,9 +5003,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -5220,9 +5266,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -5449,8 +5493,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5460,6 +5503,8 @@ TODO: how do we prevent errors in the filesystem from compromising the machine<b
           keyring is the path to key ring for RBDUser.
 Default is /etc/ceph/keyring.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: /etc/ceph/keyring<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5469,6 +5514,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           pool is the rados pool name.
 Default is rbd.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5497,6 +5544,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           user is the rados user name.
 Default is admin.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: admin<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5530,9 +5579,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -5587,6 +5634,8 @@ sensitive information. If this is not provided, Login operation will fail.<br/>
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs".
 Default is "xfs".<br/>
+          <br/>
+            <i>Default</i>: xfs<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5617,6 +5666,8 @@ the ReadOnly setting in VolumeMounts.<br/>
         <td>
           storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
 Default is ThinProvisioned.<br/>
+          <br/>
+            <i>Default</i>: ThinProvisioned<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5663,9 +5714,7 @@ sensitive information. If this is not provided, Login operation will fail.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -5879,9 +5928,7 @@ credentials.  If not specified, default values will be attempted.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -6084,7 +6131,6 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -6095,16 +6141,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.<br/>
@@ -6167,10 +6210,27 @@ More info: https://examples.k8s.io/volumes/glusterfs/README.md<br/>
 machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindeximage">image</a></b></td>
+        <td>object</td>
+        <td>
+          image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6308,8 +6368,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6380,6 +6439,8 @@ azureDisk represents an Azure Data Disk mount on the host and bind mount to the 
           fsType is Filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+          <br/>
+            <i>Default</i>: ext4<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6395,6 +6456,8 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         <td>
           readOnly Defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6536,9 +6599,7 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -6628,9 +6689,7 @@ to OpenStack.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -6691,9 +6750,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -6852,9 +6909,7 @@ secret object contains more than one secret, all secret references are passed.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -7090,7 +7145,6 @@ ephemeral represents a volume that is handled by a cluster storage driver.
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -7101,16 +7155,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.
@@ -7136,7 +7187,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -7146,10 +7196,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.<br/>
         </td>
@@ -7171,7 +7219,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -7181,10 +7228,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.
 
@@ -7331,7 +7376,7 @@ If the resource referred to by volumeAttributesClass does not exist, this Persis
 set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
 exists.
 More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
-(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7680,8 +7725,7 @@ fc represents a Fibre Channel resource that is attached to a kubelet's host mach
         <td>
           fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
-Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7811,9 +7855,7 @@ scripts.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -7890,8 +7932,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
           fsType is filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8023,9 +8064,6 @@ machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.
 
 <table>
     <thead>
@@ -8052,6 +8090,62 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
           type for HostPath Volume
 Defaults to ""
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].image
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex)</sup></sup>
+
+
+
+image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pullPolicy</b></td>
+        <td>string</td>
+        <td>
+          Policy for pulling OCI objects. Possible values are:
+Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reference</b></td>
+        <td>string</td>
+        <td>
+          Required: Image or artifact reference to be used.
+Behaves in the same way as pod.spec.containers[*].image.
+Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+More info: https://kubernetes.io/docs/concepts/containers/images
+This field is optional to allow higher level config management to default or override
+container images in workload controllers like Deployments and StatefulSets.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8121,8 +8215,7 @@ is other than default (typically TCP ports 860 and 3260).<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8140,6 +8233,8 @@ If initiatorName is specified with iscsiInterface simultaneously, new iSCSI inte
         <td>
           iscsiInterface is the interface Name that uses an iSCSI transport.
 Defaults to 'default' (tcp).<br/>
+          <br/>
+            <i>Default</i>: default<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8193,9 +8288,7 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -8402,7 +8495,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindex">sources</a></b></td>
         <td>[]object</td>
         <td>
-          sources is the list of volume projections<br/>
+          sources is the list of volume projections. Each entry in this list
+handles one source.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8414,7 +8508,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Projection that may be projected along with other supported volume types
+Projection that may be projected along with other supported volume types.
+Exactly one of these fields must be set.
 
 <table>
     <thead>
@@ -8432,13 +8527,10 @@ Projection that may be projected along with other supported volume types
           ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -8487,13 +8579,10 @@ may change the order over time.<br/>
 ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -8681,9 +8770,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -8946,9 +9033,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -9175,8 +9260,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9186,6 +9270,8 @@ TODO: how do we prevent errors in the filesystem from compromising the machine<b
           keyring is the path to key ring for RBDUser.
 Default is /etc/ceph/keyring.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: /etc/ceph/keyring<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9195,6 +9281,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           pool is the rados pool name.
 Default is rbd.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9223,6 +9311,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           user is the rados user name.
 Default is admin.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: admin<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9256,9 +9346,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -9313,6 +9401,8 @@ sensitive information. If this is not provided, Login operation will fail.<br/>
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs".
 Default is "xfs".<br/>
+          <br/>
+            <i>Default</i>: xfs<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9343,6 +9433,8 @@ the ReadOnly setting in VolumeMounts.<br/>
         <td>
           storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
 Default is ThinProvisioned.<br/>
+          <br/>
+            <i>Default</i>: ThinProvisioned<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9389,9 +9481,7 @@ sensitive information. If this is not provided, Login operation will fail.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -9605,9 +9695,7 @@ credentials.  If not specified, default values will be attempted.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -9950,7 +10038,7 @@ If the resource referred to by volumeAttributesClass does not exist, this Persis
 set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
 exists.
 More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
-(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10258,7 +10346,6 @@ Key names follow standard Kubernetes label syntax. Valid values are either:
 Apart from above values - keys that are unprefixed or have kubernetes.io prefix are considered
 reserved and hence may not be used.
 
-
 ClaimResourceStatus can be in any of following states:
 	- ControllerResizeInProgress:
 		State set when resize controller starts resizing the volume in control-plane.
@@ -10280,12 +10367,10 @@ For example: if expanding a PVC for more capacity - this field can be one of the
      - pvc.status.allocatedResourceStatus['storage'] = "NodeResizeFailed"
 When this field is not set, it means that no resize operation is in progress for the given PVC.
 
-
 A controller that receives PVC update with previously unknown resourceName or ClaimResourceStatus
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
 resources associated with PVC.
-
 
 This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
         </td>
@@ -10302,7 +10387,6 @@ Key names follow standard Kubernetes label syntax. Valid values are either:
 Apart from above values - keys that are unprefixed or have kubernetes.io prefix are considered
 reserved and hence may not be used.
 
-
 Capacity reported here may be larger than the actual capacity when a volume expansion operation
 is requested.
 For storage quota, the larger value from allocatedResources and PVC.spec.resources is used.
@@ -10311,12 +10395,10 @@ If a volume expansion capacity request is lowered, allocatedResources is only
 lowered if there are no expansion operations in progress and if the actual volume capacity
 is equal or lower than the requested capacity.
 
-
 A controller that receives PVC update with previously unknown resourceName
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
 resources associated with PVC.
-
 
 This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
         </td>
@@ -10342,7 +10424,7 @@ resized then the Condition will be set to 'Resizing'.<br/>
         <td>
           currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
 When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim
-This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+This is a beta field and requires enabling VolumeAttributesClass feature (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10351,7 +10433,7 @@ This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
         <td>
           ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
 When this is unset, there is no ModifyVolume operation being attempted.
-This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+This is a beta field and requires enabling VolumeAttributesClass feature (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10392,7 +10474,15 @@ PersistentVolumeClaimCondition contains details about state of pvc
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          PersistentVolumeClaimConditionType is a valid value of PersistentVolumeClaimCondition.Type<br/>
+          PersistentVolumeClaimConditionType defines the condition of PV claim.
+Valid values are:
+  - "Resizing", "FileSystemResizePending"
+
+If RecoverVolumeExpansionFailure feature gate is enabled, then following additional values can be expected:
+  - "ControllerResizeError", "NodeResizeError"
+
+If VolumeAttributesClass feature gate is enabled, then following additional values can be expected:
+  - "ModifyVolumeError", "ModifyingVolume"<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -10440,7 +10530,7 @@ persistent volume is being resized.<br/>
 
 ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
 When this is unset, there is no ModifyVolume operation being attempted.
-This is an alpha field and requires enabling VolumeAttributesClass feature.
+This is a beta field and requires enabling VolumeAttributesClass feature (off by default).
 
 <table>
     <thead>
@@ -10501,10 +10591,8 @@ Resources describes the compute resource requirements for the control plane pods
           Claims lists the names of resources, defined in spec.resourceClaims,
 that are used by this container.
 
-
 This is an alpha field and requires enabling the
 DynamicResourceAllocation feature gate.
-
 
 This field is immutable. It can only be set for containers.<br/>
         </td>
@@ -10556,6 +10644,15 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -10734,7 +10831,6 @@ MatchLabelKeys cannot be set when LabelSelector isn't set.
 Keys that don't exist in the incoming pod labels will
 be ignored. A null or empty list means only match against labelSelector.
 
-
 This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).<br/>
         </td>
         <td>false</td>
@@ -10752,7 +10848,6 @@ scheduler won't schedule more than maxSkew Pods to those domains.
 If value is nil, the constraint behaves as if MinDomains is equal to 1.
 Valid values are integers greater than 0.
 When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
-
 
 For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
 labelSelector spread as 2/2/2:
@@ -10775,7 +10870,6 @@ when calculating pod topology spread skew. Options are:
 - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
 - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
 
-
 If this value is nil, the behavior is equivalent to the Honor policy.
 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.<br/>
         </td>
@@ -10789,7 +10883,6 @@ pod topology spread skew. Options are:
 - Honor: nodes without taints, along with tainted nodes for which the incoming pod
 has a toleration, are included.
 - Ignore: node taints are ignored. All nodes are included.
-
 
 If this value is nil, the behavior is equivalent to the Ignore policy.
 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.<br/>
@@ -11027,14 +11120,14 @@ the API field changed is acceptable.<br/>
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          status of the condition, one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          Type of condition in CamelCase or in foo.example.com/CamelCase.
+          type of condition in CamelCase or in foo.example.com/CamelCase.
 Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
 can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
         </td>
@@ -11053,14 +11146,14 @@ This field may be empty.<br/>
         <td>
           The reason for the condition's last transition in CamelCase.
 The specific API may choose whether or not this field is considered a guaranteed API.
-This field may not be empty.<br/>
+This field may be empty.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>severity</b></td>
         <td>string</td>
         <td>
-          Severity provides an explicit classification of Reason code, so the users or machines can immediately
+          severity provides an explicit classification of Reason code, so the users or machines can immediately
 understand the current situation and act accordingly.
 The Severity field MUST be set only when Status=False.<br/>
         </td>
@@ -11661,10 +11754,8 @@ Resources defines the compute resource requirements for the etcd container.
           Claims lists the names of resources, defined in spec.resourceClaims,
 that are used by this container.
 
-
 This is an alpha field and requires enabling the
 DynamicResourceAllocation feature gate.
-
 
 This field is immutable. It can only be set for containers.<br/>
         </td>
@@ -11716,6 +11807,15 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -11864,7 +11964,6 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -11875,16 +11974,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.<br/>
@@ -11947,10 +12043,27 @@ More info: https://examples.k8s.io/volumes/glusterfs/README.md<br/>
 machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindeximage">image</a></b></td>
+        <td>object</td>
+        <td>
+          image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12081,8 +12194,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12153,6 +12265,8 @@ azureDisk represents an Azure Data Disk mount on the host and bind mount to the 
           fsType is Filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+          <br/>
+            <i>Default</i>: ext4<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12168,6 +12282,8 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         <td>
           readOnly Defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12309,9 +12425,7 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -12401,9 +12515,7 @@ to OpenStack.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -12464,9 +12576,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -12625,9 +12735,7 @@ secret object contains more than one secret, all secret references are passed.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -12863,7 +12971,6 @@ ephemeral represents a volume that is handled by a cluster storage driver.
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -12874,16 +12981,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.
@@ -12909,7 +13013,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -12919,10 +13022,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.<br/>
         </td>
@@ -12944,7 +13045,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -12954,10 +13054,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.
 
@@ -13104,7 +13202,7 @@ If the resource referred to by volumeAttributesClass does not exist, this Persis
 set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
 exists.
 More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
-(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13453,8 +13551,7 @@ fc represents a Fibre Channel resource that is attached to a kubelet's host mach
         <td>
           fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
-Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13584,9 +13681,7 @@ scripts.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -13663,8 +13758,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
           fsType is filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13796,9 +13890,6 @@ machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.
 
 <table>
     <thead>
@@ -13825,6 +13916,62 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
           type for HostPath Volume
 Defaults to ""
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].image
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex)</sup></sup>
+
+
+
+image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pullPolicy</b></td>
+        <td>string</td>
+        <td>
+          Policy for pulling OCI objects. Possible values are:
+Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reference</b></td>
+        <td>string</td>
+        <td>
+          Required: Image or artifact reference to be used.
+Behaves in the same way as pod.spec.containers[*].image.
+Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+More info: https://kubernetes.io/docs/concepts/containers/images
+This field is optional to allow higher level config management to default or override
+container images in workload controllers like Deployments and StatefulSets.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13894,8 +14041,7 @@ is other than default (typically TCP ports 860 and 3260).<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13913,6 +14059,8 @@ If initiatorName is specified with iscsiInterface simultaneously, new iSCSI inte
         <td>
           iscsiInterface is the interface Name that uses an iSCSI transport.
 Defaults to 'default' (tcp).<br/>
+          <br/>
+            <i>Default</i>: default<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13966,9 +14114,7 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -14175,7 +14321,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexprojectedsourcesindex">sources</a></b></td>
         <td>[]object</td>
         <td>
-          sources is the list of volume projections<br/>
+          sources is the list of volume projections. Each entry in this list
+handles one source.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -14187,7 +14334,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Projection that may be projected along with other supported volume types
+Projection that may be projected along with other supported volume types.
+Exactly one of these fields must be set.
 
 <table>
     <thead>
@@ -14205,13 +14353,10 @@ Projection that may be projected along with other supported volume types
           ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -14260,13 +14405,10 @@ may change the order over time.<br/>
 ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -14454,9 +14596,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -14719,9 +14859,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -14948,8 +15086,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -14959,6 +15096,8 @@ TODO: how do we prevent errors in the filesystem from compromising the machine<b
           keyring is the path to key ring for RBDUser.
 Default is /etc/ceph/keyring.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: /etc/ceph/keyring<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -14968,6 +15107,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           pool is the rados pool name.
 Default is rbd.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -14996,6 +15137,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           user is the rados user name.
 Default is admin.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: admin<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -15029,9 +15172,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -15086,6 +15227,8 @@ sensitive information. If this is not provided, Login operation will fail.<br/>
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs".
 Default is "xfs".<br/>
+          <br/>
+            <i>Default</i>: xfs<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15116,6 +15259,8 @@ the ReadOnly setting in VolumeMounts.<br/>
         <td>
           storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
 Default is ThinProvisioned.<br/>
+          <br/>
+            <i>Default</i>: ThinProvisioned<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15162,9 +15307,7 @@ sensitive information. If this is not provided, Login operation will fail.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -15378,9 +15521,7 @@ credentials.  If not specified, default values will be attempted.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -15583,7 +15724,6 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -15594,16 +15734,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.<br/>
@@ -15666,10 +15803,27 @@ More info: https://examples.k8s.io/volumes/glusterfs/README.md<br/>
 machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindeximage">image</a></b></td>
+        <td>object</td>
+        <td>
+          image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15807,8 +15961,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15879,6 +16032,8 @@ azureDisk represents an Azure Data Disk mount on the host and bind mount to the 
           fsType is Filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+          <br/>
+            <i>Default</i>: ext4<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15894,6 +16049,8 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         <td>
           readOnly Defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -16035,9 +16192,7 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -16127,9 +16282,7 @@ to OpenStack.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -16190,9 +16343,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -16351,9 +16502,7 @@ secret object contains more than one secret, all secret references are passed.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -16589,7 +16738,6 @@ ephemeral represents a volume that is handled by a cluster storage driver.
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -16600,16 +16748,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.
@@ -16635,7 +16780,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -16645,10 +16789,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.<br/>
         </td>
@@ -16670,7 +16812,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -16680,10 +16821,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.
 
@@ -16830,7 +16969,7 @@ If the resource referred to by volumeAttributesClass does not exist, this Persis
 set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
 exists.
 More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
-(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17179,8 +17318,7 @@ fc represents a Fibre Channel resource that is attached to a kubelet's host mach
         <td>
           fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
-Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17310,9 +17448,7 @@ scripts.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -17389,8 +17525,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
           fsType is filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17522,9 +17657,6 @@ machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.
 
 <table>
     <thead>
@@ -17551,6 +17683,62 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
           type for HostPath Volume
 Defaults to ""
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].image
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecmountsindex)</sup></sup>
+
+
+
+image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pullPolicy</b></td>
+        <td>string</td>
+        <td>
+          Policy for pulling OCI objects. Possible values are:
+Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reference</b></td>
+        <td>string</td>
+        <td>
+          Required: Image or artifact reference to be used.
+Behaves in the same way as pod.spec.containers[*].image.
+Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+More info: https://kubernetes.io/docs/concepts/containers/images
+This field is optional to allow higher level config management to default or override
+container images in workload controllers like Deployments and StatefulSets.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17620,8 +17808,7 @@ is other than default (typically TCP ports 860 and 3260).<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17639,6 +17826,8 @@ If initiatorName is specified with iscsiInterface simultaneously, new iSCSI inte
         <td>
           iscsiInterface is the interface Name that uses an iSCSI transport.
 Defaults to 'default' (tcp).<br/>
+          <br/>
+            <i>Default</i>: default<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17692,9 +17881,7 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -17901,7 +18088,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexprojectedsourcesindex">sources</a></b></td>
         <td>[]object</td>
         <td>
-          sources is the list of volume projections<br/>
+          sources is the list of volume projections. Each entry in this list
+handles one source.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17913,7 +18101,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Projection that may be projected along with other supported volume types
+Projection that may be projected along with other supported volume types.
+Exactly one of these fields must be set.
 
 <table>
     <thead>
@@ -17931,13 +18120,10 @@ Projection that may be projected along with other supported volume types
           ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -17986,13 +18172,10 @@ may change the order over time.<br/>
 ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -18180,9 +18363,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18445,9 +18626,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18674,8 +18853,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18685,6 +18863,8 @@ TODO: how do we prevent errors in the filesystem from compromising the machine<b
           keyring is the path to key ring for RBDUser.
 Default is /etc/ceph/keyring.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: /etc/ceph/keyring<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18694,6 +18874,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           pool is the rados pool name.
 Default is rbd.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18722,6 +18904,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           user is the rados user name.
 Default is admin.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: admin<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18755,9 +18939,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18812,6 +18994,8 @@ sensitive information. If this is not provided, Login operation will fail.<br/>
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs".
 Default is "xfs".<br/>
+          <br/>
+            <i>Default</i>: xfs<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18842,6 +19026,8 @@ the ReadOnly setting in VolumeMounts.<br/>
         <td>
           storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
 Default is ThinProvisioned.<br/>
+          <br/>
+            <i>Default</i>: ThinProvisioned<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18888,9 +19074,7 @@ sensitive information. If this is not provided, Login operation will fail.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -19104,9 +19288,7 @@ credentials.  If not specified, default values will be attempted.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -19449,7 +19631,7 @@ If the resource referred to by volumeAttributesClass does not exist, this Persis
 set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
 exists.
 More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
-(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19757,7 +19939,6 @@ Key names follow standard Kubernetes label syntax. Valid values are either:
 Apart from above values - keys that are unprefixed or have kubernetes.io prefix are considered
 reserved and hence may not be used.
 
-
 ClaimResourceStatus can be in any of following states:
 	- ControllerResizeInProgress:
 		State set when resize controller starts resizing the volume in control-plane.
@@ -19779,12 +19960,10 @@ For example: if expanding a PVC for more capacity - this field can be one of the
      - pvc.status.allocatedResourceStatus['storage'] = "NodeResizeFailed"
 When this field is not set, it means that no resize operation is in progress for the given PVC.
 
-
 A controller that receives PVC update with previously unknown resourceName or ClaimResourceStatus
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
 resources associated with PVC.
-
 
 This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
         </td>
@@ -19801,7 +19980,6 @@ Key names follow standard Kubernetes label syntax. Valid values are either:
 Apart from above values - keys that are unprefixed or have kubernetes.io prefix are considered
 reserved and hence may not be used.
 
-
 Capacity reported here may be larger than the actual capacity when a volume expansion operation
 is requested.
 For storage quota, the larger value from allocatedResources and PVC.spec.resources is used.
@@ -19810,12 +19988,10 @@ If a volume expansion capacity request is lowered, allocatedResources is only
 lowered if there are no expansion operations in progress and if the actual volume capacity
 is equal or lower than the requested capacity.
 
-
 A controller that receives PVC update with previously unknown resourceName
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
 resources associated with PVC.
-
 
 This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
         </td>
@@ -19841,7 +20017,7 @@ resized then the Condition will be set to 'Resizing'.<br/>
         <td>
           currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
 When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim
-This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+This is a beta field and requires enabling VolumeAttributesClass feature (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19850,7 +20026,7 @@ This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
         <td>
           ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
 When this is unset, there is no ModifyVolume operation being attempted.
-This is an alpha field and requires enabling VolumeAttributesClass feature.<br/>
+This is a beta field and requires enabling VolumeAttributesClass feature (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19891,7 +20067,15 @@ PersistentVolumeClaimCondition contains details about state of pvc
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          PersistentVolumeClaimConditionType is a valid value of PersistentVolumeClaimCondition.Type<br/>
+          PersistentVolumeClaimConditionType defines the condition of PV claim.
+Valid values are:
+  - "Resizing", "FileSystemResizePending"
+
+If RecoverVolumeExpansionFailure feature gate is enabled, then following additional values can be expected:
+  - "ControllerResizeError", "NodeResizeError"
+
+If VolumeAttributesClass feature gate is enabled, then following additional values can be expected:
+  - "ModifyVolumeError", "ModifyingVolume"<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -19939,7 +20123,7 @@ persistent volume is being resized.<br/>
 
 ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
 When this is unset, there is no ModifyVolume operation being attempted.
-This is an alpha field and requires enabling VolumeAttributesClass feature.
+This is a beta field and requires enabling VolumeAttributesClass feature (off by default).
 
 <table>
     <thead>
@@ -20000,10 +20184,8 @@ Resources describes the compute resource requirements for the control plane pods
           Claims lists the names of resources, defined in spec.resourceClaims,
 that are used by this container.
 
-
 This is an alpha field and requires enabling the
 DynamicResourceAllocation feature gate.
-
 
 This field is immutable. It can only be set for containers.<br/>
         </td>
@@ -20055,6 +20237,15 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -20233,7 +20424,6 @@ MatchLabelKeys cannot be set when LabelSelector isn't set.
 Keys that don't exist in the incoming pod labels will
 be ignored. A null or empty list means only match against labelSelector.
 
-
 This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).<br/>
         </td>
         <td>false</td>
@@ -20251,7 +20441,6 @@ scheduler won't schedule more than maxSkew Pods to those domains.
 If value is nil, the constraint behaves as if MinDomains is equal to 1.
 Valid values are integers greater than 0.
 When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
-
 
 For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
 labelSelector spread as 2/2/2:
@@ -20274,7 +20463,6 @@ when calculating pod topology spread skew. Options are:
 - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
 - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
 
-
 If this value is nil, the behavior is equivalent to the Honor policy.
 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.<br/>
         </td>
@@ -20288,7 +20476,6 @@ pod topology spread skew. Options are:
 - Honor: nodes without taints, along with tainted nodes for which the incoming pod
 has a toleration, are included.
 - Ignore: node taints are ignored. All nodes are included.
-
 
 If this value is nil, the behavior is equivalent to the Ignore policy.
 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.<br/>

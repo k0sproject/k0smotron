@@ -575,14 +575,14 @@ the API field changed is acceptable.<br/>
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          status of the condition, one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          Type of condition in CamelCase or in foo.example.com/CamelCase.
+          type of condition in CamelCase or in foo.example.com/CamelCase.
 Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
 can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
         </td>
@@ -601,14 +601,14 @@ This field may be empty.<br/>
         <td>
           The reason for the condition's last transition in CamelCase.
 The specific API may choose whether or not this field is considered a guaranteed API.
-This field may not be empty.<br/>
+This field may be empty.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>severity</b></td>
         <td>string</td>
         <td>
-          Severity provides an explicit classification of Reason code, so the users or machines can immediately
+          severity provides an explicit classification of Reason code, so the users or machines can immediately
 understand the current situation and act accordingly.
 The Severity field MUST be set only when Status=False.<br/>
         </td>
@@ -1131,14 +1131,14 @@ the API field changed is acceptable.<br/>
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          status of the condition, one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          Type of condition in CamelCase or in foo.example.com/CamelCase.
+          type of condition in CamelCase or in foo.example.com/CamelCase.
 Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
 can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
         </td>
@@ -1157,14 +1157,14 @@ This field may be empty.<br/>
         <td>
           The reason for the condition's last transition in CamelCase.
 The specific API may choose whether or not this field is considered a guaranteed API.
-This field may not be empty.<br/>
+This field may be empty.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>severity</b></td>
         <td>string</td>
         <td>
-          Severity provides an explicit classification of Reason code, so the users or machines can immediately
+          severity provides an explicit classification of Reason code, so the users or machines can immediately
 understand the current situation and act accordingly.
 The Severity field MUST be set only when Status=False.<br/>
         </td>

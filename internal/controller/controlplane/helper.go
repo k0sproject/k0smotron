@@ -144,7 +144,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 func (c *K0sController) getInfraMachines(ctx context.Context, machines collections.Machines) (map[string]*unstructured.Unstructured, error) {
 	result := map[string]*unstructured.Unstructured{}
 	for _, m := range machines {
-		infraMachine, err := external.Get(ctx, c.Client, &m.Spec.InfrastructureRef, m.Namespace)
+		infraMachine, err := external.Get(ctx, c.Client, &m.Spec.InfrastructureRef)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				continue
