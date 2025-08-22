@@ -57,7 +57,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 	}
 
 	// retrieve machines marked as unheathy by MHC controller
-	unhealthyMachines := machines.Filter(collections.HasUnhealthyCondition)
+	unhealthyMachines := machines.Filter(collections.IsUnhealthyAndOwnerRemediated)
 
 	// no unhealthy machines to remediate. Reconciliation can move on to the next stage.
 	if len(unhealthyMachines) == 0 {

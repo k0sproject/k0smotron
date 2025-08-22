@@ -394,7 +394,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	log.Log.Info("Got current cluster version", "version", currentVersion)
 
 	machineNamesToDelete := make(map[string]bool)
-	desiredMachineNamesSlice := []string{}
+	desiredMachines := make(collections.Machines, len(allMachines))
 
 	var clusterIsUpdating bool
 	var infraMachineMissing bool
@@ -402,7 +402,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		if m.Spec.Version == nil || (!versionMatches(m, kcp.Spec.Version)) {
 			clusterIsUpdating = true
 			if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
-				desiredMachineNamesSlice = append(desiredMachineNamesSlice, m.Name)
+				desiredMachines.Insert(m)
 			} else {
 				machineNamesToDelete[m.Name] = true
 			}
@@ -412,20 +412,16 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			}
 			machineNamesToDelete[m.Name] = true
 		} else {
-			desiredMachineNamesSlice = append(desiredMachineNamesSlice, m.Name)
+			desiredMachines.Insert(m)
 		}
-	}
-	desiredMachineNames := make(map[string]bool)
-	for i := range desiredMachineNamesSlice {
-		desiredMachineNames[desiredMachineNamesSlice[i]] = true
 	}
 
 	// if it is necessary to reduce the number of replicas even counting the replicas to be eliminated
 	// because they are outdated, we choose the oldest among the valid ones.
-	if activeMachines.Len() > int(kcp.Spec.Replicas)+len(machineNamesToDelete) && len(desiredMachineNamesSlice) > 0 {
-		machineNamesToDelete[desiredMachineNamesSlice[0]] = true
+	if activeMachines.Len() > int(kcp.Spec.Replicas)+len(machineNamesToDelete) && len(desiredMachines) > 0 {
+		machineNamesToDelete[desiredMachines.Oldest().Name] = true
 	}
-	log.Log.Info("Collected machines", "count", activeMachines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachineNames)
+	log.Log.Info("Collected machines", "count", activeMachines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachines.Names())
 
 	go func() {
 		err = c.deleteOldControlNodes(ctx, cluster)
@@ -458,7 +454,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
-	if infraMachineMissing || (len(machineNamesToDelete)+len(desiredMachineNames) > int(kcp.Spec.Replicas)) {
+	if infraMachineMissing || (len(machineNamesToDelete)+len(desiredMachines) > int(kcp.Spec.Replicas)) {
 		m := activeMachines.Newest().Name
 		err := c.checkMachineIsReady(ctx, m, cluster)
 		if err != nil {
@@ -486,7 +482,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		logger.Info("Deleted machine", "machine", machineToDelete.Name)
 	}
 
-	if len(desiredMachineNames) < int(kcp.Spec.Replicas) {
+	if len(desiredMachines) < int(kcp.Spec.Replicas) {
 
 		name := names.SimpleNameGenerator.GenerateName(fmt.Sprintf("%s-", kcp.Name))
 		log.Log.Info("desire machine", "name", name)
@@ -520,13 +516,13 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			Namespace:  kcp.Namespace,
 		}
 
-		selectedFailureDomain := failuredomains.PickFewest(ctx, cluster.Status.FailureDomains.FilterControlPlane(), activeMachines)
+		selectedFailureDomain := failuredomains.PickFewest(ctx, cluster.Status.FailureDomains.FilterControlPlane(), activeMachines, deletedMachines)
 		machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
 		if err != nil {
 			return fmt.Errorf("error creating machine: %w", err)
 		}
 		activeMachines[machine.Name] = machine
-		desiredMachineNames[machine.Name] = true
+		desiredMachines.Insert(machine)
 
 		err = c.createBootstrapConfig(ctx, name, cluster, kcp, activeMachines[name], cluster.Name)
 		if err != nil {
@@ -534,7 +530,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
-	if len(desiredMachineNames) < int(kcp.Spec.Replicas) {
+	if len(desiredMachines) < int(kcp.Spec.Replicas) {
 		return ErrNewMachinesNotReady
 	}
 
