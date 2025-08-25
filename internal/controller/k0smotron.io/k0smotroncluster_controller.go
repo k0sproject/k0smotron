@@ -218,6 +218,11 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	if err := kmcScope.reconcileIngress(ctx, kmc); err != nil {
+		kmc.Status.ReconciliationStatus = "Failed reconciling ingress"
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	}
+
 	if err := kmcScope.reconcileK0sConfig(ctx, kmc, r.Client); err != nil {
 		kmc.Status.ReconciliationStatus = "Failed reconciling configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err

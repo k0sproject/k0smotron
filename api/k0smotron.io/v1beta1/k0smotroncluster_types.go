@@ -57,6 +57,9 @@ type ClusterSpec struct {
 	// Will be detected automatically for service type LoadBalancer.
 	//+kubebuilder:validation:Optional
 	ExternalAddress string `json:"externalAddress,omitempty"`
+	// Ingress defines the ingress configuration.
+	//+kubebuilder:validation:Optional
+	Ingress IngressSpec `json:"ingress,omitempty"`
 	// Service defines the service configuration.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default={"type":"ClusterIP","apiPort":30443,"konnectivityPort":30132}
@@ -113,6 +116,24 @@ type ClusterSpec struct {
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+type IngressSpec struct {
+	// IngressPort defines the port used by the ingress controller
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=443
+	IngressPort int32 `json:"ingressPort,omitempty"`
+	//+kubebuilder:validation:Optional
+	APIHost string `json:"apiHost,omitempty"`
+	//+kubebuilder:validation:Optional
+	KonnectivityHost string `json:"konnectivityHost,omitempty"`
+	// ClassName defines the ingress class name to be used by the ingress controller.
+	//+kubebuilder:validation:Optional
+	ClassName string `json:"className,omitempty"`
+	// Annotations defines extra annotations to be added to the ingress controller service.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default={haproxy.org/ssl-passthrough: "true"}
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type Mount struct {
@@ -414,6 +435,10 @@ func (kmc *Cluster) GetNodePortServiceName() string {
 }
 
 func (kmc *Cluster) GetVolumeName() string {
+	return kmc.getObjectName("kmc-%s")
+}
+
+func (kmc *Cluster) GetIngressName() string {
 	return kmc.getObjectName("kmc-%s")
 }
 
