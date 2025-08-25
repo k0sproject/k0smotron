@@ -110,6 +110,18 @@ type K0sWorkerConfigSpec struct {
 	// SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.
 	// +kubebuilder:validation:Optional
 	SecretMetadata *SecretMetadata `json:"secretMetadata,omitempty"`
+
+	Ingress IngressSpec `json:"ingress,omitempty"`
+}
+
+// IngressSpec defines the ingress configuration for accessing the Kubernetes API and konnectivity server via host names.
+type IngressSpec struct {
+	APIHost string `json:"apiHost,omitempty"`
+	// APIPort is the port to access the Kubernetes API server via ingress. if not specified, defaults to 443.
+	APIPort          int    `json:"apiPort,omitempty"`
+	KonnectivityHost string `json:"konnectivityHost,omitempty"`
+	// KonnectivityPort is the port to access the konnectivity server via ingress. if not specified, defaults to APIPort, which defaults to 443.
+	KonnectivityPort int `json:"konnectivityPort,omitempty"`
 }
 
 // SecretMetadata defines metadata to be propagated to the bootstrap Secret

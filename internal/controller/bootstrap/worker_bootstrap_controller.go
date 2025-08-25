@@ -17,10 +17,12 @@ limitations under the License.
 package bootstrap
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
+	"text/template"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -242,6 +244,12 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	}
 	files = append(files, resolvedFiles...)
 
+	resolveCertsForIngress, err := r.resolveFilesForIngress(ctx, scope)
+	if err != nil {
+		return nil, err
+	}
+	files = append(files, resolveCertsForIngress...)
+
 	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
 	installCmd := createInstallCmd(scope)
 
@@ -250,8 +258,10 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 		`(command -v service > /dev/null 2>&1 && service k0sworker start) || ` + // SysV
 		`(echo "Not a supported init system"; false)`
 
+	ingressCommands := createIngressCommands(scope)
 	commands := scope.Config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
+	commands = append(commands, ingressCommands...)
 	commands = append(commands, installCmd, startCmd)
 	commands = append(commands, scope.Config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
@@ -323,6 +333,148 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		return "", fmt.Errorf("failed to create join token: %w", err)
 	}
 	return joinToken, nil
+}
+
+func createIngressCommands(scope *Scope) []string {
+	if scope.Config.Spec.Ingress.APIHost == "" {
+		return []string{}
+	}
+
+	return []string{
+		"mkdir -p /etc/haproxy/certs",
+		"cat /etc/haproxy/certs/server.crt /etc/haproxy/certs/server.key > /etc/haproxy/certs/server.pem",
+		"chmod 600 /etc/haproxy/certs/server.pem",
+	}
+}
+
+func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) ([]cloudinit.File, error) {
+	if scope.Config.Spec.Ingress.APIHost == "" {
+		return []cloudinit.File{}, nil
+	}
+	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv1.File{
+		{
+			File: cloudinit.File{
+				Path: "/etc/haproxy/certs/client.crt",
+			},
+			ContentFrom: &bootstrapv1.ContentSource{
+				SecretRef: &bootstrapv1.ContentSourceRef{
+					Name: secret.Name(scope.Cluster.Name, secret.FrontProxyCA),
+					Key:  "tls.crt",
+				},
+			},
+		},
+		{
+			File: cloudinit.File{
+				//Path: "/etc/kubernetes/manifests/kube-apiserver.yaml",
+				Path: "/etc/haproxy/certs/client.crt.key",
+			},
+			ContentFrom: &bootstrapv1.ContentSource{
+				SecretRef: &bootstrapv1.ContentSourceRef{
+					Name: secret.Name(scope.Cluster.Name, secret.FrontProxyCA),
+					Key:  "tls.key",
+				},
+			},
+		},
+		{
+			File: cloudinit.File{
+				Path: "/etc/haproxy/certs/server.crt",
+			},
+			ContentFrom: &bootstrapv1.ContentSource{
+				SecretRef: &bootstrapv1.ContentSourceRef{
+					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
+					Key:  "tls.crt",
+				},
+			},
+		},
+		{
+			File: cloudinit.File{
+				Path: "/etc/haproxy/certs/server.key",
+			},
+			ContentFrom: &bootstrapv1.ContentSource{
+				SecretRef: &bootstrapv1.ContentSourceRef{
+					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
+					Key:  "tls.key",
+				},
+			},
+		},
+	})
+
+	resolvedFiles = append(resolvedFiles, cloudinit.File{
+		Path:    "/etc/haproxy/haproxy.cfg",
+		Content: generateHAProxyConfig(scope),
+	})
+	resolvedFiles = append(resolvedFiles, cloudinit.File{
+		Path:    "/etc/kubernetes/manifests/haproxy.yaml",
+		Content: generateHAProxyYAML(scope),
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve files for ingress integration: %w", err)
+	}
+
+	return resolvedFiles, nil
+}
+
+func generateHAProxyConfig(scope *Scope) string {
+	if scope.Config.Spec.Ingress.APIPort == 0 {
+		scope.Config.Spec.Ingress.APIPort = 443
+	}
+	if scope.Config.Spec.Ingress.KonnectivityPort == 0 {
+		scope.Config.Spec.Ingress.KonnectivityPort = scope.Config.Spec.Ingress.APIPort
+	}
+
+	cfgTmpl := template.Must(template.New("haproxy.cfg").Parse(`frontend kubeapi_front
+    bind [::]:7443 v4v6 ssl crt /etc/haproxy/certs/server.pem
+    mode tcp
+    default_backend kubeapi_back
+
+frontend konnectivity_front
+    bind :::7132 ssl crt /etc/haproxy/certs/server.pem
+    mode tcp
+    default_backend konnectivity_back
+
+backend kubeapi_back
+    mode tcp
+    server kube_api {{.APIHost}}:{{ .APIPort }} ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str({{.APIHost}})
+
+backend konnectivity_back
+    mode tcp
+    server konnectivity {{.KonnectivityHost}}:{{.KonnectivityPort}} ssl verify none sni str({{.KonnectivityHost}})`))
+
+	var b bytes.Buffer
+	_ = cfgTmpl.Execute(&b, scope.Config.Spec.Ingress)
+	return b.String()
+}
+
+func generateHAProxyYAML(_ *Scope) string {
+	return `---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: haproxy
+  namespace: default
+  labels:
+    app: k0smotron-ingress-haproxy
+spec:
+  hostNetwork: true
+  containers:
+    - name: haproxy
+      image: haproxy:2.8
+      args:
+        - -f
+        - /etc/haproxy/haproxy.cfg
+      ports:
+        - containerPort: 7443
+          name: https
+      volumeMounts:
+        - name: haproxy-config
+          mountPath: /etc/haproxy/
+          readOnly: true
+  volumes:
+    - name: haproxy-config
+      hostPath:
+        path: /etc/haproxy/
+        type: DirectoryOrCreate`
 }
 
 // createBootstrapSecret creates a bootstrap secret for the worker node
@@ -416,6 +568,11 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 func createInstallCmd(scope *Scope) string {
 	installCmd := []string{
 		"k0s install worker --token-file /etc/k0s.token",
+	}
+	if scope.Config.Spec.Ingress.APIHost != "" {
+		installCmd = []string{
+			`k0s install worker --token-file /etc/k0s.token --kubelet-extra-args="--pod-manifest-path=/etc/kubernetes/manifests"`,
+		}
 	}
 	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
 	return strings.Join(installCmd, " ")

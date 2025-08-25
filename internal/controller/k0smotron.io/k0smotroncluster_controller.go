@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"time"
 
 	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
@@ -99,6 +100,7 @@ type kmcScope struct {
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=create;update;patch;delete
 // +kubebuilder:rbac:groups=storage.k8s.io,resources=storageclasses,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -218,6 +220,11 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	if err := kmcScope.reconcileIngress(ctx, kmc); err != nil {
+		kmc.Status.ReconciliationStatus = "Failed reconciling ingress"
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	}
+
 	if err := kmcScope.reconcileK0sConfig(ctx, kmc, r.Client); err != nil {
 		kmc.Status.ReconciliationStatus = "Failed reconciling configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
@@ -256,6 +263,16 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				Type: string(secret.EtcdCA),
 				Name: secret.Name(kmc.Name, secret.EtcdCA),
 			},
+		}
+		if kmc.Spec.Ingress != nil {
+			kmc.Spec.CertificateRefs = append(kmc.Spec.CertificateRefs, km.CertificateRef{
+				Type: "apiserver-kubelet-client",
+				Name: secret.Name(kmc.Name, "apiserver-kubelet-client"),
+			})
+			kmc.Spec.CertificateRefs = append(kmc.Spec.CertificateRefs, km.CertificateRef{
+				Type: "server",
+				Name: secret.Name(kmc.Name, "server"),
+			})
 		}
 	}
 	if kmc.Spec.KineDataSourceURL == "" {
@@ -314,6 +331,21 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 func (scope *kmcScope) ensureCertificates(ctx context.Context, kmc *km.Cluster) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
+	if kmc.Spec.Ingress != nil {
+		ingressCert := secret.Certificates{
+			&secret.Certificate{
+				Purpose:  "server",
+				CertFile: path.Join(secret.DefaultCertificatesDir, "ca.crt"),
+				KeyFile:  path.Join(secret.DefaultCertificatesDir, "ca.key"),
+			},
+			&secret.Certificate{
+				Purpose:  "apiserver-kubelet-client",
+				CertFile: path.Join(secret.DefaultCertificatesDir, "ca.crt"),
+				KeyFile:  path.Join(secret.DefaultCertificatesDir, "ca.key"),
+			},
+		}
+		certificates = append(certificates, ingressCert...)
+	}
 	err := certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc), *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")))
 	if err != nil {
 		return fmt.Errorf("error generating cluster certificates: %w", err)

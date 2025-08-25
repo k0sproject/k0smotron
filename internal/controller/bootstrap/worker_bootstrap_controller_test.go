@@ -777,3 +777,36 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 	}
 	return cluster, kcp, genericMachineTemplate
 }
+
+func TestBootstrapWorkerController_generateHAProxyConfig(t *testing.T) {
+	scope := &Scope{
+		Config: &bootstrapv1.K0sWorkerConfig{
+			Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Ingress: bootstrapv1.IngressSpec{
+					APIHost:          "api.test.local",
+					KonnectivityHost: "konnectivity.test.local",
+				},
+			},
+		},
+	}
+
+	require.Equal(t, expectedHAProxyConfig, generateHAProxyConfig(scope))
+}
+
+const expectedHAProxyConfig = `frontend kubeapi_front
+    bind [::]:7443 v4v6 ssl crt /etc/haproxy/certs/server.pem
+    mode tcp
+    default_backend kubeapi_back
+
+frontend konnectivity_front
+    bind :::7132 ssl crt /etc/haproxy/certs/server.pem
+    mode tcp
+    default_backend konnectivity_back
+
+backend kubeapi_back
+    mode tcp
+    server kube_api api.test.local:443 ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str(api.test.local)
+
+backend konnectivity_back
+    mode tcp
+    server konnectivity konnectivity.test.local:443 ssl verify none sni str(konnectivity.test.local)`

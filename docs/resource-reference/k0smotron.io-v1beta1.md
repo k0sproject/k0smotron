@@ -132,6 +132,13 @@ will pick it automatically. Must not include the image tag.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#clusterspecingress">ingress</a></b></td>
+        <td>object</td>
+        <td>
+          Ingress defines the ingress configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>k0sConfig</b></td>
         <td>object</td>
         <td>
@@ -529,6 +536,66 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.ingress
+<sup><sup>[↩ Parent](#clusterspec)</sup></sup>
+
+
+
+Ingress defines the ingress configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations defines extra annotations to be added to the ingress controller service.<br/>
+          <br/>
+            <i>Default</i>: map[haproxy.org/ssl-passthrough:true]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>apiHost</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>className</b></td>
+        <td>string</td>
+        <td>
+          ClassName defines the ingress class name to be used by the ingress controller.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>ingressPort</b></td>
+        <td>integer</td>
+        <td>
+          IngressPort defines the port used by the ingress controller<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 443<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>konnectivityHost</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
