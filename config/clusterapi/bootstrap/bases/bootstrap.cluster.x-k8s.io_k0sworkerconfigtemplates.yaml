@@ -163,26 +163,6 @@ spec:
                               type: string
                           type: object
                         type: array
-                      ingress:
-                        description: IngressSpec defines the ingress configuration
-                          for accessing the Kubernetes API and konnectivity server
-                          via host names.
-                        properties:
-                          apiHost:
-                            type: string
-                          apiPort:
-                            description: APIPort is the port to access the Kubernetes
-                              API server via ingress. if not specified, defaults to
-                              443.
-                            type: integer
-                          konnectivityHost:
-                            type: string
-                          konnectivityPort:
-                            description: KonnectivityPort is the port to access the
-                              konnectivity server via ingress. if not specified, defaults
-                              to APIPort, which defaults to 443.
-                            type: integer
-                        type: object
                       postStartCommands:
                         description: PostStartCommands specifies commands to be run
                           after starting k0s worker.

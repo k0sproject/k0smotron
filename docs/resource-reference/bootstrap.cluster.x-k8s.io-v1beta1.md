@@ -720,13 +720,6 @@ If specified the version field is ignored and what ever version is downloaded fr
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0sworkerconfigspecingress">ingress</a></b></td>
-        <td>object</td>
-        <td>
-          IngressSpec defines the ingress configuration for accessing the Kubernetes API and konnectivity server via host names.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
@@ -1028,54 +1021,6 @@ SecretRef is a reference to a secret that contains the content.
           Name is the name of the source<br/>
         </td>
         <td>true</td>
-      </tr></tbody>
-</table>
-
-
-### K0sWorkerConfig.spec.ingress
-<sup><sup>[↩ Parent](#k0sworkerconfigspec)</sup></sup>
-
-
-
-IngressSpec defines the ingress configuration for accessing the Kubernetes API and konnectivity server via host names.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>apiHost</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>apiPort</b></td>
-        <td>integer</td>
-        <td>
-          APIPort is the port to access the Kubernetes API server via ingress. if not specified, defaults to 443.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>konnectivityHost</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>konnectivityPort</b></td>
-        <td>integer</td>
-        <td>
-          KonnectivityPort is the port to access the konnectivity server via ingress. if not specified, defaults to APIPort, which defaults to 443.<br/>
-        </td>
-        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -1440,13 +1385,6 @@ If specified the version field is ignored and what ever version is downloaded fr
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecingress">ingress</a></b></td>
-        <td>object</td>
-        <td>
-          IngressSpec defines the ingress configuration for accessing the Kubernetes API and konnectivity server via host names.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
@@ -1748,54 +1686,6 @@ SecretRef is a reference to a secret that contains the content.
           Name is the name of the source<br/>
         </td>
         <td>true</td>
-      </tr></tbody>
-</table>
-
-
-### K0sWorkerConfigTemplate.spec.template.spec.ingress
-<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespec)</sup></sup>
-
-
-
-IngressSpec defines the ingress configuration for accessing the Kubernetes API and konnectivity server via host names.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>apiHost</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>apiPort</b></td>
-        <td>integer</td>
-        <td>
-          APIPort is the port to access the Kubernetes API server via ingress. if not specified, defaults to 443.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>konnectivityHost</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>konnectivityPort</b></td>
-        <td>integer</td>
-        <td>
-          KonnectivityPort is the port to access the konnectivity server via ingress. if not specified, defaults to APIPort, which defaults to 443.<br/>
-        </td>
-        <td>false</td>
       </tr></tbody>
 </table>
 

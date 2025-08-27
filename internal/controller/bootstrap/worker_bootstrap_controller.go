@@ -48,6 +48,7 @@ import (
 	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
@@ -73,6 +74,7 @@ type Scope struct {
 	Config              *bootstrapv1.K0sWorkerConfig
 	ConfigOwner         *bsutil.ConfigOwner
 	Cluster             *clusterv1.Cluster
+	ingressSpec         *km.IngressSpec
 	client              client.Client
 	secretCachingClient client.Client
 }
@@ -244,11 +246,13 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	}
 	files = append(files, resolvedFiles...)
 
-	resolveCertsForIngress, err := r.resolveFilesForIngress(ctx, scope)
-	if err != nil {
-		return nil, err
+	if scope.ingressSpec != nil {
+		resolveCertsForIngress, err := r.resolveFilesForIngress(ctx, scope)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, resolveCertsForIngress...)
 	}
-	files = append(files, resolveCertsForIngress...)
 
 	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
 	installCmd := createInstallCmd(scope)
@@ -336,7 +340,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 }
 
 func createIngressCommands(scope *Scope) []string {
-	if scope.Config.Spec.Ingress.APIHost == "" {
+	if scope.ingressSpec == nil {
 		return []string{}
 	}
 
@@ -348,9 +352,6 @@ func createIngressCommands(scope *Scope) []string {
 }
 
 func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) ([]cloudinit.File, error) {
-	if scope.Config.Spec.Ingress.APIHost == "" {
-		return []cloudinit.File{}, nil
-	}
 	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv1.File{
 		{
 			File: cloudinit.File{
@@ -358,19 +359,18 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
 				SecretRef: &bootstrapv1.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, secret.FrontProxyCA),
+					Name: secret.Name(scope.Cluster.Name, "apiserver-kubelet-client"),
 					Key:  "tls.crt",
 				},
 			},
 		},
 		{
 			File: cloudinit.File{
-				//Path: "/etc/kubernetes/manifests/kube-apiserver.yaml",
 				Path: "/etc/haproxy/certs/client.crt.key",
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
 				SecretRef: &bootstrapv1.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, secret.FrontProxyCA),
+					Name: secret.Name(scope.Cluster.Name, "apiserver-kubelet-client"),
 					Key:  "tls.key",
 				},
 			},
@@ -381,7 +381,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
 				SecretRef: &bootstrapv1.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
+					Name: secret.Name(scope.Cluster.Name, "server"),
 					Key:  "tls.crt",
 				},
 			},
@@ -392,7 +392,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
 				SecretRef: &bootstrapv1.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
+					Name: secret.Name(scope.Cluster.Name, "server"),
 					Key:  "tls.key",
 				},
 			},
@@ -405,7 +405,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 	})
 	resolvedFiles = append(resolvedFiles, cloudinit.File{
 		Path:    "/etc/kubernetes/manifests/haproxy.yaml",
-		Content: generateHAProxyYAML(scope),
+		Content: generateHAProxyYAML(),
 	})
 
 	if err != nil {
@@ -416,11 +416,8 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 }
 
 func generateHAProxyConfig(scope *Scope) string {
-	if scope.Config.Spec.Ingress.APIPort == 0 {
-		scope.Config.Spec.Ingress.APIPort = 443
-	}
-	if scope.Config.Spec.Ingress.KonnectivityPort == 0 {
-		scope.Config.Spec.Ingress.KonnectivityPort = scope.Config.Spec.Ingress.APIPort
+	if scope.ingressSpec.IngressPort == 0 {
+		scope.ingressSpec.IngressPort = 443
 	}
 
 	cfgTmpl := template.Must(template.New("haproxy.cfg").Parse(`frontend kubeapi_front
@@ -435,18 +432,18 @@ frontend konnectivity_front
 
 backend kubeapi_back
     mode tcp
-    server kube_api {{.APIHost}}:{{ .APIPort }} ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str({{.APIHost}})
+    server kube_api {{.APIHost}}:{{ .IngressPort }} ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str({{.APIHost}})
 
 backend konnectivity_back
     mode tcp
-    server konnectivity {{.KonnectivityHost}}:{{.KonnectivityPort}} ssl verify none sni str({{.KonnectivityHost}})`))
+    server konnectivity {{.KonnectivityHost}}:{{.IngressPort}} ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str({{.KonnectivityHost}})`))
 
 	var b bytes.Buffer
-	_ = cfgTmpl.Execute(&b, scope.Config.Spec.Ingress)
+	_ = cfgTmpl.Execute(&b, scope.ingressSpec)
 	return b.String()
 }
 
-func generateHAProxyYAML(_ *Scope) string {
+func generateHAProxyYAML() string {
 	return `---
 apiVersion: v1
 kind: Pod
@@ -551,6 +548,8 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 			return err
 		}
 
+		scope.ingressSpec = kcp.Spec.Ingress
+
 		if kcp.Spec.KubeconfigRef != nil {
 			var err error
 			scope.client, _, _, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kcp.Spec.KubeconfigRef)
@@ -569,7 +568,7 @@ func createInstallCmd(scope *Scope) string {
 	installCmd := []string{
 		"k0s install worker --token-file /etc/k0s.token",
 	}
-	if scope.Config.Spec.Ingress.APIHost != "" {
+	if scope.ingressSpec != nil {
 		installCmd = []string{
 			`k0s install worker --token-file /etc/k0s.token --kubelet-extra-args="--pod-manifest-path=/etc/kubernetes/manifests"`,
 		}

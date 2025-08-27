@@ -18,6 +18,7 @@ package bootstrap
 
 import (
 	"fmt"
+	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"testing"
 	"time"
 
@@ -780,13 +781,9 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 
 func TestBootstrapWorkerController_generateHAProxyConfig(t *testing.T) {
 	scope := &Scope{
-		Config: &bootstrapv1.K0sWorkerConfig{
-			Spec: bootstrapv1.K0sWorkerConfigSpec{
-				Ingress: bootstrapv1.IngressSpec{
-					APIHost:          "api.test.local",
-					KonnectivityHost: "konnectivity.test.local",
-				},
-			},
+		ingressSpec: &kmapi.IngressSpec{
+			APIHost:          "api.test.local",
+			KonnectivityHost: "konnectivity.test.local",
 		},
 	}
 
@@ -809,4 +806,4 @@ backend kubeapi_back
 
 backend konnectivity_back
     mode tcp
-    server konnectivity konnectivity.test.local:443 ssl verify none sni str(konnectivity.test.local)`
+    server konnectivity konnectivity.test.local:443 ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str(konnectivity.test.local)`

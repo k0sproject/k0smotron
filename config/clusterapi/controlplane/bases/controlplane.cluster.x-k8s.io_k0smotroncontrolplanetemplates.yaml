@@ -78,6 +78,8 @@ spec:
                               - apiserver-etcd-client
                               - etcd-peer
                               - etcd-server
+                              - apiserver-kubelet-client
+                              - server
                               type: string
                           required:
                           - type
