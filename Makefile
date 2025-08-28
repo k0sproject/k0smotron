@@ -66,23 +66,27 @@ help: ## Display this help.
 .PHONY: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-k0smotron
 manifests-bootstrap: $(CONTROLLER_GEN) ## Generate CRDs for bootstrap.cluster.x-k8s.io
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./api/bootstrap/..." \
+	  paths="./..." \
 	  output:crd:artifacts:config=config/crd/bases/bootstrap
+	find ./config/crd/bases/bootstrap -type f ! -name "bootstrap*" ! -name "kustomization.yaml" -print0 | xargs -0 rm
 
 manifests-controlplane: $(CONTROLLER_GEN) ## Generate CRDs for controlplane.cluster.x-k8s.io
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./api/controlplane/..." \
+	  paths="./..." \
 	  output:crd:artifacts:config=config/crd/bases/controlplane
+	find ./config/crd/bases/controlplane -type f ! -name "controlplane*" ! -name "kustomization.yaml" -print0 | xargs -0 rm
 
 manifests-infrastructure: $(CONTROLLER_GEN) ## Generate CRDs for infrastructure.cluster.x-k8s.io
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./api/infrastructure/..." \
+	  paths="./..." \
 	  output:crd:artifacts:config=config/crd/bases/infrastructure
+	find ./config/crd/bases/infrastructure -type f ! -name "infrastructure*" ! -name "kustomization.yaml" -print0 | xargs -0 rm
 
 manifests-k0smotron: $(CONTROLLER_GEN) ## Generate CRDs for k0smotron.io
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./api/k0smotron.io/..." \
+	  paths="./..." \
 	  output:crd:artifacts:config=config/crd/bases/k0smotron.io
+	find ./config/crd/bases/k0smotron.io -type f ! -name "k0smotron.io*" ! -name "kustomization.yaml" -print0 | xargs -0 rm
 
 .PHONY: manifests
 manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-k0smotron ## Generate all CRD YAMLs per group
