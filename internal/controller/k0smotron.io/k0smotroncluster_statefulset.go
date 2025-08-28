@@ -314,12 +314,14 @@ data:
 		InitialDelaySeconds: 60,
 		PeriodSeconds:       10,
 		FailureThreshold:    15,
+		TimeoutSeconds:      5,
 		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
 	}
 	statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
 		InitialDelaySeconds: 90,
 		FailureThreshold:    10,
 		PeriodSeconds:       10,
+		TimeoutSeconds:      5,
 		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
 	}
 
