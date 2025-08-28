@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cloudinit
+package provisioner
 
 import (
 	"testing"
@@ -23,7 +23,7 @@ import (
 )
 
 func TestCloudInit(t *testing.T) {
-	c := &CloudInit{
+	c := &InputProvisionData{
 		Files: []File{
 			{
 				Path:        "/etc/hosts",
@@ -31,12 +31,14 @@ func TestCloudInit(t *testing.T) {
 				Permissions: "0644",
 			},
 		},
-		RunCmds: []string{
+		Commands: []string{
 			"echo 'hello world'",
 		},
 	}
 
-	b, err := c.AsBytes()
+	p := &CloudInitProvisioner{}
+
+	b, err := p.ToProvisionData(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +56,7 @@ runcmd:
 }
 
 func TestCustomCloudInit(t *testing.T) {
-	c := &CloudInit{
+	c := &InputProvisionData{
 		Files: []File{
 			{
 				Path:        "/etc/hosts",
@@ -62,15 +64,17 @@ func TestCustomCloudInit(t *testing.T) {
 				Permissions: "0644",
 			},
 		},
-		RunCmds: []string{
+		Commands: []string{
 			"echo 'hello world'",
 		},
-		CustomCloudInit: `runcmd:
+		CustomUserData: `runcmd:
   - echo 'custom cloud init'
 `,
 	}
 
-	b, err := c.AsBytes()
+	p := &CloudInitProvisioner{}
+
+	b, err := p.ToProvisionData(c)
 	if err != nil {
 		t.Fatal(err)
 	}

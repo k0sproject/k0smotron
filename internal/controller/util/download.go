@@ -18,13 +18,15 @@ package util
 
 import (
 	"fmt"
+	"strings"
 )
 
 // DownloadCommands constructs the download commands for a given URL and version.
-func DownloadCommands(preInstalledK0s bool, url string, version string) []string {
+func DownloadCommands(preInstalledK0s bool, url string, version string, k0sBinPath string) []string {
 	if preInstalledK0s {
 		return nil
 	}
+
 	if url != "" {
 		return []string{
 			fmt.Sprintf("curl -sSfL --retry 5 %s -o /usr/local/bin/k0s", url),
@@ -32,14 +34,21 @@ func DownloadCommands(preInstalledK0s bool, url string, version string) []string
 		}
 	}
 
+	var scriptVars []string
+
 	if version != "" {
-		return []string{
-			fmt.Sprintf("curl -sSfL --retry 5 https://get.k0s.sh | K0S_VERSION=%s sh", version),
-		}
+		scriptVars = append(scriptVars, fmt.Sprintf("K0S_VERSION=%s", version))
+	}
+	if k0sBinPath != "" {
+		scriptVars = append(scriptVars, fmt.Sprintf("K0S_INSTALL_PATH=%s", k0sBinPath))
 	}
 
-	// Default to k0s get script to download the latest version
-	return []string{
-		"curl -sSfL --retry 5 https://get.k0s.sh | sh",
+	cmd := "curl -sSfL --retry 5 https://get.k0s.sh"
+	if len(scriptVars) > 0 {
+		cmd = fmt.Sprintf("%s | %s sh", cmd, strings.Join(scriptVars, " "))
+	} else {
+		cmd = fmt.Sprintf("%s | sh", cmd)
 	}
+
+	return []string{cmd}
 }

@@ -1,0 +1,158 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 192.168.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+        - 10.128.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane
+    name: ${CLUSTER_NAME}-aws-test
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-aws-test-mt
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      ignition:
+        storageType: ClusterObjectStore
+        version: "3.4"
+      ami:
+        id: ami-00d12617b68dbc62f # Flatcar Container Linux stable 3975.2.1 (HVM) in eu-west-1
+      instanceType: ${AWS_INSTANCE_TYPE}
+      publicIP: true
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+      uncompressedUserData: false
+      sshKeyName: ${SSH_KEY_NAME}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-aws-test
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 3
+  version: v1.30.2+k0s.0
+  updateStrategy: Recreate
+  k0sConfigSpec:
+    # Flatcar, as inmutable OS, needs k0s in /opt/bin. It cannot write k0s binary in the default /usr/local/bin.
+    k0sInstallDir: /opt/bin 
+    ignition:
+      variant: flatcar
+      version: 1.1.0
+      additionalConfig: |
+        variant: flatcar
+        version: 1.1.0
+        passwd:
+          users:
+            - name: core
+              ssh_authorized_keys:
+                - ssh-rsa ${SSH_PUBLIC_KEY}
+    args:
+      - --enable-worker
+      - --debug
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+        telemetry:
+          enabled: false
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: AWSMachineTemplate
+      name: ${CLUSTER_NAME}-aws-test-mt
+      namespace: ${NAMESPACE}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  # Ignition bootstrap data needs to be stored in an S3 bucket so that nodes can
+  # read them at boot time. Store Ignition bootstrap data in the following bucket.
+  s3Bucket:
+    controlPlaneIAMInstanceProfile: control-plane.cluster-api-provider-aws.sigs.k8s.io
+    # For simplicity and following AWS documentation: by default clusterawsadm creates IAM roles 
+    # to only allow interacting with buckets with cluster-api-provider-aws- prefix to reduce the 
+    # permissions of CAPA controller, so all bucket names should use this prefix.
+    name: cluster-api-provider-aws-ignition-test
+    nodesIAMInstanceProfiles:
+    - nodes.cluster-api-provider-aws.sigs.k8s.io
+  region: ${AWS_REGION:-eu-west-1}
+  sshKeyName: ${SSH_KEY_NAME}
+  controlPlaneLoadBalancer:
+    healthCheckProtocol: TCP
+  network:
+    additionalControlPlaneIngressRules:
+      - description: "k0s controller join API"
+        protocol: tcp
+        fromPort: 9443
+        toPort: 9443
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-aws-test-md
+  namespace: ${NAMESPACE}
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: 1
+  template:
+    spec:
+      clusterName: ${CLUSTER_NAME}
+      bootstrap:
+        configRef: # This triggers our controller to create cloud-init secret
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: K0sWorkerConfigTemplate
+          name: ${CLUSTER_NAME}-machine-config
+          namespace: ${NAMESPACE}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        name: ${CLUSTER_NAME}-aws-test-mt
+        namespace: ${NAMESPACE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-machine-config
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      version: v1.30.2+k0s.0
+      # Flatcar, as inmutable OS, needs k0s in /opt/bin. It cannot write k0s binary in the default /usr/local/bin.
+      k0sInstallDir: /opt/bin 
+      ignition:
+        variant: flatcar
+        version: 1.1.0
+        additionalConfig: |
+          variant: flatcar
+          version: 1.1.0
+          passwd:
+            users:
+              - name: core
+                ssh_authorized_keys:
+                  - ssh-rsa ${SSH_PUBLIC_KEY}

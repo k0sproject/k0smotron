@@ -29,7 +29,7 @@ import (
 
 	"github.com/go-logr/logr"
 	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	rig "github.com/k0sproject/rig/v2"
 	rigssh "github.com/k0sproject/rig/v2/protocol/ssh"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -38,11 +38,10 @@ import (
 var regex = regexp.MustCompile(`--kubelet-root-dir[ =](/[/a-zA-Z0-9_-]+)+`)
 
 type SSHProvisioner struct {
-	bootstrapData []byte
-	cloudInit     *cloudinit.CloudInit
-	machine       *api.RemoteMachine
-	sshKey        []byte
-	log           logr.Logger
+	cloudInit *provisioner.InputProvisionData
+	machine   *api.RemoteMachine
+	sshKey    []byte
+	log       logr.Logger
 }
 
 const stopCommandTemplate = `(command -v systemctl > /dev/null 2>&1 && systemctl stop %s) || ` + // systemd
@@ -94,10 +93,10 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	if p.machine.Spec.CommandsAsScript {
 		// Write the bootstrap script
 		installScriptPath := filepath.Join(p.machine.Spec.WorkingDir, "k0s_install.sh")
-		bootstrapFile := cloudinit.File{
+		bootstrapFile := provisioner.File{
 			Path:        installScriptPath,
 			Permissions: "0700",
-			Content:     "#!/bin/sh\nset -e\n\n" + strings.Join(p.cloudInit.RunCmds, "\n") + "\n",
+			Content:     "#!/bin/sh\nset -e\n\n" + strings.Join(p.cloudInit.Commands, "\n") + "\n",
 		}
 		p.cloudInit.Files = append(p.cloudInit.Files, bootstrapFile)
 	}
@@ -120,7 +119,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		log.Info("executed command", "command", installScriptPath, "output", output)
 	} else {
 		// Run commands
-		for _, cmd := range p.cloudInit.RunCmds {
+		for _, cmd := range p.cloudInit.Commands {
 			output, err := rigClient.ExecOutput(cmd)
 			if err != nil {
 				p.log.Error(err, "failed to run command", "output", output)
@@ -200,7 +199,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 	}
 
 	var kubeletRootDir string
-	for _, cmd := range p.cloudInit.RunCmds {
+	for _, cmd := range p.cloudInit.Commands {
 		if strings.Contains(cmd, "--kubelet-root-dir") {
 			finds := regex.FindStringSubmatch(cmd)
 			if len(finds) > 1 {
@@ -226,7 +225,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 	return nil
 }
 
-func (p *SSHProvisioner) uploadFile(client *rig.Client, file cloudinit.File) error {
+func (p *SSHProvisioner) uploadFile(client *rig.Client, file provisioner.File) error {
 	fsys := client.FS()
 	// Ensure base dir exists for target
 	dir := filepath.Dir(file.Path)

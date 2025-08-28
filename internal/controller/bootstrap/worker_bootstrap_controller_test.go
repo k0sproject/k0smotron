@@ -199,13 +199,14 @@ func Test_createBootstrapSecret(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			secret := createBootstrapSecret(tt.scope, tt.bootstrapData)
+			secret := createBootstrapSecret(tt.scope, tt.bootstrapData, "cloud-config")
 
 			// Check basic properties
 			require.Equal(t, tt.scope.Config.Name, secret.Name)
 			require.Equal(t, tt.scope.Config.Namespace, secret.Namespace)
 			require.Equal(t, clusterv1.ClusterSecretType, secret.Type)
 			require.Equal(t, tt.bootstrapData, secret.Data["value"])
+			require.Equal(t, "cloud-config", string(secret.Data["format"]))
 
 			// Check labels
 			require.Equal(t, tt.expectedLabels, secret.Labels)

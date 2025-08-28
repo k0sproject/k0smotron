@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	"github.com/k0sproject/k0smotron/internal/util"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -71,7 +71,7 @@ func TestResolveFiles(t *testing.T) {
 			},
 		},
 	}
-	expectedOutput := []cloudinit.File{
+	expectedOutput := []provisioner.File{
 		{
 			Content: secretContent,
 		},
