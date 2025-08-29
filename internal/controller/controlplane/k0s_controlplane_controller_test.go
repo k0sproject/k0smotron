@@ -1545,7 +1545,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	require.True(t, strings.HasPrefix(machine.Name, kcp.Name))
 	require.Equal(t, "v1.30.0+k0s.0", *machine.Spec.Version)
 	// Newly cloned infra objects should have the infraref annotation.
-	infraObj, err := external.Get(ctx, r.Client, &machine.Spec.InfrastructureRef, machine.Spec.InfrastructureRef.Namespace)
+	infraObj, err := external.Get(ctx, r.Client, &machine.Spec.InfrastructureRef)
 	require.NoError(t, err)
 	require.Equal(t, gmt.GetName(), infraObj.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation])
 	require.Equal(t, gmt.GroupVersionKind().GroupKind().String(), infraObj.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation])
