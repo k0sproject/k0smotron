@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/logr"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
 
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -19,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
 var patchOpts []client.PatchOption = []client.PatchOption{
@@ -31,7 +31,7 @@ type JobProvisioner struct {
 	clientSet *kubernetes.Clientset
 
 	bootstrapData []byte
-	cloudInit     *cloudinit.CloudInit
+	cloudInit     *provisioner.InputProvisionData
 	machine       *v1beta1.Machine
 	remoteMachine *infrastructure.RemoteMachine
 	provisionJob  *infrastructure.ProvisionJob
@@ -121,7 +121,7 @@ func (p *JobProvisioner) Provision(ctx context.Context) error {
 	return nil
 }
 
-func (p *JobProvisioner) extractCloudInit(cloudInit *cloudinit.CloudInit) (volume v1.Volume, volumeMounts []v1.VolumeMount, secretData map[string][]byte) {
+func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionData) (volume v1.Volume, volumeMounts []v1.VolumeMount, secretData map[string][]byte) {
 	machineDSN := p.machineDSN()
 
 	var sshCommand, scpCommand string
@@ -163,7 +163,7 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *cloudinit.CloudInit) (volum
 		MountPath: "/var/lib/bootstrap-data",
 	})
 
-	for _, cmd := range cloudInit.RunCmds {
+	for _, cmd := range cloudInit.Commands {
 		if p.remoteMachine.Spec.UseSudo {
 			cmd = fmt.Sprintf("sudo su -c '%s'", cmd)
 		}

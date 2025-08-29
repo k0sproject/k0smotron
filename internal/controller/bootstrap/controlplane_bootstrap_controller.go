@@ -53,8 +53,8 @@ import (
 
 	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 	"github.com/k0sproject/version"
 )
@@ -277,7 +277,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.Context, log logr.Logger, scope *ControllerScope) ([]byte, error) {
 	var (
-		files      []cloudinit.File
+		files      []provisioner.File
 		installCmd string
 		err        error
 	)
@@ -314,7 +314,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling k0s config: %v", err)
 		}
-		files = append(files, cloudinit.File{
+		files = append(files, provisioner.File{
 			Path:        "/etc/k0s.yaml",
 			Permissions: "0644",
 			Content:     string(k0sConfigBytes),
@@ -369,22 +369,30 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
 
-	ci := &cloudinit.CloudInit{
-		Files:   files,
-		RunCmds: commands,
-	}
+	var customUserData string
 	if scope.Config.Spec.CustomUserDataRef != nil {
-		customCloudInit, err := resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
+		customUserData, err = resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom controller user data: %w", err)
 		}
-		ci.CustomCloudInit = customCloudInit
 	}
 
-	return ci.AsBytes()
+	var p provisioner.Provisioner = &provisioner.CloudInitProvisioner{}
+	if scope.Config.Spec.K0sConfigSpec != nil && scope.Config.Spec.K0sConfigSpec.Ignition != nil {
+		p = &provisioner.IgnitionProvisioner{
+			Variant: scope.Config.Spec.K0sConfigSpec.Ignition.Variant,
+			Version: scope.Config.Spec.K0sConfigSpec.Ignition.Version,
+		}
+	}
+
+	return p.ToProvisionData(&provisioner.InputProvisionData{
+		Files:          files,
+		Commands:       commands,
+		CustomUserData: customUserData,
+	})
 }
 
-func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *ControllerScope, files []cloudinit.File) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File) ([]provisioner.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	certs, _, err := c.getCerts(ctx, scope)
@@ -397,7 +405,7 @@ func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context
 	return files, nil
 }
 
-func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []cloudinit.File, firstControllerMachine *clusterv1.Machine) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File, firstControllerMachine *clusterv1.Machine) ([]provisioner.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	_, ca, err := c.getCerts(ctx, scope)
@@ -432,7 +440,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 
 	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, host, "controller-bootstrap")
 
-	files = append(files, cloudinit.File{
+	files = append(files, provisioner.File{
 		Path:        joinTokenFilePath,
 		Permissions: "0644",
 		Content:     joinToken,
@@ -441,7 +449,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	return files, err
 }
 
-func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *ControllerScope) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *ControllerScope) ([]provisioner.File, error) {
 	secretName := scope.Cluster.Name + "-frp-token"
 	frpSecret := corev1.Secret{}
 	err := c.Client.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secretName}, &frpSecret)
@@ -525,15 +533,15 @@ spec:
                 path: frpc.ini
 
 `
-	return []cloudinit.File{{
+	return []provisioner.File{{
 		Path:        "/var/lib/k0s/manifests/k0smotron-tunneling/manifest.yaml",
 		Permissions: "0644",
 		Content:     fmt.Sprintf(tunnelingResources, scope.Config.Spec.Tunneling.ServerAddress, scope.Config.Spec.Tunneling.ServerNodePort, frpToken, localIP, modeConfig),
 	}}, nil
 }
 
-func (c *ControlPlaneController) getCerts(ctx context.Context, scope *ControllerScope) ([]cloudinit.File, *secret.Certificate, error) {
-	var files []cloudinit.File
+func (c *ControlPlaneController) getCerts(ctx context.Context, scope *ControllerScope) ([]provisioner.File, *secret.Certificate, error) {
+	var files []provisioner.File
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
@@ -553,7 +561,7 @@ func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Controller
 	}
 	ca := certificates.GetByPurpose(secret.ClusterCA)
 	for _, cert := range certificates.AsFiles() {
-		files = append(files, cloudinit.File{
+		files = append(files, provisioner.File{
 			Path:        cert.Path,
 			Permissions: "0644",
 			Content:     cert.Content,
@@ -749,8 +757,8 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, m
 	return machineImpl, nil
 }
 
-func genShutdownServiceFiles() []cloudinit.File {
-	return []cloudinit.File{
+func genShutdownServiceFiles() []provisioner.File {
+	return []provisioner.File{
 		{
 			Path:        "/etc/bin/k0sleave.sh",
 			Permissions: "0777",

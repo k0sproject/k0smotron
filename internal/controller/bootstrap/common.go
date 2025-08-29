@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
@@ -51,8 +51,8 @@ func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clu
 }
 
 // resolveFiles extracts the content from the given source (ConfigMap or Secret) and returns a list of cloudinit.File containing the extracted data.
-func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, filesToResolve []bootstrapv1.File) ([]cloudinit.File, error) {
-	var files []cloudinit.File
+func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, filesToResolve []bootstrapv1.File) ([]provisioner.File, error) {
+	var files []provisioner.File
 	for _, file := range filesToResolve {
 		if file.ContentFrom != nil {
 			content, err := resolveContentFromFile(ctx, cli, cluster, file.ContentFrom)
