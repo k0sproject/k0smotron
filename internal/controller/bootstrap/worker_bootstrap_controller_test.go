@@ -75,6 +75,21 @@ func Test_createInstallCmd(t *testing.T) {
 			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --hostname-override=test-from-arg"`,
 		},
 		{
+			name: "with ingress set",
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{
+					Spec: bootstrapv1.K0sWorkerConfigSpec{
+						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
+					},
+				},
+				ingressSpec: &kmapi.IngressSpec{APIHost: "test-from-arg"},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
+					"metadata": map[string]interface{}{"name": "test"},
+				}}},
+			},
+			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --pod-manifest-path=/etc/kubernetes/manifests --hostname-override=test-from-arg"`,
+		},
+		{
 			name: "with useSystemHostname set",
 			scope: &Scope{
 				Config: &bootstrapv1.K0sWorkerConfig{

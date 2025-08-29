@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -210,7 +209,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return res, err
 	}
 
-	if !ready {
+	if !ready && kcp.Spec.Ingress == nil {
 		err = c.waitExternalAddress(ctx, cluster)
 		if err != nil {
 			return res, err
@@ -301,16 +300,6 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 				Type: string(secret.EtcdCA),
 				Name: secret.Name(cluster.Name, secret.EtcdCA),
 			},
-		}
-		if kcp.Spec.Ingress != nil {
-			kcp.Spec.CertificateRefs = append(kcp.Spec.CertificateRefs, kapi.CertificateRef{
-				Type: "apiserver-kubelet-client",
-				Name: secret.Name(cluster.Name, "apiserver-kubelet-client"),
-			})
-			kcp.Spec.CertificateRefs = append(kcp.Spec.CertificateRefs, kapi.CertificateRef{
-				Type: "server",
-				Name: secret.Name(cluster.Name, "server"),
-			})
 		}
 
 		if err := ensureCertificates(ctx, cluster, kcp, scope); err != nil {
@@ -412,21 +401,6 @@ func isClusterSpecSynced(kmcSpec, kcpSpec kapi.ClusterSpec) (bool, error) {
 
 func ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane, scope *kmcScope) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
-	if kcp.Spec.Ingress != nil {
-		ingressCert := secret.Certificates{
-			&secret.Certificate{
-				Purpose:  "server",
-				CertFile: path.Join(secret.DefaultCertificatesDir, "ca.crt"),
-				KeyFile:  path.Join(secret.DefaultCertificatesDir, "ca.key"),
-			},
-			&secret.Certificate{
-				Purpose:  "apiserver-kubelet-client",
-				CertFile: path.Join(secret.DefaultCertificatesDir, "ca.crt"),
-				KeyFile:  path.Join(secret.DefaultCertificatesDir, "ca.key"),
-			},
-		}
-		certificates = append(certificates, ingressCert...)
-	}
 	return certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0smotronControlPlane")))
 }
 

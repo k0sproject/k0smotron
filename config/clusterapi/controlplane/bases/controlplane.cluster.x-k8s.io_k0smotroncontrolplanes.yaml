@@ -270,7 +270,7 @@ spec:
                     default: 443
                     description: IngressPort defines the port used by the ingress
                       controller
-                    format: int32
+                    format: int64
                     type: integer
                   konnectivityHost:
                     type: string

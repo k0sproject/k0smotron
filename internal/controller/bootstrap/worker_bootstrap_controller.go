@@ -332,9 +332,19 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		return "", errors.New("failed to get CA certificate key pair")
 	}
 
-	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port), "kubelet-bootstrap")
-	if err != nil {
-		return "", fmt.Errorf("failed to create join token: %w", err)
+	var joinToken string
+	if scope.ingressSpec != nil {
+		var err error
+		joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.IngressPort), "kubelet-bootstrap")
+		if err != nil {
+			return "", fmt.Errorf("failed to create join token: %w", err)
+		}
+	} else {
+		var err error
+		joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port), "kubelet-bootstrap")
+		if err != nil {
+			return "", fmt.Errorf("failed to create join token: %w", err)
+		}
 	}
 	return joinToken, nil
 }
@@ -346,8 +356,10 @@ func createIngressCommands(scope *Scope) []string {
 
 	return []string{
 		"mkdir -p /etc/haproxy/certs",
+		"cat /etc/haproxy/certs/ca.crt /etc/haproxy/certs/ca.key > /etc/haproxy/certs/ca.pem",
 		"cat /etc/haproxy/certs/server.crt /etc/haproxy/certs/server.key > /etc/haproxy/certs/server.pem",
-		"chmod 600 /etc/haproxy/certs/server.pem",
+		"chmod 666 /etc/haproxy/certs/server.pem",
+		"chmod 666 /etc/haproxy/certs/ca.pem",
 	}
 }
 
@@ -355,22 +367,22 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv1.File{
 		{
 			File: cloudinit.File{
-				Path: "/etc/haproxy/certs/client.crt",
+				Path: "/etc/haproxy/certs/ca.crt",
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
 				SecretRef: &bootstrapv1.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, "apiserver-kubelet-client"),
+					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
 					Key:  "tls.crt",
 				},
 			},
 		},
 		{
 			File: cloudinit.File{
-				Path: "/etc/haproxy/certs/client.crt.key",
+				Path: "/etc/haproxy/certs/ca.key",
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
 				SecretRef: &bootstrapv1.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, "apiserver-kubelet-client"),
+					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
 					Key:  "tls.key",
 				},
 			},
@@ -381,7 +393,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
 				SecretRef: &bootstrapv1.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, "server"),
+					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
 					Key:  "tls.crt",
 				},
 			},
@@ -392,7 +404,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
 				SecretRef: &bootstrapv1.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, "server"),
+					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
 					Key:  "tls.key",
 				},
 			},
@@ -432,11 +444,12 @@ frontend konnectivity_front
 
 backend kubeapi_back
     mode tcp
-    server kube_api {{.APIHost}}:{{ .IngressPort }} ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str({{.APIHost}})
+    server kube_api {{.APIHost}}:{{ .IngressPort }} ssl verify required ca-file /etc/haproxy/certs/ca.pem sni str({{.APIHost}})
 
 backend konnectivity_back
     mode tcp
-    server konnectivity {{.KonnectivityHost}}:{{.IngressPort}} ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str({{.KonnectivityHost}})`))
+    server konnectivity {{.KonnectivityHost}}:{{.IngressPort}} ssl verify required ca-file /etc/haproxy/certs/ca.pem sni str({{.KonnectivityHost}})
+`))
 
 	var b bytes.Buffer
 	_ = cfgTmpl.Execute(&b, scope.ingressSpec)
@@ -569,9 +582,9 @@ func createInstallCmd(scope *Scope) string {
 		"k0s install worker --token-file /etc/k0s.token",
 	}
 	if scope.ingressSpec != nil {
-		installCmd = []string{
-			`k0s install worker --token-file /etc/k0s.token --kubelet-extra-args="--pod-manifest-path=/etc/kubernetes/manifests"`,
-		}
+		// TODO: won't work with the user provided kubelet extra args because of the double --kubelet-extra-args usage
+		//  need to parse and merge them properly
+		scope.Config.Spec.Args = append(scope.Config.Spec.Args, `--kubelet-extra-args="--pod-manifest-path=/etc/kubernetes/manifests"`)
 	}
 	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
 	return strings.Join(installCmd, " ")

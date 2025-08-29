@@ -2273,7 +2273,7 @@ Ingress defines the ingress configuration.
         <td>
           IngressPort defines the port used by the ingress controller<br/>
           <br/>
-            <i>Format</i>: int32<br/>
+            <i>Format</i>: int64<br/>
             <i>Default</i>: 443<br/>
         </td>
         <td>false</td>
@@ -11839,7 +11839,7 @@ Ingress defines the ingress configuration.
         <td>
           IngressPort defines the port used by the ingress controller<br/>
           <br/>
-            <i>Format</i>: int32<br/>
+            <i>Format</i>: int64<br/>
             <i>Default</i>: 443<br/>
         </td>
         <td>false</td>

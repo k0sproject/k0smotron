@@ -264,16 +264,6 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				Name: secret.Name(kmc.Name, secret.EtcdCA),
 			},
 		}
-		if kmc.Spec.Ingress != nil {
-			kmc.Spec.CertificateRefs = append(kmc.Spec.CertificateRefs, km.CertificateRef{
-				Type: "apiserver-kubelet-client",
-				Name: secret.Name(kmc.Name, "apiserver-kubelet-client"),
-			})
-			kmc.Spec.CertificateRefs = append(kmc.Spec.CertificateRefs, km.CertificateRef{
-				Type: "server",
-				Name: secret.Name(kmc.Name, "server"),
-			})
-		}
 	}
 	if kmc.Spec.KineDataSourceURL == "" {
 		isAPIServerEtcdClientCertRef := false
@@ -294,6 +284,13 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				Type: string(secret.APIServerEtcdClient),
 				Name: secret.Name(kmc.Name, secret.APIServerEtcdClient),
 			})
+		}
+	}
+
+	if kmc.Spec.Ingress != nil {
+		err := kmcScope.ensureIngressCerts(ctx, kmc)
+		if err != nil {
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating ingress certificates: %w", err)
 		}
 	}
 

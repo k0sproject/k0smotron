@@ -123,7 +123,7 @@ type IngressSpec struct {
 	// IngressPort defines the port used by the ingress controller
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=443
-	IngressPort int32 `json:"ingressPort,omitempty"`
+	IngressPort int64 `json:"ingressPort,omitempty"`
 	//+kubebuilder:validation:Optional
 	APIHost string `json:"apiHost,omitempty"`
 	//+kubebuilder:validation:Optional
