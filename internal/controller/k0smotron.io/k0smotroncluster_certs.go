@@ -171,7 +171,7 @@ func (scope *kmcScope) ensureIngressCerts(ctx context.Context, kmc *km.Cluster) 
 					"kubernetes.svc.cluster.local",
 					"localhost",
 					"127.0.0.1",
-					"10.96.0.1",
+					scope.kubernetesServiceIP,
 				},
 			}
 			req.KeyRequest.A = "rsa"

@@ -1973,7 +1973,7 @@ will pick it automatically.<br/>
         <td>
           <br/>
           <br/>
-            <i>Enum</i>: ca, sa, proxy, etcd, apiserver-etcd-client, etcd-peer, etcd-server, apiserver-kubelet-client, server<br/>
+            <i>Enum</i>: ca, sa, proxy, etcd, apiserver-etcd-client, etcd-peer, etcd-server<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -11539,7 +11539,7 @@ will pick it automatically.<br/>
         <td>
           <br/>
           <br/>
-            <i>Enum</i>: ca, sa, proxy, etcd, apiserver-etcd-client, etcd-peer, etcd-server, apiserver-kubelet-client, server<br/>
+            <i>Enum</i>: ca, sa, proxy, etcd, apiserver-etcd-client, etcd-peer, etcd-server<br/>
         </td>
         <td>true</td>
       </tr><tr>

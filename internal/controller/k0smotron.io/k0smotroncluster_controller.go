@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"path"
 	"time"
 
@@ -81,6 +83,10 @@ type kmcScope struct {
 	restConfig *rest.Config
 	// secretCachingClient is the client used to cache secrets for certificate generation.
 	secretCachingClient client.Client
+	// serviceCIDR is the service CIDR of the cluster where the controlplane replicas run.
+	serviceCIDR string
+	// kubernetesServiceIP is the IP address of the kubernetes default service in the cluster where the controlplane replicas run.
+	kubernetesServiceIP string
 }
 
 // +kubebuilder:rbac:groups=k0smotron.io,resources=clusters,verbs=get;list;watch;create;update;patch;delete
@@ -362,6 +368,7 @@ func (r *ClusterReconciler) getKmcScope(ctx context.Context, kmc *km.Cluster) (*
 		clienSet:            r.ClientSet,
 		restConfig:          r.RESTConfig,
 		secretCachingClient: r.SecretCachingClient,
+		serviceCIDR:         "10.96.0.0/12", // Default service CIDR
 	}
 
 	if kmc.Spec.KubeconfigRef != nil {
@@ -374,6 +381,21 @@ func (r *ClusterReconciler) getKmcScope(ctx context.Context, kmc *km.Cluster) (*
 		}
 		kmcScope.secretCachingClient = kmcScope.client
 	}
+
+	if kmc.Spec.K0sConfig != nil {
+		cidr, found, err := unstructured.NestedString(kmc.Spec.K0sConfig.Object, "spec", "network", "serviceCIDR")
+		if err != nil {
+			return kmcScope, fmt.Errorf("error retrieving service CIDR: %w", err)
+		}
+		if found {
+			kmcScope.serviceCIDR = cidr
+		}
+	}
+	kubeSvcIP, err := constants.GetAPIServerVirtualIP(kmcScope.serviceCIDR)
+	if err != nil {
+		return kmcScope, fmt.Errorf("failed to get kubernetes service IP from CIDR %q: %w", kmcScope.serviceCIDR, err)
+	}
+	kmcScope.kubernetesServiceIP = kubeSvcIP.String()
 
 	return kmcScope, nil
 }
