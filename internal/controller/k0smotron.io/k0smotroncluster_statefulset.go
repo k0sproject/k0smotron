@@ -25,6 +25,7 @@ import (
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
 
@@ -34,7 +35,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/controller"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -284,7 +284,7 @@ data:
 `,
 		},
 	}
-	_ = ctrl.SetControllerReference(kmc, cm, scope.client.Scheme())
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, cm, scope.client.Scheme(), scope.externalOwner)
 
 	if err := scope.client.Patch(context.Background(), cm, client.Apply, patchOpts...); err != nil {
 		return apps.StatefulSet{}, err
@@ -304,7 +304,7 @@ data:
 		ReadOnly:  true,
 	})
 
-	_ = ctrl.SetControllerReference(kmc, &statefulSet, scope.client.Scheme())
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
 	// We calculate the hash of the statefulset template and store it in the annotations
 	// This is used to detect changes in the statefulset template and trigger a rollout

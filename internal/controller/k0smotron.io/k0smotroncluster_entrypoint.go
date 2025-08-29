@@ -26,7 +26,6 @@ import (
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -64,7 +63,7 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 		},
 	}
 
-	_ = ctrl.SetControllerReference(kmc, &cm, scope.client.Scheme())
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &cm, scope.client.Scheme(), scope.externalOwner)
 	return cm, nil
 }
 
