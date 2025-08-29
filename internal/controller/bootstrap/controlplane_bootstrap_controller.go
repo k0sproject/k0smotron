@@ -622,7 +622,7 @@ func createCPInstallCmdWithJoinToken(scope *ControllerScope, tokenPath string) s
 }
 
 func mergeControllerExtraArgs(scope *ControllerScope) []string {
-	return mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
+	return mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, scope.WorkerEnabled, false, scope.Config.Spec.UseSystemHostname)
 }
 
 func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv1.Machine) (string, error) {

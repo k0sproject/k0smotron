@@ -68,7 +68,7 @@ func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Clu
 	return files, nil
 }
 
-func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWorker bool, useSystemHostname bool) []string {
+func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWorker, ingressEnabled, useSystemHostname bool) []string {
 	var args []string
 	if isWorker {
 		args = []string{
@@ -76,24 +76,31 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 		}
 	}
 
-	kubeletExtraArgs := fmt.Sprintf(`--kubelet-extra-args="--hostname-override=%s"`, configOwner.GetName())
+	kubeletExtraArgs := []string{}
+	if isWorker && !useSystemHostname {
+		kubeletExtraArgs = append(kubeletExtraArgs, "--hostname-override="+configOwner.GetName())
+	}
+	if ingressEnabled {
+		kubeletExtraArgs = append(kubeletExtraArgs, "--pod-manifest-path=/etc/kubernetes/manifests")
+	}
+
 	for _, arg := range configArgs {
-		if strings.HasPrefix(arg, "--kubelet-extra-args") && !useSystemHostname {
+		if strings.HasPrefix(arg, "--kubelet-extra-args") {
 			_, after, ok := strings.Cut(arg, "=")
 			if !ok {
 				_, after, ok = strings.Cut(arg, " ")
 			}
 			if !ok {
-				kubeletExtraArgs = arg
+				kubeletExtraArgs = append(kubeletExtraArgs, arg)
 			} else {
-				kubeletExtraArgs = fmt.Sprintf(`--kubelet-extra-args="--hostname-override=%s %s"`, configOwner.GetName(), strings.Trim(after, "\"'"))
+				kubeletExtraArgs = append(kubeletExtraArgs, strings.Trim(after, "\"'"))
 			}
 		} else {
 			args = append(args, arg)
 		}
 	}
-	if isWorker && !useSystemHostname {
-		args = append(args, kubeletExtraArgs)
+	if len(kubeletExtraArgs) > 0 {
+		args = append(args, fmt.Sprintf(`--kubelet-extra-args="%s"`, strings.Join(kubeletExtraArgs, " ")))
 	}
 
 	return args

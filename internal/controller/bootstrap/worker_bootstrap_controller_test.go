@@ -75,7 +75,7 @@ func Test_createInstallCmd(t *testing.T) {
 			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --hostname-override=test-from-arg"`,
 		},
 		{
-			name: "with ingress set",
+			name: "with ingress",
 			scope: &Scope{
 				Config: &bootstrapv1.K0sWorkerConfig{
 					Spec: bootstrapv1.K0sWorkerConfigSpec{
@@ -88,6 +88,22 @@ func Test_createInstallCmd(t *testing.T) {
 				}}},
 			},
 			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --pod-manifest-path=/etc/kubernetes/manifests --hostname-override=test-from-arg"`,
+		},
+		{
+			name: "with ingress and useSystemHostname set",
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{
+					Spec: bootstrapv1.K0sWorkerConfigSpec{
+						UseSystemHostname: true,
+						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
+					},
+				},
+				ingressSpec: &kmapi.IngressSpec{APIHost: "test-from-arg"},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
+					"metadata": map[string]interface{}{"name": "test"},
+				}}},
+			},
+			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--pod-manifest-path=/etc/kubernetes/manifests --hostname-override=test-from-arg"`,
 		},
 		{
 			name: "with useSystemHostname set",
@@ -817,8 +833,9 @@ frontend konnectivity_front
 
 backend kubeapi_back
     mode tcp
-    server kube_api api.test.local:443 ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str(api.test.local)
+    server kube_api api.test.local:443 ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str(api.test.local)
 
 backend konnectivity_back
     mode tcp
-    server konnectivity konnectivity.test.local:443 ssl verify none crt /etc/haproxy/certs/client.crt ca-file /etc/haproxy/certs/server.pem sni str(konnectivity.test.local)`
+    server konnectivity konnectivity.test.local:443 ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str(konnectivity.test.local)
+`

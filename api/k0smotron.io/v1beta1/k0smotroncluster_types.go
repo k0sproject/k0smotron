@@ -344,7 +344,7 @@ type EtcdPersistenceSpec struct {
 }
 
 type CertificateRef struct {
-	//+kubebuilder:validation:Enum=ca;sa;proxy;etcd;apiserver-etcd-client;etcd-peer;etcd-server;apiserver-kubelet-client;server
+	//+kubebuilder:validation:Enum=ca;sa;proxy;etcd;apiserver-etcd-client;etcd-peer;etcd-server
 	Type string `json:"type"`
 	//+kubebuilder:validation:Optional
 	Name string `json:"name,omitempty"`

@@ -356,10 +356,8 @@ func createIngressCommands(scope *Scope) []string {
 
 	return []string{
 		"mkdir -p /etc/haproxy/certs",
-		"cat /etc/haproxy/certs/ca.crt /etc/haproxy/certs/ca.key > /etc/haproxy/certs/ca.pem",
 		"cat /etc/haproxy/certs/server.crt /etc/haproxy/certs/server.key > /etc/haproxy/certs/server.pem",
 		"chmod 666 /etc/haproxy/certs/server.pem",
-		"chmod 666 /etc/haproxy/certs/ca.pem",
 	}
 }
 
@@ -373,17 +371,6 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 				SecretRef: &bootstrapv1.ContentSourceRef{
 					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
 					Key:  "tls.crt",
-				},
-			},
-		},
-		{
-			File: cloudinit.File{
-				Path: "/etc/haproxy/certs/ca.key",
-			},
-			ContentFrom: &bootstrapv1.ContentSource{
-				SecretRef: &bootstrapv1.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
-					Key:  "tls.key",
 				},
 			},
 		},
@@ -444,11 +431,11 @@ frontend konnectivity_front
 
 backend kubeapi_back
     mode tcp
-    server kube_api {{.APIHost}}:{{ .IngressPort }} ssl verify required ca-file /etc/haproxy/certs/ca.pem sni str({{.APIHost}})
+    server kube_api {{.APIHost}}:{{ .IngressPort }} ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str({{.APIHost}})
 
 backend konnectivity_back
     mode tcp
-    server konnectivity {{.KonnectivityHost}}:{{.IngressPort}} ssl verify required ca-file /etc/haproxy/certs/ca.pem sni str({{.KonnectivityHost}})
+    server konnectivity {{.KonnectivityHost}}:{{.IngressPort}} ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str({{.KonnectivityHost}})
 `))
 
 	var b bytes.Buffer
@@ -581,12 +568,11 @@ func createInstallCmd(scope *Scope) string {
 	installCmd := []string{
 		"k0s install worker --token-file /etc/k0s.token",
 	}
+	var ingressEnabled bool
 	if scope.ingressSpec != nil {
-		// TODO: won't work with the user provided kubelet extra args because of the double --kubelet-extra-args usage
-		//  need to parse and merge them properly
-		scope.Config.Spec.Args = append(scope.Config.Spec.Args, `--kubelet-extra-args="--pod-manifest-path=/etc/kubernetes/manifests"`)
+		ingressEnabled = true
 	}
-	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
+	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, ingressEnabled, scope.Config.Spec.UseSystemHostname)...)
 	return strings.Join(installCmd, " ")
 }
 

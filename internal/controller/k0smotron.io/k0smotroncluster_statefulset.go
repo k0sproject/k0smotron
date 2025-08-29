@@ -421,39 +421,6 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 					},
 				},
 			})
-		case "apiserver-kubelet-client":
-			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
-				Secret: &v1.SecretProjection{
-					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
-					Items: []v1.KeyToPath{
-						{
-							Key:  "tls.crt",
-							Path: "apiserver-kubelet-client.crt",
-						},
-						{
-							Key:  "tls.key",
-							Path: "apiserver-kubelet-client.key",
-						},
-					},
-				},
-			})
-		case "server":
-			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
-				Secret: &v1.SecretProjection{
-					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
-					Items: []v1.KeyToPath{
-						{
-							Key:  "tls.crt",
-							Path: "server.crt",
-						},
-						{
-							Key:  "tls.key",
-							Path: "server.key",
-						},
-					},
-				},
-			})
-
 		}
 	}
 	sfs.Spec.Template.Spec.Volumes = append(sfs.Spec.Template.Spec.Volumes, v1.Volume{

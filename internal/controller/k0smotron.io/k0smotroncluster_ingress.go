@@ -19,9 +19,12 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 	if kmc.Spec.Ingress == nil {
 		return nil
 	}
-	configMap := scope.generateIngressManifestsConfigMap(kmc)
+	configMap, err := scope.generateIngressManifestsConfigMap(kmc)
+	if err != nil {
+		return fmt.Errorf("failed to generate ingress manifests configmap: %w", err)
+	}
 	_ = ctrl.SetControllerReference(kmc, &configMap, scope.client.Scheme())
-	err := scope.client.Patch(ctx, &configMap, client.Apply, patchOpts...)
+	err = scope.client.Patch(ctx, &configMap, client.Apply, patchOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to patch haproxy configmap for ingress: %w", err)
 	}
@@ -50,7 +53,7 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 	return scope.client.Patch(ctx, &ingress, client.Apply, patchOpts...)
 }
 
-func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster) corev1.ConfigMap {
+func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster) (corev1.ConfigMap, error) {
 	configMap := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -76,7 +79,7 @@ subsets:
   - name: https
     port: 7443
     protocol: TCP`,
-			"1_kube-service.yaml": `apiVersion: v1
+			"1_kube-service.yaml": fmt.Sprintf(`apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -85,9 +88,9 @@ metadata:
   name: kubernetes
   namespace: default
 spec:
-  clusterIP: 10.96.0.1
+  clusterIP: %s
   clusterIPs:
-  - 10.96.0.1
+  - %s
   internalTrafficPolicy: Local
   ipFamilies:
   - IPv4
@@ -100,11 +103,11 @@ spec:
   selector:
     app: k0smotron-ingress-haproxy
   sessionAffinity: None
-  type: ClusterIP`,
+  type: ClusterIP`, scope.clusterSettings.kubernetesServiceIP, scope.clusterSettings.kubernetesServiceIP),
 		},
 	}
 
-	return configMap
+	return configMap, nil
 }
 
 func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
