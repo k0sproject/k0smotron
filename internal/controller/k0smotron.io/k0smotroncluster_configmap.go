@@ -219,6 +219,18 @@ func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {
 
 	sans = append(sans, fmt.Sprintf("%s.svc.cluster.local", svcNamespacedName))
 
+	if kmc.Spec.Ingress != nil {
+		if kmc.Spec.Ingress.APIHost != "" {
+			// Always add localhost to SANs if APIHost is set, as we create a local proxy to the API server
+			sans = append(sans, "127.0.0.1")
+			sans = append(sans, "localhost")
+			sans = append(sans, kmc.Spec.Ingress.APIHost)
+		}
+		if kmc.Spec.Ingress.KonnectivityHost != "" {
+			sans = append(sans, kmc.Spec.Ingress.KonnectivityHost)
+		}
+	}
+
 	// Sort the sans to ensure stable output order
 	sort.Strings(sans)
 
@@ -260,5 +272,24 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
 			},
 		}
 	}
+
+	if kmc.Spec.Ingress != nil {
+		v1beta1Spec["api"].(map[string]any)["extraArgs"] = map[string]interface{}{
+			"endpoint-reconciler-type": "none",
+		}
+		v1beta1Spec["network"] = map[string]interface{}{
+			"nodeLocalLoadBalancing": map[string]interface{}{
+				"enabled": true,
+				"type":    "Custom",
+				"custom": map[string]interface{}{
+					"apiHost":          kmc.Spec.Ingress.APIHost,
+					"apiPort":          kmc.Spec.Ingress.IngressPort,
+					"konnectivityHost": kmc.Spec.Ingress.KonnectivityHost,
+					"konnectivityPort": kmc.Spec.Ingress.IngressPort,
+				},
+			},
+		}
+	}
+
 	return v1beta1Spec
 }
