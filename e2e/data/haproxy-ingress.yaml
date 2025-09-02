@@ -1,0 +1,216 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: haproxy-controller
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: haproxy-kubernetes-ingress
+  namespace: haproxy-controller
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: haproxy-kubernetes-ingress
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - endpoints
+  - nodes
+  - pods
+  - services
+  - namespaces
+  - events
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - "extensions"
+  - "networking.k8s.io"
+  resources:
+  - ingresses
+  - ingresses/status
+  - ingressclasses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - "extensions"
+  - "networking.k8s.io"
+  resources:
+  - ingresses/status
+  verbs:
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - update
+- apiGroups:
+  - ingress.v1.haproxy.org
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - ingress.v3.haproxy.org
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - "discovery.k8s.io"
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - "apiextensions.k8s.io"
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - "apps"
+  resources:
+  - replicasets
+  - deployments
+  - daemonsets
+  verbs:
+  - get
+  - list
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: haproxy-kubernetes-ingress
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: haproxy-kubernetes-ingress
+subjects:
+- kind: ServiceAccount
+  name: haproxy-kubernetes-ingress
+  namespace: haproxy-controller
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: haproxy-kubernetes-ingress
+  namespace: haproxy-controller
+data:
+  ssl-redirect-port: "443"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: haproxy-ingress
+  name: haproxy-kubernetes-ingress
+  namespace: haproxy-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: haproxy-ingress
+  template:
+    metadata:
+      labels:
+        run: haproxy-ingress
+    spec:
+      serviceAccountName: haproxy-kubernetes-ingress
+      containers:
+      - name: haproxy-ingress
+        image: haproxytech/kubernetes-ingress
+        args:
+        - --configmap=haproxy-controller/haproxy-kubernetes-ingress
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - NET_BIND_SERVICE
+          seccompProfile:
+            type: RuntimeDefault
+        resources:
+          limits:
+            memory: 2560Mi
+          requests:
+            memory: 2048Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 1042
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8443
+        - name: stat
+          containerPort: 1024
+        env:
+        - name: TZ
+          value: "Etc/UTC"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: haproxy-ingress
+  name: haproxy-kubernetes-ingress
+  namespace: haproxy-controller
+spec:
+  selector:
+    run: haproxy-ingress
+  type: NodePort
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+    nodePort: 32180
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: 8443
+    nodePort: 32143
+  - name: stat
+    port: 1024
+    protocol: TCP
+    targetPort: 1024

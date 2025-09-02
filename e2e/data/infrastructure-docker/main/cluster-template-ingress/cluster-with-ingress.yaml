@@ -1,0 +1,105 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 192.168.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+        - 10.128.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0smotronControlPlane
+    name: ${CLUSTER_NAME}-cp
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: DockerCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-cp
+spec:
+  image: makhov/k0s
+  version: v1.33.1-custom-nllb-6-k0s.0
+  ingress:
+    apiHost: kube-api.${KIND_IP}.nip.io
+    ingressPort: ${HAPROXY_PORT}
+    konnectivityHost: konnectivity.${KIND_IP}.nip.io
+  k0sConfig:
+    apiVersion: k0s.k0sproject.io/v1beta1
+    kind: ClusterConfig
+    spec:
+      api:
+        extraArgs:
+          anonymous-auth: "true"
+      telemetry:
+        enabled: false
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 2
+  clusterName: ${CLUSTER_NAME}
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+      pool: worker-pool-1
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+        pool: worker-pool-1
+    spec:
+      version: v1.33.1
+      clusterName: ${CLUSTER_NAME}
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: K0sWorkerConfigTemplate
+          name: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: DockerMachineTemplate
+        name: ${CLUSTER_NAME}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      version: v1.33.1+k0s.0-484-gab8ceb622
+      preStartCommands:
+        - curl -L -o /usr/local/bin/k0s https://github.com/makhov/k0s/releases/download/vFAKE7/k0s-ing-support-amd64
+        - chmod +x /usr/local/bin/k0s
+      preInstalledK0s: true
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      customImage: kindest/node:v1.33.0

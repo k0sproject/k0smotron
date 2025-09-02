@@ -126,6 +126,7 @@ generate-e2e-templates-main: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-webhook-k0s-not-compatible --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-webhook-k0s-not-compatible.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp.yaml
+	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-ingress --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-ingress.yaml
 
 
 e2e: generate-e2e-templates-main
