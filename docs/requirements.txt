@@ -22,7 +22,7 @@ pyparsing==3.2.1
 python-dateutil==2.9.0.post0
 PyYAML==6.0.2
 pyyaml_env_tag==0.1
-regex==2024.11.6
+regex==2025.9.1
 requests==2.32.3
 six==1.17.0
 termcolor==2.5.0
