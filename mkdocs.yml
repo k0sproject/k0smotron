@@ -29,6 +29,7 @@ nav:
       - Control Plane Bootstrap: capi-controlplane-bootstrap.md
       - Worker Node Bootstrap: capi-bootstrap.md
       - Remote Machine Provider: capi-remote.md
+      - Ingress support: ingress-support.md
       - ClusterClass: capi-clusterclass.md
       - Examples:
         - Software prerequisites: capi-examples.md

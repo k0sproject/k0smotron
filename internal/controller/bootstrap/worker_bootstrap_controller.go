@@ -424,18 +424,9 @@ func generateHAProxyConfig(scope *Scope) string {
     mode tcp
     default_backend kubeapi_back
 
-frontend konnectivity_front
-    bind :::7132 ssl crt /etc/haproxy/certs/server.pem
-    mode tcp
-    default_backend konnectivity_back
-
 backend kubeapi_back
     mode tcp
     server kube_api {{.APIHost}}:{{ .IngressPort }} ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str({{.APIHost}})
-
-backend konnectivity_back
-    mode tcp
-    server konnectivity {{.KonnectivityHost}}:{{.IngressPort}} ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str({{.KonnectivityHost}})
 `))
 
 	var b bytes.Buffer

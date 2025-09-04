@@ -826,16 +826,7 @@ const expectedHAProxyConfig = `frontend kubeapi_front
     mode tcp
     default_backend kubeapi_back
 
-frontend konnectivity_front
-    bind :::7132 ssl crt /etc/haproxy/certs/server.pem
-    mode tcp
-    default_backend konnectivity_back
-
 backend kubeapi_back
     mode tcp
     server kube_api api.test.local:443 ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str(api.test.local)
-
-backend konnectivity_back
-    mode tcp
-    server konnectivity konnectivity.test.local:443 ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str(konnectivity.test.local)
 `
