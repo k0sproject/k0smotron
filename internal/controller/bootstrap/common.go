@@ -68,7 +68,7 @@ func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Clu
 	return files, nil
 }
 
-func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWorker, ingressEnabled, useSystemHostname bool) []string {
+func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWorker, useSystemHostname bool) []string {
 	var args []string
 	if isWorker {
 		args = []string{
@@ -79,9 +79,6 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 	kubeletExtraArgs := []string{}
 	if isWorker && !useSystemHostname {
 		kubeletExtraArgs = append(kubeletExtraArgs, "--hostname-override="+configOwner.GetName())
-	}
-	if ingressEnabled {
-		kubeletExtraArgs = append(kubeletExtraArgs, "--pod-manifest-path=/etc/kubernetes/manifests")
 	}
 
 	for _, arg := range configArgs {

@@ -79,7 +79,65 @@ subsets:
   - name: https
     port: 7443
     protocol: TCP`,
-			"1_kube-service.yaml": fmt.Sprintf(`apiVersion: v1
+			"1_haproxy-configmap.yaml": fmt.Sprintf(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k0smotron-ingress-haproxy-config
+  namespace: default
+data:
+  haproxy.cfg: |
+    frontend kubeapi_front
+        bind [::]:7443 v4v6 ssl crt /etc/haproxy/certs/server.pem
+        mode tcp
+        default_backend kubeapi_back
+
+    backend kubeapi_back
+        mode tcp
+        server kube_api %s:%d ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str(%s)
+`, kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.IngressPort, kmc.Spec.Ingress.APIHost),
+			"2_haproxy-ds.yaml": `apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: k0smotron-ingress-haproxy
+  namespace: default
+  labels:
+    app: k0smotron-ingress-haproxy
+spec:
+  selector:
+    matchLabels:
+      app: k0smotron-ingress-haproxy
+  template:
+    metadata:
+      labels:
+        app: k0smotron-ingress-haproxy
+    spec:
+      hostNetwork: true
+      containers:
+        - name: haproxy
+          image: haproxy:2.8
+          args:
+            - -f
+            - /usr/local/etc/haproxy/haproxy.cfg
+          ports:
+            - containerPort: 7443
+              name: https
+          volumeMounts:
+            - name: haproxy-config
+              mountPath: /usr/local/etc/haproxy/haproxy.cfg
+              subPath: haproxy.cfg
+            - name: haproxy-certs
+              mountPath: /etc/haproxy/certs
+              readOnly: true
+      volumes:
+        - name: haproxy-config
+          configMap:
+            name: k0smotron-ingress-haproxy-config
+        - name: haproxy-certs
+          hostPath:
+            path: /etc/haproxy/certs
+            type: DirectoryOrCreate
+`,
+			"3_kube-service.yaml": fmt.Sprintf(`apiVersion: v1
 kind: Service
 metadata:
   labels:

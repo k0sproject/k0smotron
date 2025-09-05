@@ -87,24 +87,7 @@ spec:
 
 ## Manual Worker Setup for Standalone Clusters
 
-When using standalone k0smotron clusters with ingress support, you need to manually set up the HAProxy sidecar on each worker node. The following steps show what k0smotron does automatically in Cluster API mode:
-
-### 1. Create HAProxy Configuration
-
-Create the HAProxy configuration file at `/etc/haproxy/haproxy.cfg`:
-
-```bash
-frontend kubeapi_front
-    bind [::]:7443 v4v6 ssl crt /etc/haproxy/certs/server.pem
-    mode tcp
-    default_backend kubeapi_back
-
-backend kubeapi_back
-    mode tcp
-    server kube_api kube-api.example.com:443 ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str(kube-api.example.com)
-```
-
-### 2. Set Up Certificates
+When using standalone k0smotron clusters with ingress support, you need to manually add certificates for the HAProxy sidecar on each worker node.
 
 Create the certificate directory and place the required certificates:
 
@@ -125,57 +108,6 @@ kubectl get secret <cluster-name>-ingress-haproxy -o jsonpath='{.data.tls\.key}'
 # Combine server cert and key for HAProxy
 cat /etc/haproxy/certs/server.crt /etc/haproxy/certs/server.key > /etc/haproxy/certs/server.pem
 chmod 666 /etc/haproxy/certs/server.pem
-```
-
-### 3. Create HAProxy Pod Manifest
-
-Create `/etc/kubernetes/manifests/haproxy.yaml`:
-
-```yaml
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: haproxy
-  namespace: default
-  labels:
-    app: k0smotron-ingress-haproxy
-spec:
-  hostNetwork: true
-  containers:
-    - name: haproxy
-      image: haproxy:2.8
-      args:
-        - -f
-        - /etc/haproxy/haproxy.cfg
-      ports:
-        - containerPort: 7443
-          name: https
-      volumeMounts:
-        - name: haproxy-config
-          mountPath: /etc/haproxy/
-          readOnly: true
-  volumes:
-    - name: haproxy-config
-      hostPath:
-        path: /etc/haproxy/
-        type: DirectoryOrCreate
-```
-
-### 4. Configure k0s Worker
-
-When installing the k0s worker, set the `--pod-manifest-path` to point to the manifest directory:
-
-```bash
-k0s install worker --token-file /etc/k0s.token --kubelet-extra-args="--pod-manifest-path=/etc/kubernetes/manifests"
-```
-
-### 5. Start the Worker
-
-Start the k0s worker service:
-
-```bash
-k0s start
 ```
 
 The k0smotron control plane will automatically configure the Kubernetes service to point to the HAProxy sidecar when it detects the ingress configuration.

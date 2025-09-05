@@ -17,12 +17,10 @@ limitations under the License.
 package bootstrap
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
-	"text/template"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -398,71 +396,11 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 		},
 	})
 
-	resolvedFiles = append(resolvedFiles, cloudinit.File{
-		Path:    "/etc/haproxy/haproxy.cfg",
-		Content: generateHAProxyConfig(scope),
-	})
-	resolvedFiles = append(resolvedFiles, cloudinit.File{
-		Path:    "/etc/kubernetes/manifests/haproxy.yaml",
-		Content: generateHAProxyYAML(),
-	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve files for ingress integration: %w", err)
 	}
 
 	return resolvedFiles, nil
-}
-
-func generateHAProxyConfig(scope *Scope) string {
-	if scope.ingressSpec.IngressPort == 0 {
-		scope.ingressSpec.IngressPort = 443
-	}
-
-	cfgTmpl := template.Must(template.New("haproxy.cfg").Parse(`frontend kubeapi_front
-    bind [::]:7443 v4v6 ssl crt /etc/haproxy/certs/server.pem
-    mode tcp
-    default_backend kubeapi_back
-
-backend kubeapi_back
-    mode tcp
-    server kube_api {{.APIHost}}:{{ .IngressPort }} ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str({{.APIHost}})
-`))
-
-	var b bytes.Buffer
-	_ = cfgTmpl.Execute(&b, scope.ingressSpec)
-	return b.String()
-}
-
-func generateHAProxyYAML() string {
-	return `---
-apiVersion: v1
-kind: Pod
-metadata:
-  name: haproxy
-  namespace: default
-  labels:
-    app: k0smotron-ingress-haproxy
-spec:
-  hostNetwork: true
-  containers:
-    - name: haproxy
-      image: haproxy:2.8
-      args:
-        - -f
-        - /etc/haproxy/haproxy.cfg
-      ports:
-        - containerPort: 7443
-          name: https
-      volumeMounts:
-        - name: haproxy-config
-          mountPath: /etc/haproxy/
-          readOnly: true
-  volumes:
-    - name: haproxy-config
-      hostPath:
-        path: /etc/haproxy/
-        type: DirectoryOrCreate`
 }
 
 // createBootstrapSecret creates a bootstrap secret for the worker node
@@ -559,11 +497,7 @@ func createInstallCmd(scope *Scope) string {
 	installCmd := []string{
 		"k0s install worker --token-file /etc/k0s.token",
 	}
-	var ingressEnabled bool
-	if scope.ingressSpec != nil {
-		ingressEnabled = true
-	}
-	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, ingressEnabled, scope.Config.Spec.UseSystemHostname)...)
+	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
 	return strings.Join(installCmd, " ")
 }
 

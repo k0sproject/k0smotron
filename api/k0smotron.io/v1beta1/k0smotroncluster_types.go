@@ -446,7 +446,7 @@ func (kmc *Cluster) GetIngressName() string {
 
 // GetIngressManifestsConfigMapName returns the name of the configmap containing the manifests needed for the ingress
 func (kmc *Cluster) GetIngressManifestsConfigMapName() string {
-	return kmc.getObjectName("kmc-%s-haproxy-svc")
+	return kmc.getObjectName("kmc-%s-ingress")
 }
 
 const kubeNameLengthLimit = 63

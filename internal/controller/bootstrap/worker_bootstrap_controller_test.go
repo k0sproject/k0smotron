@@ -18,7 +18,6 @@ package bootstrap
 
 import (
 	"fmt"
-	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"testing"
 	"time"
 
@@ -73,37 +72,6 @@ func Test_createInstallCmd(t *testing.T) {
 				}}},
 			},
 			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --hostname-override=test-from-arg"`,
-		},
-		{
-			name: "with ingress",
-			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
-						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
-					},
-				},
-				ingressSpec: &kmapi.IngressSpec{APIHost: "test-from-arg"},
-				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{"name": "test"},
-				}}},
-			},
-			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --pod-manifest-path=/etc/kubernetes/manifests --hostname-override=test-from-arg"`,
-		},
-		{
-			name: "with ingress and useSystemHostname set",
-			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
-						UseSystemHostname: true,
-						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
-					},
-				},
-				ingressSpec: &kmapi.IngressSpec{APIHost: "test-from-arg"},
-				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{"name": "test"},
-				}}},
-			},
-			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--pod-manifest-path=/etc/kubernetes/manifests --hostname-override=test-from-arg"`,
 		},
 		{
 			name: "with useSystemHostname set",
@@ -809,24 +777,3 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 	}
 	return cluster, kcp, genericMachineTemplate
 }
-
-func TestBootstrapWorkerController_generateHAProxyConfig(t *testing.T) {
-	scope := &Scope{
-		ingressSpec: &kmapi.IngressSpec{
-			APIHost:          "api.test.local",
-			KonnectivityHost: "konnectivity.test.local",
-		},
-	}
-
-	require.Equal(t, expectedHAProxyConfig, generateHAProxyConfig(scope))
-}
-
-const expectedHAProxyConfig = `frontend kubeapi_front
-    bind [::]:7443 v4v6 ssl crt /etc/haproxy/certs/server.pem
-    mode tcp
-    default_backend kubeapi_back
-
-backend kubeapi_back
-    mode tcp
-    server kube_api api.test.local:443 ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str(api.test.local)
-`
