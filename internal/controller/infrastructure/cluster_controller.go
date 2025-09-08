@@ -51,10 +51,12 @@ func (r *ClusterController) Reconcile(ctx context.Context, req ctrl.Request) (re
 	}
 
 	// Nothing really to do, except put the cluster in a ready state
-	c.Status.Ready = true
-	if err := r.Status().Update(ctx, c); err != nil {
-		log.Error(err, "Failed to update RemoteCluster status")
-		return ctrl.Result{}, err
+	if c.ObjectMeta.DeletionTimestamp.IsZero() {
+		c.Status.Ready = true
+		if err := r.Status().Update(ctx, c); err != nil {
+			log.Error(err, "Failed to update RemoteCluster status")
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil
