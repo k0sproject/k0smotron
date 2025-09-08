@@ -357,6 +357,9 @@ func (r *RemoteMachineController) returnMachineToPool(ctx context.Context, rm *i
 		return fmt.Errorf("failed to list pooled machines: %w", err)
 	}
 	if len(pooledMachines.Items) == 0 {
+		if !rm.DeletionTimestamp.IsZero() {
+			return nil
+		}
 		return fmt.Errorf("no pooled machines found for pool %s", pool)
 	}
 
