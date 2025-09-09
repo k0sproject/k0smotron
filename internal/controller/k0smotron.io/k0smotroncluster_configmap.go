@@ -283,9 +283,9 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
 				"type":    "Custom",
 				"custom": map[string]interface{}{
 					"apiHost":          kmc.Spec.Ingress.APIHost,
-					"apiPort":          kmc.Spec.Ingress.IngressPort,
+					"apiPort":          kmc.Spec.Ingress.Port,
 					"konnectivityHost": kmc.Spec.Ingress.KonnectivityHost,
-					"konnectivityPort": kmc.Spec.Ingress.IngressPort,
+					"konnectivityPort": kmc.Spec.Ingress.Port,
 				},
 			},
 		}

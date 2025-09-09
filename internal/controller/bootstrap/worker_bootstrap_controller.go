@@ -333,7 +333,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	var joinToken string
 	if scope.ingressSpec != nil {
 		var err error
-		joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.IngressPort), "kubelet-bootstrap")
+		joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port), "kubelet-bootstrap")
 		if err != nil {
 			return "", fmt.Errorf("failed to create join token: %w", err)
 		}

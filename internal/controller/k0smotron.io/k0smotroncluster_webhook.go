@@ -5,6 +5,7 @@ import (
 	"fmt"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,6 +39,12 @@ func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error 
 
 	if kmc.Spec.Etcd.Image == "" {
 		kmc.Spec.Etcd.Image = km.DefaultEtcdImage
+	}
+
+	if kmc.Spec.Ingress != nil {
+		if kmc.Spec.Ingress.Deploy == nil {
+			kmc.Spec.Ingress.Deploy = ptr.To(true)
+		}
 	}
 
 	return nil

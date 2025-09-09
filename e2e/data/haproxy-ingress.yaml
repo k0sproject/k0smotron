@@ -164,7 +164,7 @@ spec:
           limits:
             memory: 2560Mi
           requests:
-            memory: 2048Mi
+            memory: 250Mi
         livenessProbe:
           httpGet:
             path: /healthz

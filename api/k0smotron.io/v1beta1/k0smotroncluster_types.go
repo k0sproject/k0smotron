@@ -27,9 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
 	// KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
@@ -120,10 +117,13 @@ type ClusterSpec struct {
 
 // IngressSpec defines the ingress configuration for accessing the Kubernetes API and konnectivity server via host names
 type IngressSpec struct {
-	// IngressPort defines the port used by the ingress controller
+	// Deploy defines whether to deploy an ingress resource for the cluster or let the user do it manually.
+	// Default: true
+	Deploy *bool `json:"deploy,omitempty"`
+	// Port defines the port used by the ingress controller
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=443
-	IngressPort int64 `json:"ingressPort,omitempty"`
+	Port int64 `json:"port,omitempty"`
 	//+kubebuilder:validation:Optional
 	APIHost string `json:"apiHost,omitempty"`
 	//+kubebuilder:validation:Optional

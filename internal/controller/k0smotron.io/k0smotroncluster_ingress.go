@@ -19,6 +19,7 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 	if kmc.Spec.Ingress == nil {
 		return nil
 	}
+
 	configMap, err := scope.generateIngressManifestsConfigMap(kmc)
 	if err != nil {
 		return fmt.Errorf("failed to generate ingress manifests configmap: %w", err)
@@ -28,6 +29,7 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 	if err != nil {
 		return fmt.Errorf("failed to patch haproxy configmap for ingress: %w", err)
 	}
+
 	var foundManifest bool
 	for _, manifest := range kmc.Spec.Manifests {
 		if manifest.Name == kmc.GetIngressManifestsConfigMapName() {
@@ -48,9 +50,13 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 		})
 	}
 
-	ingress := scope.generateIngress(kmc)
-	_ = ctrl.SetControllerReference(kmc, &ingress, scope.client.Scheme())
-	return scope.client.Patch(ctx, &ingress, client.Apply, patchOpts...)
+	if *kmc.Spec.Ingress.Deploy {
+		ingress := scope.generateIngress(kmc)
+		_ = ctrl.SetControllerReference(kmc, &ingress, scope.client.Scheme())
+		return scope.client.Patch(ctx, &ingress, client.Apply, patchOpts...)
+	}
+
+	return nil
 }
 
 func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster) (corev1.ConfigMap, error) {
@@ -82,7 +88,7 @@ subsets:
 			"1_haproxy-configmap.yaml": fmt.Sprintf(`apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: k0smotron-ingress-haproxy-config
+  name: k0smotron-haproxy-config
   namespace: default
 data:
   haproxy.cfg: |
@@ -94,22 +100,22 @@ data:
     backend kubeapi_back
         mode tcp
         server kube_api %s:%d ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str(%s)
-`, kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.IngressPort, kmc.Spec.Ingress.APIHost),
+`, kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port, kmc.Spec.Ingress.APIHost),
 			"2_haproxy-ds.yaml": `apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: k0smotron-ingress-haproxy
+  name: k0smotron-haproxy
   namespace: default
   labels:
-    app: k0smotron-ingress-haproxy
+    app: k0smotron-haproxy
 spec:
   selector:
     matchLabels:
-      app: k0smotron-ingress-haproxy
+      app: k0smotron-haproxy
   template:
     metadata:
       labels:
-        app: k0smotron-ingress-haproxy
+        app: k0smotron-haproxy
     spec:
       hostNetwork: true
       containers:
@@ -131,7 +137,7 @@ spec:
       volumes:
         - name: haproxy-config
           configMap:
-            name: k0smotron-ingress-haproxy-config
+            name: k0smotron-haproxy-config
         - name: haproxy-certs
           hostPath:
             path: /etc/haproxy/certs
@@ -159,7 +165,7 @@ spec:
     protocol: TCP
     targetPort: 7443
   selector:
-    app: k0smotron-ingress-haproxy
+    app: k0smotron-haproxy
   sessionAffinity: None
   type: ClusterIP`, scope.clusterSettings.kubernetesServiceIP, scope.clusterSettings.kubernetesServiceIP),
 		},
@@ -236,5 +242,4 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 	}
 
 	return ingress
-
 }

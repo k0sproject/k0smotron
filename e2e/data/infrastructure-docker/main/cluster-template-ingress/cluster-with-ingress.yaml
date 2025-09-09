@@ -31,8 +31,8 @@ spec:
   version: v1.33.1-custom-nllb-6-k0s.0
   ingress:
     apiHost: kube-api.${KIND_IP}.nip.io
-    ingressPort: ${HAPROXY_PORT}
     konnectivityHost: konnectivity.${KIND_IP}.nip.io
+    port: ${HAPROXY_PORT}
   k0sConfig:
     apiVersion: k0s.k0sproject.io/v1beta1
     kind: ClusterConfig

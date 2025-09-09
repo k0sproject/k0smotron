@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
-func TestIngressdock(t *testing.T) {
+func TestIngress(t *testing.T) {
 	setupAndRun(t, ingressSupportSpec)
 }
 

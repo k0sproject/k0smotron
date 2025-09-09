@@ -250,14 +250,19 @@ spec:
                             description: ClassName defines the ingress class name
                               to be used by the ingress controller.
                             type: string
-                          ingressPort:
-                            default: 443
-                            description: IngressPort defines the port used by the
-                              ingress controller
-                            format: int64
-                            type: integer
+                          deploy:
+                            description: |-
+                              Deploy defines whether to deploy an ingress resource for the cluster or let the user do it manually.
+                              Default: true
+                            type: boolean
                           konnectivityHost:
                             type: string
+                          port:
+                            default: 443
+                            description: Port defines the port used by the ingress
+                              controller
+                            format: int64
+                            type: integer
                         type: object
                       k0sConfig:
                         description: |-

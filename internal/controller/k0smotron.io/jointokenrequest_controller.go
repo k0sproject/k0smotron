@@ -227,7 +227,7 @@ func updateJoinTokenURL(token string, kmc km.Cluster) (string, error) {
 	}
 
 	for _, cluster := range cfg.Clusters {
-		cluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.IngressPort)
+		cluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
 	}
 
 	updatedData, err := clientcmd.Write(*cfg)

@@ -580,13 +580,11 @@ Ingress defines the ingress configuration.
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>ingressPort</b></td>
-        <td>integer</td>
+        <td><b>deploy</b></td>
+        <td>boolean</td>
         <td>
-          IngressPort defines the port used by the ingress controller<br/>
-          <br/>
-            <i>Format</i>: int64<br/>
-            <i>Default</i>: 443<br/>
+          Deploy defines whether to deploy an ingress resource for the cluster or let the user do it manually.
+Default: true<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -594,6 +592,16 @@ Ingress defines the ingress configuration.
         <td>string</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>
+          Port defines the port used by the ingress controller<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Default</i>: 443<br/>
         </td>
         <td>false</td>
       </tr></tbody>
