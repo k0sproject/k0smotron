@@ -2,7 +2,7 @@
 
 Users can use k0smotron in two distinct ways:
 
-**Standalone**
+## Standalone
 
 :   In this mode, standalone k0smotron manages only k0s control planes
     running in the management cluster offering streamlined control and
@@ -10,7 +10,7 @@ Users can use k0smotron in two distinct ways:
 
     [comment]: # (k0smotron.io/v1beta1.Cluster)
 
-**Cluster API integration**
+## Cluster API integration
 
 :   Alternatively, users can opt for k0smotron integration with Cluster API,
     enabling k0smotron to manage Kubernetes clusters across various infrastructure

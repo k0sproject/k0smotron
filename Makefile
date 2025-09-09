@@ -63,33 +63,62 @@ help: ## Display this help.
 ##@ Development
 
 ### CRD manifests (one per API group)
-.PHONY: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-k0smotron
+.PHONY: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-standalone
 manifests-bootstrap: $(CONTROLLER_GEN) ## Generate CRDs for bootstrap.cluster.x-k8s.io
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./..." \
-	  output:crd:artifacts:config=config/crd/bases/bootstrap
-	find ./config/crd/bases/bootstrap -type f ! -name "bootstrap*" ! -name "kustomization.yaml" -print0 | xargs -0 rm
+	  paths="./api/bootstrap/v1beta1/..." \
+	  paths=./internal/controller/bootstrap/... \
+	  output:crd:artifacts:config=config/clusterapi/bootstrap/crd/bases \
+	  output:rbac:dir=config/clusterapi/bootstrap/rbac \
+	  output:webhook:dir=config/clusterapi/bootstrap/webhook
 
-manifests-controlplane: $(CONTROLLER_GEN) ## Generate CRDs for controlplane.cluster.x-k8s.io
+manifests-controlplane: $(CONTROLLER_GEN) ## Generate CRDs for controlplane.cluster.x-k8s.io.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./..." \
-	  output:crd:artifacts:config=config/crd/bases/controlplane
-	find ./config/crd/bases/controlplane -type f ! -name "controlplane*" ! -name "kustomization.yaml" -print0 | xargs -0 rm
+	  paths="./api/controlplane/v1beta1/..." \
+	  paths=./internal/controller/controlplane/... \
+	  output:crd:artifacts:config=config/clusterapi/controlplane/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
+	  paths="./api/controlplane/v1beta1/..." \
+	  paths="./api/k0smotron.io/v1beta1/..." \
+	  paths=./internal/controller/controlplane/... \
+	  paths=./internal/controller/k0smotron.io/... \
+	  output:rbac:dir=config/clusterapi/controlplane/rbac \
+	  output:webhook:dir=config/clusterapi/controlplane/webhook
 
 manifests-infrastructure: $(CONTROLLER_GEN) ## Generate CRDs for infrastructure.cluster.x-k8s.io
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./..." \
-	  output:crd:artifacts:config=config/crd/bases/infrastructure
-	find ./config/crd/bases/infrastructure -type f ! -name "infrastructure*" ! -name "kustomization.yaml" -print0 | xargs -0 rm
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true \
+	  paths="./api/infrastructure/v1beta1/..." \
+	  paths=./internal/controller/infrastructure/... \
+	  output:crd:artifacts:config=config/clusterapi/infrastructure/crd/bases \
+	  output:rbac:dir=config/clusterapi/infrastructure/rbac
 
-manifests-k0smotron: $(CONTROLLER_GEN) ## Generate CRDs for k0smotron.io
+manifests-standalone: $(CONTROLLER_GEN) ## Generate CRDs for k0smotron.io standalone
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./..." \
-	  output:crd:artifacts:config=config/crd/bases/k0smotron.io
-	find ./config/crd/bases/k0smotron.io -type f ! -name "k0smotron.io*" ! -name "kustomization.yaml" -print0 | xargs -0 rm
+	  paths="./api/k0smotron.io/v1beta1/..." \
+	  paths=./internal/controller/k0smotron.io/... \
+	  output:crd:artifacts:config=config/standalone/crd/bases \
+	  output:rbac:dir=config/standalone/rbac \
+	  output:webhook:dir=config/standalone/webhook
+
+.PHONY: manifests-capi-integration
+manifests-capi-integration: manifests manifests-capi-integration-without-crd
+
+.PHONY: manifests-capi-integration-without-crd
+manifests-capi-integration-without-crd: $(CONTROLLER_GEN) # Generate RBAC and webhook manifests for all controllers except CRDs in order to reuse them from each config/clusterapi/{provider}
+	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook \
+	  paths="./api/bootstrap/v1beta1/..." \
+	  paths=./internal/controller/bootstrap/... \
+	  paths="./api/controlplane/v1beta1/..." \
+	  paths="./api/k0smotron.io/v1beta1/..." \
+	  paths=./internal/controller/controlplane/... \
+	  paths=./internal/controller/k0smotron.io/... \
+	  paths="./api/infrastructure/v1beta1/..." \
+	  paths=./internal/controller/infrastructure/... \
+	  output:rbac:dir=config/clusterapi/all/rbac \
+	  output:webhook:dir=config/clusterapi/all/webhook
 
 .PHONY: manifests
-manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-k0smotron ## Generate all CRD YAMLs per group
+manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-standalone ## Generate all CRD YAMLs per group
 
 ### generate
 generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
@@ -100,7 +129,7 @@ generate_targets += api/infrastructure/v1beta1/zz_generated.deepcopy.go
 $(generate_targets): $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-generate: $(generate_targets) clusterapi-manifests ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: $(generate_targets) manifests ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 
 
 GO_PKGS=$(shell go list ./...)
@@ -155,10 +184,6 @@ e2e-aws:
 build:
 	go build -o bin/manager cmd/main.go
 
-.PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./cmd/main.go
-
 # If you wish built the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
@@ -199,49 +224,43 @@ ifndef ignore-not-found
   ignore-not-found = false
 endif
 
-.PHONY: install
-install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl create -f -
-
-.PHONY: uninstall
-uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
-
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image k0s/k0smotron=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl create -f -
+	cd config/clusterapi/all/manager && $(KUSTOMIZE) edit set image k0s/k0smotron=${IMG}
+	$(KUSTOMIZE) build config/clusterapi/all | kubectl create -f -
+	git checkout config/clusterapi/all/manager/kustomization.yaml
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/clusterapi/all | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: release
-release: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+release: manifests-capi-integration kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/clusterapi/all/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/clusterapi/all > install.yaml
+	git checkout config/clusterapi/all/manager/kustomization.yaml
+
+.PHONY: release-standalone
+release-standalone: manifests-standalone kustomize ## Generate install yaml for standalone mode
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default > install.yaml
+	$(KUSTOMIZE) build config/standalone > install-standalone.yaml
 	git checkout config/manager/kustomization.yaml
 
-clusterapi-manifests:
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/bootstrap/..." output:crd:artifacts:config=config/clusterapi/bootstrap/bases
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/controlplane/..." output:crd:artifacts:config=config/clusterapi/controlplane/bases
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/infrastructure/..." output:crd:artifacts:config=config/clusterapi/infrastructure/bases
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook paths="./api/k0smotron.io/..." output:crd:artifacts:config=config/clusterapi/k0smotron.io/bases
-
-bootstrap-components.yaml: $(CONTROLLER_GEN) clusterapi-manifests kustomize
+bootstrap-components.yaml: $(CONTROLLER_GEN) manifests-bootstrap kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/clusterapi/bootstrap/ > bootstrap-components.yaml
 	git checkout config/manager/kustomization.yaml
 
-control-plane-components.yaml: $(CONTROLLER_GEN) clusterapi-manifests kustomize
+control-plane-components.yaml: $(CONTROLLER_GEN) manifests-controlplane kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/clusterapi/controlplane/ > control-plane-components.yaml
 	git checkout config/manager/kustomization.yaml
 
-infrastructure-components.yaml: $(CONTROLLER_GEN) clusterapi-manifests kustomize
+infrastructure-components.yaml: $(CONTROLLER_GEN) manifests-infrastructure kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/clusterapi/infrastructure/ > infrastructure-components.yaml
 	git checkout config/manager/kustomization.yaml
+
 ##@ Build Dependencies
 
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary. If wrong version is installed, it will be removed before downloading.
@@ -275,23 +294,23 @@ $(CRDOC): Makefile.variables | $(LOCALBIN)
 
 .PHONY: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron docs-generate-reference
 docs-generate-bootstrap: $(CRDOC) ## Generate docs for bootstrap CRDs
-	$(CRDOC) --resources config/crd/bases/bootstrap --output docs/resource-reference/bootstrap.cluster.x-k8s.io-v1beta1.md
+	$(CRDOC) --resources config/clusterapi/bootstrap/crd/bases --output docs/resource-reference/bootstrap.cluster.x-k8s.io-v1beta1.md
 
 docs-generate-controlplane: $(CRDOC) ## Generate docs for controlplane CRDs
-	$(CRDOC) --resources config/crd/bases/controlplane --output docs/resource-reference/controlplane.cluster.x-k8s.io-v1beta1.md
+	$(CRDOC) --resources config/clusterapi/controlplane/crd/bases --output docs/resource-reference/controlplane.cluster.x-k8s.io-v1beta1.md
 
 docs-generate-infrastructure: $(CRDOC) ## Generate docs for infrastructure CRDs
-	$(CRDOC) --resources config/crd/bases/infrastructure --output docs/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1.md
+	$(CRDOC) --resources config/clusterapi/infrastructure/crd/bases --output docs/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1.md
 
 docs-generate-k0smotron: $(CRDOC) ## Generate docs for k0smotron CRDs
-	$(CRDOC) --resources config/crd/bases/k0smotron.io --output docs/resource-reference/k0smotron.io-v1beta1.md
+	$(CRDOC) --resources config/standalone/crd/bases --output docs/resource-reference/k0smotron.io-v1beta1.md
 
 # Generate docs for all CRDs apis
 docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron
 
 ## Generate all code, manifests, documentation, and release artifacts
 .PHONY: generate-all
-generate-all: clean generate manifests clusterapi-manifests docs-generate-reference release
+generate-all: clean generate docs-generate-reference release
 
 .PHONY: $(smoketests)
 $(smoketests): release k0smotron-image-bundle.tar

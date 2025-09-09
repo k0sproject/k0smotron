@@ -80,15 +80,15 @@ jobs:
             config.yaml
             k0sproject-k0smotron/
 
-      - name: Generate install yaml
+      - name: Generate install yaml for standalone mode
         run: |
-          make release
+          make release-standalone
 
-      - name: Upload install yaml
+      - name: Upload install-standalone yaml
         uses: actions/upload-artifact@v4
         with:
-          name: install-yaml
-          path: install.yaml
+          name: install-standalone-yaml
+          path: install-standalone.yaml
 
   unittest:
     name: Unit tests
@@ -194,7 +194,7 @@ jobs:
       - name: Download install manifest for k0smotron
         uses: actions/download-artifact@v5
         with:
-          name: install-yaml
+          name: install-standalone-yaml
 
       - name: Load k0smotron image bundle
         run: |
@@ -289,11 +289,6 @@ jobs:
       - name: Load k0smotron image bundle
         run: |
           docker load -i k0smotron-image-bundle.tar
-
-      - name: Download install manifest
-        uses: actions/download-artifact@v5
-        with:
-          name: install-yaml
 
       - name: Run e2e test
         run: |

@@ -69,7 +69,7 @@ func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc 
 		return err
 	}
 
-	err = CreateFromYAML(ctx, kc, rc, os.Getenv("K0SMOTRON_INSTALL_YAML"))
+	err = CreateFromYAML(ctx, kc, rc, os.Getenv("K0SMOTRON_STANDALONE_INSTALL_YAML"))
 	if err != nil {
 		return fmt.Errorf("failed to install k0smotron operator: %w", err)
 	}
@@ -78,6 +78,11 @@ func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc 
 	if err != nil {
 		return fmt.Errorf("failed to wait for k0smotron operator deployment: %w", err)
 	}
+
+	// Give some extra time for network to settle. This prevents issues with the webhook
+	// not being reachable right after the deployment is ready. Even though we wait for the
+	// webhook to be ready, it seems sometimes the network is not yet fully functional.
+	time.Sleep(5 * time.Second)
 
 	return nil
 }

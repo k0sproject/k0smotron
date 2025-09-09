@@ -1,5 +1,6 @@
 # Generated files
 install.yaml
+install-standalone.yaml
 bootstrap-components.yaml
 control-plane-components.yaml
 infrastructure-components.yaml
