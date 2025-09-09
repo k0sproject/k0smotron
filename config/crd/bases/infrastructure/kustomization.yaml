@@ -1,6 +1,0 @@
-resources:
-  - infrastructure.cluster.x-k8s.io_pooledremotemachines.yaml
-  - infrastructure.cluster.x-k8s.io_remoteclusters.yaml
-  - infrastructure.cluster.x-k8s.io_remoteclustertemplates.yaml
-  - infrastructure.cluster.x-k8s.io_remotemachines.yaml
-  - infrastructure.cluster.x-k8s.io_remotemachinetemplates.yaml

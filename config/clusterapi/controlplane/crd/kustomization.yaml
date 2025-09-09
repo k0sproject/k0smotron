@@ -1,0 +1,6 @@
+resources:
+ - ./bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
+ - ./bases/controlplane.cluster.x-k8s.io_k0scontrolplanetemplates.yaml
+ - ./bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
+ - ./bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanetemplates.yaml
+ - ../../../standalone/crd
