@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -41,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -67,10 +69,13 @@ var (
 )
 
 const (
-	allControllers           = "all"
+	allControllers = "all"
+	// CAPI controllers flags
 	bootstrapController      = "bootstrap"
 	controlPlaneController   = "control-plane"
 	infrastructureController = "infrastructure"
+	// Standalone controller flag
+	standaloneController = "standalone"
 )
 
 func init() {
@@ -265,32 +270,8 @@ func main() {
 	}
 
 	if isControllerEnabled(controlPlaneController) {
-		_ = mgr.AddReadyzCheck("webhook-check", mgr.GetWebhookServer().StartedChecker())
-		if err = (&controller.ClusterReconciler{
-			Client:     mgr.GetClient(),
-			Scheme:     mgr.GetScheme(),
-			ClientSet:  clientSet,
-			RESTConfig: restConfig,
-			Recorder:   mgr.GetEventRecorderFor("cluster-reconciler"),
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "K0smotronCluster")
-			os.Exit(1)
-		}
-
-		if err = (&controller.ClusterDefaulter{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "k0smotron.Cluster")
-			os.Exit(1)
-		}
-
-		if err = (&controller.JoinTokenRequestReconciler{
-			Client:     mgr.GetClient(),
-			Scheme:     mgr.GetScheme(),
-			ClientSet:  clientSet,
-			RESTConfig: restConfig,
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "JoinTokenRequest")
-			os.Exit(1)
-		}
+		// If 'control-plane' CAPI controller is explicitly enabled, it means also standalone controllers must be enabled
+		setStandaloneControllers(mgr, clientSet, restConfig)
 
 		if runCAPIControllers {
 			if err = (&controlplane.K0smotronController{
@@ -324,6 +305,9 @@ func main() {
 				os.Exit(1)
 			}
 		}
+	} else if isControllerEnabled(standaloneController) {
+		// If 'standalone' controller is explicitly enabled, run only standalone controllers.
+		setStandaloneControllers(mgr, clientSet, restConfig)
 	}
 
 	if isControllerEnabled(infrastructureController) && runCAPIControllers {
@@ -378,4 +362,32 @@ func main() {
 
 func isControllerEnabled(controllerName string) bool {
 	return enabledControllers[controllerName]
+}
+
+func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config) {
+	if err := (&controller.ClusterReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		ClientSet:  clientSet,
+		RESTConfig: restConfig,
+		Recorder:   mgr.GetEventRecorderFor("cluster-reconciler"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "K0smotronCluster")
+		os.Exit(1)
+	}
+
+	if err := (&controller.ClusterDefaulter{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "k0smotron.Cluster")
+		os.Exit(1)
+	}
+
+	if err := (&controller.JoinTokenRequestReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		ClientSet:  clientSet,
+		RESTConfig: restConfig,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "JoinTokenRequest")
+		os.Exit(1)
+	}
 }
