@@ -81,7 +81,7 @@ jobs:
           echo STABLE="$STABLE" >> $GITHUB_OUTPUT
 
       # Ensures the current branch is gh-pages,
-      # Creates / updates the "install.yaml" file with the corresponding versions
+      # Creates / updates the "install.yaml" and "install-standalone.yaml" files with the corresponding versions
       # Commits if the files were changed
       # Finally pushes if there are unpushed commits
       - name: Create install files
@@ -94,9 +94,12 @@ jobs:
         run: |
           STABLE=${{ steps.set_versions.outputs.STABLE }}
           make release IMG=quay.io/k0sproject/k0smotron:${STABLE}
+          make release-standalone IMG=quay.io/k0sproject/k0smotron:${STABLE}
           cp install.yaml /tmp/install.yaml
+          cp install-standalone.yaml /tmp/install-standalone.yaml
           git checkout gh-pages
           cp /tmp/install.yaml ${STABLE}/install.yaml
-          git add ${STABLE}/install.yaml && git update-index --refresh
-          git diff-index --quiet HEAD -- || git commit -m "Update install.yaml to ${STABLE}"
+          cp /tmp/install-standalone.yaml ${STABLE}/install-standalone.yaml
+          git add ${STABLE}/install.yaml ${STABLE}/install-standalone.yaml && git update-index --refresh
+          git diff-index --quiet HEAD -- || git commit -m "Update install.yaml and install-standalone.yaml to ${STABLE}"
           git push origin gh-pages

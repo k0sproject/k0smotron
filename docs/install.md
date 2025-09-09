@@ -6,13 +6,61 @@ control plane.
 
 !!! warning "Pre-requisites"
 
-    Before installing k0smotron, ensure that you have [cert-manager](https://cert-manager.io/docs/installation/) installed
+    Before installing k0smotron, ensure that you have [cert-manager](https://cert-manager.io/docs/installation/) installed when using the `kubectl apply` method.  
+    If you use `clusterctl`, cert-manager is installed automatically as part of the process.
 
 !!! note "TL;DR"
 
     ```bash
     kubectl apply --server-side=true -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/install.yaml
     ```
+
+## Installation modes
+
+k0smotron can be deployed in two modes:
+
+### 1. Standalone
+
+This mode installs only the k0smotron operator: 
+
+```bash
+kubectl apply --server-side=true -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/install-standalone.yaml
+```
+
+For more details, see the [Standalone](usage-overview.md#standalone) usage section.
+
+### 2. Cluster API integration
+
+Deploys k0smotron as a full Cluster API provider (**bootstrap, control plane, and infrastructure**).  
+This installation embeds the standalone components, so there is no need to install standalone separately. For more details, see the [Cluster API integration](usage-overview.md#cluster-api-integration) usage section.
+
+
+There are two options for installing in CAPI mode:
+
+#### Declarative deployment with `kubectl apply`:
+
+```bash
+kubectl apply --server-side=true -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/install.yaml
+```
+
+This installs **all components**: k0smotron operator, bootstrap provider, control plane provider, and infrastructure provider.
+It requires cert-manager to be preinstalled.
+
+!!! note "TL;DR"
+
+    In order to run k0smotron CAPI controllers, Cluster API controllers must be installed first.
+
+#### Per-module installation for Cluster API
+
+```bash
+clusterctl init --bootstrap k0sproject-k0smotron \
+                --control-plane k0sproject-k0smotron \
+                --infrastructure k0sproject-k0smotron
+```
+
+In this case, `clusterctl` also ensures that `cert-manager` is installed automatically.
+
+To start using the k0smotron Cluster API, refer to [Cluster API](cluster-api.md).
 
 ## Known limitations
 
@@ -60,38 +108,3 @@ k0smotron requires the following software to be preinstalled:
 * Optional. CSI provider for persistent storage in managed clusters.
 * Optional. Load balancer provider for ensuring high availability of the
   control plane.
-
-## Full installation
-
-A full k0smotron installation implies the following components:
-
-* k0smotron operator
-* Custom Resource Definitions
-* Role-based access control rules
-* Bootstrap provider
-* Infrastructure provider
-* Control plane provider
-
-To install the full version of k0smotron:
-
-```bash
-kubectl apply --server-side=true -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/install.yaml
-```
-
-Now, you can create your first control planes using k0smotron either as a
-standalone manager, or as a Cluster API provider. For use case details, see
-[k0smotron usage](usage-overview.md).
-
-## Per-module installation for Cluster API
-
-k0smotron is compatible with `clusterctl` and can act as a Cluster API
-bootstrap, infrastructure, and control plane provider. You can use
-`clusterctl` to install each k0smotron Cluster API module separately:
-
-```bash
-clusterctl init --bootstrap k0sproject-k0smotron \
-                --control-plane k0sproject-k0smotron \
-                --infrastructure k0sproject-k0smotron
-```
-
-To start using the k0smotron Cluster API, refer to [Cluster API](cluster-api.md).

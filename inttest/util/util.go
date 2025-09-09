@@ -69,7 +69,7 @@ func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc 
 		return err
 	}
 
-	err = CreateFromYAML(ctx, kc, rc, os.Getenv("K0SMOTRON_INSTALL_YAML"))
+	err = CreateFromYAML(ctx, kc, rc, os.Getenv("K0SMOTRON_STANDALONE_INSTALL_YAML"))
 	if err != nil {
 		return fmt.Errorf("failed to install k0smotron operator: %w", err)
 	}

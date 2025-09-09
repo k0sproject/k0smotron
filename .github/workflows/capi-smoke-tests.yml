@@ -79,10 +79,10 @@ jobs:
         run: |
           kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
 
-      - name: Download install manifest for k0smotron
+      - name: Download install manifest for k0smotron standalone
         uses: actions/download-artifact@v5
         with:
-          name: install-yaml
+          name: install-standalone-yaml
 
       - name: Run inttest for CAPI with docker provider
         run: |
