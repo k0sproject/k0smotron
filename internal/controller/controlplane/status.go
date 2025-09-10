@@ -107,7 +107,7 @@ func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *
 		}
 
 		return &planStatus{plan}, nil
-	case cpv1beta1.UpdateRecreate:
+	case cpv1beta1.UpdateRecreate, cpv1beta1.UpdateRecreateDeleteFirst:
 		return newMachineStatusComputer(ctx, c.Client, cluster)
 	default:
 		return nil, errors.New("upgrade strategy not found")
