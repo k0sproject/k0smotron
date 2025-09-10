@@ -325,6 +325,7 @@ spec:
                         enum:
                         - InPlace
                         - Recreate
+                        - RecreateDeleteFirst
                         type: string
                       version:
                         type: string

@@ -226,6 +226,7 @@ jobs:
           - check-capi-remote-machine-template-update
           - check-capi-docker-machine-template-update
           - check-capi-docker-machine-template-update-recreate
+          - check-capi-docker-machine-template-update-recreate-delete-first
           - check-capi-docker-machine-template-update-recreate-single
           - check-capi-docker-machine-template-update-recreate-kine
           - check-capi-remote-machine-job-provision

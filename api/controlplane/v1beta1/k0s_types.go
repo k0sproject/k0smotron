@@ -32,8 +32,12 @@ func init() {
 type UpdateStrategy string
 
 const (
-	UpdateInPlace  UpdateStrategy = "InPlace"
+	// UpdateInPlace is the default update strategy and it updates the control plane nodes in place using k0s autopilot.
+	UpdateInPlace UpdateStrategy = "InPlace"
+	// UpdateRecreate recreates control plane nodes one by one starting from creating a spare node.
 	UpdateRecreate UpdateStrategy = "Recreate"
+	// UpdateRecreateDeleteFirst recreates control plane nodes one by one starting from deleting an existing node.
+	UpdateRecreateDeleteFirst UpdateStrategy = "RecreateDeleteFirst"
 )
 
 const (
@@ -91,7 +95,7 @@ type K0sControlPlaneSpec struct {
 	Replicas int32 `json:"replicas,omitempty"`
 	// UpdateStrategy defines the strategy to use when updating the control plane.
 	//+kubebuilder:validation:Optional
-	//+kubebuilder:validation:Enum=InPlace;Recreate
+	//+kubebuilder:validation:Enum=InPlace;Recreate;RecreateDeleteFirst
 	//+kubebuilder:default=InPlace
 	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
 	// Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or

@@ -34,6 +34,7 @@ smoketests := \
     check-capi-docker-machine-change-template \
     check-capi-docker-machine-template-update \
     check-capi-docker-machine-template-update-recreate \
+    check-capi-docker-machine-template-update-recreate-delete-first \
     check-capi-docker-machine-template-update-recreate-kine \
     check-capi-docker-machine-template-update-recreate-single \
     check-upgrade \
