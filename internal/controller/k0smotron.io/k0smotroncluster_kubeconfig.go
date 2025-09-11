@@ -74,7 +74,8 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 		Type:       clusterv1.ClusterSecretType,
 	}
 
-	_ = ctrl.SetControllerReference(kmc, &secret, managementClusterClient.Scheme())
+	// workload cluster kubeconfig is always created in the management cluster so we set k0smotron cluster as owner
+	_ = ctrl.SetControllerReference(kmc, &secret, scope.client.Scheme())
 
 	return managementClusterClient.Patch(ctx, &secret, client.Apply, patchOpts...)
 }

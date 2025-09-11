@@ -81,10 +81,8 @@ type Scope struct {
 }
 
 type kmcScope struct {
-	// isClusterHCP indicates if the controlplane replicas run in the mothership cluster or in a different cluster
-	// (determined by the ClusterProfileRef).
-	// If 'true', the controlplane replicas run in the mothership cluster
-	inClusterHCP bool
+	// externalOwner is the owner object used to set the owner reference for the external cluster resources.
+	externalOwner metav1.Object
 	// client is the client used to interact with the cluster where the controlplane replicas run.
 	client client.Client
 	// clientSet is the clientset used to interact with the cluster where the controlplane replicas run.
@@ -152,6 +150,17 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	// If the controlplane replicas run in a different cluster, we need to ensure the external owner is created
+	// for garbage collection purposes. Only if the K0smotronControlPlane is not being deleted, otherwise an infinite
+	// loop would be created creating the root owner - deleting it - creating it again.
+	if kcp.Spec.KubeconfigRef != nil && kcp.ObjectMeta.DeletionTimestamp.IsZero() {
+		kmcScope.externalOwner, err = util.EnsureExternalOwner(ctx, cluster.Name, cluster.Namespace, kmcScope.client)
+		if err != nil {
+			log.Error(err, "Error ensuring external owner")
+			return ctrl.Result{}, err
+		}
+	}
+
 	defer func() {
 		derr := c.computeStatus(ctx, cluster, kcp, kmcScope)
 		if derr != nil {
@@ -191,11 +200,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	if !kcp.ObjectMeta.DeletionTimestamp.IsZero() {
 		log.Info("Reconcile K0smotronControlPlane deletion")
-		if !kmcScope.inClusterHCP {
-			return c.reconcileDelete(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, kcp)
-		}
-
-		return ctrl.Result{}, nil
+		return c.reconcileDelete(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, kcp)
 	}
 
 	res, ready, err := c.reconcile(ctx, cluster, kcp, kmcScope)
@@ -401,7 +406,13 @@ func isClusterSpecSynced(kmcSpec, kcpSpec kapi.ClusterSpec) (bool, error) {
 
 func ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane, scope *kmcScope) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
-	return certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0smotronControlPlane")))
+
+	owner := *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0smotronControlPlane"))
+	if scope.externalOwner != nil {
+		owner = *util.GetExternalControllerRef(scope.externalOwner)
+	}
+
+	return certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, capiutil.ObjectKey(cluster), owner)
 }
 
 // FormatStatusVersion formats the status version to match the spec version format.
@@ -678,6 +689,7 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta1.K0
 			logger.Error(err, "Error getting client from cluster kubeconfig reference")
 			return nil, err
 		}
+
 		kmcScope.secretCachingClient = kmcScope.client
 	}
 
