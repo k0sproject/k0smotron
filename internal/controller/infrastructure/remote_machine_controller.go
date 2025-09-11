@@ -340,6 +340,8 @@ func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *
 	rm.Spec.User = foundPooledMachine.Spec.Machine.User
 	rm.Spec.SSHKeyRef = foundPooledMachine.Spec.Machine.SSHKeyRef
 	rm.Spec.UseSudo = foundPooledMachine.Spec.Machine.UseSudo
+	rm.Spec.CommandsAsScript = foundPooledMachine.Spec.Machine.CommandsAsScript
+	rm.Spec.WorkingDir = foundPooledMachine.Spec.Machine.WorkingDir
 	rm.Spec.CustomCleanUpCommands = foundPooledMachine.Spec.Machine.CustomCleanUpCommands
 
 	return nil

@@ -68,6 +68,17 @@ type RemoteMachineSpec struct {
 	// +kubebuilder:validation:Optional
 	UseSudo bool `json:"useSudo,omitempty"`
 
+	// CommandsAsScript indicates if the commands should be executed as a script.
+	// If true, the commands will be written to a file and executed as a script.
+	// If false, the commands will be executed one by one.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
+	CommandsAsScript bool `json:"commandsAsScript,omitempty"`
+	// WorkingDir is the directory to use as working directory when connecting to the remote machine.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="/etc/k0smotron"
+	WorkingDir string `json:"workingDir,omitempty"`
+
 	// SSHKeyRef is a reference to a secret that contains the SSH private key.
 	// The key must be placed on the secret using the key "value".
 	// +kubebuilder:validation:Optional
@@ -151,7 +162,16 @@ type PooledMachineSpec struct {
 
 	// +kubebuilder:validation:Optional
 	UseSudo bool `json:"useSudo,omitempty"`
-
+	// CommandsAsScript indicates if the commands should be executed as a script.
+	// If true, the commands will be written to a file and executed as a script.
+	// If false, the commands will be executed one by one.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
+	CommandsAsScript bool `json:"commandsAsScript,omitempty"`
+	// WorkingDir is the directory to use as working directory when connecting to the remote machine.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="/etc/k0smotron"
+	WorkingDir string `json:"workingDir,omitempty"`
 	// CustomCleanUpCommands allow the user to run custom command for the clean up process of the machine.
 	// +kubebuilder:validation:Optional
 	CustomCleanUpCommands []string `json:"customCleanUpCommands,omitempty"`
