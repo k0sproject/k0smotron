@@ -20,6 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"path"
 	"time"
 
 	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
@@ -80,6 +83,14 @@ type kmcScope struct {
 	restConfig *rest.Config
 	// secretCachingClient is the client used to cache secrets for certificate generation.
 	secretCachingClient client.Client
+	// clusterSettings holds the cluster settings retrieved from the k0sConfig
+	clusterSettings clusterSettings
+}
+
+type clusterSettings struct {
+	serviceCIDR         string
+	clusterDomain       string
+	kubernetesServiceIP string
 }
 
 // +kubebuilder:rbac:groups=k0smotron.io,resources=clusters,verbs=get;list;watch;create;update;patch;delete
@@ -99,6 +110,7 @@ type kmcScope struct {
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=create;update;patch;delete
 // +kubebuilder:rbac:groups=storage.k8s.io,resources=storageclasses,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -218,6 +230,11 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	if err := kmcScope.reconcileIngress(ctx, kmc); err != nil {
+		kmc.Status.ReconciliationStatus = "Failed reconciling ingress"
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	}
+
 	if err := kmcScope.reconcileK0sConfig(ctx, kmc, r.Client); err != nil {
 		kmc.Status.ReconciliationStatus = "Failed reconciling configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
@@ -280,6 +297,13 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
+	if kmc.Spec.Ingress != nil {
+		err := kmcScope.ensureIngressCerts(ctx, kmc)
+		if err != nil {
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating ingress certificates: %w", err)
+		}
+	}
+
 	if err := kmcScope.reconcilePVC(ctx, kmc); err != nil {
 		kmc.Status.ReconciliationStatus = "Failed reconciling PVCs"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
@@ -314,6 +338,21 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 func (scope *kmcScope) ensureCertificates(ctx context.Context, kmc *km.Cluster) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
+	if kmc.Spec.Ingress != nil {
+		ingressCert := secret.Certificates{
+			&secret.Certificate{
+				Purpose:  "server",
+				CertFile: path.Join(secret.DefaultCertificatesDir, "ca.crt"),
+				KeyFile:  path.Join(secret.DefaultCertificatesDir, "ca.key"),
+			},
+			&secret.Certificate{
+				Purpose:  "apiserver-kubelet-client",
+				CertFile: path.Join(secret.DefaultCertificatesDir, "ca.crt"),
+				KeyFile:  path.Join(secret.DefaultCertificatesDir, "ca.key"),
+			},
+		}
+		certificates = append(certificates, ingressCert...)
+	}
 	err := certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc), *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")))
 	if err != nil {
 		return fmt.Errorf("error generating cluster certificates: %w", err)
@@ -333,6 +372,11 @@ func (r *ClusterReconciler) getKmcScope(ctx context.Context, kmc *km.Cluster) (*
 		clienSet:            r.ClientSet,
 		restConfig:          r.RESTConfig,
 		secretCachingClient: r.SecretCachingClient,
+		clusterSettings: clusterSettings{
+			serviceCIDR:         "10.96.0.0/12",  // Default service CIDR
+			kubernetesServiceIP: "10.96.0.1",     // Default kubernetes service IP
+			clusterDomain:       "cluster.local", // Default cluster domain
+		},
 	}
 
 	if kmc.Spec.KubeconfigRef != nil {
@@ -345,6 +389,29 @@ func (r *ClusterReconciler) getKmcScope(ctx context.Context, kmc *km.Cluster) (*
 		}
 		kmcScope.secretCachingClient = kmcScope.client
 	}
+
+	if kmc.Spec.K0sConfig != nil {
+		cidr, found, err := unstructured.NestedString(kmc.Spec.K0sConfig.Object, "spec", "network", "serviceCIDR")
+		if err != nil {
+			return kmcScope, fmt.Errorf("error retrieving service CIDR: %w", err)
+		}
+		if found {
+			kmcScope.clusterSettings.serviceCIDR = cidr
+		}
+
+		domain, found, err := unstructured.NestedString(kmc.Spec.K0sConfig.Object, "spec", "network", "clusterDomain")
+		if err != nil {
+			return kmcScope, fmt.Errorf("error retrieving cluster domain: %w", err)
+		}
+		if found {
+			kmcScope.clusterSettings.clusterDomain = domain
+		}
+	}
+	kubeSvcIP, err := constants.GetAPIServerVirtualIP(kmcScope.clusterSettings.serviceCIDR)
+	if err != nil {
+		return kmcScope, fmt.Errorf("failed to get kubernetes service IP from CIDR %q: %w", kmcScope.clusterSettings.serviceCIDR, err)
+	}
+	kmcScope.clusterSettings.kubernetesServiceIP = kubeSvcIP.String()
 
 	return kmcScope, nil
 }

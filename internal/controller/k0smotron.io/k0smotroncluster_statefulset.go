@@ -421,7 +421,6 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 					},
 				},
 			})
-
 		}
 	}
 	sfs.Spec.Template.Spec.Volumes = append(sfs.Spec.Template.Spec.Volumes, v1.Volume{
