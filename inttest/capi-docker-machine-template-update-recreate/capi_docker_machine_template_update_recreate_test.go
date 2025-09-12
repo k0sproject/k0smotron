@@ -270,7 +270,7 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  version: v1.30.3+k0s.0
+  version: v1.31.6+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
     k0s:
@@ -304,7 +304,7 @@ metadata:
   name:  docker-test-worker-0
   namespace: default
 spec:
-  version: v1.30.3
+  version: v1.31.6
   clusterName: docker-test
   bootstrap:
     configRef:
@@ -323,7 +323,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.30.3+k0s.0
+  version: v1.31.6+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine

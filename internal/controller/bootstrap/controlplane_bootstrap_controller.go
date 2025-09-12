@@ -70,6 +70,7 @@ type ControlPlaneController struct {
 const joinTokenFilePath = "/etc/k0s.token"
 
 var minVersionForETCDName = version.MustParse("v1.31.1+k0s.0")
+var minVersionForETCDMemberCRD = version.MustParse("v1.31.6+k0s.0")
 var errInitialControllerMachineNotInitialize = errors.New("initial controller machine has not completed its initialization")
 
 type ControllerScope struct {
@@ -354,15 +355,17 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		return nil, fmt.Errorf("error extracting the contents of the provided extra files: %w", err)
 	}
 	files = append(files, resolvedFiles...)
-	files = append(files, genShutdownServiceFiles()...)
 
 	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
 
 	commands := scope.Config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
-	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
-	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
-	commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
+	if currentKCPVersion.LessThanOrEqual(minVersionForETCDMemberCRD) {
+		files = append(files, genShutdownServiceFiles()...)
+		commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
+		commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
+		commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
+	}
 	commands = append(commands, installCmd, "k0s start")
 	commands = append(commands, scope.Config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
