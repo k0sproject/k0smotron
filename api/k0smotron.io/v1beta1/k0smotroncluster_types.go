@@ -125,7 +125,7 @@ type Mount struct {
 
 const (
 	defaultK0SImage   = "quay.io/k0sproject/k0s"
-	DefaultK0SVersion = "v1.27.9-k0s.0"
+	DefaultK0SVersion = "v1.33.4-k0s.0"
 	DefaultK0SSuffix  = "k0s.0"
 	DefaultEtcdImage  = "quay.io/k0sproject/etcd:v3.5.13"
 )
