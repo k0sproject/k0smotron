@@ -157,6 +157,7 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *cloudinit.CloudInit) (volum
 		})
 
 		buf.WriteString(fmt.Sprintf("%s /var/lib/bootstrap-data/%s %s:%s\n", scpCommand, fileName, machineDSN, file.Path))
+		buf.WriteString(fmt.Sprintf("%s chmod %s %s\n", sshCommand, file.Permissions, file.Path))
 	}
 	volumeMounts = append(volumeMounts, v1.VolumeMount{
 		Name:      "bootstrap-data",
