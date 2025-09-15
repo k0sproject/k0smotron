@@ -29,7 +29,7 @@ import (
 
 	"github.com/go-logr/logr"
 	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	rig "github.com/k0sproject/rig/v2"
 	rigssh "github.com/k0sproject/rig/v2/protocol/ssh"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -39,7 +39,7 @@ var regex = regexp.MustCompile(`--kubelet-root-dir[ =](/[/a-zA-Z0-9_-]+)+`)
 
 type SSHProvisioner struct {
 	bootstrapData []byte
-	cloudInit     *cloudinit.CloudInit
+	cloudInit     *provisioner.InputProvisionData
 	machine       *api.RemoteMachine
 	sshKey        []byte
 	log           logr.Logger
@@ -99,7 +99,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	}
 
 	// Execute the bootstrap script commands
-	for _, cmd := range p.cloudInit.RunCmds {
+	for _, cmd := range p.cloudInit.Commands {
 		output, err := rigClient.ExecOutput(cmd)
 		if err != nil {
 			p.log.Error(err, "failed to run command", "output", output)
@@ -178,7 +178,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 	}
 
 	var kubeletRootDir string
-	for _, cmd := range p.cloudInit.RunCmds {
+	for _, cmd := range p.cloudInit.Commands {
 		if strings.Contains(cmd, "--kubelet-root-dir") {
 			finds := regex.FindStringSubmatch(cmd)
 			if len(finds) > 1 {
@@ -204,7 +204,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 	return nil
 }
 
-func (p *SSHProvisioner) uploadFile(client *rig.Client, file cloudinit.File) error {
+func (p *SSHProvisioner) uploadFile(client *rig.Client, file provisioner.File) error {
 	fsys := client.Sudo().FS()
 	// Ensure base dir exists for target
 	dir := filepath.Dir(file.Path)

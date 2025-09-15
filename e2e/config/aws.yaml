@@ -1,0 +1,162 @@
+---
+# E2E test scenario using local dev images and manifests built from the source tree for following providers:
+# - cluster-api
+# - bootstrap k0smotron
+# - control-plane k0smotron
+# - infrastructure aws
+images:
+  - name: quay.io/k0sproject/k0smotron:latest
+    loadBehavior: mustLoad
+
+providers:
+  - name: cluster-api
+    type: CoreProvider
+    versions:
+      - name: "{go://sigs.k8s.io/cluster-api@v1.10}"
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.10}/core-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+  - name: aws
+    type: InfrastructureProvider
+    versions:
+      - name: v2.9.0
+        value: "https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/v2.9.0/infrastructure-components.yaml"
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../data/shared/v1beta1_aws/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+    files:
+      - sourcePath: "../data/infrastructure-aws/cluster-template-ignition.yaml"
+  - name: k0sproject-k0smotron
+    type: ControlPlaneProvider
+    versions:
+      - name: "{go://github.com/k0sproject/k0smotron@v1.4}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.4}/control-plane-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v1.5}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.5}/control-plane-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v1.6}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.6}/control-plane-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: v1.6.99 # potentially next release. Manifest from source files (development) are used.
+        value: ../../config/default
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "image: k0s/k0smotron:latest"
+            new: "image: quay.io/k0sproject/k0smotron:latest" # For local testing, this image needs to be built before run e2e by using `make docker-build`
+  - name: k0sproject-k0smotron
+    type: BootstrapProvider
+    versions:
+      - name: "{go://github.com/k0sproject/k0smotron@v1.4}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.4}/bootstrap-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v1.5}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.5}/bootstrap-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v1.6}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.6}/bootstrap-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: v1.6.99 # potentially next release. Manifest from source files (development) are used.
+        value: ../../config/default
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "image: k0s/k0smotron:latest"
+            new: "image: quay.io/k0sproject/k0smotron:latest"
+
+variables:
+  KUBERNETES_VERSION_MANAGEMENT: "v1.30.0"
+  KUBERNETES_VERSION: "v1.31.0"
+  KUBERNETES_VERSION_FIRST_UPGRADE_TO: "v1.30.2+k0s.0"
+  KUBERNETES_VERSION_SECOND_UPGRADE_TO: "v1.31.2+k0s.0"
+  IP_FAMILY: "IPv4"
+  KIND_IMAGE_VERSION: "v1.30.0"
+  # Enabling the feature flags by setting the env variables.
+  CLUSTER_TOPOLOGY: "true"
+  EXP_MACHINE_POOL: "true"
+  AWS_INSTANCE_TYPE: "t3.large" 
+  # Following feature flags are required to use Ignition as bootstrap data format in CAPA.
+  EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
+  EXP_BOOTSTRAP_FORMAT_IGNITION: "true"
+
+intervals:
+  # The array is defined as [timeout, polling interval]
+  # copied from https://github.com/kubernetes-sigs/cluster-api/blob/main/test/e2e/config/docker.yaml
+  default/wait-controllers: ["3m", "10s"]
+  default/wait-cluster: ["5m", "10s"]
+  default/wait-control-plane: ["10m", "10s"]
+  default/wait-worker-nodes: ["10m", "10s"]
+  default/wait-machine-pool-nodes: ["10m", "10s"]
+  default/wait-delete-cluster: ["10m", "10s"]
+  default/wait-kube-proxy-upgrade: ["30m", "10s"]
+  default/wait-machine-pool-upgrade: ["30m", "10s"]
+  default/wait-nodes-ready: ["10m", "10s"]
+  default/wait-machine-remediation: ["5m", "10s"]
+  default/wait-autoscaler: ["5m", "10s"]
+  remote-hcp/wait-controllers: ["5m", "10s"]
+  bootstrap/wait-deployment-available: ["3m", "10s"]
+  node-drain/wait-deployment-available: ["3m", "10s"]
+  node-drain/wait-control-plane: ["15m", "10s"]
+  node-drain/wait-machine-deleted: ["2m", "10s"]
+  kcp-remediation/wait-machines: ["5m", "10s"]
+  workload-recreate-upgrade/wait-cluster: ["10m", "10s"]
+  workload-recreate-upgrade/wait-control-plane: ["20m", "10s"]
+  workload-recreate-upgrade/wait-worker-nodes: ["20m", "10s"]
+  workload-inplace-upgrade/wait-cluster: ["10m", "10s"]
+  workload-inplace-upgrade/wait-control-plane: ["20m", "10s"]
+  workload-inplace-upgrade/wait-worker-nodes: ["20m", "10s"]
+  machinedeployment/wait-cluster: ["20m", "10s"]
+  machinedeployment/wait-control-plane: ["20m", "10s"]
+  machinedeployment/wait-delete-cluster: ["20m", "10s"]

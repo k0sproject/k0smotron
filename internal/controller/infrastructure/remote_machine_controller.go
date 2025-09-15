@@ -19,7 +19,6 @@ package infrastructure
 import (
 	"context"
 	"fmt"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
 
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
@@ -28,6 +27,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -188,7 +188,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}
 
-	cloudInit := &cloudinit.CloudInit{}
+	cloudInit := &provisioner.InputProvisionData{}
 	err = yaml.Unmarshal(bootstrapData, cloudInit)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to parse bootstrap data: %w", err)

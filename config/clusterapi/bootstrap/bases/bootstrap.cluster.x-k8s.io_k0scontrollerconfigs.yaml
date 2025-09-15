@@ -138,12 +138,46 @@ spec:
                       type: string
                   type: object
                 type: array
+              ignition:
+                description: Ignition defines the ignition configuration. If empty,
+                  k0smotron will use cloud-init.
+                properties:
+                  additionalConfig:
+                    description: |-
+                      AdditionalConfig is an unstructured object that contains additional config to be merged
+                      with the generated one. The format follows Butane spec: https://coreos.github.io/butane/
+                    type: string
+                  variant:
+                    description: |-
+                      Variant declares which distribution variant the generated config is for.
+                      Check the supported variants and versions here:
+                      https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications
+                    enum:
+                    - fcos
+                    - flatcar
+                    - openshift
+                    - r4e
+                    - fiot
+                    type: string
+                  version:
+                    description: |-
+                      Version is the schema version of the Butane config to use
+                      Check the supported variants and versions here:
+                      https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications
+                    type: string
+                type: object
               k0s:
                 description: |-
                   K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
                   If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              k0sInstallDir:
+                default: /usr/local/bin
+                description: |-
+                  K0sInstallDir specifies the directory where k0s binary will be installed.
+                  If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.
+                type: string
               postStartCommands:
                 description: PostStartCommands specifies commands to be run after
                   starting k0s worker.

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/netip"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -53,8 +54,8 @@ import (
 
 	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 	"github.com/k0sproject/version"
 )
@@ -216,7 +217,9 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	scope.machines = machines
 
-	bootstrapData, err := c.generateBootstrapDataForController(ctx, log, scope)
+	format := config.GetProvisionerFormat()
+
+	bootstrapData, err := c.generateBootstrapDataForController(ctx, log, scope, format)
 	if err != nil {
 		// if the bootstrap data generation corresponds to a controller that is not the initial one, it is common to try to obtain
 		// the IP of the first controller when has not yet been surfaced. This is required to create a join token. It is needed to
@@ -253,7 +256,8 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			},
 		},
 		Data: map[string][]byte{
-			"value": bootstrapData,
+			"value":  bootstrapData,
+			"format": []byte(format),
 		},
 		Type: clusterv1.ClusterSecretType,
 	}
@@ -275,9 +279,9 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.Context, log logr.Logger, scope *ControllerScope) ([]byte, error) {
+func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.Context, log logr.Logger, scope *ControllerScope, format string) ([]byte, error) {
 	var (
-		files      []cloudinit.File
+		files      []provisioner.File
 		installCmd string
 		err        error
 	)
@@ -314,7 +318,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling k0s config: %v", err)
 		}
-		files = append(files, cloudinit.File{
+		files = append(files, provisioner.File{
 			Path:        "/etc/k0s.yaml",
 			Permissions: "0644",
 			Content:     string(k0sConfigBytes),
@@ -354,37 +358,46 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		return nil, fmt.Errorf("error extracting the contents of the provided extra files: %w", err)
 	}
 	files = append(files, resolvedFiles...)
-	files = append(files, genShutdownServiceFiles()...)
+	files = append(files, genShutdownServiceFiles(scope.Config.Spec.K0sInstallDir)...)
 
-	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
+	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
 
 	commands := scope.Config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
-	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
+	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start --no-block k0sleave.service) || true)")
 	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
 	commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
-	commands = append(commands, installCmd, "k0s start")
+	commands = append(commands, installCmd, fmt.Sprintf("%s start", filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s")))
 	commands = append(commands, scope.Config.Spec.PostStartCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
 
-	ci := &cloudinit.CloudInit{
-		Files:   files,
-		RunCmds: commands,
-	}
+	var customUserData string
 	if scope.Config.Spec.CustomUserDataRef != nil {
-		customCloudInit, err := resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
+		customUserData, err = resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom controller user data: %w", err)
 		}
-		ci.CustomCloudInit = customCloudInit
 	}
 
-	return ci.AsBytes()
+	var p provisioner.Provisioner = &provisioner.CloudInitProvisioner{}
+	if format == bootstrapv1.IgnitionProvisioningFormat {
+		p = &provisioner.IgnitionProvisioner{
+			Variant:          scope.Config.Spec.K0sConfigSpec.Ignition.Variant,
+			Version:          scope.Config.Spec.K0sConfigSpec.Ignition.Version,
+			AdditionalConfig: scope.Config.Spec.K0sConfigSpec.Ignition.AdditionalConfig,
+		}
+	}
+
+	return p.ToProvisionData(&provisioner.InputProvisionData{
+		Files:          files,
+		Commands:       commands,
+		CustomUserData: customUserData,
+	})
 }
 
-func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *ControllerScope, files []cloudinit.File) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File) ([]provisioner.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	certs, _, err := c.getCerts(ctx, scope)
@@ -397,7 +410,7 @@ func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context
 	return files, nil
 }
 
-func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []cloudinit.File, firstControllerMachine *clusterv1.Machine) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File, firstControllerMachine *clusterv1.Machine) ([]provisioner.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	_, ca, err := c.getCerts(ctx, scope)
@@ -432,7 +445,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 
 	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, host, "controller-bootstrap")
 
-	files = append(files, cloudinit.File{
+	files = append(files, provisioner.File{
 		Path:        joinTokenFilePath,
 		Permissions: "0644",
 		Content:     joinToken,
@@ -441,7 +454,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	return files, err
 }
 
-func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *ControllerScope) ([]cloudinit.File, error) {
+func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *ControllerScope) ([]provisioner.File, error) {
 	secretName := scope.Cluster.Name + "-frp-token"
 	frpSecret := corev1.Secret{}
 	err := c.Client.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secretName}, &frpSecret)
@@ -525,15 +538,15 @@ spec:
                 path: frpc.ini
 
 `
-	return []cloudinit.File{{
+	return []provisioner.File{{
 		Path:        "/var/lib/k0s/manifests/k0smotron-tunneling/manifest.yaml",
 		Permissions: "0644",
 		Content:     fmt.Sprintf(tunnelingResources, scope.Config.Spec.Tunneling.ServerAddress, scope.Config.Spec.Tunneling.ServerNodePort, frpToken, localIP, modeConfig),
 	}}, nil
 }
 
-func (c *ControlPlaneController) getCerts(ctx context.Context, scope *ControllerScope) ([]cloudinit.File, *secret.Certificate, error) {
-	var files []cloudinit.File
+func (c *ControlPlaneController) getCerts(ctx context.Context, scope *ControllerScope) ([]provisioner.File, *secret.Certificate, error) {
+	var files []provisioner.File
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
@@ -553,7 +566,7 @@ func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Controller
 	}
 	ca := certificates.GetByPurpose(secret.ClusterCA)
 	for _, cert := range certificates.AsFiles() {
-		files = append(files, cloudinit.File{
+		files = append(files, provisioner.File{
 			Path:        cert.Path,
 			Permissions: "0644",
 			Content:     cert.Content,
@@ -595,8 +608,9 @@ func (c *ControlPlaneController) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func createCPInstallCmd(scope *ControllerScope) string {
+	k0sPath := filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s")
 	installCmd := []string{
-		"k0s install controller",
+		fmt.Sprintf("%s install controller", k0sPath),
 		"--force",
 		"--enable-dynamic-config",
 		"--env AUTOPILOT_HOSTNAME=" + scope.Config.Name,
@@ -608,8 +622,9 @@ func createCPInstallCmd(scope *ControllerScope) string {
 }
 
 func createCPInstallCmdWithJoinToken(scope *ControllerScope, tokenPath string) string {
+	k0sPath := filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s")
 	installCmd := []string{
-		"k0s install controller",
+		fmt.Sprintf("%s install controller", k0sPath),
 		"--force",
 		"--enable-dynamic-config",
 		"--env AUTOPILOT_HOSTNAME=" + scope.Config.Name,
@@ -749,25 +764,26 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, m
 	return machineImpl, nil
 }
 
-func genShutdownServiceFiles() []cloudinit.File {
-	return []cloudinit.File{
+func genShutdownServiceFiles(k0sInstallDir string) []provisioner.File {
+	k0sPath := filepath.Join(k0sInstallDir, "k0s")
+	return []provisioner.File{
 		{
 			Path:        "/etc/bin/k0sleave.sh",
 			Permissions: "0777",
-			Content: `#!/bin/sh
+			Content: fmt.Sprintf(`#!/bin/sh
 
-PID=$(k0s status | grep "Process ID" | awk '{print $3}')
+PID=$(%[1]s status | grep "Process ID" | awk '{print $3}')
 AUTOPILOT_HOSTNAME=$(tr '\0' '\n' < /proc/$PID/environ | grep AUTOPILOT_HOSTNAME)
 MACHINE_NAME=${AUTOPILOT_HOSTNAME#"AUTOPILOT_HOSTNAME="}
 
-IS_LEAVING=$(/usr/local/bin/k0s kc get controlnodes $MACHINE_NAME -o jsonpath='{.metadata.annotations.k0smotron\.io/leave}')
+IS_LEAVING=$(%[1]s kc get controlnodes $MACHINE_NAME -o jsonpath='{.metadata.annotations.k0smotron\.io/leave}')
 
 if [ $IS_LEAVING = "true" ]; then
-    until /usr/local/bin/k0s etcd leave; do
+    until %[1]s etcd leave; do
         sleep 1
     done
 fi
-`,
+`, k0sPath),
 		}, {
 			Path:        "/k0s/k0sleave.service",
 			Permissions: "0644",

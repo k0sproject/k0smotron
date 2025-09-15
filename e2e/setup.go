@@ -51,6 +51,7 @@ const (
 	KubernetesVersionSecondUpgradeTo = "KUBERNETES_VERSION_SECOND_UPGRADE_TO"
 	ControlPlaneMachineCount         = "CONTROL_PLANE_MACHINE_COUNT"
 	IPFamily                         = "IP_FAMILY"
+	SSHPublicKey                     = "SSH_PUBLIC_KEY"
 )
 
 var (

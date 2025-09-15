@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -46,8 +47,8 @@ import (
 	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 )
 
@@ -193,15 +194,17 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
+	format := config.GetProvisionerFormat()
+
 	log.Info("Generating bootstrap data")
-	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope)
+	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope, format)
 	if err != nil {
 		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	// Create the secret containing the bootstrap data
-	bootstrapSecret := createBootstrapSecret(scope, bootstrapData)
+	bootstrapSecret := createBootstrapSecret(scope, bootstrapData, format)
 
 	if err := r.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
@@ -220,7 +223,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log logr.Logger, scope *Scope) ([]byte, error) {
+func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log logr.Logger, scope *Scope, format string) ([]byte, error) {
 	log.Info("Finding the token secret")
 	token, err := r.getK0sToken(ctx, scope)
 	if err != nil {
@@ -228,7 +231,7 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 		return nil, err
 	}
 
-	files := []cloudinit.File{
+	files := []provisioner.File{
 		{
 			Path:        "/etc/k0s.token",
 			Permissions: "0644",
@@ -242,7 +245,7 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	}
 	files = append(files, resolvedFiles...)
 
-	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
+	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
 	installCmd := createInstallCmd(scope)
 
 	startCmd := `(command -v systemctl > /dev/null 2>&1 && systemctl start k0sworker) || ` + // systemd
@@ -258,20 +261,27 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
 
-	ci := &cloudinit.CloudInit{
-		Files:   files,
-		RunCmds: commands,
-	}
-
+	var customUserData string
 	if scope.Config.Spec.CustomUserDataRef != nil {
-		customCloudInit, err := resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
+		customUserData, err = resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom worker user data: %w", err)
 		}
-		ci.CustomCloudInit = customCloudInit
 	}
 
-	return ci.AsBytes()
+	var p provisioner.Provisioner = &provisioner.CloudInitProvisioner{}
+	if format == bootstrapv1.IgnitionProvisioningFormat {
+		p = &provisioner.IgnitionProvisioner{
+			Variant: scope.Config.Spec.Ignition.Variant,
+			Version: scope.Config.Spec.Ignition.Version,
+		}
+	}
+
+	return p.ToProvisionData(&provisioner.InputProvisionData{
+		Files:          files,
+		Commands:       commands,
+		CustomUserData: customUserData,
+	})
 }
 
 func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
@@ -326,7 +336,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 }
 
 // createBootstrapSecret creates a bootstrap secret for the worker node
-func createBootstrapSecret(scope *Scope, bootstrapData []byte) *corev1.Secret {
+func createBootstrapSecret(scope *Scope, bootstrapData []byte, format string) *corev1.Secret {
 	// Initialize labels with cluster-name label
 	labels := map[string]string{
 		clusterv1.ClusterNameLabel: scope.Cluster.Name,
@@ -368,7 +378,8 @@ func createBootstrapSecret(scope *Scope, bootstrapData []byte) *corev1.Secret {
 			},
 		},
 		Data: map[string][]byte{
-			"value": bootstrapData,
+			"value":  bootstrapData,
+			"format": []byte(format),
 		},
 		Type: clusterv1.ClusterSecretType,
 	}
@@ -414,8 +425,9 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 }
 
 func createInstallCmd(scope *Scope) string {
+	k0sPath := filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s")
 	installCmd := []string{
-		"k0s install worker --token-file /etc/k0s.token",
+		fmt.Sprintf("%s install worker --token-file /etc/k0s.token", k0sPath),
 	}
 	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
 	return strings.Join(installCmd, " ")
