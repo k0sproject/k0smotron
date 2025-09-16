@@ -69,15 +69,17 @@ type ControlPlaneController struct {
 
 const joinTokenFilePath = "/etc/k0s.token"
 
-var minVersionForETCDName = version.MustParse("v1.31.1+k0s.0")
+var minVersionForETCDName = version.MustParse("v1.31.1")
+var minVersionForETCDMemberCRD = version.MustParse("v1.31.6")
 var errInitialControllerMachineNotInitialize = errors.New("initial controller machine has not completed its initialization")
 
 type ControllerScope struct {
-	Config        *bootstrapv1.K0sControllerConfig
-	ConfigOwner   *bsutil.ConfigOwner
-	Cluster       *clusterv1.Cluster
-	WorkerEnabled bool
-	machines      collections.Machines
+	Config            *bootstrapv1.K0sControllerConfig
+	ConfigOwner       *bsutil.ConfigOwner
+	Cluster           *clusterv1.Cluster
+	WorkerEnabled     bool
+	currentKCPVersion *version.Version
+	machines          collections.Machines
 }
 
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -156,11 +158,17 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
+	currentKCPVersion, err := version.NewVersion(config.Spec.Version)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error parsing k0s version: %w", err)
+	}
+
 	scope := &ControllerScope{
-		Config:        config,
-		ConfigOwner:   configOwner,
-		Cluster:       cluster,
-		WorkerEnabled: false,
+		Config:            config,
+		ConfigOwner:       configOwner,
+		Cluster:           cluster,
+		WorkerEnabled:     false,
+		currentKCPVersion: currentKCPVersion,
 	}
 
 	for _, arg := range config.Spec.Args {
@@ -282,11 +290,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		err        error
 	)
 
-	currentKCPVersion, err := version.NewVersion(scope.Config.Spec.Version)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing k0s version: %w", err)
-	}
-	if currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
+	if scope.currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
 		if scope.Config.Spec.K0s == nil {
 			scope.Config.Spec.K0s = &unstructured.Unstructured{
 				Object: make(map[string]interface{}),
@@ -354,17 +358,12 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		return nil, fmt.Errorf("error extracting the contents of the provided extra files: %w", err)
 	}
 	files = append(files, resolvedFiles...)
-	files = append(files, genShutdownServiceFiles()...)
 
-	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
+	if scope.currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
+		files = append(files, genShutdownServiceFiles()...)
+	}
 
-	commands := scope.Config.Spec.PreStartCommands
-	commands = append(commands, downloadCommands...)
-	commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
-	commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
-	commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
-	commands = append(commands, installCmd, "k0s start")
-	commands = append(commands, scope.Config.Spec.PostStartCommands...)
+	commands := c.genK0sCommands(scope, installCmd)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
@@ -747,6 +746,22 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, m
 		return nil, fmt.Errorf("error getting machine implementation object: %w", err)
 	}
 	return machineImpl, nil
+}
+
+func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) []string {
+	commands := scope.Config.Spec.PreStartCommands
+
+	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
+	commands = append(commands, downloadCommands...)
+	if scope.currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
+		commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
+		commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
+		commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
+	}
+	commands = append(commands, installCmd, "k0s start")
+	commands = append(commands, scope.Config.Spec.PostStartCommands...)
+
+	return commands
 }
 
 func genShutdownServiceFiles() []cloudinit.File {
