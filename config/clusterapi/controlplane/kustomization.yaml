@@ -16,15 +16,16 @@ nameSuffix: -control-plane
 #    someName: someValue
 
 resources:
-- ../../rbac
-- ../../manager
+- ./rbac
+- ./manager
 - ../../certmanager
-- ../../webhook
-- ../k0smotron.io
-- ./bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
-- ./bases/controlplane.cluster.x-k8s.io_k0scontrolplanetemplates.yaml
-- ./bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
-- ./bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanetemplates.yaml
+- ./webhook
+- ./crd/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
+- ./crd/controlplane.cluster.x-k8s.io_k0scontrolplanetemplates.yaml
+- ./crd/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
+- ./crd/controlplane.cluster.x-k8s.io_k0smotroncontrolplanetemplates.yaml
+- ./crd/k0smotron.io_clusters.yaml
+- ./crd/k0smotron.io_jointokenrequests.yaml
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
 #- ../webhook

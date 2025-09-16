@@ -102,10 +102,9 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 
 	crdPaths := []string{
 		capiCoreCrdsPath,
-		filepath.Join(root, "config", "clusterapi", "bootstrap", "bases"),
-		filepath.Join(root, "config", "clusterapi", "controlplane", "bases"),
-		filepath.Join(root, "config", "clusterapi", "infrastructure", "bases"),
-		filepath.Join(root, "config", "clusterapi", "k0smotron.io", "bases"),
+		filepath.Join(root, "config", "clusterapi", "bootstrap", "crd"),
+		filepath.Join(root, "config", "clusterapi", "controlplane", "crd"),
+		filepath.Join(root, "config", "clusterapi", "infrastructure", "crd"),
 	}
 
 	env := &envtest.Environment{
