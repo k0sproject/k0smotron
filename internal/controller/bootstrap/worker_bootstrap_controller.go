@@ -231,7 +231,7 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	files := []cloudinit.File{
 		{
 			Path:        "/etc/k0s.token",
-			Permissions: "0644",
+			Permissions: "0600",
 			Content:     token,
 		},
 	}
