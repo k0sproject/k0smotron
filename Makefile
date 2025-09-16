@@ -163,6 +163,10 @@ e2e: generate-e2e-templates-main
 build:
 	go build -o bin/manager cmd/main.go
 
+.PHONY: run
+run: manifests generate fmt vet ## Run a controller from your host.
+	go run ./cmd/main.go
+
 # If you wish built the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
@@ -203,11 +207,25 @@ ifndef ignore-not-found
   ignore-not-found = false
 endif
 
+.PHONY: install
+install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build config/clusterapi/all/crd | kubectl create -f -
+
+.PHONY: uninstall
+uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	$(KUSTOMIZE) build config/clusterapi/all/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/clusterapi/all/manager && $(KUSTOMIZE) edit set image k0s/k0smotron=${IMG}
 	$(KUSTOMIZE) build config/clusterapi/all | kubectl create -f -
 	git checkout config/clusterapi/all/manager/kustomization.yaml
+
+
+.PHONY: tilt-standalone-env
+tilt-standalone-env: 
+	$(MAKE) release-standalone IMG=k0smotron-controller-manager
+	tilt up $(if $(DEBUG),-- --debug)
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.

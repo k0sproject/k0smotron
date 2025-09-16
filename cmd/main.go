@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
@@ -210,6 +211,14 @@ func main() {
 		mgr.GetLogger().Info("Cluster API v1beta1 not installed, skipping cluster-api controllers setup")
 	}
 
+	fmt.Println("Running with the following controllers enabled: test")
+
+	areWebhooksEnabled := areWebhooksEnabled(true)
+	if areWebhooksEnabled {
+		setupLog.Info("webhooks are enabled")
+	} else {
+		setupLog.Info("webhooks are disabled")
+	}
 	//+kubebuilder:scaffold:builder
 
 	if isControllerEnabled(bootstrapController) && runCAPIControllers {
@@ -245,7 +254,7 @@ func main() {
 
 	if isControllerEnabled(controlPlaneController) {
 		// If 'control-plane' CAPI controller is explicitly enabled, it means also standalone controllers must be enabled
-		setStandaloneControllers(mgr, clientSet, restConfig)
+		setStandaloneControllers(mgr, clientSet, restConfig, areWebhooksEnabled)
 
 		if runCAPIControllers {
 			if err = (&controlplane.K0smotronController{
@@ -269,19 +278,21 @@ func main() {
 				os.Exit(1)
 			}
 
-			if err = (&controlplane.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
-				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
-				os.Exit(1)
-			}
+			if areWebhooksEnabled {
+				if err = (&controlplane.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+					setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
+					os.Exit(1)
+				}
 
-			if err = (&controlplane.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
-				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0smotronControlPlaneValidator")
-				os.Exit(1)
+				if err = (&controlplane.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
+					setupLog.Error(err, "unable to create validation webhook", "webhook", "K0smotronControlPlaneValidator")
+					os.Exit(1)
+				}
 			}
 		}
 	} else if isControllerEnabled(standaloneController) {
 		// If 'standalone' controller is explicitly enabled, run only standalone controllers.
-		setStandaloneControllers(mgr, clientSet, restConfig)
+		setStandaloneControllers(mgr, clientSet, restConfig, areWebhooksEnabled)
 	}
 
 	if isControllerEnabled(infrastructureController) && runCAPIControllers {
@@ -325,7 +336,7 @@ func isControllerEnabled(controllerName string) bool {
 	return enabledControllers[controllerName]
 }
 
-func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config) {
+func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, areWebhooksEnabled bool) {
 	if err := (&controller.ClusterReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
@@ -337,9 +348,11 @@ func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clients
 		os.Exit(1)
 	}
 
-	if err := (&controller.ClusterDefaulter{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "k0smotron.Cluster")
-		os.Exit(1)
+	if areWebhooksEnabled {
+		if err := (&controller.ClusterDefaulter{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "k0smotron.Cluster")
+			os.Exit(1)
+		}
 	}
 
 	if err := (&controller.JoinTokenRequestReconciler{
@@ -351,4 +364,17 @@ func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clients
 		setupLog.Error(err, "unable to create controller", "controller", "JoinTokenRequest")
 		os.Exit(1)
 	}
+}
+
+func areWebhooksEnabled(defaultVal bool) bool {
+	valStr := os.Getenv("ENABLE_WEBHOOKS")
+	if valStr == "" {
+		return defaultVal
+	}
+
+	val, err := strconv.ParseBool(valStr)
+	if err != nil {
+		return defaultVal
+	}
+	return val
 }

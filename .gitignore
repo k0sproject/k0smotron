@@ -44,3 +44,6 @@ _artifacts
 
 # E2E test templates
 e2e/data/infrastructure-docker/**/cluster-template*.yaml
+
+# Dev environment files
+.tiltbuild/
