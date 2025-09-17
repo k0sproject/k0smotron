@@ -433,7 +433,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 
 	files = append(files, cloudinit.File{
 		Path:        joinTokenFilePath,
-		Permissions: "0644",
+		Permissions: "0600",
 		Content:     joinToken,
 	})
 

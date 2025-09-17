@@ -365,6 +365,7 @@ spec:
     address: {{ .Address }}
     port: 22
     user: root
+    commandsAsScript: true
     sshKeyRef:
       name: footloose-key
 ---
