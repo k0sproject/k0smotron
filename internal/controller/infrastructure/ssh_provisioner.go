@@ -91,6 +91,17 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		rigClient = rigClient.Sudo()
 	}
 
+	if p.machine.Spec.CommandsAsScript {
+		// Write the bootstrap script
+		installScriptPath := filepath.Join(p.machine.Spec.WorkingDir, "k0s_install.sh")
+		bootstrapFile := cloudinit.File{
+			Path:        installScriptPath,
+			Permissions: "0700",
+			Content:     "#!/bin/sh\nset -e\n\n" + strings.Join(p.cloudInit.RunCmds, "\n") + "\n",
+		}
+		p.cloudInit.Files = append(p.cloudInit.Files, bootstrapFile)
+	}
+
 	// Write files first
 	for _, file := range p.cloudInit.Files {
 		if err := p.uploadFile(rigClient, file); err != nil {
@@ -98,14 +109,25 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		}
 	}
 
-	// Execute the bootstrap script commands
-	for _, cmd := range p.cloudInit.RunCmds {
-		output, err := rigClient.ExecOutput(cmd)
+	if p.machine.Spec.CommandsAsScript {
+		// Run the install script
+		installScriptPath := filepath.Join(p.machine.Spec.WorkingDir, "k0s_install.sh")
+		output, err := rigClient.ExecOutput(installScriptPath)
 		if err != nil {
 			p.log.Error(err, "failed to run command", "output", output)
 			return fmt.Errorf("failed to run command: %w", err)
 		}
-		log.Info("executed command", "command", cmd, "output", output)
+		log.Info("executed command", "command", installScriptPath, "output", output)
+	} else {
+		// Run commands
+		for _, cmd := range p.cloudInit.RunCmds {
+			output, err := rigClient.ExecOutput(cmd)
+			if err != nil {
+				p.log.Error(err, "failed to run command", "output", output)
+				return fmt.Errorf("failed to run command: %w", err)
+			}
+			log.Info("executed command", "command", cmd, "output", output)
+		}
 	}
 
 	// Check for sentinel file
@@ -205,7 +227,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 }
 
 func (p *SSHProvisioner) uploadFile(client *rig.Client, file cloudinit.File) error {
-	fsys := client.Sudo().FS()
+	fsys := client.FS()
 	// Ensure base dir exists for target
 	dir := filepath.Dir(file.Path)
 	perms, err := file.PermissionsAsInt()

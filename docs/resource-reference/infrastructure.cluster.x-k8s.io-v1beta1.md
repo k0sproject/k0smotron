@@ -141,6 +141,17 @@ The key must be placed on the secret using the key "value".<br/>
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>commandsAsScript</b></td>
+        <td>boolean</td>
+        <td>
+          CommandsAsScript indicates if the commands should be executed as a script.
+If true, the commands will be written to a file and executed as a script.
+If false, the commands will be executed one by one.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>customCleanUpCommands</b></td>
         <td>[]string</td>
         <td>
@@ -170,6 +181,15 @@ The key must be placed on the secret using the key "value".<br/>
           User is the user to use when connecting to the remote machine.<br/>
           <br/>
             <i>Default</i>: root<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>workingDir</b></td>
+        <td>string</td>
+        <td>
+          WorkingDir is the directory to use as working directory when connecting to the remote machine.<br/>
+          <br/>
+            <i>Default</i>: /etc/k0smotron<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -752,6 +772,17 @@ RemoteMachineSpec defines the desired state of RemoteMachine
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>commandsAsScript</b></td>
+        <td>boolean</td>
+        <td>
+          CommandsAsScript indicates if the commands should be executed as a script.
+If true, the commands will be written to a file and executed as a script.
+If false, the commands will be executed one by one.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>customCleanUpCommands</b></td>
         <td>[]string</td>
         <td>
@@ -810,6 +841,15 @@ The key must be placed on the secret using the key "value".<br/>
           User is the user to use when connecting to the remote machine.<br/>
           <br/>
             <i>Default</i>: root<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>workingDir</b></td>
+        <td>string</td>
+        <td>
+          WorkingDir is the directory to use as working directory when connecting to the remote machine.<br/>
+          <br/>
+            <i>Default</i>: /etc/k0smotron<br/>
         </td>
         <td>false</td>
       </tr></tbody>

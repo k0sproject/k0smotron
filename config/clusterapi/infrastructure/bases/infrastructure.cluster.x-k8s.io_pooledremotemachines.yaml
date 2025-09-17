@@ -46,6 +46,13 @@ spec:
                     description: Address is the IP address or DNS name of the remote
                       machine.
                     type: string
+                  commandsAsScript:
+                    default: false
+                    description: |-
+                      CommandsAsScript indicates if the commands should be executed as a script.
+                      If true, the commands will be written to a file and executed as a script.
+                      If false, the commands will be executed one by one.
+                    type: boolean
                   customCleanUpCommands:
                     description: CustomCleanUpCommands allow the user to run custom
                       command for the clean up process of the machine.
@@ -73,6 +80,11 @@ spec:
                     default: root
                     description: User is the user to use when connecting to the remote
                       machine.
+                    type: string
+                  workingDir:
+                    default: /etc/k0smotron
+                    description: WorkingDir is the directory to use as working directory
+                      when connecting to the remote machine.
                     type: string
                 required:
                 - address
