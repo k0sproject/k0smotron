@@ -215,7 +215,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return res, err
 	}
 
-	if !ready {
+	if !ready && kcp.Spec.Ingress == nil {
 		err = c.waitExternalAddress(ctx, cluster)
 		if err != nil {
 			return res, err

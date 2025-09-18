@@ -86,7 +86,7 @@ type K0sControlPlane struct {
 
 	Spec K0sControlPlaneSpec `json:"spec,omitempty"`
 
-	// +kubebuilder:default:={version:"",ready:false,initialized:false,initialization:{controlPlaneInitialized:false}}
+	// +kubebuilder:default={version:"",ready:false,initialized:false,initialization:{controlPlaneInitialized:false}}
 	Status K0sControlPlaneStatus `json:"status,omitempty"`
 }
 

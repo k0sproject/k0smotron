@@ -48,6 +48,7 @@ import (
 	"github.com/go-logr/logr"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
@@ -73,6 +74,7 @@ type Scope struct {
 	Config              *bootstrapv1.K0sWorkerConfig
 	ConfigOwner         *bsutil.ConfigOwner
 	Cluster             *clusterv1.Cluster
+	ingressSpec         *km.IngressSpec
 	client              client.Client
 	secretCachingClient client.Client
 	provisioner         provisioner.Provisioner
@@ -246,6 +248,14 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	}
 	files = append(files, resolvedFiles...)
 
+	if scope.ingressSpec != nil {
+		resolveCertsForIngress, err := r.resolveFilesForIngress(ctx, scope)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, resolveCertsForIngress...)
+	}
+
 	commandsMap := make(map[provisioner.VarName]string)
 
 	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
@@ -259,9 +269,11 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 		`(command -v service > /dev/null 2>&1 && service k0sworker start) || ` + // SysV
 		`(echo "Not a supported init system"; false)`
 
+	ingressCommands := createIngressCommands(scope)
 	commands := scope.Config.Spec.PreStartCommands
 	commands = append(commands, downloadCommands...)
 	commandsMap[provisioner.VarK0sDownloadCommands] = strings.Join(downloadCommands, " && ")
+	commands = append(commands, ingressCommands...)
 	commands = append(commands, installCmd, startCmd)
 	commandsMap[provisioner.VarK0sInstallCommand] = installCmd
 	commandsMap[provisioner.VarK0sStartCommand] = startCmd
@@ -334,11 +346,77 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		return "", errors.New("failed to get CA certificate key pair")
 	}
 
-	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port), "kubelet-bootstrap")
-	if err != nil {
-		return "", fmt.Errorf("failed to create join token: %w", err)
+	var joinToken string
+	if scope.ingressSpec != nil {
+		var err error
+		joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port), "kubelet-bootstrap")
+		if err != nil {
+			return "", fmt.Errorf("failed to create join token: %w", err)
+		}
+	} else {
+		var err error
+		joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port), "kubelet-bootstrap")
+		if err != nil {
+			return "", fmt.Errorf("failed to create join token: %w", err)
+		}
 	}
 	return joinToken, nil
+}
+
+func createIngressCommands(scope *Scope) []string {
+	if scope.ingressSpec == nil {
+		return []string{}
+	}
+
+	return []string{
+		"mkdir -p /etc/haproxy/certs",
+		"cat /etc/haproxy/certs/server.crt /etc/haproxy/certs/server.key > /etc/haproxy/certs/server.pem",
+		"chmod 666 /etc/haproxy/certs/server.pem",
+	}
+}
+
+func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) ([]cloudinit.File, error) {
+	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv1.File{
+		{
+			File: cloudinit.File{
+				Path: "/etc/haproxy/certs/ca.crt",
+			},
+			ContentFrom: &bootstrapv1.ContentSource{
+				SecretRef: &bootstrapv1.ContentSourceRef{
+					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
+					Key:  "tls.crt",
+				},
+			},
+		},
+		{
+			File: cloudinit.File{
+				Path: "/etc/haproxy/certs/server.crt",
+			},
+			ContentFrom: &bootstrapv1.ContentSource{
+				SecretRef: &bootstrapv1.ContentSourceRef{
+					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
+					Key:  "tls.crt",
+				},
+			},
+		},
+		{
+			File: cloudinit.File{
+				Path: "/etc/haproxy/certs/server.key",
+			},
+			ContentFrom: &bootstrapv1.ContentSource{
+				SecretRef: &bootstrapv1.ContentSourceRef{
+					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
+					Key:  "tls.key",
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve files for ingress integration: %w", err)
+	}
+
+	return resolvedFiles, nil
 }
 
 // createBootstrapSecret creates a bootstrap secret for the worker node
@@ -415,6 +493,8 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 			log.Error(err, "Failed to get K0smotronControlPlane")
 			return err
 		}
+
+		scope.ingressSpec = kcp.Spec.Ingress
 
 		if kcp.Spec.KubeconfigRef != nil {
 			var err error

@@ -213,6 +213,36 @@ spec:
                   Image defines the k0s image to be deployed. If empty k0smotron
                   will pick it automatically. Must not include the image tag.
                 type: string
+              ingress:
+                description: Ingress defines the ingress configuration.
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    default:
+                      haproxy.org/ssl-passthrough: "true"
+                    description: Annotations defines extra annotations to be added
+                      to the ingress controller service.
+                    type: object
+                  apiHost:
+                    type: string
+                  className:
+                    description: ClassName defines the ingress class name to be used
+                      by the ingress controller.
+                    type: string
+                  deploy:
+                    description: |-
+                      Deploy defines whether to deploy an ingress resource for the cluster or let the user do it manually.
+                      Default: true
+                    type: boolean
+                  konnectivityHost:
+                    type: string
+                  port:
+                    default: 443
+                    description: Port defines the port used by the ingress controller
+                    format: int64
+                    type: integer
+                type: object
               k0sConfig:
                 description: |-
                   k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.

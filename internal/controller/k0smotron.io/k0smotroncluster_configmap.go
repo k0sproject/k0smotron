@@ -19,7 +19,9 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
+	"net"
 	"sort"
+	"strconv"
 
 	"github.com/imdario/mergo"
 	v1 "k8s.io/api/core/v1"
@@ -73,7 +75,7 @@ func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.Config
 		}
 	}
 
-	if !nllbEnabled {
+	if !nllbEnabled && kmc.Spec.Ingress == nil {
 		err := unstructured.SetNestedField(k0smotronValues, kmc.Spec.ExternalAddress, "spec", "api", "externalAddress")
 		if err != nil {
 			return v1.ConfigMap{}, nil, fmt.Errorf("error setting externalAddress: %v", err)
@@ -218,6 +220,18 @@ func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {
 
 	sans = append(sans, fmt.Sprintf("%s.svc.cluster.local", svcNamespacedName))
 
+	if kmc.Spec.Ingress != nil {
+		if kmc.Spec.Ingress.APIHost != "" {
+			// Always add localhost to SANs if APIHost is set, as we create a local proxy to the API server
+			sans = append(sans, "127.0.0.1")
+			sans = append(sans, "localhost")
+			sans = append(sans, kmc.Spec.Ingress.APIHost)
+		}
+		if kmc.Spec.Ingress.KonnectivityHost != "" {
+			sans = append(sans, kmc.Spec.Ingress.KonnectivityHost)
+		}
+	}
+
 	// Sort the sans to ensure stable output order
 	sort.Strings(sans)
 
@@ -259,5 +273,17 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
 			},
 		}
 	}
+
+	if kmc.Spec.Ingress != nil {
+		v1beta1Spec["api"].(map[string]any)["externalAddress"] = net.JoinHostPort(kmc.Spec.Ingress.APIHost, strconv.FormatInt(kmc.Spec.Ingress.Port, 10))
+		v1beta1Spec["api"].(map[string]any)["extraArgs"] = map[string]interface{}{
+			"endpoint-reconciler-type": "none",
+		}
+		v1beta1Spec["konnectivity"] = map[string]any{
+			"externalAddress": kmc.Spec.Ingress.KonnectivityHost,
+			"agentPort":       kmc.Spec.Ingress.Port,
+		}
+	}
+
 	return v1beta1Spec
 }
