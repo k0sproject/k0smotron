@@ -251,6 +251,7 @@ jobs:
           - k0smotron-upgrade
           - machinedeployment
           - remote-hosted-control-planes
+          - ingress
 
     steps:
       - name: Check out code into the Go module directory
