@@ -18,12 +18,8 @@ package k0smotronio
 
 import (
 	"context"
-
 	"fmt"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
-	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
-	"github.com/k0sproject/k0smotron/internal/exec"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
@@ -35,6 +31,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/internal/exec"
 )
 
 func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, managementClusterClient client.Client, kmc *km.Cluster) error {
@@ -51,7 +51,7 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 	}
 
 	// Post-process: build a kubeconfig with desired names based on current-context
-	processedOutput, err := rewriteKubeconfigNames(output, kmc.Name)
+	processedOutput, err := rewriteKubeconfigValues(output, kmc)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 	return managementClusterClient.Patch(ctx, &secret, client.Apply, patchOpts...)
 }
 
-func rewriteKubeconfigNames(kubeconfigYAML string, clusterName string) (string, error) {
+func rewriteKubeconfigValues(kubeconfigYAML string, kmc *km.Cluster) (string, error) {
 	obj, err := k8sruntime.Decode(clientcmdlatest.Codec, []byte(kubeconfigYAML))
 	if err != nil {
 		return "", err
@@ -110,12 +110,15 @@ func rewriteKubeconfigNames(kubeconfigYAML string, clusterName string) (string, 
 	if srcCluster.Server == "" {
 		return "", fmt.Errorf("cluster server is empty")
 	}
+	if kmc.Spec.Ingress != nil {
+		srcCluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
+	}
 	if len(srcUser.ClientCertificateData) == 0 || len(srcUser.ClientKeyData) == 0 {
 		return "", fmt.Errorf("client certificate/key data not found in kubeconfig")
 	}
 
-	clusterKey := fmt.Sprintf("%s-k0s", clusterName)
-	userKey := fmt.Sprintf("%s-admin", clusterName)
+	clusterKey := fmt.Sprintf("%s-k0s", kmc.Name)
+	userKey := fmt.Sprintf("%s-admin", kmc.Name)
 
 	newConfig := kubeconfig.CreateBasic(srcCluster.Server, clusterKey, userKey, srcCluster.CertificateAuthorityData)
 
