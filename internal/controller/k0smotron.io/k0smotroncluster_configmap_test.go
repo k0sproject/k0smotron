@@ -88,4 +88,33 @@ func TestGenerateCM(t *testing.T) {
 		assert.True(t, strings.Contains(conf, "my.san.address"))
 		assert.True(t, strings.Contains(conf, "my.san.address2"))
 	})
+
+	t.Run("config with ingress", func(t *testing.T) {
+		kmc := km.Cluster{
+			Spec: km.ClusterSpec{
+				Ingress: &km.IngressSpec{
+					APIHost:          "my.external.address",
+					KonnectivityHost: "my.konnectivity.external.address",
+					Port:             443,
+				},
+				K0sConfig: &unstructured.Unstructured{Object: map[string]interface{}{
+					"apiVersion": "k0s.k0sproject.io/v1beta1",
+					"kind":       "ClusterConfig",
+					"spec": map[string]interface{}{
+						"network": map[string]interface{}{
+							"provider": "calico",
+						},
+					},
+				}},
+			},
+		}
+
+		cm, _, err := scope.generateConfig(&kmc, []string{})
+		require.NoError(t, err)
+
+		conf := cm.Data["K0SMOTRON_K0S_YAML"]
+		t.Log(conf)
+		assert.True(t, strings.Contains(conf, "my.external.address:443"), "The external address must be my.external.address")
+		assert.True(t, strings.Contains(conf, "my.konnectivity.external.address"), "The konnectivity  address must be my.konnectivity.external.address")
+	})
 }
