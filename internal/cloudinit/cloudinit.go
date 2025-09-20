@@ -26,9 +26,10 @@ import (
 // Very basic type definitions to generate cloud-init yaml
 
 type CloudInit struct {
-	Files           []File   `yaml:"write_files,omitempty" json:"write_files,omitempty"`
-	RunCmds         []string `yaml:"runcmd" json:"runcmd,omitempty"`
-	CustomCloudInit string   `yaml:"-" json:"-,omitempty"`
+	Vars            map[string]string `yaml:"-" json:"-"`
+	Files           []File            `yaml:"write_files,omitempty" json:"write_files,omitempty"`
+	RunCmds         []string          `yaml:"runcmd" json:"runcmd,omitempty"`
+	CustomCloudInit string            `yaml:"-" json:"-,omitempty"`
 }
 
 type File struct {
@@ -45,6 +46,13 @@ func (c *CloudInit) AsBytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if len(c.Vars) > 0 {
+		for k, v := range c.Vars {
+			_, err = b.WriteString("{% set " + k + " = \"" + v + "\" %}\n")
+		}
+	}
+
 	_, err = b.WriteString("#cloud-config\n")
 	if err != nil {
 		return nil, err
@@ -61,9 +69,6 @@ func (c *CloudInit) AsBytes() ([]byte, error) {
 
 	if c.CustomCloudInit != "" {
 		_, err = b.WriteString("\n#cloud-config\n")
-		if err != nil {
-			return nil, err
-		}
 		_, err = b.WriteString(c.CustomCloudInit)
 		if err != nil {
 			return nil, err

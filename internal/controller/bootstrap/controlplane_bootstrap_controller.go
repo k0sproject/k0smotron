@@ -363,7 +363,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		files = append(files, genShutdownServiceFiles()...)
 	}
 
-	commands := c.genK0sCommands(scope, installCmd)
+	commands, commandsMap := c.genK0sCommands(scope, installCmd)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
@@ -373,6 +373,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		RunCmds: commands,
 	}
 	if scope.Config.Spec.CustomUserDataRef != nil {
+		ci.Vars = commandsMap
 		customCloudInit, err := resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom controller user data: %w", err)
@@ -748,20 +749,28 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, m
 	return machineImpl, nil
 }
 
-func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) []string {
+func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) ([]string, map[string]string) {
+	commandsMap := make(map[string]string)
+	commandsMap["preStartCommands"] = strings.Join(scope.Config.Spec.PreStartCommands, " && ")
+	commandsMap["postStartCommands"] = strings.Join(scope.Config.Spec.PostStartCommands, " && ")
+
 	commands := scope.Config.Spec.PreStartCommands
 
 	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
+	commandsMap["k0sDownloadCommands"] = strings.Join(downloadCommands, " && ")
 	commands = append(commands, downloadCommands...)
 	if scope.currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
 		commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start k0sleave.service) || true)")
 		commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
 		commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
 	}
+	commandsMap["k0sInstallCommand"] = installCmd
+	commandsMap["k0sStartCommand"] = "k0s start"
+
 	commands = append(commands, installCmd, "k0s start")
 	commands = append(commands, scope.Config.Spec.PostStartCommands...)
 
-	return commands
+	return commands, commandsMap
 }
 
 func genShutdownServiceFiles() []cloudinit.File {
