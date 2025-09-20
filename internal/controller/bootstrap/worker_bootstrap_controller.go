@@ -242,6 +242,8 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	}
 	files = append(files, resolvedFiles...)
 
+	commandsMap := make(map[string]string)
+
 	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version)
 	installCmd := createInstallCmd(scope)
 
@@ -251,9 +253,14 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 		`(echo "Not a supported init system"; false)`
 
 	commands := scope.Config.Spec.PreStartCommands
+	commandsMap["preStartCommands"] = strings.Join(scope.Config.Spec.PreStartCommands, " && ")
 	commands = append(commands, downloadCommands...)
+	commandsMap["k0sDownloadCommands"] = strings.Join(downloadCommands, " && ")
 	commands = append(commands, installCmd, startCmd)
+	commandsMap["k0sInstallCommand"] = installCmd
+	commandsMap["k0sStartCommand"] = startCmd
 	commands = append(commands, scope.Config.Spec.PostStartCommands...)
+	commandsMap["postStartCommands"] = strings.Join(scope.Config.Spec.PostStartCommands, " && ")
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
@@ -264,6 +271,7 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	}
 
 	if scope.Config.Spec.CustomUserDataRef != nil {
+		ci.Vars = commandsMap
 		customCloudInit, err := resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom worker user data: %w", err)
