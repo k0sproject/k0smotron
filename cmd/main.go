@@ -25,7 +25,6 @@ import (
 
 	"k8s.io/client-go/discovery"
 
-	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,7 +35,6 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,7 +44,10 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/featuregate"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/spf13/pflag"
+	"sigs.k8s.io/cluster-api/util/flags"
 	infrastructurev1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/bootstrap"
@@ -65,6 +66,7 @@ var (
 		infrastructureController: true,
 	}
 	managerOptions = flags.ManagerOptions{}
+	featureGates string
 )
 
 const (
@@ -106,6 +108,7 @@ func main() {
 		"[Deprecated, use --insecure-diagnostics instead] If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	pflag.CommandLine.BoolVar(&enableHTTP2, "enable-http2", false,
 		"[Deprecated] If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	pflag.CommandLine.StringVar(&featureGates, "feature-gates", "", "feature gates to enable (comma separated list of key=value pairs)")
 
 	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	opts := zap.Options{
@@ -115,6 +118,8 @@ func main() {
 	flags.AddManagerOptions(pflag.CommandLine, &managerOptions)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
+
+	_ = featuregate.Configure(featureGates)
 
 	if enabledController != "" && enabledController != allControllers {
 		enabledControllers = map[string]bool{
