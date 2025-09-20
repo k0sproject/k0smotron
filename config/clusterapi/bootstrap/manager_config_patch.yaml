@@ -21,3 +21,4 @@ spec:
         - "--diagnostics-address=127.0.0.1:8080"
         - "--leader-elect"
         - "--enable-controller=bootstrap"
+        - --feature-gates=${K0SMOTRON_FEATURE_GATES:=""}

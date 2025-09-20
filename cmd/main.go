@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"github.com/k0sproject/k0smotron/internal/featuregate"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -63,6 +64,7 @@ var (
 		controlPlaneController:   true,
 		infrastructureController: true,
 	}
+	featureGates string
 	managerOptions = flags.ManagerOptions{}
 )
 
@@ -105,6 +107,7 @@ func main() {
 		"[Deprecated, use --insecure-diagnostics instead] If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	pflag.CommandLine.BoolVar(&enableHTTP2, "enable-http2", false,
 		"[Deprecated] If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	pflag.CommandLine.StringVar(&featureGates, "feature-gates", "", "feature gates to enable (comma separated list of key=value pairs)")
 
 	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	opts := zap.Options{
@@ -114,6 +117,8 @@ func main() {
 	flags.AddManagerOptions(pflag.CommandLine, &managerOptions)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
+
+	_ = featuregate.Configure(featureGates)
 
 	if enabledController != "" && enabledController != allControllers {
 		enabledControllers = map[string]bool{
