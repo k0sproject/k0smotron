@@ -23,9 +23,10 @@ const (
 
 // InputProvisionData holds the data needed for provisioning a machine.
 type InputProvisionData struct {
-	Files          []File   `yaml:"write_files"`
-	Commands       []string `yaml:"runcmd"`
-	CustomUserData string   `yaml:"-"`
+	Files          []File             `yaml:"write_files"`
+	Commands       []string           `yaml:"runcmd"`
+	CustomUserData string             `yaml:"-"`
+	Vars           map[VarName]string `yaml:"-"`
 }
 
 // File represents a file to be created on the target system.
