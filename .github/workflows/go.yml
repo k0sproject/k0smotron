@@ -110,7 +110,7 @@ jobs:
 
   generate-sbom:
     name: "Build :: SBOM"
-    needs: [ build ]
+    needs: [build, unittest]
 
     runs-on: ubuntu-22.04
 
@@ -141,7 +141,7 @@ jobs:
 
   smoketest:
     name: Smoke test
-    needs: build
+    needs: [build, unittest]
     runs-on: oracle-vm-16cpu-64gb-x86-64
     strategy:
       fail-fast: false
@@ -189,7 +189,7 @@ jobs:
 
   capi-smokes-on-different-k0s-versions:
     name: CAPI Smokes Matrix
-    needs: build
+    needs: [build, unittest]
     strategy:
       fail-fast: false
       matrix:
@@ -205,7 +205,7 @@ jobs:
 
   capi-smokes:
     name: Cluster API smoke tests
-    needs: build
+    needs: [build, unittest]
     strategy:
       fail-fast: false
       matrix:
@@ -236,7 +236,7 @@ jobs:
 
   e2e:
     name: E2E test
-    needs: build
+    needs: [build, unittest]
     runs-on: oracle-vm-16cpu-64gb-x86-64
     strategy:
       fail-fast: false

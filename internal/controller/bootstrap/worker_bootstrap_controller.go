@@ -382,7 +382,7 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 	scope.client = r.Client
 	scope.secretCachingClient = r.SecretCachingClient
 
-	uControlPlane, err := external.Get(ctx, r.Client, cluster.Spec.ControlPlaneRef, cluster.Namespace)
+	uControlPlane, err := external.Get(ctx, r.Client, cluster.Spec.ControlPlaneRef)
 	if err != nil {
 		return err
 	}
