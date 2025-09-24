@@ -135,6 +135,14 @@ e2e: generate-e2e-templates-main
 	    -skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
 		-timeout=30m
 
+e2e-aws:
+	@[ -n "$$AWS_ACCESS_KEY_ID" ] || (echo "AWS_ACCESS_KEY_ID not defined"; exit 1)
+	@[ -n "$$AWS_SECRET_ACCESS_KEY" ] || (echo "AWS_SECRET_ACCESS_KEY not defined"; exit 1)
+	@[ -n "$$AWS_REGION" ] || (echo "AWS_REGION not defined"; exit 1)
+	@[ -n "$$AWS_B64ENCODED_CREDENTIALS" ] || (echo "AWS_B64ENCODED_CREDENTIALS not defined"; exit 1)
+	@[ -n "$$SSH_PUBLIC_KEY" ] || (echo "SSH_PUBLIC_KEY not defined"; exit 1)
+	$(MAKE) e2e TEST_NAME="${TEST_NAME}" E2E_CONF_FILE="$(shell pwd)/e2e/config/aws.yaml"
+
 ##@ Build
 
 .PHONY: build

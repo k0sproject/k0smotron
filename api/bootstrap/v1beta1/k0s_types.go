@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/k0sproject/k0smotron/internal/cloudinit"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -62,6 +62,14 @@ type K0sWorkerConfigList struct {
 }
 
 type K0sWorkerConfigSpec struct {
+	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+	// +kubebuilder:validation:Optional
+	Ignition *IgnitionSpec `json:"ignition,omitempty"`
+	// K0sInstallDir specifies the directory where k0s binary will be installed.
+	// If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=/usr/local/bin
+	K0sInstallDir string `json:"k0sInstallDir,omitempty"`
 	// Version is the version of k0s to use. In case this is not set, k0smotron will use
 	// a version field of the Machine object. If it's empty, the latest version is used.
 	// Make sure the version is compatible with the k0s version running on the control plane.
@@ -200,7 +208,7 @@ type K0sControllerConfigSpec struct {
 
 // File defines a file to be passed to user_data upon creation.
 type File struct {
-	cloudinit.File `json:",inline"`
+	provisioner.File `json:",inline"`
 	// ContentFrom specifies the source of the content.
 	// +kubebuilder:validation:Optional
 	ContentFrom *ContentSource `json:"contentFrom,omitempty"`
@@ -227,6 +235,14 @@ type ContentSourceRef struct {
 }
 
 type K0sConfigSpec struct {
+	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+	// +kubebuilder:validation:Optional
+	Ignition *IgnitionSpec `json:"ignition,omitempty"`
+	// K0sInstallDir specifies the directory where k0s binary will be installed.
+	// If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=/usr/local/bin
+	K0sInstallDir string `json:"k0sInstallDir,omitempty"`
 	// K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 	// If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
 	//+kubebuilder:validation:Optional
@@ -299,4 +315,23 @@ type TunnelingSpec struct {
 	//+kubebuilder:validation:Enum=tunnel;proxy
 	//+kubebuilder:default=tunnel
 	Mode string `json:"mode,omitempty"`
+}
+
+// IgnitionSpec defines the configuration for the Ignition provisioner.
+type IgnitionSpec struct {
+	// Variant declares which distribution variant the generated config is for.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=fcos;flatcar;openshift;r4e;fiot
+	// Check the supported variants and versions here:
+	// https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications
+	Variant string `json:"variant,omitempty"`
+	// Version is the schema version of the Butane config to use
+	// +kubebuilder:validation:Required
+	// Check the supported variants and versions here:
+	// https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications
+	Version string `json:"version,omitempty"`
+	// AdditionalConfig is an unstructured object that contains additional config to be merged
+	// with the generated one. The format follows Butane spec: https://coreos.github.io/butane/
+	// +kubebuilder:validation:Optional
+	AdditionalConfig string `json:"additionalConfig,omitempty"`
 }

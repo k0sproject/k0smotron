@@ -28,6 +28,7 @@ func Test_createDownloadCommands(t *testing.T) {
 		preInstalledK0s bool
 		url             string
 		version         string
+		installPath     string
 		want            []string
 	}{
 		{
@@ -62,10 +63,28 @@ func Test_createDownloadCommands(t *testing.T) {
 				"chmod +x /usr/local/bin/k0s",
 			},
 		},
+		{
+			name:        "with custom install path",
+			version:     "",
+			url:         "",
+			installPath: "/opt/bin",
+			want: []string{
+				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/opt/bin sh",
+			},
+		},
+		{
+			name:        "with custom version and install path",
+			version:     "v1.2.3",
+			url:         "",
+			installPath: "/opt/bin",
+			want: []string{
+				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_VERSION=v1.2.3 K0S_INSTALL_PATH=/opt/bin sh",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, DownloadCommands(tt.preInstalledK0s, tt.url, tt.version))
+			require.Equal(t, tt.want, DownloadCommands(tt.preInstalledK0s, tt.url, tt.version, tt.installPath))
 		})
 	}
 }
