@@ -1800,11 +1800,28 @@ If the version field is specified, it is ignored, and whatever version is downlo
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrollerconfigspecignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>k0s</b></td>
         <td>object</td>
         <td>
           K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0sInstallDir</b></td>
+        <td>string</td>
+        <td>
+          K0sInstallDir specifies the directory where k0s binary will be installed.
+If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.<br/>
+          <br/>
+            <i>Default</i>: /usr/local/bin<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2077,6 +2094,49 @@ See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html</p>
       </tr></tbody>
 </table>
 
+<h3 id="k0scontrollerconfigspecignition">K0sControllerConfig.spec.ignition<a class="headerlink" href="#k0scontrollerconfigspecignition" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrollerconfigspec">↩ Parent</a></sup></sup></p>
+<p>Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
 <h3 id="k0scontrollerconfigspectunneling">K0sControllerConfig.spec.tunneling<a class="headerlink" href="#k0scontrollerconfigspectunneling" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrollerconfigspec">↩ Parent</a></sup></sup></p>
 <p>Tunneling defines the tunneling configuration for the cluster.</p>
@@ -2332,6 +2392,23 @@ If specified the version field is ignored and what ever version is downloaded fr
         <td>[]object</td>
         <td>
           Files specifies extra files to be passed to user_data upon creation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0sworkerconfigspecignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0sInstallDir</b></td>
+        <td>string</td>
+        <td>
+          K0sInstallDir specifies the directory where k0s binary will be installed.
+If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.<br/>
+          <br/>
+            <i>Default</i>: /usr/local/bin<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2601,6 +2678,49 @@ See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html</p>
           Name is the name of the source<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0sworkerconfigspecignition">K0sWorkerConfig.spec.ignition<a class="headerlink" href="#k0sworkerconfigspecignition" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0sworkerconfigspec">↩ Parent</a></sup></sup></p>
+<p>Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -2917,6 +3037,23 @@ If specified the version field is ignored and what ever version is downloaded fr
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0sInstallDir</b></td>
+        <td>string</td>
+        <td>
+          K0sInstallDir specifies the directory where k0s binary will be installed.
+If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.<br/>
+          <br/>
+            <i>Default</i>: /usr/local/bin<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>postStartCommands</b></td>
         <td>[]string</td>
         <td>
@@ -3183,6 +3320,49 @@ See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html</p>
           Name is the name of the source<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0sworkerconfigtemplatespectemplatespecignition">K0sWorkerConfigTemplate.spec.template.spec.ignition<a class="headerlink" href="#k0sworkerconfigtemplatespectemplatespecignition" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0sworkerconfigtemplatespectemplatespec">↩ Parent</a></sup></sup></p>
+<p>Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
