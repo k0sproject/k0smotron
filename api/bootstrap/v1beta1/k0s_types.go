@@ -277,7 +277,9 @@ type K0sConfigSpec struct {
 
 	// DownloadURL specifies the URL from which to download the k0s binary.
 	// If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
+	// Supported protocols are: http, https, oci
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:pattern=`^(https?|oci)://[^\s/$.?#].[^\s]*$`
 	DownloadURL string `json:"downloadURL,omitempty"`
 
 	// Tunneling defines the tunneling configuration for the cluster.
