@@ -367,7 +367,10 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		files = append(files, genShutdownServiceFiles(scope.Config.Spec.K0sInstallDir)...)
 	}
 
-	commands := c.genK0sCommands(scope, installCmd)
+	commands, err := c.genK0sCommands(scope, installCmd)
+	if err != nil {
+		return nil, fmt.Errorf("error generating k0s commands: %w", err)
+	}
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
@@ -754,11 +757,15 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, m
 	return machineImpl, nil
 }
 
-func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) []string {
+func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) ([]string, error) {
 	commands := scope.Config.Spec.PreStartCommands
 
-	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
+	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
+	if err != nil {
+		return nil, fmt.Errorf("error generating download commands: %w", err)
+	}
 	commands = append(commands, downloadCommands...)
+
 	if scope.currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
 		commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start --no-block k0sleave.service) || true)")
 		commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
@@ -767,7 +774,7 @@ func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installC
 	commands = append(commands, installCmd, fmt.Sprintf("%s start", filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s")))
 	commands = append(commands, scope.Config.Spec.PostStartCommands...)
 
-	return commands
+	return commands, nil
 }
 
 func genShutdownServiceFiles(k0sInstallDir string) []provisioner.File {

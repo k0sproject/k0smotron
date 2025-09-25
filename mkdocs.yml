@@ -41,6 +41,7 @@ nav:
         - vSphere: capi-vsphere.md
         - Remote Machine with Teleport: capi-remotemachine-teleport.md
         - Remote Machine with Okta ASA: capi-remotemachine-okta-asa.md
+        - Using OCI registry to pull k0s: capi-use-oci-registry.md
     - Monitoring: monitoring.md
   - Update:
      - Standalone: update/update-standalone.md

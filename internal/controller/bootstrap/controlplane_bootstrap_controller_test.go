@@ -588,7 +588,7 @@ func TestController_genK0sCommands(t *testing.T) {
 			},
 			installCmd: "k0s install controller --force --enable-dynamic-config",
 			want: []string{
-				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_VERSION=v1.31.0 sh",
+				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/usr/local/bin K0S_VERSION=v1.31.0 sh",
 				"(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start --no-block k0sleave.service) || true)",
 				"(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)",
 				"(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)",
@@ -609,7 +609,7 @@ func TestController_genK0sCommands(t *testing.T) {
 			},
 			installCmd: "k0s install controller --force --enable-dynamic-config",
 			want: []string{
-				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_VERSION=v1.31.6 sh",
+				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/usr/local/bin K0S_VERSION=v1.31.6 sh",
 				"k0s install controller --force --enable-dynamic-config",
 				"k0s start",
 			},
@@ -627,7 +627,7 @@ func TestController_genK0sCommands(t *testing.T) {
 			},
 			installCmd: "k0s install controller --force --enable-dynamic-config",
 			want: []string{
-				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_VERSION=v1.31.6+k0s.0 sh",
+				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/usr/local/bin K0S_VERSION=v1.31.6+k0s.0 sh",
 				"k0s install controller --force --enable-dynamic-config",
 				"k0s start",
 			},
@@ -637,7 +637,9 @@ func TestController_genK0sCommands(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			c := &ControlPlaneController{}
-			require.Equal(t, tt.want, c.genK0sCommands(tt.scope, tt.installCmd))
+			commands, err := c.genK0sCommands(tt.scope, tt.installCmd)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, commands)
 		})
 	}
 }

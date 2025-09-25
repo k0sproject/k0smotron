@@ -30,6 +30,7 @@ func Test_createDownloadCommands(t *testing.T) {
 		version         string
 		installPath     string
 		want            []string
+		wantErr         bool
 	}{
 		{
 			name:            "with pre-installed k0s",
@@ -43,7 +44,7 @@ func Test_createDownloadCommands(t *testing.T) {
 			version: "",
 			url:     "",
 			want: []string{
-				"curl -sSfL --retry 5 https://get.k0s.sh | sh",
+				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/usr/local/bin sh",
 			},
 		},
 		{
@@ -51,7 +52,7 @@ func Test_createDownloadCommands(t *testing.T) {
 			version: "v1.2.3",
 			url:     "",
 			want: []string{
-				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_VERSION=v1.2.3 sh",
+				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/usr/local/bin K0S_VERSION=v1.2.3 sh",
 			},
 		},
 		{
@@ -78,13 +79,37 @@ func Test_createDownloadCommands(t *testing.T) {
 			url:         "",
 			installPath: "/opt/bin",
 			want: []string{
-				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_VERSION=v1.2.3 K0S_INSTALL_PATH=/opt/bin sh",
+				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/opt/bin K0S_VERSION=v1.2.3 sh",
 			},
+		},
+		{
+			name:        "with oci scheme in download URL",
+			version:     "v1.2.3",
+			url:         "oci://example.com/k0s@sha256:abcdef1234567890",
+			installPath: "/opt/bin",
+			want: []string{
+				"export HOME=/root",
+				"oras blob fetch --output /opt/bin/k0s example.com/k0s@sha256:abcdef1234567890",
+				"chmod +x /opt/bin/k0s",
+			},
+		},
+		{
+			name:    "download scheme not supported",
+			version: "v1.2.3",
+			url:     "nonvalid://example.com/k0s@sha256:abcdef1234567890",
+			want:    nil,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, DownloadCommands(tt.preInstalledK0s, tt.url, tt.version, tt.installPath))
+			commands, err := DownloadCommands(tt.preInstalledK0s, tt.url, tt.version, tt.installPath)
+			if !tt.wantErr {
+				require.NoError(t, err)
+				require.Equal(t, tt.want, commands)
+			} else {
+				require.Error(t, err)
+			}
 		})
 	}
 }
