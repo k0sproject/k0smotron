@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/k0sproject/k0smotron/internal/featuregate"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -53,6 +52,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
 	"github.com/k0sproject/k0smotron/internal/controller/infrastructure"
 	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
+	"github.com/k0sproject/k0smotron/internal/featuregate"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -64,7 +64,7 @@ var (
 		controlPlaneController:   true,
 		infrastructureController: true,
 	}
-	featureGates string
+	featureGates   string
 	managerOptions = flags.ManagerOptions{}
 )
 

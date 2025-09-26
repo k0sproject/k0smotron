@@ -213,7 +213,7 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 .PHONY: release
 release: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | K0SMOTRON_FEATURE_GATES=$(K0SMOTRON_FEATURE_GATES) envsubst "${K0SMOTRON_FEATURE_GATES:=""}" > install.yaml
+	$(KUSTOMIZE) build config/default > install.yaml
 	git checkout config/manager/kustomization.yaml
 
 clusterapi-manifests:

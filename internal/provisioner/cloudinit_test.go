@@ -135,13 +135,6 @@ func TestCustomCloudInitWithVars(t *testing.T) {
     "permissions": "0644"
   }
 ] %}
-#cloud-config
-write_files:
-  - path: /etc/hosts
-    content: foobar
-    permissions: "0644"
-runcmd:
-  - echo 'hello world'
 
 #cloud-config
 runcmd:
