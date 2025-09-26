@@ -51,6 +51,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
 	"github.com/k0sproject/k0smotron/internal/controller/infrastructure"
 	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
+	"github.com/k0sproject/k0smotron/internal/featuregate"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -62,6 +63,7 @@ var (
 		controlPlaneController:   true,
 		infrastructureController: true,
 	}
+	featureGates string
 )
 
 const (
@@ -102,6 +104,7 @@ func main() {
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.StringVar(&featureGates, "feature-gates", "", "feature gates to enable (comma separated list of key=value pairs)")
 
 	flag.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	opts := zap.Options{
@@ -109,6 +112,8 @@ func main() {
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
+
+	_ = featuregate.Configure(featureGates)
 
 	if enabledController != "" && enabledController != allControllers {
 		enabledControllers = map[string]bool{
