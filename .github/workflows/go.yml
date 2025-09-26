@@ -52,6 +52,16 @@ jobs:
           docker tag quay.io/k0sproject/k0smotron:latest ttl.sh/k0smotron-${{ github.sha }}
           docker push ttl.sh/k0smotron-${{ github.sha }}
 
+      - name: Post image link as a comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            **Docker image built and pushed to ttl.sh for this PR:**
+            ttl.sh/k0smotron-${{ github.sha }}
+
       - name: Upload image bundle
         uses: actions/upload-artifact@v4
         with:
