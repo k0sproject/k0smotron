@@ -771,7 +771,7 @@ func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installC
 
 	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
 	if err != nil {
-		return nil, fmt.Errorf("error generating download commands: %w", err)
+		return nil, nil, fmt.Errorf("error generating download commands: %w", err)
 	}
 	commandsMap[provisioner.VarK0sDownloadCommands] = strings.Join(downloadCommands, " && ")
 	commands = append(commands, downloadCommands...)
