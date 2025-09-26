@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/k0sproject/k0smotron/internal/featuregate"
 	"os"
 
 	"k8s.io/client-go/discovery"
@@ -52,6 +51,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
 	"github.com/k0sproject/k0smotron/internal/controller/infrastructure"
 	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
+	"github.com/k0sproject/k0smotron/internal/featuregate"
 	//+kubebuilder:scaffold:imports
 )
 
