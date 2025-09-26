@@ -112,6 +112,7 @@ spec:
                             description: |-
                               DownloadURL specifies the URL from which to download the k0s binary.
                               If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
+                              Supported protocols are: http, https, oci
                             type: string
                           files:
                             description: Files specifies extra files to be passed

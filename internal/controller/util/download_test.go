@@ -81,10 +81,23 @@ func Test_createDownloadCommands(t *testing.T) {
 				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_VERSION=v1.2.3 K0S_INSTALL_PATH=/opt/bin sh",
 			},
 		},
+		{
+			name:        "with oci download URL",
+			version:     "v1.2.3",
+			url:         "oci://example.com/k0s@sha256:abcdef1234567890",
+			installPath: "/opt/bin",
+			want: []string{
+				"export HOME=/root",
+				"oras blob fetch --output /opt/bin/k0s example.com/k0s@sha256:abcdef1234567890",
+				"chmod +x /opt/bin/k0s",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, DownloadCommands(tt.preInstalledK0s, tt.url, tt.version, tt.installPath))
+			commands, err := DownloadCommands(tt.preInstalledK0s, tt.url, tt.version, tt.installPath)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, commands)
 		})
 	}
 }
