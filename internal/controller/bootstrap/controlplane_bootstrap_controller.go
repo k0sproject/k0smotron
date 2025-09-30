@@ -367,23 +367,28 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		files = append(files, genShutdownServiceFiles(scope.Config.Spec.K0sInstallDir)...)
 	}
 
-	commands := c.genK0sCommands(scope, installCmd)
+	commands, commandsMap := c.genK0sCommands(scope, installCmd)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
 
-	var customUserData string
+	var (
+		customUserData string
+		vars           map[provisioner.VarName]string
+	)
 	if scope.Config.Spec.CustomUserDataRef != nil {
 		customUserData, err = resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom controller user data: %w", err)
 		}
+		vars = commandsMap
 	}
 
 	return scope.provisioner.ToProvisionData(&provisioner.InputProvisionData{
 		Files:          files,
 		Commands:       commands,
 		CustomUserData: customUserData,
+		Vars:           vars,
 	})
 }
 
@@ -754,20 +759,27 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, m
 	return machineImpl, nil
 }
 
-func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) []string {
+func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) ([]string, map[provisioner.VarName]string) {
+	commandsMap := make(map[provisioner.VarName]string)
+	commandsMap[provisioner.VarPreStartCommand] = strings.Join(scope.Config.Spec.PreStartCommands, " && ")
+	commandsMap[provisioner.VarPostStartCommand] = strings.Join(scope.Config.Spec.PostStartCommands, " && ")
+
 	commands := scope.Config.Spec.PreStartCommands
 
 	downloadCommands := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
+	commandsMap[provisioner.VarK0sDownloadCommands] = strings.Join(downloadCommands, " && ")
 	commands = append(commands, downloadCommands...)
 	if scope.currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
 		commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start --no-block k0sleave.service) || true)")
 		commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
 		commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
 	}
-	commands = append(commands, installCmd, fmt.Sprintf("%s start", filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s")))
-	commands = append(commands, scope.Config.Spec.PostStartCommands...)
+	startCmd := fmt.Sprintf("%s start", filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s"))
+	commands = append(commands, installCmd, startCmd)
+	commandsMap[provisioner.VarK0sInstallCommand] = installCmd
+	commandsMap[provisioner.VarK0sStartCommand] = startCmd
 
-	return commands
+	return commands, commandsMap
 }
 
 func genShutdownServiceFiles(k0sInstallDir string) []provisioner.File {
