@@ -461,9 +461,11 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
+	tooManyMachines := len(machineNamesToDelete)+len(desiredMachines) > int(kcp.Spec.Replicas)
+	clusterHasChanged := configurationHasChanged || clusterIsUpdating
 	if infraMachineMissing ||
-		(len(machineNamesToDelete)+len(desiredMachines) > int(kcp.Spec.Replicas)) ||
-		((clusterIsUpdating || configurationHasChanged) && isRecreateDeleteFirstPossible(kcp, machineNamesToDelete, desiredMachines)) {
+		tooManyMachines ||
+		isRecreateDeleteFirstPossible(kcp, clusterHasChanged, machineNamesToDelete, desiredMachines) {
 		m := activeMachines.Newest().Name
 		err := c.checkMachineIsReady(ctx, m, cluster)
 		if err != nil {
@@ -713,7 +715,10 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 	return nil
 }
 
-func isRecreateDeleteFirstPossible(kcp *cpv1beta1.K0sControlPlane, machineNamesToDelete map[string]bool, desiredMachines collections.Machines) bool {
+func isRecreateDeleteFirstPossible(kcp *cpv1beta1.K0sControlPlane, clusterHasChanged bool, machineNamesToDelete map[string]bool, desiredMachines collections.Machines) bool {
+	if !clusterHasChanged {
+		return false
+	}
 	return kcp.Spec.Replicas >= 3 && // if we have at least 3 replicas
 		// and we are running recreate delete first strategy
 		kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreateDeleteFirst &&

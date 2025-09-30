@@ -226,7 +226,6 @@ jobs:
           - check-capi-remote-machine-template-update
           - check-capi-docker-machine-template-update
           - check-capi-docker-machine-template-update-recreate
-          - check-capi-docker-machine-template-update-recreate-delete-first
           - check-capi-docker-machine-template-update-recreate-single
           - check-capi-docker-machine-template-update-recreate-kine
           - check-capi-remote-machine-job-provision
@@ -247,6 +246,7 @@ jobs:
           - controlplane-conditions
           - workload-cluster-inplace-upgrade
           - workload-cluster-recreate-upgrade
+          - workload-cluster-recreate-delete-first-upgrade
           - admission-webhook-recreate-strategy-in-single-mode
           - admission-webhook-k0s-not-compatible
           - k0smotron-upgrade
