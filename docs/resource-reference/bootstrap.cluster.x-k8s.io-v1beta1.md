@@ -109,7 +109,13 @@ See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html<br/>
         <td>string</td>
         <td>
           DownloadURL specifies the URL from which to download the k0s binary.
-If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.<br/>
+If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
+Supported protocols are: http, https, oci. Using 'oci' scheme requires 'oras' to be installed on the target system.
+
+If 'oci' schema is used and the OCI registry requires authentication, make sure to set up the authentication beforehand
+by adding a file to the Files section that contains the necessary config for ORAS. See: https://oras.land/docs/how_to_guides/authentication/
+The file must be placed at `/root` directory (HOME for cloud-init execution time) and named `config.json`.
+NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.<br/>
         </td>
         <td>false</td>
       </tr><tr>

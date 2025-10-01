@@ -18,29 +18,56 @@ package util
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 )
 
+const (
+	k0sBinName = "k0s"
+)
+
 // DownloadCommands constructs the download commands for a given URL and version.
-func DownloadCommands(preInstalledK0s bool, url string, version string, k0sBinPath string) []string {
+func DownloadCommands(preInstalledK0s bool, downloadURL string, version string, k0sInstallPath string) ([]string, error) {
 	if preInstalledK0s {
-		return nil
+		return nil, nil
 	}
 
-	if url != "" {
-		return []string{
-			fmt.Sprintf("curl -sSfL --retry 5 %s -o /usr/local/bin/k0s", url),
-			"chmod +x /usr/local/bin/k0s",
+	if k0sInstallPath == "" {
+		k0sInstallPath = "/usr/local/bin"
+	}
+
+	k0sBinPath := fmt.Sprintf("%s/%s", k0sInstallPath, k0sBinName)
+
+	if downloadURL != "" {
+		parsedURL, err := url.Parse(downloadURL)
+		if err != nil {
+			return []string{fmt.Sprintf("echo 'Invalid download URL: %s'", downloadURL)}, nil
+		}
+
+		switch parsedURL.Scheme {
+		case "https", "http":
+			return []string{
+				fmt.Sprintf("curl -sSfL --retry 5 %s -o %s", downloadURL, k0sBinPath),
+				fmt.Sprintf("chmod +x %s", k0sBinPath),
+			}, nil
+		case "oci":
+			// oras expects the part after oci:// in the URL: example.com/k0s@sha256:abcdef1234567890
+			artifactRef := fmt.Sprintf("%s%s", parsedURL.Host, parsedURL.Path)
+			return []string{
+				"export HOME=/root", // oras requires HOME to be set. During cloud-init execution, HOME is not set because the user is root at that point.
+				fmt.Sprintf("oras blob fetch --output %s %s", k0sBinPath, artifactRef),
+				fmt.Sprintf("chmod +x %s", k0sBinPath),
+			}, nil
+		default:
+			return nil, fmt.Errorf("unsupported URL scheme '%s'", parsedURL.Scheme)
 		}
 	}
 
-	var scriptVars []string
-
+	scriptVars := []string{
+		fmt.Sprintf("K0S_INSTALL_PATH=%s", k0sInstallPath),
+	}
 	if version != "" {
 		scriptVars = append(scriptVars, fmt.Sprintf("K0S_VERSION=%s", version))
-	}
-	if k0sBinPath != "" {
-		scriptVars = append(scriptVars, fmt.Sprintf("K0S_INSTALL_PATH=%s", k0sBinPath))
 	}
 
 	cmd := "curl -sSfL --retry 5 https://get.k0s.sh"
@@ -50,5 +77,5 @@ func DownloadCommands(preInstalledK0s bool, url string, version string, k0sBinPa
 		cmd = fmt.Sprintf("%s | sh", cmd)
 	}
 
-	return []string{cmd}
+	return []string{cmd}, nil
 }
