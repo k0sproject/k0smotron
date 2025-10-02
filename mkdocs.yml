@@ -47,6 +47,7 @@ nav:
      - Standalone: update/update-standalone.md
      - Cluster API (HCP): update/update-cluster-pod.md
      - Cluster API (VMs): update/update-capi-cluster.md
+     - Update workers (HCP): update/hcp-autopilot.md
   - FAQ: faq.md
   - Troubleshooting: troubleshooting.md
   - Commercial Support: commercial-support.md
