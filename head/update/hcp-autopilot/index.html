@@ -12,22 +12,28 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
+        <link rel="canonical" href="https://docs.k0smotron.io/head/update/hcp-autopilot/">
       
       
+        <link rel="prev" href="../update-capi-cluster/">
       
-      <link rel="icon" href="/head/img/k0s_social.png">
+      
+        <link rel="next" href="../../faq/">
+      
+      
+      <link rel="icon" href="../../img/k0s_social.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
     
     
       
-        <title>Documentation</title>
+        <title>Update workers (HCP) - Documentation</title>
       
     
     
-      <link rel="stylesheet" href="/head/assets/stylesheets/main.e53b48f4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.e53b48f4.min.css">
       
         
-        <link rel="stylesheet" href="/head/assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -46,9 +52,9 @@
       
     
     
-      <link rel="stylesheet" href="/head/stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("/head",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY3LK5RVBZ"></script>
@@ -80,6 +86,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#updating-self-managed-worker-nodes-using-autopilot-for-hcp" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -91,12 +102,12 @@
             <div class="md-banner__inner md-grid md-typeset">
               
 You are not currently viewing the documentation for the current stable release of k0smotron.
-<a href="..//head">
+<a href="../../..">
   <strong>Click here to go to the documentation of the current stable release.</strong>
 </a>
 
             </div>
-            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("/head"),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
           </aside>
         
       </div>
@@ -108,9 +119,9 @@ You are not currently viewing the documentation for the current stable release o
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/head/." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href="../.." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="/head/img/k0s_social.png" alt="logo">
+  <img src="../../img/k0s_social.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -127,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Update workers (HCP)
             
           </span>
         </div>
@@ -245,9 +256,9 @@ You are not currently viewing the documentation for the current stable release o
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/head/." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href="../.." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="/head/img/k0s_social.png" alt="logo">
+  <img src="../../img/k0s_social.png" alt="logo">
 
     </a>
     Documentation
@@ -274,7 +285,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -296,7 +307,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/status/" class="md-nav__link">
+      <a href="../../status/" class="md-nav__link">
         
   
   
@@ -318,7 +329,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/install/" class="md-nav__link">
+      <a href="../../install/" class="md-nav__link">
         
   
   
@@ -378,7 +389,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/usage-overview/" class="md-nav__link">
+      <a href="../../usage-overview/" class="md-nav__link">
         
   
   
@@ -439,7 +450,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/cluster/" class="md-nav__link">
+      <a href="../../cluster/" class="md-nav__link">
         
   
   
@@ -462,7 +473,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/join-nodes/" class="md-nav__link">
+      <a href="../../join-nodes/" class="md-nav__link">
         
   
   
@@ -485,7 +496,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -508,7 +519,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/etcd/" class="md-nav__link">
+      <a href="../../etcd/" class="md-nav__link">
         
   
   
@@ -531,7 +542,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/ha/" class="md-nav__link">
+      <a href="../../ha/" class="md-nav__link">
         
   
   
@@ -554,7 +565,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/hcp-autoscaling/" class="md-nav__link">
+      <a href="../../hcp-autoscaling/" class="md-nav__link">
         
   
   
@@ -623,7 +634,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/cluster-api/" class="md-nav__link">
+      <a href="../../cluster-api/" class="md-nav__link">
         
   
   
@@ -646,7 +657,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-controlplane/" class="md-nav__link">
+      <a href="../../capi-controlplane/" class="md-nav__link">
         
   
   
@@ -669,7 +680,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-controlplane-bootstrap/" class="md-nav__link">
+      <a href="../../capi-controlplane-bootstrap/" class="md-nav__link">
         
   
   
@@ -692,7 +703,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-bootstrap/" class="md-nav__link">
+      <a href="../../capi-bootstrap/" class="md-nav__link">
         
   
   
@@ -715,7 +726,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-remote/" class="md-nav__link">
+      <a href="../../capi-remote/" class="md-nav__link">
         
   
   
@@ -738,7 +749,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-clusterclass/" class="md-nav__link">
+      <a href="../../capi-clusterclass/" class="md-nav__link">
         
   
   
@@ -799,7 +810,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-examples/" class="md-nav__link">
+      <a href="../../capi-examples/" class="md-nav__link">
         
   
   
@@ -822,7 +833,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-aws/" class="md-nav__link">
+      <a href="../../capi-aws/" class="md-nav__link">
         
   
   
@@ -845,7 +856,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-aws-vm/" class="md-nav__link">
+      <a href="../../capi-aws-vm/" class="md-nav__link">
         
   
   
@@ -868,7 +879,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-hetzner/" class="md-nav__link">
+      <a href="../../capi-hetzner/" class="md-nav__link">
         
   
   
@@ -891,7 +902,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-openstack/" class="md-nav__link">
+      <a href="../../capi-openstack/" class="md-nav__link">
         
   
   
@@ -914,7 +925,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-docker/" class="md-nav__link">
+      <a href="../../capi-docker/" class="md-nav__link">
         
   
   
@@ -937,7 +948,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-kubevirt/" class="md-nav__link">
+      <a href="../../capi-kubevirt/" class="md-nav__link">
         
   
   
@@ -960,7 +971,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-vsphere/" class="md-nav__link">
+      <a href="../../capi-vsphere/" class="md-nav__link">
         
   
   
@@ -983,7 +994,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-remotemachine-teleport/" class="md-nav__link">
+      <a href="../../capi-remotemachine-teleport/" class="md-nav__link">
         
   
   
@@ -1006,7 +1017,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-remotemachine-okta-asa/" class="md-nav__link">
+      <a href="../../capi-remotemachine-okta-asa/" class="md-nav__link">
         
   
   
@@ -1029,7 +1040,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/capi-use-oci-registry/" class="md-nav__link">
+      <a href="../../capi-use-oci-registry/" class="md-nav__link">
         
   
   
@@ -1068,7 +1079,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/monitoring/" class="md-nav__link">
+      <a href="../../monitoring/" class="md-nav__link">
         
   
   
@@ -1095,18 +1106,20 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -1122,7 +1135,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Update
@@ -1136,7 +1149,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/update/update-standalone/" class="md-nav__link">
+      <a href="../update-standalone/" class="md-nav__link">
         
   
   
@@ -1159,7 +1172,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/update/update-cluster-pod/" class="md-nav__link">
+      <a href="../update-cluster-pod/" class="md-nav__link">
         
   
   
@@ -1182,7 +1195,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/update/update-capi-cluster/" class="md-nav__link">
+      <a href="../update-capi-cluster/" class="md-nav__link">
         
   
   
@@ -1202,10 +1215,32 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/head/update/hcp-autopilot/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Update workers (HCP)
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1216,6 +1251,44 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#update-the-control-plane" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update the control plane
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-self-managed-worker-nodes-using-autopilot" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update self-managed worker nodes using autopilot
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1235,7 +1308,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/faq/" class="md-nav__link">
+      <a href="../../faq/" class="md-nav__link">
         
   
   
@@ -1257,7 +1330,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/troubleshooting/" class="md-nav__link">
+      <a href="../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1279,7 +1352,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/commercial-support/" class="md-nav__link">
+      <a href="../../commercial-support/" class="md-nav__link">
         
   
   
@@ -1339,7 +1412,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/contributing/contribute-overview/" class="md-nav__link">
+      <a href="../../contributing/contribute-overview/" class="md-nav__link">
         
   
   
@@ -1362,7 +1435,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/contributing/dev-environment/" class="md-nav__link">
+      <a href="../../contributing/dev-environment/" class="md-nav__link">
         
   
   
@@ -1385,7 +1458,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/contributing/contribute-workflow/" class="md-nav__link">
+      <a href="../../contributing/contribute-workflow/" class="md-nav__link">
         
   
   
@@ -1408,7 +1481,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/contributing/contribute-testing/" class="md-nav__link">
+      <a href="../../contributing/contribute-testing/" class="md-nav__link">
         
   
   
@@ -1431,7 +1504,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/contributing/release-process/" class="md-nav__link">
+      <a href="../../contributing/release-process/" class="md-nav__link">
         
   
   
@@ -1461,7 +1534,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/known-limitations/" class="md-nav__link">
+      <a href="../../known-limitations/" class="md-nav__link">
         
   
   
@@ -1559,7 +1632,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../../resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -1582,7 +1655,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -1605,7 +1678,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../../resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -1628,7 +1701,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
+      <a href="../../resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -1659,7 +1732,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="/head/terminology/" class="md-nav__link">
+      <a href="../../terminology/" class="md-nav__link">
         
   
   
@@ -1699,6 +1772,34 @@ You are not currently viewing the documentation for the current stable release o
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#update-the-control-plane" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update the control plane
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-self-managed-worker-nodes-using-autopilot" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update self-managed worker nodes using autopilot
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1710,8 +1811,86 @@ You are not currently viewing the documentation for the current stable release o
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+
+<h1 id="updating-self-managed-worker-nodes-using-autopilot-for-hcp">Updating self-managed worker nodes using autopilot for HCP<a class="headerlink" href="#updating-self-managed-worker-nodes-using-autopilot-for-hcp" title="Permanent link">#</a></h1>
+<p>In hybrid control plane (HCP) setups, the Kubernetes control plane runs inside pods, while worker nodes are self-managed and connect remotely. Keeping both the control plane and worker nodes up to date is essential for security and compatibility.</p>
+<p>This guide demonstrates how to use the autopilot feature to update self-managed worker nodes after the control plane has been upgraded.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Everything described in this article is applicable to and all commands are run in the workload cluster.</p>
+</div>
+<h2 id="update-the-control-plane">Update the control plane<a class="headerlink" href="#update-the-control-plane" title="Permanent link">#</a></h2>
+<p>First, update the control plane to the desired k0s version by modifying the <code>Cluster</code> resource:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">k0sImage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/k0sproject/k0s</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.33.1-k0s.0</span><span class="w"> </span><span class="c1"># new k0s version</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Always update the control plane components first before updating the worker nodes.
+Refer to the <a href="https://kubernetes.io/releases/version-skew-policy/">Kubernetes version skew policy</a>.</p>
+</div>
+<h2 id="update-self-managed-worker-nodes-using-autopilot">Update self-managed worker nodes using autopilot<a class="headerlink" href="#update-self-managed-worker-nodes-using-autopilot" title="Permanent link">#</a></h2>
+<p>Autopilot is the easiest way to update self-managed worker nodes.</p>
+<p>Read more about <a href="https://docs.k0sproject.io/stable/autopilot/#configuration">k0s autopilot configuration</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The Plan name should always be "autopilot" and the Plan resource is immutable. To make changes, remove old Plan and create a new one with a different <code>spec.id</code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>selector</code> field in the <code>discovery</code> section can be adjusted to target specific nodes based on labels. An empty selector <code>{}</code> targets all worker nodes.
+To target specific nodes, use a <code>static</code> discovery like <code>discovery: { "static": ["node-name1", "node-name2"] }</code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>get.k0sproject.io</code> is a simple proxy service to the GitHub release assets. GitHub CDN may answer with a 403 error for automated downloads, so using <code>get.k0sproject.io</code> helps avoid this issue.
+<code>https://get.k0sproject.io/v1.33.1+k0s.0/k0s-v1.33.1+k0s.0-amd64</code> will proxy to <code>https://github.com/k0sproject/k0s/releases/download/v1.33.1+k0s.0/k0s-v1.33.1+k0s.0-amd64</code>.</p>
+</div>
+<p>Create a <code>Plan</code> resource that specifies the desired k0s version and targets the worker nodes:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autopilot.k0sproject.io/v1beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Plan</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autopilot</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">id123</span><span class="w"> </span><span class="c1"># Unique ID for the plan</span>
+<span class="w">  </span><span class="nt">timestamp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">now</span>
+<span class="w">  </span><span class="nt">commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">k0supdate</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.33.1+k0s.0</span><span class="w"> </span><span class="c1"># Target k0s version</span>
+<span class="w">      </span><span class="nt">platforms</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">linux-amd64</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://get.k0sproject.io/v1.33.1+k0s.0/k0s-v1.33.1+k0s.0-amd64</span>
+<span class="w">        </span><span class="nt">linux-arm64</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://get.k0sproject.io/v1.33.1+k0s.0/k0s-v1.33.1+k0s.0-arm64</span>
+<span class="w">      </span><span class="nt">targets</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># We target only workers, since we updated control planes using the Cluster object</span>
+<span class="w">        </span><span class="nt">workers</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">discovery</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w"> </span><span class="c1"># Select all worker nodes</span>
+</code></pre></div>
+<p>Autopilot will automatically apply the update to the selected worker nodes.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1767,10 +1946,10 @@ You are not currently viewing the documentation for the current stable release o
     
     
       
-      <script id="__config" type="application/json">{"base": "/head", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "/head/assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
-      <script src="/head/assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
     
   </body>
