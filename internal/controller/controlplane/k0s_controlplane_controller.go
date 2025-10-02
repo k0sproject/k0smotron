@@ -396,8 +396,11 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	machineNamesToDelete := make(map[string]bool)
 	desiredMachines := make(collections.Machines, len(allMachines))
 
-	var clusterIsUpdating bool
-	var infraMachineMissing bool
+	var (
+		clusterIsUpdating       bool
+		infraMachineMissing     bool
+		configurationHasChanged bool
+	)
 	for _, m := range activeMachines.SortedByCreationTimestamp() {
 		if m.Spec.Version == nil || (!versionMatches(m, kcp.Spec.Version)) {
 			clusterIsUpdating = true
@@ -410,6 +413,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			if _, found := infraMachines[m.Name]; !found {
 				infraMachineMissing = true
 			}
+			configurationHasChanged = true
 			machineNamesToDelete[m.Name] = true
 		} else {
 			desiredMachines.Insert(m)
@@ -457,7 +461,9 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 	}
 
-	if infraMachineMissing || (len(machineNamesToDelete)+len(desiredMachines) > int(kcp.Spec.Replicas)) {
+	if infraMachineMissing ||
+		(len(machineNamesToDelete)+len(desiredMachines) > int(kcp.Spec.Replicas)) ||
+		((clusterIsUpdating || configurationHasChanged) && isRecreateDeleteFirstPossible(kcp, machineNamesToDelete, desiredMachines)) {
 		m := activeMachines.Newest().Name
 		err := c.checkMachineIsReady(ctx, m, cluster)
 		if err != nil {
@@ -705,6 +711,14 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 	}
 
 	return nil
+}
+
+func isRecreateDeleteFirstPossible(kcp *cpv1beta1.K0sControlPlane, machineNamesToDelete map[string]bool, desiredMachines collections.Machines) bool {
+	return kcp.Spec.Replicas >= 3 && // if we have at least 3 replicas
+		// and we are running recreate delete first strategy
+		kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreateDeleteFirst &&
+		// and the number of machines we have and the ones we want to delete is more or equal to the desired replicas
+		len(machineNamesToDelete)+len(desiredMachines) >= int(kcp.Spec.Replicas)
 }
 
 func (c *K0sController) reconcileTunneling(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {

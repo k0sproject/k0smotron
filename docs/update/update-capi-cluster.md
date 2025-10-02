@@ -1,9 +1,14 @@
 # Update control nodes in Cluster API clusters
 
-k0smotron supports two ways to update the control plane in the Cluster API clusters:
+k0smotron supports three update strategies to update the control plane in the Cluster API clusters:
 
-- [Using the k0s autopilot](#updating-the-control-plane-using-k0s-autopilot)
-- [Using the Cluster API workflow](#updating-the-control-plane-using-the-cluster-api-workflow)
+- `InPlace` (default): uses [k0s autopilot](https://docs.k0sproject.io/stable/autopilot/) to update the k0s version on the control plane nodes in-place without recycling the machines.
+- `Recreate`: uses the Cluster API workflow to update the control plane by creating new machines for the control plane and decommissioning the old ones.
+- `RecreateDeleteFirst`: similar to `Recreate`, but deletes the old machines before creating the new ones. This strategy is suitable for clusters with limited resources.
+
+!!! warning
+
+    The `RecreateDeleteFirst` update strategy is not supported for k0s clusters of less than 3 control plane nodes
 
 ## Updating the control plane using k0s autopilot
 
@@ -130,12 +135,13 @@ where deploying the new control plane is followed by decommissioning of the old 
 
 ## Updating the control plane using the Cluster API workflow
 
-In case `K0sControlPlane` is created with `spec.updateStrategy=Recreate`, k0smotron uses the Cluster API workflow to update the control plane,
+In case `K0sControlPlane` is created with `spec.updateStrategy=Recreate` or `spec.updateStrategy=RecreateDeleteFirst`, k0smotron uses the Cluster API workflow to update the control plane,
 which involves creating a new machines for control plane and decommissioning the old ones.
 
 !!! warning
 
     The `Recreate` update strategy is not supported for k0s clusters running in `--single` mode.
+    The `RecreateDeleteFirst` update strategy is not supported for k0s clusters of less than 3 control plane nodes
 
 For the example below, k0smotron will create 3 new machines for the control plane, ensure that the new control plane nodes are online, and then remove the old machines.
 
