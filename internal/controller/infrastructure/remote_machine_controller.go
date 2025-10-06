@@ -19,16 +19,15 @@ package infrastructure
 import (
 	"context"
 	"fmt"
-
 	"gopkg.in/yaml.v3"
+	"sync"
+	"time"
+
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/provisioner"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -38,6 +37,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
 var ErrPooledMachineNotFound = fmt.Errorf("free pooled machine not found")
@@ -53,6 +55,7 @@ type RemoteMachineController struct {
 	Scheme              *runtime.Scheme
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
+	lock                sync.Map
 }
 
 type RemoteMachineMode int
@@ -244,6 +247,15 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	if rm.Status.Ready {
 		return ctrl.Result{}, nil
 	}
+
+	key := machine.GetNamespace() + "/" + machine.GetName()
+	if _, exists := r.lock.Load(key); exists {
+		// another reconcile is already in progress
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	r.lock.Store(key, struct{}{})
+	defer r.lock.Delete(key)
 
 	if !controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
 		controllerutil.AddFinalizer(rm, RemoteMachineFinalizer)
