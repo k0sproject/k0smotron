@@ -14,6 +14,7 @@ require (
 	github.com/k0sproject/version v0.6.0
 	github.com/onsi/gomega v1.36.0
 	github.com/pkg/errors v0.9.1
+	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -161,7 +162,6 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/spf13/cobra v1.8.1 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/spf13/viper v1.19.0 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
@@ -221,3 +221,16 @@ require (
 require sigs.k8s.io/cluster-api v1.9.11
 
 replace github.com/weaveworks/footloose => github.com/ncopa/footloose v0.0.0-20220210144732-fe970537b890
+
+replace (
+	k8s.io/cri-client => k8s.io/cri-client v0.31.3
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.31.3
+	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.31.3
+	k8s.io/endpointslice => k8s.io/endpointslice v0.31.3
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.31.3
+	k8s.io/kube-proxy => k8s.io/kube-proxy v0.31.3
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.31.3
+	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.31.3
+	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.31.3
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.31.3
+)
