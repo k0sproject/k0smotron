@@ -23,18 +23,19 @@ import (
 	"fmt"
 	"os"
 
-	"k8s.io/client-go/discovery"
-
+	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -108,6 +109,9 @@ func main() {
 		Development: true,
 	}
 	opts.BindFlags(flag.CommandLine)
+
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	flags.AddManagerOptions(pflag.CommandLine, nil)
 	flag.Parse()
 
 	if enabledController != "" && enabledController != allControllers {
