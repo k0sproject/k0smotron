@@ -57,5 +57,5 @@ available under the ["Apache License 2.0"](../../LICENSE).
 ## Community
 
 Get the latest news on k0smotron from [the k0sproject Twitter account](https://twitter.com/k0sproject).
-You can also learn about k0smotron updates and initiatives on [the official k0s community blog](https://medium.com/k0sproject).
+You can also learn about k0smotron updates and initiatives on [the official k0s community blog](https://blog.k0sproject.io/).
 Share your views on the [Lens Forums](https://forums.k8slens.dev/).
