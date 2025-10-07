@@ -1,4 +1,0 @@
-resources:
-  - bootstrap.cluster.x-k8s.io_k0scontrollerconfigs.yaml
-  - bootstrap.cluster.x-k8s.io_k0sworkerconfigs.yaml
-  - bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
