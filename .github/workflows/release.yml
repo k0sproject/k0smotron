@@ -6,6 +6,34 @@ on:
       - v* # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
+  # Check if the tag mayor/minor is in the metadata.yaml file
+  check-tag:
+    name: Check tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download yq
+        uses: supplypike/setup-bin@v4
+        with:
+          name: yq
+          version: v4.30.6
+          uri: https://github.com/mikefarah/yq/releases/download/v4.30.6/yq_linux_amd64
+
+      - name: Check that metadata.yaml includes tag version
+        id: get_major_minor
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          TAG="${TAG#v}"
+          IFS='.' read -r major minor patch <<< "$TAG"
+          major_minor="$major.$minor"
+
+          all_versions=$(yq -r '.releaseSeries[] | "\(.major).\(.minor)"' metadata.yaml)
+
+          if ! echo "$all_versions" | grep -q "^$major_minor$"; then
+            echo "metadata.yaml does not include version '$major_minor'"
+            echo "Found versions:"
+            echo "$all_versions"
+            exit 1
+          fi
   release:
     name: release
     runs-on: ubuntu-latest
