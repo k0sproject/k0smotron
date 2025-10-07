@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -38,6 +39,7 @@ import (
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/kubectl/pkg/drain"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
@@ -541,6 +543,18 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 }
 
 func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
+
+	for _, arg := range kcp.Spec.K0sConfigSpec.Args {
+		if arg == "--enable-worker" || arg == "--enable-worker=true" {
+			err := c.drainNode(ctx, cluster, kcp, machine)
+			if err != nil {
+				logger.Error(err, "Error draining worker node")
+			}
+			break
+		}
+	}
+
 	err := c.deleteK0sNodeResources(ctx, cluster, kcp, machine)
 	if err != nil {
 		return fmt.Errorf("error deleting k0s node resources: %w", err)
@@ -548,6 +562,52 @@ func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster 
 
 	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
 		return fmt.Errorf("error deleting machine from template: %w", err)
+	}
+
+	return nil
+}
+
+func (c *K0sController) drainNode(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
+	for _, annotation := range machine.GetAnnotations() {
+		if strings.HasPrefix(annotation, "cluster.x-k8s.io/skip-node-drain=true") {
+			// Skip node drain as per annotation
+			return nil
+		}
+	}
+
+	helper := &drain.Helper{
+		Ctx:                 ctx,
+		Client:              c.ClientSet,
+		Force:               true,
+		IgnoreAllDaemonSets: true,
+		DeleteEmptyDirData:  true,
+		Out:                 os.Stdout,
+		ErrOut:              os.Stderr,
+	}
+	if machine.Spec.NodeDrainTimeout != nil {
+		helper.Timeout = machine.Spec.NodeDrainTimeout.Duration
+	}
+
+	nodes, err := c.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: "k0smotron.io/machine-name=" + machine.Name})
+	if err != nil {
+		return fmt.Errorf("error listing nodes: %w", err)
+	}
+
+	for _, node := range nodes.Items {
+		if node.Spec.Unschedulable {
+			continue
+		}
+
+		logger.Info("cordoning node ", node.Name)
+		if err := drain.RunCordonOrUncordon(helper, &node, true); err != nil {
+			return fmt.Errorf("error cordoning node %s: %w", node.Name, err)
+		}
+
+		logger.Info("draining node ", node.Name)
+		if err := drain.RunNodeDrain(helper, node.Name); err != nil {
+			return fmt.Errorf("error draining node %s: %w", node.Name, err)
+		}
 	}
 
 	return nil
