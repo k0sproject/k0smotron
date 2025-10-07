@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/client-go/discovery"
 
+	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,6 +36,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,6 +64,7 @@ var (
 		controlPlaneController:   true,
 		infrastructureController: true,
 	}
+	managerOptions = flags.ManagerOptions{}
 )
 
 const (
@@ -86,29 +89,32 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
+	var metricsAddr string // deprecated, use capi's diagnostics-address instead
 	var enableLeaderElection bool
-	var secureMetrics bool
-	var enableHTTP2 bool
+	var secureMetrics bool // deprecated, use capi's insecure-diagnostics instead
+	var enableHTTP2 bool   // deprecated
 	var probeAddr string
 	var enabledController string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8443", "The address the metric endpoint binds to. "+
+
+	pflag.CommandLine.StringVar(&metricsAddr, "metrics-bind-address", ":8443", "[Deprecated, use --diagnostics-address instead] The address the metric endpoint binds to. "+
 		"Use :8080 for http and :8443 for https. Setting to 0 will disable the metrics endpoint.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+	pflag.CommandLine.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	pflag.CommandLine.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&secureMetrics, "metrics-secure", true,
-		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
-	flag.BoolVar(&enableHTTP2, "enable-http2", false,
-		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	pflag.CommandLine.BoolVar(&secureMetrics, "metrics-secure", true,
+		"[Deprecated, use --insecure-diagnostics instead] If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
+	pflag.CommandLine.BoolVar(&enableHTTP2, "enable-http2", false,
+		"[Deprecated] If set, HTTP/2 will be enabled for the metrics and webhook servers")
 
-	flag.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
+	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	opts := zap.Options{
 		Development: true,
 	}
 	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
+	flags.AddManagerOptions(pflag.CommandLine, &managerOptions)
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
 
 	if enabledController != "" && enabledController != allControllers {
 		enabledControllers = map[string]bool{
@@ -118,23 +124,52 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	var tlsOpts []func(*tls.Config)
-	disableHTTP2 := func(c *tls.Config) {
-		setupLog.Info("disabling http/2")
-		c.NextProtos = []string{"http/1.1"}
-	}
-	if !enableHTTP2 {
-		tlsOpts = append(tlsOpts, disableHTTP2)
-	}
+	// NOTE: support both the deprecated and capi metrics flags
+	// TODO: remove the next block in favor of:
+	// _, metricsOpts, err := flags.GetManagerOptions(managerOptions)
+	// if err != nil {
+	// 	setupLog.Error(err, "unable to start manager: invalid flags")
+	// 	os.Exit(1)
+	// }
 
-	metricsOpts := metricsserver.Options{
-		BindAddress:   metricsAddr,
-		SecureServing: secureMetrics,
-		TLSOpts:       tlsOpts,
-	}
+	var metricsOpts metricsserver.Options
+	{
+		tlsOpts, newMetricsOpts, err := flags.GetManagerOptions(managerOptions)
+		if err != nil {
+			setupLog.Error(err, "unable to start manager: invalid flags")
+			os.Exit(1)
+		}
 
-	if secureMetrics {
-		metricsOpts.FilterProvider = filters.WithAuthenticationAndAuthorization
+		// this protocols list is not required starting golang.org/x/net@v0.17.0
+		// see: https://github.com/advisories/GHSA-qppj-fm5r-hxr3
+		// see: https://github.com/advisories/GHSA-4374-p667-p6c8
+		disableHTTP2 := func(c *tls.Config) {
+			setupLog.Info("disabling http/2")
+			c.NextProtos = []string{"http/1.1"}
+		}
+		if !enableHTTP2 {
+			tlsOpts = append(tlsOpts, disableHTTP2)
+		}
+
+		metricsOpts = *newMetricsOpts
+		metricsOpts.TLSOpts = tlsOpts
+
+		diagnosticsAddressSet := pflag.CommandLine.Changed("diagnostics-address") && pflag.Lookup("diagnostics-address").Value.String() != ":8443"
+		insecureDiagnosticsSet := pflag.CommandLine.Changed("insecure-diagnostics")
+
+		if !diagnosticsAddressSet {
+			metricsOpts.BindAddress = metricsAddr
+			setupLog.Info("Using legacy metrics configuration",
+				"bindAddress", metricsAddr)
+		}
+		if !insecureDiagnosticsSet {
+			metricsOpts.SecureServing = secureMetrics
+			if secureMetrics {
+				metricsOpts.FilterProvider = filters.WithAuthenticationAndAuthorization
+			}
+			setupLog.Info("Using legacy metrics configuration",
+				"secureServing", secureMetrics)
+		}
 	}
 
 	req, _ := labels.NewRequirement(clusterv1.ClusterNameLabel, selection.Exists, nil)
