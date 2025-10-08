@@ -74,6 +74,11 @@ func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc 
 		return fmt.Errorf("failed to install k0smotron operator: %w", err)
 	}
 
+	err = WaitForDeployment(ctx, kc, "k0smotron-controller-manager", "k0smotron")
+	if err != nil {
+		return fmt.Errorf("failed to wait for k0smotron operator deployment: %w", err)
+	}
+
 	err = InstallWebhookChecker(ctx, kc, rc)
 	if err != nil {
 		return fmt.Errorf("failed to install webhook checker: %w", err)
@@ -107,10 +112,18 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 		return err
 	}
 
-	if err := InstallWebhookChecker(ctx, kc, rc); err != nil {
+	err = WaitForDeployment(ctx, kc, "k0smotron-controller-manager", "k0smotron")
+	if err != nil {
+		return fmt.Errorf("failed to wait for k0smotron operator deployment: %w", err)
+	}
+
+	err = InstallWebhookChecker(ctx, kc, rc)
+	if err != nil {
 		return fmt.Errorf("failed to install webhook checker: %w", err)
 	}
-	if err := WaitForPod(ctx, kc, "webhook-checker", "k0smotron"); err != nil {
+
+	err = WaitForPod(ctx, kc, "webhook-checker", "k0smotron")
+	if err != nil {
 		return fmt.Errorf("failed to wait for k0smotron webhook: %w", err)
 	}
 
