@@ -15,4 +15,9 @@ spec:
         k0smotron-provider: control-plane
     spec:
       containers:
-      - name: manager
+        - name: manager
+          args:
+            - "--health-probe-bind-address=:8081"
+            - "--diagnostics-address=127.0.0.1:8080"
+            - "--leader-elect"
+            - "--enable-controller=control-plane"
