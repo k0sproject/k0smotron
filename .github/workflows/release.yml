@@ -11,13 +11,6 @@ jobs:
     name: Check tag
     runs-on: ubuntu-latest
     steps:
-      - name: Download yq
-        uses: supplypike/setup-bin@v4
-        with:
-          name: yq
-          version: v4.30.6
-          uri: https://github.com/mikefarah/yq/releases/download/v4.30.6/yq_linux_amd64
-
       - name: Run git checkout
         uses: actions/checkout@v4
 
