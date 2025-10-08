@@ -84,7 +84,10 @@ type RemoteMachineSpec struct {
 	// +kubebuilder:validation:Optional
 	SSHKeyRef SecretRef `json:"sshKeyRef,omitempty"`
 
-	// CustomCleanUpCommands allow the user to run custom command for the clean up process of the machine.
+	// CustomCleanUpCommands allows the user to run custom commands during the machine cleanup process.
+	// If CustomCleanUpCommands is set and k0s is used as the bootstrap provider,
+	// the user is responsible for the complete cleanup of the k0s installation.
+	// See https://docs.k0sproject.io/stable/reset/ for more details.
 	// +kubebuilder:validation:Optional
 	CustomCleanUpCommands []string `json:"customCleanUpCommands,omitempty"`
 

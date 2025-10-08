@@ -172,20 +172,22 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 		rigClient = rigClient.Sudo()
 	}
 
-	// When k0s is not the bootstrap provider, the user can set custom commands for the clean up process.
-	if mode == ModeNonK0s {
-		if p.machine.Spec.CustomCleanUpCommands != nil {
-			p.log.Info("Cleaning up remote machine...")
-			for _, cmd := range p.machine.Spec.CustomCleanUpCommands {
-				output, err := rigClient.ExecOutput(cmd)
-				if err != nil {
-					p.log.Error(err, "failed to run command", "command", cmd, "output", output)
-				} else {
-					p.log.Info("executed command", "command", cmd, "output", output)
-				}
+	if p.machine.Spec.CustomCleanUpCommands != nil {
+		p.log.Info("Cleaning up remote machine...")
+		for _, cmd := range p.machine.Spec.CustomCleanUpCommands {
+			output, err := rigClient.ExecOutput(cmd)
+			if err != nil {
+				p.log.Error(err, "failed to run command", "command", cmd, "output", output)
+			} else {
+				p.log.Info("executed command", "command", cmd, "output", output)
 			}
 		}
 
+		return nil
+	}
+
+	if mode == ModeNonK0s {
+		// If k0s is not the bootstrap provider, we have nothing to do.
 		return nil
 	}
 
