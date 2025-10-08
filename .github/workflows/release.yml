@@ -18,6 +18,9 @@ jobs:
           version: v4.30.6
           uri: https://github.com/mikefarah/yq/releases/download/v4.30.6/yq_linux_amd64
 
+      - name: Run git checkout
+        uses: actions/checkout@v4
+
       - name: Check that metadata.yaml includes tag version
         id: get_major_minor
         run: |
@@ -35,6 +38,8 @@ jobs:
             exit 1
           fi
   release:
+    needs:
+      - check-tag
     name: release
     runs-on: ubuntu-latest
     outputs:
