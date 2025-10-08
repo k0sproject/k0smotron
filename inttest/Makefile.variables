@@ -1,7 +1,7 @@
 alpine_version = 3.18
 alpine_patch_version = $(alpine_version).2
 golang_buildimage=docker.io/library/golang:$(go_version)-alpine$(alpine_version)
-go_version = 1.22.6
+go_version = 1.23.12
 kubernetes_version=1.27.2
 
 smoketests := \
