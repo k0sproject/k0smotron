@@ -201,7 +201,6 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-	_ = mgr.AddReadyzCheck("webhook-check", mgr.GetWebhookServer().StartedChecker())
 
 	restConfig, err := ctrl.GetConfig()
 	if err != nil {
@@ -274,6 +273,7 @@ func main() {
 	}
 
 	if isControllerEnabled(controlPlaneController) {
+		_ = mgr.AddReadyzCheck("webhook-check", mgr.GetWebhookServer().StartedChecker())
 		if err = (&controller.ClusterReconciler{
 			Client:     mgr.GetClient(),
 			Scheme:     mgr.GetScheme(),
