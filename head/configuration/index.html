@@ -565,6 +565,21 @@ You are not currently viewing the documentation for the current stable release o
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="K0s configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#clusterconfig-for-k0smotron" class="md-nav__link">
+    <span class="md-ellipsis">
+      ClusterConfig for K0smotron
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1799,6 +1814,21 @@ You are not currently viewing the documentation for the current stable release o
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="K0s configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#clusterconfig-for-k0smotron" class="md-nav__link">
+    <span class="md-ellipsis">
+      ClusterConfig for K0smotron
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1840,17 +1870,77 @@ You are not currently viewing the documentation for the current stable release o
 <p>The <code>/var/lib/k0s</code> directory contains essential data for the operation of the k0s controller, but its growth over time is primarily driven by the addition of small <a href="https://docs.k0sproject.io/stable/manifests/">manifest</a> files. Since these manifests are lightweight and in text format, the directory tends to grow gradually and not excessively. Typically, 250 MB of space is sufficient to handle its growth, as the main additions are these small manifests, keeping the overall size manageable.</p>
 <p>The type of persistence used for this can be configurable via <code>spec.persistence</code>. For more information, check out the <a href="../resource-reference/k0smotron.io-v1beta1/#clusterspecpersistence">reference docs</a> on Cluster persistence.</p>
 <h2 id="k0s-configuration">K0s configuration<a class="headerlink" href="#k0s-configuration" title="Permanent link">#</a></h2>
-<p>K0smotron allows you to configure k0s via <code>spec.k0sConfig</code> field. If empty, the default configuration will be used.</p>
-<p>Refer to <a href="https://docs.k0sproject.io/stable/configuration/">k0s docs</a> for a reference on k0s configuration.</p>
-<p><strong>Note</strong>: Some fields will be overwritten by k0smotron. K0smotron will set the following fields:</p>
-<ul>
-<li><code>spec.k0sConfig.spec.api.externalAddress</code> will be set to the value of <code>spec.externalAddress</code> if <code>spec.externalAddress</code> is set.
-   If not, k0smotron will use load balancer IP or try to detect <code>externalAddress</code> out of nodes IP addresses.</li>
-<li><code>spec.k0sConfig.spec.api.port</code> will be set to the value of <code>spec.service.apiPort</code>.</li>
-<li><code>spec.k0sConfig.spec.konnectivity.port</code> will be set to the value of <code>spec.service.konnectivityPort</code>.</li>
-<li><code>spec.k0sConfig.spec.storage.kine.dataSource</code> will be set to the value of <code>spec.kineDataSourceURL</code> if <code>spec.kineDataSourceURL</code> is set.
-  <code>spec.k0sConfig.spec.storage.type</code> will be set to <code>kine</code>.</li>
-</ul>
+<p>K0smotron allows you to configure k0s via <code>spec.k0sConfig</code> field. This field expects a k0s <strong>ClusterConfig</strong> resource as value, which defines the configuration parameters for k0s. If <code>spec.k0sConfig</code> is left empty, the default k0s configuration will be applied.</p>
+<p>Refer to <a href="https://docs.k0sproject.io/stable/configuration/">k0s docs</a> for a reference on configuring k0s via the ClusterConfig resource.</p>
+<h3 id="clusterconfig-for-k0smotron">ClusterConfig for K0smotron<a class="headerlink" href="#clusterconfig-for-k0smotron" title="Permanent link">#</a></h3>
+<p>K0smotron can automatically generate <code>spec.k0sConfig</code> or override some fields (if provided) based on the values provided for the <a href="resource-reference.md/#clusterspec">Cluster</a> resource, following specific configuration rules:</p>
+<table>
+  <tr>
+    <th style="width: 30%;">ClusterConfig Field</th>
+    <th style="width: 30%;">Value</th>
+    <th>Condition</th>
+  </tr>
+  <tr>
+    <td><code>api.externalAddress</code></td>
+    <td>Value in <code>spec.externalAddress</code> if provided. Otherwise, depending of the service type, K0smotron attempts to detect an external address from the load balancer or available node IPs.</td>
+    <td>Only set if <code>nodeLocalLoadBalancing.enabled</code> is <code>false</code>.</td>
+  </tr>
+  <tr>
+    <td><code>api.port</code></td>
+    <td>Value in <code>spec.service.apiPort</code></td>
+    <td>Always.</td>
+  </tr>
+  <tr>
+    <td><code>api.sans</code></td>
+    <td><code>[&lt;spec.externalAddress&gt;, &lt;cluster-svc-ips&gt;, &lt;cluster-service-name&gt;, &lt;cluster-service-name-namespaced&gt;, &lt;cluster-service-name-DNS&gt;], &lt;cluster-service-name-FQDNS&gt;</code> plus the possible provided ones.</td>
+    <td>Always.</td>
+  </tr>
+  <tr>
+    <td><code>konnectivity.port</code></td>
+    <td>Value in <code>spec.service.konnectivityPort</code></td>
+    <td>Always.</td>
+  </tr>
+  <tr>
+    <td><code>storage.kine.dataSource</code></td>
+    <td>Value in <code>spec.kineDataSourceURL</code></td>
+    <td>Only set if <code>spec.kineDataSourceURL</code> is defined.</td>
+  </tr>
+  <tr>
+    <td><code>storage.type</code></td>
+    <td><code>kine</code></td>
+    <td>Only set if <code>spec.kineDataSourceURL</code> is defined.</td>
+  </tr>
+  <tr>
+    <td><code>storage.type</code></td>
+    <td><code>etcd</code></td>
+    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+  </tr>
+  <tr>
+    <td><code>storage.etcd.externalCluster.endpoints</code></td>
+    <td><code>[https://kmc-&lt;cluster.name&gt;-etcd:2379]</code></td>
+    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+  </tr>
+  <tr>
+    <td><code>storage.etcd.externalCluster.etcdPrefix</code></td>
+    <td>Value in <code>metadata.name</code></td>
+    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+  </tr>
+  <tr>
+    <td><code>storage.etcd.externalCluster.caFile</code></td>
+    <td><code>/var/lib/k0s/pki/etcd-ca.crt</code></td>
+    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+  </tr>
+  <tr>
+    <td><code>storage.etcd.externalCluster.clientCertFile</code></td>
+    <td><code>/var/lib/k0s/pki/apiserver-etcd-client.crt</code></td>
+    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+  </tr>
+  <tr>
+    <td><code>storage.etcd.externalCluster.clientKeyFile</code></td>
+    <td><code>/var/lib/k0s/pki/apiserver-etcd-client.key</code></td>
+    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+  </tr>
+</table>
 
 
 
