@@ -207,3 +207,78 @@ spec:
 ```
 
 When CAPI controller creates a `RemoteMachine` from template object for the `K0sControlPlane`, k0smotron will pick one of the `PooledRemoteMachine` objects and use it's values for the `RemoteMachine` object.
+
+### Using Sudo for Commands
+
+When connecting to remote machines, you may need to execute commands with elevated privileges. 
+The `useSudo` field allows k0smotron to wrap all executed commands with `sudo`. This is particularly useful when the SSH user doesn't have root privileges but has sudo access:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteMachine
+metadata:
+  name: remote-test-0
+  namespace: default
+spec:
+  address: 1.2.3.4
+  port: 22
+  user: my-user
+  useSudo: true
+  sshKeyRef:
+    name: my-user-key
+```
+
+All commands executed on this machine will be prefixed with `sudo`, allowing operations that require elevated privileges.
+
+## Cleanup
+
+If you delete a `RemoteMachine`, k0smotron will perform cleanup of the k0s installation on the machine before deleting the object.
+
+!!! note
+
+    Cleanup is only performed if the `RemoteMachine` has been successfully provisioned using `K0sWorkerConfig` or `K0sControlPlane` objects.
+    If the `RemoteMachine` was provisioned using some other bootstrap provider, cleanup can be performed using `customCleanUpCommands` (see below).
+
+The cleanup process for a k0s installation includes:
+
+- Leaving the etcd cluster (if the node is a controller)
+- Stopping the k0s service
+- Running `k0s reset` to clean up k0s data ([read more](https://docs.k0sproject.io/stable/reset/)).
+
+## Custom Cleanup Commands
+
+k0smotron supports executing custom commands during the machine cleanup process when a `RemoteMachine` is deleted. This feature is particularly useful for:
+
+- Cleaning up custom installations or configurations
+- Removing additional services or agents
+- Performing custom data cleanup
+- Handling special cleanup requirements
+
+!!! warning
+    When using `customCleanUpCommands`, you are responsible for the complete cleanup of the k0s installation. The default k0s cleanup will not be performed.
+
+You can specify custom cleanup commands in the `customCleanUpCommands` field of a `RemoteMachine` or `PooledRemoteMachine`. For example:
+
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteMachine
+metadata:
+  name: remote-test-0
+  namespace: default
+spec:
+  address: 1.2.3.4
+  port: 22
+  user: root
+  sshKeyRef:
+    name: footloose-key
+  customCleanUpCommands:
+    - "systemctl stop custom-service"
+    - "/custom-cleanup-script.sh"
+    - "/usr/local/bin/k0s etcd leave"
+    - "/usr/local/bin/k0s stop"
+    - "/usr/local/bin/k0s reset"
+    - "rm -rf /opt/custom-data"
+    - "echo 'Custom cleanup completed'"
+```
+
+`useSudo` field will be respected for `customCleanUpCommands` to execute the commands with elevated privileges if needed.
