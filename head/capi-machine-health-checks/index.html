@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/ha/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-machine-health-checks/">
       
       
-        <link rel="prev" href="../etcd/">
+        <link rel="prev" href="../capi-clusterclass/">
       
       
-        <link rel="next" href="../hcp-autoscaling/">
+        <link rel="next" href="../capi-examples/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>HA control planes with Kine - Documentation</title>
+        <title>Health Checks - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#highly-available-hosted-control-planes-using-external-data-stores" class="md-skip">
+        <a href="#machinehealthchecks-with-k0smotron" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              HA control planes with Kine
+              Health Checks
             
           </span>
         </div>
@@ -411,20 +411,18 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
         
           
           <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
@@ -440,7 +438,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             Standalone
@@ -543,32 +541,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    HA control planes with Kine
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../ha/" class="md-nav__link">
         
   
   
@@ -579,35 +555,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#using-postgres-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      Using Postgres operator
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -648,18 +595,20 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
         
           
           <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
@@ -675,7 +624,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             Cluster API
@@ -824,10 +773,32 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../capi-machine-health-checks/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Health Checks
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -838,6 +809,80 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      How it works
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safety-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Safety Features
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Best Practices
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1798,9 +1843,54 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#using-postgres-operator" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Postgres operator
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      How it works
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safety-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Safety Features
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Best Practices
     </span>
   </a>
   
@@ -1822,89 +1912,59 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="highly-available-hosted-control-planes-using-external-data-stores">Highly available hosted control planes using external data stores<a class="headerlink" href="#highly-available-hosted-control-planes-using-external-data-stores" title="Permanent link">#</a></h1>
-<p>Setting up a highly available etcd cluster for Kubernetes control planes can be
-complicated due to their dynamic nature. In k0smotron, we solve this challenge
-by "externalizing" the HA setup of data storage for the control plane.</p>
-<p>The control planes managed by k0smotron are k0s control planes. As k0s comes
-with support for using SQL databases as data store, which uses Kine, you can
-use HA databases instead of etcd. This enables you to use, for example,
-Postgres operator, MySQL operator, or cloud provider managed databases as the
-data store for the control planes.</p>
-<h2 id="using-postgres-operator">Using Postgres operator<a class="headerlink" href="#using-postgres-operator" title="Permanent link">#</a></h2>
-<p>This instruction demonstrates how to configure the <a href="https://postgres-operator.readthedocs.io/en/latest/">Postgres operator</a>
-to manage the data store of a control plane. Use these steps as an example for
-the required data store resource.</p>
+<h1 id="machinehealthchecks-with-k0smotron">MachineHealthChecks with k0smotron<a class="headerlink" href="#machinehealthchecks-with-k0smotron" title="Permanent link">#</a></h1>
+<p>k0smotron provides built-in support for MachineHealthChecks (MHC), a core Cluster API feature that automatically detects and remediates unhealthy control plane machines.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">#</a></h2>
+<p>k0smotron's control plane controller automatically handles the remediation process when machines are marked as unhealthy by MHC.</p>
+<p>Read more about MachineHealthChecks in the <a href="https://cluster-api.sigs.k8s.io/tasks/automated-machine-management/healthchecking.html#configure-a-machinehealthcheckbb">Cluster API documentation</a>.</p>
+<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">#</a></h2>
+<p>When a MachineHealthCheck detects an unhealthy control plane machine:</p>
 <ol>
-<li>
-<p>Install the Postgres operator following the <a href="https://postgres-operator.readthedocs.io/en/latest/quickstart/">quickstart guide</a>.</p>
-</li>
-<li>
-<p>Create the database using a custom resource:</p>
-<div class="highlight"><pre><span></span><code>apiVersion: &quot;acid.zalan.do/v1&quot;
-kind: postgresql
-metadata:
-  name: acid-minimal-cluster
-spec:
-  teamId: &quot;acid&quot;
-  volume:
-    size: 10Gi
-  numberOfInstances: 2
-  users:
-    # database owner
-    k0smotron:
-    - superuser
-    - createdb
-
-  databases:
-    kine: k0smotron
-  postgresql:
-    version: &quot;15&quot;
-</code></pre></div>
-</li>
-<li>
-<p>Once you set up the database, configure k0smotron to create a control plane:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: k0smotron.io/v1beta1</span>
-<span class="s">kind: Cluster</span>
-<span class="s">metadata:</span>
-<span class="s">  name: k0smotron-test</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 3</span>
-<span class="s">  service:</span>
-<span class="s">    type: LoadBalancer</span>
-<span class="s">  kineDataSourceURL: postgres://k0smotron:&lt;passwd&gt;@acid-minimal-cluster.default:5432/kine?sslmode=disable</span>
-<span class="s">EOF</span>
-</code></pre></div>
-<p>You can also use the reference to the secret containing the database
- credentials:</p>
-<div class="highlight"><pre><span></span><code>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kubectl apply -f -</span>
-<span class="s">apiVersion: v1</span>
-<span class="s">kind: Secret</span>
-<span class="s">metadata:</span>
-<span class="s">  name: database-credentials</span>
-<span class="s">  namespace: k0smotron-test</span>
-<span class="s">type: Opaque</span>
-<span class="s">data:</span>
-<span class="s">  K0SMOTRON_KINE_DATASOURCE_URL: &lt;base64-encoded-datasource&gt;</span>
-<span class="s">---</span>
-<span class="s">apiVersion: k0smotron.io/v1beta1</span>
-<span class="s">kind: Cluster</span>
-<span class="s">metadata:</span>
-<span class="s">  name: k0smotron-test</span>
-<span class="s">spec:</span>
-<span class="s">  replicas: 3</span>
-<span class="s">  service:</span>
-<span class="s">    type: LoadBalancer</span>
-<span class="s">  kineDataSourceSecretName: database-credentials</span>
-<span class="s">EOF</span>
-</code></pre></div>
-<p>!!! note</p>
-<div class="highlight"><pre><span></span><code>The secret must be in the same namespace as the cluster and the key
-must be `K0SMOTRON_KINE_DATASOURCE_URL`.
-</code></pre></div>
-</li>
+<li>The MHC controller marks the machine as unhealthy</li>
+<li>k0smotron's control plane controller detects this condition</li>
+<li>The controller safely deletes the unhealthy machine</li>
+<li>A new machine is automatically created to replace it</li>
 </ol>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
+<ul>
+<li>A k0smotron control plane with at least 2 replicas (required for safe remediation)</li>
+<li>MachineHealthCheck controller running in your management cluster</li>
+</ul>
+<h2 id="example-configuration">Example Configuration<a class="headerlink" href="#example-configuration" title="Permanent link">#</a></h2>
+<p>Here's a simple example of how to set up MachineHealthChecks for a k0smotron control plane:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineHealthCheck</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron-controlplane-mhc</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cluster.x-k8s.io/control-plane</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">  </span><span class="nt">unhealthyConditions</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
+<span class="w">    </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unknown</span>
+<span class="w">    </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300s</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
+<span class="w">    </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;False&quot;</span>
+<span class="w">    </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300s</span>
+<span class="w">  </span><span class="nt">nodeStartupTimeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10m</span>
+</code></pre></div>
+<h2 id="safety-features">Safety Features<a class="headerlink" href="#safety-features" title="Permanent link">#</a></h2>
+<p>k0smotron includes several safety mechanisms to prevent cluster disruption:</p>
+<ul>
+<li><strong>Minimum replicas</strong>: Remediation only occurs when there are more than 1 control plane replica</li>
+<li><strong>No concurrent operations</strong>: Waits for provisioning/deletion operations to complete</li>
+<li><strong>Graceful deletion</strong>: Properly removes machines from the k0s cluster before deletion</li>
+</ul>
+<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">#</a></h2>
+<ul>
+<li>Always use at least 3 control plane replicas in production</li>
+<li>Set appropriate timeouts based on your infrastructure</li>
+<li>Monitor remediation events and adjust thresholds as needed</li>
+<li>Test remediation in non-production environments first</li>
+</ul>
 
 
 
