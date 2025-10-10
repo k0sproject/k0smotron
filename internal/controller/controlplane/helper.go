@@ -18,12 +18,14 @@ package controlplane
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/imdario/mergo"
 	"github.com/k0sproject/version"
 	corev1 "k8s.io/api/core/v1"
@@ -109,6 +111,12 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 		annotations[k] = v
 	}
 
+	k0sConfigAnnotationValue, err := generateK0sConfigAnnotationValueForMachine(kcp, name)
+	if err != nil {
+		return nil, err
+	}
+	annotations["k0smotron.io/k0s-config"] = k0sConfigAnnotationValue
+
 	machine := &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: clusterv1.GroupVersion.String(),
@@ -139,6 +147,53 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 
 	return machine, nil
+}
+
+func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta1.K0sControlPlane, machineName string) (string, error) {
+	// We make a copy of the K0sControlPlane to avoid modifying the original object with a value that is specific to a machine.
+	kcpCopy := kcp.DeepCopy()
+
+	currentKCPVersion, err := version.NewVersion(kcpCopy.Spec.Version)
+	if err != nil {
+		return "", fmt.Errorf("error parsing k0s version: %w", err)
+	}
+
+	if currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
+		if kcpCopy.Spec.K0sConfigSpec.K0s == nil {
+			kcpCopy.Spec.K0sConfigSpec.K0s = &unstructured.Unstructured{
+				Object: make(map[string]interface{}),
+			}
+		}
+		// If it is not explicitly indicated to use Kine storage, we use the machine name to name the ETCD member.
+		kineStorage, found, err := unstructured.NestedString(kcpCopy.Spec.K0sConfigSpec.K0s.Object, "spec", "storage", "kine", "dataSource")
+		if err != nil {
+			return "", fmt.Errorf("error retrieving storage.kine.datasource: %w", err)
+		}
+		if !found || kineStorage == "" {
+			err = unstructured.SetNestedMap(kcpCopy.Spec.K0sConfigSpec.K0s.Object, map[string]interface{}{}, "spec", "storage", "etcd", "extraArgs")
+			if err != nil {
+				return "", fmt.Errorf("error ensuring intermediate maps spec.storage.etcd.extraArgs: %w", err)
+			}
+			err = unstructured.SetNestedField(kcpCopy.Spec.K0sConfigSpec.K0s.Object, machineName, "spec", "storage", "etcd", "extraArgs", "name")
+			if err != nil {
+				return "", fmt.Errorf("error setting storage.etcd.extraArgs.name: %w", err)
+			}
+		}
+	}
+
+	k0sConfigSpec, err := json.Marshal(kcpCopy.Spec.K0sConfigSpec)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal K0sConfigSpec: %w", err)
+	}
+	return string(k0sConfigSpec), nil
+}
+
+func getK0sConfigFromAnnotationValue(value string) (*bootstrapv1.K0sConfigSpec, error) {
+	k0sConfigSpec := &bootstrapv1.K0sConfigSpec{}
+	if err := json.Unmarshal([]byte(value), k0sConfigSpec); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal K0sConfigSpec: %w", err)
+	}
+	return k0sConfigSpec, nil
 }
 
 func (c *K0sController) getInfraMachines(ctx context.Context, machines collections.Machines) (map[string]*unstructured.Unstructured, error) {
@@ -272,7 +327,7 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 }
 
 func (c *K0sController) hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sControllerConfig, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
-	// Skip the check if the K0sControlPlane is not ready
+
 	if !kcp.Status.Ready || kcp.Spec.Replicas != kcp.Status.Replicas {
 		return false
 	}
@@ -287,48 +342,73 @@ func (c *K0sController) hasControllerConfigChanged(bootstrapConfigs map[string]b
 		return false
 	}
 
-	bootstrapConfig, found := bootstrapConfigs[machine.Name]
-	if !found {
-		return false
+	// If the machine has the k0s config annotation, use it for comparison instead of manually comparing the K0sConfigSpec.
+	// We will fall back to the manual comparison only if the annotation is missing or invalid. This is required to support
+	// the scenario where the machine was created using old k0smotron versions where the k0s config was a mutable resource.
+	// TODO: Remove this fallback logic in a future release.
+	k0sConfigAnnotationValue, ok := machine.GetAnnotations()["k0smotron.io/k0s-config"]
+	if ok {
+		machineK0sConfig, err := getK0sConfigFromAnnotationValue(k0sConfigAnnotationValue)
+		if err != nil {
+			return false
+		}
+
+		// IMPORTANT: make a copy of the K0sConfigSpec from the K0sControlPlane, as we will modify it.
+		kcpK0sConfig := kcp.Spec.K0sConfigSpec.DeepCopy()
+
+		// ClusterConfig data is reconciled using dynamic config, so leave it out of the comparison
+		kcpK0sConfig.K0s = nil
+		machineK0sConfig.K0s = nil
+
+		return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
 	}
 
-	kcpK0sConfigSpecCopy := kcp.Spec.K0sConfigSpec.DeepCopy()
-	bootstrapConfigCopy := bootstrapConfig.DeepCopy()
-	kcpK0sConfigSpecCopy.Args = uniqueArgs(kcpK0sConfigSpecCopy.Args)
+	// TODO: REMOVE THIS IN A FUTURE RELEASE
+	{
 
-	// remove data that should not be taken into account to check if the configuration has changed.
-	normalizeK0sConfigSpec(kcp, bootstrapConfigCopy)
-	bootstrapConfigSpecCopy := bootstrapConfigCopy.Spec.K0sConfigSpec.DeepCopy()
+		bootstrapConfig, found := bootstrapConfigs[machine.Name]
+		if !found {
+			return false
+		}
 
-	// k0s config will be reconciled using dynamic config, so leave it out of the comparison
-	bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "api")
-	kcpAPIConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "api")
-	bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "storage")
-	kcpStorageConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
+		kcpK0sConfigSpecCopy := kcp.Spec.K0sConfigSpec.DeepCopy()
+		bootstrapConfigCopy := bootstrapConfig.DeepCopy()
+		kcpK0sConfigSpecCopy.Args = uniqueArgs(kcpK0sConfigSpecCopy.Args)
 
-	// Handle nil cases consistently - convert nil to empty map for comparison
-	if bootstrapStorageConfig == nil {
-		bootstrapStorageConfig = make(map[string]interface{})
+		// remove data that should not be taken into account to check if the configuration has changed.
+		normalizeK0sConfigSpec(kcp, bootstrapConfigCopy)
+		bootstrapConfigSpecCopy := bootstrapConfigCopy.Spec.K0sConfigSpec.DeepCopy()
+
+		// k0s config will be reconciled using dynamic config, so leave it out of the comparison
+		bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "api")
+		kcpAPIConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "api")
+		bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "storage")
+		kcpStorageConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
+
+		// Handle nil cases consistently - convert nil to empty map for comparison
+		if bootstrapStorageConfig == nil {
+			bootstrapStorageConfig = make(map[string]interface{})
+		}
+		if kcpStorageConfig == nil {
+			kcpStorageConfig = make(map[string]interface{})
+		}
+
+		// Bootstrap controller did set etcd name to the K0sControllerConfig, so we need to compare it with the name set in the K0sControlPlane
+		kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
+		if kcpStorageConfigEtcdWithName == nil {
+			kcpStorageConfigEtcdWithName = make(map[string]interface{})
+		}
+		_ = unstructured.SetNestedField(kcpStorageConfigEtcdWithName, machine.Name, "etcd", "extraArgs", "name")
+
+		bootstrapConfigCopy.Spec.K0sConfigSpec.K0s = kcpK0sConfigSpecCopy.K0s
+
+		// leave out the tunneling spec for the bootstrap config
+		bootstrapConfigCopy.Spec.K0sConfigSpec.Tunneling = kcpK0sConfigSpecCopy.Tunneling
+
+		return !reflect.DeepEqual(kcpK0sConfigSpecCopy, bootstrapConfigCopy.Spec.K0sConfigSpec) ||
+			!reflect.DeepEqual(kcpAPIConfig, bootstrapAPIConfig) ||
+			(!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig) && !reflect.DeepEqual(kcpStorageConfigEtcdWithName, bootstrapStorageConfig))
 	}
-	if kcpStorageConfig == nil {
-		kcpStorageConfig = make(map[string]interface{})
-	}
-
-	// Bootstrap controller did set etcd name to the K0sControllerConfig, so we need to compare it with the name set in the K0sControlPlane
-	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
-	if kcpStorageConfigEtcdWithName == nil {
-		kcpStorageConfigEtcdWithName = make(map[string]interface{})
-	}
-	_ = unstructured.SetNestedField(kcpStorageConfigEtcdWithName, machine.Name, "etcd", "extraArgs", "name")
-
-	bootstrapConfigCopy.Spec.K0sConfigSpec.K0s = kcpK0sConfigSpecCopy.K0s
-
-	// leave out the tunneling spec for the bootstrap config
-	bootstrapConfigCopy.Spec.K0sConfigSpec.Tunneling = kcpK0sConfigSpecCopy.Tunneling
-
-	return !reflect.DeepEqual(kcpK0sConfigSpecCopy, bootstrapConfigCopy.Spec.K0sConfigSpec) ||
-		!reflect.DeepEqual(kcpAPIConfig, bootstrapAPIConfig) ||
-		(!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig) && !reflect.DeepEqual(kcpStorageConfigEtcdWithName, bootstrapStorageConfig))
 }
 
 func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {

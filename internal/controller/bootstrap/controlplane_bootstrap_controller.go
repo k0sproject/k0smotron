@@ -82,6 +82,7 @@ type ControllerScope struct {
 	currentKCPVersion *version.Version
 	machines          collections.Machines
 	provisioner       provisioner.Provisioner
+	installArgs       []string
 }
 
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -172,6 +173,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		WorkerEnabled:     false,
 		currentKCPVersion: currentKCPVersion,
 		provisioner:       getProvisioner(config.Spec.Ignition),
+		installArgs:       append([]string{}, config.Spec.Args...),
 	}
 
 	for _, arg := range config.Spec.Args {
@@ -294,29 +296,6 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		err        error
 	)
 
-	if scope.currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
-		if scope.Config.Spec.K0s == nil {
-			scope.Config.Spec.K0s = &unstructured.Unstructured{
-				Object: make(map[string]interface{}),
-			}
-		}
-		// If it is not explicitly indicated to use Kine storage, we use the machine name to name the ETCD member.
-		kineStorage, found, err := unstructured.NestedString(scope.Config.Spec.K0s.Object, "spec", "storage", "kine", "dataSource")
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving storage.kine.datasource: %w", err)
-		}
-		if !found || kineStorage == "" {
-			err = unstructured.SetNestedMap(scope.Config.Spec.K0s.Object, map[string]interface{}{}, "spec", "storage", "etcd", "extraArgs")
-			if err != nil {
-				return nil, fmt.Errorf("error ensuring intermediate maps spec.storage.etcd.extraArgs: %w", err)
-			}
-			err = unstructured.SetNestedField(scope.Config.Spec.K0s.Object, scope.ConfigOwner.GetName(), "spec", "storage", "etcd", "extraArgs", "name")
-			if err != nil {
-				return nil, fmt.Errorf("error setting storage.etcd.extraArgs.name: %w", err)
-			}
-		}
-	}
-
 	if scope.Config.Spec.K0s != nil {
 		k0sConfigBytes, err := scope.Config.Spec.K0s.MarshalJSON()
 		if err != nil {
@@ -327,7 +306,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 			Permissions: "0644",
 			Content:     string(k0sConfigBytes),
 		})
-		scope.Config.Spec.Args = append(scope.Config.Spec.Args, "--config", "/etc/k0s.yaml")
+		scope.installArgs = append(scope.installArgs, "--config", "/etc/k0s.yaml")
 	}
 
 	if scope.machines.Oldest().Name == scope.Config.Name {
@@ -630,7 +609,7 @@ func createCPInstallCmdWithJoinToken(scope *ControllerScope, tokenPath string) s
 }
 
 func mergeControllerExtraArgs(scope *ControllerScope) []string {
-	return mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
+	return mergeExtraArgs(scope.installArgs, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
 }
 
 func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv1.Machine) (string, error) {

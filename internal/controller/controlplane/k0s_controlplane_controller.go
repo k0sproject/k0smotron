@@ -20,13 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -71,6 +71,7 @@ var (
 	FRPConfigMapNameTemplate  = "%s-frps-config"
 	FRPDeploymentNameTemplate = "%s-frps"
 	FRPServiceNameTemplate    = "%s-frps"
+	minVersionForETCDName     = version.MustParse("v1.31.1")
 )
 
 type K0sController struct {
@@ -149,7 +150,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	// Always patch the object to update the status
 	defer func() {
 		log.Info("Updating status")
-		existingStatus := kcp.Status.DeepCopy()
 
 		// When controlplane is being deleted, we don't update the status to avoid requests workload API
 		// because it is terminating so machines probably are terminating too.
@@ -161,17 +161,12 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			derr = c.updateStatus(ctx, kcp, cluster)
 			if derr != nil {
 				if !errors.Is(derr, errUpgradeNotCompleted) {
-					log.Error(derr, "Failed to update status")
-					return
+					log.Info("Status update not completed", "error", derr)
 				}
 
 				if res.IsZero() {
 					res = ctrl.Result{RequeueAfter: 10 * time.Second}
 				}
-			}
-
-			if errors.Is(err, ErrNotReady) || reflect.DeepEqual(existingStatus, kcp.Status) {
-				return
 			}
 		}
 
@@ -589,9 +584,6 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 
 func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
 
-	k0sConfigSpec := kcp.Spec.K0sConfigSpec.DeepCopy()
-	k0sConfigSpec.Args = uniqueArgs(k0sConfigSpec.Args)
-
 	controllerConfig := bootstrapv1.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
@@ -613,7 +605,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 		},
 		Spec: bootstrapv1.K0sControllerConfigSpec{
 			Version:       kcp.Spec.Version,
-			K0sConfigSpec: k0sConfigSpec,
+			K0sConfigSpec: &kcp.Spec.K0sConfigSpec,
 		},
 	}
 
