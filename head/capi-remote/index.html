@@ -795,6 +795,39 @@ You are not currently viewing the documentation for the current stable release o
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Using RemoteMachines in machineTemplates of higher-level objects">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-sudo-for-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Sudo for Commands
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cleanup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-cleanup-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Cleanup Commands
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -1822,6 +1855,39 @@ You are not currently viewing the documentation for the current stable release o
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Using RemoteMachines in machineTemplates of higher-level objects">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-sudo-for-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Sudo for Commands
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cleanup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-cleanup-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Cleanup Commands
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -2031,6 +2097,70 @@ Since k0smotron remote machine provider can't create machines on its own, it wor
 <span class="l l-Scalar l-Scalar-Plain">…</span><span class="w"> </span><span class="c1"># other objects omitted for brevity</span>
 </code></pre></div>
 <p>When CAPI controller creates a <code>RemoteMachine</code> from template object for the <code>K0sControlPlane</code>, k0smotron will pick one of the <code>PooledRemoteMachine</code> objects and use it's values for the <code>RemoteMachine</code> object.</p>
+<h3 id="using-sudo-for-commands">Using Sudo for Commands<a class="headerlink" href="#using-sudo-for-commands" title="Permanent link">#</a></h3>
+<p>When connecting to remote machines, you may need to execute commands with elevated privileges. 
+The <code>useSudo</code> field allows k0smotron to wrap all executed commands with <code>sudo</code>. This is particularly useful when the SSH user doesn't have root privileges but has sudo access:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachine</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remote-test-0</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2.3.4</span>
+<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">22</span>
+<span class="w">  </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-user</span>
+<span class="w">  </span><span class="nt">useSudo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">sshKeyRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-user-key</span>
+</code></pre></div>
+<p>All commands executed on this machine will be prefixed with <code>sudo</code>, allowing operations that require elevated privileges.</p>
+<h2 id="cleanup">Cleanup<a class="headerlink" href="#cleanup" title="Permanent link">#</a></h2>
+<p>If you delete a <code>RemoteMachine</code>, k0smotron will perform cleanup of the k0s installation on the machine before deleting the object.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Cleanup is only performed if the <code>RemoteMachine</code> has been successfully provisioned using <code>K0sWorkerConfig</code> or <code>K0sControlPlane</code> objects.
+If the <code>RemoteMachine</code> was provisioned using some other bootstrap provider, cleanup can be performed using <code>customCleanUpCommands</code> (see below).</p>
+</div>
+<p>The cleanup process for a k0s installation includes:</p>
+<ul>
+<li>Leaving the etcd cluster (if the node is a controller)</li>
+<li>Stopping the k0s service</li>
+<li>Running <code>k0s reset</code> to clean up k0s data (<a href="https://docs.k0sproject.io/stable/reset/">read more</a>).</li>
+</ul>
+<h2 id="custom-cleanup-commands">Custom Cleanup Commands<a class="headerlink" href="#custom-cleanup-commands" title="Permanent link">#</a></h2>
+<p>k0smotron supports executing custom commands during the machine cleanup process when a <code>RemoteMachine</code> is deleted. This feature is particularly useful for:</p>
+<ul>
+<li>Cleaning up custom installations or configurations</li>
+<li>Removing additional services or agents</li>
+<li>Performing custom data cleanup</li>
+<li>Handling special cleanup requirements</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When using <code>customCleanUpCommands</code>, you are responsible for the complete cleanup of the k0s installation. The default k0s cleanup will not be performed.</p>
+</div>
+<p>You can specify custom cleanup commands in the <code>customCleanUpCommands</code> field of a <code>RemoteMachine</code> or <code>PooledRemoteMachine</code>. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachine</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remote-test-0</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2.3.4</span>
+<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">22</span>
+<span class="w">  </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root</span>
+<span class="w">  </span><span class="nt">sshKeyRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">footloose-key</span>
+<span class="w">  </span><span class="nt">customCleanUpCommands</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">stop</span><span class="nv"> </span><span class="s">custom-service&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/custom-cleanup-script.sh&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/usr/local/bin/k0s</span><span class="nv"> </span><span class="s">etcd</span><span class="nv"> </span><span class="s">leave&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/usr/local/bin/k0s</span><span class="nv"> </span><span class="s">stop&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/usr/local/bin/k0s</span><span class="nv"> </span><span class="s">reset&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;rm</span><span class="nv"> </span><span class="s">-rf</span><span class="nv"> </span><span class="s">/opt/custom-data&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Custom</span><span class="nv"> </span><span class="s">cleanup</span><span class="nv"> </span><span class="s">completed&#39;&quot;</span>
+</code></pre></div>
+<p><code>useSudo</code> field will be respected for <code>customCleanUpCommands</code> to execute the commands with elevated privileges if needed.</p>
 
 
 
