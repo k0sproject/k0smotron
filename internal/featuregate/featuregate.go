@@ -22,6 +22,9 @@ import (
 	"strings"
 )
 
+// EnvVarName is the environment variable name that can be used to set feature gates.
+const EnvVarName = "K0SMOTRON_FEATURE_GATES"
+
 func init() {
 	effectiveFeatureGates = &FeatureGates{
 		featureMap: defaultFeatureMap,
@@ -55,7 +58,11 @@ func (fg *FeatureGates) isEnabled(feature Feature) bool {
 // Configure parses the provided flag string and configures the
 // feature gates accordingly. This function is not thread-safe and is only
 // expected to be called once during the initialization phase.
-func Configure(flag string) error {
+func Configure(flag string, envVar string) error {
+	if envVar != "" {
+		flag = envVar
+	}
+
 	featureMap, err := parseFeatureGateFlags(flag)
 	if err != nil {
 		return err

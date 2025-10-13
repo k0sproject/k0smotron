@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -32,10 +33,6 @@ type CloudInitProvisioner struct{}
 type VarName string
 
 const (
-	// VarPreStartCommand is the name of the variable that contains commands from spec.preStartCommands
-	VarPreStartCommand VarName = "k0smotron_preStartCommands"
-	// VarPostStartCommand is the name of the variable that contains commands from spec.postStartCommands
-	VarPostStartCommand VarName = "k0smotron_postStartCommands"
 	// VarK0sDownloadCommands is the name of the variable that contains commands to download k0s
 	VarK0sDownloadCommands VarName = "k0smotron_k0sDownloadCommands"
 	// VarK0sInstallCommand is the name of the variable that contains the command to install k0s
@@ -54,17 +51,17 @@ func (c *CloudInitProvisioner) ToProvisionData(input *InputProvisionData) ([]byt
 		return nil, err
 	}
 
+	_, err = b.WriteString("#cloud-config\n")
+	if err != nil {
+		return nil, err
+	}
 	// If CloudInitVars feature is enabled write all k0smotron commands and files as jinja variables
 	if len(input.Vars) > 0 && featuregate.IsEnabled(featuregate.CloudInitVars) {
 		for k, v := range input.Vars {
-			_, _ = b.WriteString("{% set " + string(k) + " = \"" + v + "\" %}\n")
+			_, _ = b.WriteString("{% set " + string(k) + " = '" + strings.ReplaceAll(v, `"`, `\"`) + "' %}\n")
 		}
 		writeFilesVars(&b, input.Files)
 	} else {
-		_, err = b.WriteString("#cloud-config\n")
-		if err != nil {
-			return nil, err
-		}
 		// Marshal the data
 		enc := yaml.NewEncoder(&b)
 		enc.SetIndent(2)
@@ -77,9 +74,11 @@ func (c *CloudInitProvisioner) ToProvisionData(input *InputProvisionData) ([]byt
 	}
 
 	if input.CustomUserData != "" {
-		_, err = b.WriteString("\n#cloud-config\n")
-		if err != nil {
-			return nil, err
+		if !featuregate.IsEnabled(featuregate.CloudInitVars) {
+			_, err = b.WriteString("\n#cloud-config\n")
+			if err != nil {
+				return nil, err
+			}
 		}
 		_, err = b.WriteString(input.CustomUserData)
 		if err != nil {

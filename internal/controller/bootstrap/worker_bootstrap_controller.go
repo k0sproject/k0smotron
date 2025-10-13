@@ -259,14 +259,12 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 		`(echo "Not a supported init system"; false)`
 
 	commands := scope.Config.Spec.PreStartCommands
-	commandsMap[provisioner.VarPreStartCommand] = strings.Join(scope.Config.Spec.PreStartCommands, " && ")
 	commands = append(commands, downloadCommands...)
 	commandsMap[provisioner.VarK0sDownloadCommands] = strings.Join(downloadCommands, " && ")
 	commands = append(commands, installCmd, startCmd)
 	commandsMap[provisioner.VarK0sInstallCommand] = installCmd
 	commandsMap[provisioner.VarK0sStartCommand] = startCmd
 	commands = append(commands, scope.Config.Spec.PostStartCommands...)
-	commandsMap[provisioner.VarPostStartCommand] = strings.Join(scope.Config.Spec.PostStartCommands, " && ")
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")

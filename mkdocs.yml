@@ -43,6 +43,8 @@ nav:
         - Remote Machine with Teleport: capi-remotemachine-teleport.md
         - Remote Machine with Okta ASA: capi-remotemachine-okta-asa.md
         - Using OCI registry to pull k0s: capi-use-oci-registry.md
+      - Advanced:
+        - Cloud init customization: capi-advanced/cloud-init.md
     - Monitoring: monitoring.md
   - Update:
      - Standalone: update/update-standalone.md
@@ -102,6 +104,8 @@ plugins:
   - macros:
       j2_variable_start_string: "{{{"
       j2_variable_end_string: "}}}"
+      j2_block_start_string: "[[%"
+      j2_block_end_string: "%]]"
   - exclude:
       glob:
         - "*.etag"

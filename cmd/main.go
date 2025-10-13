@@ -118,7 +118,7 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
-	_ = featuregate.Configure(featureGates)
+	_ = featuregate.Configure(featureGates, os.Getenv(featuregate.EnvVarName))
 
 	if enabledController != "" && enabledController != allControllers {
 		enabledControllers = map[string]bool{

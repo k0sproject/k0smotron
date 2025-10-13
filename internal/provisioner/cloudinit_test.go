@@ -98,7 +98,7 @@ runcmd:
 }
 
 func TestCustomCloudInitWithVars(t *testing.T) {
-	featuregate.Configure("CloudInitVars=true")
+	featuregate.Configure("CloudInitVars=true", "")
 
 	input := &InputProvisionData{
 		Files: []File{
@@ -112,7 +112,7 @@ func TestCustomCloudInitWithVars(t *testing.T) {
 			"echo 'hello world'",
 		},
 		Vars: map[VarName]string{
-			"myvar": "myvalue",
+			"myvar": `myvalue "withquotes"`,
 		},
 		CustomUserData: `runcmd:
   - echo 'custom cloud init'
@@ -127,7 +127,8 @@ func TestCustomCloudInitWithVars(t *testing.T) {
 	s := string(b)
 
 	assert.Equal(t, `## template: jinja
-{% set myvar = "myvalue" %}
+#cloud-config
+{% set myvar = 'myvalue \"withquotes\"' %}
 {% set k0smotron_files = [
   {
     "path": "/etc/hosts",
@@ -135,8 +136,6 @@ func TestCustomCloudInitWithVars(t *testing.T) {
     "permissions": "0644"
   }
 ] %}
-
-#cloud-config
 runcmd:
   - echo 'custom cloud init'
 `, s)

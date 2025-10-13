@@ -764,9 +764,6 @@ func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, m
 
 func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) ([]string, map[provisioner.VarName]string, error) {
 	commandsMap := make(map[provisioner.VarName]string)
-	commandsMap[provisioner.VarPreStartCommand] = strings.Join(scope.Config.Spec.PreStartCommands, " && ")
-	commandsMap[provisioner.VarPostStartCommand] = strings.Join(scope.Config.Spec.PostStartCommands, " && ")
-
 	commands := scope.Config.Spec.PreStartCommands
 
 	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
