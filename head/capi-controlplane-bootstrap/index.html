@@ -734,6 +734,57 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prepost-start-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre/Post Start Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pre/Post Start Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prestartcommands" class="md-nav__link">
+    <span class="md-ellipsis">
+      PreStartCommands
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#poststartcommands" class="md-nav__link">
+    <span class="md-ellipsis">
+      PostStartCommands
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-execution-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command Execution Order
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Cases
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#downscaling-the-control-plane" class="md-nav__link">
     <span class="md-ellipsis">
       Downscaling the control plane
@@ -1816,6 +1867,57 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prepost-start-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre/Post Start Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pre/Post Start Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prestartcommands" class="md-nav__link">
+    <span class="md-ellipsis">
+      PreStartCommands
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#poststartcommands" class="md-nav__link">
+    <span class="md-ellipsis">
+      PostStartCommands
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-execution-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command Execution Order
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Cases
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#downscaling-the-control-plane" class="md-nav__link">
     <span class="md-ellipsis">
       Downscaling the control plane
@@ -1914,6 +2016,98 @@ You are not currently viewing the documentation for the current stable release o
 </code></pre></div>
 <p>By applying this yaml, k0smotron will create 3 machines based on the <code>MachineTemplate</code> configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.</p>
 <p>For a full reference on <code>K0sControlPlane</code> configurability see the <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/">reference docs</a>.</p>
+<h2 id="prepost-start-commands">Pre/Post Start Commands<a class="headerlink" href="#prepost-start-commands" title="Permanent link">#</a></h2>
+<p>k0smotron supports executing custom commands before and after starting k0s on control plane nodes. This feature is useful for:</p>
+<ul>
+<li>Installing additional packages or dependencies</li>
+<li>Configuring system settings</li>
+<li>Setting up monitoring agents</li>
+<li>Running health checks</li>
+<li>Performing cleanup operations</li>
+</ul>
+<h3 id="prestartcommands">PreStartCommands<a class="headerlink" href="#prestartcommands" title="Permanent link">#</a></h3>
+<p>Commands specified in <code>preStartCommands</code> are executed before k0s binary is downloaded and installed.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">preStartCommands</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;apt-get</span><span class="nv"> </span><span class="s">update</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">apt-get</span><span class="nv"> </span><span class="s">install</span><span class="nv"> </span><span class="s">-y</span><span class="nv"> </span><span class="s">curl</span><span class="nv"> </span><span class="s">jq&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;mkdir</span><span class="nv"> </span><span class="s">-p</span><span class="nv"> </span><span class="s">/etc/k0s/monitoring&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;export</span><span class="nv"> </span><span class="s">MONITORING_ENABLED=true&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/etc/environment&quot;</span>
+</code></pre></div>
+<h3 id="poststartcommands">PostStartCommands<a class="headerlink" href="#poststartcommands" title="Permanent link">#</a></h3>
+<p>Commands specified in <code>postStartCommands</code> are executed after k0s has started successfully. These commands run after the k0s service is running and the control plane is ready.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">postStartCommands</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">enable</span><span class="nv"> </span><span class="s">monitoring-agent&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">start</span><span class="nv"> </span><span class="s">monitoring-agent&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;kubectl</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">nodes</span><span class="nv"> </span><span class="s">--kubeconfig=/var/lib/k0s/pki/admin.conf&quot;</span>
+</code></pre></div>
+<h3 id="command-execution-order">Command Execution Order<a class="headerlink" href="#command-execution-order" title="Permanent link">#</a></h3>
+<p>The commands are executed in the following order:</p>
+<ol>
+<li><strong>PreStartCommands</strong> - Custom commands before k0s starts</li>
+<li><strong>Download and Install</strong> - k0s binary download and installation</li>
+<li><strong>k0s start</strong> - k0s service startup</li>
+<li><strong>PostStartCommands</strong> - Custom commands after k0s starts</li>
+</ol>
+<h3 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">#</a></h3>
+<h4 id="installing-monitoring-agents-on-control-plane">Installing Monitoring Agents on Control Plane<a class="headerlink" href="#installing-monitoring-agents-on-control-plane" title="Permanent link">#</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-with-monitoring</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">preStartCommands</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;curl</span><span class="nv"> </span><span class="s">-fsSL</span><span class="nv"> </span><span class="s">https://get.docker.com</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">sh&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">enable</span><span class="nv"> </span><span class="s">docker&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">start</span><span class="nv"> </span><span class="s">docker&quot;</span>
+<span class="w">    </span><span class="nt">postStartCommands</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;docker</span><span class="nv"> </span><span class="s">run</span><span class="nv"> </span><span class="s">-d</span><span class="nv"> </span><span class="s">--name</span><span class="nv"> </span><span class="s">node-exporter</span><span class="nv"> </span><span class="s">-p</span><span class="nv"> </span><span class="s">9100:9100</span><span class="nv"> </span><span class="s">prom/node-exporter&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Node</span><span class="nv"> </span><span class="s">exporter</span><span class="nv"> </span><span class="s">started</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">port</span><span class="nv"> </span><span class="s">9100&#39;&quot;</span>
+</code></pre></div>
+<h4 id="configuring-system-settings-for-control-plane">Configuring System Settings for Control Plane<a class="headerlink" href="#configuring-system-settings-for-control-plane" title="Permanent link">#</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-with-config</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">preStartCommands</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;vm.max_map_count=262144&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/etc/sysctl.conf&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;sysctl</span><span class="nv"> </span><span class="s">-p&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;net.core.somaxconn=65535&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/etc/sysctl.conf&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;sysctl</span><span class="nv"> </span><span class="s">-p&quot;</span>
+<span class="w">    </span><span class="nt">postStartCommands</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;System</span><span class="nv"> </span><span class="s">configuration</span><span class="nv"> </span><span class="s">applied</span><span class="nv"> </span><span class="s">successfully&#39;&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;sysctl</span><span class="nv"> </span><span class="s">vm.max_map_count</span><span class="nv"> </span><span class="s">net.core.somaxconn&quot;</span>
+</code></pre></div>
+<h4 id="health-checks-and-validation-for-control-plane">Health Checks and Validation for Control Plane<a class="headerlink" href="#health-checks-and-validation-for-control-plane" title="Permanent link">#</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-with-health-checks</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">postStartCommands</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;kubectl</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">nodes</span><span class="nv"> </span><span class="s">--kubeconfig=/var/lib/k0s/pki/admin.conf&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;kubectl</span><span class="nv"> </span><span class="s">describe</span><span class="nv"> </span><span class="s">node</span><span class="nv"> </span><span class="s">$(hostname)</span><span class="nv"> </span><span class="s">--kubeconfig=/var/lib/k0s/pki/admin.conf&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Control</span><span class="nv"> </span><span class="s">plane</span><span class="nv"> </span><span class="s">health</span><span class="nv"> </span><span class="s">check</span><span class="nv"> </span><span class="s">completed</span><span class="nv"> </span><span class="s">successfully&#39;&quot;</span>
+</code></pre></div>
 <h2 id="downscaling-the-control-plane">Downscaling the control plane<a class="headerlink" href="#downscaling-the-control-plane" title="Permanent link">#</a></h2>
 <p><strong>WARNING: Downscaling is a potentially dangerous operation.</strong></p>
 <p>Kubernetes using etcd as its backing store. It's crucial to have a quorum of etcd nodes available at all times. Always run etcd as a cluster of <strong>odd</strong> members.</p>
