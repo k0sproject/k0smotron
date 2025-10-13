@@ -282,3 +282,36 @@ spec:
 ```
 
 `useSudo` field will be respected for `customCleanUpCommands` to execute the commands with elevated privileges if needed.
+
+Another way to provide custom cleanup logic is to create a script on the machine using `files` and then reference that script in `customCleanUpCommands`. For example:
+
+```yaml
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfig
+metadata:
+  name: machine-test-config
+  namespace: default
+spec:
+  version: v1.32.2+k0s.0
+  files:
+    - path: /custom-cleanup-script.sh
+      content: |
+        #!/bin/bash
+        echo "Running custom cleanup script"
+        # Add your custom cleanup logic here
+      permissions: "0755"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: RemoteMachine
+metadata:
+  name: remote-test-0
+  namespace: default
+spec:
+  address: 1.2.3.4
+  port: 22
+  user: root
+  sshKeyRef:
+    name: footloose-key
+  customCleanUpCommands:
+    - "/custom-cleanup-script.sh"
+```
