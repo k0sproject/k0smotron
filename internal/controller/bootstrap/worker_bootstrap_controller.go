@@ -375,10 +375,10 @@ func createIngressCommands(scope *Scope) []string {
 	}
 }
 
-func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) ([]cloudinit.File, error) {
+func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) ([]provisioner.File, error) {
 	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv1.File{
 		{
-			File: cloudinit.File{
+			File: provisioner.File{
 				Path: "/etc/haproxy/certs/ca.crt",
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
@@ -389,7 +389,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			},
 		},
 		{
-			File: cloudinit.File{
+			File: provisioner.File{
 				Path: "/etc/haproxy/certs/server.crt",
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
@@ -400,7 +400,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			},
 		},
 		{
-			File: cloudinit.File{
+			File: provisioner.File{
 				Path: "/etc/haproxy/certs/server.key",
 			},
 			ContentFrom: &bootstrapv1.ContentSource{
