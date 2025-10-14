@@ -39,13 +39,14 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	// Skip the control plane machines that don't have worker enabled
-	if capiutil.IsControlPlaneMachine(machine) && machine.ObjectMeta.Labels["k0smotron.io/control-plane-worker-enabled"] != "true" {
+	// Skip non-k0smotron managed machines
+	if machine.Spec.Bootstrap.ConfigRef.Kind != "K0sControllerConfig" && machine.Spec.Bootstrap.ConfigRef.Kind != "K0sWorkerConfig" &&
+		machine.Spec.InfrastructureRef.Kind != "RemoteMachine" {
 		return ctrl.Result{}, nil
 	}
 
-	// Skip non-k0s machines
-	if machine.Spec.Bootstrap.ConfigRef.Kind != "K0sControllerConfig" && machine.Spec.Bootstrap.ConfigRef.Kind != "K0sWorkerConfig" {
+	// Skip the control plane machines that don't have worker enabled
+	if machine.Spec.Bootstrap.ConfigRef.Kind == "K0sControllerConfig" && machine.ObjectMeta.Labels["k0smotron.io/control-plane-worker-enabled"] != "true" {
 		return ctrl.Result{}, nil
 	}
 
