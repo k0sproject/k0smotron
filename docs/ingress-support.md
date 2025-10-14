@@ -11,6 +11,13 @@ k0smotron will create an ingress resource that routes traffic to the control pla
 HAProxy sidecar that proxies traffic from pods to the ingress controller. The kubelet connects directly to the ingress 
 controller for control plane communication, while pods communicate through the HAProxy sidecar.
 
+### Supported k0s versions
+
+- v1.34.1+k0s.0 and later 
+- v1.33.5+k0s.0 and later
+- v1.32.9+k0s.0 and later
+- v1.31.13+k0s.0 and later
+
 ## Architecture
 
 The ingress support works by:

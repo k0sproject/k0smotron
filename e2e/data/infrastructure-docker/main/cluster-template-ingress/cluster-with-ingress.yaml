@@ -27,8 +27,7 @@ kind: K0smotronControlPlane
 metadata:
   name: ${CLUSTER_NAME}-cp
 spec:
-  image: makhov/k0s
-  version: v1.34.0-beta.0-k0s.0-250-g4da84d23e
+  version: v1.34.1-k0s.0
   ingress:
     apiHost: kube-api.${KIND_IP}.nip.io
     konnectivityHost: konnectivity.${KIND_IP}.nip.io
@@ -68,7 +67,7 @@ spec:
         cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
         pool: worker-pool-1
     spec:
-      version: v1.34.0-beta.0
+      version: v1.34.1
       clusterName: ${CLUSTER_NAME}
       bootstrap:
         configRef:
@@ -88,11 +87,7 @@ metadata:
 spec:
   template:
     spec:
-      version: v1.34.0-beta.0+k0s.0-250-g4da84d23e
-      preStartCommands:
-        - curl -L -o /usr/local/bin/k0s https://github.com/makhov/k0s/releases/download/vFAKE7/k0s-ext-addr
-        - chmod +x /usr/local/bin/k0s
-      preInstalledK0s: true
+      version: v1.34.1+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
