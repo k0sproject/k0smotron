@@ -406,7 +406,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			} else {
 				machineNamesToDelete[m.Name] = true
 			}
-		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) || c.hasControllerConfigChanged(bootstrapConfigs, kcp, m) {
+		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) || hasControllerConfigChanged(bootstrapConfigs, kcp, m) {
 			if _, found := infraMachines[m.Name]; !found {
 				infraMachineMissing = true
 			}
