@@ -262,14 +262,6 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
 		}
-		if err = (&bootstrap.ProviderIDController{
-			Client:    mgr.GetClient(),
-			Scheme:    mgr.GetScheme(),
-			ClientSet: clientSet,
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
-			os.Exit(1)
-		}
 	}
 
 	if isControllerEnabled(controlPlaneController) {
@@ -351,6 +343,19 @@ func main() {
 			Scheme: mgr.GetScheme(),
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
+			os.Exit(1)
+		}
+	}
+
+	// ProviderID controller needs to run if either bootstrap or infrastructure controllers are running
+	// as both of them create/update Machines.
+	if runCAPIControllers && (isControllerEnabled(infrastructureController) || isControllerEnabled(bootstrapController)) {
+		if err = (&bootstrap.ProviderIDController{
+			Client:    mgr.GetClient(),
+			Scheme:    mgr.GetScheme(),
+			ClientSet: clientSet,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "ProviderID")
 			os.Exit(1)
 		}
 	}
