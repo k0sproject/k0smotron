@@ -27,6 +27,7 @@ import (
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -71,6 +72,7 @@ var (
 	FRPConfigMapNameTemplate  = "%s-frps-config"
 	FRPDeploymentNameTemplate = "%s-frps"
 	FRPServiceNameTemplate    = "%s-frps"
+	minVersionForETCDName     = version.MustParse("v1.31.1")
 )
 
 type K0sController struct {
@@ -527,7 +529,12 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		activeMachines[machine.Name] = machine
 		desiredMachines.Insert(machine)
 
-		err = c.createBootstrapConfig(ctx, name, cluster, kcp, activeMachines[name], cluster.Name)
+		machineK0sConfig, err := getMachineK0sConfig(machine)
+		if err != nil {
+			return fmt.Errorf("error getting machine k0s config: %w", err)
+		}
+
+		err = c.createBootstrapConfig(ctx, name, machineK0sConfig, kcp, activeMachines[name], cluster.Name)
 		if err != nil {
 			return fmt.Errorf("error creating bootstrap config: %w", err)
 		}
@@ -587,10 +594,7 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 	return nil
 }
 
-func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, _ *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
-
-	k0sConfigSpec := kcp.Spec.K0sConfigSpec.DeepCopy()
-	k0sConfigSpec.Args = uniqueArgs(k0sConfigSpec.Args)
+func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, k0sConfigSpec *bootstrapv1.K0sConfigSpec, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
 
 	controllerConfig := bootstrapv1.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
