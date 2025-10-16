@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/k0sproject/k0smotron/internal/featuregate"
 )
 
 func TestCloudInit(t *testing.T) {
@@ -90,6 +92,50 @@ runcmd:
   - echo 'hello world'
 
 #cloud-config
+runcmd:
+  - echo 'custom cloud init'
+`, s)
+}
+
+func TestCustomCloudInitWithVars(t *testing.T) {
+	featuregate.Configure("CloudInitVars=true", "")
+
+	input := &InputProvisionData{
+		Files: []File{
+			{
+				Path:        "/etc/hosts",
+				Content:     "foobar",
+				Permissions: "0644",
+			},
+		},
+		Commands: []string{
+			"echo 'hello world'",
+		},
+		Vars: map[VarName]string{
+			"myvar": `myvalue "withquotes"`,
+		},
+		CustomUserData: `runcmd:
+  - echo 'custom cloud init'
+`,
+	}
+	p := &CloudInitProvisioner{}
+	b, err := p.ToProvisionData(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s := string(b)
+
+	assert.Equal(t, `## template: jinja
+#cloud-config
+{% set myvar = 'myvalue \"withquotes\"' %}
+{% set k0smotron_files = [
+  {
+    "path": "/etc/hosts",
+    "content": "foobar",
+    "permissions": "0644"
+  }
+] %}
 runcmd:
   - echo 'custom cloud init'
 `, s)
