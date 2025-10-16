@@ -67,6 +67,7 @@ const (
 var (
 	ErrNotReady               = fmt.Errorf("waiting for the state")
 	ErrNewMachinesNotReady    = fmt.Errorf("waiting for new machines: %w", ErrNotReady)
+	ErrWaitForMachineCleanUp  = fmt.Errorf("waiting for machines to be cleaned up: %w", ErrNotReady)
 	FRPTokenNameTemplate      = "%s-frp-token"
 	FRPConfigMapNameTemplate  = "%s-frps-config"
 	FRPDeploymentNameTemplate = "%s-frps"
@@ -366,6 +367,11 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	if deletedMachines.Len() > 0 {
 		var errs []error
 		for _, m := range deletedMachines.SortedByCreationTimestamp() {
+			if len(m.Finalizers) != 0 {
+				// If the machine has finalizers, we can't proceed with deletion yet
+				return ErrWaitForMachineCleanUp
+			}
+
 			err := c.deleteK0sNodeResources(ctx, cluster, kcp, m)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("error deleting k0s node resources: %w", err))
