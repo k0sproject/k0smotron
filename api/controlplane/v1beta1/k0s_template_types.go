@@ -37,7 +37,7 @@ type K0sControlPlaneTemplateResourceSpec struct {
 	Version         string                                  `json:"version,omitempty"`
 	// UpdateStrategy defines the strategy to use when updating the control plane.
 	//+kubebuilder:validation:Optional
-	//+kubebuilder:validation:Enum=InPlace;Recreate
+	//+kubebuilder:validation:Enum=InPlace;Recreate;RecreateDeleteFirst
 	//+kubebuilder:default=InPlace
 	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
 }

@@ -121,7 +121,7 @@ Resource Types:
         <td>
           UpdateStrategy defines the strategy to use when updating the control plane.<br/>
           <br/>
-            <i>Enum</i>: InPlace, Recreate<br/>
+            <i>Enum</i>: InPlace, Recreate, RecreateDeleteFirst<br/>
             <i>Default</i>: InPlace<br/>
         </td>
         <td>false</td>
@@ -1237,7 +1237,7 @@ be configured on the K0sControlPlaneTemplate.<br/>
         <td>
           UpdateStrategy defines the strategy to use when updating the control plane.<br/>
           <br/>
-            <i>Enum</i>: InPlace, Recreate<br/>
+            <i>Enum</i>: InPlace, Recreate, RecreateDeleteFirst<br/>
             <i>Default</i>: InPlace<br/>
         </td>
         <td>false</td>
