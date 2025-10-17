@@ -541,15 +541,10 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 }
 
 func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
-	err := c.deleteK0sNodeResources(ctx, cluster, kcp, machine)
-	if err != nil {
-		return fmt.Errorf("error deleting k0s node resources: %w", err)
-	}
-
+	// Delete Machine first; pre-terminate hook will trigger deleteK0sNodeResources via reconcileMachines
 	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
 		return fmt.Errorf("error deleting machine from template: %w", err)
 	}
-
 	return nil
 }
 
@@ -559,24 +554,26 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 	if kcp.Status.Ready {
 		kubeClient, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
-			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
-		}
-
-		waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-		defer cancel()
-		err = wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
-			if err := c.markChildControlNodeToLeave(fctx, machine.Name, kubeClient); err != nil {
-				return false, fmt.Errorf("error marking controlnode to leave: %w", err)
+			if kcp.DeletionTimestamp.IsZero() {
+				return fmt.Errorf("error getting cluster client set for deletion: %w", err)
 			}
+		} else {
+			waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+			defer cancel()
+			err = wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
+				if err := c.markChildControlNodeToLeave(fctx, machine.Name, kubeClient); err != nil {
+					return false, fmt.Errorf("error marking controlnode to leave: %w", err)
+				}
 
-			ok, err := c.checkMachineLeft(fctx, machine.Name, kubeClient)
-			if err != nil {
-				logger.Error(err, "Error checking machine left", "machine", machine.Name)
+				ok, err := c.checkMachineLeft(fctx, machine.Name, kubeClient)
+				if err != nil {
+					logger.Error(err, "Error checking machine left", "machine", machine.Name)
+				}
+				return ok, err
+			})
+			if err != nil && kcp.DeletionTimestamp.IsZero() {
+				return fmt.Errorf("error checking machine left: %w", err)
 			}
-			return ok, err
-		})
-		if err != nil {
-			return fmt.Errorf("error checking machine left: %w", err)
 		}
 	}
 
@@ -897,12 +894,7 @@ func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.
 	var errs []error
 	for _, m := range cpMachines {
 		if !m.DeletionTimestamp.IsZero() {
-			// Machine is already being deleted.
-			continue
-		}
-
-		if err := c.removePreTerminateHookAnnotationFromMachine(ctx, m); err != nil {
-			errs = append(errs, fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", m.Name, err))
+			_ := c.removePreTerminateHookAnnotationFromMachine(ctx, m)
 			continue
 		}
 
