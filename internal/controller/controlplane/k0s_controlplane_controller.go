@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"strings"
 	"time"
 
@@ -58,6 +59,8 @@ import (
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 )
+
+const machineCleanupFinalizer = "k0smotron.io/k0s-node-cleanup"
 
 const (
 	defaultK0sSuffix  = "k0s.0"
@@ -364,17 +367,41 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	activeMachines := allMachines.Filter(collections.ActiveMachines)
 	deletedMachines := allMachines.Filter(collections.HasDeletionTimestamp)
 
+	// Ensure our cleanup finalizer is present on all active control plane Machines
+	for _, m := range activeMachines {
+		if finalizerAdded, err := util.EnsureFinalizer(ctx, c.Client, m, machineCleanupFinalizer); err != nil {
+			return fmt.Errorf("failed to ensure machine finalizer: %w", err)
+		} else if finalizerAdded {
+			// Immediately requeue to avoid doing further work in this reconciliation
+			return ErrNotReady
+		}
+	}
+
 	if deletedMachines.Len() > 0 {
 		var errs []error
 		for _, m := range deletedMachines.SortedByCreationTimestamp() {
-			if len(m.Finalizers) != 0 {
-				// If the machine has finalizers, we can't proceed with deletion yet
+
+			// If the machine has other finalizers, we can't proceed with deletion yet
+			if m.Status.NodeRef != nil && !conditions.IsTrue(m, clusterv1.DrainingSucceededCondition) {
 				return ErrWaitForMachineCleanUp
 			}
 
 			err := c.deleteK0sNodeResources(ctx, cluster, kcp, m)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("error deleting k0s node resources: %w", err))
+			} else {
+				// Cleanup done, remove our finalizer to allow Machine deletion to proceed
+				if controllerutil.ContainsFinalizer(m, machineCleanupFinalizer) {
+					ph, perr := patch.NewHelper(m, c.Client)
+					if perr != nil {
+						errs = append(errs, fmt.Errorf("error creating patch helper to remove machine finalizer: %w", perr))
+					} else {
+						controllerutil.RemoveFinalizer(m, machineCleanupFinalizer)
+						if perr = ph.Patch(ctx, m); perr != nil {
+							errs = append(errs, fmt.Errorf("error removing machine finalizer: %w", perr))
+						}
+					}
+				}
 			}
 		}
 
@@ -550,6 +577,18 @@ func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster 
 	err := c.deleteK0sNodeResources(ctx, cluster, kcp, machine)
 	if err != nil {
 		return fmt.Errorf("error deleting k0s node resources: %w", err)
+	}
+
+	// Cleanup done, remove our finalizer to allow Machine deletion to proceed
+	if controllerutil.ContainsFinalizer(machine, machineCleanupFinalizer) {
+		ph, perr := patch.NewHelper(machine, c.Client)
+		if perr != nil {
+			return fmt.Errorf("error creating patch helper to remove machine finalizer: %w", perr)
+		}
+		controllerutil.RemoveFinalizer(machine, machineCleanupFinalizer)
+		if perr = ph.Patch(ctx, machine); perr != nil {
+			return fmt.Errorf("error removing machine finalizer: %w", perr)
+		}
 	}
 
 	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
