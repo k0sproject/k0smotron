@@ -117,7 +117,7 @@ func (scope *kmcScope) ensureEtcdCertificates(ctx context.Context, kmc *km.Clust
 	return etcdCerts.SaveGenerated(ctx, scope.client, util.ObjectKey(kmc), *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")))
 }
 
-func (scope *kmcScope) ensureIngressCerts(ctx context.Context, kmc *km.Cluster) error {
+func (scope *kmcScope) ensureHAProxyCerts(ctx context.Context, kmc *km.Cluster) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
 	err := certificates.LookupCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc))
 	if err != nil {
