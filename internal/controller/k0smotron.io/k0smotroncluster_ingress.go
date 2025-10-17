@@ -8,7 +8,6 @@ import (
 	v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -24,7 +23,7 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 	if err != nil {
 		return fmt.Errorf("failed to generate ingress manifests configmap: %w", err)
 	}
-	_ = ctrl.SetControllerReference(kmc, &configMap, scope.client.Scheme())
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
 	err = scope.client.Patch(ctx, &configMap, client.Apply, patchOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to patch haproxy configmap for ingress: %w", err)
@@ -52,7 +51,7 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 
 	if *kmc.Spec.Ingress.Deploy {
 		ingress := scope.generateIngress(kmc)
-		_ = ctrl.SetControllerReference(kmc, &ingress, scope.client.Scheme())
+		_ = kcontrollerutil.SetExternalOwnerReference(kmc, &ingress, scope.client.Scheme(), scope.externalOwner)
 		return scope.client.Patch(ctx, &ingress, client.Apply, patchOpts...)
 	}
 

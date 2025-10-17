@@ -3,7 +3,6 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
-	"github.com/k0sproject/version"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	corev1 "k8s.io/api/core/v1"
@@ -54,26 +53,11 @@ func (c ClusterValidator) ValidateDelete(_ context.Context, _ runtime.Object) (w
 	return nil, nil
 }
 
-var ingressCompatibleVersions = []*version.Version{
-	version.MustParse("v1.34.1+k0s.0"),
-	version.MustParse("v1.33.5+k0s.0"),
-	version.MustParse("v1.32.9+k0s.0"),
-	version.MustParse("v1.31.13+k0s.0"),
-}
-
 func (c ClusterValidator) validateCluster(kmc *km.Cluster) (warnings admission.Warnings, err error) {
 	if kmc.Spec.Ingress != nil {
-		v, err := version.NewVersion(kmc.Spec.Version)
+		err := kmc.Spec.Ingress.Validate(kmc.Spec.Version)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse k0s version %s: %w", kmc.Spec.Version, err)
-		}
-
-		for _, iv := range ingressCompatibleVersions {
-			if v.Segments()[1] == iv.Segments()[1] {
-				if v.Core().LessThan(iv.Core()) {
-					return nil, fmt.Errorf("ingress controller is not supported with k0s version %s, minimum supported version for ingress is %s", kmc.Spec.Version, iv.String())
-				}
-			}
+			return nil, err
 		}
 	}
 

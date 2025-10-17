@@ -46,6 +46,7 @@ func (v *K0smotronControlPlaneValidator) validateVersionSuffix(version string) a
 	if version != "" && !strings.Contains(version, "-k0s.") {
 		warnings = append(warnings, fmt.Sprintf("The specified version '%s' requires a k0s suffix (-k0s.<number>). Using '%s-k0s.0' instead.", version, version))
 	}
+
 	return warnings
 }
 
@@ -56,7 +57,14 @@ func (v *K0smotronControlPlaneValidator) ValidateCreate(_ context.Context, obj r
 		return nil, fmt.Errorf("expected a K0smotronControlPlane object but got %T", obj)
 	}
 
-	warnings := v.validateVersionSuffix(kcp.Spec.Version)
+	warnings, err := v.validate(kcp)
+	if err != nil {
+		return warnings, err
+	}
+
+	vsWarnings := v.validateVersionSuffix(kcp.Spec.Version)
+	warnings = append(warnings, vsWarnings...)
+
 	return warnings, nil
 }
 
@@ -94,7 +102,23 @@ func (v *K0smotronControlPlaneValidator) ValidateUpdate(_ context.Context, oldOb
 		}
 	}
 
+	_, err := v.validate(newKCP)
+	if err != nil {
+		return warnings, err
+	}
+
 	return warnings, nil
+}
+
+func (v *K0smotronControlPlaneValidator) validate(kcp *v1beta1.K0smotronControlPlane) (admission.Warnings, error) {
+	if kcp.Spec.Ingress != nil {
+		err := kcp.Spec.Ingress.Validate(kcp.Spec.Version)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type K0smotronControlPlane.
