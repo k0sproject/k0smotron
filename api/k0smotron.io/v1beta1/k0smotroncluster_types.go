@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/k0sproject/version"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -135,6 +136,28 @@ type IngressSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default={haproxy.org/ssl-passthrough: "true"}
 	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+var ingressCompatibleVersions = []*version.Version{
+	version.MustParse("v1.34.1+k0s.0"),
+}
+
+// Validate checks if the ingress controller is compatible with the given k0s version
+func (i *IngressSpec) Validate(clusterVersion string) error {
+	v, err := version.NewVersion(clusterVersion)
+	if err != nil {
+		return fmt.Errorf("failed to parse k0s version %s: %w", clusterVersion, err)
+	}
+
+	for _, iv := range ingressCompatibleVersions {
+		if v.Segments()[1] == iv.Segments()[1] {
+			if v.Core().LessThan(iv.Core()) {
+				return fmt.Errorf("ingress controller is not supported with k0s version %s, minimum supported version for ingress is %s", clusterVersion, iv.String())
+			}
+		}
+	}
+
+	return nil
 }
 
 type Mount struct {

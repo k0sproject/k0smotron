@@ -13,10 +13,7 @@ controller for control plane communication, while pods communicate through the H
 
 ### Supported k0s versions
 
-- v1.34.1+k0s.0 and later 
-- v1.33.5+k0s.0 and later
-- v1.32.9+k0s.0 and later
-- v1.31.13+k0s.0 and later
+- v1.34.1+k0s.0 and later
 
 ## Architecture
 

@@ -347,18 +347,14 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	}
 
 	var joinToken string
+	joinURL := fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port)
 	if scope.ingressSpec != nil {
-		var err error
-		joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port), "kubelet-bootstrap")
-		if err != nil {
-			return "", fmt.Errorf("failed to create join token: %w", err)
-		}
-	} else {
-		var err error
-		joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port), "kubelet-bootstrap")
-		if err != nil {
-			return "", fmt.Errorf("failed to create join token: %w", err)
-		}
+		joinURL = fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port)
+	}
+
+	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, joinURL, "kubelet-bootstrap")
+	if err != nil {
+		return "", fmt.Errorf("failed to create join token: %w", err)
 	}
 	return joinToken, nil
 }

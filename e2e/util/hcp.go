@@ -90,12 +90,12 @@ func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *c
 
 		desiredReplicas := controlplane.Spec.Replicas
 		statusReplicas := controlplane.Status.Replicas
-		//updatedReplicas := controlplane.Status.UpdatedReplicas
+		updatedReplicas := controlplane.Status.UpdatedReplicas
 		readyReplicas := controlplane.Status.ReadyReplicas
 		unavailableReplicas := controlplane.Status.UnavailableReplicas
 
 		if statusReplicas != desiredReplicas ||
-			//updatedReplicas != desiredReplicas ||
+			updatedReplicas != desiredReplicas ||
 			readyReplicas != desiredReplicas ||
 			unavailableReplicas > 0 ||
 			controlplane.Spec.Version != controlplane.Status.Version {

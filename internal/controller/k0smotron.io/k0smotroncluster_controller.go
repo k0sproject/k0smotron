@@ -289,7 +289,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if kmc.Spec.Ingress != nil {
-		err := kmcScope.ensureIngressCerts(ctx, kmc)
+		err := kmcScope.ensureHAProxyCerts(ctx, kmc)
 		if err != nil {
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating ingress certificates: %w", err)
 		}

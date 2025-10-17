@@ -84,7 +84,7 @@ func ingressSupportSpec(t *testing.T) {
 		Flavor:                   "ingress",
 		Namespace:                workloadClusterNamespace,
 		ClusterName:              workloadClusterName,
-		KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 		ControlPlaneMachineCount: ptr.To[int64](1),
 		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
@@ -119,6 +119,7 @@ func ingressSupportSpec(t *testing.T) {
 			cluster,
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
+			clusterctlConfigPath,
 		)
 
 		testCancelWatches()
