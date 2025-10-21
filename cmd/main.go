@@ -118,7 +118,10 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
-	_ = featuregate.Configure(featureGates, os.Getenv(featuregate.EnvVarName))
+	err := featuregate.Configure(featureGates, os.Getenv(featuregate.EnvVarName))
+	if err != nil {
+		setupLog.Error(err, "unable to configure feature gates, the provided flags will be ignored")
+	}
 
 	if enabledController != "" && enabledController != allControllers {
 		enabledControllers = map[string]bool{
@@ -127,14 +130,6 @@ func main() {
 	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
-	// NOTE: support both the deprecated and capi metrics flags
-	// TODO: remove the next block in favor of:
-	// _, metricsOpts, err := flags.GetManagerOptions(managerOptions)
-	// if err != nil {
-	// 	setupLog.Error(err, "unable to start manager: invalid flags")
-	// 	os.Exit(1)
-	// }
 
 	var metricsOpts metricsserver.Options
 	{
