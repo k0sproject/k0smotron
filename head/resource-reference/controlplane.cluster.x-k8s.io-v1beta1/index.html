@@ -2487,7 +2487,7 @@ More info: http://kubernetes.io/docs/user-guide/annotations<br/>
         <td><b>labels</b></td>
         <td>map[string]string</td>
         <td>
-          Map of string keys and values that can be used to organize and categorize
+          labels is a map of string keys and values that can be used to organize and categorize
 (scope and select) objects. May match selectors of replication controllers
 and services.
 More info: http://kubernetes.io/docs/user-guide/labels<br/>
@@ -2626,7 +2626,7 @@ in the cluster.<br/>
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.
+          lastTransitionTime is the last time the condition transitioned from one status to another.
 This should be when the underlying condition changed. If that is not known, then using the time when
 the API field changed is acceptable.<br/>
           <br/>
@@ -2653,7 +2653,7 @@ can be useful (see .node.status.conditions), the ability to deconflict is import
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.
+          message is a human readable message indicating details about the transition.
 This field may be empty.<br/>
         </td>
         <td>false</td>
@@ -2661,7 +2661,7 @@ This field may be empty.<br/>
         <td><b>reason</b></td>
         <td>string</td>
         <td>
-          The reason for the condition's last transition in CamelCase.
+          reason is the reason for the condition's last transition in CamelCase.
 The specific API may choose whether or not this field is considered a guaranteed API.
 This field may be empty.<br/>
         </td>
@@ -3409,7 +3409,7 @@ More info: http://kubernetes.io/docs/user-guide/annotations<br/>
         <td><b>labels</b></td>
         <td>map[string]string</td>
         <td>
-          Map of string keys and values that can be used to organize and categorize
+          labels is a map of string keys and values that can be used to organize and categorize
 (scope and select) objects. May match selectors of replication controllers
 and services.
 More info: http://kubernetes.io/docs/user-guide/labels<br/>
@@ -3964,6 +3964,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
         <td>
           awsElasticBlockStore represents an AWS Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
         </td>
         <td>false</td>
@@ -3971,21 +3973,26 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexazuredisk">azureDisk</a></b></td>
         <td>object</td>
         <td>
-          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.<br/>
+          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexazurefile">azureFile</a></b></td>
         <td>object</td>
         <td>
-          azureFile represents an Azure File Service mount on the host and bind mount to the pod.<br/>
+          azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexcephfs">cephfs</a></b></td>
         <td>object</td>
         <td>
-          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime<br/>
+          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3993,6 +4000,8 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
         <td>object</td>
         <td>
           cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
         </td>
         <td>false</td>
@@ -4007,7 +4016,7 @@ More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexcsi">csi</a></b></td>
         <td>object</td>
         <td>
-          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).<br/>
+          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4067,14 +4076,16 @@ persistent volumes at the same time.<br/>
         <td>object</td>
         <td>
           flexVolume represents a generic volume resource that is
-provisioned/attached using an exec based plugin.<br/>
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexflocker">flocker</a></b></td>
         <td>object</td>
         <td>
-          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running<br/>
+          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4083,6 +4094,8 @@ provisioned/attached using an exec based plugin.<br/>
         <td>
           gcePersistentDisk represents a GCE Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
         </td>
         <td>false</td>
@@ -4091,7 +4104,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
         <td>object</td>
         <td>
           gitRepo represents a git repository at a particular revision.
-DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
 into the Pod's container.<br/>
         </td>
@@ -4101,6 +4114,7 @@ into the Pod's container.<br/>
         <td>object</td>
         <td>
           glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md<br/>
         </td>
         <td>false</td>
@@ -4165,14 +4179,18 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexphotonpersistentdisk">photonPersistentDisk</a></b></td>
         <td>object</td>
         <td>
-          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine<br/>
+          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexportworxvolume">portworxVolume</a></b></td>
         <td>object</td>
         <td>
-          portworxVolume represents a portworx volume attached and mounted on kubelets host machine<br/>
+          portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4186,7 +4204,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexquobyte">quobyte</a></b></td>
         <td>object</td>
         <td>
-          quobyte represents a Quobyte mount on the host that shares a pod's lifetime<br/>
+          quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4194,6 +4213,7 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td>object</td>
         <td>
           rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
 More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
         </td>
         <td>false</td>
@@ -4201,7 +4221,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexscaleio">scaleIO</a></b></td>
         <td>object</td>
         <td>
-          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.<br/>
+          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4216,14 +4237,17 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexstorageos">storageos</a></b></td>
         <td>object</td>
         <td>
-          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.<br/>
+          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexvspherevolume">vsphereVolume</a></b></td>
         <td>object</td>
         <td>
-          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine<br/>
+          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -4233,6 +4257,8 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>awsElasticBlockStore represents an AWS Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore</p>
 <table>
     <thead>
@@ -4286,7 +4312,9 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexazuredisk">K0smotronControlPlane.spec.manifests[index].azureDisk<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexazuredisk" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.</p>
+<p>azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -4350,7 +4378,9 @@ the ReadOnly setting in VolumeMounts.<br/>
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexazurefile">K0smotronControlPlane.spec.manifests[index].azureFile<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexazurefile" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>azureFile represents an Azure File Service mount on the host and bind mount to the pod.</p>
+<p>azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -4387,7 +4417,8 @@ the ReadOnly setting in VolumeMounts.<br/>
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexcephfs">K0smotronControlPlane.spec.manifests[index].cephfs<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexcephfs" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>cephFS represents a Ceph FS mount on the host that shares a pod's lifetime</p>
+<p>cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -4480,6 +4511,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 <h3 id="k0smotroncontrolplanespecmanifestsindexcinder">K0smotronControlPlane.spec.manifests[index].cinder<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexcinder" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md</p>
 <table>
     <thead>
@@ -4668,7 +4701,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexcsi">K0smotronControlPlane.spec.manifests[index].csi<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexcsi" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).</p>
+<p>csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.</p>
 <table>
     <thead>
         <tr>
@@ -5524,7 +5557,8 @@ Either wwids or combination of targetWWNs and lun must be set, but not both simu
 <h3 id="k0smotroncontrolplanespecmanifestsindexflexvolume">K0smotronControlPlane.spec.manifests[index].flexVolume<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexflexvolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>flexVolume represents a generic volume resource that is
-provisioned/attached using an exec based plugin.</p>
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.</p>
 <table>
     <thead>
         <tr>
@@ -5613,7 +5647,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexflocker">K0smotronControlPlane.spec.manifests[index].flocker<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexflocker" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running</p>
+<p>flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -5645,6 +5680,8 @@ should be considered as deprecated<br/>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>gcePersistentDisk represents a GCE Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk</p>
 <table>
     <thead>
@@ -5701,7 +5738,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 <h3 id="k0smotroncontrolplanespecmanifestsindexgitrepo">K0smotronControlPlane.spec.manifests[index].gitRepo<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexgitrepo" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>gitRepo represents a git repository at a particular revision.
-DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
 into the Pod's container.</p>
 <table>
@@ -5743,6 +5780,7 @@ the subdirectory with the given name.<br/>
 <h3 id="k0smotroncontrolplanespecmanifestsindexglusterfs">K0smotronControlPlane.spec.manifests[index].glusterfs<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexglusterfs" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md</p>
 <table>
     <thead>
@@ -6080,7 +6118,8 @@ Default false.<br/>
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexphotonpersistentdisk">K0smotronControlPlane.spec.manifests[index].photonPersistentDisk<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexphotonpersistentdisk" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine</p>
+<p>photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -6111,7 +6150,10 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexportworxvolume">K0smotronControlPlane.spec.manifests[index].portworxVolume<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexportworxvolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>portworxVolume represents a portworx volume attached and mounted on kubelets host machine</p>
+<p>portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.</p>
 <table>
     <thead>
         <tr>
@@ -6768,7 +6810,8 @@ and must be at least 10 minutes.<br/>
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexquobyte">K0smotronControlPlane.spec.manifests[index].quobyte<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexquobyte" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>quobyte represents a Quobyte mount on the host that shares a pod's lifetime</p>
+<p>quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -6832,6 +6875,7 @@ Defaults to serivceaccount user<br/>
 <h3 id="k0smotroncontrolplanespecmanifestsindexrbd">K0smotronControlPlane.spec.manifests[index].rbd<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexrbd" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
 More info: https://examples.k8s.io/volumes/rbd/README.md</p>
 <table>
     <thead>
@@ -6956,7 +7000,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexscaleio">K0smotronControlPlane.spec.manifests[index].scaleIO<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexscaleio" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.</p>
+<p>scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -7186,7 +7231,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexstorageos">K0smotronControlPlane.spec.manifests[index].storageos<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexstorageos" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.</p>
+<p>storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -7275,7 +7321,9 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanespecmanifestsindexvspherevolume">K0smotronControlPlane.spec.manifests[index].vsphereVolume<a class="headerlink" href="#k0smotroncontrolplanespecmanifestsindexvspherevolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine</p>
+<p>vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -7383,6 +7431,8 @@ them as usual kubernetes pod metrics.<br/>
         <td>
           awsElasticBlockStore represents an AWS Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
         </td>
         <td>false</td>
@@ -7390,21 +7440,26 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
         <td><b><a href="#k0smotroncontrolplanespecmountsindexazuredisk">azureDisk</a></b></td>
         <td>object</td>
         <td>
-          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.<br/>
+          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexazurefile">azureFile</a></b></td>
         <td>object</td>
         <td>
-          azureFile represents an Azure File Service mount on the host and bind mount to the pod.<br/>
+          azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexcephfs">cephfs</a></b></td>
         <td>object</td>
         <td>
-          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime<br/>
+          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7412,6 +7467,8 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
         <td>object</td>
         <td>
           cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
         </td>
         <td>false</td>
@@ -7426,7 +7483,7 @@ More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexcsi">csi</a></b></td>
         <td>object</td>
         <td>
-          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).<br/>
+          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7486,14 +7543,16 @@ persistent volumes at the same time.<br/>
         <td>object</td>
         <td>
           flexVolume represents a generic volume resource that is
-provisioned/attached using an exec based plugin.<br/>
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexflocker">flocker</a></b></td>
         <td>object</td>
         <td>
-          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running<br/>
+          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7502,6 +7561,8 @@ provisioned/attached using an exec based plugin.<br/>
         <td>
           gcePersistentDisk represents a GCE Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
         </td>
         <td>false</td>
@@ -7510,7 +7571,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
         <td>object</td>
         <td>
           gitRepo represents a git repository at a particular revision.
-DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
 into the Pod's container.<br/>
         </td>
@@ -7520,6 +7581,7 @@ into the Pod's container.<br/>
         <td>object</td>
         <td>
           glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md<br/>
         </td>
         <td>false</td>
@@ -7584,14 +7646,18 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td><b><a href="#k0smotroncontrolplanespecmountsindexphotonpersistentdisk">photonPersistentDisk</a></b></td>
         <td>object</td>
         <td>
-          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine<br/>
+          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexportworxvolume">portworxVolume</a></b></td>
         <td>object</td>
         <td>
-          portworxVolume represents a portworx volume attached and mounted on kubelets host machine<br/>
+          portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7605,7 +7671,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td><b><a href="#k0smotroncontrolplanespecmountsindexquobyte">quobyte</a></b></td>
         <td>object</td>
         <td>
-          quobyte represents a Quobyte mount on the host that shares a pod's lifetime<br/>
+          quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7613,6 +7680,7 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td>object</td>
         <td>
           rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
 More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
         </td>
         <td>false</td>
@@ -7627,7 +7695,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexscaleio">scaleIO</a></b></td>
         <td>object</td>
         <td>
-          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.<br/>
+          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7642,14 +7711,17 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexstorageos">storageos</a></b></td>
         <td>object</td>
         <td>
-          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.<br/>
+          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexvspherevolume">vsphereVolume</a></b></td>
         <td>object</td>
         <td>
-          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine<br/>
+          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7659,6 +7731,8 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>awsElasticBlockStore represents an AWS Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore</p>
 <table>
     <thead>
@@ -7712,7 +7786,9 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
 
 <h3 id="k0smotroncontrolplanespecmountsindexazuredisk">K0smotronControlPlane.spec.mounts[index].azureDisk<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexazuredisk" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.</p>
+<p>azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -7776,7 +7852,9 @@ the ReadOnly setting in VolumeMounts.<br/>
 
 <h3 id="k0smotroncontrolplanespecmountsindexazurefile">K0smotronControlPlane.spec.mounts[index].azureFile<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexazurefile" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>azureFile represents an Azure File Service mount on the host and bind mount to the pod.</p>
+<p>azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -7813,7 +7891,8 @@ the ReadOnly setting in VolumeMounts.<br/>
 
 <h3 id="k0smotroncontrolplanespecmountsindexcephfs">K0smotronControlPlane.spec.mounts[index].cephfs<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexcephfs" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>cephFS represents a Ceph FS mount on the host that shares a pod's lifetime</p>
+<p>cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -7906,6 +7985,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 <h3 id="k0smotroncontrolplanespecmountsindexcinder">K0smotronControlPlane.spec.mounts[index].cinder<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexcinder" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md</p>
 <table>
     <thead>
@@ -8094,7 +8175,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 <h3 id="k0smotroncontrolplanespecmountsindexcsi">K0smotronControlPlane.spec.mounts[index].csi<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexcsi" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).</p>
+<p>csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.</p>
 <table>
     <thead>
         <tr>
@@ -8950,7 +9031,8 @@ Either wwids or combination of targetWWNs and lun must be set, but not both simu
 <h3 id="k0smotroncontrolplanespecmountsindexflexvolume">K0smotronControlPlane.spec.mounts[index].flexVolume<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexflexvolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>flexVolume represents a generic volume resource that is
-provisioned/attached using an exec based plugin.</p>
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.</p>
 <table>
     <thead>
         <tr>
@@ -9039,7 +9121,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanespecmountsindexflocker">K0smotronControlPlane.spec.mounts[index].flocker<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexflocker" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running</p>
+<p>flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -9071,6 +9154,8 @@ should be considered as deprecated<br/>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>gcePersistentDisk represents a GCE Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk</p>
 <table>
     <thead>
@@ -9127,7 +9212,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 <h3 id="k0smotroncontrolplanespecmountsindexgitrepo">K0smotronControlPlane.spec.mounts[index].gitRepo<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexgitrepo" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>gitRepo represents a git repository at a particular revision.
-DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
 into the Pod's container.</p>
 <table>
@@ -9169,6 +9254,7 @@ the subdirectory with the given name.<br/>
 <h3 id="k0smotroncontrolplanespecmountsindexglusterfs">K0smotronControlPlane.spec.mounts[index].glusterfs<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexglusterfs" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md</p>
 <table>
     <thead>
@@ -9506,7 +9592,8 @@ Default false.<br/>
 
 <h3 id="k0smotroncontrolplanespecmountsindexphotonpersistentdisk">K0smotronControlPlane.spec.mounts[index].photonPersistentDisk<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexphotonpersistentdisk" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine</p>
+<p>photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -9537,7 +9624,10 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 <h3 id="k0smotroncontrolplanespecmountsindexportworxvolume">K0smotronControlPlane.spec.mounts[index].portworxVolume<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexportworxvolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>portworxVolume represents a portworx volume attached and mounted on kubelets host machine</p>
+<p>portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.</p>
 <table>
     <thead>
         <tr>
@@ -10194,7 +10284,8 @@ and must be at least 10 minutes.<br/>
 
 <h3 id="k0smotroncontrolplanespecmountsindexquobyte">K0smotronControlPlane.spec.mounts[index].quobyte<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexquobyte" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>quobyte represents a Quobyte mount on the host that shares a pod's lifetime</p>
+<p>quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -10258,6 +10349,7 @@ Defaults to serivceaccount user<br/>
 <h3 id="k0smotroncontrolplanespecmountsindexrbd">K0smotronControlPlane.spec.mounts[index].rbd<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexrbd" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
 More info: https://examples.k8s.io/volumes/rbd/README.md</p>
 <table>
     <thead>
@@ -10382,7 +10474,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanespecmountsindexscaleio">K0smotronControlPlane.spec.mounts[index].scaleIO<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexscaleio" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.</p>
+<p>scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -10612,7 +10705,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 <h3 id="k0smotroncontrolplanespecmountsindexstorageos">K0smotronControlPlane.spec.mounts[index].storageos<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexstorageos" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.</p>
+<p>storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -10701,7 +10795,9 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanespecmountsindexvspherevolume">K0smotronControlPlane.spec.mounts[index].vsphereVolume<a class="headerlink" href="#k0smotroncontrolplanespecmountsindexvspherevolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine</p>
+<p>vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -11403,22 +11499,17 @@ This is a beta field and requires enabling VolumeAttributesClass feature (off by
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Status is the status of the condition.
+Can be True, False, Unknown.
+More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=state%20of%20pvc-,conditions.status,-(string)%2C%20required<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          PersistentVolumeClaimConditionType defines the condition of PV claim.
-Valid values are:
-  - "Resizing", "FileSystemResizePending"
-
-If RecoverVolumeExpansionFailure feature gate is enabled, then following additional values can be expected:
-  - "ControllerResizeError", "NodeResizeError"
-
-If VolumeAttributesClass feature gate is enabled, then following additional values can be expected:
-  - "ModifyVolumeError", "ModifyingVolume"<br/>
+          Type is the type of the condition.
+More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=set%20to%20%27ResizeStarted%27.-,PersistentVolumeClaimCondition,-contains%20details%20about<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -11999,7 +12090,7 @@ in the cluster.<br/>
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.
+          lastTransitionTime is the last time the condition transitioned from one status to another.
 This should be when the underlying condition changed. If that is not known, then using the time when
 the API field changed is acceptable.<br/>
           <br/>
@@ -12026,7 +12117,7 @@ can be useful (see .node.status.conditions), the ability to deconflict is import
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.
+          message is a human readable message indicating details about the transition.
 This field may be empty.<br/>
         </td>
         <td>false</td>
@@ -12034,7 +12125,7 @@ This field may be empty.<br/>
         <td><b>reason</b></td>
         <td>string</td>
         <td>
-          The reason for the condition's last transition in CamelCase.
+          reason is the reason for the condition's last transition in CamelCase.
 The specific API may choose whether or not this field is considered a guaranteed API.
 This field may be empty.<br/>
         </td>
@@ -12708,6 +12799,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
         <td>
           awsElasticBlockStore represents an AWS Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
         </td>
         <td>false</td>
@@ -12715,21 +12808,26 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexazuredisk">azureDisk</a></b></td>
         <td>object</td>
         <td>
-          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.<br/>
+          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexazurefile">azureFile</a></b></td>
         <td>object</td>
         <td>
-          azureFile represents an Azure File Service mount on the host and bind mount to the pod.<br/>
+          azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexcephfs">cephfs</a></b></td>
         <td>object</td>
         <td>
-          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime<br/>
+          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12737,6 +12835,8 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
         <td>object</td>
         <td>
           cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
         </td>
         <td>false</td>
@@ -12751,7 +12851,7 @@ More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexcsi">csi</a></b></td>
         <td>object</td>
         <td>
-          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).<br/>
+          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12811,14 +12911,16 @@ persistent volumes at the same time.<br/>
         <td>object</td>
         <td>
           flexVolume represents a generic volume resource that is
-provisioned/attached using an exec based plugin.<br/>
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexflocker">flocker</a></b></td>
         <td>object</td>
         <td>
-          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running<br/>
+          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12827,6 +12929,8 @@ provisioned/attached using an exec based plugin.<br/>
         <td>
           gcePersistentDisk represents a GCE Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
         </td>
         <td>false</td>
@@ -12835,7 +12939,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
         <td>object</td>
         <td>
           gitRepo represents a git repository at a particular revision.
-DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
 into the Pod's container.<br/>
         </td>
@@ -12845,6 +12949,7 @@ into the Pod's container.<br/>
         <td>object</td>
         <td>
           glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md<br/>
         </td>
         <td>false</td>
@@ -12909,14 +13014,18 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexphotonpersistentdisk">photonPersistentDisk</a></b></td>
         <td>object</td>
         <td>
-          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine<br/>
+          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexportworxvolume">portworxVolume</a></b></td>
         <td>object</td>
         <td>
-          portworxVolume represents a portworx volume attached and mounted on kubelets host machine<br/>
+          portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12930,7 +13039,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexquobyte">quobyte</a></b></td>
         <td>object</td>
         <td>
-          quobyte represents a Quobyte mount on the host that shares a pod's lifetime<br/>
+          quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12938,6 +13048,7 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td>object</td>
         <td>
           rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
 More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
         </td>
         <td>false</td>
@@ -12945,7 +13056,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexscaleio">scaleIO</a></b></td>
         <td>object</td>
         <td>
-          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.<br/>
+          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12960,14 +13072,17 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexstorageos">storageos</a></b></td>
         <td>object</td>
         <td>
-          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.<br/>
+          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexvspherevolume">vsphereVolume</a></b></td>
         <td>object</td>
         <td>
-          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine<br/>
+          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12977,6 +13092,8 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>awsElasticBlockStore represents an AWS Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore</p>
 <table>
     <thead>
@@ -13030,7 +13147,9 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexazuredisk">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].azureDisk<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexazuredisk" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.</p>
+<p>azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -13094,7 +13213,9 @@ the ReadOnly setting in VolumeMounts.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexazurefile">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].azureFile<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexazurefile" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>azureFile represents an Azure File Service mount on the host and bind mount to the pod.</p>
+<p>azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -13131,7 +13252,8 @@ the ReadOnly setting in VolumeMounts.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexcephfs">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].cephfs<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexcephfs" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>cephFS represents a Ceph FS mount on the host that shares a pod's lifetime</p>
+<p>cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -13224,6 +13346,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexcinder">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].cinder<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexcinder" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md</p>
 <table>
     <thead>
@@ -13412,7 +13536,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexcsi">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].csi<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexcsi" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).</p>
+<p>csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.</p>
 <table>
     <thead>
         <tr>
@@ -14268,7 +14392,8 @@ Either wwids or combination of targetWWNs and lun must be set, but not both simu
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexflexvolume">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].flexVolume<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexflexvolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>flexVolume represents a generic volume resource that is
-provisioned/attached using an exec based plugin.</p>
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.</p>
 <table>
     <thead>
         <tr>
@@ -14357,7 +14482,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexflocker">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].flocker<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexflocker" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running</p>
+<p>flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -14389,6 +14515,8 @@ should be considered as deprecated<br/>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>gcePersistentDisk represents a GCE Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk</p>
 <table>
     <thead>
@@ -14445,7 +14573,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexgitrepo">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].gitRepo<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexgitrepo" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>gitRepo represents a git repository at a particular revision.
-DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
 into the Pod's container.</p>
 <table>
@@ -14487,6 +14615,7 @@ the subdirectory with the given name.<br/>
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexglusterfs">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].glusterfs<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexglusterfs" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md</p>
 <table>
     <thead>
@@ -14824,7 +14953,8 @@ Default false.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexphotonpersistentdisk">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].photonPersistentDisk<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexphotonpersistentdisk" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine</p>
+<p>photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -14855,7 +14985,10 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexportworxvolume">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].portworxVolume<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexportworxvolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>portworxVolume represents a portworx volume attached and mounted on kubelets host machine</p>
+<p>portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.</p>
 <table>
     <thead>
         <tr>
@@ -15512,7 +15645,8 @@ and must be at least 10 minutes.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexquobyte">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].quobyte<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexquobyte" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>quobyte represents a Quobyte mount on the host that shares a pod's lifetime</p>
+<p>quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -15576,6 +15710,7 @@ Defaults to serivceaccount user<br/>
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexrbd">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].rbd<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexrbd" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
 <p>rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
 More info: https://examples.k8s.io/volumes/rbd/README.md</p>
 <table>
     <thead>
@@ -15700,7 +15835,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexscaleio">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].scaleIO<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexscaleio" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.</p>
+<p>scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -15930,7 +16066,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexstorageos">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].storageos<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexstorageos" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.</p>
+<p>storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -16019,7 +16156,9 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmanifestsindexvspherevolume">K0smotronControlPlaneTemplate.spec.template.spec.manifests[index].vsphereVolume<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexvspherevolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">↩ Parent</a></sup></sup></p>
-<p>vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine</p>
+<p>vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -16127,6 +16266,8 @@ them as usual kubernetes pod metrics.<br/>
         <td>
           awsElasticBlockStore represents an AWS Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
         </td>
         <td>false</td>
@@ -16134,21 +16275,26 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexazuredisk">azureDisk</a></b></td>
         <td>object</td>
         <td>
-          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.<br/>
+          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexazurefile">azureFile</a></b></td>
         <td>object</td>
         <td>
-          azureFile represents an Azure File Service mount on the host and bind mount to the pod.<br/>
+          azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexcephfs">cephfs</a></b></td>
         <td>object</td>
         <td>
-          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime<br/>
+          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16156,6 +16302,8 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
         <td>object</td>
         <td>
           cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
         </td>
         <td>false</td>
@@ -16170,7 +16318,7 @@ More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexcsi">csi</a></b></td>
         <td>object</td>
         <td>
-          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).<br/>
+          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16230,14 +16378,16 @@ persistent volumes at the same time.<br/>
         <td>object</td>
         <td>
           flexVolume represents a generic volume resource that is
-provisioned/attached using an exec based plugin.<br/>
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexflocker">flocker</a></b></td>
         <td>object</td>
         <td>
-          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running<br/>
+          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16246,6 +16396,8 @@ provisioned/attached using an exec based plugin.<br/>
         <td>
           gcePersistentDisk represents a GCE Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
         </td>
         <td>false</td>
@@ -16254,7 +16406,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
         <td>object</td>
         <td>
           gitRepo represents a git repository at a particular revision.
-DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
 into the Pod's container.<br/>
         </td>
@@ -16264,6 +16416,7 @@ into the Pod's container.<br/>
         <td>object</td>
         <td>
           glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md<br/>
         </td>
         <td>false</td>
@@ -16328,14 +16481,18 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexphotonpersistentdisk">photonPersistentDisk</a></b></td>
         <td>object</td>
         <td>
-          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine<br/>
+          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexportworxvolume">portworxVolume</a></b></td>
         <td>object</td>
         <td>
-          portworxVolume represents a portworx volume attached and mounted on kubelets host machine<br/>
+          portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16349,7 +16506,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexquobyte">quobyte</a></b></td>
         <td>object</td>
         <td>
-          quobyte represents a Quobyte mount on the host that shares a pod's lifetime<br/>
+          quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16357,6 +16515,7 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persis
         <td>object</td>
         <td>
           rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
 More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
         </td>
         <td>false</td>
@@ -16371,7 +16530,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexscaleio">scaleIO</a></b></td>
         <td>object</td>
         <td>
-          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.<br/>
+          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16386,14 +16546,17 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexstorageos">storageos</a></b></td>
         <td>object</td>
         <td>
-          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.<br/>
+          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexvspherevolume">vsphereVolume</a></b></td>
         <td>object</td>
         <td>
-          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine<br/>
+          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -16403,6 +16566,8 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>awsElasticBlockStore represents an AWS Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore</p>
 <table>
     <thead>
@@ -16456,7 +16621,9 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexazuredisk">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].azureDisk<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexazuredisk" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.</p>
+<p>azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -16520,7 +16687,9 @@ the ReadOnly setting in VolumeMounts.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexazurefile">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].azureFile<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexazurefile" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>azureFile represents an Azure File Service mount on the host and bind mount to the pod.</p>
+<p>azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -16557,7 +16726,8 @@ the ReadOnly setting in VolumeMounts.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexcephfs">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].cephfs<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexcephfs" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>cephFS represents a Ceph FS mount on the host that shares a pod's lifetime</p>
+<p>cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -16650,6 +16820,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexcinder">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].cinder<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexcinder" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md</p>
 <table>
     <thead>
@@ -16838,7 +17010,7 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexcsi">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].csi<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexcsi" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).</p>
+<p>csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.</p>
 <table>
     <thead>
         <tr>
@@ -17694,7 +17866,8 @@ Either wwids or combination of targetWWNs and lun must be set, but not both simu
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexflexvolume">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].flexVolume<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexflexvolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>flexVolume represents a generic volume resource that is
-provisioned/attached using an exec based plugin.</p>
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.</p>
 <table>
     <thead>
         <tr>
@@ -17783,7 +17956,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexflocker">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].flocker<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexflocker" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running</p>
+<p>flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -17815,6 +17989,8 @@ should be considered as deprecated<br/>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>gcePersistentDisk represents a GCE Disk resource that is attached to a
 kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk</p>
 <table>
     <thead>
@@ -17871,7 +18047,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexgitrepo">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].gitRepo<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexgitrepo" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>gitRepo represents a git repository at a particular revision.
-DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
 into the Pod's container.</p>
 <table>
@@ -17913,6 +18089,7 @@ the subdirectory with the given name.<br/>
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexglusterfs">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].glusterfs<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexglusterfs" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md</p>
 <table>
     <thead>
@@ -18250,7 +18427,8 @@ Default false.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexphotonpersistentdisk">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].photonPersistentDisk<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexphotonpersistentdisk" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine</p>
+<p>photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -18281,7 +18459,10 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexportworxvolume">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].portworxVolume<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexportworxvolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>portworxVolume represents a portworx volume attached and mounted on kubelets host machine</p>
+<p>portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.</p>
 <table>
     <thead>
         <tr>
@@ -18938,7 +19119,8 @@ and must be at least 10 minutes.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexquobyte">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].quobyte<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexquobyte" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>quobyte represents a Quobyte mount on the host that shares a pod's lifetime</p>
+<p>quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -19002,6 +19184,7 @@ Defaults to serivceaccount user<br/>
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexrbd">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].rbd<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexrbd" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
 <p>rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
 More info: https://examples.k8s.io/volumes/rbd/README.md</p>
 <table>
     <thead>
@@ -19126,7 +19309,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexscaleio">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].scaleIO<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexscaleio" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.</p>
+<p>scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -19356,7 +19540,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexstorageos">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].storageos<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexstorageos" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.</p>
+<p>storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.</p>
 <table>
     <thead>
         <tr>
@@ -19445,7 +19630,9 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindexvspherevolume">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index].vsphereVolume<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexvspherevolume" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex">↩ Parent</a></sup></sup></p>
-<p>vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine</p>
+<p>vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.</p>
 <table>
     <thead>
         <tr>
@@ -20147,22 +20334,17 @@ This is a beta field and requires enabling VolumeAttributesClass feature (off by
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Status is the status of the condition.
+Can be True, False, Unknown.
+More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=state%20of%20pvc-,conditions.status,-(string)%2C%20required<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          PersistentVolumeClaimConditionType defines the condition of PV claim.
-Valid values are:
-  - "Resizing", "FileSystemResizePending"
-
-If RecoverVolumeExpansionFailure feature gate is enabled, then following additional values can be expected:
-  - "ControllerResizeError", "NodeResizeError"
-
-If VolumeAttributesClass feature gate is enabled, then following additional values can be expected:
-  - "ModifyVolumeError", "ModifyingVolume"<br/>
+          Type is the type of the condition.
+More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=set%20to%20%27ResizeStarted%27.-,PersistentVolumeClaimCondition,-contains%20details%20about<br/>
         </td>
         <td>true</td>
       </tr><tr>
