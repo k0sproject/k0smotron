@@ -86,7 +86,7 @@ func remoteHCPSpec(t *testing.T) {
 
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
-		KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 		ControlPlaneMachineCount: ptr.To[int64](3),
 		// TODO: make infra provider configurable
 		InfrastructureProvider: "docker",
@@ -121,6 +121,7 @@ func remoteHCPSpec(t *testing.T) {
 			cluster,
 			util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
+			clusterctlConfigPath,
 		)
 	}()
 

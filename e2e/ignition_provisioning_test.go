@@ -46,7 +46,7 @@ func ignitionProvisioningSpec(t *testing.T) {
 	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 
 	// A SSH is not really needed for using AWS, but for debugging purposes it is useful to have it configured.
-	SSHPublicKey := e2eConfig.GetVariable(SSHPublicKey)
+	SSHPublicKey := e2eConfig.MustGetVariable(SSHPublicKey)
 	if SSHPublicKey == "" {
 		t.Fatal("SSH public key is not set")
 	}
@@ -58,7 +58,7 @@ func ignitionProvisioningSpec(t *testing.T) {
 
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
-		KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 		ControlPlaneMachineCount: ptr.To[int64](3),
 		// CAPD doesn't support ignition, so we use AWS as infrastructure provider
 		InfrastructureProvider: "aws",
@@ -95,6 +95,7 @@ func ignitionProvisioningSpec(t *testing.T) {
 			cluster,
 			util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
+			clusterctlConfigPath,
 		)
 	}()
 

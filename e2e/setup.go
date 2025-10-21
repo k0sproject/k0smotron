@@ -148,9 +148,9 @@ func setupMothership() error {
 		bootstrapClusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 			Name:               e2eConfig.ManagementClusterName,
 			Images:             e2eConfig.Images,
-			KubernetesVersion:  e2eConfig.GetVariable(KubernetesVersionManagement),
+			KubernetesVersion:  e2eConfig.MustGetVariable(KubernetesVersionManagement),
 			RequiresDockerSock: e2eConfig.HasDockerProvider(),
-			IPFamily:           e2eConfig.GetVariable(IPFamily),
+			IPFamily:           e2eConfig.MustGetVariable(IPFamily),
 			LogFolder:          filepath.Join(artifactFolder, "kind"),
 		})
 		if bootstrapClusterProvider == nil {

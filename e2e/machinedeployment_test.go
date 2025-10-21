@@ -92,6 +92,7 @@ func TestMachinedeployment(t *testing.T) {
 				cluster,
 				util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 				skipCleanup,
+				clusterctlConfigPath,
 			)
 		}()
 

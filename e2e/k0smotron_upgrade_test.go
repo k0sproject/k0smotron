@@ -65,10 +65,10 @@ func k0smotronUpgradeSpec(t *testing.T) {
 
 	managementClusterProvider := bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 		Name:               managementClusterName,
-		KubernetesVersion:  e2eConfig.GetVariable(KubernetesVersionManagement),
+		KubernetesVersion:  e2eConfig.MustGetVariable(KubernetesVersionManagement),
 		RequiresDockerSock: e2eConfig.HasDockerProvider(),
 		Images:             e2eConfig.Images,
-		IPFamily:           e2eConfig.GetVariable(IPFamily),
+		IPFamily:           e2eConfig.MustGetVariable(IPFamily),
 		LogFolder:          filepath.Join(managementClusterLogFolder, "logs-kind"),
 	})
 	require.NotNil(t, managementClusterProvider, "Failed to create cluster to upgrade")
@@ -119,7 +119,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 
 		Namespace:         workloadClusterNamespace,
 		ClusterName:       workloadClusterName,
-		KubernetesVersion: e2eConfig.GetVariable(KubernetesVersion),
+		KubernetesVersion: e2eConfig.MustGetVariable(KubernetesVersion),
 		// TODO: make replicas value configurable
 		ControlPlaneMachineCount: ptr.To[int64](3),
 		// TODO: make infra provider configurable
@@ -155,6 +155,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 			cluster,
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
+			clusterctlConfigPath,
 		)
 
 		testCancelWatches()

@@ -635,7 +635,7 @@ Condition defines an observation of a Cluster API resource operational state.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.
+          lastTransitionTime is the last time the condition transitioned from one status to another.
 This should be when the underlying condition changed. If that is not known, then using the time when
 the API field changed is acceptable.<br/>
           <br/>
@@ -662,7 +662,7 @@ can be useful (see .node.status.conditions), the ability to deconflict is import
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.
+          message is a human readable message indicating details about the transition.
 This field may be empty.<br/>
         </td>
         <td>false</td>
@@ -670,7 +670,7 @@ This field may be empty.<br/>
         <td><b>reason</b></td>
         <td>string</td>
         <td>
-          The reason for the condition's last transition in CamelCase.
+          reason is the reason for the condition's last transition in CamelCase.
 The specific API may choose whether or not this field is considered a guaranteed API.
 This field may be empty.<br/>
         </td>
@@ -1256,7 +1256,7 @@ Condition defines an observation of a Cluster API resource operational state.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.
+          lastTransitionTime is the last time the condition transitioned from one status to another.
 This should be when the underlying condition changed. If that is not known, then using the time when
 the API field changed is acceptable.<br/>
           <br/>
@@ -1283,7 +1283,7 @@ can be useful (see .node.status.conditions), the ability to deconflict is import
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.
+          message is a human readable message indicating details about the transition.
 This field may be empty.<br/>
         </td>
         <td>false</td>
@@ -1291,7 +1291,7 @@ This field may be empty.<br/>
         <td><b>reason</b></td>
         <td>string</td>
         <td>
-          The reason for the condition's last transition in CamelCase.
+          reason is the reason for the condition's last transition in CamelCase.
 The specific API may choose whether or not this field is considered a guaranteed API.
 This field may be empty.<br/>
         </td>

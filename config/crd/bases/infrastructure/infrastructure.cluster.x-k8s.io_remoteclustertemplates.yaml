@@ -85,7 +85,7 @@ spec:
                         additionalProperties:
                           type: string
                         description: |-
-                          Map of string keys and values that can be used to organize and categorize
+                          labels is a map of string keys and values that can be used to organize and categorize
                           (scope and select) objects. May match selectors of replication controllers
                           and services.
                           More info: http://kubernetes.io/docs/user-guide/labels
@@ -99,10 +99,13 @@ spec:
                           used to communicate with the control plane.
                         properties:
                           host:
-                            description: The hostname on which the API server is serving.
+                            description: host is the hostname on which the API server
+                              is serving.
+                            maxLength: 512
                             type: string
                           port:
-                            description: The port on which the API server is serving.
+                            description: port is the port on which the API server
+                              is serving.
                             format: int32
                             type: integer
                         required:

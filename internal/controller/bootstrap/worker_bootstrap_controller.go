@@ -186,7 +186,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}
 	err = r.setClientScope(ctx, cluster, scope)
 	if err != nil {
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		return ctrl.Result{}, err
 	}
 
@@ -199,7 +199,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	log.Info("Generating bootstrap data")
 	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope)
 	if err != nil {
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		return ctrl.Result{}, err
 	}
 
@@ -208,7 +208,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	if err := r.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, err.Error())
+		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		return ctrl.Result{}, err
 	}
 	conditions.MarkTrue(config, bootstrapv1.DataSecretAvailableCondition)
