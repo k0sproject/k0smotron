@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
 func (scope *kmcScope) ensureEtcdCertificates(ctx context.Context, kmc *km.Cluster) error {
@@ -114,5 +115,10 @@ func (scope *kmcScope) ensureEtcdCertificates(ctx context.Context, kmc *km.Clust
 		}
 	}
 
-	return etcdCerts.SaveGenerated(ctx, scope.client, util.ObjectKey(kmc), *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")))
+	owner := *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster"))
+	if scope.externalOwner != nil {
+		owner = *kutil.GetExternalControllerRef(scope.externalOwner)
+	}
+
+	return etcdCerts.SaveGenerated(ctx, scope.client, util.ObjectKey(kmc), owner)
 }
