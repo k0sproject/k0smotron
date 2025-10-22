@@ -52,6 +52,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
 	"github.com/k0sproject/k0smotron/internal/controller/infrastructure"
 	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
+	"github.com/k0sproject/k0smotron/internal/featuregate"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -63,6 +64,7 @@ var (
 		controlPlaneController:   true,
 		infrastructureController: true,
 	}
+	featureGates   string
 	managerOptions = flags.ManagerOptions{}
 )
 
@@ -105,6 +107,7 @@ func main() {
 		"[Deprecated, use --insecure-diagnostics instead] If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	pflag.CommandLine.BoolVar(&enableHTTP2, "enable-http2", false,
 		"[Deprecated] If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	pflag.CommandLine.StringVar(&featureGates, "feature-gates", "", "feature gates to enable (comma separated list of key=value pairs)")
 
 	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	opts := zap.Options{
@@ -115,6 +118,11 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
+	err := featuregate.Configure(featureGates, os.Getenv(featuregate.EnvVarName))
+	if err != nil {
+		setupLog.Error(err, "unable to configure feature gates, the provided flags will be ignored")
+	}
+
 	if enabledController != "" && enabledController != allControllers {
 		enabledControllers = map[string]bool{
 			enabledController: true,
@@ -122,14 +130,6 @@ func main() {
 	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
-	// NOTE: support both the deprecated and capi metrics flags
-	// TODO: remove the next block in favor of:
-	// _, metricsOpts, err := flags.GetManagerOptions(managerOptions)
-	// if err != nil {
-	// 	setupLog.Error(err, "unable to start manager: invalid flags")
-	// 	os.Exit(1)
-	// }
 
 	var metricsOpts metricsserver.Options
 	{

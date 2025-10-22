@@ -637,7 +637,7 @@ func TestController_genK0sCommands(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			c := &ControlPlaneController{}
-			commands, err := c.genK0sCommands(tt.scope, tt.installCmd)
+			commands, _, err := c.genK0sCommands(tt.scope, tt.installCmd)
 			require.NoError(t, err)
 			require.Equal(t, tt.want, commands)
 		})
