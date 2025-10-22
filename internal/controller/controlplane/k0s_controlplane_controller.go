@@ -412,6 +412,10 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			}
 			machineNamesToDelete[m.Name] = true
 		} else {
+			err := c.inplaceSyncMachineValues(ctx, kcp, m)
+			if err != nil {
+				return fmt.Errorf("error syncing in-place updates to machine %s: %w", m.Name, err)
+			}
 			desiredMachines.Insert(m)
 		}
 	}
@@ -538,6 +542,19 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	}
 
 	return nil
+}
+
+func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+	patchHelper, err := patch.NewHelper(machine, c.Client)
+	if err != nil {
+		return err
+	}
+
+	machine.Spec.NodeDrainTimeout = kcp.Spec.MachineTemplate.NodeDrainTimeout
+	machine.Spec.NodeDeletionTimeout = kcp.Spec.MachineTemplate.NodeDeletionTimeout
+	machine.Spec.NodeVolumeDetachTimeout = kcp.Spec.MachineTemplate.NodeVolumeDetachTimeout
+
+	return patchHelper.Patch(ctx, machine)
 }
 
 func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
