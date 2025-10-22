@@ -1857,11 +1857,16 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="update-control-nodes-in-cluster-api-clusters">Update control nodes in Cluster API clusters<a class="headerlink" href="#update-control-nodes-in-cluster-api-clusters" title="Permanent link">#</a></h1>
-<p>k0smotron supports two ways to update the control plane in the Cluster API clusters:</p>
+<p>k0smotron supports three update strategies to update the control plane in the Cluster API clusters:</p>
 <ul>
-<li><a href="#updating-the-control-plane-using-k0s-autopilot">Using the k0s autopilot</a></li>
-<li><a href="#updating-the-control-plane-using-the-cluster-api-workflow">Using the Cluster API workflow</a></li>
+<li><code>InPlace</code> (default): uses <a href="https://docs.k0sproject.io/stable/autopilot/">k0s autopilot</a> to update the k0s version on the control plane nodes in-place without recycling the machines.</li>
+<li><code>Recreate</code>: uses the Cluster API workflow to update the control plane by creating new machines for the control plane and decommissioning the old ones.</li>
+<li><code>RecreateDeleteFirst</code>: similar to <code>Recreate</code>, but deletes the old machines before creating the new ones. This strategy is suitable for clusters with limited resources.</li>
 </ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <code>RecreateDeleteFirst</code> update strategy is not supported for k0s clusters of less than 3 control plane nodes</p>
+</div>
 <h2 id="updating-the-control-plane-using-k0s-autopilot">Updating the control plane using k0s autopilot<a class="headerlink" href="#updating-the-control-plane-using-k0s-autopilot" title="Permanent link">#</a></h2>
 <p>In case <code>K0sContolPlane</code> is created with <code>spec.updateStrategy=InPlace</code>, k0smotron uses <a href="https://docs.k0sproject.io/stable/autopilot/">k0s autopilot</a>
 to seamlessly update the k0s version on the control plane <strong>in-place</strong>.</p>
@@ -1982,11 +1987,12 @@ where deploying the new control plane is followed by decommissioning of the old 
 </li>
 </ol>
 <h2 id="updating-the-control-plane-using-the-cluster-api-workflow">Updating the control plane using the Cluster API workflow<a class="headerlink" href="#updating-the-control-plane-using-the-cluster-api-workflow" title="Permanent link">#</a></h2>
-<p>In case <code>K0sControlPlane</code> is created with <code>spec.updateStrategy=Recreate</code>, k0smotron uses the Cluster API workflow to update the control plane,
+<p>In case <code>K0sControlPlane</code> is created with <code>spec.updateStrategy=Recreate</code> or <code>spec.updateStrategy=RecreateDeleteFirst</code>, k0smotron uses the Cluster API workflow to update the control plane,
 which involves creating a new machines for control plane and decommissioning the old ones.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The <code>Recreate</code> update strategy is not supported for k0s clusters running in <code>--single</code> mode.</p>
+<p>The <code>Recreate</code> update strategy is not supported for k0s clusters running in <code>--single</code> mode.
+The <code>RecreateDeleteFirst</code> update strategy is not supported for k0s clusters of less than 3 control plane nodes</p>
 </div>
 <p>For the example below, k0smotron will create 3 new machines for the control plane, ensure that the new control plane nodes are online, and then remove the old machines.</p>
 <ol>
