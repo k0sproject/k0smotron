@@ -392,6 +392,7 @@ spec:
                 enum:
                 - InPlace
                 - Recreate
+                - RecreateDeleteFirst
                 type: string
               version:
                 description: |-
