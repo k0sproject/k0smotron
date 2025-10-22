@@ -558,11 +558,6 @@ func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, kcp *cpv1b
 }
 
 func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
-	err := c.deleteK0sNodeResources(ctx, cluster, kcp, machine)
-	if err != nil {
-		return fmt.Errorf("error deleting k0s node resources: %w", err)
-	}
-
 	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
 		return fmt.Errorf("error deleting machine from template: %w", err)
 	}
@@ -918,14 +913,14 @@ func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.
 			continue
 		}
 
-		if err := c.removePreTerminateHookAnnotationFromMachine(ctx, m); err != nil {
-			errs = append(errs, fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", m.Name, err))
-			continue
-		}
-
 		err := c.Delete(ctx, m)
 		if err != nil && !apierrors.IsNotFound(err) {
 			errs = append(errs, fmt.Errorf("failed to delete control plane Machine '%s': %w", m.Name, err))
+			continue
+		}
+
+		if err := c.removePreTerminateHookAnnotationFromMachine(ctx, m); err != nil {
+			errs = append(errs, fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", m.Name, err))
 		}
 	}
 
