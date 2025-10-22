@@ -65,7 +65,7 @@ providers:
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: v1.8.99 # potentially next release. Manifest from source files (development) are used.
+      - name: v1.9.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../config/default
         contract: v1beta1
         files:
@@ -105,7 +105,7 @@ providers:
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: v1.8.99 # potentially next release. Manifest from source files (development) are used.
+      - name: v1.9.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../config/default
         contract: v1beta1
         files:
