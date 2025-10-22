@@ -63,7 +63,7 @@ func workloadClusterRecreateDeleteFirstUpgradeSpec(t *testing.T) {
 
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
-		KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 		ControlPlaneMachineCount: ptr.To[int64](3),
 		// TODO: make infra provider configurable
 		InfrastructureProvider: "docker",
@@ -98,6 +98,7 @@ func workloadClusterRecreateDeleteFirstUpgradeSpec(t *testing.T) {
 			cluster,
 			util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
+			clusterctlConfigPath,
 		)
 	}()
 
@@ -112,7 +113,7 @@ func workloadClusterRecreateDeleteFirstUpgradeSpec(t *testing.T) {
 		ClusterProxy:                     bootstrapClusterProxy,
 		Cluster:                          cluster,
 		ControlPlane:                     controlPlane,
-		KubernetesUpgradeVersion:         e2eConfig.GetVariable(KubernetesVersionFirstUpgradeTo),
+		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(KubernetesVersionFirstUpgradeTo),
 		WaitForKubeProxyUpgradeInterval:  util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"),
 		WaitForControlPlaneReadyInterval: util.GetInterval(e2eConfig, testName, "wait-control-plane"),
 	})
@@ -123,7 +124,7 @@ func workloadClusterRecreateDeleteFirstUpgradeSpec(t *testing.T) {
 		ClusterProxy:                     bootstrapClusterProxy,
 		Cluster:                          cluster,
 		ControlPlane:                     controlPlane,
-		KubernetesUpgradeVersion:         e2eConfig.GetVariable(KubernetesVersionSecondUpgradeTo),
+		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(KubernetesVersionSecondUpgradeTo),
 		WaitForKubeProxyUpgradeInterval:  util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"),
 		WaitForControlPlaneReadyInterval: util.GetInterval(e2eConfig, testName, "wait-control-plane"),
 	})
