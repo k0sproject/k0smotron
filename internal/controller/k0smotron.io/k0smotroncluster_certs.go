@@ -122,3 +122,83 @@ func (scope *kmcScope) ensureEtcdCertificates(ctx context.Context, kmc *km.Clust
 
 	return etcdCerts.SaveGenerated(ctx, scope.client, util.ObjectKey(kmc), owner)
 }
+
+func (scope *kmcScope) ensureHAProxyCerts(ctx context.Context, kmc *km.Cluster) error {
+	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
+	err := certificates.LookupCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc))
+	if err != nil {
+		return fmt.Errorf("error looking up cluster certs: %w", err)
+	}
+	clusterCACert := certificates.GetByPurpose(secret.ClusterCA)
+	if clusterCACert.KeyPair == nil || len(clusterCACert.KeyPair.Cert) == 0 {
+		return fmt.Errorf("cluster CA certificate not found")
+	}
+
+	caCert, err := helpers.ParseCertificatePEM(clusterCACert.KeyPair.Cert)
+	if err != nil {
+		return fmt.Errorf("error parsing cluster CA certificate: %w", err)
+	}
+
+	caPrivKey, err := helpers.ParsePrivateKeyPEM(clusterCACert.KeyPair.Key)
+	if err != nil {
+		return fmt.Errorf("error parsing cluster CA private key: %w", err)
+	}
+
+	signr, err := local.NewSigner(caPrivKey, caCert, x509.SHA256WithRSA, nil)
+	if err != nil {
+		return fmt.Errorf("error creating signer: %w", err)
+	}
+
+	g := &csr.Generator{Validator: genkey.Validator}
+
+	clusterCerts := secret.Certificates{
+		&secret.Certificate{Purpose: "ingress-haproxy"},
+	}
+
+	err = clusterCerts.LookupCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc))
+	if err != nil {
+		return fmt.Errorf("error looking up cluster certs: %w", err)
+	}
+
+	for _, c := range clusterCerts {
+		if c.KeyPair == nil {
+			req := csr.CertificateRequest{
+				KeyRequest: csr.NewKeyRequest(),
+				CN:         string(c.Purpose),
+				Names: []csr.Name{
+					{O: "kubernetes"},
+				},
+				Hosts: []string{
+					"kubernetes",
+					"kubernetes.default",
+					"kubernetes.default.svc",
+					"kubernetes.default.svc.cluster",
+					"kubernetes.default.svc." + scope.clusterSettings.clusterDomain,
+					"kubernetes.svc." + scope.clusterSettings.clusterDomain,
+					"localhost",
+					"127.0.0.1",
+					scope.clusterSettings.kubernetesServiceIP,
+				},
+			}
+			req.KeyRequest.A = "rsa"
+			req.KeyRequest.S = 2048
+
+			csrBytes, key, err := g.ProcessRequest(&req)
+			if err != nil {
+				return fmt.Errorf("error processing csr: %w", err)
+			}
+			cert, err := signr.Sign(signer.SignRequest{
+				Request: string(csrBytes),
+				Profile: "kubernetes",
+			})
+			if err != nil {
+				return fmt.Errorf("error signing csr: %w", err)
+			}
+
+			c.Generated = true
+			c.KeyPair = &certs.KeyPair{Cert: cert, Key: key}
+		}
+	}
+
+	return clusterCerts.SaveGenerated(ctx, scope.client, util.ObjectKey(kmc), *metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")))
+}

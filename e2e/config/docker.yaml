@@ -40,6 +40,7 @@ providers:
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-webhook-k0s-not-compatible.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-machinedeployment.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-remote-hcp.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/cluster-template-ingress.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -182,6 +183,7 @@ intervals:
   default/wait-nodes-ready: ["10m", "10s"]
   default/wait-machine-remediation: ["5m", "10s"]
   default/wait-autoscaler: ["5m", "10s"]
+  ingress/wait-controllers: ["5m", "10s"]
   remote-hcp/wait-controllers: ["5m", "10s"]
   bootstrap/wait-deployment-available: ["3m", "10s"]
   node-drain/wait-deployment-available: ["3m", "10s"]

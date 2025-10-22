@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/k0sproject/version"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -26,9 +27,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
@@ -57,6 +55,9 @@ type ClusterSpec struct {
 	// Will be detected automatically for service type LoadBalancer.
 	//+kubebuilder:validation:Optional
 	ExternalAddress string `json:"externalAddress,omitempty"`
+	// Ingress defines the ingress configuration.
+	//+kubebuilder:validation:Optional
+	Ingress *IngressSpec `json:"ingress,omitempty"`
 	// Service defines the service configuration.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default={"type":"ClusterIP","apiPort":30443,"konnectivityPort":30132}
@@ -113,6 +114,52 @@ type ClusterSpec struct {
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+// IngressSpec defines the ingress configuration for accessing the Kubernetes API and konnectivity server via host names
+type IngressSpec struct {
+	// Deploy defines whether to deploy an ingress resource for the cluster or let the user do it manually.
+	// Default: true
+	Deploy *bool `json:"deploy,omitempty"`
+	// Port defines the port used by the ingress controller
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=443
+	Port int64 `json:"port,omitempty"`
+	//+kubebuilder:validation:Optional
+	APIHost string `json:"apiHost,omitempty"`
+	//+kubebuilder:validation:Optional
+	KonnectivityHost string `json:"konnectivityHost,omitempty"`
+	// ClassName defines the ingress class name to be used by the ingress controller.
+	//+kubebuilder:validation:Optional
+	ClassName string `json:"className,omitempty"`
+	// Annotations defines extra annotations to be added to the ingress controller service.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default={haproxy.org/ssl-passthrough: "true"}
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+var ingressCompatibleVersions = []*version.Version{
+	version.MustParse("v1.34.1+k0s.0"),
+	version.MustParse("v1.33.6+k0s.0"),
+	version.MustParse("v1.32.10+k0s.0"),
+}
+
+// Validate checks if the ingress controller is compatible with the given k0s version
+func (i *IngressSpec) Validate(clusterVersion string) error {
+	v, err := version.NewVersion(clusterVersion)
+	if err != nil {
+		return fmt.Errorf("failed to parse k0s version %s: %w", clusterVersion, err)
+	}
+
+	for _, iv := range ingressCompatibleVersions {
+		if v.Segments()[1] == iv.Segments()[1] {
+			if v.Core().LessThan(iv.Core()) {
+				return fmt.Errorf("ingress controller is not supported with k0s version %s, minimum supported version for ingress is %s", clusterVersion, iv.String())
+			}
+		}
+	}
+
+	return nil
 }
 
 type Mount struct {
@@ -415,6 +462,16 @@ func (kmc *Cluster) GetNodePortServiceName() string {
 
 func (kmc *Cluster) GetVolumeName() string {
 	return kmc.getObjectName("kmc-%s")
+}
+
+// GetIngressName returns the name of the ingress resource
+func (kmc *Cluster) GetIngressName() string {
+	return kmc.getObjectName("kmc-%s")
+}
+
+// GetIngressManifestsConfigMapName returns the name of the configmap containing the manifests needed for the ingress
+func (kmc *Cluster) GetIngressManifestsConfigMapName() string {
+	return kmc.getObjectName("kmc-%s-ingress")
 }
 
 const kubeNameLengthLimit = 63
