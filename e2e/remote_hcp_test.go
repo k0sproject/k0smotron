@@ -19,6 +19,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"path/filepath"
@@ -27,14 +28,18 @@ import (
 
 	"github.com/k0sproject/k0smotron/e2e/util"
 	"github.com/stretchr/testify/require"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	capiutil "sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/secret"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/cluster"
 
@@ -144,6 +149,85 @@ func remoteHCPSpec(t *testing.T) {
 	})
 	require.NoError(t, err)
 	fmt.Println("Worker nodes are reeady!")
+
+	// Verify resources in the hosting cluster and their owner references, then validate GC on deletion
+	ownerName := fmt.Sprintf("%s-root-owner", clusterName)
+
+	// Pre-delete: ensure external owner and etcd cert secrets exist with correct OwnerReferences
+	{
+		cm := &corev1.ConfigMap{}
+		require.NoError(t, hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: ownerName}, cm))
+
+		apiserverEtcdClientSecret := &corev1.Secret{}
+		etcdServerSecret := &corev1.Secret{}
+		etcdPeerSecret := &corev1.Secret{}
+
+		require.NoError(t, hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: secret.Name(clusterName, secret.APIServerEtcdClient)}, apiserverEtcdClientSecret))
+		require.NoError(t, hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: secret.Name(clusterName, "etcd-server")}, etcdServerSecret))
+		require.NoError(t, hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: secret.Name(clusterName, "etcd-peer")}, etcdPeerSecret))
+
+		assertOwnedByRoot := func(obj metav1.Object) {
+			found := false
+			for _, or := range obj.GetOwnerReferences() {
+				if or.Controller != nil && *or.Controller && or.Kind == "ConfigMap" && or.Name == ownerName {
+					found = true
+					break
+				}
+			}
+			require.True(t, found, fmt.Sprintf("%s should be controlled by %s", obj.GetName(), ownerName))
+		}
+
+		assertOwnedByRoot(apiserverEtcdClientSecret)
+		assertOwnedByRoot(etcdServerSecret)
+		assertOwnedByRoot(etcdPeerSecret)
+	}
+
+	// Delete the management Cluster and verify garbage collection in the hosting cluster
+	{
+		fmt.Println("Deleting Cluster and waiting for GC of hosting-cluster resources")
+		require.NoError(t, bootstrapClusterProxy.GetClient().Delete(ctx, cluster))
+
+		// Wait for Cluster to be deleted in the management cluster
+		require.NoError(t, wait.PollUntilContextTimeout(ctx, 1*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
+			cl := cluster.DeepCopy()
+			err := bootstrapClusterProxy.GetClient().Get(ctx, crclient.ObjectKeyFromObject(cluster), cl)
+			return apierrors.IsNotFound(err), nil
+		}))
+
+		// Wait for external owner to be deleted in hosting cluster
+		require.NoError(t, wait.PollUntilContextTimeout(ctx, 1*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
+			cm := &corev1.ConfigMap{}
+			err := hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: ownerName}, cm)
+			return apierrors.IsNotFound(err), nil
+		}))
+
+		// Ensure etcd cert Secrets are garbage collected in hosting cluster
+		for _, name := range []string{
+			secret.Name(clusterName, secret.APIServerEtcdClient),
+			secret.Name(clusterName, "etcd-server"),
+			secret.Name(clusterName, "etcd-peer"),
+		} {
+			require.NoError(t, wait.PollUntilContextTimeout(ctx, 1*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+				sec := &corev1.Secret{}
+				err := hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: name}, sec)
+				return apierrors.IsNotFound(err), nil
+			}))
+		}
+
+		// Optionally ensure key workload resources are GC'd as well (etcd StatefulSet & Service)
+		etcdStsName := fmt.Sprintf("kmc-%s-etcd", clusterName)
+		etcdSvcName := fmt.Sprintf("kmc-%s-etcd", clusterName)
+		require.NoError(t, wait.PollUntilContextTimeout(ctx, 1*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+			sts := &appsv1.StatefulSet{}
+			err := hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: etcdStsName}, sts)
+			return apierrors.IsNotFound(err), nil
+		}))
+		require.NoError(t, wait.PollUntilContextTimeout(ctx, 1*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+			svc := &corev1.Service{}
+			err := hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: etcdSvcName}, svc)
+			return apierrors.IsNotFound(err), nil
+		}))
+	}
 }
 
 // deployHostingCluster deploys a cluster for hosting control planes.
