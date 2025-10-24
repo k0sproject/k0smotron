@@ -18,12 +18,15 @@ package controlplane
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/imdario/mergo"
 	"github.com/k0sproject/version"
 	corev1 "k8s.io/api/core/v1"
@@ -45,6 +48,10 @@ import (
 
 const (
 	etcdMemberConditionTypeJoined = "Joined"
+)
+
+var (
+	errMachineWithoutK0sConfigAnnotation = fmt.Errorf("k0s config annotation not found on machine")
 )
 
 func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
@@ -109,6 +116,12 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 		annotations[k] = v
 	}
 
+	k0sConfigAnnotationValue, err := generateK0sConfigAnnotationValueForMachine(kcp, name)
+	if err != nil {
+		return nil, err
+	}
+	annotations[cpv1beta1.MachineK0sConfigAnnotation] = k0sConfigAnnotationValue
+
 	machine := &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: clusterv1.GroupVersion.String(),
@@ -139,6 +152,45 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 
 	return machine, nil
+}
+
+func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta1.K0sControlPlane, machineName string) (string, error) {
+	// We make a copy of the K0sControlPlane to avoid modifying the original object with a value that is specific to a machine.
+	kcpCopy := kcp.DeepCopy()
+
+	currentKCPVersion, err := version.NewVersion(kcpCopy.Spec.Version)
+	if err != nil {
+		return "", fmt.Errorf("error parsing k0s version: %w", err)
+	}
+
+	if currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
+		if kcpCopy.Spec.K0sConfigSpec.K0s == nil {
+			kcpCopy.Spec.K0sConfigSpec.K0s = &unstructured.Unstructured{
+				Object: make(map[string]interface{}),
+			}
+		}
+		// If it is not explicitly indicated to use Kine storage, we use the machine name to name the ETCD member.
+		kineStorage, found, err := unstructured.NestedString(kcpCopy.Spec.K0sConfigSpec.K0s.Object, "spec", "storage", "kine", "dataSource")
+		if err != nil {
+			return "", fmt.Errorf("error retrieving storage.kine.datasource: %w", err)
+		}
+		if !found || kineStorage == "" {
+			err = unstructured.SetNestedMap(kcpCopy.Spec.K0sConfigSpec.K0s.Object, map[string]interface{}{}, "spec", "storage", "etcd", "extraArgs")
+			if err != nil {
+				return "", fmt.Errorf("error ensuring intermediate maps spec.storage.etcd.extraArgs: %w", err)
+			}
+			err = unstructured.SetNestedField(kcpCopy.Spec.K0sConfigSpec.K0s.Object, machineName, "spec", "storage", "etcd", "extraArgs", "name")
+			if err != nil {
+				return "", fmt.Errorf("error setting storage.etcd.extraArgs.name: %w", err)
+			}
+		}
+	}
+
+	k0sConfigSpec, err := json.Marshal(kcpCopy.Spec.K0sConfigSpec)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal K0sConfigSpec: %w", err)
+	}
+	return string(k0sConfigSpec), nil
 }
 
 func (c *K0sController) getInfraMachines(ctx context.Context, machines collections.Machines) (map[string]*unstructured.Unstructured, error) {
@@ -292,6 +344,36 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sContr
 		return false
 	}
 
+	// If the machine has the k0s config annotation, use it for comparison instead of manually comparing the K0sConfigSpec.
+	// We will fall back to the manual comparison only if the annotation is missing or invalid. This is required to support
+	// the scenario where the machine was created using old k0smotron versions where the k0s config was a mutable resource.
+	machineK0sConfig, err := getMachineK0sConfig(machine)
+	if err != nil {
+		// TODO: Remove this fallback logic in a future release.
+		if errors.Is(err, errMachineWithoutK0sConfigAnnotation) {
+			return deprecatedIsK0sConfigChanged(&bootstrapConfig, kcp, machine)
+		}
+
+		return false
+	}
+
+	// IMPORTANT: make a copy of the K0sConfigSpec from the K0sControlPlane, as we will modify it.
+	kcpK0sConfig := kcp.Spec.K0sConfigSpec.DeepCopy()
+	// ClusterConfig values are reconciled using dynamic config, so leave it out of the comparison
+	kcpK0sConfig.K0s = nil
+	machineK0sConfig.K0s = nil
+
+	return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
+
+}
+
+// Deprecated: This function is kept for backward compatibility with clusters created with versions that does not add an annotation in the
+// Machine with the k0s config. Due to its complexity, it is also prone to bugs, so it should not be used in new code and remove its support
+// in future releases.
+//
+// deprecatedIsK0sConfigChanged compares the K0sConfigSpec in the K0sControlPlane with the one in the K0sControllerConfig used to bootstrap
+// the Machine.
+func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv1.K0sControllerConfig, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
 	kcpK0sConfigSpecCopy := kcp.Spec.K0sConfigSpec.DeepCopy()
 	bootstrapConfigCopy := bootstrapConfig.DeepCopy()
 	kcpK0sConfigSpecCopy.Args = uniqueArgs(kcpK0sConfigSpecCopy.Args)
@@ -328,6 +410,20 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sContr
 	return !reflect.DeepEqual(kcpK0sConfigSpecCopy, bootstrapConfigCopy.Spec.K0sConfigSpec) ||
 		!reflect.DeepEqual(kcpAPIConfig, bootstrapAPIConfig) ||
 		(!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig) && !reflect.DeepEqual(kcpStorageConfigEtcdWithName, bootstrapStorageConfig))
+}
+
+func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv1.K0sConfigSpec, error) {
+	k0sConfigAnnotationValue, ok := machine.GetAnnotations()[cpv1beta1.MachineK0sConfigAnnotation]
+	if !ok {
+		return nil, errMachineWithoutK0sConfigAnnotation
+	}
+
+	k0sConfigSpec := &bootstrapv1.K0sConfigSpec{}
+	if err := json.Unmarshal([]byte(k0sConfigAnnotationValue), k0sConfigSpec); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal K0sConfigSpec: %w", err)
+	}
+
+	return k0sConfigSpec, nil
 }
 
 func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
