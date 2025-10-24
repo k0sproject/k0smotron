@@ -39,6 +39,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	capictrl "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -90,12 +91,15 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string // deprecated, use capi's diagnostics-address instead
-	var enableLeaderElection bool
-	var secureMetrics bool // deprecated, use capi's insecure-diagnostics instead
-	var enableHTTP2 bool   // deprecated
-	var probeAddr string
-	var enabledController string
+	var (
+		metricsAddr          string // deprecated, use capi's diagnostics-address instead
+		enableLeaderElection bool
+		secureMetrics        bool // deprecated, use capi's insecure-diagnostics instead
+		enableHTTP2          bool // deprecated
+		probeAddr            string
+		enabledController    string
+		concurrency          int
+	)
 
 	pflag.CommandLine.StringVar(&metricsAddr, "metrics-bind-address", ":8443", "[Deprecated, use --diagnostics-address instead] The address the metric endpoint binds to. "+
 		"Use :8080 for http and :8443 for https. Setting to 0 will disable the metrics endpoint.")
@@ -108,6 +112,7 @@ func main() {
 	pflag.CommandLine.BoolVar(&enableHTTP2, "enable-http2", false,
 		"[Deprecated] If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	pflag.CommandLine.StringVar(&featureGates, "feature-gates", "", "feature gates to enable (comma separated list of key=value pairs)")
+	pflag.CommandLine.IntVar(&concurrency, "concurrency", 5, "controller concurrency, default: 5")
 
 	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	opts := zap.Options{
@@ -240,6 +245,9 @@ func main() {
 	}
 
 	//+kubebuilder:scaffold:builder
+	ctrlOptions := capictrl.Options{
+		MaxConcurrentReconciles: concurrency,
+	}
 
 	if isControllerEnabled(bootstrapController) && runCAPIControllers {
 		if err = (&bootstrap.Controller{
@@ -248,7 +256,7 @@ func main() {
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr); err != nil {
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
 		}
@@ -258,7 +266,7 @@ func main() {
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr); err != nil {
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
 		}
@@ -272,7 +280,7 @@ func main() {
 			ClientSet:  clientSet,
 			RESTConfig: restConfig,
 			Recorder:   mgr.GetEventRecorderFor("cluster-reconciler"),
-		}).SetupWithManager(mgr); err != nil {
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "K0smotronCluster")
 			os.Exit(1)
 		}
@@ -287,7 +295,7 @@ func main() {
 			Scheme:     mgr.GetScheme(),
 			ClientSet:  clientSet,
 			RESTConfig: restConfig,
-		}).SetupWithManager(mgr); err != nil {
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "JoinTokenRequest")
 			os.Exit(1)
 		}
@@ -299,7 +307,7 @@ func main() {
 				Scheme:              mgr.GetScheme(),
 				ClientSet:           clientSet,
 				RESTConfig:          restConfig,
-			}).SetupWithManager(mgr); err != nil {
+			}).SetupWithManager(mgr, ctrlOptions); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "K0smotronControlPlane")
 				os.Exit(1)
 			}
@@ -309,7 +317,7 @@ func main() {
 				SecretCachingClient: secretCachingClient,
 				ClientSet:           clientSet,
 				RESTConfig:          restConfig,
-			}).SetupWithManager(mgr); err != nil {
+			}).SetupWithManager(mgr, ctrlOptions); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "K0sController")
 				os.Exit(1)
 			}
@@ -333,7 +341,7 @@ func main() {
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr); err != nil {
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "RemoteMachine")
 			os.Exit(1)
 		}
@@ -341,7 +349,7 @@ func main() {
 		if err = (&infrastructure.ClusterController{
 			Client: mgr.GetClient(),
 			Scheme: mgr.GetScheme(),
-		}).SetupWithManager(mgr); err != nil {
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
 			os.Exit(1)
 		}
@@ -354,7 +362,7 @@ func main() {
 			Client:    mgr.GetClient(),
 			Scheme:    mgr.GetScheme(),
 			ClientSet: clientSet,
-		}).SetupWithManager(mgr); err != nil {
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "ProviderID")
 			os.Exit(1)
 		}

@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"strings"
 	"time"
 
@@ -1012,9 +1013,10 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (c *K0sController) SetupWithManager(mgr ctrl.Manager) error {
+func (c *K0sController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	// Check if the cluster.x-k8s.io API is available and if not, don't try to watch for Machine objects
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(opts).
 		For(&cpv1beta1.K0sControlPlane{}).
 		Owns(&clusterv1.Machine{}).
 		Complete(c)

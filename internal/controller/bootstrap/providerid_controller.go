@@ -14,6 +14,7 @@ import (
 	capiutil "sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
@@ -91,7 +92,8 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
-func (p *ProviderIDController) SetupWithManager(mgr ctrl.Manager) error {
+// SetupWithManager sets up the controller with the Manager.
+func (p *ProviderIDController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	apiResources, err := p.ClientSet.Discovery().ServerResourcesForGroupVersion(clusterv1.GroupVersion.String())
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
@@ -102,6 +104,7 @@ func (p *ProviderIDController) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(opts).
 		For(&clusterv1.Machine{}).
 		Complete(p)
 }
