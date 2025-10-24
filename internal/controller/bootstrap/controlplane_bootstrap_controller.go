@@ -50,6 +50,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
@@ -599,8 +600,10 @@ func createTokenSecret(tokenID, tokenSecret string) *corev1.Secret {
 	}
 }
 
-func (c *ControlPlaneController) SetupWithManager(mgr ctrl.Manager) error {
+// SetupWithManager sets up the controller with the Manager.
+func (c *ControlPlaneController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(opts).
 		For(&bootstrapv1.K0sControllerConfig{}).
 		Complete(c)
 }

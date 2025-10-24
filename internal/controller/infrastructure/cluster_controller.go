@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
@@ -62,8 +63,10 @@ func (r *ClusterController) Reconcile(ctx context.Context, req ctrl.Request) (re
 	return ctrl.Result{}, nil
 }
 
-func (r *ClusterController) SetupWithManager(mgr ctrl.Manager) error {
+// SetupWithManager sets up the controller with the Manager.
+func (r *ClusterController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(opts).
 		For(&infrastructure.RemoteCluster{}).
 		Complete(r)
 }

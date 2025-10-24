@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/cluster-api/controllers/remote"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -697,8 +698,9 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta1.K0
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (c *K0smotronController) SetupWithManager(mgr ctrl.Manager) error {
+func (c *K0smotronController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(opts).
 		For(&cpv1beta1.K0smotronControlPlane{}).
 		Owns(&kapi.Cluster{}, builder.MatchEveryOwner).
 		Complete(c)

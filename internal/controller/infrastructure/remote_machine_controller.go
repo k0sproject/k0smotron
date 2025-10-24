@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -415,8 +416,10 @@ func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine 
 	return secret.Data["value"], nil
 }
 
-func (r *RemoteMachineController) SetupWithManager(mgr ctrl.Manager) error {
+// SetupWithManager sets up the controller with the Manager.
+func (r *RemoteMachineController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(opts).
 		For(&infrastructure.RemoteMachine{}).
 		Complete(r)
 }
