@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"net"
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -66,21 +68,53 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, fmt.Errorf("can't get kube client for cluster %s/%s: %w. may not be created yet", machine.Namespace, machine.Spec.ClusterName, err)
 	}
 
-	nodes, err := childClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", machineNameNodeLabel, machine.GetName()),
-	})
-	if err != nil || len(nodes.Items) == 0 {
+	nodes, err := childClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to list nodes in cluster %s/%s: %w", cluster.Namespace, cluster.Name, err)
+	}
+
+	var node *corev1.Node
+	for _, n := range nodes.Items {
+		if n.Spec.ProviderID == *machine.Spec.ProviderID {
+			// ProviderID is already set on the node
+			return ctrl.Result{}, nil
+		}
+
+		// If node name matches machine name, we have found our node
+		if n.Name == machine.GetName() {
+			node = &n
+			break
+		}
+
+		// Check k0smotron.io/machine-name node label
+		if val, ok := n.Labels[machineNameNodeLabel]; ok && val == machine.GetName() {
+			node = &n
+			break
+		}
+
+		// Check node addresses against machine addresses
+		for _, addr := range machine.Status.Addresses {
+			for _, nodeAddr := range n.Status.Addresses {
+				if addr.Address == nodeAddr.Address && !net.ParseIP(nodeAddr.Address).IsLoopback() {
+					node = &n
+					break
+				}
+			}
+		}
+	}
+
+	if node == nil {
 		log.Info("waiting for node to be available for machine " + machine.Name)
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 10}, nil
 	}
 
-	node := nodes.Items[0]
 	if node.Spec.ProviderID == "" {
 		node.Spec.ProviderID = *machine.Spec.ProviderID
+		node.Labels[machineNameNodeLabel] = machine.GetName()
 		err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
 			return true
 		}, func() error {
-			_, upErr := childClient.CoreV1().Nodes().Update(context.Background(), &node, metav1.UpdateOptions{})
+			_, upErr := childClient.CoreV1().Nodes().Update(context.Background(), node, metav1.UpdateOptions{})
 			return upErr
 		})
 
