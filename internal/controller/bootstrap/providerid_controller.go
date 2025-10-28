@@ -9,6 +9,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
@@ -53,7 +54,11 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	if machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "" {
+	pid, err := getProviderIDFromMachine(machine)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if pid == "" {
 		log.Info("waiting for providerID for the machine " + machine.Name)
 		return ctrl.Result{RequeueAfter: time.Second * 10}, nil
 	}
@@ -109,7 +114,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if node.Spec.ProviderID == "" {
-		node.Spec.ProviderID = *machine.Spec.ProviderID
+		node.Spec.ProviderID = pid
 		node.Labels[machineNameNodeLabel] = machine.GetName()
 		err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
 			return true
@@ -124,6 +129,20 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// getProviderIDFromMachine returns spec.providerID working with both CAPI v1beta1 (*string)
+// and v1beta2 (string) via unstructured conversion.
+func getProviderIDFromMachine(machine *clusterv1.Machine) (string, error) {
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(machine)
+	if err != nil {
+		return "", err
+	}
+	s, found, err := unstructured.NestedString(obj, "spec", "providerID")
+	if err != nil || !found {
+		return "", err
+	}
+	return s, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

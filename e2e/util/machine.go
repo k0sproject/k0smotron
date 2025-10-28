@@ -164,19 +164,19 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 			return false, err
 		}
 
-		currentWorkerMachines := 0
-		for _, m := range machineList.Items {
-			isWorker := true
-			for k, _ := range m.GetLabels() {
-				if k == clusterv1.MachineControlPlaneLabel {
-					isWorker = false
-					break
-				}
-			}
-			if isWorker && *m.Spec.ProviderID != "" {
-				currentWorkerMachines += 1
-			}
-		}
+        currentWorkerMachines := 0
+        for _, m := range machineList.Items {
+            isWorker := true
+            for k, _ := range m.GetLabels() {
+                if k == clusterv1.MachineControlPlaneLabel {
+                    isWorker = false
+                    break
+                }
+            }
+            if isWorker && m.Spec.ProviderID != nil && *m.Spec.ProviderID != "" {
+                currentWorkerMachines += 1
+            }
+        }
 		if input.ExpectedWorkers != currentWorkerMachines {
 			return false, fmt.Errorf("expected worker machines is %d but got %d", input.ExpectedWorkers, currentWorkerMachines)
 		}
