@@ -51,6 +51,11 @@ spec:
                   If true, the commands will be written to a file and executed as a script.
                   If false, the commands will be executed one by one.
                 type: boolean
+              commandsAsScriptPath:
+                default: /etc/k0smotron/k0s_install.sh
+                description: CommandsAsScriptPath is the path where the script will
+                  be stored on the remote machine if CommandsAsScript is true.
+                type: string
               customCleanUpCommands:
                 description: |-
                   CustomCleanUpCommands allows the user to run custom commands during the machine cleanup process.

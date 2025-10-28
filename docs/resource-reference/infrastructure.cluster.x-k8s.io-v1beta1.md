@@ -775,6 +775,15 @@ If false, the commands will be executed one by one.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>commandsAsScriptPath</b></td>
+        <td>string</td>
+        <td>
+          CommandsAsScriptPath is the path where the script will be stored on the remote machine if CommandsAsScript is true.<br/>
+          <br/>
+            <i>Default</i>: /etc/k0smotron/k0s_install.sh<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>customCleanUpCommands</b></td>
         <td>[]string</td>
         <td>

@@ -234,7 +234,7 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 
 	files := []provisioner.File{
 		{
-			Path:        "/etc/k0s.token",
+			Path:        scope.Config.GetJoinTokenPath(),
 			Permissions: "0600",
 			Content:     token,
 		},
@@ -433,7 +433,7 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 func createInstallCmd(scope *Scope) string {
 	k0sPath := filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s")
 	installCmd := []string{
-		fmt.Sprintf("%s install worker --token-file /etc/k0s.token", k0sPath),
+		fmt.Sprintf("%s install worker --token-file %s", k0sPath, scope.Config.GetJoinTokenPath()),
 	}
 	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
 	return strings.Join(installCmd, " ")

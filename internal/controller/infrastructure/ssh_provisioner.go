@@ -28,11 +28,12 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/provisioner"
 	rig "github.com/k0sproject/rig/v2"
 	rigssh "github.com/k0sproject/rig/v2/protocol/ssh"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
 var regex = regexp.MustCompile(`--kubelet-root-dir[ =](/[/a-zA-Z0-9_-]+)+`)

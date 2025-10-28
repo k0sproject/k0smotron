@@ -74,9 +74,15 @@ type RemoteMachineSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	CommandsAsScript bool `json:"commandsAsScript,omitempty"`
+	// CommandsAsScriptPath is the path where the script will be stored on the remote machine if CommandsAsScript is true.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="/etc/k0smotron/k0s_install.sh"
+	CommandsAsScriptPath string `json:"commandsAsScriptPath,omitempty"`
+
 	// WorkingDir is the directory to use as working directory when connecting to the remote machine.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="/etc/k0smotron"
+	// +deprecated use CommandsAsScriptPath and K0sControlPlane.spec.k0sConfigSpec.workingDir and K0sWorkerConfig.spec.workingDir instead
 	WorkingDir string `json:"workingDir,omitempty"`
 
 	// SSHKeyRef is a reference to a secret that contains the SSH private key.
