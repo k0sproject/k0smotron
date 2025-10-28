@@ -614,23 +614,33 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 		return nil
 	}
 
-	// Check current status.ready value
-	currentReady, found, err := unstructured.NestedBool(infraObj.Object, "status", "ready")
+	// Prefer status.initialization.provisioned if present, otherwise fallback to status.ready
+	currentReady, found, err := unstructured.NestedBool(infraObj.Object, "status", "initialization", "provisioned")
+	if err != nil {
+		return fmt.Errorf("failed to get initialization.provisioned status: %w", err)
+	}
+	if !found {
+		// fallback to legacy ready
+		currentReady, found, err = unstructured.NestedBool(infraObj.Object, "status", "ready")
+		if err != nil {
+			return fmt.Errorf("failed to get ready status: %w", err)
+		}
+	}
 	if err != nil {
 		return fmt.Errorf("failed to get ready status: %w", err)
 	}
 
 	// Only patch if status is not set or different from desired value
 	if !found || currentReady != ready {
-		log.Info("Patching Infrastructure object status", "ready", ready)
+		log.Info("Patching Infrastructure object status", "initialization.provisioned", ready, "ready", ready)
 
-		// Apply the patch
+		// Apply the patch updating both the new field and the legacy field for compatibility
 		err = c.Client.Status().Patch(
 			ctx,
 			infraObj,
 			client.RawPatch(
 				types.MergePatchType,
-				fmt.Appendf(nil, `{"status": {"ready": %t}}`, ready),
+				fmt.Appendf(nil, `{"status": {"initialization": {"provisioned": %t}, "ready": %t}}`, ready, ready),
 			),
 		)
 		if err != nil {

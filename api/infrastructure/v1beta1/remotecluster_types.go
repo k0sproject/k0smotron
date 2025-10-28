@@ -32,9 +32,21 @@ type RemoteClusterSpec struct {
 // RemoteClusterStatus defines the observed state of RemoteCluster
 type RemoteClusterStatus struct {
 	// Ready denotes that the remote cluster is ready to be used.
+	// Deprecated: use .status.initialization.provisioned instead
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default=false
 	Ready bool `json:"ready"`
+
+	// initialization represents initialization status of the remote cluster
+	// +kubebuilder:validation:Optional
+	Initialization RemoteClusterInitialization `json:"initialization,omitempty"`
+}
+
+// RemoteClusterInitialization represents RemoteCluster initialization status
+type RemoteClusterInitialization struct {
+	// provisioned indicates whether the remote cluster has been provisioned and is ready for use
+	// +kubebuilder:validation:Optional
+	Provisioned bool `json:"provisioned,omitempty"`
 }
 
 // +kubebuilder:object:root=true

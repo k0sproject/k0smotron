@@ -61,10 +61,20 @@ spec:
           status:
             description: RemoteClusterStatus defines the observed state of RemoteCluster
             properties:
+              initialization:
+                description: initialization represents initialization status of the
+                  remote cluster
+                properties:
+                  provisioned:
+                    description: provisioned indicates whether the remote cluster
+                      has been provisioned and is ready for use
+                    type: boolean
+                type: object
               ready:
                 default: false
-                description: Ready denotes that the remote cluster is ready to be
-                  used.
+                description: |-
+                  Ready denotes that the remote cluster is ready to be used.
+                  Deprecated: use .status.initialization.provisioned instead
                 type: boolean
             required:
             - ready

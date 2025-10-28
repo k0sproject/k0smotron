@@ -428,11 +428,46 @@ RemoteClusterStatus defines the observed state of RemoteCluster
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
-          Ready denotes that the remote cluster is ready to be used.<br/>
+          Ready denotes that the remote cluster is ready to be used.
+Deprecated: use .status.initialization.provisioned instead<br/>
           <br/>
             <i>Default</i>: false<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b><a href="#remoteclusterstatusinitialization">initialization</a></b></td>
+        <td>object</td>
+        <td>
+          initialization represents initialization status of the remote cluster<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteCluster.status.initialization
+<sup><sup>[↩ Parent](#remoteclusterstatus)</sup></sup>
+
+
+
+initialization represents initialization status of the remote cluster
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>provisioned</b></td>
+        <td>boolean</td>
+        <td>
+          provisioned indicates whether the remote cluster has been provisioned and is ready for use<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
