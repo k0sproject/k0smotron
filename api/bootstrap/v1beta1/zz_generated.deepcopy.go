@@ -266,11 +266,6 @@ func (in *K0sControllerConfigSpec) DeepCopy() *K0sControllerConfigSpec {
 func (in *K0sControllerConfigStatus) DeepCopyInto(out *K0sControllerConfigStatus) {
 	*out = *in
 	out.Initialization = in.Initialization
-	if in.DataSecretName != nil {
-		in, out := &in.DataSecretName, &out.DataSecretName
-		*out = new(string)
-		**out = **in
-	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make(apiv1beta1.Conditions, len(*in))
@@ -405,11 +400,6 @@ func (in *K0sWorkerConfigSpec) DeepCopy() *K0sWorkerConfigSpec {
 func (in *K0sWorkerConfigStatus) DeepCopyInto(out *K0sWorkerConfigStatus) {
 	*out = *in
 	out.Initialization = in.Initialization
-	if in.DataSecretName != nil {
-		in, out := &in.DataSecretName, &out.DataSecretName
-		*out = new(string)
-		**out = **in
-	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make(apiv1beta1.Conditions, len(*in))

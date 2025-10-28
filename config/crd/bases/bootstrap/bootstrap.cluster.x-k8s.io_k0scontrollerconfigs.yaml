@@ -312,16 +312,20 @@ spec:
                 description: DataSecretName is the name of the secret that stores
                   the bootstrap data script.
                 type: string
-              ready:
-                description: Ready indicates the Bootstrapdata field is ready to be consumed. Deprecated: use .status.initialization.dataSecretCreated instead
-                type: boolean
               initialization:
-                description: initialization represents the initialization status for the bootstrap resource
+                description: initialization represents the initialization status for
+                  the bootstrap resource
                 properties:
                   dataSecretCreated:
-                    description: DataSecretCreated indicates whether the bootstrap data Secret has been created
+                    description: DataSecretCreated indicates whether the bootstrap
+                      data Secret has been created
                     type: boolean
                 type: object
+              ready:
+                description: |-
+                  Ready indicates the Bootstrapdata field is ready to be consumed
+                  Deprecated: use .status.initialization.dataSecretCreated instead
+                type: boolean
             type: object
         type: object
     served: true

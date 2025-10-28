@@ -218,7 +218,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	// Report bootstrap data secret created via Initialization.DataSecretCreated and keep Ready for backwards compatibility
 	scope.Config.Status.Initialization.DataSecretCreated = true
 	scope.Config.Status.Ready = true
-	scope.Config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
+	scope.Config.Status.DataSecretName = bootstrapSecret.Name
 
 	log.Info("Reconciled succesfully")
 

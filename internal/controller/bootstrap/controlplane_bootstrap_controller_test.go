@@ -563,8 +563,8 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sControllerConfig), updatedK0sControllerConfig))
 
 		assert.True(c, updatedK0sControllerConfig.Status.Initialization.DataSecretCreated)
-		assert.NotNil(c, updatedK0sControllerConfig.Status.DataSecretName)
-		assert.Equal(c, *updatedK0sControllerConfig.Status.DataSecretName, updatedK0sControllerConfig.Name)
+		assert.NotEmpty(c, updatedK0sControllerConfig.Status.DataSecretName)
+		assert.Equal(c, updatedK0sControllerConfig.Status.DataSecretName, updatedK0sControllerConfig.Name)
 		assert.True(c, conditions.IsTrue(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
 	}, 20*time.Second, 100*time.Millisecond)
 }

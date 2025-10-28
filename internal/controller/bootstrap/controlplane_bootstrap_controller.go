@@ -282,7 +282,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	// Report bootstrap data secret created via Initialization.DataSecretCreated and keep Ready for backwards compatibility
 	config.Status.Initialization.DataSecretCreated = true
 	config.Status.Ready = true
-	config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
+	config.Status.DataSecretName = bootstrapSecret.Name
 
 	log.Info("Reconciled succesfully")
 

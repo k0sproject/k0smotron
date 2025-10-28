@@ -605,10 +605,18 @@ If empty, k0smotron will use the default one.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrollerconfigstatusinitialization">initialization</a></b></td>
+        <td>object</td>
+        <td>
+          initialization represents the initialization status for the bootstrap resource<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
-          Ready indicates the Bootstrapdata field is ready to be consumed<br/>
+          Ready indicates the Bootstrapdata field is ready to be consumed
+Deprecated: use .status.initialization.dataSecretCreated instead<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -682,6 +690,33 @@ This field may be empty.<br/>
           severity provides an explicit classification of Reason code, so the users or machines can immediately
 understand the current situation and act accordingly.
 The Severity field MUST be set only when Status=False.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.status.initialization
+<sup><sup>[↩ Parent](#k0scontrollerconfigstatus)</sup></sup>
+
+
+
+initialization represents the initialization status for the bootstrap resource
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>dataSecretCreated</b></td>
+        <td>boolean</td>
+        <td>
+          DataSecretCreated indicates whether the bootstrap data Secret has been created<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1226,10 +1261,18 @@ SecretMetadata specifies metadata (labels and annotations) to be propagated to t
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0sworkerconfigstatusinitialization">initialization</a></b></td>
+        <td>object</td>
+        <td>
+          initialization represents the initialization status for the bootstrap resource<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
-          Ready indicates the Bootstrapdata field is ready to be consumed<br/>
+          Ready indicates the Bootstrapdata field is ready to be consumed
+Deprecated: use .status.initialization.dataSecretCreated instead<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1303,6 +1346,33 @@ This field may be empty.<br/>
           severity provides an explicit classification of Reason code, so the users or machines can immediately
 understand the current situation and act accordingly.
 The Severity field MUST be set only when Status=False.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfig.status.initialization
+<sup><sup>[↩ Parent](#k0sworkerconfigstatus)</sup></sup>
+
+
+
+initialization represents the initialization status for the bootstrap resource
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>dataSecretCreated</b></td>
+        <td>boolean</td>
+        <td>
+          DataSecretCreated indicates whether the bootstrap data Secret has been created<br/>
         </td>
         <td>false</td>
       </tr></tbody>

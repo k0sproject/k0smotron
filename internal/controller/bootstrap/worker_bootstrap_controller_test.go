@@ -688,19 +688,17 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
 
 		assert.True(c, updatedK0sWorkerConfig.Status.Initialization.DataSecretCreated)
-		assert.NotNil(c, updatedK0sWorkerConfig.Status.DataSecretName)
-		if updatedK0sWorkerConfig.Status.DataSecretName != nil {
-			assert.Equal(c, *updatedK0sWorkerConfig.Status.DataSecretName, updatedK0sWorkerConfig.Name)
-			assert.True(c, conditions.IsTrue(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
+		assert.NotEmpty(c, updatedK0sWorkerConfig.Status.DataSecretName)
+		assert.Equal(c, updatedK0sWorkerConfig.Status.DataSecretName, updatedK0sWorkerConfig.Name)
+		assert.True(c, conditions.IsTrue(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
 
-			// Verify the created secret has the correct labels
-			secretObj := &corev1.Secret{}
-			err = testEnv.Get(ctx, client.ObjectKey{Name: k0sWorkerConfig.Name, Namespace: ns.Name}, secretObj)
-			assert.NoError(c, err, "bootstrap secret should have been created")
-			assert.NotNil(c, secretObj)
-			assert.Equal(c, cluster.Name, secretObj.Labels[clusterv1.ClusterNameLabel])
-			assert.NotEmpty(c, secretObj.Data["value"])
-		}
+		// Verify the created secret has the correct labels
+		secretObj := &corev1.Secret{}
+		err = testEnv.Get(ctx, client.ObjectKey{Name: k0sWorkerConfig.Name, Namespace: ns.Name}, secretObj)
+		assert.NoError(c, err, "bootstrap secret should have been created")
+		assert.NotNil(c, secretObj)
+		assert.Equal(c, cluster.Name, secretObj.Labels[clusterv1.ClusterNameLabel])
+		assert.NotEmpty(c, secretObj.Data["value"])
 	}, 20*time.Second, 100*time.Millisecond)
 }
 

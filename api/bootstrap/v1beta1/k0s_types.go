@@ -158,7 +158,7 @@ type K0sWorkerConfigStatus struct {
 
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional
-	DataSecretName *string `json:"dataSecretName,omitempty"`
+	DataSecretName string `json:"dataSecretName,omitempty"`
 
 	// Conditions defines current service state of the K0sWorkerConfig.
 	// +optional
@@ -189,7 +189,7 @@ type K0sControllerConfigStatus struct {
 
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional
-	DataSecretName *string `json:"dataSecretName,omitempty"`
+	DataSecretName string `json:"dataSecretName,omitempty"`
 
 	// Conditions defines current service state of the K0sControllerConfig.
 	// +optional
