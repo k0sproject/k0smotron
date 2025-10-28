@@ -74,6 +74,7 @@ type RemoteMachineSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	CommandsAsScript bool `json:"commandsAsScript,omitempty"`
+
 	// WorkingDir is the directory to use as working directory when connecting to the remote machine.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="/etc/k0smotron"

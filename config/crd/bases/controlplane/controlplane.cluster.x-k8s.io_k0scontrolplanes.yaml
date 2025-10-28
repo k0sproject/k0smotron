@@ -289,6 +289,10 @@ spec:
                       UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
                       By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.
                     type: boolean
+                  workingDir:
+                    description: WorkingDir specifies the working directory where
+                      k0smotron will place its files.
+                    type: string
                 type: object
               machineTemplate:
                 properties:

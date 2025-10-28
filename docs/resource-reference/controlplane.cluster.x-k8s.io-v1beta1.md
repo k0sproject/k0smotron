@@ -254,6 +254,13 @@ By default, k0smotron will use Machine name as a node name. If true, it will pic
             <i>Default</i>: false<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>workingDir</b></td>
+        <td>string</td>
+        <td>
+          WorkingDir specifies the working directory where k0smotron will place its files.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -1367,6 +1374,13 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
 By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
           <br/>
             <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>workingDir</b></td>
+        <td>string</td>
+        <td>
+          WorkingDir specifies the working directory where k0smotron will place its files.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
