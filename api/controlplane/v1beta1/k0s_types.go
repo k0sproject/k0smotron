@@ -166,7 +166,7 @@ type K0sControlPlaneStatus struct {
 
 	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
 	// +optional
-	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
+	ExternalManagedControlPlane *bool `json:"externalManagedControlPlane"`
 
 	// replicas is the total number of non-terminated machines targeted by this control plane
 	// (their labels match the selector).

@@ -85,7 +85,7 @@ type K0smotronControlPlaneStatus struct {
 
 	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
 	// +optional
-	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
+	ExternalManagedControlPlane *bool `json:"externalManagedControlPlane"`
 	// version represents the minimum Kubernetes version for the control plane pods
 	// in the cluster.
 	// +optional

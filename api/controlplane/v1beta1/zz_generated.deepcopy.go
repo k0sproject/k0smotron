@@ -173,6 +173,11 @@ func (in *K0sControlPlaneSpec) DeepCopy() *K0sControlPlaneSpec {
 func (in *K0sControlPlaneStatus) DeepCopyInto(out *K0sControlPlaneStatus) {
 	*out = *in
 	out.Initialization = in.Initialization
+	if in.ExternalManagedControlPlane != nil {
+		in, out := &in.ExternalManagedControlPlane, &out.ExternalManagedControlPlane
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make(apiv1beta1.Conditions, len(*in))
@@ -384,6 +389,11 @@ func (in *K0smotronControlPlaneList) DeepCopyObject() runtime.Object {
 func (in *K0smotronControlPlaneStatus) DeepCopyInto(out *K0smotronControlPlaneStatus) {
 	*out = *in
 	out.Initialization = in.Initialization
+	if in.ExternalManagedControlPlane != nil {
+		in, out := &in.ExternalManagedControlPlane, &out.ExternalManagedControlPlane
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make(apiv1beta1.Conditions, len(*in))

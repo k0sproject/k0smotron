@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
@@ -222,7 +223,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	kcp.Status.ExternalManagedControlPlane = true
+	kcp.Status.ExternalManagedControlPlane = ptr.To(true)
 
 	return res, err
 }
