@@ -17454,24 +17454,139 @@ RemoteMachineStatus defines the observed state of RemoteMachine
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#remotemachinestatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Conditions defines current service state of the RemoteMachine<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>failureMessage</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Deprecated: use conditions instead<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>failureReason</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Deprecated: use conditions instead<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinestatusinitialization">initialization</a></b></td>
+        <td>object</td>
+        <td>
+          Initialization represents initialization status of the remote machine<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
-          Ready denotes that the remote machine is ready to be used.<br/>
+          Ready denotes that the remote machine is ready to be used.
+Deprecated: use .status.initialization.provisioned instead<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.status.conditions[index]
+<sup><sup>[↩ Parent](#remotemachinestatus)</sup></sup>
+
+
+
+Condition defines an observation of a Cluster API resource operational state.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed. If that is not known, then using the time when
+the API field changed is acceptable.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status of the condition, one of True, False, Unknown.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type of condition in CamelCase or in foo.example.com/CamelCase.
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is a human readable message indicating details about the transition.
+This field may be empty.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason is the reason for the condition's last transition in CamelCase.
+The specific API may choose whether or not this field is considered a guaranteed API.
+This field may be empty.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>severity</b></td>
+        <td>string</td>
+        <td>
+          severity provides an explicit classification of Reason code, so the users or machines can immediately
+understand the current situation and act accordingly.
+The Severity field MUST be set only when Status=False.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.status.initialization
+<sup><sup>[↩ Parent](#remotemachinestatus)</sup></sup>
+
+
+
+Initialization represents initialization status of the remote machine
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>provisioned</b></td>
+        <td>boolean</td>
+        <td>
+          Provisioned indicates whether the remote machine has been provisioned and is ready for use<br/>
         </td>
         <td>false</td>
       </tr></tbody>

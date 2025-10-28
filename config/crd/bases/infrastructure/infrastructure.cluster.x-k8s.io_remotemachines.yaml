@@ -8815,15 +8815,71 @@ spec:
           status:
             description: RemoteMachineStatus defines the observed state of RemoteMachine
             properties:
+              conditions:
+                description: Conditions defines current service state of the RemoteMachine
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed. If that is not known, then using the time when
+                        the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This field may be empty.
+                      maxLength: 10240
+                      minLength: 1
+                      type: string
+                    reason:
+                      description: |-
+                        reason is the reason for the condition's last transition in CamelCase.
+                        The specific API may choose whether or not this field is considered a guaranteed API.
+                        This field may be empty.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                    severity:
+                      description: |-
+                        severity provides an explicit classification of Reason code, so the users or machines can immediately
+                        understand the current situation and act accordingly.
+                        The Severity field MUST be set only when Status=False.
+                      maxLength: 32
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: |-
+                        type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+                        can be useful (see .node.status.conditions), the ability to deconflict is important.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
               failureMessage:
+                description: 'Deprecated: use conditions instead'
                 type: string
               failureReason:
+                description: 'Deprecated: use conditions instead'
                 type: string
               initialization:
-                description: Initialization represents initialization status of the remote machine
+                description: Initialization represents initialization status of the
+                  remote machine
                 properties:
                   provisioned:
-                    description: Provisioned indicates whether the remote machine has been provisioned and is ready for use
+                    description: Provisioned indicates whether the remote machine
+                      has been provisioned and is ready for use
                     type: boolean
                 type: object
               ready:

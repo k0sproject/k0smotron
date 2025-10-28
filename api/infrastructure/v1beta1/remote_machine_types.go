@@ -19,6 +19,7 @@ package v1beta1
 import (
 	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -108,24 +109,38 @@ type ProvisionJob struct {
 
 // RemoteMachineStatus defines the observed state of RemoteMachine
 type RemoteMachineStatus struct {
-    // Ready denotes that the remote machine is ready to be used.
-    // Deprecated: use .status.initialization.provisioned instead
-    // +kubebuilder:validation:Optional
-    Ready bool `json:"ready,omitempty"`
+	// Ready denotes that the remote machine is ready to be used.
+	// Deprecated: use .status.initialization.provisioned instead
+	// +kubebuilder:validation:Optional
+	Ready bool `json:"ready,omitempty"`
 
-    // Initialization represents initialization status of the remote machine
-    // +kubebuilder:validation:Optional
-    Initialization RemoteMachineInitialization `json:"initialization,omitempty"`
+	// Initialization represents initialization status of the remote machine
+	// +kubebuilder:validation:Optional
+	Initialization RemoteMachineInitialization `json:"initialization,omitempty"`
 
-	FailureReason  string `json:"failureReason,omitempty"`
+	// Deprecated: use conditions instead
+	FailureReason string `json:"failureReason,omitempty"`
+	// Deprecated: use conditions instead
 	FailureMessage string `json:"failureMessage,omitempty"`
+
+	// Conditions defines current service state of the RemoteMachine
+	// +kubebuilder:validation:Optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+}
+
+// GetConditions returns the conditions of the RemoteMachine.
+func (r *RemoteMachine) GetConditions() clusterv1.Conditions { return r.Status.Conditions }
+
+// SetConditions sets the conditions of the RemoteMachine.
+func (r *RemoteMachine) SetConditions(conditions clusterv1.Conditions) {
+	r.Status.Conditions = conditions
 }
 
 // RemoteMachineInitialization represents RemoteMachine initialization status
 type RemoteMachineInitialization struct {
-    // Provisioned indicates whether the remote machine has been provisioned and is ready for use
-    // +kubebuilder:validation:Optional
-    Provisioned bool `json:"provisioned,omitempty"`
+	// Provisioned indicates whether the remote machine has been provisioned and is ready for use
+	// +kubebuilder:validation:Optional
+	Provisioned bool `json:"provisioned,omitempty"`
 }
 
 type SecretRef struct {

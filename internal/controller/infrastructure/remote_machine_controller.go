@@ -33,6 +33,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -137,8 +138,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 		if rm.Spec.ProvisionJob == nil {
 			if rm.Spec.Address == "" || rm.Spec.SSHKeyRef.Name == "" {
-				rm.Status.FailureReason = "MissingFields"
-				rm.Status.FailureMessage = "If pool is empty, following fields are required: address, sshKeyRef"
+				conditions.MarkFalse(rm, clusterv1.ReadyCondition, "MissingFields", clusterv1.ConditionSeverityError, "If pool is empty, following fields are required: address, sshKeyRef")
 				rm.Status.Ready = false
 				if err := rmPatchHelper.Patch(ctx, rm); err != nil {
 					log.Error(err, "Failed to update RemoteMachine status")
@@ -242,7 +242,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-    if rm.Status.Initialization.Provisioned || rm.Status.Ready {
+	if rm.Status.Initialization.Provisioned || rm.Status.Ready {
 		return ctrl.Result{}, nil
 	}
 
@@ -252,17 +252,15 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 	defer func() {
 		log.Info("Reconcile complete")
-        if err != nil {
-            rm.Status.FailureReason = "ProvisionFailed"
-            rm.Status.FailureMessage = err.Error()
-            rm.Status.Initialization.Provisioned = false
-            rm.Status.Ready = false
-        } else {
-            rm.Status.FailureReason = ""
-            rm.Status.FailureMessage = ""
-            rm.Status.Initialization.Provisioned = true
-            rm.Status.Ready = true
-        }
+		if err != nil {
+			conditions.MarkFalse(rm, clusterv1.ReadyCondition, "ProvisionFailed", clusterv1.ConditionSeverityError, "%s", err.Error())
+			rm.Status.Initialization.Provisioned = false
+			rm.Status.Ready = false
+		} else {
+			conditions.MarkTrue(rm, clusterv1.ReadyCondition)
+			rm.Status.Initialization.Provisioned = true
+			rm.Status.Ready = true
+		}
 		log.Info(fmt.Sprintf("Updating RemoteMachine status: %+v", rm.Status))
 		if err := rmPatchHelper.Patch(ctx, rm); err != nil {
 			log.Error(err, "Failed to update RemoteMachine status")
