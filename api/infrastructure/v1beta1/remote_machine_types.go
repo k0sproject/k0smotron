@@ -108,12 +108,24 @@ type ProvisionJob struct {
 
 // RemoteMachineStatus defines the observed state of RemoteMachine
 type RemoteMachineStatus struct {
-	// Ready denotes that the remote machine is ready to be used.
-	// +kubebuilder:validation:Optional
-	Ready bool `json:"ready,omitempty"`
+    // Ready denotes that the remote machine is ready to be used.
+    // Deprecated: use .status.initialization.provisioned instead
+    // +kubebuilder:validation:Optional
+    Ready bool `json:"ready,omitempty"`
+
+    // Initialization represents initialization status of the remote machine
+    // +kubebuilder:validation:Optional
+    Initialization RemoteMachineInitialization `json:"initialization,omitempty"`
 
 	FailureReason  string `json:"failureReason,omitempty"`
 	FailureMessage string `json:"failureMessage,omitempty"`
+}
+
+// RemoteMachineInitialization represents RemoteMachine initialization status
+type RemoteMachineInitialization struct {
+    // Provisioned indicates whether the remote machine has been provisioned and is ready for use
+    // +kubebuilder:validation:Optional
+    Provisioned bool `json:"provisioned,omitempty"`
 }
 
 type SecretRef struct {

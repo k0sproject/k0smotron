@@ -8819,9 +8819,17 @@ spec:
                 type: string
               failureReason:
                 type: string
+              initialization:
+                description: Initialization represents initialization status of the remote machine
+                properties:
+                  provisioned:
+                    description: Provisioned indicates whether the remote machine has been provisioned and is ready for use
+                    type: boolean
+                type: object
               ready:
-                description: Ready denotes that the remote machine is ready to be
-                  used.
+                description: |-
+                  Ready denotes that the remote machine is ready to be used.
+                  Deprecated: use .status.initialization.provisioned instead
                 type: boolean
             type: object
         type: object

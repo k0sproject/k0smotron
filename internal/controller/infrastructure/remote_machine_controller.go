@@ -242,7 +242,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	if rm.Status.Ready {
+    if rm.Status.Initialization.Provisioned || rm.Status.Ready {
 		return ctrl.Result{}, nil
 	}
 
@@ -252,15 +252,17 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 	defer func() {
 		log.Info("Reconcile complete")
-		if err != nil {
-			rm.Status.FailureReason = "ProvisionFailed"
-			rm.Status.FailureMessage = err.Error()
-			rm.Status.Ready = false
-		} else {
-			rm.Status.FailureReason = ""
-			rm.Status.FailureMessage = ""
-			rm.Status.Ready = true
-		}
+        if err != nil {
+            rm.Status.FailureReason = "ProvisionFailed"
+            rm.Status.FailureMessage = err.Error()
+            rm.Status.Initialization.Provisioned = false
+            rm.Status.Ready = false
+        } else {
+            rm.Status.FailureReason = ""
+            rm.Status.FailureMessage = ""
+            rm.Status.Initialization.Provisioned = true
+            rm.Status.Ready = true
+        }
 		log.Info(fmt.Sprintf("Updating RemoteMachine status: %+v", rm.Status))
 		if err := rmPatchHelper.Patch(ctx, rm); err != nil {
 			log.Error(err, "Failed to update RemoteMachine status")
