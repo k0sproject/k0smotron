@@ -655,37 +655,18 @@ offered by an infrastructure provider.<br/>
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatedeletion">deletion</a></b></td>
+        <td>object</td>
+        <td>
+          Deletion contains node deletion related settings<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0scontrolplanespecmachinetemplatemetadata">metadata</a></b></td>
         <td>object</td>
         <td>
           Standard object's metadata.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>nodeDeletionTimeout</b></td>
-        <td>string</td>
-        <td>
-          NodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
-hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
-If no value is provided, the default value for this property of the Machine resource will be used.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>nodeDrainTimeout</b></td>
-        <td>string</td>
-        <td>
-          NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
-The default value is 0, meaning that the node can be drained without any time limitations.
-NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>nodeVolumeDetachTimeout</b></td>
-        <td>string</td>
-        <td>
-          NodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
-to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -767,6 +748,52 @@ More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-
         <td>
           UID of the referent.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.deletion
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate)</sup></sup>
+
+
+
+Deletion contains node deletion related settings
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>nodeDeletionTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
+hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+If no value is provided, the default value for this property of the Machine resource will be used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeDrainTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
+The default value is 0, meaning that the node can be drained without any time limitations.
+NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeVolumeDetachTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
+to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1767,6 +1794,13 @@ be configured on the K0sControlPlaneTemplate.
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespecmachinetemplatedeletion">deletion</a></b></td>
+        <td>object</td>
+        <td>
+          Deletion contains node deletion related settings<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0scontrolplanetemplatespectemplatespecmachinetemplatemetadata">metadata</a></b></td>
         <td>object</td>
         <td>
@@ -1774,7 +1808,27 @@ be configured on the K0sControlPlaneTemplate.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
         </td>
         <td>false</td>
-      </tr><tr>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.machineTemplate.deletion
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespecmachinetemplate)</sup></sup>
+
+
+
+Deletion contains node deletion related settings
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
         <td><b>nodeDeletionTimeout</b></td>
         <td>string</td>
         <td>

@@ -114,6 +114,13 @@ type K0sControlPlaneMachineTemplate struct {
 	// offered by an infrastructure provider.
 	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
 
+	// Deletion contains node deletion related settings
+	// +optional
+	Deletion K0sControlPlaneMachineTemplateDeletionSpec `json:"deletion,omitempty"`
+}
+
+// K0sControlPlaneMachineTemplateDeletionSpec groups node deletion related settings for control plane machines
+type K0sControlPlaneMachineTemplateDeletionSpec struct {
 	// NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
 	// The default value is 0, meaning that the node can be drained without any time limitations.
 	// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`

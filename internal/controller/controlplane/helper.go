@@ -132,9 +132,9 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 				},
 			},
 			InfrastructureRef:       infraRef,
-			NodeDrainTimeout:        kcp.Spec.MachineTemplate.NodeDrainTimeout,
-			NodeDeletionTimeout:     kcp.Spec.MachineTemplate.NodeDeletionTimeout,
-			NodeVolumeDetachTimeout: kcp.Spec.MachineTemplate.NodeVolumeDetachTimeout,
+			NodeDrainTimeout:        kcp.Spec.MachineTemplate.Deletion.NodeDrainTimeout,
+			NodeDeletionTimeout:     kcp.Spec.MachineTemplate.Deletion.NodeDeletionTimeout,
+			NodeVolumeDetachTimeout: kcp.Spec.MachineTemplate.Deletion.NodeVolumeDetachTimeout,
 		},
 	}
 

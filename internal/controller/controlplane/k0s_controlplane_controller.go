@@ -21,9 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"strings"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -559,9 +560,9 @@ func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, kcp *cpv1b
 		return err
 	}
 
-	machine.Spec.NodeDrainTimeout = kcp.Spec.MachineTemplate.NodeDrainTimeout
-	machine.Spec.NodeDeletionTimeout = kcp.Spec.MachineTemplate.NodeDeletionTimeout
-	machine.Spec.NodeVolumeDetachTimeout = kcp.Spec.MachineTemplate.NodeVolumeDetachTimeout
+	machine.Spec.NodeDrainTimeout = kcp.Spec.MachineTemplate.Deletion.NodeDrainTimeout
+	machine.Spec.NodeDeletionTimeout = kcp.Spec.MachineTemplate.Deletion.NodeDeletionTimeout
+	machine.Spec.NodeVolumeDetachTimeout = kcp.Spec.MachineTemplate.Deletion.NodeVolumeDetachTimeout
 
 	return patchHelper.Patch(ctx, machine)
 }
