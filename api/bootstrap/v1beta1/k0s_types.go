@@ -140,9 +140,21 @@ type JoinTokenSecretRef struct {
 	Key string `json:"key"`
 }
 
+// Initialization represents the initialization status of the bootstrap resource
+type Initialization struct {
+	// DataSecretCreated indicates whether the bootstrap data Secret has been created
+	// +optional
+	DataSecretCreated bool `json:"dataSecretCreated,omitempty"`
+}
+
 type K0sWorkerConfigStatus struct {
 	// Ready indicates the Bootstrapdata field is ready to be consumed
+	// Deprecated: use .status.initialization.dataSecretCreated instead
 	Ready bool `json:"ready,omitempty"`
+
+	// initialization represents the initialization status for the bootstrap resource
+	// +optional
+	Initialization Initialization `json:"initialization,omitempty"`
 
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional
@@ -168,7 +180,12 @@ type K0sControllerConfig struct {
 
 type K0sControllerConfigStatus struct {
 	// Ready indicates the Bootstrapdata field is ready to be consumed
+	// Deprecated: use .status.initialization.dataSecretCreated instead
 	Ready bool `json:"ready,omitempty"`
+
+	// initialization represents the initialization status for the bootstrap resource
+	// +optional
+	Initialization Initialization `json:"initialization,omitempty"`
 
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional

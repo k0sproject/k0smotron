@@ -376,8 +376,8 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 	}
 	require.NoError(t, testEnv.Create(ctx, k0sControllerConfig))
 
-	// Bootstrap data is already crreated.
-	k0sControllerConfig.Status.Ready = true
+	// Bootstrap data is already created.
+	k0sControllerConfig.Status.Initialization.DataSecretCreated = true
 	require.NoError(t, testEnv.Status().Update(ctx, k0sControllerConfig))
 
 	defer func(do ...client.Object) {
@@ -562,7 +562,7 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 		updatedK0sControllerConfig := &bootstrapv1.K0sControllerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sControllerConfig), updatedK0sControllerConfig))
 
-		assert.True(c, updatedK0sControllerConfig.Status.Ready)
+		assert.True(c, updatedK0sControllerConfig.Status.Initialization.DataSecretCreated)
 		assert.NotNil(c, updatedK0sControllerConfig.Status.DataSecretName)
 		assert.Equal(c, *updatedK0sControllerConfig.Status.DataSecretName, updatedK0sControllerConfig.Name)
 		assert.True(c, conditions.IsTrue(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))

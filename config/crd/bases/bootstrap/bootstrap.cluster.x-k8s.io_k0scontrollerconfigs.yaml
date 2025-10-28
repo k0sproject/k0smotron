@@ -313,9 +313,15 @@ spec:
                   the bootstrap data script.
                 type: string
               ready:
-                description: Ready indicates the Bootstrapdata field is ready to be
-                  consumed
+                description: Ready indicates the Bootstrapdata field is ready to be consumed. Deprecated: use .status.initialization.dataSecretCreated instead
                 type: boolean
+              initialization:
+                description: initialization represents the initialization status for the bootstrap resource
+                properties:
+                  dataSecretCreated:
+                    description: DataSecretCreated indicates whether the bootstrap data Secret has been created
+                    type: boolean
+                type: object
             type: object
         type: object
     served: true
