@@ -325,11 +325,23 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 		return
 	}
 	logger.Info("Successfully pinged the workload cluster API")
-	// Set the conditions
-	conditions.MarkTrue(kcp, cpv1beta1.ControlPlaneReadyCondition)
-	kcp.Status.Ready = true
+
+	// Initialization confirmed
 	kcp.Status.Initialized = true
 	kcp.Status.Initialization.ControlPlaneInitialized = true
+
+	// Decide condition based on replica/upgrade status
+	switch {
+	case kcp.Status.UnavailableReplicas > 0 || int(kcp.Status.ReadyReplicas) < int(kcp.Spec.Replicas):
+		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "ReplicasUnavailable", clusterv1.ConditionSeverityWarning, "readyReplicas=%d updatedReplicas=%d unavailableReplicas=%d desiredReplicas=%d", kcp.Status.ReadyReplicas, kcp.Status.UpdatedReplicas, kcp.Status.UnavailableReplicas, kcp.Spec.Replicas)
+		kcp.Status.Ready = false
+	case kcp.Status.UpdatedReplicas != kcp.Spec.Replicas:
+		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "RollingUpdateInProgress", clusterv1.ConditionSeverityInfo, "updatedReplicas=%d desiredReplicas=%d", kcp.Status.UpdatedReplicas, kcp.Spec.Replicas)
+		kcp.Status.Ready = false
+	default:
+		conditions.MarkTrue(kcp, cpv1beta1.ControlPlaneReadyCondition)
+		kcp.Status.Ready = true
+	}
 
 	// Set the k0s cluster ID annotation
 	annotations.AddAnnotations(cluster, map[string]string{
