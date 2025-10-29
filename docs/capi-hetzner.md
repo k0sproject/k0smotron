@@ -100,6 +100,7 @@ spec:
         pool: worker-pool-1
     spec:
       clusterName: hetzner-test
+      failureDomain: fsn1
       bootstrap:
         configRef: # This triggers our controller to create cloud-init secret
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
