@@ -1128,6 +1128,15 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
+  <a href="#uploading-the-k0s-binary-to-an-oci-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      Uploading the k0s Binary to an OCI Registry
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configure-k0scontrolplane-for-using-and-oci-registry" class="md-nav__link">
     <span class="md-ellipsis">
       Configure K0sControlPlane for using and OCI registry
@@ -1896,6 +1905,15 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
+  <a href="#uploading-the-k0s-binary-to-an-oci-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      Uploading the k0s Binary to an OCI Registry
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configure-k0scontrolplane-for-using-and-oci-registry" class="md-nav__link">
     <span class="md-ellipsis">
       Configure K0sControlPlane for using and OCI registry
@@ -1936,6 +1954,44 @@ You are not currently viewing the documentation for the current stable release o
 <p>(See the <a href="https://cluster-api-aws.sigs.k8s.io/quick-start">tutorial</a> on how to use AWS in CAPI for more details). Once you have a valid cluster to deploy the providers, run:</p>
 <div class="highlight"><pre><span></span><code>clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure aws
 </code></pre></div>
+<h2 id="uploading-the-k0s-binary-to-an-oci-registry">Uploading the k0s Binary to an OCI Registry<a class="headerlink" href="#uploading-the-k0s-binary-to-an-oci-registry" title="Permanent link">#</a></h2>
+<p>This section would cover how to package and push the k0s binary into an OCI-compatible registry using the <a href="https://oras.land/docs/">Oras CLI</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Download the desired k0s binary </span>
+curl<span class="w"> </span>-L<span class="w"> </span>https://github.com/k0sproject/k0s/releases/download/v1.34.1%2Bk0s.0/k0s-v1.34.1+k0s.0-amd64<span class="w"> </span>-o<span class="w"> </span>k0s
+
+<span class="c1"># Optional: Annotate the layer for your binary</span>
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; annotations.json</span>
+<span class="s">{</span>
+<span class="s">  &quot;k0s&quot;: {</span>
+<span class="s">    &quot;arch&quot;: &quot;amd64&quot;</span>
+<span class="s">  }</span>
+<span class="s">}</span>
+<span class="s">EOF</span>
+
+<span class="c1"># Tag and push it to your OCI registry using Oras</span>
+oras<span class="w"> </span>push<span class="w"> </span>example.com/my-repo/k0s:v1.34.1-k0s.0<span class="w"> </span>k0s<span class="w"> </span>--annotation-file<span class="w"> </span>annotations.json
+</code></pre></div>
+<p>Once uploaded, you can retrieve the digest associated with the k0s binary blob:</p>
+<div class="highlight"><pre><span></span><code>oras<span class="w"> </span>manifest<span class="w"> </span>fetch<span class="w"> </span>example.com/my-repo/k0s:v1.34.1-k0s.0<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</code></pre></div>
+<p>This command outputs the OCI manifest, including its layers. One of these layers corresponds to the k0s binary blob.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;mediaType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;application/vnd.oci.image.manifest.v1+json&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;artifactType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;application/octet-stream&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;layers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;mediaType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;application/vnd.oci.image.layer.v1.tar&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;digest&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:abcdefg123456789&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">262022198</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;annotations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;org.opencontainers.image.title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;k0s&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Use the digest of this k0s binary blob later in your <code>downloadURL</code> field for the <code>K0sControlPlane</code> specification, in this case <code>sha256:abcdefg123456789</code> .</p>
 <h2 id="configure-k0scontrolplane-for-using-and-oci-registry">Configure <code>K0sControlPlane</code> for using and OCI registry<a class="headerlink" href="#configure-k0scontrolplane-for-using-and-oci-registry" title="Permanent link">#</a></h2>
 <p>Configuring the <code>K0sControlPlane</code> to pull k0s from an OCI registry is straightforward. <strong>The only requirement is that the machine being bootstrapped needs Oras CLI installed</strong>. You can achieve this in two ways:</p>
 <ul>
@@ -1992,7 +2048,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-test</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.33.4+k0s.0</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.1+k0s.0</span>
 <span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
 <span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
 <span class="w">    </span><span class="c1"># OCI URL (digest reference) for the k0s binary blob</span>
@@ -2051,7 +2107,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-test</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.33.4+k0s.0</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.1+k0s.0</span>
 <span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
 <span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
 <span class="w">    </span><span class="c1"># OCI URL (digest reference) for the k0s binary blob</span>
