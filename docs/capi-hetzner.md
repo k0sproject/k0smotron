@@ -84,7 +84,7 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-  name: hetnzer-test-md
+  name: hetzner-test-md
   namespace: default
 spec:
   clusterName: hetzner-test
