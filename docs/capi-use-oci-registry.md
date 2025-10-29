@@ -13,6 +13,55 @@ For this setup, you need to use the control plane and bootstrap providers for k0
 clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure aws
 ```
 
+## Uploading the k0s Binary to an OCI Registry
+
+This section would cover how to package and push the k0s binary into an OCI-compatible registry using the [Oras CLI](https://oras.land/docs/).
+
+```bash
+# Download the desired k0s binary 
+curl -L https://github.com/k0sproject/k0s/releases/download/v1.34.1%2Bk0s.0/k0s-v1.34.1+k0s.0-amd64 -o k0s
+
+# Optional: Annotate the layer for your binary
+cat <<EOF > annotations.json
+{
+  "k0s": {
+    "arch": "amd64"
+  }
+}
+EOF
+
+# Tag and push it to your OCI registry using Oras
+oras push example.com/my-repo/k0s:v1.34.1-k0s.0 k0s --annotation-file annotations.json
+```
+
+Once uploaded, you can retrieve the digest associated with the k0s binary blob:
+
+```bash
+oras manifest fetch example.com/my-repo/k0s:v1.34.1-k0s.0 | jq
+```
+
+This command outputs the OCI manifest, including its layers. One of these layers corresponds to the k0s binary blob.
+
+```json
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "artifactType": "application/octet-stream",
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar",
+      "digest": "sha256:abcdefg123456789",
+      "size": 262022198,
+      "annotations": {
+        "org.opencontainers.image.title": "k0s"
+      }
+    }
+  ]
+}
+```
+
+Use the digest of this k0s binary blob later in your `downloadURL` field for the `K0sControlPlane` specification, in this case `sha256:abcdefg123456789` .
+
 ## Configure `K0sControlPlane` for using and OCI registry
 
 Configuring the `K0sControlPlane` to pull k0s from an OCI registry is straightforward. **The only requirement is that the machine being bootstrapped needs Oras CLI installed**. You can achieve this in two ways:
@@ -71,7 +120,7 @@ metadata:
   name: aws-test
 spec:
   replicas: 3
-  version: v1.33.4+k0s.0
+  version: v1.34.1+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
     # OCI URL (digest reference) for the k0s binary blob
@@ -135,7 +184,7 @@ metadata:
   name: aws-test
 spec:
   replicas: 3
-  version: v1.33.4+k0s.0
+  version: v1.34.1+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
     # OCI URL (digest reference) for the k0s binary blob
