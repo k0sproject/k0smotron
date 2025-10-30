@@ -1981,8 +1981,8 @@ You are not currently viewing the documentation for the current stable release o
 <p>This example demonstrates how k0smotron can be used with CAPH (Cluster API Provider HetznerCloud).</p>
 <h2 id="preparations">Preparations<a class="headerlink" href="#preparations" title="Permanent link">#</a></h2>
 <p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>.</p>
-<p>To initialize the management cluster with Hetzner infrastrcture provider you can run:</p>
-<div class="highlight"><pre><span></span><code>clusterctl init --core cluster-api --infrastructure hetzner
+<p>To initialize the management cluster with Hetzner infrastructure provider you can run:</p>
+<div class="highlight"><pre><span></span><code>clusterctl init --core cluster-api:v1.11.2 --infrastructure hetzner:v1.0.7
 </code></pre></div>
 <p>For more details on Cluster API Provider Hetzner see it's <a href="https://github.com/syself/cluster-api-provider-hetzner/tree/main/docs">docs</a>.</p>
 <h3 id="token">Token<a class="headerlink" href="#token" title="Permanent link">#</a></h3>
@@ -2065,6 +2065,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">        </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-test</span>
+<span class="w">      </span><span class="nt">failureDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span>
 <span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">configRef</span><span class="p">:</span><span class="w"> </span><span class="c1"># This triggers our controller to create cloud-init secret</span>
 <span class="w">          </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
