@@ -173,8 +173,14 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 					break
 				}
 			}
-			if isWorker && *m.Spec.ProviderID != "" {
-				currentWorkerMachines += 1
+
+			if isWorker {
+				mProviderId := m.Spec.ProviderID
+				if mProviderId == nil || *mProviderId == "" {
+					continue
+				}
+
+				currentWorkerMachines++
 			}
 		}
 		if input.ExpectedWorkers != currentWorkerMachines {
