@@ -36,7 +36,7 @@ spec:
         id: ami-00d12617b68dbc62f # Flatcar Container Linux stable 3975.2.1 (HVM) in eu-west-1
       instanceType: ${AWS_INSTANCE_TYPE}
       publicIP: true
-      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+      iamInstanceProfile: control-plane.cluster-api-provider-aws.sigs.k8s.io
       uncompressedUserData: false
       sshKeyName: ${SSH_KEY_NAME}
 ---

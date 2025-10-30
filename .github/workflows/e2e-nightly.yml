@@ -1,0 +1,149 @@
+name: Nightly E2E Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # Runs every day at 02:00 UTC
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+  
+jobs:
+  # TODO: instead of building the image for the nightly tests, we could cuse the one published to ttl.sh. If the image no longer exists there,
+  # the tests would fail, which is acceptable, meaning that the development version has already been tested against AWS the night before.
+  build:
+    name: Build artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # for `git describe`
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: |
+          make build
+
+      - name: Upload manager binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-binary
+          path: bin/manager
+
+      - name: Build image bundle
+        run: |
+          # Build Docker image and create image bundle
+          make k0smotron-image-bundle.tar
+
+      - name: Publish the previously built imageto ttl.sh with the commit sha
+        run: |
+          docker tag quay.io/k0sproject/k0smotron:latest ttl.sh/k0smotron-${{ github.sha }}
+          docker push ttl.sh/k0smotron-${{ github.sha }}
+
+      - name: Upload image bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: k0smotron-image-bundle
+          path: k0smotron-image-bundle.tar
+
+      - name: Build cluster api components
+        run: |
+          make bootstrap-components.yaml control-plane-components.yaml infrastructure-components.yaml
+          mkdir -p v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/ k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/ k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+
+          mv bootstrap-components.yaml v0.0.0
+          mv control-plane-components.yaml v0.0.0
+          mv infrastructure-components.yaml v0.0.0
+          mv ./hack/capi-ci/metadata.yaml v0.0.0
+
+          cp -r v0.0.0 k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+
+      - name: Upload cluster api components
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-api-components
+          path: |
+            config.yaml
+            k0sproject-k0smotron/
+
+      - name: Generate install yaml
+        run: |
+          make release
+
+      - name: Upload install yaml
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-yaml
+          path: install.yaml
+
+  e2e:
+    name: E2E test
+    needs: [build]
+    runs-on: oracle-vm-16cpu-64gb-x86-64
+    strategy:
+      fail-fast: false
+      matrix:
+        e2e-suite:
+          - TestIgnitionProvisioning
+    env:
+      SSH_KEY_NAME: ${{ secrets.SSH_KEY_NAME }}
+      SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Download image bundle
+        uses: actions/download-artifact@v5
+        with:
+          name: k0smotron-image-bundle
+
+      - name: Load k0smotron image bundle
+        run: |
+          docker load -i k0smotron-image-bundle.tar
+
+      - name: Download install manifest
+        uses: actions/download-artifact@v5
+        with:
+          name: install-yaml
+
+      - name: Download clusterawsadm
+        uses: supplypike/setup-bin@v4
+        with:
+          name: clusterawsadm
+          version: v2.9.2
+          uri: https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/v2.9.2/clusterawsadm-linux-amd64
+
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      - name: Run e2e test
+        run: |
+          export AWS_B64ENCODED_CREDENTIALS=$(clusterawsadm bootstrap credentials encode-as-profile)
+          make e2e TEST_NAME="${{ matrix.e2e-suite }}" E2E_CONF_FILE="$(pwd)/e2e/config/aws.yaml"
+
+      - name: Archive artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4.3.2
+        with:
+          name: e2e-artifacts
+          path: _artifacts
+          if-no-files-found: ignore

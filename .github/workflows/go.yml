@@ -242,16 +242,16 @@ jobs:
       fail-fast: false
       matrix:
         e2e-suite:
-          - controlplane-remediation
-          - controlplane-conditions
-          - workload-cluster-inplace-upgrade
-          - workload-cluster-recreate-upgrade
-          - workload-cluster-recreate-delete-first-upgrade
-          - admission-webhook-recreate-strategy-in-single-mode
-          - admission-webhook-k0s-not-compatible
-          - k0smotron-upgrade
-          - machinedeployment
-          - remote-hosted-control-planes
+          - TestControlplaneRemediation
+          - TestControlplaneConditions
+          - TestWorkloadClusterInplaceUpgrade
+          - TestWorkloadClusterRecreateUpgrade
+          - TestWorkloadClusterRecreateDeleteFirstUpgrade
+          - TestAdmissionWebhookRecreateStrategyInSingleMode
+          - TestAdmissionWebhookK0sNotCompatible
+          - TestK0smotronUpgrade
+          - TestMachineDeployment
+          - TestRemoteHostedControlPlanes
 
     steps:
       - name: Check out code into the Go module directory
@@ -278,9 +278,7 @@ jobs:
 
       - name: Run e2e test
         run: |
-          export TEST_NAME=Test$(echo "${{ matrix.e2e-suite }}" | awk -F'-' '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1' OFS='')
-          echo "Running E2E tests with TEST_NAME=$TEST_NAME"
-          make e2e TEST_NAME="$TEST_NAME"
+          make e2e TEST_NAME="${{ matrix.e2e-suite }}"
 
       - name: Archive artifacts
         if: failure()
