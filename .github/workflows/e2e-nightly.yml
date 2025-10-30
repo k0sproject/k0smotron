@@ -1,0 +1,160 @@
+name: Nightly E2E Tests
+
+on:
+  push:
+    branches: &protected_branches
+      - main
+      - release-*
+    paths-ignore: &common_ignores
+      - 'config/**'
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '**.md'
+      - LICENSE
+      - '**.svg'
+  pull_request:
+    branches: *protected_branches
+    paths-ignore: *common_ignores
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # Runs every day at 02:00 UTC
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+  
+jobs:
+  build:
+    name: Build artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # for `git describe`
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: |
+          make build
+
+      - name: Upload manager binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-binary
+          path: bin/manager
+
+      - name: Build image bundle
+        run: |
+          # Build Docker image and create image bundle
+          make k0smotron-image-bundle.tar
+
+      - name: Publish the previously built imageto ttl.sh with the commit sha
+        run: |
+          docker tag quay.io/k0sproject/k0smotron:latest ttl.sh/k0smotron-${{ github.sha }}
+          docker push ttl.sh/k0smotron-${{ github.sha }}
+
+      - name: Upload image bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: k0smotron-image-bundle
+          path: k0smotron-image-bundle.tar
+
+      - name: Build cluster api components
+        run: |
+          make bootstrap-components.yaml control-plane-components.yaml infrastructure-components.yaml
+          mkdir -p v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/ k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/ k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+
+          mv bootstrap-components.yaml v0.0.0
+          mv control-plane-components.yaml v0.0.0
+          mv infrastructure-components.yaml v0.0.0
+          mv ./hack/capi-ci/metadata.yaml v0.0.0
+
+          cp -r v0.0.0 k0sproject-k0smotron/bootstrap-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/control-plane-k0sproject-k0smotron/
+          cp -r v0.0.0 k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
+
+      - name: Upload cluster api components
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-api-components
+          path: |
+            config.yaml
+            k0sproject-k0smotron/
+
+      - name: Generate install yaml
+        run: |
+          make release
+
+      - name: Upload install yaml
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-yaml
+          path: install.yaml
+
+  e2e:
+    name: E2E test
+    needs: [build]
+    runs-on: oracle-vm-16cpu-64gb-x86-64
+    strategy:
+      fail-fast: false
+      matrix:
+        e2e-suite:
+          - ignition-provisioning
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Download image bundle
+        uses: actions/download-artifact@v5
+        with:
+          name: k0smotron-image-bundle
+
+      - name: Load k0smotron image bundle
+        run: |
+          docker load -i k0smotron-image-bundle.tar
+
+      - name: Download install manifest
+        uses: actions/download-artifact@v5
+        with:
+          name: install-yaml
+          
+      - name: Check secret presence
+        run: |
+          if [ -z "${{ secrets.AWS_OIDC_ROLE_ARN }}" ]; then
+            echo "❌ Secret AWS_OIDC_ROLE_ARN is empty or missing"
+            exit 1
+          else
+            echo "✅ Secret AWS_OIDC_ROLE_ARN is defined (value hidden)"
+          fi
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Run e2e test
+        run: |
+          export TEST_NAME=Test$(echo "${{ matrix.e2e-suite }}" | awk -F'-' '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1' OFS='')
+          echo "Running E2E tests with TEST_NAME=$TEST_NAME"
+          make e2e TEST_NAME="$TEST_NAME" E2E_CONF_FILE="$(pwd)/e2e/config/aws.yaml"
+
+      - name: Archive artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4.3.2
+        with:
+          name: e2e-artifacts
+          path: _artifacts
+          if-no-files-found: ignore
