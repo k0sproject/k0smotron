@@ -79,6 +79,7 @@ func Test_createCPInstallCmd(t *testing.T) {
 						},
 					},
 				},
+				installArgs: []string{"--enable-worker", "--labels=k0sproject.io/foo=bar"},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
 					"metadata": map[string]interface{}{"name": "test-machine"},
 				}}},
