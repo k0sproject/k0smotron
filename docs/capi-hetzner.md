@@ -6,10 +6,10 @@ This example demonstrates how k0smotron can be used with CAPH (Cluster API Provi
 
 Before starting this example, ensure that you have met the [general prerequisites](capi-examples.md#prerequisites).
 
-To initialize the management cluster with Hetzner infrastrcture provider you can run:
+To initialize the management cluster with Hetzner infrastructure provider you can run:
 
 ```
-clusterctl init --core cluster-api --infrastructure hetzner
+clusterctl init --core cluster-api:v1.11.2 --infrastructure hetzner:v1.0.7
 ```
 
 For more details on Cluster API Provider Hetzner see it's [docs](https://github.com/syself/cluster-api-provider-hetzner/tree/main/docs).
@@ -100,6 +100,7 @@ spec:
         pool: worker-pool-1
     spec:
       clusterName: hetzner-test
+      failureDomain: fsn1
       bootstrap:
         configRef: # This triggers our controller to create cloud-init secret
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
