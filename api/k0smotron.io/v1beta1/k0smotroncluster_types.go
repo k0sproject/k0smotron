@@ -293,6 +293,27 @@ type EtcdSpec struct {
 	// Resources defines the compute resource requirements for the etcd container.
 	//+kubebuilder:validation:Optional
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+	// RuntimeClass defines the runtime class to be used for the etcd pods.
+	//+kubebuilder:validation:Optional
+	RuntimeClass *string `json:"runtimeClass,omitempty"`
+	// Tolerations defines the tolerations for the etcd pods.
+	//+kubebuilder:validation:Optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
+	// TopologySpreadConstraints defines the topology spread constraints for the etcd pods.
+	//+kubebuilder:validation:Optional
+	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// NodeSelector defines the node selector for the etcd pods.
+	//+kubebuilder:validation:Optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// Affinity defines the affinity/anti-affinity rules for the etcd pods.
+	//+kubebuilder:validation:Optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// ImagePullSecrets defines the image pull secrets for the etcd pods.
+	//+kubebuilder:validation:Optional
+	ImagePullSecrets []v1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	// PriorityClassName defines the priority class name for the etcd pods.
+	//+kubebuilder:validation:Optional
+	PriorityClassName string `json:"priorityClassName,omitempty"`
 }
 
 type DefragJob struct {
