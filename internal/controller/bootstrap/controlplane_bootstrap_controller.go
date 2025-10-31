@@ -69,8 +69,6 @@ type ControlPlaneController struct {
 	RESTConfig          *rest.Config
 }
 
-const joinTokenFilePath = "/etc/k0s.token"
-
 var minVersionForETCDName = version.MustParse("v1.31.1")
 var minVersionForETCDMemberCRD = version.MustParse("v1.31.6")
 var errInitialControllerMachineNotInitialize = errors.New("initial controller machine has not completed its initialization")
@@ -323,12 +321,13 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling k0s config: %v", err)
 		}
+		k0sConfigPath := scope.Config.Spec.GetDefaultK0sConfigPath()
 		files = append(files, provisioner.File{
-			Path:        "/etc/k0s.yaml",
+			Path:        k0sConfigPath,
 			Permissions: "0644",
 			Content:     string(k0sConfigBytes),
 		})
-		scope.Config.Spec.Args = append(scope.Config.Spec.Args, "--config", "/etc/k0s.yaml")
+		scope.Config.Spec.Args = append(scope.Config.Spec.Args, "--config", k0sConfigPath)
 	}
 
 	if scope.machines.Oldest().Name == scope.Config.Name {
@@ -347,7 +346,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		if err != nil {
 			return nil, err
 		}
-		installCmd = createCPInstallCmdWithJoinToken(scope, joinTokenFilePath)
+		installCmd = createCPInstallCmdWithJoinToken(scope, scope.Config.Spec.GetJoinTokenPath())
 	}
 
 	if scope.Config.Spec.Tunneling.Enabled {
@@ -445,7 +444,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, host, "controller-bootstrap")
 
 	files = append(files, provisioner.File{
-		Path:        joinTokenFilePath,
+		Path:        scope.Config.Spec.GetJoinTokenPath(),
 		Permissions: "0600",
 		Content:     joinToken,
 	})
