@@ -52,6 +52,7 @@ const (
 	ControlPlaneMachineCount         = "CONTROL_PLANE_MACHINE_COUNT"
 	IPFamily                         = "IP_FAMILY"
 	SSHPublicKey                     = "SSH_PUBLIC_KEY"
+	SSHKeyName                       = "SSH_KEY_NAME"
 )
 
 var (
