@@ -1,0 +1,27 @@
+on:
+  pull_request_target:
+    types: [assigned, opened, synchronize, converted_to_draft, ready_for_review, reopened]
+
+jobs:
+  comment:
+    name: Create or update ttl.sh image link comment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find a ttl.sh image link comment
+        uses: peter-evans/find-comment@3eae4d37986fb5a8592848f6a574fdf654e61f9e
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: Docker image built and
+
+      - name: Post new ttl.sh image link as a comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043 # v4
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }} # Empty means create a new comment
+          edit-mode: replace
+          token: ${{ secrets.GH_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            **Docker image built and pushed to ttl.sh for this PR:**
+            ttl.sh/k0smotron-${{ github.sha }}
