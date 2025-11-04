@@ -60,6 +60,9 @@ const (
 	// the K0sControlPlane for k0s node resources cleanup: controlnode and etcdmember. This annotation will prevent
 	// Machine controller from deleting the Machine before the cleanup is done.
 	K0ControlPlanePreTerminateHookCleanupAnnotation = clusterv1.PreTerminateDeleteHookAnnotationPrefix + "/kcp-cleanup"
+
+	// MachineK0sConfigAnnotation is the annotation used to store the K0sConfigSpec on the Machine object.
+	MachineK0sConfigAnnotation = "k0s.controlplane.cluster.x-k8s.io/k0s-config"
 )
 
 // +kubebuilder:object:root=true
