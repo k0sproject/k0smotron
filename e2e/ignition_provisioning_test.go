@@ -45,10 +45,14 @@ func ignitionProvisioningSpec(t *testing.T) {
 
 	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 
-	// A SSH is not really needed for using AWS, but for debugging purposes it is useful to have it configured.
-	SSHPublicKey := e2eConfig.MustGetVariable(SSHPublicKey)
-	if SSHPublicKey == "" {
+	// // A SSH is not really needed for using AWS, but for debugging purposes it is useful to have it configured.
+	sshPublicKey := e2eConfig.MustGetVariable(SSHPublicKey)
+	if sshPublicKey == "" {
 		t.Fatal("SSH public key is not set")
+	}
+	sshKeyName := e2eConfig.MustGetVariable(SSHKeyName)
+	if sshKeyName == "" {
+		t.Fatal("SSH key name is not set")
 	}
 
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
@@ -60,13 +64,14 @@ func ignitionProvisioningSpec(t *testing.T) {
 		ClusterName:              clusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 		ControlPlaneMachineCount: ptr.To[int64](3),
-		// CAPD doesn't support ignition, so we use AWS as infrastructure provider
+		// CAPD doesn't support ignition, so we hardcode AWS as infrastructure provider
 		InfrastructureProvider: "aws",
 		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME":   clusterName,
 			"NAMESPACE":      namespace.Name,
-			"SSH_PUBLIC_KEY": SSHPublicKey,
+			"SSH_PUBLIC_KEY": sshPublicKey,
+			"SSH_KEY_NAME":   sshKeyName,
 		},
 	})
 	require.NotNil(t, workloadClusterTemplate)

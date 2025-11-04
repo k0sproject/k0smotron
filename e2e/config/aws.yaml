@@ -160,3 +160,5 @@ intervals:
   machinedeployment/wait-cluster: ["20m", "10s"]
   machinedeployment/wait-control-plane: ["20m", "10s"]
   machinedeployment/wait-delete-cluster: ["20m", "10s"]
+  ignition/wait-controllers: ["10m", "10s"]
+  ignition/wait-machines: ["10m", "10s"]
