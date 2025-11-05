@@ -20,6 +20,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"path/filepath"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -118,6 +119,9 @@ type K0sWorkerConfigSpec struct {
 	// SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.
 	// +kubebuilder:validation:Optional
 	SecretMetadata *SecretMetadata `json:"secretMetadata,omitempty"`
+
+	// WorkingDir specifies the working directory where k0smotron will place its files.
+	WorkingDir string `json:"workingDir,omitempty"`
 }
 
 // SecretMetadata defines metadata to be propagated to the bootstrap Secret
@@ -294,6 +298,9 @@ type K0sConfigSpec struct {
 	// See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html
 	// +kubebuilder:validation:Optional
 	CustomUserDataRef *ContentSource `json:"customUserDataRef,omitempty"`
+
+	// WorkingDir specifies the working directory where k0smotron will place its files.
+	WorkingDir string `json:"workingDir,omitempty"`
 }
 
 type TunnelingSpec struct {
@@ -339,4 +346,36 @@ type IgnitionSpec struct {
 	// with the generated one. The format follows Butane spec: https://coreos.github.io/butane/
 	// +kubebuilder:validation:Optional
 	AdditionalConfig string `json:"additionalConfig,omitempty"`
+}
+
+// GetK0sConfigPath returns the full path to the k0s.yaml file in the working directory.
+func (kcs *K0sConfigSpec) GetK0sConfigPath() string {
+	if kcs.WorkingDir == "" {
+		return "/etc/k0s.yaml"
+	}
+	return filepath.Join(kcs.WorkingDir, "k0s.yaml")
+}
+
+// GetJoinTokenPath returns the full path to the k0s token file in the working directory.
+func (kcs *K0sConfigSpec) GetJoinTokenPath() string {
+	if kcs.WorkingDir == "" {
+		return "/etc/k0s.token"
+	}
+	return filepath.Join(kcs.WorkingDir, "k0s.token")
+}
+
+// GetK0sConfigPath returns the full path to the k0s.yaml file in the working directory.
+func (k *K0sWorkerConfig) GetK0sConfigPath() string {
+	if k.Spec.WorkingDir == "" {
+		return "/etc/k0s.yaml"
+	}
+	return filepath.Join(k.Spec.WorkingDir, "k0s.yaml")
+}
+
+// GetJoinTokenPath returns the full path to the k0s token file in the working directory.
+func (k *K0sWorkerConfig) GetJoinTokenPath() string {
+	if k.Spec.WorkingDir == "" {
+		return "/etc/k0s.token"
+	}
+	return filepath.Join(k.Spec.WorkingDir, "k0s.token")
 }

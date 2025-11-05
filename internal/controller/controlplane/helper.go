@@ -701,7 +701,7 @@ func minVersion(machines collections.Machines) (string, error) {
 func removeArgsGeneratedInControllerConfigReconcile(bootstrapConfig *bootstrapv1.K0sControllerConfig) {
 	argsWithoutConfig := []string{}
 	for _, arg := range bootstrapConfig.Spec.K0sConfigSpec.Args {
-		if arg != "--config" && arg != "/etc/k0s.yaml" {
+		if arg != "--config" && arg != bootstrapConfig.Spec.GetK0sConfigPath() {
 			argsWithoutConfig = append(argsWithoutConfig, arg)
 		}
 	}

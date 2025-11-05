@@ -220,6 +220,10 @@ spec:
                   Make sure the version is compatible with the k0s version running on the control plane.
                   For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
                 type: string
+              workingDir:
+                description: WorkingDir specifies the working directory where k0smotron
+                  will place its files.
+                type: string
             type: object
           status:
             properties:
