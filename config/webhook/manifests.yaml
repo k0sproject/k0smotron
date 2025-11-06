@@ -36,6 +36,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-k0smotron-io-v1beta1-cluster
+  failurePolicy: Fail
+  name: validate-k0smotron-cluster-v1beta1.k0smotron.io
+  rules:
+  - apiGroups:
+    - k0smotron.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clusters
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-controlplane-cluster-x-k8s-io-v1beta1-k0scontrolplane
   failurePolicy: Fail
   name: validate-k0scontrolplane-v1beta1.k0smotron.io
@@ -69,24 +89,4 @@ webhooks:
     - UPDATE
     resources:
     - k0smotroncontrolplanes
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /validate-k0smotron-io-v1beta1-cluster
-  failurePolicy: Fail
-  name: validate-k0smotron-cluster-v1beta1.k0smotron.io
-  rules:
-  - apiGroups:
-    - k0smotron.io
-    apiVersions:
-    - v1beta1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - clusters
   sideEffects: None

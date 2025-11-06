@@ -20,6 +20,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/k0sproject/version"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -125,16 +126,15 @@ type IngressSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=443
 	Port int64 `json:"port,omitempty"`
-	//+kubebuilder:validation:Optional
+	//+kubebuilder:validation:Required
 	APIHost string `json:"apiHost,omitempty"`
-	//+kubebuilder:validation:Optional
+	//+kubebuilder:validation:Required
 	KonnectivityHost string `json:"konnectivityHost,omitempty"`
 	// ClassName defines the ingress class name to be used by the ingress controller.
 	//+kubebuilder:validation:Optional
-	ClassName string `json:"className,omitempty"`
+	ClassName *string `json:"className,omitempty"`
 	// Annotations defines extra annotations to be added to the ingress controller service.
 	//+kubebuilder:validation:Optional
-	//+kubebuilder:default={haproxy.org/ssl-passthrough: "true"}
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
@@ -143,21 +143,26 @@ var ingressCompatibleVersions = []*version.Version{
 }
 
 // Validate checks if the ingress controller is compatible with the given k0s version
-func (i *IngressSpec) Validate(clusterVersion string) error {
+func (i *IngressSpec) Validate(clusterVersion string) (admission.Warnings, error) {
+	warnings := admission.Warnings{}
 	v, err := version.NewVersion(clusterVersion)
 	if err != nil {
-		return fmt.Errorf("failed to parse k0s version %s: %w", clusterVersion, err)
+		return warnings, fmt.Errorf("failed to parse k0s version %s: %w", clusterVersion, err)
 	}
 
 	for _, iv := range ingressCompatibleVersions {
 		if v.Segments()[1] == iv.Segments()[1] {
 			if v.Core().LessThan(iv.Core()) {
-				return fmt.Errorf("ingress controller is not supported with k0s version %s, minimum supported version for ingress is %s", clusterVersion, iv.String())
+				return warnings, fmt.Errorf("ingress controller is not supported with k0s version %s, minimum supported version for ingress is %s", clusterVersion, iv.String())
 			}
 		}
 	}
 
-	return nil
+	if i.Deploy != nil && *i.Deploy && len(i.Annotations) == 0 {
+		warnings = append(warnings, "no annotations specified for the ingress controller, make sure that ingress controller supports tls passthrough")
+	}
+
+	return warnings, nil
 }
 
 type Mount struct {

@@ -193,6 +193,7 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 			Labels:      kcontrollerutil.LabelsForK0smotronCluster(kmc),
 		},
 		Spec: v1.IngressSpec{
+			IngressClassName: kmc.Spec.Ingress.ClassName,
 			Rules: []v1.IngressRule{
 				{
 					Host: kmc.Spec.Ingress.APIHost,
@@ -234,10 +235,6 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 				},
 			},
 		},
-	}
-
-	if kmc.Spec.Ingress.ClassName != "" {
-		ingress.Spec.IngressClassName = &kmc.Spec.Ingress.ClassName
 	}
 
 	return ingress

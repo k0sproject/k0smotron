@@ -3,13 +3,14 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
@@ -30,7 +31,7 @@ func (c ClusterValidator) ValidateCreate(_ context.Context, obj runtime.Object) 
 		return nil, fmt.Errorf("expected a Cluster object but got %T", obj)
 	}
 
-	return c.validateCluster(kmc)
+	return c.ValidateClusterSpec(&kmc.Spec)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
@@ -45,7 +46,7 @@ func (c ClusterValidator) ValidateUpdate(_ context.Context, oldObj, newObj runti
 		return nil, fmt.Errorf("expected a Cluster object but got %T", newObj)
 	}
 
-	return c.validateCluster(kmc)
+	return c.ValidateClusterSpec(&kmc.Spec)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
@@ -53,15 +54,33 @@ func (c ClusterValidator) ValidateDelete(_ context.Context, _ runtime.Object) (w
 	return nil, nil
 }
 
-func (c ClusterValidator) validateCluster(kmc *km.Cluster) (warnings admission.Warnings, err error) {
-	if kmc.Spec.Ingress != nil {
-		err := kmc.Spec.Ingress.Validate(kmc.Spec.Version)
+// ValidateClusterSpec validates the ClusterSpec and returns any warnings or errors.
+func (c ClusterValidator) ValidateClusterSpec(kcs *km.ClusterSpec) (warnings admission.Warnings, err error) {
+	warnings = c.validateVersionSuffix(kcs.Version)
+
+	if kcs.Ingress != nil {
+		warn, err := kcs.Ingress.Validate(kcs.Version)
+		warnings = append(warnings, warn...)
 		if err != nil {
 			return nil, err
+		}
+
+		if kcs.Ingress.Deploy != nil && *kcs.Ingress.Deploy && len(kcs.Ingress.Annotations) == 0 {
+			warnings = append(warnings, "ingress annotations are not set, make sure that the ingress controller supports tls passthrough")
 		}
 	}
 
 	return warnings, nil
+}
+
+// validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
+func (c ClusterValidator) validateVersionSuffix(version string) admission.Warnings {
+	warnings := admission.Warnings{}
+	if version != "" && !strings.Contains(version, "-k0s.") {
+		warnings = append(warnings, fmt.Sprintf("The specified version '%s' requires a k0s suffix (-k0s.<number>). Using '%s-k0s.0' instead.", version, version))
+	}
+
+	return warnings
 }
 
 func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error {

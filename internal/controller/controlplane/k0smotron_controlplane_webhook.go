@@ -19,8 +19,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
-	"strings"
-
+	k0smotronio "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
 	"github.com/k0sproject/version"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -36,19 +35,11 @@ import (
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type K0smotronControlPlaneValidator struct{}
+type K0smotronControlPlaneValidator struct {
+	cv k0smotronio.ClusterValidator
+}
 
 var _ webhook.CustomValidator = &K0smotronControlPlaneValidator{}
-
-// validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
-func (v *K0smotronControlPlaneValidator) validateVersionSuffix(version string) admission.Warnings {
-	warnings := admission.Warnings{}
-	if version != "" && !strings.Contains(version, "-k0s.") {
-		warnings = append(warnings, fmt.Sprintf("The specified version '%s' requires a k0s suffix (-k0s.<number>). Using '%s-k0s.0' instead.", version, version))
-	}
-
-	return warnings
-}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type K0smotronControlPlane.
 func (v *K0smotronControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
@@ -61,9 +52,6 @@ func (v *K0smotronControlPlaneValidator) ValidateCreate(_ context.Context, obj r
 	if err != nil {
 		return warnings, err
 	}
-
-	vsWarnings := v.validateVersionSuffix(kcp.Spec.Version)
-	warnings = append(warnings, vsWarnings...)
 
 	return warnings, nil
 }
@@ -79,7 +67,7 @@ func (v *K0smotronControlPlaneValidator) ValidateUpdate(_ context.Context, oldOb
 		return nil, fmt.Errorf("expected a old K0smotronControlPlane object but got %T", oldObj)
 	}
 
-	warnings := v.validateVersionSuffix(newKCP.Spec.Version)
+	warnings := admission.Warnings{}
 
 	if oldKCP.Spec.Version != newKCP.Spec.Version {
 		// Skip validation if either version is empty
@@ -111,14 +99,7 @@ func (v *K0smotronControlPlaneValidator) ValidateUpdate(_ context.Context, oldOb
 }
 
 func (v *K0smotronControlPlaneValidator) validate(kcp *v1beta1.K0smotronControlPlane) (admission.Warnings, error) {
-	if kcp.Spec.Ingress != nil {
-		err := kcp.Spec.Ingress.Validate(kcp.Spec.Version)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return nil, nil
+	return v.cv.ValidateClusterSpec(&kcp.Spec)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type K0smotronControlPlane.

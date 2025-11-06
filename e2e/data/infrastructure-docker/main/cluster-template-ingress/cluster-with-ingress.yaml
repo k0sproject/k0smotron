@@ -32,6 +32,8 @@ spec:
     apiHost: kube-api.${KIND_IP}.nip.io
     konnectivityHost: konnectivity.${KIND_IP}.nip.io
     port: ${HAPROXY_PORT}
+    annotations:
+      haproxy.org/ssl-passthrough: "true"
   k0sConfig:
     apiVersion: k0s.k0sproject.io/v1beta1
     kind: ClusterConfig

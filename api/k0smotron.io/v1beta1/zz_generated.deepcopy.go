@@ -256,6 +256,11 @@ func (in *IngressSpec) DeepCopyInto(out *IngressSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.ClassName != nil {
+		in, out := &in.ClassName, &out.ClassName
+		*out = new(string)
+		**out = **in
+	}
 	if in.Annotations != nil {
 		in, out := &in.Annotations, &out.Annotations
 		*out = make(map[string]string, len(*in))

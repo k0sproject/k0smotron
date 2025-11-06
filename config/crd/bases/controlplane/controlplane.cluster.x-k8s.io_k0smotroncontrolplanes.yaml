@@ -257,8 +257,6 @@ spec:
                   annotations:
                     additionalProperties:
                       type: string
-                    default:
-                      haproxy.org/ssl-passthrough: "true"
                     description: Annotations defines extra annotations to be added
                       to the ingress controller service.
                     type: object
@@ -280,6 +278,9 @@ spec:
                     description: Port defines the port used by the ingress controller
                     format: int64
                     type: integer
+                required:
+                - apiHost
+                - konnectivityHost
                 type: object
               k0sConfig:
                 description: |-

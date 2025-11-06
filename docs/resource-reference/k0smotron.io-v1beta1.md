@@ -564,19 +564,24 @@ Ingress defines the ingress configuration.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>annotations</b></td>
-        <td>map[string]string</td>
-        <td>
-          Annotations defines extra annotations to be added to the ingress controller service.<br/>
-          <br/>
-            <i>Default</i>: map[haproxy.org/ssl-passthrough:true]<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>apiHost</b></td>
         <td>string</td>
         <td>
           <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>konnectivityHost</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations defines extra annotations to be added to the ingress controller service.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -592,13 +597,6 @@ Ingress defines the ingress configuration.
         <td>
           Deploy defines whether to deploy an ingress resource for the cluster or let the user do it manually.
 Default: true<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>konnectivityHost</b></td>
-        <td>string</td>
-        <td>
-          <br/>
         </td>
         <td>false</td>
       </tr><tr>
