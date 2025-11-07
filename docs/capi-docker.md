@@ -10,7 +10,6 @@ Ensure you have the following components installed:
 
 - [Docker](https://docs.docker.com/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
-- [Helm](https://helm.sh/docs/intro/install/)
 - [kind](https://kind.sigs.k8s.io)
 - [clusterctl](https://cluster-api.sigs.k8s.io/user/quick-start#install-clusterctl)
 
@@ -51,23 +50,10 @@ Then, check that your one-node cluster is up and running.
 kubectl get no
 ```
 
-As a k0smotron pre-requisite, install [cert-manager](https://artifacthub.io/packages/helm/cert-manager/cert-manager) with helm.
-
-```bash
-helm repo add jetstack https://charts.jetstack.io --force-update
-
-helm install \
-  cert-manager jetstack/cert-manager \
-  --namespace cert-manager \
-  --create-namespace \
-  --version v1.19.1 \
-  --set crds.enabled=true
-```
-
 Initialize the management cluster so that it installs k0smotron CAPI provider and Docker infrastructure provider. For more details on Cluster API Provider Docker see it's [docs](https://github.com/kubernetes-sigs/cluster-api/tree/main/test/infrastructure/docker).
 
 ```bash
-CLUSTER_TOPOLOGY=true clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure k0sproject-k0smotron,docker
+clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure docker
 ```
 
 ## Creating a child cluster
