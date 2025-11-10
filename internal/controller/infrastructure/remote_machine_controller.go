@@ -282,9 +282,19 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 			Address: rm.Spec.Address,
 		},
 	}
+	for l := range rm.Labels {
+		if _, ok := m.Labels[l]; !ok {
+			m.Labels[l] = rm.Labels[l]
+		}
+	}
+	for k := range rm.Annotations {
+		if _, ok := m.Annotations[k]; !ok {
+			m.Annotations[k] = rm.Annotations[k]
+		}
+	}
 
 	err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		return r.Status().Patch(ctx, m, client.MergeFrom(machine))
+		return r.Patch(ctx, m, client.MergeFrom(machine))
 	})
 	if err != nil {
 		log.Error(err, "Failed to update Machine")
@@ -335,6 +345,8 @@ func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *
 		}
 	}
 
+	rm.Labels = foundPooledMachine.Labels
+	rm.Annotations = foundPooledMachine.Annotations
 	rm.Spec.Address = foundPooledMachine.Spec.Machine.Address
 	rm.Spec.Port = foundPooledMachine.Spec.Machine.Port
 	rm.Spec.User = foundPooledMachine.Spec.Machine.User

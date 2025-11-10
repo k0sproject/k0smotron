@@ -167,6 +167,10 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 
 		controlPlaneMachineName = machines[0].GetName()
 
+		if machines[0].Labels["my-custom-label"] != "my-custom-value" {
+			return false, nil
+		}
+
 		rm, err := s.getRemoteMachine(controlPlaneMachineName, "default")
 		if err != nil {
 			s.T().Log(err)
@@ -359,6 +363,8 @@ kind: PooledRemoteMachine
 metadata:
   name: remote-test-0
   namespace: default
+  labels:
+    my-custom-label: my-custom-value
 spec:
   pool: default
   machine:
