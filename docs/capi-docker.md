@@ -180,7 +180,7 @@ You can also check the status of the cluster deployment with `clusterctl describ
 To access the child cluster, get the kubeconfig and save it to disk and/or import to your favorite tooling like [Lens](https://k8slens.dev)
 
 ```bash
-clusterctl get kubeconfig docker-test > docker-test.conf
+clusterctl get kubeconfig docker-demo > docker-demo.conf
 ```
 
 Because we are using the CAPD provider we need to change the `server` property of this kubeconfig so that we can access the cluster from our local machine.
@@ -193,7 +193,7 @@ Change `server: https://172.19.0.2:30443` to `https://localhost:30443`.
 Verify you can access the child cluster.
 
 ```bash
-$ export KUBECONFIG=$PWD/docker-test.conf
+$ export KUBECONFIG=$PWD/docker-demo.conf
 
 $ kubectl get nodes
 ```
