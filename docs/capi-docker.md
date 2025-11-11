@@ -61,7 +61,7 @@ clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0sm
 Once all the controllers are up and running, you can apply the cluster manifests containing the specifications of the cluster you want to provision. Here is an example:
 
 ```yaml {filename="docker-demo.yaml"}
-apiVersion: cluster.x-k8s.io/v1beta2
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: docker-demo
@@ -76,11 +76,11 @@ spec:
       cidrBlocks:
       - 10.128.0.0/12
   controlPlaneRef:
-    apiGroup: controlplane.cluster.x-k8s.io
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: K0smotronControlPlane   # This is the config for the controlplane
     name: docker-demo-cp
   infrastructureRef:
-    apiGroup: infrastructure.cluster.x-k8s.io
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DockerCluster
     name: docker-demo
 ---
@@ -96,7 +96,7 @@ spec:
   service:
     type: NodePort
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
 metadata:
   name: docker-demo
@@ -105,7 +105,7 @@ metadata:
     cluster.x-k8s.io/managed-by: k0smotron   # This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.
 spec: {}
 ---
-apiVersion: cluster.x-k8s.io/v1beta2
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name:  docker-demo-md
@@ -127,15 +127,15 @@ spec:
       version: v1.34.0   # Docker Provider requires a version to be set (see https://hub.docker.com/r/kindest/node/tags)
       bootstrap:
         configRef:
-          apiGroup: bootstrap.cluster.x-k8s.io
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
           kind: K0sWorkerConfigTemplate
           name: docker-demo-machine-config
       infrastructureRef:
-        apiGroup: infrastructure.cluster.x-k8s.io
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: DockerMachineTemplate
         name: docker-demo-mt
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachineTemplate
 metadata:
   name: docker-demo-mt
@@ -193,9 +193,7 @@ Change `server: https://172.19.0.2:30443` to `https://localhost:30443`.
 Verify you can access the child cluster.
 
 ```bash
-$ export KUBECONFIG=$PWD/docker-demo.conf
-
-$ kubectl get nodes
+kubectl get nodes --kubeconfig=./docker-demo.conf
 ```
 
 ## Deleting the cluster
