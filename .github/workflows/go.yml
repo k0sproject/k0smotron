@@ -252,6 +252,7 @@ jobs:
           - TestK0smotronUpgrade
           - TestMachineDeployment
           - TestRemoteHostedControlPlanes
+          - TestIngress
 
     steps:
       - name: Check out code into the Go module directory

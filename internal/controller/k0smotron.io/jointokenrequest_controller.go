@@ -130,6 +130,14 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	if cluster.Spec.Ingress != nil {
+		token, err = updateJoinTokenURL(token, cluster)
+		if err != nil {
+			r.updateStatus(ctx, jtr, "Failed updating token URL")
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		}
+	}
+
 	if err := r.reconcileSecret(ctx, jtr, token); err != nil {
 		r.updateStatus(ctx, jtr, "Failed creating secret")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
@@ -209,6 +217,33 @@ func (r *JoinTokenRequestReconciler) SetupWithManager(mgr ctrl.Manager, opts con
 		Complete(r)
 }
 
+func updateJoinTokenURL(token string, kmc km.Cluster) (string, error) {
+	b, err := tokenDecode(token)
+	if err != nil {
+		return "", err
+	}
+
+	cfg, err := clientcmd.Load(b)
+	if err != nil {
+		return "", err
+	}
+
+	for _, cluster := range cfg.Clusters {
+		cluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
+	}
+
+	updatedData, err := clientcmd.Write(*cfg)
+	if err != nil {
+		return "", err
+	}
+
+	encodedToken, err := tokenEncode(bytes.NewReader(updatedData))
+	if err != nil {
+		return "", err
+	}
+	return encodedToken, nil
+}
+
 func getTokenID(token, role string) (string, error) {
 	b, err := tokenDecode(token)
 	if err != nil {
@@ -250,4 +285,23 @@ func tokenDecode(token string) ([]byte, error) {
 	}
 
 	return output, err
+}
+
+func tokenEncode(in io.Reader) (string, error) {
+	var outBuf bytes.Buffer
+	gz, err := gzip.NewWriterLevel(&outBuf, gzip.BestCompression)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = io.Copy(gz, in)
+	gzErr := gz.Close()
+	if err != nil {
+		return "", err
+	}
+	if gzErr != nil {
+		return "", gzErr
+	}
+
+	return base64.StdEncoding.EncodeToString(outBuf.Bytes()), nil
 }

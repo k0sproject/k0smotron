@@ -99,6 +99,10 @@ func getControllerFlags(kmc *km.Cluster) string {
 		flags = append(flags, "--enable-dynamic-config")
 	}
 
+	if kmc.Spec.Ingress != nil {
+		flags = append(flags, "--disable-components=endpoint-reconciler")
+	}
+
 	return strings.Join(flags, " ")
 }
 

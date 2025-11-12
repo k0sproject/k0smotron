@@ -88,6 +88,36 @@ func Test_createInstallCmd(t *testing.T) {
 			},
 			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test-from-arg"`,
 		},
+		{
+			name: "with extra args and useSystemHostname not set",
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{
+					Spec: bootstrapv1.K0sWorkerConfigSpec{
+						UseSystemHostname: false,
+						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
+					},
+				},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
+					"metadata": map[string]interface{}{"name": "test"},
+				}}},
+			},
+			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --my-arg=value"`,
+		},
+		{
+			name: "with extra args and useSystemHostname set",
+			scope: &Scope{
+				Config: &bootstrapv1.K0sWorkerConfig{
+					Spec: bootstrapv1.K0sWorkerConfigSpec{
+						UseSystemHostname: true,
+						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
+					},
+				},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
+					"metadata": map[string]interface{}{"name": "test"},
+				}}},
+			},
+			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--my-arg=value"`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
