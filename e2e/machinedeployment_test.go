@@ -51,18 +51,16 @@ func TestMachinedeployment(t *testing.T) {
 		clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 
 		workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
-			ClusterctlConfigPath: clusterctlConfigPath,
-			KubeconfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
-			// select cluster templates
-			Flavor: "machinedeployment",
-
+			ClusterctlConfigPath:     clusterctlConfigPath,
+			KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+			Flavor:                   "machinedeployment",
 			Namespace:                namespace.Name,
 			ClusterName:              clusterName,
 			KubernetesVersion:        "v1.32.2",
-			ControlPlaneMachineCount: ptr.To[int64](1),
-			// TODO: make infra provider configurable
-			InfrastructureProvider: "docker",
-			LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+			ControlPlaneMachineCount: ptr.To(int64(controlPlaneMachineCount)),
+			WorkerMachineCount:       ptr.To(int64(workerMachineCount)),
+			InfrastructureProvider:   infrastructureProvider,
+			LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 			ClusterctlVariables: map[string]string{
 				"CLUSTER_NAME": clusterName,
 				"NAMESPACE":    namespace.Name,
@@ -93,6 +91,7 @@ func TestMachinedeployment(t *testing.T) {
 				util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 				skipCleanup,
 				clusterctlConfigPath,
+				infrastructureProvider,
 			)
 		}()
 

@@ -21,9 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"strings"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -410,6 +411,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
 				desiredMachines.Insert(m)
 			} else {
+				fmt.Println("Deleting machine because version mismatch", m.Name)
 				machineNamesToDelete[m.Name] = true
 			}
 		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) || hasControllerConfigChanged(bootstrapConfigs, kcp, m) {
@@ -417,6 +419,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				infraMachineMissing = true
 			}
 			configurationHasChanged = true
+			fmt.Println("Deleting machine because configuration has changed", m.Name)
 			machineNamesToDelete[m.Name] = true
 		} else {
 			err := c.inplaceSyncMachineValues(ctx, kcp, m)
@@ -430,6 +433,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	// if it is necessary to reduce the number of replicas even counting the replicas to be eliminated
 	// because they are outdated, we choose the oldest among the valid ones.
 	if activeMachines.Len() > int(kcp.Spec.Replicas)+len(machineNamesToDelete) && len(desiredMachines) > 0 {
+		fmt.Println("Deleting desiredMachines.Oldest().Name because needed to reduce", desiredMachines.Oldest().Name)
 		machineNamesToDelete[desiredMachines.Oldest().Name] = true
 	}
 	log.Log.Info("Collected machines", "count", activeMachines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachines.Names())

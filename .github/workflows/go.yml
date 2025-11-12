@@ -285,6 +285,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4.3.2
         with:
-          name: e2e-artifacts
+          name: e2e-artifacts-${{ matrix.e2e-suite }}
           path: _artifacts
           if-no-files-found: ignore

@@ -23,10 +23,11 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
 	"github.com/k0sproject/k0smotron/internal/util"
@@ -120,6 +121,7 @@ func ingressSupportSpec(t *testing.T) {
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
 			clusterctlConfigPath,
+			infrastructureProvider,
 		)
 
 		testCancelWatches()

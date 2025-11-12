@@ -58,12 +58,13 @@ func controlplaneConditionsSpec(t *testing.T) {
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
 		ClusterctlConfigPath:     clusterctlConfigPath,
 		KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-		InfrastructureProvider:   "docker",
+		InfrastructureProvider:   infrastructureProvider,
 		Flavor:                   "",
 		Namespace:                workloadClusterNamespace,
 		ClusterName:              workloadClusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: ptr.To[int64](1),
+		ControlPlaneMachineCount: ptr.To(int64(controlPlaneMachineCount)),
+		WorkerMachineCount:       ptr.To(int64(workerMachineCount)),
 		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME":    workloadClusterName,
@@ -97,6 +98,7 @@ func controlplaneConditionsSpec(t *testing.T) {
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
 			clusterctlConfigPath,
+			infrastructureProvider,
 		)
 
 		testCancelWatches()

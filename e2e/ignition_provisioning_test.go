@@ -56,15 +56,17 @@ func ignitionProvisioningSpec(t *testing.T) {
 	}
 
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
-		ClusterctlConfigPath: clusterctlConfigPath,
-		KubeconfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
-		Flavor:               "ignition",
-
+		ClusterctlConfigPath:     clusterctlConfigPath,
+		KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+		Flavor:                   "ignition",
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: ptr.To[int64](3),
-		// CAPD doesn't support ignition, so we hardcode AWS as infrastructure provider
+		ControlPlaneMachineCount: ptr.To(int64(controlPlaneMachineCount)),
+		WorkerMachineCount:       ptr.To(int64(workerMachineCount)),
+		// TODO: Infra hardcoded for AWS at the moment because there is no other provider configured supporting
+		// Ignition provisioning. Once k0smotron infra provider implements AWS as provisioning backend, this
+		// should be changed to use the e2e configured infra provider but not CAPD.
 		InfrastructureProvider: "aws",
 		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
@@ -101,6 +103,7 @@ func ignitionProvisioningSpec(t *testing.T) {
 			util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
 			clusterctlConfigPath,
+			infrastructureProvider,
 		)
 	}()
 
