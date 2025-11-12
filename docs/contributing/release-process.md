@@ -57,4 +57,4 @@ You can verify the documentation at https://docs.k0smotron.io/ after the workflo
 If you are making a new **major** or **minor** release, after publishing the release, update the E2E upgrade test to reflect the new release version:
 
 - Add new release in `k0smotronMinorVersionsToCheckUpgrades` in [`e2e/k0smotron_upgrade_test.go`](https://github.com/k0sproject/k0smotron/blob/main/e2e/k0smotron_upgrade_test.go).
-- Add the new release entry under the `k0sproject-k0smotron` provider in [`e2e/config/docker.yaml`](https://github.com/k0sproject/k0smotron/blob/main/e2e/config/docker.yaml) (including matching `control-plane-components.yaml` and `bootstrap-components.yaml` URLs).
+- Add the new release entry under the `k0sproject-k0smotron` provider in [`e2e/config.yaml`](https://github.com/k0sproject/k0smotron/blob/main/e2e/config.yaml) (including matching `control-plane-components.yaml` and `bootstrap-components.yaml` URLs).

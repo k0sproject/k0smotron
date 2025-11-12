@@ -186,23 +186,6 @@ jobs:
         run: |
           make -C inttest ${{ matrix.smoke-suite }}
 
-
-  capi-smokes-on-different-k0s-versions:
-    name: CAPI Smokes Matrix
-    needs: [build, unittest]
-    strategy:
-      fail-fast: false
-      matrix:
-        smoke-suite:
-          - check-capi-remote-machine
-          - check-capi-remote-machine-template
-        k0s-version: [ "v1.28.11", "v1.29.6", "v1.30.2" ]
-
-    uses: ./.github/workflows/capi-smoke-tests.yml
-    with:
-      smoke-suite: ${{ matrix.smoke-suite }}
-      k0s-version: ${{ matrix.k0s-version }}
-
   capi-smokes:
     name: Cluster API smoke tests
     needs: [build, unittest]
@@ -223,7 +206,6 @@ jobs:
           - check-capi-controlplane-docker-worker
           - check-capi-docker-machine-change-args
           - check-capi-docker-machine-change-template
-          - check-capi-remote-machine-template-update
           - check-capi-docker-machine-template-update
           - check-capi-docker-machine-template-update-recreate
           - check-capi-docker-machine-template-update-recreate-single
@@ -285,6 +267,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4.3.2
         with:
-          name: e2e-artifacts
+          name: e2e-artifacts-${{ matrix.e2e-suite }}
           path: _artifacts
           if-no-files-found: ignore

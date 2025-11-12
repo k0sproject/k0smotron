@@ -1,0 +1,3 @@
+resources:
+- cluster-with-ingress.yaml
+- ../bases/pooled-machines.yaml

@@ -109,9 +109,12 @@ func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input Upgrad
 		return err
 	}
 
+	workloadClient, err := getWorkloadClusterClient(ctx, input.ClusterProxy, input.Cluster)
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Waiting for kube-proxy to have the upgraded kubernetes version")
-	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
-	workloadClient := workloadCluster.GetClient()
 	return WaitForKubeProxyUpgrade(ctx, WaitForKubeProxyUpgradeInput{
 		Getter:            workloadClient,
 		KubernetesVersion: input.KubernetesUpgradeVersion,
@@ -136,7 +139,7 @@ func DiscoveryAndWaitForControlPlaneInitialized(ctx context.Context, input capif
 		return nil, fmt.Errorf("couldn't get the control plane for the cluster %s: %w", klog.KObj(input.Cluster), err)
 	}
 
-	fmt.Printf("Waiting for the first control plane machine managed by %s to be provisioned", klog.KObj(controlPlane))
+	fmt.Printf("Waiting for the first control plane machine managed by %s to be provisioned\n", klog.KObj(controlPlane))
 	err = WaitForOneK0sControlPlaneMachineToExist(ctx, WaitForOneK0sControlPlaneMachineToExistInput{
 		Lister:       input.Lister,
 		Cluster:      input.Cluster,

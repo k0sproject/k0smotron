@@ -39,6 +39,10 @@ linters:
         - name: if-return
         - name: increment-decrement
         - name: var-naming
+          arguments:
+            - []
+            - []
+            - [skip-package-name-checks: true]
         - name: var-declaration
         - name: range
         - name: receiver-naming
