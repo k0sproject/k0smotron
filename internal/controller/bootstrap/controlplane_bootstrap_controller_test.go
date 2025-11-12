@@ -32,8 +32,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -130,7 +130,7 @@ func TestReconcileReturnErrorWhenControllerConfigOwnerIsNotFound(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       "non-existing-machine",
 					UID:        "1",
 				},
@@ -183,12 +183,12 @@ func TestReconcileReturnErrorWhenClusterControllerConfigBelongsIsNotFound(t *tes
 	require.NoError(t, err)
 
 	machineName := fmt.Sprintf("%s-%d", "machine-for-controller", 0)
-	machineForControllerConfig := &clusterv1.Machine{
+	machineForControllerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      machineName,
 			Namespace: ns.Name,
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: "non-existing-cluster",
 			Version:     ptr.To("v1.30.0"),
 		},
@@ -201,7 +201,7 @@ func TestReconcileReturnErrorWhenClusterControllerConfigBelongsIsNotFound(t *tes
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineName,
 					UID:        "1",
 				},
@@ -235,17 +235,17 @@ func TestReconcileControllerConfigPausedCluster(t *testing.T) {
 
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	machineForControllerConfig := &clusterv1.Machine{
+	machineForControllerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", "machine-for-controlelr", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForControllerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForControllerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
 		},
@@ -259,7 +259,7 @@ func TestReconcileControllerConfigPausedCluster(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForControllerConfig.Name,
 					UID:        "1",
 				},
@@ -288,17 +288,17 @@ func TestReconcilePausedK0sControllerConfig(t *testing.T) {
 	cluster := newCluster(ns.Name)
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	machineForControllerConfig := &clusterv1.Machine{
+	machineForControllerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", "machine-for-controller", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForControllerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForControllerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
 		},
@@ -311,7 +311,7 @@ func TestReconcilePausedK0sControllerConfig(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForControllerConfig.Name,
 					UID:        "1",
 				},
@@ -320,7 +320,7 @@ func TestReconcilePausedK0sControllerConfig(t *testing.T) {
 	}
 
 	// K0sControlPlane with 'paused' annotation.
-	k0sControllerConfig.Annotations = map[string]string{clusterv1.PausedAnnotation: "true"}
+	k0sControllerConfig.Annotations = map[string]string{clusterv2.PausedAnnotation: "true"}
 
 	require.NoError(t, testEnv.Create(ctx, k0sControllerConfig))
 
@@ -344,17 +344,17 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 	cluster := newCluster(ns.Name)
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	machineForControllerConfig := &clusterv1.Machine{
+	machineForControllerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", "machine-for-controller", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForControllerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForControllerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
 		},
@@ -368,7 +368,7 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForControllerConfig.Name,
 					UID:        "1",
 				},
@@ -403,20 +403,20 @@ func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
 
 	cluster := newCluster(ns.Name)
 	// Cluster.Spec.ControlPlaneEndpoint is not set by infra provider
-	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{}
+	cluster.Spec.ControlPlaneEndpoint = clusterv2.APIEndpoint{}
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	machineForControllerConfig := &clusterv1.Machine{
+	machineForControllerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", "machine-for-controller", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForControllerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForControllerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
 		},
@@ -427,14 +427,14 @@ func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
 			Name:      "controller-config",
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForControllerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForControllerConfig",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForControllerConfig.Name,
 					UID:        "1",
 				},
@@ -458,10 +458,10 @@ func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
 
 		updatedK0sControllerConfig := &bootstrapv1.K0sControllerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sControllerConfig), updatedK0sControllerConfig))
-		assert.True(c, conditions.IsFalse(updatedK0sControllerConfig, clusterv1.ReadyCondition))
+		assert.True(c, conditions.IsFalse(updatedK0sControllerConfig, clusterv2.ReadyCondition))
 		assert.True(c, conditions.IsFalse(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
 		assert.Equal(c, bootstrapv1.WaitingForControlPlaneInitializationReason, conditions.GetReason(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
-		assert.Equal(c, clusterv1.ConditionSeverityInfo, *conditions.GetSeverity(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
+		assert.Equal(c, clusterv2.ConditionSeverityInfo, *conditions.GetSeverity(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
 	}, 10*time.Second, 100*time.Millisecond)
 }
 
@@ -472,22 +472,22 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 	cluster := newCluster(ns.Name)
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+	cluster.Spec.ControlPlaneEndpoint = clusterv2.APIEndpoint{
 		Host: "localhost",
 	}
 	require.NoError(t, testEnv.Status().Update(ctx, cluster))
 
-	machineForControllerConfig := &clusterv1.Machine{
+	machineForControllerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-controller",
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForControllerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForControllerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
 			Version:     ptr.To("v1.30.0"),
 		},
@@ -505,7 +505,7 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForControllerConfig.Name,
 					UID:        "1",
 				},
@@ -534,7 +534,7 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
 			Namespace: cluster.Namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: cluster.Name,
+				clusterv2.ClusterNameLabel: cluster.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{},
 		},

@@ -47,7 +47,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -84,7 +84,7 @@ func init() {
 	ctrl.SetLogger(logger)
 
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme.Scheme))
-	utilruntime.Must(clusterv1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(clusterv2.AddToScheme(scheme.Scheme))
 	utilruntime.Must(k0smotronv1beta1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(bootstrapv1beta1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(cpv1beta1.AddToScheme(scheme.Scheme))
@@ -121,7 +121,7 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 		panic(err)
 	}
 
-	req, _ := labels.NewRequirement(clusterv1.ClusterNameLabel, selection.Exists, nil)
+	req, _ := labels.NewRequirement(clusterv2.ClusterNameLabel, selection.Exists, nil)
 	clusterSecretCacheSelector := labels.NewSelector().Add(*req)
 
 	options := manager.Options{
@@ -160,7 +160,7 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 
 	if kubeconfigPath := os.Getenv("TEST_ENV_KUBECONFIG"); kubeconfigPath != "" {
 		klog.Infof("Writing test env kubeconfig to %q", kubeconfigPath)
-		config := kubeconfig.FromEnvTestConfig(env.Config, &clusterv1.Cluster{
+		config := kubeconfig.FromEnvTestConfig(env.Config, &clusterv2.Cluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "test"},
 		})
 		if err := os.WriteFile(kubeconfigPath, config, 0o600); err != nil {

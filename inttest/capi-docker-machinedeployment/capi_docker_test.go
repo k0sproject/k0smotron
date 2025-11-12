@@ -32,7 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 type CAPIDockerSuite struct {
@@ -132,7 +132,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	// nolint:staticcheck
 	s.Require().NoError(wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (done bool, err error) {
 		// Get the MachineDeployment
-		md := &clusterv1.MachineDeployment{}
+		md := &clusterv2.MachineDeployment{}
 		err = s.client.RESTClient().
 			Get().
 			AbsPath("/apis/cluster.x-k8s.io/v1beta1").

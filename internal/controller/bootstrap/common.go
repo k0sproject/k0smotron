@@ -9,7 +9,7 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	corev1 "k8s.io/api/core/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -19,7 +19,7 @@ var (
 	errExtractingFileContent = errors.New("failed to get file content from source")
 )
 
-func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, contentFrom *bootstrapv1.ContentSource) (string, error) {
+func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clusterv2.Cluster, contentFrom *bootstrapv1.ContentSource) (string, error) {
 	switch {
 	case contentFrom.SecretRef != nil:
 		s := &corev1.Secret{}
@@ -51,7 +51,7 @@ func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clu
 }
 
 // resolveFiles extracts the content from the given source (ConfigMap or Secret) and returns a list of cloudinit.File containing the extracted data.
-func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, filesToResolve []bootstrapv1.File) ([]provisioner.File, error) {
+func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv2.Cluster, filesToResolve []bootstrapv1.File) ([]provisioner.File, error) {
 	var files []provisioner.File
 	for _, file := range filesToResolve {
 		if file.ContentFrom != nil {

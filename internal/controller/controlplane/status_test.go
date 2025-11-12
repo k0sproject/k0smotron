@@ -32,7 +32,7 @@ import (
 	restfake "k8s.io/client-go/rest/fake"
 	"k8s.io/kubectl/pkg/scheme"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -110,7 +110,7 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		kcp.Spec.UpdateStrategy = cpv1beta1.UpdateInPlace
 		require.NoError(t, testEnv.Create(ctx, kcp))
 
-		firstMachinesForKCP := &clusterv1.Machine{
+		firstMachinesForKCP := &clusterv2.Machine{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Machine",
 				APIVersion: "cluster.x-k8s.io/v1beta1",
@@ -119,11 +119,11 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 				Name:      "machine1",
 				Namespace: ns.Name,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel:         cluster.Name,
-					clusterv1.MachineControlPlaneLabel: "",
+					clusterv2.ClusterNameLabel:         cluster.Name,
+					clusterv2.MachineControlPlaneLabel: "",
 				},
 			},
-			Spec: clusterv1.MachineSpec{
+			Spec: clusterv2.MachineSpec{
 				ClusterName: cluster.Name,
 			},
 		}
@@ -178,7 +178,7 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		kcp.Spec.UpdateStrategy = cpv1beta1.UpdateRecreate
 		require.NoError(t, testEnv.Create(ctx, kcp))
 
-		firstMachinesForKCP := &clusterv1.Machine{
+		firstMachinesForKCP := &clusterv2.Machine{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Machine",
 				APIVersion: "cluster.x-k8s.io/v1beta1",
@@ -187,11 +187,11 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 				Name:      "machine1",
 				Namespace: ns.Name,
 				Labels: map[string]string{
-					clusterv1.ClusterNameLabel:         cluster.Name,
-					clusterv1.MachineControlPlaneLabel: "",
+					clusterv2.ClusterNameLabel:         cluster.Name,
+					clusterv2.MachineControlPlaneLabel: "",
 				},
 			},
-			Spec: clusterv1.MachineSpec{
+			Spec: clusterv2.MachineSpec{
 				ClusterName: cluster.Name,
 			},
 		}
@@ -469,20 +469,20 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.31.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.30.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 		}
@@ -508,20 +508,20 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.31.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.30.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 		}
@@ -547,20 +547,20 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.31.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.30.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 		}
@@ -586,28 +586,28 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.31.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.30.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseProvisioning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseProvisioning),
 				},
 			},
-			"machine3": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine3": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.30.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseFailed),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseFailed),
 				},
 			},
 		}
@@ -633,28 +633,28 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.31.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseProvisioned),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseProvisioned),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.30.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseProvisioning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseProvisioning),
 				},
 			},
-			"machine3": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine3": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.30.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseFailed),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseFailed),
 				},
 			},
 		}
@@ -684,20 +684,20 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.31.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseProvisioned),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseProvisioned),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: ptr.To[string]("v1.30.0"),
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 		}
@@ -719,7 +719,7 @@ func Test_machineStatusCompute(t *testing.T) {
 
 func Test_versionMatches(t *testing.T) {
 	type args struct {
-		machine *clusterv1.Machine
+		machine *clusterv2.Machine
 		ver     string
 	}
 	tests := []struct {
@@ -730,8 +730,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "version matches, both without suffix",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: ptr.To("v1.31.0"),
 					},
 				},
@@ -742,8 +742,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "version does not match",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: ptr.To("v1.31.0"),
 					},
 				},
@@ -754,8 +754,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "semver version match, machine version is missing the suffix",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: ptr.To("v1.31.0"),
 					},
 				},
@@ -766,8 +766,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "semver version match, kcp version is missing the suffix",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: ptr.To("v1.31.0+k0s.0"),
 					},
 				},
@@ -778,8 +778,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "versions match, both with the suffix",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: ptr.To("v1.31.0+k0s.0"),
 					},
 				},
@@ -790,8 +790,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "versions do not match, machine version is missing",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: nil,
 					},
 				},
@@ -802,8 +802,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "versions do not match, machine version is empty",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: ptr.To(""),
 					},
 				},

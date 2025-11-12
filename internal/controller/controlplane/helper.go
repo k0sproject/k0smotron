@@ -35,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util/collections"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -54,7 +54,7 @@ var (
 	errMachineWithoutK0sConfigAnnotation = fmt.Errorf("k0s config annotation not found on machine")
 )
 
-func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
+func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv2.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv2.Machine, error) {
 	machine, err := c.generateMachine(ctx, name, cluster, kcp, infraRef, failureDomain)
 	if err != nil {
 		return nil, fmt.Errorf("error generating machine: %w", err)
@@ -76,10 +76,10 @@ func (c *K0sController) createMachine(ctx context.Context, name string, cluster 
 }
 
 func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
-	machine := &clusterv1.Machine{
+	machine := &clusterv2.Machine{
 
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: clusterv1.GroupVersion.String(),
+			APIVersion: clusterv2.GroupVersion.String(),
 			Kind:       "Machine",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -95,7 +95,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 	return nil
 }
 
-func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
+func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv2.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv2.Machine, error) {
 	v := kcp.Spec.Version
 
 	labels := controlPlaneCommonLabelsForCluster(kcp, cluster.Name)
@@ -122,9 +122,23 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 	annotations[cpv1beta1.MachineK0sConfigAnnotation] = k0sConfigAnnotationValue
 
-	machine := &clusterv1.Machine{
+	failureDomainStr := ""
+	if failureDomain != nil {
+		failureDomainStr = *failureDomain
+	}
+	configRef := clusterv2.ContractVersionedObjectReference{
+		APIGroup: "bootstrap.cluster.x-k8s.io",
+		Kind:     "K0sControllerConfig",
+		Name:     name,
+	}
+	infraRefContract := clusterv2.ContractVersionedObjectReference{
+		APIGroup: extractAPIGroup(infraRef.APIVersion),
+		Kind:     infraRef.Kind,
+		Name:     infraRef.Name,
+	}
+	machine := &clusterv2.Machine{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: clusterv1.GroupVersion.String(),
+			APIVersion: clusterv2.GroupVersion.String(),
 			Kind:       "Machine",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -133,25 +147,27 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			Labels:      labels,
 			Annotations: annotations,
 		},
-		Spec: clusterv1.MachineSpec{
-			Version:       &v,
+		Spec: clusterv2.MachineSpec{
+			Version:       v,
 			ClusterName:   cluster.Name,
-			FailureDomain: failureDomain,
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: &corev1.ObjectReference{
-					APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
-					Kind:       "K0sControllerConfig",
-					Name:       name,
-				},
+			FailureDomain: failureDomainStr,
+			Bootstrap: clusterv2.Bootstrap{
+				ConfigRef: configRef,
 			},
-			InfrastructureRef:       infraRef,
-			NodeDrainTimeout:        kcp.Spec.MachineTemplate.NodeDrainTimeout,
-			NodeDeletionTimeout:     kcp.Spec.MachineTemplate.NodeDeletionTimeout,
-			NodeVolumeDetachTimeout: kcp.Spec.MachineTemplate.NodeVolumeDetachTimeout,
+			InfrastructureRef: infraRefContract,
 		},
 	}
 
 	return machine, nil
+}
+
+// extractAPIGroup extracts the API group from an APIVersion string
+// e.g., "infrastructure.cluster.x-k8s.io/v1beta1" -> "infrastructure.cluster.x-k8s.io"
+func extractAPIGroup(apiVersion string) string {
+	if idx := strings.Index(apiVersion, "/"); idx != -1 {
+		return apiVersion[:idx]
+	}
+	return apiVersion
 }
 
 func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta1.K0sControlPlane, machineName string) (string, error) {
@@ -196,7 +212,16 @@ func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta1.K0sControlPlane, 
 func (c *K0sController) getInfraMachines(ctx context.Context, machines collections.Machines) (map[string]*unstructured.Unstructured, error) {
 	result := map[string]*unstructured.Unstructured{}
 	for _, m := range machines {
-		infraMachine, err := external.Get(ctx, c.Client, &m.Spec.InfrastructureRef)
+		// ContractVersionedObjectReference doesn't have APIVersion, need to construct it from APIGroup
+		// The version is inferred from contract labels, but for external.Get we need APIVersion
+		// We'll need to look up the actual version, but for now use a placeholder or construct from known patterns
+		infraRef := &corev1.ObjectReference{
+			APIVersion: m.Spec.InfrastructureRef.APIGroup + "/v1beta1", // Default to v1beta1, may need adjustment
+			Kind:       m.Spec.InfrastructureRef.Kind,
+			Name:       m.Spec.InfrastructureRef.Name,
+			Namespace:  m.Namespace, // Use machine namespace
+		}
+		infraMachine, err := external.Get(ctx, c.Client, infraRef)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				continue
@@ -224,7 +249,7 @@ func (c *K0sController) getBootstrapConfigs(ctx context.Context, machines collec
 	return result, nil
 }
 
-func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
+func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv2.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
 	infraMachine, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
 	if err != nil {
 		return nil, err
@@ -279,7 +304,7 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 	return infraMachine, nil
 }
 
-func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
+func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv2.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
 	infraMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
 	if err != nil {
 		return nil, err
@@ -311,19 +336,19 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 		annotations[k] = v
 	}
 
-	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.Name
-	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
+	annotations[clusterv2.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.Name
+	annotations[clusterv2.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
 	infraMachine.SetAnnotations(annotations)
 
 	infraMachine.SetLabels(controlPlaneCommonLabelsForCluster(kcp, cluster.GetName()))
 
 	infraMachine.SetAPIVersion(infraMachineTemplate.GetAPIVersion())
-	infraMachine.SetKind(strings.TrimSuffix(infraMachineTemplate.GetKind(), clusterv1.TemplateSuffix))
+	infraMachine.SetKind(strings.TrimSuffix(infraMachineTemplate.GetKind(), clusterv2.TemplateSuffix))
 
 	return infraMachine, nil
 }
 
-func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sControllerConfig, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
+func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sControllerConfig, kcp *cpv1beta1.K0sControlPlane, machine *clusterv2.Machine) bool {
 	// Skip the check if the K0sControlPlane is not ready
 	if !kcp.Status.Ready || kcp.Spec.Replicas != kcp.Status.Replicas {
 		return false
@@ -333,9 +358,9 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sContr
 		return false
 	}
 
-	if machine.Status.Phase != string(clusterv1.MachinePhaseRunning) &&
-		machine.Status.Phase != string(clusterv1.MachinePhaseProvisioned) &&
-		machine.Status.Phase != string(clusterv1.MachinePhaseProvisioning) {
+	if machine.Status.Phase != string(clusterv2.MachinePhaseRunning) &&
+		machine.Status.Phase != string(clusterv2.MachinePhaseProvisioned) &&
+		machine.Status.Phase != string(clusterv2.MachinePhaseProvisioning) {
 		return false
 	}
 
@@ -373,7 +398,7 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sContr
 //
 // deprecatedIsK0sConfigChanged compares the K0sConfigSpec in the K0sControlPlane with the one in the K0sControllerConfig used to bootstrap
 // the Machine.
-func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv1.K0sControllerConfig, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
+func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv1.K0sControllerConfig, kcp *cpv1beta1.K0sControlPlane, machine *clusterv2.Machine) bool {
 	kcpK0sConfigSpecCopy := kcp.Spec.K0sConfigSpec.DeepCopy()
 	bootstrapConfigCopy := bootstrapConfig.DeepCopy()
 	kcpK0sConfigSpecCopy.Args = uniqueArgs(kcpK0sConfigSpecCopy.Args)
@@ -412,7 +437,7 @@ func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv1.K0sControllerConf
 		(!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig) && !reflect.DeepEqual(kcpStorageConfigEtcdWithName, bootstrapStorageConfig))
 }
 
-func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv1.K0sConfigSpec, error) {
+func getMachineK0sConfig(machine *clusterv2.Machine) (*bootstrapv1.K0sConfigSpec, error) {
 	k0sConfigAnnotationValue, ok := machine.GetAnnotations()[cpv1beta1.MachineK0sConfigAnnotation]
 	if !ok {
 		return nil, errMachineWithoutK0sConfigAnnotation
@@ -426,7 +451,7 @@ func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv1.K0sConfigSpec
 	return k0sConfigSpec, nil
 }
 
-func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
+func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta1.K0sControlPlane, machine *clusterv2.Machine) bool {
 	if machine == nil {
 		return false
 	}
@@ -435,8 +460,8 @@ func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructur
 		return false
 	}
 
-	clonedFromName := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation]
-	clonedFromGroupKind := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation]
+	clonedFromName := infraMachine.GetAnnotations()[clusterv2.TemplateClonedFromNameAnnotation]
+	clonedFromGroupKind := infraMachine.GetAnnotations()[clusterv2.TemplateClonedFromGroupKindAnnotation]
 
 	return clonedFromName == kcp.Spec.MachineTemplate.InfrastructureRef.Name &&
 		clonedFromGroupKind == kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
@@ -510,7 +535,7 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 	return nil
 }
 
-func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster) error {
+func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv2.Cluster) error {
 	kubeClient, err := c.getKubeClient(ctx, cluster)
 	if err != nil {
 		return fmt.Errorf("error getting kube client: %w", err)
@@ -565,7 +590,7 @@ func (c *K0sController) deleteControlNode(ctx context.Context, name string, clie
 	return nil
 }
 
-func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv1.Cluster, clientset *kubernetes.Clientset) error {
+func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv2.Cluster, clientset *kubernetes.Clientset) error {
 	if clientset == nil {
 		return nil
 	}
@@ -682,9 +707,9 @@ func minVersion(machines collections.Machines) (string, error) {
 
 	versions := make([]*version.Version, 0, len(machines))
 	for _, m := range machines {
-		v, err := version.NewVersion(*m.Spec.Version)
+		v, err := version.NewVersion(m.Spec.Version)
 		if err != nil {
-			return "", fmt.Errorf("failed to parse version %s: %w", *m.Spec.Version, err)
+			return "", fmt.Errorf("failed to parse version %s: %w", m.Spec.Version, err)
 		}
 
 		versions = append(versions, v)

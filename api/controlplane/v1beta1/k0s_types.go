@@ -22,7 +22,7 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 func init() {
@@ -42,7 +42,7 @@ const (
 
 const (
 	// ControlPlaneReadyCondition documents the status of the control plane
-	ControlPlaneReadyCondition clusterv1.ConditionType = "ControlPlaneReady"
+	ControlPlaneReadyCondition clusterv2.ConditionType = "ControlPlaneReady"
 
 	// RemediationInProgressAnnotation is used to keep track that a remediation is in progress,
 	// and more specifically it tracks that the system is in between having deleted an unhealthy machine
@@ -50,7 +50,7 @@ const (
 	RemediationInProgressAnnotation = "controlplane.cluster.x-k8s.io/remediation-in-progress"
 
 	// ControlPlanePausedCondition documents the reconciliation of the control plane is paused.
-	ControlPlanePausedCondition clusterv1.ConditionType = "Paused"
+	ControlPlanePausedCondition clusterv2.ConditionType = "Paused"
 
 	// K0sControlPlaneFinalizer is the finalizer applied to KubeadmControlPlane resources
 	// by its managing controller.
@@ -59,7 +59,7 @@ const (
 	// K0ControlPlanePreTerminateHookCleanupAnnotation is the annotation used to mark the Machine associated with
 	// the K0sControlPlane for k0s node resources cleanup: controlnode and etcdmember. This annotation will prevent
 	// Machine controller from deleting the Machine before the cleanup is done.
-	K0ControlPlanePreTerminateHookCleanupAnnotation = clusterv1.PreTerminateDeleteHookAnnotationPrefix + "/kcp-cleanup"
+	K0ControlPlanePreTerminateHookCleanupAnnotation = clusterv2.PreTerminateDeleteHookAnnotationPrefix + "/kcp-cleanup"
 
 	// MachineK0sConfigAnnotation is the annotation used to store the K0sConfigSpec on the Machine object.
 	MachineK0sConfigAnnotation = "k0s.controlplane.cluster.x-k8s.io/k0s-config"
@@ -111,7 +111,7 @@ type K0sControlPlaneMachineTemplate struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
-	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
+	ObjectMeta clusterv2.ObjectMeta `json:"metadata,omitempty"`
 
 	// InfrastructureRef is a required reference to a custom resource
 	// offered by an infrastructure provider.
@@ -201,15 +201,39 @@ type K0sControlPlaneStatus struct {
 
 	// Conditions defines current service state of the K0sControlPlane.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv2.Conditions `json:"conditions,omitempty"`
 }
 
-func (k *K0sControlPlane) GetConditions() clusterv1.Conditions {
-	return k.Status.Conditions
+// GetConditions implements conditions.Getter for v1beta2 conditions API
+func (k *K0sControlPlane) GetConditions() []metav1.Condition {
+	result := make([]metav1.Condition, len(k.Status.Conditions))
+	for i, c := range k.Status.Conditions {
+		result[i] = metav1.Condition{
+			Type:               string(c.Type),
+			Status:             metav1.ConditionStatus(c.Status),
+			ObservedGeneration: k.GetGeneration(),
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+		}
+	}
+	return result
 }
 
-func (k *K0sControlPlane) SetConditions(conditions clusterv1.Conditions) {
-	k.Status.Conditions = conditions
+// SetConditions implements conditions.Setter for v1beta2 conditions API
+func (k *K0sControlPlane) SetConditions(conditions []metav1.Condition) {
+	result := make(clusterv2.Conditions, len(conditions))
+	for i, c := range conditions {
+		result[i] = clusterv2.Condition{
+			Type:               clusterv2.ConditionType(c.Type),
+			Status:             corev1.ConditionStatus(c.Status),
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+			Severity:           clusterv2.ConditionSeverityInfo, // Default severity
+		}
+	}
+	k.Status.Conditions = result
 }
 
 func (k *K0sControlPlane) WorkerEnabled() bool {
