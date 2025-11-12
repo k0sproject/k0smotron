@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/k0sproject/k0smotron/e2e/util/poolprovisioner"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -31,7 +32,7 @@ import (
 )
 
 // DumpSpecResourcesAndCleanup dumps all the resources in the spec namespace and cleans up the spec namespace.
-func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, cluster *clusterv1.Cluster, interval Interval, skipCleanup bool, clusterctlConfigPath string) {
+func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, cluster *clusterv1.Cluster, interval Interval, skipCleanup bool, clusterctlConfigPath string, infraProvider string) {
 	// Dump all the resources in the spec namespace and the workload cluster.
 	dumpAllResourcesAndLogs(ctx, clusterProxy, artifactFolder, namespace, cluster, clusterctlConfigPath)
 
@@ -49,6 +50,13 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 			Deleter: clusterProxy.GetClient(),
 			Name:    namespace.Name,
 		})
+
+		if infraProvider == "k0sproject-k0smotron" {
+			err := poolprovisioner.PoolProvisioner.Clean(ctx)
+			if err != nil {
+				fmt.Printf("Error cleaning up pool provisioner: %v\n", err)
+			}
+		}
 	}
 	cancelWatches()
 }
@@ -56,6 +64,7 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 // dumpAllResourcesAndLogs dumps all the resources in the spec namespace and the workload cluster.
 func dumpAllResourcesAndLogs(ctx context.Context, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cluster *clusterv1.Cluster, clusterctlConfigPath string) {
 	// Dump all the logs from the workload cluster.
+	//
 	clusterProxy.CollectWorkloadClusterLogs(ctx, cluster.Namespace, cluster.Name, filepath.Join(artifactFolder, "clusters", cluster.Name))
 
 	// Dump all Cluster API related resources to artifacts.

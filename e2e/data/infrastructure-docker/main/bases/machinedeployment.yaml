@@ -46,7 +46,7 @@ metadata:
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
-  replicas: 2
+  replicas: ${WORKER_MACHINE_COUNT}
   clusterName: ${CLUSTER_NAME}
   selector:
     matchLabels:

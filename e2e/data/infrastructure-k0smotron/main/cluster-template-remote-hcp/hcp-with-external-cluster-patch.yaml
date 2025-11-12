@@ -1,0 +1,21 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  kubeconfigRef:
+    name: hosting-cluster-kubeconfig
+    namespace: ${NAMESPACE}
+    key: value
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: "${K0S_VERSION}"
+  service:
+    type: NodePort
+
+  k0sConfig:
+    apiVersion: k0s.k0sproject.io/v1beta1
+    kind: ClusterConfig
+    spec:
+      telemetry:
+        enabled: false

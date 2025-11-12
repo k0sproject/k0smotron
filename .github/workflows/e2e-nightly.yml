@@ -138,7 +138,7 @@ jobs:
       - name: Run e2e test
         run: |
           export AWS_B64ENCODED_CREDENTIALS=$(clusterawsadm bootstrap credentials encode-as-profile)
-          make e2e TEST_NAME="${{ matrix.e2e-suite }}" E2E_CONF_FILE="$(pwd)/e2e/config/aws.yaml"
+          make e2e-aws TEST_NAME="${{ matrix.e2e-suite }}" 
 
       - name: Archive artifacts
         if: failure()
