@@ -12,28 +12,28 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/contributing/contribute-workflow/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/ingress-support/">
       
       
-        <link rel="prev" href="../dev-environment/">
+        <link rel="prev" href="../capi-remote/">
       
       
-        <link rel="next" href="../contribute-testing/">
+        <link rel="next" href="../capi-clusterclass/">
       
       
-      <link rel="icon" href="../../img/k0s_social.png">
+      <link rel="icon" href="../img/k0s_social.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
     
     
       
-        <title>Workflow - Documentation</title>
+        <title>Ingress support - Documentation</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -52,9 +52,9 @@
       
     
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY3LK5RVBZ"></script>
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#k0smotron-github-workflow" class="md-skip">
+        <a href="#ingress-support-for-hosted-control-planes" class="md-skip">
           Skip to content
         </a>
       
@@ -102,12 +102,12 @@
             <div class="md-banner__inner md-grid md-typeset">
               
 You are not currently viewing the documentation for the current stable release of k0smotron.
-<a href="../../..">
+<a href="../..">
   <strong>Click here to go to the documentation of the current stable release.</strong>
 </a>
 
             </div>
-            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL(".."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
           </aside>
         
       </div>
@@ -119,9 +119,9 @@ You are not currently viewing the documentation for the current stable release o
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href=".." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="../../img/k0s_social.png" alt="logo">
+  <img src="../img/k0s_social.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Workflow
+              Ingress support
             
           </span>
         </div>
@@ -256,9 +256,9 @@ You are not currently viewing the documentation for the current stable release o
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href=".." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="../../img/k0s_social.png" alt="logo">
+  <img src="../img/k0s_social.png" alt="logo">
 
     </a>
     Documentation
@@ -285,7 +285,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -307,7 +307,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../status/" class="md-nav__link">
+      <a href="../status/" class="md-nav__link">
         
   
   
@@ -329,7 +329,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -348,18 +348,20 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -375,7 +377,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Usage
@@ -389,7 +391,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../usage-overview/" class="md-nav__link">
+      <a href="../usage-overview/" class="md-nav__link">
         
   
   
@@ -450,7 +452,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../cluster/" class="md-nav__link">
+      <a href="../cluster/" class="md-nav__link">
         
   
   
@@ -473,7 +475,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../join-nodes/" class="md-nav__link">
+      <a href="../join-nodes/" class="md-nav__link">
         
   
   
@@ -496,7 +498,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   
@@ -519,7 +521,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../etcd/" class="md-nav__link">
+      <a href="../etcd/" class="md-nav__link">
         
   
   
@@ -542,7 +544,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../ha/" class="md-nav__link">
+      <a href="../ha/" class="md-nav__link">
         
   
   
@@ -565,7 +567,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../hcp-autoscaling/" class="md-nav__link">
+      <a href="../hcp-autoscaling/" class="md-nav__link">
         
   
   
@@ -593,18 +595,20 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
         
           
           <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
@@ -620,7 +624,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             Cluster API
@@ -634,7 +638,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../cluster-api/" class="md-nav__link">
+      <a href="../cluster-api/" class="md-nav__link">
         
   
   
@@ -657,7 +661,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-controlplane/" class="md-nav__link">
+      <a href="../capi-controlplane/" class="md-nav__link">
         
   
   
@@ -680,7 +684,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-controlplane-bootstrap/" class="md-nav__link">
+      <a href="../capi-controlplane-bootstrap/" class="md-nav__link">
         
   
   
@@ -703,7 +707,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-bootstrap/" class="md-nav__link">
+      <a href="../capi-bootstrap/" class="md-nav__link">
         
   
   
@@ -726,7 +730,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-remote/" class="md-nav__link">
+      <a href="../capi-remote/" class="md-nav__link">
         
   
   
@@ -746,10 +750,32 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../ingress-support/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Ingress support
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -760,6 +786,110 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-k0s-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported k0s versions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cluster-api-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster API Integration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standalone-k0smotron-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standalone k0smotron Cluster
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-worker-setup-for-standalone-clusters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual Worker Setup for Standalone Clusters
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Limitations
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -772,7 +902,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-clusterclass/" class="md-nav__link">
+      <a href="../capi-clusterclass/" class="md-nav__link">
         
   
   
@@ -795,7 +925,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-machine-health-checks/" class="md-nav__link">
+      <a href="../capi-machine-health-checks/" class="md-nav__link">
         
   
   
@@ -856,7 +986,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-examples/" class="md-nav__link">
+      <a href="../capi-examples/" class="md-nav__link">
         
   
   
@@ -879,7 +1009,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-aws/" class="md-nav__link">
+      <a href="../capi-aws/" class="md-nav__link">
         
   
   
@@ -902,7 +1032,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-aws-vm/" class="md-nav__link">
+      <a href="../capi-aws-vm/" class="md-nav__link">
         
   
   
@@ -925,7 +1055,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-hetzner/" class="md-nav__link">
+      <a href="../capi-hetzner/" class="md-nav__link">
         
   
   
@@ -948,7 +1078,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-openstack/" class="md-nav__link">
+      <a href="../capi-openstack/" class="md-nav__link">
         
   
   
@@ -971,7 +1101,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-docker/" class="md-nav__link">
+      <a href="../capi-docker/" class="md-nav__link">
         
   
   
@@ -994,7 +1124,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-kubevirt/" class="md-nav__link">
+      <a href="../capi-kubevirt/" class="md-nav__link">
         
   
   
@@ -1017,7 +1147,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-vsphere/" class="md-nav__link">
+      <a href="../capi-vsphere/" class="md-nav__link">
         
   
   
@@ -1040,7 +1170,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-remotemachine-teleport/" class="md-nav__link">
+      <a href="../capi-remotemachine-teleport/" class="md-nav__link">
         
   
   
@@ -1063,7 +1193,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-remotemachine-okta-asa/" class="md-nav__link">
+      <a href="../capi-remotemachine-okta-asa/" class="md-nav__link">
         
   
   
@@ -1086,7 +1216,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-use-oci-registry/" class="md-nav__link">
+      <a href="../capi-use-oci-registry/" class="md-nav__link">
         
   
   
@@ -1155,7 +1285,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-advanced/cloud-init/" class="md-nav__link">
+      <a href="../capi-advanced/cloud-init/" class="md-nav__link">
         
   
   
@@ -1194,7 +1324,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../monitoring/" class="md-nav__link">
+      <a href="../monitoring/" class="md-nav__link">
         
   
   
@@ -1262,7 +1392,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/update-standalone/" class="md-nav__link">
+      <a href="../update/update-standalone/" class="md-nav__link">
         
   
   
@@ -1285,7 +1415,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/update-cluster-pod/" class="md-nav__link">
+      <a href="../update/update-cluster-pod/" class="md-nav__link">
         
   
   
@@ -1308,7 +1438,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/update-capi-cluster/" class="md-nav__link">
+      <a href="../update/update-capi-cluster/" class="md-nav__link">
         
   
   
@@ -1331,7 +1461,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/hcp-autopilot/" class="md-nav__link">
+      <a href="../update/hcp-autopilot/" class="md-nav__link">
         
   
   
@@ -1361,7 +1491,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         
   
   
@@ -1383,7 +1513,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../troubleshooting/" class="md-nav__link">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1405,7 +1535,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../commercial-support/" class="md-nav__link">
+      <a href="../commercial-support/" class="md-nav__link">
         
   
   
@@ -1424,20 +1554,18 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
         
           
           <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
@@ -1453,7 +1581,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             Contributing
@@ -1467,7 +1595,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contribute-overview/" class="md-nav__link">
+      <a href="../contributing/contribute-overview/" class="md-nav__link">
         
   
   
@@ -1490,7 +1618,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../dev-environment/" class="md-nav__link">
+      <a href="../contributing/dev-environment/" class="md-nav__link">
         
   
   
@@ -1510,32 +1638,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Workflow
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../contributing/contribute-workflow/" class="md-nav__link">
         
   
   
@@ -1546,140 +1652,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#fork-the-project" class="md-nav__link">
-    <span class="md-ellipsis">
-      Fork the project
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configure-remote-repository" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configure remote repository
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#create-and-rebase-feature-branch" class="md-nav__link">
-    <span class="md-ellipsis">
-      Create and rebase feature branch
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#run-local-verifications" class="md-nav__link">
-    <span class="md-ellipsis">
-      Run local verifications
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#commit-and-push" class="md-nav__link">
-    <span class="md-ellipsis">
-      Commit and push
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#open-pull-request" class="md-nav__link">
-    <span class="md-ellipsis">
-      Open pull request
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Open pull request">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#draft-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      Draft mode
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-requisites-for-merge" class="md-nav__link">
-    <span class="md-ellipsis">
-      Pre-requisites for merge
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wait-for-code-review" class="md-nav__link">
-    <span class="md-ellipsis">
-      Wait for code review
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#squash-small-commits" class="md-nav__link">
-    <span class="md-ellipsis">
-      Squash small commits
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#push-final-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Push final changes
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cleanup-local-workspace" class="md-nav__link">
-    <span class="md-ellipsis">
-      Cleanup local workspace
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1692,7 +1664,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contribute-testing/" class="md-nav__link">
+      <a href="../contributing/contribute-testing/" class="md-nav__link">
         
   
   
@@ -1715,7 +1687,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../release-process/" class="md-nav__link">
+      <a href="../contributing/release-process/" class="md-nav__link">
         
   
   
@@ -1745,7 +1717,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../known-limitations/" class="md-nav__link">
+      <a href="../known-limitations/" class="md-nav__link">
         
   
   
@@ -1843,7 +1815,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -1866,7 +1838,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -1889,7 +1861,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -1912,7 +1884,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
+      <a href="../resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -1943,7 +1915,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../terminology/" class="md-nav__link">
+      <a href="../terminology/" class="md-nav__link">
         
   
   
@@ -1993,100 +1965,19 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#fork-the-project" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Fork the project
+      Overview
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configure-remote-repository" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configure remote repository
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#create-and-rebase-feature-branch" class="md-nav__link">
-    <span class="md-ellipsis">
-      Create and rebase feature branch
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#run-local-verifications" class="md-nav__link">
-    <span class="md-ellipsis">
-      Run local verifications
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#commit-and-push" class="md-nav__link">
-    <span class="md-ellipsis">
-      Commit and push
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#open-pull-request" class="md-nav__link">
-    <span class="md-ellipsis">
-      Open pull request
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Open pull request">
+    <nav class="md-nav" aria-label="Overview">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#draft-mode" class="md-nav__link">
+  <a href="#supported-k0s-versions" class="md-nav__link">
     <span class="md-ellipsis">
-      Draft mode
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-requisites-for-merge" class="md-nav__link">
-    <span class="md-ellipsis">
-      Pre-requisites for merge
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wait-for-code-review" class="md-nav__link">
-    <span class="md-ellipsis">
-      Wait for code review
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#squash-small-commits" class="md-nav__link">
-    <span class="md-ellipsis">
-      Squash small commits
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#push-final-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Push final changes
+      Supported k0s versions
     </span>
   </a>
   
@@ -2098,9 +1989,60 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
-  <a href="#cleanup-local-workspace" class="md-nav__link">
+  <a href="#architecture" class="md-nav__link">
     <span class="md-ellipsis">
-      Cleanup local workspace
+      Architecture
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cluster-api-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster API Integration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standalone-k0smotron-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standalone k0smotron Cluster
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-worker-setup-for-standalone-clusters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual Worker Setup for Standalone Clusters
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Limitations
     </span>
   </a>
   
@@ -2122,156 +2064,109 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="k0smotron-github-workflow">k0smotron GitHub workflow<a class="headerlink" href="#k0smotron-github-workflow" title="Permanent link">#</a></h1>
-<p>Create pull requests to contribute to <a href="http://github.com/k0sproject/k0smotron">k0smotron GitHub repository</a>.</p>
-<h2 id="fork-the-project">Fork the project<a class="headerlink" href="#fork-the-project" title="Permanent link">#</a></h2>
-<ol>
-<li>Go to <a href="http://github.com/k0sproject/k0smotron">k0smotron GitHub repository</a>.</li>
-<li>In the top right-hand corner, click "Fork" and select your username for the fork destination.</li>
-</ol>
-<h2 id="configure-remote-repository">Configure remote repository<a class="headerlink" href="#configure-remote-repository" title="Permanent link">#</a></h2>
-<ol>
-<li>
-<p>Add k0smotron as a remote branch:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="nv">$WORKDIR</span>/k0smotron
-git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>my_fork<span class="w"> </span>git@github.com:<span class="si">${</span><span class="nv">GITHUB_USER</span><span class="si">}</span>/k0smotron.git
-</code></pre></div>
-</li>
-<li>
-<p>Prevent push to upstream branch:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>remote<span class="w"> </span>set-url<span class="w"> </span>--push<span class="w"> </span>origin<span class="w"> </span>no_push
-</code></pre></div>
-</li>
-<li>
-<p>Set your fork remote as a default push target:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>--set-upstream<span class="w"> </span>my_fork<span class="w"> </span>main
-</code></pre></div>
-</li>
-<li>
-<p>Check the remote branches with the following command:</p>
-<p><div class="highlight"><pre><span></span><code>git<span class="w"> </span>remote<span class="w"> </span>-v
-</code></pre></div>
-  The origin branch should have <code>no_push</code> next to it:</p>
-<div class="highlight"><pre><span></span><code>origin<span class="w">  </span>https://github.com/k0sproject/k0smotron<span class="w"> </span><span class="o">(</span>fetch<span class="o">)</span>
-origin<span class="w">  </span>no_push<span class="w"> </span><span class="o">(</span>push<span class="o">)</span>
-my_fork<span class="w"> </span>git@github.com:<span class="o">{</span><span class="w"> </span>github_username<span class="w"> </span><span class="o">}</span>/k0smotron.git<span class="w"> </span><span class="o">(</span>fetch<span class="o">)</span>
-my_fork<span class="w"> </span>git@github.com:<span class="o">{</span><span class="w"> </span>github_username<span class="w"> </span><span class="o">}</span>/k0smotron.git<span class="w"> </span><span class="o">(</span>push<span class="o">)</span>
-</code></pre></div>
-</li>
-</ol>
-<h2 id="create-and-rebase-feature-branch">Create and rebase feature branch<a class="headerlink" href="#create-and-rebase-feature-branch" title="Permanent link">#</a></h2>
-<ol>
-<li>
-<p>Create and switch to a feature branch:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>my_feature_branch
-</code></pre></div>
-</li>
-<li>
-<p>Rebase your branch:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>fetch<span class="w"> </span>origin<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>git<span class="w"> </span>rebase<span class="w"> </span>origin/main
-</code></pre></div>
-</li>
-</ol>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Use <code>git fetch</code> or <code>git rebase</code> instead of <code>git pull</code> to keep the commit history linear.
-The <code>git pull</code> command performs a merge, which leaves merge commits.
-Too many commits make the history messy and violate the principle
-that commits ought to be individually understandable and useful.</p>
+<h1 id="ingress-support-for-hosted-control-planes">Ingress Support for Hosted Control Planes<a class="headerlink" href="#ingress-support-for-hosted-control-planes" title="Permanent link">#</a></h1>
+<p>k0smotron now supports exposing kube-apiserver and konnectivity server through ingress controllers for HCPs, enabling access to your clusters via hostnames instead of direct service endpoints. This feature works with both standalone k0smotron clusters and Cluster API managed clusters.</p>
+<div class="admonition warning">
+<p class="admonition-title">Important Note</p>
+<p>This feature requires an ingress controller that supports SSL passthrough (e.g., HAProxy, NGINX, Traefik). Ensure your ingress controller is properly configured to handle TLS traffic.</p>
 </div>
-<h2 id="run-local-verifications">Run local verifications<a class="headerlink" href="#run-local-verifications" title="Permanent link">#</a></h2>
-<p>Run the following style and formatting commands to fix or check-in the changes:</p>
-<ol>
-<li>
-<p>Verify code style using <a href="https://golangci-lint.run/"><code>golangci-lint</code></a>. In the root directory of the repository run:
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>lint
-</code></pre></div>
-The build system automatically installs <code>golangci-lint</code>.</p>
-</li>
-<li>
-<p>Format Go source code using the <code>go fmt</code> command:
-<div class="highlight"><pre><span></span><code>go<span class="w"> </span>fmt<span class="w"> </span>./...
-</code></pre></div></p>
-</li>
-<li>
-<p>Check documentation.</p>
-<p>The Dockerized setup is used to locally perform documentation tests.
- Run <code>make docs-serve-dev</code> to build documentation on http://localhost:8000.</p>
-<p>If your port <code>8000</code> is busy, run <code>make docs-serve-dev DOCS_DEV_PORT=9999</code>.
- The documentation page will be available on http://localhost:9999.</p>
-</li>
-<li>
-<p>Pre-submit flight checks.</p>
-<p>In the repository root directory, ensure that the following commands are successfully run:</p>
-<p>* <code>make build &amp;&amp; git diff --exit-code</code>
-    This command verifies that the build is working
-    and that the generated source code matches the code checked into source control.
-  * <code>make test</code>
-    This command verifies that all the unit tests pass.</p>
-<p>Once all tests have passed, you can open a pull request upstream.</p>
-</li>
-</ol>
-<h2 id="commit-and-push">Commit and push<a class="headerlink" href="#commit-and-push" title="Permanent link">#</a></h2>
-<p>Commit and sign your changes:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>commit<span class="w"> </span>--signoff
-</code></pre></div>
-<p>The commit message should have:</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">#</a></h2>
+<p>k0smotron will create an ingress resource that routes traffic to the control plane service. Each worker node runs a local 
+HAProxy sidecar that proxies traffic from pods to the ingress controller. The kubelet connects directly to the ingress 
+controller for control plane communication, while pods communicate through the HAProxy sidecar.</p>
+<h3 id="supported-k0s-versions">Supported k0s versions<a class="headerlink" href="#supported-k0s-versions" title="Permanent link">#</a></h3>
 <ul>
-<li>title</li>
-<li>description</li>
-<li>link to the GitHub issue</li>
-<li>sign-off</li>
+<li>v1.34.1+k0s.0 and later</li>
 </ul>
-<p>For example:</p>
-<div class="highlight"><pre><span></span><code>Title that summarizes changes in 50 characters or less
-
-Description that briefly explains the problem your commit is solving.
-Focus on why you are making this change as opposed to how.
-Are there any consequences of this change? Here you can include them.
-
-Fixes: https://github.com/k0sproject/k0smotron/issues/373
-
-Signed-off-by: Name Lastname &lt;user@example.com&gt;
-</code></pre></div>
-<p>To add some additional changes or tests use <code>commit --amend</code> command.
-Push your changes to your fork's repository:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>--set-upstream<span class="w"> </span>my_fork<span class="w"> </span>my_feature_branch
-</code></pre></div>
-<h2 id="open-pull-request">Open pull request<a class="headerlink" href="#open-pull-request" title="Permanent link">#</a></h2>
-<p>Refer to the official GitHub documentation <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork">Creating a pull request from a fork</a>.</p>
-<h3 id="draft-mode">Draft mode<a class="headerlink" href="#draft-mode" title="Permanent link">#</a></h3>
-<p>If you open a pull request in draft mode, it will only go through the automated testing.
-Once you decide the PR is ready for review, transition it out of draft mode to notify the k0smotron team.</p>
-<h3 id="pre-requisites-for-merge">Pre-requisites for merge<a class="headerlink" href="#pre-requisites-for-merge" title="Permanent link">#</a></h3>
-<p>In order for a pull request to be merged, the following conditions should be met:</p>
+<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">#</a></h2>
+<p>The ingress support works by:</p>
 <ol>
-<li>The PR has passed all the automated tests (style, build and conformance tests).</li>
-<li>All the PR commits have been signed with the <code>--signoff</code> option.</li>
-<li>The PR has been reviewed and approved by a code owner.</li>
-<li>The PR has been rebased against upstream main branch.</li>
+<li><strong>Ingress Resource Creation</strong>: k0smotron creates a Kubernetes Ingress resource that routes traffic to the control plane service</li>
+<li><strong>HAProxy Sidecar</strong>: A local HAProxy instance runs as a sidecar in each worker node to proxy traffic from pods to the ingress controller</li>
+<li><strong>Service Configuration</strong>: The kubernetes default service is configured to point to the HAProxy sidecar for pod-to-API communication</li>
+<li><strong>Direct Kubelet Access</strong>: Kubelet connects directly to the ingress controller for control plane communication</li>
+<li><strong>SSL Passthrough</strong>: The ingress controller uses SSL passthrough to maintain end-to-end encryption</li>
 </ol>
-<h3 id="wait-for-code-review">Wait for code review<a class="headerlink" href="#wait-for-code-review" title="Permanent link">#</a></h3>
-<p>The k0smotron team will review your pull request and leave comments.
-Commit changes made in response to review comments should be added to the same branch on your fork.</p>
-<p>Keep the PRs small to speed up the review process.</p>
-<h3 id="squash-small-commits">Squash small commits<a class="headerlink" href="#squash-small-commits" title="Permanent link">#</a></h3>
-<p>Commits on your branch should represent meaningful milestones or units of work.
-Squash together small commits that contain typo fixes, rebases, review feedbacks,
-and so on.
-To do that, perform an interactive rebase.</p>
-<h3 id="push-final-changes">Push final changes<a class="headerlink" href="#push-final-changes" title="Permanent link">#</a></h3>
-<p>Once done, you can push the final commits to your branch:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>--force
+<pre class="mermaid"><code>graph TB
+    subgraph "Worker Node"
+        HAProxy[HAProxy Sidecar]
+        Kubelet[Kubelet]
+        Konnectivity[Konnectivity]
+        Pods[Pods]
+    end
+
+    subgraph "Management Cluster"
+        IC[Ingress Controller]
+        CP[Control Plane Pod]
+        SVC[Service]
+    end
+
+    Kubelet --&gt; IC
+    Konnectivity --&gt; IC
+    IC --&gt; SVC
+    SVC --&gt; CP
+    Pods --&gt; HAProxy
+    HAProxy --&gt; IC</code></pre>
+<h2 id="usage-examples">Usage Examples<a class="headerlink" href="#usage-examples" title="Permanent link">#</a></h2>
+<h3 id="cluster-api-integration">Cluster API Integration<a class="headerlink" href="#cluster-api-integration" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster-cp</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.0-k0s.0</span>
+<span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiHost</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-api.example.com</span>
+<span class="w">    </span><span class="nt">konnectivityHost</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">konnectivity.example.com</span>
+<span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">haproxy</span>
+<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">haproxy.org/ssl-passthrough</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
 </code></pre></div>
-<p>If necessary, you can run multiple iteration of <code>rebase</code>/<code>push -f</code>.</p>
-<h2 id="cleanup-local-workspace">Cleanup local workspace<a class="headerlink" href="#cleanup-local-workspace" title="Permanent link">#</a></h2>
-<p>Run <code>make clean</code> to remove all the intermediate files and directories created
-locally during the k0smotron build.
-You cannot use <code>git clean -X</code> or <code>rm -rf</code>, since the Go modules
-cache sets all of its subdirectories to read-only.
-If you encounter problems during a deletion process,
-run <code>chmod -R u+w /path/to/workspace &amp;&amp; rm -rf /path/to/workspace</code>.</p>
+<h3 id="standalone-k0smotron-cluster">Standalone k0smotron Cluster<a class="headerlink" href="#standalone-k0smotron-cluster" title="Permanent link">#</a></h3>
+<div class="admonition danger">
+<p class="admonition-title">Warning</p>
+<p>When using standalone k0smotron clusters with ingress support, you need to manually set up and configure the HAProxy sidecar on each worker node. See the <a href="#manual-worker-setup-for-standalone-clusters">Manual Worker Setup for Standalone Clusters</a> section below.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.0-k0s.0</span>
+<span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiHost</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-api.example.com</span>
+<span class="w">    </span><span class="nt">konnectivityHost</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">konnectivity.example.com</span>
+<span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">haproxy</span>
+<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">haproxy.org/ssl-passthrough</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+</code></pre></div>
+<h2 id="manual-worker-setup-for-standalone-clusters">Manual Worker Setup for Standalone Clusters<a class="headerlink" href="#manual-worker-setup-for-standalone-clusters" title="Permanent link">#</a></h2>
+<p>When using standalone k0smotron clusters with ingress support, you need to manually add certificates for the HAProxy sidecar on each worker node.</p>
+<p>Create the certificate directory and place the required certificates:</p>
+<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>/etc/haproxy/certs
+</code></pre></div>
+<p>You can obtain the required certificates from the k0smotron cluster secrets:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Get the cluster CA certificate</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-ca<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.tls\.crt}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/ca.crt
+
+<span class="c1"># Get the HAProxy server certificate and key</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-ingress-haproxy<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.tls\.crt}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/server.crt
+kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-ingress-haproxy<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.tls\.key}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/server.key
+
+<span class="c1"># Combine server cert and key for HAProxy</span>
+cat<span class="w"> </span>/etc/haproxy/certs/server.crt<span class="w"> </span>/etc/haproxy/certs/server.key<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/server.pem
+chmod<span class="w"> </span><span class="m">666</span><span class="w"> </span>/etc/haproxy/certs/server.pem
+</code></pre></div>
+<p>The k0smotron control plane will automatically configure the Kubernetes service to point to the HAProxy sidecar when it detects the ingress configuration.</p>
+<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">#</a></h2>
+<ul>
+<li>Requires an ingress controller that supports SSL passthrough</li>
+<li>Additional network latency due to the proxy layer</li>
+<li>HAProxy sidecar consumes additional resources on worker nodes</li>
+<li>DNS configuration is required for proper functionality</li>
+</ul>
 
 
 
@@ -2340,10 +2235,10 @@ run <code>chmod -R u+w /path/to/workspace &amp;&amp; rm -rf /path/to/workspace</
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
     
   </body>
