@@ -19,7 +19,7 @@ package v1beta1
 import (
 	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -116,7 +116,7 @@ type RemoteMachineStatus struct {
 
 	// addresses contains the associated addresses for the machine.
 	// +optional
-	Addresses []clusterv1.MachineAddress `json:"addresses,omitempty"`
+	Addresses []clusterv2.MachineAddress `json:"addresses,omitempty"`
 
 	FailureReason  string `json:"failureReason,omitempty"`
 	FailureMessage string `json:"failureMessage,omitempty"`

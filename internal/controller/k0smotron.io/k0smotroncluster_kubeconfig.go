@@ -27,7 +27,7 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	kubeconfig "k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -71,7 +71,7 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		StringData: map[string]string{"value": processedOutput},
-		Type:       clusterv1.ClusterSecretType,
+		Type:       clusterv2.ClusterSecretType,
 	}
 
 	// workload cluster kubeconfig is always created in the management cluster so we set k0smotron cluster as owner

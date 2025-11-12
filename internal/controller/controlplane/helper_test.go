@@ -24,25 +24,25 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 func TestHasControllerConfigChanged(t *testing.T) {
 	var testCases = []struct {
 		name             string
-		machine          *clusterv1.Machine
+		machine          *clusterv2.Machine
 		kcp              *cpv1beta1.K0sControlPlane
 		bootstrapConfigs map[string]bootstrapv1.K0sControllerConfig
 		configHasChanged bool
 	}{
 		{
 			name: "equal configs",
-			machine: &clusterv1.Machine{
+			machine: &clusterv2.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 			kcp: &cpv1beta1.K0sControlPlane{
@@ -130,12 +130,12 @@ func TestHasControllerConfigChanged(t *testing.T) {
 		},
 		{
 			name: "not equal configs: new k0sInstallDir",
-			machine: &clusterv1.Machine{
+			machine: &clusterv2.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 			kcp: &cpv1beta1.K0sControlPlane{
@@ -225,12 +225,12 @@ func TestHasControllerConfigChanged(t *testing.T) {
 		},
 		{
 			name: "not equal configs: enabling worker in kcp",
-			machine: &clusterv1.Machine{
+			machine: &clusterv2.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 			kcp: &cpv1beta1.K0sControlPlane{

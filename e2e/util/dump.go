@@ -25,13 +25,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // DumpSpecResourcesAndCleanup dumps all the resources in the spec namespace and cleans up the spec namespace.
-func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, cluster *clusterv1.Cluster, interval Interval, skipCleanup bool, clusterctlConfigPath string) {
+func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, cluster *clusterv2.Cluster, interval Interval, skipCleanup bool, clusterctlConfigPath string) {
 	// Dump all the resources in the spec namespace and the workload cluster.
 	dumpAllResourcesAndLogs(ctx, clusterProxy, artifactFolder, namespace, cluster, clusterctlConfigPath)
 
@@ -54,7 +54,7 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 }
 
 // dumpAllResourcesAndLogs dumps all the resources in the spec namespace and the workload cluster.
-func dumpAllResourcesAndLogs(ctx context.Context, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cluster *clusterv1.Cluster, clusterctlConfigPath string) {
+func dumpAllResourcesAndLogs(ctx context.Context, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cluster *clusterv2.Cluster, clusterctlConfigPath string) {
 	// Dump all the logs from the workload cluster.
 	clusterProxy.CollectWorkloadClusterLogs(ctx, cluster.Namespace, cluster.Name, filepath.Join(artifactFolder, "clusters", cluster.Name))
 
@@ -68,7 +68,7 @@ func dumpAllResourcesAndLogs(ctx context.Context, clusterProxy capiframework.Clu
 	})
 
 	// If the cluster still exists, dump pods and nodes of the workload cluster.
-	if err := clusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(cluster), &clusterv1.Cluster{}); err == nil {
+	if err := clusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(cluster), &clusterv2.Cluster{}); err == nil {
 		capiframework.DumpResourcesForCluster(ctx, capiframework.DumpResourcesForClusterInput{
 			Lister:  clusterProxy.GetWorkloadCluster(ctx, cluster.Namespace, cluster.Name).GetClient(),
 			Cluster: cluster,

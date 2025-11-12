@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -40,13 +40,13 @@ type GetK0smotronControlPlaneByClusterInput struct {
 
 type WaitForOneK0smotronControlPlaneMachineToExistInput struct {
 	Lister       capiframework.Lister
-	Cluster      *clusterv1.Cluster
+	Cluster      *clusterv2.Cluster
 	ControlPlane *cpv1beta1.K0smotronControlPlane
 }
 
 type DiscoveryAndWaitForHCPReadyInput struct {
 	Lister  capiframework.Lister
-	Cluster *clusterv1.Cluster
+	Cluster *clusterv2.Cluster
 	Getter  capiframework.Getter
 }
 

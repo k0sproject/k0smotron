@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
@@ -32,7 +32,7 @@ type JobProvisioner struct {
 
 	bootstrapData []byte
 	cloudInit     *provisioner.InputProvisionData
-	machine       *v1beta1.Machine
+	machine       *clusterv2.Machine
 	remoteMachine *infrastructure.RemoteMachine
 	provisionJob  *infrastructure.ProvisionJob
 	log           logr.Logger

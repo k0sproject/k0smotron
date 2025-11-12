@@ -50,7 +50,7 @@ import (
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/k0sproject/k0smotron/inttest/util/watch"
 	"github.com/sirupsen/logrus"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
@@ -363,10 +363,10 @@ func WaitForSecret(ctx context.Context, kc *kubernetes.Clientset, name string, n
 	})
 }
 
-func GetCluster(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*clusterv1.Cluster, error) {
+func GetCluster(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*clusterv2.Cluster, error) {
 	url := fmt.Sprintf("apis/cluster.x-k8s.io/v1beta1/namespaces/%s/clusters/%s", namespace, name)
 
-	cluster := &clusterv1.Cluster{}
+	cluster := &clusterv2.Cluster{}
 
 	err := kc.RESTClient().
 		Get().
@@ -377,7 +377,7 @@ func GetCluster(ctx context.Context, kc *kubernetes.Clientset, name string, name
 	return cluster, err
 }
 
-func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *clusterv1.Cluster) error {
+func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *clusterv2.Cluster) error {
 	url := fmt.Sprintf("apis/cluster.x-k8s.io/v1beta1/namespaces/%s/clusters/%s", cluster.Namespace, cluster.Name)
 
 	clusterJSON, err := json.Marshal(cluster)
@@ -440,20 +440,20 @@ func DeleteCluster(clusterName string) error {
 	return nil
 }
 
-func GetControlPlaneMachinesByKcpName(ctx context.Context, kcpName string, namespace string, c *kubernetes.Clientset) ([]clusterv1.Machine, error) {
+func GetControlPlaneMachinesByKcpName(ctx context.Context, kcpName string, namespace string, c *kubernetes.Clientset) ([]clusterv2.Machine, error) {
 	apiPath := fmt.Sprintf("/apis/cluster.x-k8s.io/v1beta1/namespaces/%s/machines", namespace)
 	res, err := c.RESTClient().Get().AbsPath(apiPath).DoRaw(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ml := &clusterv1.MachineList{}
+	ml := &clusterv2.MachineList{}
 	if err := yaml.Unmarshal(res, ml); err != nil {
 		return nil, err
 	}
 
-	var result []clusterv1.Machine
+	var result []clusterv2.Machine
 	for _, m := range ml.Items {
-		if _, ok := m.Labels[clusterv1.MachineControlPlaneLabel]; ok && m.Labels[clusterv1.MachineControlPlaneNameLabel] == kcpName {
+		if _, ok := m.Labels[clusterv2.MachineControlPlaneLabel]; ok && m.Labels[clusterv2.MachineControlPlaneNameLabel] == kcpName {
 			result = append(result, m)
 		}
 	}

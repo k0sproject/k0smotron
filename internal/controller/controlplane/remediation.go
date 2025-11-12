@@ -22,8 +22,9 @@ import (
 
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -31,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (retErr error) {
+func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster *clusterv2.Cluster, kcp *cpv1beta1.K0sControlPlane) (retErr error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
@@ -87,14 +88,24 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 		// The cluster MUST have more than one replica, because this is the smallest cluster size that allows any etcd failure tolerance.
 		if !(machines.Len() > 1) {
 			log.Info("A control plane machine needs remediation, but the number of current replicas is less or equal to 1. Skipping remediation", "replicas", machines.Len())
-			conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.WaitingForRemediationReason, clusterv1.ConditionSeverityWarning, "KCP can't remediate if current replicas are less or equal to 1")
+			conditions.Set(machineToBeRemediated, metav1.Condition{
+				Type:    string(clusterv2.MachineOwnerRemediatedCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  "WaitingForRemediation",
+				Message: "KCP can't remediate if current replicas are less or equal to 1",
+			})
 			return nil
 		}
 
 		// The cluster MUST NOT have healthy machines still being provisioned. This rule prevents KCP taking actions while the cluster is in a transitional state.
 		if isProvisioningHealthyMachine(healthyMachines) {
 			log.Info("A control plane machine needs remediation, but there are other control-plane machines being provisioned. Skipping remediation")
-			conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.WaitingForRemediationReason, clusterv1.ConditionSeverityWarning, "KCP waiting for control plane machine provisioning to complete before triggering remediation")
+			conditions.Set(machineToBeRemediated, metav1.Condition{
+				Type:    string(clusterv2.MachineOwnerRemediatedCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  "WaitingForRemediation",
+				Message: "KCP waiting for control plane machine provisioning to complete before triggering remediation",
+			})
 
 			return nil
 		}
@@ -102,7 +113,12 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 		// The cluster MUST have no machines with a deletion timestamp. This rule prevents KCP taking actions while the cluster is in a transitional state.
 		if len(machines.Filter(collections.HasDeletionTimestamp)) > 0 {
 			log.Info("A control plane machine needs remediation, but there are other control-plane machines being deleted. Skipping remediation")
-			conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.WaitingForRemediationReason, clusterv1.ConditionSeverityWarning, "KCP waiting for control plane machine deletion to complete before triggering remediation")
+			conditions.Set(machineToBeRemediated, metav1.Condition{
+				Type:    string(clusterv2.MachineOwnerRemediatedCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  "WaitingForRemediation",
+				Message: "KCP waiting for control plane machine deletion to complete before triggering remediation",
+			})
 			return nil
 		}
 	}
@@ -110,7 +126,12 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 	// After checks, remediation can be carried out.
 
 	if err := c.runMachineDeletionSequence(ctx, cluster, kcp, machineToBeRemediated); err != nil {
-		conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(machineToBeRemediated, metav1.Condition{
+			Type:    string(clusterv2.MachineOwnerRemediatedCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  "RemediationFailed",
+			Message: err.Error(),
+		})
 		return errors.Wrapf(err, "failed to delete unhealthy machine %s", machineToBeRemediated.Name)
 	}
 	log.Info("Remediated unhealthy machine, another new machine should take its place soon.")
@@ -124,18 +145,19 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 	return nil
 }
 
-func isHealthy(machine *clusterv1.Machine) bool {
+func isHealthy(machine *clusterv2.Machine) bool {
 	if machine == nil {
 		return false
 	}
-	return conditions.IsTrue(machine, clusterv1.MachineHealthCheckSucceededCondition)
+	return conditions.IsTrue(machine, clusterv2.MachineHealthCheckSucceededCondition)
 }
 
-func hasNode(machine *clusterv1.Machine) bool {
+func hasNode(machine *clusterv2.Machine) bool {
 	if machine == nil {
 		return false
 	}
-	return machine.Status.NodeRef != nil
+	// In v1beta2, NodeRef is a value type (MachineNodeReference), use IsDefined() to check if it's set
+	return (&machine.Status.NodeRef).IsDefined()
 }
 
 func isProvisioningHealthyMachine(healthyMachines collections.Machines) bool {
@@ -147,9 +169,9 @@ func (c *K0sController) sanitizeHealthyMachines(ctx context.Context, healthyMach
 
 	errList := []error{}
 	for _, m := range healthyMachines {
-		if conditions.IsFalse(m, clusterv1.MachineOwnerRemediatedCondition) && m.DeletionTimestamp.IsZero() {
+		if conditions.IsFalse(m, clusterv2.MachineOwnerRemediatedCondition) && m.DeletionTimestamp.IsZero() {
 
-			conditions.Delete(m, clusterv1.MachineOwnerRemediatedCondition)
+			conditions.Delete(m, clusterv2.MachineOwnerRemediatedCondition)
 
 			err := c.Status().Patch(ctx, m, client.Merge)
 			if err != nil {

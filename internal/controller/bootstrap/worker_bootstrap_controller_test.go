@@ -31,8 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	fakeremote "sigs.k8s.io/cluster-api/controllers/remote/fake"
 	"sigs.k8s.io/cluster-api/util"
@@ -157,7 +157,7 @@ func Test_createBootstrapSecret(t *testing.T) {
 						},
 					},
 				},
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv2.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test-cluster",
 					},
@@ -166,7 +166,7 @@ func Test_createBootstrapSecret(t *testing.T) {
 			bootstrapData: []byte("test-bootstrap-data"),
 			expectedLabels: map[string]string{
 				"custom-label":             "foo",
-				clusterv1.ClusterNameLabel: "test-cluster",
+				clusterv2.ClusterNameLabel: "test-cluster",
 			},
 			expectedAnnotations: map[string]string{
 				"custom-anno": "bar",
@@ -185,7 +185,7 @@ func Test_createBootstrapSecret(t *testing.T) {
 						Kind: "K0sWorkerConfig",
 					},
 				},
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv2.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test-cluster",
 					},
@@ -193,7 +193,7 @@ func Test_createBootstrapSecret(t *testing.T) {
 			},
 			bootstrapData: []byte("test-bootstrap-data"),
 			expectedLabels: map[string]string{
-				clusterv1.ClusterNameLabel: "test-cluster",
+				clusterv2.ClusterNameLabel: "test-cluster",
 			},
 			expectedAnnotations: map[string]string{},
 		},
@@ -213,7 +213,7 @@ func Test_createBootstrapSecret(t *testing.T) {
 						SecretMetadata: nil,
 					},
 				},
-				Cluster: &clusterv1.Cluster{
+				Cluster: &clusterv2.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test-cluster",
 					},
@@ -221,7 +221,7 @@ func Test_createBootstrapSecret(t *testing.T) {
 			},
 			bootstrapData: []byte("test-bootstrap-data"),
 			expectedLabels: map[string]string{
-				clusterv1.ClusterNameLabel: "test-cluster",
+				clusterv2.ClusterNameLabel: "test-cluster",
 			},
 			expectedAnnotations: map[string]string{},
 		},
@@ -234,7 +234,7 @@ func Test_createBootstrapSecret(t *testing.T) {
 			// Check basic properties
 			require.Equal(t, tt.scope.Config.Name, secret.Name)
 			require.Equal(t, tt.scope.Config.Namespace, secret.Namespace)
-			require.Equal(t, clusterv1.ClusterSecretType, secret.Type)
+			require.Equal(t, clusterv2.ClusterSecretType, secret.Type)
 			require.Equal(t, tt.bootstrapData, secret.Data["value"])
 			require.Equal(t, "cloud-config", string(secret.Data["format"]))
 
@@ -316,7 +316,7 @@ func TestReconcileReturnErrorWhenWorkerConfigOwnerIsNotFound(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       "non-existing-machine",
 					UID:        "1",
 				},
@@ -343,14 +343,14 @@ func TestReconcileReturnErrorWhenClusterIsNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	machineName := fmt.Sprintf("%s-%d", "machine-for-worker", 0)
-	machineForWorkerConfig := &clusterv1.Machine{
+	machineForWorkerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      machineName,
 			Namespace: ns.Name,
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: "non-existing-cluster",
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -361,7 +361,7 @@ func TestReconcileReturnErrorWhenClusterIsNotFound(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineName,
 					UID:        "1",
 				},
@@ -391,23 +391,23 @@ func TestReconcilePausedCluster(t *testing.T) {
 	cluster := newCluster(ns.Name)
 
 	// Cluster 'paused'.
-	cluster.Spec.Paused = true
+	cluster.Spec.Paused = ptr.To(true)
 
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	machineForWorkerConfig := &clusterv1.Machine{
+	machineForWorkerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", "machine-for-worker", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForWorkerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForWorkerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -419,7 +419,7 @@ func TestReconcilePausedCluster(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForWorkerConfig.Name,
 					UID:        "1",
 				},
@@ -448,19 +448,19 @@ func TestReconcilePausedK0sWorkerConfig(t *testing.T) {
 	cluster := newCluster(ns.Name)
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	machineForWorkerConfig := &clusterv1.Machine{
+	machineForWorkerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", "machine-for-worker", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForWorkerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForWorkerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -471,7 +471,7 @@ func TestReconcilePausedK0sWorkerConfig(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForWorkerConfig.Name,
 					UID:        "1",
 				},
@@ -480,7 +480,7 @@ func TestReconcilePausedK0sWorkerConfig(t *testing.T) {
 	}
 
 	// K0sControlPlane with 'paused' annotation.
-	k0sWorkerConfig.Annotations = map[string]string{clusterv1.PausedAnnotation: "true"}
+	k0sWorkerConfig.Annotations = map[string]string{clusterv2.PausedAnnotation: "true"}
 
 	require.NoError(t, testEnv.Create(ctx, k0sWorkerConfig))
 
@@ -504,19 +504,19 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 	cluster := newCluster(ns.Name)
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	machineForWorkerConfig := &clusterv1.Machine{
+	machineForWorkerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", "machine-for-worker", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForWorkerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForWorkerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -528,7 +528,7 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForWorkerConfig.Name,
 					UID:        "1",
 				},
@@ -566,19 +566,19 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
-	machineForWorkerConfig := &clusterv1.Machine{
+	machineForWorkerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", "machine-for-worker", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForWorkerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForWorkerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -589,7 +589,7 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForWorkerConfig.Name,
 					UID:        "1",
 				},
@@ -613,13 +613,13 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 
 		updatedK0sWorkerConfig := &bootstrapv1.K0sWorkerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
-		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, clusterv1.ReadyCondition))
-		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
-		assert.Equal(c, bootstrapv1.WaitingForControlPlaneInitializationReason, conditions.GetReason(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
-		assert.Equal(c, clusterv1.ConditionSeverityInfo, *conditions.GetSeverity(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
+		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, string(clusterv2.ReadyCondition)))
+		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, string(bootstrapv1.DataSecretAvailableCondition)))
+		assert.Equal(c, bootstrapv1.WaitingForControlPlaneInitializationReason, conditions.GetReason(updatedK0sWorkerConfig, string(bootstrapv1.DataSecretAvailableCondition)))
+		// GetSeverity was removed in v1beta2, severity is not part of metav1.Condition
 
 		// Cluster.Spec.ControlPlaneEndpoint is set but Cluster.Status.ControlPlaneReady is false
-		cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+		cluster.Spec.ControlPlaneEndpoint = clusterv2.APIEndpoint{
 			Host: "http://test.host",
 			Port: 9999,
 		}
@@ -631,10 +631,10 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 
 		updatedK0sWorkerConfig = &bootstrapv1.K0sWorkerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
-		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, clusterv1.ReadyCondition))
-		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
-		assert.Equal(c, bootstrapv1.WaitingForControlPlaneInitializationReason, conditions.GetReason(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
-		assert.Equal(c, clusterv1.ConditionSeverityInfo, *conditions.GetSeverity(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
+		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, string(clusterv2.ReadyCondition)))
+		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, string(bootstrapv1.DataSecretAvailableCondition)))
+		assert.Equal(c, bootstrapv1.WaitingForControlPlaneInitializationReason, conditions.GetReason(updatedK0sWorkerConfig, string(bootstrapv1.DataSecretAvailableCondition)))
+		// GetSeverity was removed in v1beta2, severity is not part of metav1.Condition
 	}, 10*time.Second, 100*time.Millisecond)
 }
 
@@ -646,22 +646,27 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
-	cluster.Status.ControlPlaneReady = true
+	// ControlPlaneReady was removed in v1beta2, set condition instead
+	conditions.Set(cluster, metav1.Condition{
+		Type:   "ControlPlaneReady",
+		Status: metav1.ConditionTrue,
+		Reason: "ControlPlaneReady",
+	})
 	require.NoError(t, testEnv.Status().Update(ctx, cluster))
 
-	machineForWorkerConfig := &clusterv1.Machine{
+	machineForWorkerConfig := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", "machine-for-worker", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: "machineForWorkerConfig",
+				clusterv2.ClusterNameLabel:             cluster.Name,
+				clusterv2.MachineControlPlaneLabel:     "true",
+				clusterv2.MachineControlPlaneNameLabel: "machineForWorkerConfig",
 			},
 		},
-		Spec: clusterv1.MachineSpec{
+		Spec: clusterv2.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -677,7 +682,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Machine",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       machineForWorkerConfig.Name,
 					UID:        "1",
 				},
@@ -721,31 +726,30 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 		assert.NotNil(c, updatedK0sWorkerConfig.Status.DataSecretName)
 		if updatedK0sWorkerConfig.Status.DataSecretName != nil {
 			assert.Equal(c, *updatedK0sWorkerConfig.Status.DataSecretName, updatedK0sWorkerConfig.Name)
-			assert.True(c, conditions.IsTrue(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
+			assert.True(c, conditions.IsTrue(updatedK0sWorkerConfig, string(bootstrapv1.DataSecretAvailableCondition)))
 
 			// Verify the created secret has the correct labels
 			secretObj := &corev1.Secret{}
 			err = testEnv.Get(ctx, client.ObjectKey{Name: k0sWorkerConfig.Name, Namespace: ns.Name}, secretObj)
 			assert.NoError(c, err, "bootstrap secret should have been created")
 			assert.NotNil(c, secretObj)
-			assert.Equal(c, cluster.Name, secretObj.Labels[clusterv1.ClusterNameLabel])
+			assert.Equal(c, cluster.Name, secretObj.Labels[clusterv2.ClusterNameLabel])
 			assert.NotEmpty(c, secretObj.Data["value"])
 		}
 	}, 20*time.Second, 100*time.Millisecond)
 }
 
-func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta1.K0sControlPlane, *unstructured.Unstructured) {
+func createClusterWithControlPlane(namespace string) (*clusterv2.Cluster, *cpv1beta1.K0sControlPlane, *unstructured.Unstructured) {
 	kcpName := fmt.Sprintf("kcp-foo-%s", util.RandomString(6))
 
 	cluster := newCluster(namespace)
-	cluster.Spec = clusterv1.ClusterSpec{
-		ControlPlaneRef: &corev1.ObjectReference{
-			Kind:       "K0sControlPlane",
-			Namespace:  namespace,
-			Name:       kcpName,
-			APIVersion: cpv1beta1.GroupVersion.String(),
+	cluster.Spec = clusterv2.ClusterSpec{
+		ControlPlaneRef: clusterv2.ContractVersionedObjectReference{
+			APIGroup: "controlplane.cluster.x-k8s.io",
+			Kind:     "K0sControlPlane",
+			Name:     kcpName,
 		},
-		ControlPlaneEndpoint: clusterv1.APIEndpoint{
+		ControlPlaneEndpoint: clusterv2.APIEndpoint{
 			Host: "test.endpoint",
 			Port: 6443,
 		},
@@ -763,7 +767,7 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Cluster",
-					APIVersion: clusterv1.GroupVersion.String(),
+					APIVersion: clusterv2.GroupVersion.String(),
 					Name:       kcpName,
 					UID:        "1",
 				},
@@ -793,8 +797,8 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 				"name":      "infra-foo",
 				"namespace": namespace,
 				"annotations": map[string]interface{}{
-					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.InfrastructureRef.Name,
-					clusterv1.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String(),
+					clusterv2.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.InfrastructureRef.Name,
+					clusterv2.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String(),
 				},
 			},
 			"spec": map[string]interface{}{

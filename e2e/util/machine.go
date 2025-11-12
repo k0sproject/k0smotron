@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -46,13 +46,13 @@ type WaitForMachinesInput struct {
 func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string, []string, error) {
 	inClustersNamespaceListOption := client.InNamespace(input.Namespace)
 	matchClusterListOption := client.MatchingLabels{
-		clusterv1.ClusterNameLabel:         input.ClusterName,
-		clusterv1.MachineControlPlaneLabel: "true",
+		clusterv2.ClusterNameLabel:         input.ClusterName,
+		clusterv2.MachineControlPlaneLabel: "true",
 	}
 
 	allMachines := make(map[string]string)
 	newMachines := make(map[string]string)
-	machineList := &clusterv1.MachineList{}
+	machineList := &clusterv2.MachineList{}
 
 	// Waits for the desired set of machines to exist.
 	err := wait.PollUntilContextTimeout(ctx, input.WaitForMachinesIntervals.tick, input.WaitForMachinesIntervals.timeout, true, func(ctx context.Context) (done bool, err error) {
@@ -152,10 +152,10 @@ type WaitForWorkersMachineInput struct {
 func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput) error {
 	inClustersNamespaceListOption := client.InNamespace(input.Namespace)
 	matchClusterGetOption := client.MatchingLabels{
-		clusterv1.ClusterNameLabel: input.ClusterName,
+		clusterv2.ClusterNameLabel: input.ClusterName,
 	}
 
-	machineList := &clusterv1.MachineList{}
+	machineList := &clusterv2.MachineList{}
 
 	// Waits for the desired worker machine to exist.
 	err := wait.PollUntilContextTimeout(ctx, input.WaitForMachinesIntervals.tick, input.WaitForMachinesIntervals.timeout, true, func(ctx context.Context) (done bool, err error) {
@@ -168,7 +168,7 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 		for _, m := range machineList.Items {
 			isWorker := true
 			for k, _ := range m.GetLabels() {
-				if k == clusterv1.MachineControlPlaneLabel {
+				if k == clusterv2.MachineControlPlaneLabel {
 					isWorker = false
 					break
 				}

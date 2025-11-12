@@ -16,7 +16,7 @@ limitations under the License.
 
 package v1beta1
 
-import clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+import clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 // Conditions and condition Reasons for the K0sControllerConfig and K0sWorkerConfig objects
 // FROM: https://github.com/kubernetes-sigs/cluster-api/blob/main/bootstrap/kubeadm/api/v1beta1/condition_consts.go
@@ -27,7 +27,7 @@ const (
 	// NOTE: When the DataSecret generation starts the process completes immediately and within the
 	// same reconciliation, so the user will always see a transition from Wait to Generated without having
 	// evidence that BootstrapSecret generation is started/in progress.
-	DataSecretAvailableCondition clusterv1.ConditionType = "DataSecretAvailable"
+	DataSecretAvailableCondition clusterv2.ConditionType = "DataSecretAvailable"
 
 	// DataSecretGenerationFailedReason (Severity=Warning) documents a BootstrapConfig controller detecting
 	// an error while generating a data secret; those kind of errors are usually due to misconfigurations

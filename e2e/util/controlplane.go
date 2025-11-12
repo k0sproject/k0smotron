@@ -32,7 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util/patch"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -78,7 +78,7 @@ func WaitForControlPlaneToBeReady(ctx context.Context, client crclient.Client, c
 type UpgradeControlPlaneAndWaitForUpgradeInput struct {
 	GetLister                        capiframework.GetLister
 	ClusterProxy                     capiframework.ClusterProxy
-	Cluster                          *clusterv1.Cluster
+	Cluster                          *clusterv2.Cluster
 	ControlPlane                     *cpv1beta1.K0sControlPlane
 	KubernetesUpgradeVersion         string
 	WaitForKubeProxyUpgradeInterval  Interval
@@ -180,14 +180,14 @@ func byClusterOptions(name, namespace string) []crclient.ListOption {
 	return []crclient.ListOption{
 		crclient.InNamespace(namespace),
 		crclient.MatchingLabels{
-			clusterv1.ClusterNameLabel: name,
+			clusterv2.ClusterNameLabel: name,
 		},
 	}
 }
 
 type WaitForOneK0sControlPlaneMachineToExistInput struct {
 	Lister       capiframework.Lister
-	Cluster      *clusterv1.Cluster
+	Cluster      *clusterv2.Cluster
 	ControlPlane *cpv1beta1.K0sControlPlane
 }
 
@@ -197,12 +197,12 @@ func WaitForOneK0sControlPlaneMachineToExist(ctx context.Context, input WaitForO
 	inClustersNamespaceListOption := crclient.InNamespace(input.Cluster.Namespace)
 	// ControlPlane labels
 	matchClusterListOption := crclient.MatchingLabels{
-		clusterv1.MachineControlPlaneLabel: "true",
-		clusterv1.ClusterNameLabel:         input.Cluster.Name,
+		clusterv2.MachineControlPlaneLabel: "true",
+		clusterv2.ClusterNameLabel:         input.Cluster.Name,
 	}
 
 	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
-		machineList := &clusterv1.MachineList{}
+		machineList := &clusterv2.MachineList{}
 		if err := input.Lister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterListOption); err != nil {
 			fmt.Printf("failed to list the machines: %+v", err)
 			return false, err

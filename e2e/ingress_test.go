@@ -25,8 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"os/exec"
 	"path/filepath"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/controllers/remote"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
@@ -139,7 +138,7 @@ func ingressSupportSpec(t *testing.T) {
 
 	fmt.Print("Waiting for MachineDeployment to be ready\n")
 	require.Eventually(t, func() bool {
-		md := &clusterv1.MachineDeployment{}
+		md := &clusterv2.MachineDeployment{}
 		err := bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{
 			Namespace: workloadClusterNamespace,
 			Name:      workloadClusterName,
@@ -151,9 +150,9 @@ func ingressSupportSpec(t *testing.T) {
 	}, 5*time.Minute, 10*time.Second, "MachineDeployment failed to become ready")
 
 	fmt.Println("Check kube api connection from the nodes through the proxy")
-	machineList := &clusterv1.MachineList{}
+	machineList := &clusterv2.MachineList{}
 	require.NoError(t, bootstrapClusterProxy.GetClient().List(ctx, machineList, client.InNamespace(workloadClusterNamespace), client.MatchingLabels{
-		clusterv1.ClusterNameLabel: workloadClusterName,
+		clusterv2.ClusterNameLabel: workloadClusterName,
 	}), "Should list machines")
 
 	wrc, err := remote.RESTConfig(ctx, "ingress-test", bootstrapClusterProxy.GetClient(), client.ObjectKey{Namespace: workloadClusterNamespace, Name: workloadClusterName})
