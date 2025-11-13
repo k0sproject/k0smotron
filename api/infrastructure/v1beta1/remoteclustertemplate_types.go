@@ -2,7 +2,7 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 func init() {
@@ -30,7 +30,7 @@ type RemoteClusterTemplateSpec struct {
 
 // RemoteClusterTemplateResource describes the data needed to create a RemoteCluster from a template.
 type RemoteClusterTemplateResource struct {
-	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
+	ObjectMeta clusterv2.ObjectMeta `json:"metadata,omitempty"`
 	Spec       RemoteClusterSpec    `json:"spec"`
 }
 

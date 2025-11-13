@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
@@ -73,7 +73,7 @@ func (c *K0sController) generateKubeconfig(ctx context.Context, clusterKey clien
 
 }
 
-func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Config, cluster *clusterv1.Cluster, secretName string) error {
+func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Config, cluster *clusterv2.Cluster, secretName string) error {
 	cfgBytes, err := clientcmd.Write(*cfg)
 	if err != nil {
 		return fmt.Errorf("failed to serialize config to yaml: %w", err)
@@ -81,7 +81,7 @@ func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Con
 
 	clusterName := util.ObjectKey(cluster)
 	owner := metav1.OwnerReference{
-		APIVersion: clusterv1.GroupVersion.String(),
+		APIVersion: clusterv2.GroupVersion.String(),
 		Kind:       "Cluster",
 		Name:       cluster.Name,
 		UID:        cluster.UID,
@@ -132,7 +132,7 @@ func (c *K0sController) regenerateKubeconfigSecret(ctx context.Context, kubeconf
 	return c.Update(ctx, kubeconfigSecret)
 }
 
-func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
+func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv2.Cluster) (*kubernetes.Clientset, error) {
 	if c.workloadClusterKubeClient != nil {
 		return c.workloadClusterKubeClient, nil
 	}
@@ -140,16 +140,21 @@ func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cl
 	return k0smoutil.GetKubeClient(ctx, c.SecretCachingClient, cluster)
 }
 
-func enrichK0sConfigWithClusterData(cluster *clusterv1.Cluster, k0sConfig *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	if cluster.Spec.ClusterNetwork == nil {
+func enrichK0sConfigWithClusterData(cluster *clusterv2.Cluster, k0sConfig *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	// In v1beta2, ClusterNetwork is not a pointer, check if it's empty/zero value
+	// Check if any network fields are set
+	if len(cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) == 0 &&
+		len(cluster.Spec.ClusterNetwork.Services.CIDRBlocks) == 0 &&
+		cluster.Spec.ClusterNetwork.ServiceDomain == "" {
 		return k0sConfig, nil
 	}
 
 	clusterNetworkValues := make(map[string]interface{})
-	if cluster.Spec.ClusterNetwork.Pods != nil {
+	// In v1beta2, NetworkRanges is not a pointer, check if CIDRBlocks is not empty
+	if len(cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) > 0 {
 		clusterNetworkValues["podCIDR"] = cluster.Spec.ClusterNetwork.Pods.String()
 	}
-	if cluster.Spec.ClusterNetwork.Services != nil {
+	if len(cluster.Spec.ClusterNetwork.Services.CIDRBlocks) > 0 {
 		clusterNetworkValues["serviceCIDR"] = cluster.Spec.ClusterNetwork.Services.String()
 	}
 	if cluster.Spec.ClusterNetwork.ServiceDomain != "" {
@@ -182,9 +187,9 @@ func controlPlaneCommonLabelsForCluster(kcp *cpv1beta1.K0sControlPlane, clusterN
 	}
 
 	// Always force these labels over the ones coming from the spec.
-	labels[clusterv1.ClusterNameLabel] = clusterName
-	labels[clusterv1.MachineControlPlaneLabel] = "true"
+	labels[clusterv2.ClusterNameLabel] = clusterName
+	labels[clusterv2.MachineControlPlaneLabel] = "true"
 	// Note: MustFormatValue is used here as the label value can be a hash if the control plane name is longer than 63 characters.
-	labels[clusterv1.MachineControlPlaneNameLabel] = format.MustFormatValue(kcp.Name)
+	labels[clusterv2.MachineControlPlaneNameLabel] = format.MustFormatValue(kcp.Name)
 	return labels
 }

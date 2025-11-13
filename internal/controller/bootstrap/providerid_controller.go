@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,7 +32,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	log := log.FromContext(ctx).WithValues("providerID", req.NamespacedName)
 	log.Info("Reconciling machine's ProviderID")
 
-	machine := &clusterv1.Machine{}
+	machine := &clusterv2.Machine{}
 	if err := p.Get(ctx, req.NamespacedName, machine); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("machine not found")
@@ -53,7 +53,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	if machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "" {
+	if machine.Spec.ProviderID == "" {
 		log.Info("waiting for providerID for the machine " + machine.Name)
 		return ctrl.Result{RequeueAfter: time.Second * 10}, nil
 	}
@@ -75,7 +75,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	var node *corev1.Node
 	for _, n := range nodes.Items {
-		if n.Spec.ProviderID == *machine.Spec.ProviderID {
+		if n.Spec.ProviderID == machine.Spec.ProviderID {
 			// ProviderID is already set on the node
 			return ctrl.Result{}, nil
 		}
@@ -109,7 +109,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if node.Spec.ProviderID == "" {
-		node.Spec.ProviderID = *machine.Spec.ProviderID
+		node.Spec.ProviderID = machine.Spec.ProviderID
 		node.Labels[machineNameNodeLabel] = machine.GetName()
 		err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
 			return true
@@ -128,7 +128,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 
 // SetupWithManager sets up the controller with the Manager.
 func (p *ProviderIDController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
-	apiResources, err := p.ClientSet.Discovery().ServerResourcesForGroupVersion(clusterv1.GroupVersion.String())
+	apiResources, err := p.ClientSet.Discovery().ServerResourcesForGroupVersion(clusterv2.GroupVersion.String())
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
@@ -139,6 +139,6 @@ func (p *ProviderIDController) SetupWithManager(mgr ctrl.Manager, opts controlle
 
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
-		For(&clusterv1.Machine{}).
+		For(&clusterv2.Machine{}).
 		Complete(p)
 }

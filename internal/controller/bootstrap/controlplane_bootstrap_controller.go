@@ -38,8 +38,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -76,7 +76,7 @@ var errInitialControllerMachineNotInitialize = errors.New("initial controller ma
 type ControllerScope struct {
 	Config            *bootstrapv1.K0sControllerConfig
 	ConfigOwner       *bsutil.ConfigOwner
-	Cluster           *clusterv1.Cluster
+	Cluster           *clusterv2.Cluster
 	WorkerEnabled     bool
 	currentKCPVersion *version.Version
 	machines          collections.Machines
@@ -125,14 +125,14 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	log = log.WithValues("kind", configOwner.GetKind(), "version", configOwner.GetResourceVersion(), "name", configOwner.GetName())
 
-	machine := &clusterv1.Machine{}
+	machine := &clusterv2.Machine{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(configOwner.Object, machine); err != nil {
 		return ctrl.Result{}, fmt.Errorf("error converting %s to Machine: %w", configOwner.GetKind(), err)
 	}
 
 	// If the K0sWorkerConfig does not have a version set, use the machine's version.
-	if config.Spec.Version == "" && machine.Spec.Version != nil {
-		config.Spec.Version = *machine.Spec.Version
+	if config.Spec.Version == "" && machine.Spec.Version != "" {
+		config.Spec.Version = machine.Spec.Version
 	}
 	// If the version does not contain the k0s suffix, append it.
 	if config.Spec.Version != "" && !strings.Contains(config.Spec.Version, "+k0s.") {
@@ -196,13 +196,14 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	oldConfig := config.DeepCopy()
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
-		conditions.SetSummary(config,
-			conditions.WithConditions(
-				bootstrapv1.DataSecretAvailableCondition,
-			),
+		err := conditions.SetSummaryCondition(config, config, string(bootstrapv1.DataSecretAvailableCondition),
+			conditions.ForConditionTypes{string(bootstrapv1.DataSecretAvailableCondition)},
 		)
+		if err != nil {
+			log.Error(err, "Failed to set summary condition")
+		}
 		config.Spec = oldConfig.Spec
-		err := patchHelper.Patch(ctx, config)
+		err = patchHelper.Patch(ctx, config)
 		if err != nil {
 			log.Error(err, "Failed to patch K0sControllerConfig status")
 		}
@@ -210,20 +211,35 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		log.Info("control plane endpoint is not set")
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForControlPlaneInitializationReason, clusterv1.ConditionSeverityInfo, "")
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.WaitingForControlPlaneInitializationReason,
+			Message: "",
+		})
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
 	}
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	if err != nil {
 		err = fmt.Errorf("error collecting machines: %w", err)
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.DataSecretGenerationFailedReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
 
 	if machines.Len() == 0 {
 		log.Info("No control plane machines found, waiting for machines to be created")
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForInfrastructureInitializationReason, clusterv1.ConditionSeverityInfo, "")
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.WaitingForInfrastructureInitializationReason,
+			Message: "",
+		})
 		return ctrl.Result{Requeue: true}, nil
 	}
 	scope.machines = machines
@@ -234,11 +250,21 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		// the IP of the first controller when has not yet been surfaced. This is required to create a join token. It is needed to
 		// wait for the addresses to be set.
 		if errors.Is(err, errInitialControllerMachineNotInitialize) {
-			conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForInfrastructureInitializationReason, clusterv1.ConditionSeverityInfo, "")
+			conditions.Set(config, metav1.Condition{
+				Type:    string(bootstrapv1.DataSecretAvailableCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  bootstrapv1.WaitingForInfrastructureInitializationReason,
+				Message: "",
+			})
 			return ctrl.Result{RequeueAfter: time.Second * 30}, nil
 		}
 
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.DataSecretGenerationFailedReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
 
@@ -252,7 +278,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Name:      config.Name,
 			Namespace: config.Namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: scope.Cluster.Name,
+				clusterv2.ClusterNameLabel: scope.Cluster.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -268,15 +294,24 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			"value":  bootstrapData,
 			"format": []byte(scope.provisioner.GetFormat()),
 		},
-		Type: clusterv1.ClusterSecretType,
+		Type: clusterv2.ClusterSecretType,
 	}
 
 	if err := c.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.DataSecretGenerationFailedReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
-	conditions.MarkTrue(config, bootstrapv1.DataSecretAvailableCondition)
+	conditions.Set(config, metav1.Condition{
+		Type:   string(bootstrapv1.DataSecretAvailableCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "DataSecretAvailable",
+	})
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
 
 	// Set the status to ready
@@ -387,7 +422,7 @@ func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context
 	return files, nil
 }
 
-func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File, firstControllerMachine *clusterv1.Machine) ([]provisioner.File, error) {
+func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File, firstControllerMachine *clusterv2.Machine) ([]provisioner.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	_, ca, err := c.getCerts(ctx, scope)
@@ -441,8 +476,8 @@ func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *C
 	frpToken := string(frpSecret.Data["value"])
 
 	localIP := "10.96.0.1"
-	if scope.Cluster.Spec.ClusterNetwork != nil && scope.Cluster.Spec.ClusterNetwork.Services != nil {
-		kubeSvcIP, err := constants.GetAPIServerVirtualIP(scope.Cluster.Spec.ClusterNetwork.Services.String())
+	if scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks != nil && len(scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks) > 0 {
+		kubeSvcIP, err := constants.GetAPIServerVirtualIP(scope.Cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0])
 		if err != nil {
 			return nil, err
 		}
@@ -619,7 +654,7 @@ func mergeControllerExtraArgs(scope *ControllerScope) []string {
 	return mergeExtraArgs(scope.installArgs, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
 }
 
-func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv1.Machine) (string, error) {
+func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv2.Machine) (string, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.TLSClientConfig = &tls.Config{
 		// Since we are using self-signed certificates, we need to skip the verification
@@ -653,14 +688,14 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 	return fmt.Sprintf("https://%s:%s", firstControllerIP, port), nil
 }
 
-func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv1.Machine) (string, error) {
+func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv2.Machine) (string, error) {
 	extAddr, intIPv4Addr, intAddr := "", "", ""
 	for _, addr := range firstControllerMachine.Status.Addresses {
-		if addr.Type == clusterv1.MachineExternalIP {
+		if addr.Type == clusterv2.MachineExternalIP {
 			extAddr = addr.Address
 			break
 		}
-		if addr.Type == clusterv1.MachineInternalIP {
+		if addr.Type == clusterv2.MachineInternalIP {
 			ip, err := netip.ParseAddr(addr.Address)
 			if err != nil {
 				continue
@@ -726,15 +761,17 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 	return "", fmt.Errorf("no address found for machine %s: %w", name, errInitialControllerMachineNotInitialize)
 }
 
-func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, machine *clusterv1.Machine) (*unstructured.Unstructured, error) {
+func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, machine *clusterv2.Machine) (*unstructured.Unstructured, error) {
 	infRef := machine.Spec.InfrastructureRef
 
 	machineImpl := new(unstructured.Unstructured)
-	machineImpl.SetAPIVersion(infRef.APIVersion)
+	// ContractVersionedObjectReference uses APIGroup, need to construct APIVersion
+	// Default to v1beta1, but version is inferred from contract labels in v1beta2
+	machineImpl.SetAPIVersion(infRef.APIGroup + "/v1beta1")
 	machineImpl.SetKind(infRef.Kind)
 	machineImpl.SetName(infRef.Name)
 
-	key := client.ObjectKey{Name: infRef.Name, Namespace: infRef.Namespace}
+	key := client.ObjectKey{Name: infRef.Name, Namespace: machine.Namespace}
 
 	err := c.Get(ctx, key, machineImpl)
 	if err != nil {
@@ -916,10 +953,10 @@ exit 0`,
 	}
 }
 
-func getFirstRunningMachineWithLatestVersion(machines collections.Machines) *clusterv1.Machine {
+func getFirstRunningMachineWithLatestVersion(machines collections.Machines) *clusterv2.Machine {
 	res := make(machinesByVersionAndCreationTimestamp, 0, len(machines))
 	for _, value := range machines {
-		if value.Status.Phase == string(clusterv1.MachinePhasePending) {
+		if value.Status.Phase == string(clusterv2.MachinePhasePending) {
 			continue
 		}
 		res = append(res, value)
@@ -932,7 +969,7 @@ func getFirstRunningMachineWithLatestVersion(machines collections.Machines) *clu
 }
 
 // machinesByCreationTimestamp sorts a list of Machine by creation timestamp, using their names as a tie breaker.
-type machinesByVersionAndCreationTimestamp []*clusterv1.Machine
+type machinesByVersionAndCreationTimestamp []*clusterv2.Machine
 
 func (o machinesByVersionAndCreationTimestamp) Len() int      { return len(o) }
 func (o machinesByVersionAndCreationTimestamp) Swap(i, j int) { o[i], o[j] = o[j], o[i] }
@@ -941,5 +978,5 @@ func (o machinesByVersionAndCreationTimestamp) Less(i, j int) bool {
 	if o[i].CreationTimestamp.Equal(&o[j].CreationTimestamp) {
 		return o[i].Name < o[j].Name
 	}
-	return *o[i].Spec.Version < *o[j].Spec.Version && o[i].CreationTimestamp.Before(&o[j].CreationTimestamp)
+	return o[i].Spec.Version < o[j].Spec.Version && o[i].CreationTimestamp.Before(&o[j].CreationTimestamp)
 }

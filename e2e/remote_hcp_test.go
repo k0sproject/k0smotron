@@ -33,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -250,7 +249,7 @@ func deployHostingCluster() {
 		panic("failed to create a management cluster")
 	}
 
-	hostingClusterProxy = capiframework.NewClusterProxy("bootstrap", hostingClusterProvider.GetKubeconfigPath(), getHostingClusterDefaultScheme(), framework.WithMachineLogCollector(framework.DockerLogCollector{}))
+	hostingClusterProxy = capiframework.NewClusterProxy("bootstrap", hostingClusterProvider.GetKubeconfigPath(), getHostingClusterDefaultScheme(), capiframework.WithMachineLogCollector(capiframework.DockerLogCollector{}))
 	if hostingClusterProxy == nil {
 		panic("failed to get a management cluster proxy")
 	}

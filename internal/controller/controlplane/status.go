@@ -26,8 +26,9 @@ import (
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -56,7 +57,7 @@ type replicaStatusComputer interface {
 	compute(*cpv1beta1.K0sControlPlane) error
 }
 
-func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv1.Cluster) error {
+func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv2.Cluster) error {
 	logger := log.FromContext(ctx)
 
 	defer func() {
@@ -77,7 +78,7 @@ func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sCont
 	return sc.compute(kcp)
 }
 
-func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (replicaStatusComputer, error) {
+func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *clusterv2.Cluster, kcp *cpv1beta1.K0sControlPlane) (replicaStatusComputer, error) {
 	logger := log.FromContext(ctx)
 
 	switch kcp.Spec.UpdateStrategy {
@@ -182,7 +183,7 @@ type machineStatus struct {
 	machines collections.Machines
 }
 
-func newMachineStatusComputer(ctx context.Context, c client.Client, cluster *clusterv1.Cluster) (replicaStatusComputer, error) {
+func newMachineStatusComputer(ctx context.Context, c client.Client, cluster *clusterv2.Cluster) (replicaStatusComputer, error) {
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get machines: %w", err)
@@ -203,9 +204,9 @@ func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 	// Count the machines in different states
 	for _, machine := range rc.machines {
 		switch machine.Status.Phase {
-		case string(clusterv1.MachinePhaseRunning):
+		case string(clusterv2.MachinePhaseRunning):
 			readyReplicas++
-		case string(clusterv1.MachinePhaseProvisioned):
+		case string(clusterv2.MachinePhaseProvisioned):
 			// If we're running without --enable-worker, the machine will never transition
 			// to running state, so we need to count it as ready when it's provisioned
 			if !kcp.WorkerEnabled() {
@@ -213,7 +214,7 @@ func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 			} else {
 				unavailableReplicas++
 			}
-		case string(clusterv1.MachinePhaseDeleting), string(clusterv1.MachinePhaseDeleted):
+		case string(clusterv2.MachinePhaseDeleting), string(clusterv2.MachinePhaseDeleted):
 			// Do nothing
 		default:
 			unavailableReplicas++
@@ -264,17 +265,17 @@ func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 }
 
 // versionMatches checks if the machine version matches the kcp version taking the possibly missing suffix into account
-func versionMatches(machine *clusterv1.Machine, ver string) bool {
+func versionMatches(machine *clusterv2.Machine, ver string) bool {
 
-	if machine.Spec.Version == nil || *machine.Spec.Version == "" {
+	if machine.Spec.Version == "" {
 		return false
 	}
 
-	if *machine.Spec.Version == ver {
+	if machine.Spec.Version == ver {
 		return true
 	}
 
-	machineVersion := *machine.Spec.Version
+	machineVersion := machine.Spec.Version
 	kcpVersion := ver
 
 	// If either of the versions is missing the suffix, we need to add it
@@ -296,7 +297,7 @@ func versionMatches(machine *clusterv1.Machine, ver string) bool {
 	return vKCP.Equal(vMachine)
 }
 
-func (c *K0sController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, logger logr.Logger) {
+func (c *K0sController) computeAvailability(ctx context.Context, cluster *clusterv2.Cluster, kcp *cpv1beta1.K0sControlPlane, logger logr.Logger) {
 	kcp.Status.Ready = false
 	logger.Info("Computed status", "status", kcp.Status)
 	// Check if the control plane is ready by connecting to the API server
@@ -307,7 +308,12 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	if err != nil {
 		logger.Info("Failed to create cluster client", "error", err)
 		// Set a condition for this so we can determine later if we should requeue the reconciliation
-		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "Unable to connect to the workload cluster API", clusterv1.ConditionSeverityWarning, "Failed to create cluster client: %v", err)
+		conditions.Set(kcp, metav1.Condition{
+			Type:    string(cpv1beta1.ControlPlaneReadyCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  "Unable to connect to the workload cluster API",
+			Message: fmt.Sprintf("Failed to create cluster client: %v", err),
+		})
 		return
 	}
 	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -321,12 +327,21 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	}
 	err = client.Get(pingCtx, nsKey, ns)
 	if err != nil {
-		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "Unable to connect to the workload cluster API", clusterv1.ConditionSeverityWarning, "Failed to get namespace: %v", err)
+		conditions.Set(kcp, metav1.Condition{
+			Type:    string(cpv1beta1.ControlPlaneReadyCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  "Unable to connect to the workload cluster API",
+			Message: fmt.Sprintf("Failed to get namespace: %v", err),
+		})
 		return
 	}
 	logger.Info("Successfully pinged the workload cluster API")
 	// Set the conditions
-	conditions.MarkTrue(kcp, cpv1beta1.ControlPlaneReadyCondition)
+	conditions.Set(kcp, metav1.Condition{
+		Type:   string(cpv1beta1.ControlPlaneReadyCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "ControlPlaneReady",
+	})
 	kcp.Status.Ready = true
 	kcp.Status.Initialized = true
 	kcp.Status.Initialization.ControlPlaneInitialized = true

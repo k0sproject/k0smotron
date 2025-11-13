@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
 	"github.com/k0sproject/k0smotron/inttest/util"
@@ -169,7 +169,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 			if strings.Contains(item.GetName(), "worker") {
 				continue
 			}
-			if item.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation] != "docker-test-cp-template-new" {
+			if item.GetAnnotations()[clusterv2.TemplateClonedFromNameAnnotation] != "docker-test-cp-template-new" {
 				return false, nil
 			}
 		}
@@ -197,7 +197,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 				continue
 			}
 
-			if item.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation] != "docker-test-cp-template-new-2" {
+			if item.GetAnnotations()[clusterv2.TemplateClonedFromNameAnnotation] != "docker-test-cp-template-new-2" {
 				return false, nil
 			}
 		}

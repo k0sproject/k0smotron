@@ -30,9 +30,10 @@ import (
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -101,7 +102,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	mode := ModeNonK0s
-	if machine.Spec.Bootstrap.ConfigRef != nil {
+	if machine.Spec.Bootstrap.ConfigRef.Kind != "" {
 		switch machine.Spec.Bootstrap.ConfigRef.Kind {
 		case "K0sWorkerConfig":
 			mode = ModeWorker
@@ -159,11 +160,12 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		// Bail out early if surrounding objects are not ready
-		if cluster.Spec.Paused || annotations.IsPaused(cluster, rm) {
+		if (cluster.Spec.Paused != nil && *cluster.Spec.Paused) || annotations.IsPaused(cluster, rm) {
 			log.Info("Cluster is paused, skipping RemoteMachine reconciliation")
 		}
 
-		if !cluster.Status.InfrastructureReady {
+		// InfrastructureReady was removed in v1beta2, check conditions instead
+		if !conditions.IsTrue(cluster, clusterv2.InfrastructureReadyCondition) {
 			log.Info("Cluster infrastructure is not ready yet")
 			return ctrl.Result{Requeue: true}, nil
 		}
@@ -276,9 +278,9 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	rm.Spec.ProviderID = fmt.Sprintf("remote-machine://%s:%d", rm.Spec.Address, rm.Spec.Port)
 
 	m := machine.DeepCopy()
-	m.Status.Addresses = []clusterv1.MachineAddress{
+	m.Status.Addresses = []clusterv2.MachineAddress{
 		{
-			Type:    clusterv1.MachineExternalIP,
+			Type:    clusterv2.MachineExternalIP,
 			Address: rm.Spec.Address,
 		},
 	}
@@ -411,7 +413,7 @@ func (r *RemoteMachineController) getSSHKey(ctx context.Context, rm *infrastruct
 
 }
 
-func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine *clusterv1.Machine) ([]byte, error) {
+func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine *clusterv2.Machine) ([]byte, error) {
 	if machine.Spec.Bootstrap.DataSecretName == nil {
 		return nil, fmt.Errorf("wait for bootstap secret for the machine: %s", machine.Name)
 	}

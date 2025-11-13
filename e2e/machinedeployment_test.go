@@ -34,7 +34,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -113,7 +113,7 @@ func TestMachinedeployment(t *testing.T) {
 
 		fmt.Print("Waiting for MachineDeployment to be ready\n")
 		require.Eventually(t, func() bool {
-			md := &clusterv1.MachineDeployment{}
+			md := &clusterv2.MachineDeployment{}
 			err := bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{
 				Namespace: namespace.Name,
 				Name:      clusterName,

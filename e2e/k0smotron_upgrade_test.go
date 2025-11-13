@@ -30,7 +30,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/util"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
@@ -187,12 +187,12 @@ func k0smotronUpgradeSpec(t *testing.T) {
 
 	// Get the machines before the management cluster is upgraded to make sure that the upgrade did not trigger
 	// any unexpected rollouts.
-	preUpgradeMachineList := &clusterv1.MachineList{}
+	preUpgradeMachineList := &clusterv2.MachineList{}
 	err = managementClusterProxy.GetClient().List(
 		ctx,
 		preUpgradeMachineList,
 		client.InNamespace(workloadClusterNamespace),
-		client.MatchingLabels{clusterv1.ClusterNameLabel: workloadClusterName},
+		client.MatchingLabels{clusterv2.ClusterNameLabel: workloadClusterName},
 	)
 	require.NoError(t, err)
 
@@ -219,12 +219,12 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		err = e2eutil.WaitForControlPlaneToBeReady(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
 		require.NoError(t, err)
 
-		postUpgradeMachineList := &clusterv1.MachineList{}
+		postUpgradeMachineList := &clusterv2.MachineList{}
 		err = managementClusterProxy.GetClient().List(
 			ctx,
 			postUpgradeMachineList,
 			client.InNamespace(workloadClusterNamespace),
-			client.MatchingLabels{clusterv1.ClusterNameLabel: workloadClusterName},
+			client.MatchingLabels{clusterv2.ClusterNameLabel: workloadClusterName},
 		)
 		require.NoError(t, err)
 
@@ -239,7 +239,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		ClusterctlConfigPath: clusterctlConfigPath,
 		ClusterProxy:         managementClusterProxy,
 		// TODO: make contract configurable
-		Contract:  clusterv1.GroupVersion.Version,
+		Contract:  clusterv2.GroupVersion.Version,
 		LogFolder: managementClusterLogFolder,
 	}, e2eutil.GetInterval(e2eConfig, "bootstrap", "wait-deployment-available"))
 
@@ -254,12 +254,12 @@ func k0smotronUpgradeSpec(t *testing.T) {
 	err = e2eutil.WaitForControlPlaneToBeReady(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
 	require.NoError(t, err)
 
-	postUpgradeMachineList := &clusterv1.MachineList{}
+	postUpgradeMachineList := &clusterv2.MachineList{}
 	err = managementClusterProxy.GetClient().List(
 		ctx,
 		postUpgradeMachineList,
 		client.InNamespace(workloadClusterNamespace),
-		client.MatchingLabels{clusterv1.ClusterNameLabel: workloadClusterName},
+		client.MatchingLabels{clusterv2.ClusterNameLabel: workloadClusterName},
 	)
 	require.NoError(t, err)
 
@@ -271,7 +271,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 // validateMachineRollout checks if the machines in the workload cluster have been rolled out correctly.
 // It compares the pre-upgrade and post-upgrade machine lists to ensure that the machines has not been rolled out after
 // upgrade k0smotron.
-func validateMachineRollout(preMachineList, postMachineList *clusterv1.MachineList) bool {
+func validateMachineRollout(preMachineList, postMachineList *clusterv2.MachineList) bool {
 	if preMachineList == nil && postMachineList == nil {
 		return true
 	}

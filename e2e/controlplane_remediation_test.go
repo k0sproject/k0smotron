@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -123,7 +123,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.Len(t, allMachines, 1)
 	require.Len(t, newMachines, 1)
 	firstMachineName := newMachines[0]
-	firstMachine := &clusterv1.Machine{
+	firstMachine := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      firstMachineName,
 			Namespace: namespace.Name,
@@ -156,7 +156,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.Len(t, allMachines, 1)
 	require.Len(t, newMachines, 1)
 	firstMachineReplacementName := newMachines[0]
-	firstMachineReplacement := &clusterv1.Machine{
+	firstMachineReplacement := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      firstMachineReplacementName,
 			Namespace: namespace.Name,
@@ -202,7 +202,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.Len(t, allMachines, 2)
 	require.Len(t, newMachines, 1)
 	secondMachineName := newMachines[0]
-	secondMachine := &clusterv1.Machine{
+	secondMachine := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secondMachineName,
 			Namespace: namespace.Name,
@@ -235,7 +235,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.Len(t, allMachines, 2)
 	require.Len(t, newMachines, 1)
 	secondMachineReplacementName := newMachines[0]
-	secondMachineReplacement := &clusterv1.Machine{
+	secondMachineReplacement := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secondMachineReplacementName,
 			Namespace: namespace.Name,
@@ -281,7 +281,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.Len(t, allMachines, 3)
 	require.Len(t, newMachines, 1)
 	thirdMachineName := newMachines[0]
-	thirdMachine := &clusterv1.Machine{
+	thirdMachine := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      thirdMachineName,
 			Namespace: namespace.Name,
@@ -342,7 +342,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.Len(t, allMachines, 3)
 	require.Len(t, newMachines, 1)
 	thirdMachineReplacementName := newMachines[0]
-	thirdMachineReplacement := &clusterv1.Machine{
+	thirdMachineReplacement := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      thirdMachineReplacementName,
 			Namespace: namespace.Name,
@@ -514,7 +514,7 @@ func sendSignalToBootstrappingMachine(ctx context.Context, t *testing.T, input s
 		assert.Equal(c, cmWithSignal.Data[configMapDataKey], fmt.Sprintf("ack-%s", input.Signal))
 	}, time.Minute, 10*time.Second, "Failed to get ack signal from machine %s", input.Machine)
 
-	machine := &clusterv1.Machine{
+	machine := &clusterv2.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      input.Machine,
 			Namespace: input.Namespace,

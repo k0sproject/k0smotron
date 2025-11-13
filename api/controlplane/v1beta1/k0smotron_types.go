@@ -18,8 +18,9 @@ package v1beta1
 
 import (
 	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 const K0smotronControlPlaneFinalizer = "k0smotron.controlplane.cluster.x-k8s.io"
@@ -110,13 +111,37 @@ type K0smotronControlPlaneStatus struct {
 
 	// Conditions defines current service state of the K0smotronControlPlane.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv2.Conditions `json:"conditions,omitempty"`
 }
 
-func (k *K0smotronControlPlane) GetConditions() clusterv1.Conditions {
-	return k.Status.Conditions
+// GetConditions implements conditions.Getter for v1beta2 conditions API
+func (k *K0smotronControlPlane) GetConditions() []metav1.Condition {
+	result := make([]metav1.Condition, len(k.Status.Conditions))
+	for i, c := range k.Status.Conditions {
+		result[i] = metav1.Condition{
+			Type:               string(c.Type),
+			Status:             metav1.ConditionStatus(c.Status),
+			ObservedGeneration: k.GetGeneration(),
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+		}
+	}
+	return result
 }
 
-func (k *K0smotronControlPlane) SetConditions(conditions clusterv1.Conditions) {
-	k.Status.Conditions = conditions
+// SetConditions implements conditions.Setter for v1beta2 conditions API
+func (k *K0smotronControlPlane) SetConditions(conditions []metav1.Condition) {
+	result := make(clusterv2.Conditions, len(conditions))
+	for i, c := range conditions {
+		result[i] = clusterv2.Condition{
+			Type:               clusterv2.ConditionType(c.Type),
+			Status:             corev1.ConditionStatus(c.Status),
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+			Severity:           clusterv2.ConditionSeverityInfo, // Default severity
+		}
+	}
+	k.Status.Conditions = result
 }
