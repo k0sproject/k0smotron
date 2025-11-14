@@ -115,16 +115,14 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		ClusterctlConfigPath: clusterctlConfigPath,
 		KubeconfigPath:       managementClusterProxy.GetKubeconfigPath(),
 		// no flavor specified, so it will use the default one "cluster-template"
-		Flavor: "",
-
-		Namespace:         workloadClusterNamespace,
-		ClusterName:       workloadClusterName,
-		KubernetesVersion: e2eConfig.MustGetVariable(KubernetesVersion),
-		// TODO: make replicas value configurable
-		ControlPlaneMachineCount: ptr.To[int64](3),
-		// TODO: make infra provider configurable
-		InfrastructureProvider: "docker",
-		LogFolder:              filepath.Join(artifactFolder, "clusters", managementClusterProxy.GetName()),
+		Flavor:                   "",
+		Namespace:                workloadClusterNamespace,
+		ClusterName:              workloadClusterName,
+		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
+		ControlPlaneMachineCount: ptr.To(int64(controlPlaneMachineCount)),
+		WorkerMachineCount:       ptr.To(int64(workerMachineCount)),
+		InfrastructureProvider:   infrastructureProvider,
+		LogFolder:                filepath.Join(artifactFolder, "clusters", managementClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME":    workloadClusterName,
 			"NAMESPACE":       workloadClusterNamespace,
@@ -156,6 +154,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
 			clusterctlConfigPath,
+			infrastructureProvider,
 		)
 
 		testCancelWatches()

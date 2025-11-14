@@ -21,20 +21,26 @@ package util
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	dockerprovisioner "github.com/k0sproject/k0smotron/e2e/util/poolprovisioner/docker"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/infrastructure/container"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -109,9 +115,27 @@ func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input Upgrad
 		return err
 	}
 
+	isK0smotronInfrastructure, err := isK0smotronInfrastructure(ctx, IsK0smotronInfrastructureInput{
+		Getter:  input.ClusterProxy.GetClient(),
+		Cluster: input.Cluster,
+	})
+	if err != nil {
+		return err
+	}
+
+	var workloadClient crclient.Client
+	if isK0smotronInfrastructure {
+		c, err := getLocalWorkloadClient(ctx, input.ClusterProxy, input.Cluster.Namespace, input.Cluster.Name)
+		if err != nil {
+			return err
+		}
+		workloadClient = c
+	} else {
+		workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
+		workloadClient = workloadCluster.GetClient()
+	}
+
 	fmt.Println("Waiting for kube-proxy to have the upgraded kubernetes version")
-	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
-	workloadClient := workloadCluster.GetClient()
 	return WaitForKubeProxyUpgrade(ctx, WaitForKubeProxyUpgradeInput{
 		Getter:            workloadClient,
 		KubernetesVersion: input.KubernetesUpgradeVersion,
@@ -334,4 +358,92 @@ func k0smotronControlPlaneExists(ctx context.Context, input K0smotronControlPlan
 	}
 
 	return false, nil
+}
+
+type IsK0smotronInfrastructureInput struct {
+	Getter  capiframework.Getter
+	Cluster *clusterv1.Cluster
+}
+
+func isK0smotronInfrastructure(ctx context.Context, input IsK0smotronInfrastructureInput) (bool, error) {
+	clusterInfra := &unstructured.Unstructured{}
+	clusterInfra.SetAPIVersion("infrastructure.cluster.x-k8s.io/v1beta1")
+	clusterInfra.SetKind("RemoteCluster")
+	clusterKey := crclient.ObjectKey{
+		Name:      input.Cluster.Name,
+		Namespace: input.Cluster.Namespace,
+	}
+
+	err := input.Getter.Get(ctx, clusterKey, clusterInfra)
+	if err != nil {
+		if strings.Contains(err.Error(), "no matches for kind \"RemoteCluster\"") {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+// getLocalWorkloadClient retrieves the workload cluster client for k0smotron infrastructure clusters where controlplane url need to be modified
+// to point to the local port-forwarded API server.
+func getLocalWorkloadClient(ctx context.Context, clusterProxy capiframework.ClusterProxy, namespace, name string) (crclient.Client, error) {
+	cl := clusterProxy.GetClient()
+
+	secret := &corev1.Secret{}
+	key := client.ObjectKey{
+		Name:      fmt.Sprintf("%s-kubeconfig", name),
+		Namespace: namespace,
+	}
+	err := cl.Get(ctx, key, secret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret %s: %w", key, err)
+	}
+
+	config, err := clientcmd.Load(secret.Data["value"])
+	if err != nil {
+		return nil, fmt.Errorf("failed to load kubeconfig from secret %s: %w", key, err)
+	}
+
+	currentCluster := config.Contexts[config.CurrentContext].Cluster
+
+	containerRuntime, err := container.NewDockerClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create docker client: %w", err)
+	}
+	ctx = container.RuntimeInto(ctx, containerRuntime)
+	loadBalancerName := dockerprovisioner.GetLoadBalancerName()
+
+	// Check if the container exists locally.
+	filters := container.FilterBuilder{}
+	filters.AddKeyValue("name", loadBalancerName)
+	containers, err := containerRuntime.ListContainers(ctx, filters)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list containers: %w", err)
+	}
+	if len(containers) == 0 {
+		return nil, fmt.Errorf("container %s not found", loadBalancerName)
+	}
+	port, err := containerRuntime.GetHostPort(ctx, loadBalancerName, "6443/tcp")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get load balancer port: %w", err)
+	}
+
+	controlPlaneURL := &url.URL{
+		Scheme: "https",
+		Host:   "127.0.0.1:" + port,
+	}
+	config.Clusters[currentCluster].Server = controlPlaneURL.String()
+
+	// now create the client
+	restConfig, err := clientcmd.NewDefaultClientConfig(*config, &clientcmd.ConfigOverrides{}).ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create rest config from modified kubeconfig: %w", err)
+	}
+
+	workloadClient, err := crclient.New(restConfig, crclient.Options{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create workload client from modified rest config: %w", err)
+	}
+	return workloadClient, nil
 }

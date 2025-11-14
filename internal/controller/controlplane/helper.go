@@ -363,7 +363,10 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sContr
 	kcpK0sConfig.K0s = nil
 	machineK0sConfig.K0s = nil
 
-	return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
+	diff := cmp.Diff(kcpK0sConfig, machineK0sConfig)
+	fmt.Println("K0sConfig diff:", diff)
+
+	return diff != ""
 
 }
 
@@ -438,8 +441,20 @@ func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructur
 	clonedFromName := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation]
 	clonedFromGroupKind := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation]
 
-	return clonedFromName == kcp.Spec.MachineTemplate.InfrastructureRef.Name &&
+	matchesTemplateClonedFrom := clonedFromName == kcp.Spec.MachineTemplate.InfrastructureRef.Name &&
 		clonedFromGroupKind == kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
+
+	if !matchesTemplateClonedFrom {
+		fmt.Printf("Machine %s infra does not match template cloned from. Got name: %s, expected: %s. Got groupkind: %s, expected: %s\n",
+			machine.Name,
+			clonedFromName,
+			kcp.Spec.MachineTemplate.InfrastructureRef.Name,
+			clonedFromGroupKind,
+			kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String(),
+		)
+	}
+
+	return matchesTemplateClonedFrom
 }
 
 func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clientset *kubernetes.Clientset) (bool, error) {
