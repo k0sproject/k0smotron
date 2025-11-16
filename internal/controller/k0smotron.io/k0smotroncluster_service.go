@@ -116,9 +116,10 @@ func generateService(kmc *km.Cluster) v1.Service {
 			Annotations: annotations,
 		},
 		Spec: v1.ServiceSpec{
-			Type:     kmc.Spec.Service.Type,
-			Selector: labels,
-			Ports:    ports,
+			Type:                  kmc.Spec.Service.Type,
+			Selector:              labels,
+			Ports:                 ports,
+			ExternalTrafficPolicy: kmc.Spec.Service.ExternalTrafficPolicy,
 		},
 	}
 

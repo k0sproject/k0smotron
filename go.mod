@@ -7,6 +7,7 @@ require (
 	github.com/coreos/butane v0.24.0
 	github.com/go-logr/logr v1.4.2
 	github.com/gobuffalo/flect v1.0.3
+	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/imdario/mergo v0.3.16
 	github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29
@@ -118,7 +119,6 @@ require (
 	github.com/google/cel-go v0.22.0 // indirect
 	github.com/google/certificate-transparency-go v1.1.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-github/v53 v53.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
