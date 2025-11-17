@@ -19,6 +19,7 @@ package v1beta1
 import (
 	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -112,6 +113,10 @@ type RemoteMachineStatus struct {
 	// Ready denotes that the remote machine is ready to be used.
 	// +kubebuilder:validation:Optional
 	Ready bool `json:"ready,omitempty"`
+
+	// addresses contains the associated addresses for the machine.
+	// +optional
+	Addresses []clusterv1.MachineAddress `json:"addresses,omitempty"`
 
 	FailureReason  string `json:"failureReason,omitempty"`
 	FailureMessage string `json:"failureMessage,omitempty"`

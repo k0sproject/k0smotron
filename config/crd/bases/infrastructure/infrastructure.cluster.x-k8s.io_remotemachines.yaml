@@ -8815,6 +8815,32 @@ spec:
           status:
             description: RemoteMachineStatus defines the observed state of RemoteMachine
             properties:
+              addresses:
+                description: addresses contains the associated addresses for the machine.
+                items:
+                  description: MachineAddress contains information for the node's
+                    address.
+                  properties:
+                    address:
+                      description: address is the machine address.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                    type:
+                      description: type is the machine address type, one of Hostname,
+                        ExternalIP, InternalIP, ExternalDNS or InternalDNS.
+                      enum:
+                      - Hostname
+                      - ExternalIP
+                      - InternalIP
+                      - ExternalDNS
+                      - InternalDNS
+                      type: string
+                  required:
+                  - address
+                  - type
+                  type: object
+                type: array
               failureMessage:
                 type: string
               failureReason:

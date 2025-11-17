@@ -25,11 +25,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/retry"
 
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -274,14 +274,14 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	rm.Spec.ProviderID = fmt.Sprintf("remote-machine://%s:%d", rm.Spec.Address, rm.Spec.Port)
-
-	m := machine.DeepCopy()
-	m.Status.Addresses = []clusterv1.MachineAddress{
+	rm.Status.Addresses = []clusterv1.MachineAddress{
 		{
 			Type:    clusterv1.MachineExternalIP,
 			Address: rm.Spec.Address,
 		},
 	}
+
+	m := machine.DeepCopy()
 	for l := range rm.Labels {
 		if _, ok := m.Labels[l]; !ok {
 			m.Labels[l] = rm.Labels[l]
