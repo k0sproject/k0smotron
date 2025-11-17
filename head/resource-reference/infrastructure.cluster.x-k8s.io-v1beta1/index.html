@@ -17674,6 +17674,13 @@ The key must be placed on the secret using the key "value".</p>
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#remotemachinestatusaddressesindex">addresses</a></b></td>
+        <td>[]object</td>
+        <td>
+          addresses contains the associated addresses for the machine.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>failureMessage</b></td>
         <td>string</td>
         <td>
@@ -17694,6 +17701,37 @@ The key must be placed on the secret using the key "value".</p>
           Ready denotes that the remote machine is ready to be used.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="remotemachinestatusaddressesindex">RemoteMachine.status.addresses[index]<a class="headerlink" href="#remotemachinestatusaddressesindex" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#remotemachinestatus">↩ Parent</a></sup></sup></p>
+<p>MachineAddress contains information for the node's address.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>address</b></td>
+        <td>string</td>
+        <td>
+          address is the machine address.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          type is the machine address type, one of Hostname, ExternalIP, InternalIP, ExternalDNS or InternalDNS.<br/>
+          <br/>
+            <i>Enum</i>: Hostname, ExternalIP, InternalIP, ExternalDNS, InternalDNS<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
