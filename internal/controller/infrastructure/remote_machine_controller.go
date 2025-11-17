@@ -345,8 +345,12 @@ func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *
 		}
 	}
 
-	rm.Labels = foundPooledMachine.Labels
-	rm.Annotations = foundPooledMachine.Annotations
+	for k, v := range foundPooledMachine.Labels {
+		rm.Labels[k] = v
+	}
+	for k, v := range foundPooledMachine.Annotations {
+		rm.Annotations[k] = v
+	}
 	rm.Spec.Address = foundPooledMachine.Spec.Machine.Address
 	rm.Spec.Port = foundPooledMachine.Spec.Machine.Port
 	rm.Spec.User = foundPooledMachine.Spec.Machine.User
