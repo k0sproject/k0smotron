@@ -17419,6 +17419,13 @@ RemoteMachineStatus defines the observed state of RemoteMachine
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#remotemachinestatusaddressesindex">addresses</a></b></td>
+        <td>[]object</td>
+        <td>
+          addresses contains the associated addresses for the machine.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>failureMessage</b></td>
         <td>string</td>
         <td>
@@ -17439,6 +17446,42 @@ RemoteMachineStatus defines the observed state of RemoteMachine
           Ready denotes that the remote machine is ready to be used.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.status.addresses[index]
+<sup><sup>[↩ Parent](#remotemachinestatus)</sup></sup>
+
+
+
+MachineAddress contains information for the node's address.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>address</b></td>
+        <td>string</td>
+        <td>
+          address is the machine address.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          type is the machine address type, one of Hostname, ExternalIP, InternalIP, ExternalDNS or InternalDNS.<br/>
+          <br/>
+            <i>Enum</i>: Hostname, ExternalIP, InternalIP, ExternalDNS, InternalDNS<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
