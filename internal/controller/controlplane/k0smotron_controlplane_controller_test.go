@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -244,6 +245,41 @@ func TestIsClusterSpecSynced(t *testing.T) {
 			result, err := isClusterSpecSynced(tc.kmcSpec, tc.kcpSpec)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expected, result)
+		})
+	}
+}
+
+func Test_alignToSpecVersionFormat(t *testing.T) {
+	tests := []struct {
+		name           string
+		specVersion    *version.Version
+		currentVersion *version.Version
+		want           *version.Version
+	}{
+		{
+			name:           "both versions have same format",
+			specVersion:    version.MustParse("v1.33.1-k0s.0"),
+			currentVersion: version.MustParse("v1.33.1-k0s.1"),
+			want:           version.MustParse("v1.33.1-k0s.1"),
+		},
+		{
+			name:           "versions does not have same format: spec with +k0s, current with -k0s",
+			specVersion:    version.MustParse("v1.33.1+k0s.0"),
+			currentVersion: version.MustParse("v1.33.1-k0s.1"),
+			want:           version.MustParse("v1.33.1+k0s.1"),
+		},
+		{
+			name:           "versions does not have same format: spec with -k0s, current with +k0s",
+			specVersion:    version.MustParse("v1.33.1-k0s.0"),
+			currentVersion: version.MustParse("v1.33.1+k0s.1"),
+			want:           version.MustParse("v1.33.1-k0s.1"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := alignToSpecVersionFormat(tt.specVersion, tt.currentVersion)
+			require.NoError(t, err)
+			require.True(t, tt.want.Equal(got), "alignToSpecVersionFormat() = %v, want %v", got, tt.want)
 		})
 	}
 }

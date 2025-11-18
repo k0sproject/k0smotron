@@ -417,16 +417,25 @@ func ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cp
 }
 
 // FormatStatusVersion formats the status version to match the spec version format.
-// If spec.version doesn't contain "-k0s." suffix, it removes the suffix from status.version as well.
+// If spec.version doesn't contain "-k0s." or "+k0s." suffix, it removes the suffix from status.version as well.
+// TODO: Remove support for "-k0s." suffix in future versions.
 func FormatStatusVersion(specVersion, statusVersion string) string {
-	specHasK0sSuffix := strings.Contains(specVersion, "-k0s.")
+	specHasK0sSuffix := strings.Contains(specVersion, "-k0s.") || strings.Contains(specVersion, "+k0s.")
 
-	// Adjust status.version to match the format of spec.version
-	if !specHasK0sSuffix && strings.Contains(statusVersion, "-k0s.") {
-		// If spec.version doesn't have the -k0s. suffix, remove it from status.version as well
-		parts := strings.Split(statusVersion, "-k0s.")
-		if len(parts) > 0 {
-			return parts[0]
+	if !specHasK0sSuffix {
+		if strings.Contains(statusVersion, "-k0s.") {
+			// If spec.version doesn't have the -k0s. suffix, remove it from status.version as well
+			parts := strings.Split(statusVersion, "-k0s.")
+			if len(parts) > 0 {
+				return parts[0]
+			}
+		}
+		if strings.Contains(statusVersion, "+k0s.") {
+			// If spec.version doesn't have the +k0s. suffix, remove it from status.version as well
+			parts := strings.Split(statusVersion, "+k0s.")
+			if len(parts) > 0 {
+				return parts[0]
+			}
 		}
 	}
 
@@ -462,8 +471,8 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	var updatedReplicas, readyReplicas, unavailableReplicas int
 
 	desiredVersionStr := kcp.Spec.Version
-	if !strings.Contains(desiredVersionStr, "-") {
-		desiredVersionStr = fmt.Sprintf("%s-%s", desiredVersionStr, kapi.DefaultK0SSuffix)
+	if !strings.Contains(desiredVersionStr, "-") && !strings.Contains(desiredVersionStr, "+") {
+		desiredVersionStr = fmt.Sprintf("%s+%s", desiredVersionStr, kapi.DefaultK0SSuffix)
 	}
 	desiredVersion, err := version.NewVersion(desiredVersionStr)
 	if err != nil {
@@ -488,7 +497,12 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 			continue
 		}
 
-		currentVersion, err := scope.getComparableK0sVersionRunningInPod(ctx, &pod)
+		currentVersion, err := scope.getK0sVersionRunningInPod(ctx, &pod)
+		if err != nil {
+			return err
+		}
+		// Align version format in spec to the current version format for comparison. DO NOT modify version format in spec.
+		currentVersion, err = alignToSpecVersionFormat(desiredVersion, currentVersion)
 		if err != nil {
 			return err
 		}
@@ -525,6 +539,32 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	}
 
 	return nil
+}
+
+// alignToSpecVersionFormat ensures that the currentVersion format matches the desiredVersion format.
+// TODO: Once the "-k0s." suffix is fully deprecated, this function can be removed.
+func alignToSpecVersionFormat(specVersion, currentVersion *version.Version) (*version.Version, error) {
+	specVersionUsesDefaultK0SSuffix := strings.Contains(specVersion.String(), "+")
+	currentVersionUsesDefaultK0SSuffix := strings.Contains(currentVersion.String(), "+")
+
+	isFormatAligned := (specVersionUsesDefaultK0SSuffix && currentVersionUsesDefaultK0SSuffix) ||
+		(!specVersionUsesDefaultK0SSuffix && !currentVersionUsesDefaultK0SSuffix)
+
+	if isFormatAligned {
+		return currentVersion, nil
+	}
+
+	currentVersionStr := currentVersion.String()
+	if !specVersionUsesDefaultK0SSuffix {
+		// Spec version format is like "vX.Y.Z-k0s.0". Convert currentVersion to match it.
+		currentVersionAlignedStr := strings.Replace(currentVersionStr, "+k0s.", "-k0s.", 1)
+		return version.NewVersion(currentVersionAlignedStr)
+	}
+
+	// Current version format is like "vX.Y.Z-k0s.0". Convert currentVersion to match it.
+	currentVersionAlignedStr := strings.Replace(currentVersionStr, "-k0s.", "+k0s.", 1)
+	return version.NewVersion(currentVersionAlignedStr)
+
 }
 
 // computeAvailability checks if the control plane is ready by connecting to the API server
@@ -574,16 +614,12 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	})
 }
 
-func (scope *kmcScope) getComparableK0sVersionRunningInPod(ctx context.Context, pod *corev1.Pod) (*version.Version, error) {
+func (scope *kmcScope) getK0sVersionRunningInPod(ctx context.Context, pod *corev1.Pod) (*version.Version, error) {
 	currentVersionOutput, err := exec.PodExecCmdOutput(ctx, scope.clientSet, scope.restConfig, pod.GetName(), pod.GetNamespace(), "k0s version")
 	if err != nil {
 		return nil, err
 	}
 	currentVersionStr, _ := strings.CutSuffix(currentVersionOutput, "\n")
-	// In order to compare the version reported by the 'k0s version' command executed in the pod running
-	// the controlplane with the version declared in K0smotronControlPlane.spec this transformation is
-	// necessary to match their format.
-	currentVersionStr = strings.Replace(currentVersionStr, "+", "-", 1)
 	return version.NewVersion(currentVersionStr)
 }
 

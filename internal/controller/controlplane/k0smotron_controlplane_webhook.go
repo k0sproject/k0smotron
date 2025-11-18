@@ -19,6 +19,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
+
 	k0smotronio "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
 	"github.com/k0sproject/version"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,6 +31,7 @@ import (
 )
 
 // +kubebuilder:webhook:path=/validate-controlplane-cluster-x-k8s-io-v1beta1-k0smotroncontrolplane,mutating=false,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0smotroncontrolplanes,verbs=create;update,versions=v1beta1,name=validate-k0smotroncontrolplane-v1beta1.k0smotron.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/mutate-controlplane-cluster-x-k8s-io-v1beta1-k0smotroncontrolplane,mutating=true,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0smotroncontrolplanes,verbs=create;update,versions=v1beta1,name=mutate-k0smotroncontrolplane-v1beta1.k0smotron.io,admissionReviewVersions=v1
 
 // K0smotronControlPlaneValidator struct is responsible for validating the K0smotronControlPlane resource when it is created, updated, or deleted.
 //
@@ -39,7 +41,25 @@ type K0smotronControlPlaneValidator struct {
 	cv k0smotronio.ClusterValidator
 }
 
+// K0smotronControlPlaneDefaulter struct is responsible for defaulting the K0smotronControlPlane resource when it is created or updated.
+//
+// NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
+// as this struct is used only for temporary operations and does not need to be deeply copied.
+type K0smotronControlPlaneDefaulter struct {
+	cv k0smotronio.ClusterDefaulter
+}
+
 var _ webhook.CustomValidator = &K0smotronControlPlaneValidator{}
+var _ webhook.CustomDefaulter = &K0smotronControlPlaneDefaulter{}
+
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type K0smotronControlPlane.
+func (d *K0smotronControlPlaneDefaulter) Default(_ context.Context, obj runtime.Object) error {
+	kcp, ok := obj.(*v1beta1.K0smotronControlPlane)
+	if !ok {
+		return fmt.Errorf("expected a K0smotronControlPlane object but got %T", obj)
+	}
+	return d.cv.DefaultClusterSpec(&kcp.Spec)
+}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type K0smotronControlPlane.
 func (v *K0smotronControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
@@ -108,9 +128,10 @@ func (v *K0smotronControlPlaneValidator) ValidateDelete(_ context.Context, _ run
 }
 
 // SetupK0smotronControlPlaneWebhookWithManager registers the webhook for K0smotronControlPlane in the manager.
-func (v *K0smotronControlPlaneValidator) SetupK0smotronControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
+func SetupK0smotronControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&v1beta1.K0smotronControlPlane{}).
-		WithValidator(v).
+		WithValidator(&K0smotronControlPlaneValidator{}).
+		WithDefaulter(&K0smotronControlPlaneDefaulter{}).
 		Complete()
 }

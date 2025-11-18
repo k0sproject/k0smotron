@@ -37,7 +37,7 @@ func TestClusterSpec_GetImage(t *testing.T) {
 		{
 			name: "Only version given with suffix",
 			spec: &ClusterSpec{
-				Version: "v1.29.4-k0s.0",
+				Version: "v1.29.4+k0s.0",
 			},
 			want: "quay.io/k0sproject/k0s:v1.29.4-k0s.0",
 		},
@@ -66,7 +66,7 @@ func TestClusterSpec_GetImage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.spec.GetImage(); got != tt.want {
+			if got := tt.spec.GetK0sImageRef(); got != tt.want {
 				require.Equal(t, tt.want, got)
 			}
 		})

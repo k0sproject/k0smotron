@@ -19,9 +19,10 @@ package v1beta1
 import (
 	"crypto/md5"
 	"fmt"
+	"strings"
+
 	"github.com/k0sproject/version"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -174,27 +175,34 @@ type Mount struct {
 }
 
 const (
-	defaultK0SImage   = "quay.io/k0sproject/k0s"
-	DefaultK0SVersion = "v1.27.9-k0s.0"
-	DefaultK0SSuffix  = "k0s.0"
-	DefaultEtcdImage  = "quay.io/k0sproject/etcd:v3.5.13"
+	defaultK0SRepository = "quay.io/k0sproject/k0s"
+	// DefaultK0SVersion is the default version used (kubernetes version + k0s version).
+	DefaultK0SVersion = "v1.27.9+k0s.0"
+	// DefaultK0SSuffix is the default k0s version used.
+	DefaultK0SSuffix = "k0s.0"
+	// DefaultEtcdImage is the default etcd image reference used.
+	DefaultEtcdImage = "quay.io/k0sproject/etcd:v3.5.13"
 )
 
-func (c *ClusterSpec) GetImage() string {
-	k0sVersion := c.Version
-	if k0sVersion == "" {
-		k0sVersion = DefaultK0SVersion
+// GetK0sImageRef returns the k0s image reference.
+func (c *ClusterSpec) GetK0sImageRef() string {
+	k0sTag := c.Version
+	if k0sTag == "" {
+		k0sTag = DefaultK0SVersion
 	}
 
-	if !strings.Contains(k0sVersion, "-k0s.") {
-		k0sVersion = fmt.Sprintf("%s-%s", k0sVersion, DefaultK0SSuffix)
+	if !strings.Contains(k0sTag, "+k0s.") {
+		k0sTag = fmt.Sprintf("%s+%s", k0sTag, DefaultK0SSuffix)
 	}
 
+	k0sImageRef := fmt.Sprintf("%s:%s", c.Image, k0sTag)
 	if c.Image == "" {
-		return fmt.Sprintf("%s:%s", defaultK0SImage, k0sVersion)
+		k0sImageRef = fmt.Sprintf("%s:%s", defaultK0SRepository, k0sTag)
 	}
 
-	return fmt.Sprintf("%s:%s", c.Image, k0sVersion)
+	// Mutate image reference to avoid "+" character in the k0s version tag which is not allowed in some
+	// registries like Docker Hub (https://github.com/distribution/reference/blob/main/reference.go)
+	return strings.ReplaceAll(k0sImageRef, "+k0s.", "-k0s.")
 }
 
 // ClusterStatus defines the observed state of K0smotronCluster

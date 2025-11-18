@@ -118,7 +118,7 @@ func (scope *kmcScope) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, e
 					}},
 					Containers: []v1.Container{{
 						Name:            "controller",
-						Image:           kmc.Spec.GetImage(),
+						Image:           kmc.Spec.GetK0sImageRef(),
 						ImagePullPolicy: v1.PullIfNotPresent,
 						Args:            []string{"/bin/sh", "-c", "/k0smotron-entrypoint.sh"},
 						Ports: []v1.ContainerPort{
@@ -442,7 +442,7 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 	// Otherwise k0s will trip over the permissions and RO mounts
 	sfs.Spec.Template.Spec.InitContainers = append(sfs.Spec.Template.Spec.InitContainers, v1.Container{
 		Name:  "certs-init",
-		Image: kmc.Spec.GetImage(),
+		Image: kmc.Spec.GetK0sImageRef(),
 		Command: []string{
 			"sh",
 			"-c",

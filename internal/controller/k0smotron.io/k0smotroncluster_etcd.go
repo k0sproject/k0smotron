@@ -406,7 +406,7 @@ func initialCluster(kmc *km.Cluster, replicas int32) string {
 }
 
 func generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet) []v1.Container {
-	checkImage := kmc.Spec.GetImage()
+	checkImage := kmc.Spec.GetK0sImageRef()
 	if existingSts != nil {
 		for _, c := range existingSts.Spec.Template.Spec.InitContainers {
 			if c.Name == "dns-check" {

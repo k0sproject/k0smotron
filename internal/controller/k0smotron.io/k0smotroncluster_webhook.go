@@ -56,8 +56,6 @@ func (c ClusterValidator) ValidateDelete(_ context.Context, _ runtime.Object) (w
 
 // ValidateClusterSpec validates the ClusterSpec and returns any warnings or errors.
 func (c ClusterValidator) ValidateClusterSpec(kcs *km.ClusterSpec) (warnings admission.Warnings, err error) {
-	warnings = c.validateVersionSuffix(kcs.Version)
-
 	if kcs.Ingress != nil {
 		warn, err := kcs.Ingress.Validate(kcs.Version)
 		warnings = append(warnings, warn...)
@@ -73,43 +71,48 @@ func (c ClusterValidator) ValidateClusterSpec(kcs *km.ClusterSpec) (warnings adm
 	return warnings, nil
 }
 
-// validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
-func (c ClusterValidator) validateVersionSuffix(version string) admission.Warnings {
-	warnings := admission.Warnings{}
-	if version != "" && !strings.Contains(version, "-k0s.") {
-		warnings = append(warnings, fmt.Sprintf("The specified version '%s' requires a k0s suffix (-k0s.<number>). Using '%s-k0s.0' instead.", version, version))
-	}
-
-	return warnings
-}
-
-func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error {
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type Cluster.
+func (c ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error {
 	kmc, ok := obj.(*km.Cluster)
 	if !ok {
 		return fmt.Errorf("expected a Cluster object but got %T", obj)
 	}
 
-	if kmc.Spec.Replicas == 0 {
-		kmc.Spec.Replicas = 1
+	return c.DefaultClusterSpec(&kmc.Spec)
+}
+
+// DefaultClusterSpec sets default values for the ClusterSpec.
+func (c *ClusterDefaulter) DefaultClusterSpec(kmcSpec *km.ClusterSpec) error {
+	if kmcSpec.Replicas == 0 {
+		kmcSpec.Replicas = 1
 	}
 
-	if kmc.Spec.Version == "" {
-		kmc.Spec.Version = km.DefaultK0SVersion
+	if kmcSpec.Version == "" {
+		kmcSpec.Version = km.DefaultK0SVersion
+	} else {
+		// Ensure we store the version with "+k0s.". That way we can standardize the k0s version format.
+		// Needed sanitization will be done in runtime when building image references and not required
+		// by the user.
+		kmcSpec.Version = strings.ReplaceAll(kmcSpec.Version, "-k0s.", "+k0s.")
+		// Always append the default k0s version if not present.
+		if !strings.Contains(kmcSpec.Version, "+k0s.") {
+			kmcSpec.Version = fmt.Sprintf("%s+%s", kmcSpec.Version, km.DefaultK0SSuffix)
+		}
 	}
 
-	if kmc.Spec.Service.Type == "" {
-		kmc.Spec.Service.Type = corev1.ServiceTypeClusterIP
-		kmc.Spec.Service.APIPort = 30443
-		kmc.Spec.Service.KonnectivityPort = 30132
+	if kmcSpec.Service.Type == "" {
+		kmcSpec.Service.Type = corev1.ServiceTypeClusterIP
+		kmcSpec.Service.APIPort = 30443
+		kmcSpec.Service.KonnectivityPort = 30132
 	}
 
-	if kmc.Spec.Etcd.Image == "" {
-		kmc.Spec.Etcd.Image = km.DefaultEtcdImage
+	if kmcSpec.Etcd.Image == "" {
+		kmcSpec.Etcd.Image = km.DefaultEtcdImage
 	}
 
-	if kmc.Spec.Ingress != nil {
-		if kmc.Spec.Ingress.Deploy == nil {
-			kmc.Spec.Ingress.Deploy = ptr.To(true)
+	if kmcSpec.Ingress != nil {
+		if kmcSpec.Ingress.Deploy == nil {
+			kmcSpec.Ingress.Deploy = ptr.To(true)
 		}
 	}
 
