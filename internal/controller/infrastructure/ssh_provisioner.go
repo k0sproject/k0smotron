@@ -237,8 +237,10 @@ func (p *SSHProvisioner) uploadFile(client *rig.Client, file provisioner.File) e
 		return fmt.Errorf("failed to parse permissions: %w", err)
 	}
 
-	if err := fsys.MkdirAll(dir, fs.FileMode(perms)); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+	if _, err := fsys.Stat(dir); errors.Is(err, fs.ErrNotExist) {
+		if err := fsys.MkdirAll(dir, fs.FileMode(perms)); err != nil {
+			return fmt.Errorf("failed to create directory: %w", err)
+		}
 	}
 
 	destFile, err := fsys.OpenFile(file.Path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fs.FileMode(perms))
