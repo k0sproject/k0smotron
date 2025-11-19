@@ -123,7 +123,7 @@ func (s *HostPathSuite) createK0smotronCluster(ctx context.Context, kc *kubernet
 			"service":{
 				"type": "NodePort"
 			},
-			"version": "v1.31.5-k0s.0",
+			"version": "v1.31.5+k0s.0",
 			"persistence": {
 				"type": "hostPath",
 				"hostPath": "/tmp/kmc-test"

@@ -38,7 +38,7 @@ metadata:
   namespace: default
 spec:
   replicas: 1
-  version: "v1.31.5-k0s.0"
+  version: "v1.31.5+k0s.0"
   service:
     type: NodePort
   resources:

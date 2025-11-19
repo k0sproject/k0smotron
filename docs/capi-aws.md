@@ -50,7 +50,7 @@ kind: K0smotronControlPlane # This is the config for the controlplane
 metadata:
   name: k0s-aws-test-cp
 spec:
-  version: v1.27.2-k0s.0
+  version: v1.27.2+k0s.0
   persistence:
     type: emptyDir
   service:

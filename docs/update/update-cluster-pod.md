@@ -34,7 +34,7 @@ the k0s version and machine names in the YAML configuration file:
     metadata:
       name: docker-test-cp
     spec:
-      version: v1.27.2-k0s.0
+      version: v1.27.2+k0s.0
     ```
 2. Make sure that the [persistence](../resource-reference/k0smotron.io-v1beta1.md#clusterspecpersistence) is configured
 to prevent data loss. For example:
@@ -46,7 +46,7 @@ to prevent data loss. For example:
     metadata:
       name: docker-test-cp
     spec:
-      version: v1.27.2-k0s.0
+      version: v1.27.2+k0s.0
       persistence:
         type: hostPath
         hostPath: "/tmp/kmc-test" # k0smotron will mount a basic hostPath volume to avoid data loss.
@@ -64,7 +64,7 @@ to prevent data loss. For example:
    metadata:
      name: cp-test
    spec:
-     version: v1.28.7-k0s.0 # new k0s version
+     version: v1.28.7+k0s.0 # new k0s version
    ```
 
 4. In the same configuration, replace the names of machines running the old k0smotron version

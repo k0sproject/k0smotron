@@ -20,7 +20,7 @@ metadata:
 spec:
   replicas: 1
   k0sImage: quay.io/k0sproject/k0s
-  version: v1.33.1-k0s.0 # new k0s version
+  version: v1.33.1+k0s.0 # new k0s version
 ```
 
 !!! warning

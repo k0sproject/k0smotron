@@ -24,7 +24,7 @@ metadata:
   name: ${CLUSTER_NAME}-control-plane
 spec:
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
-  version: ${KUBERNETES_VERSION}-k0s.0
+  version: ${KUBERNETES_VERSION}+k0s.0
   persistence:
     type: emptyDir
   service:

@@ -133,7 +133,7 @@ func (s *HAControllerEtcdSuite) createK0smotronCluster(ctx context.Context, kc *
 		},
 		"spec": {
 		    "replicas": 3,
-			"version": "v1.31.2-k0s.0",
+			"version": "v1.31.2+k0s.0",
 			"service":{
 				"type": "NodePort"
 			},
@@ -161,7 +161,7 @@ func (s *HAControllerEtcdSuite) updateK0smotronCluster(ctx context.Context, rc *
 	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
 	s.Require().NoError(err)
 
-	patch := `[{"op": "replace", "path": "/spec/version", "value": "v1.31.5-k0s.0"}]`
+	patch := `[{"op": "replace", "path": "/spec/version", "value": "v1.31.5+k0s.0"}]`
 	res := crdRestClient.
 		Patch(types.JSONPatchType).
 		Resource("clusters").

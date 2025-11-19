@@ -10,7 +10,7 @@ metadata:
 spec:
   replicas: 1
   image: quay.io/k0sproject/k0s
-  version: v1.27.1-k0s.0
+  version: v1.27.1+k0s.0
   service:
     type: NodePort
     apiPort: 30443

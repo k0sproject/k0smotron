@@ -59,7 +59,7 @@ metadata:
   name: my-cluster-cp
   namespace: default
 spec:
-  version: v1.34.0-k0s.0
+  version: v1.34.0+k0s.0
   ingress:
     apiHost: kube-api.example.com
     konnectivityHost: konnectivity.example.com
@@ -80,7 +80,7 @@ metadata:
   name: my-cluster
   namespace: default
 spec:
-  version: v1.34.0-k0s.0
+  version: v1.34.0+k0s.0
   ingress:
     apiHost: kube-api.example.com
     konnectivityHost: konnectivity.example.com

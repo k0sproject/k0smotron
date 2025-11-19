@@ -191,7 +191,8 @@ func (c *ClusterSpec) GetK0sImageRef() string {
 		k0sTag = DefaultK0SVersion
 	}
 
-	if !strings.Contains(k0sTag, "+k0s.") {
+	// Old references might contain "-k0s." suffix instead of "+k0s." so we check only for the presence of "k0s."
+	if !strings.Contains(k0sTag, "k0s.") {
 		k0sTag = fmt.Sprintf("%s+%s", k0sTag, DefaultK0SSuffix)
 	}
 

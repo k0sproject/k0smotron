@@ -5,19 +5,19 @@ This example demonstrates how k0smotron can be used with CAPV (Cluster API Provi
 **Table of Contents**
 
 - [Cluster API - VMware](#cluster-api---vmware)
-  * [Setting the scene](#setting-the-scene)
-  * [Preparations](#preparations)
-    + [Configure clusterctl on the local machine](#configure-clusterctl-on-the-local-machine)
-    + [Deploy Cluster API in the management cluster](#deploy-cluster-api-in-the-management-cluster)
-    + [(Optional) IPAM IP pool creation](#optional-ipam-ip-pool-creation)
-  * [(Optional) MetalLB as Load Balancer solution in the management cluster](#optional-metallb-as-load-balancer-solution-in-the-management-cluster)
-  * [Operating child clusters](#operating-child-clusters)
-    + [Generate a child cluster definition using the template](#generate-a-child-cluster-definition-using-the-template)
-      - [Control plane in Pods](#control-plane-in-pods)
-      - [Control plane in VMs](#control-plane-in-vms)
-    + [Deploy the child clusters](#deploy-the-child-clusters)
-    + [Observe the child cluster objects](#observe-the-child-cluster-objects)
-    + [Deleting the child cluster](#deleting-the-child-cluster)
+  - [Setting the scene](#setting-the-scene)
+  - [Preparations](#preparations)
+    - [Configure clusterctl on the local machine](#configure-clusterctl-on-the-local-machine)
+    - [Deploy Cluster API in the management cluster](#deploy-cluster-api-in-the-management-cluster)
+    - [(Optional) IPAM IP pool creation](#optional-ipam-ip-pool-creation)
+  - [(Optional) MetalLB as Load Balancer solution in the management cluster](#optional-metallb-as-load-balancer-solution-in-the-management-cluster)
+  - [Operating child clusters](#operating-child-clusters)
+    - [Generate a child cluster definition using the template](#generate-a-child-cluster-definition-using-the-template)
+      - [Control plane in Pods:](#control-plane-in-pods)
+      - [Control plane in VMs:](#control-plane-in-vms)
+    - [Deploy the child clusters](#deploy-the-child-clusters)
+    - [Observe the child cluster objects](#observe-the-child-cluster-objects)
+    - [Deleting the child cluster](#deleting-the-child-cluster)
 
 ## Setting the scene
 
@@ -63,7 +63,7 @@ VSPHERE_STORAGE_POLICY: ""                                    # This is the vSph
                                                               #  Keep this close to the minimum Kubernetes version of the cluster being created.
 CSI_INSECURE: "1"
 K0S_VERSION: "v1.29.1+k0s.1"
-K0S_CP_VERSION: "v1.29.1-k0s.1"
+K0S_CP_VERSION: "v1.29.1+k0s.1"
 NODE_IPAM_POOL_NAME: "ipam-ip-pool"
 NODE_IPAM_POOL_API_GROUP: "ipam.cluster.x-k8s.io"
 NODE_IPAM_POOL_KIND: "InClusterIPPool"

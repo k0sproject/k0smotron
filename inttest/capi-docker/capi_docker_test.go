@@ -258,7 +258,7 @@ kind: K0smotronControlPlane
 metadata:
   name: docker-test-cp
 spec:
-  version: v1.31.2-k0s.0
+  version: v1.31.2+k0s.0
   certificateRefs:
     - name: docker-test-ca
       type: ca

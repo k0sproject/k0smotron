@@ -291,7 +291,7 @@ metadata:
   name: remote-test
   namespace: default
 spec:
-  version: {{ .K0SVersion }}-k0s.0
+  version: {{ .K0SVersion }}+k0s.0
   persistence:
     type: emptyDir
   service:
