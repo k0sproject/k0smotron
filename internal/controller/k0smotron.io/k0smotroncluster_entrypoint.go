@@ -113,7 +113,8 @@ const entrypointTemplate = `
 mkdir /etc/k0s && echo "$K0SMOTRON_K0S_YAML" > /etc/k0s/k0s.yaml
 
 # Substitute the kine datasource URL from the env var
-sed -i "s {{ .KineDataSourceURLPlaceholder }} ${K0SMOTRON_KINE_DATASOURCE_URL} g" /etc/k0s/k0s.yaml
+escaped_url=$(printf '%s' "$K0SMOTRON_KINE_DATASOURCE_URL" | sed 's/[&/\]/\\&/g')
+sed -i "s {{ .KineDataSourceURLPlaceholder }} $escaped_url g" /etc/k0s/k0s.yaml
 
 {{if .PrivilegedPortIsUsed}}
 apk add --no-cache libcap
