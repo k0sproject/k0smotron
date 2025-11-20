@@ -130,9 +130,15 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	if config.Spec.Version == "" && machine.Spec.Version != nil {
 		config.Spec.Version = *machine.Spec.Version
 	}
+
 	// If the version does not contain the k0s suffix, append it.
-	if config.Spec.Version != "" && !strings.Contains(config.Spec.Version, "+k0s.") {
-		config.Spec.Version = fmt.Sprintf("%s+%s", config.Spec.Version, defaultK0sSuffix)
+	if config.Spec.Version != "" {
+		// When machine is created by CAPI, for example by using a clusterclass template, the version
+		// of the cluster may contain '-k0s.' instead of '+k0s.', so we need to replace it first.
+		config.Spec.Version = strings.Replace(config.Spec.Version, "-k0s.", "+k0s.", 1)
+		if !strings.Contains(config.Spec.Version, "+k0s.") {
+			config.Spec.Version = fmt.Sprintf("%s+%s", config.Spec.Version, defaultK0sSuffix)
+		}
 	}
 
 	// Lookup the cluster the config owner is associated with

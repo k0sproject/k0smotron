@@ -76,8 +76,9 @@ func (c ClusterValidator) ValidateClusterSpec(kcs *km.ClusterSpec) (warnings adm
 // validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
 func (c ClusterValidator) validateVersionSuffix(version string) admission.Warnings {
 	warnings := admission.Warnings{}
-	if version != "" && !strings.Contains(version, "-k0s.") {
-		warnings = append(warnings, fmt.Sprintf("The specified version '%s' requires a k0s suffix (-k0s.<number>). Using '%s-k0s.0' instead.", version, version))
+	// When using CAPI clusterclass version can be specified with a +k0s. suffix.
+	if version != "" && (!strings.Contains(version, "-k0s.") && !strings.Contains(version, "+k0s.")) {
+		warnings = append(warnings, fmt.Sprintf("The specified version '%s' requires a k0s suffix (k0s.<number>). Using '%s-k0s.0' instead.", version, version))
 	}
 
 	return warnings
