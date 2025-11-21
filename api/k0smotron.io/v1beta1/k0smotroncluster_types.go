@@ -19,9 +19,10 @@ package v1beta1
 import (
 	"crypto/md5"
 	"fmt"
+	"strings"
+
 	"github.com/k0sproject/version"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -185,6 +186,9 @@ func (c *ClusterSpec) GetImage() string {
 	if k0sVersion == "" {
 		k0sVersion = DefaultK0SVersion
 	}
+
+	// Ensure any version with +k0s. is converted to -k0s. for image tagging
+	k0sVersion = strings.Replace(k0sVersion, "+k0s.", "-k0s.", 1)
 
 	if !strings.Contains(k0sVersion, "-k0s.") {
 		k0sVersion = fmt.Sprintf("%s-%s", k0sVersion, DefaultK0SSuffix)

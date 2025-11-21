@@ -63,6 +63,14 @@ func TestClusterSpec_GetImage(t *testing.T) {
 			},
 			want: "foobar/k0s:v1.29.4-k0s.0",
 		},
+		{
+			name: "Image and version given with +k0s. suffix",
+			spec: &ClusterSpec{
+				Image:   "foobar/k0s",
+				Version: "v1.29.4+k0s.0",
+			},
+			want: "foobar/k0s:v1.29.4-k0s.0",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
