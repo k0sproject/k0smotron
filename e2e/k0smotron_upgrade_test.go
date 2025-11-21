@@ -49,7 +49,7 @@ func TestK0smotronUpgrade(t *testing.T) {
 // Important: This version MUST match the ones set in the e2e config file because that guarantees that the clusterctl
 // local repository contains the required versions of the providers when running the upgrade tests. We should test
 // development version against the latests stable version of k0smotron.
-var k0smotronMinorVersionsToCheckUpgrades = []string{"1.5", "1.6", "1.7", "1.8"}
+var k0smotronMinorVersionsToCheckUpgrades = []string{"1.7", "1.8", "1.9"}
 
 func k0smotronUpgradeSpec(t *testing.T) {
 

@@ -44,33 +44,6 @@ providers:
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
-      - name: "{go://github.com/k0sproject/k0smotron@v1.4}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.4}/control-plane-components.yaml
-        type: url
-        contract: v1beta1
-        files:
-          - sourcePath: "../../metadata.yaml"
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-      - name: "{go://github.com/k0sproject/k0smotron@v1.5}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.5}/control-plane-components.yaml
-        type: url
-        contract: v1beta1
-        files:
-          - sourcePath: "../../metadata.yaml"
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-      - name: "{go://github.com/k0sproject/k0smotron@v1.6}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.6}/control-plane-components.yaml
-        type: url
-        contract: v1beta1
-        files:
-          - sourcePath: "../../metadata.yaml"
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
       - name: "{go://github.com/k0sproject/k0smotron@v1.7}"
         value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.7}/control-plane-components.yaml
         type: url
@@ -89,7 +62,16 @@ providers:
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: v1.9.99 # potentially next release. Manifest from source files (development) are used.
+      - name: "{go://github.com/k0sproject/k0smotron@v1.9}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.9}/control-plane-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: v1.10.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../config/default
         contract: v1beta1
         files:
@@ -102,8 +84,8 @@ providers:
   - name: k0sproject-k0smotron
     type: BootstrapProvider
     versions:
-      - name: "{go://github.com/k0sproject/k0smotron@v1.4}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.4}/bootstrap-components.yaml
+      - name: "{go://github.com/k0sproject/k0smotron@v1.7}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.7}/bootstrap-components.yaml
         type: url
         contract: v1beta1
         files:
@@ -111,8 +93,8 @@ providers:
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: "{go://github.com/k0sproject/k0smotron@v1.5}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.5}/bootstrap-components.yaml
+      - name: "{go://github.com/k0sproject/k0smotron@v1.8}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.8}/bootstrap-components.yaml
         type: url
         contract: v1beta1
         files:
@@ -120,8 +102,8 @@ providers:
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: "{go://github.com/k0sproject/k0smotron@v1.6}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.6}/bootstrap-components.yaml
+      - name: "{go://github.com/k0sproject/k0smotron@v1.9}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.9}/bootstrap-components.yaml
         type: url
         contract: v1beta1
         files:
@@ -147,7 +129,7 @@ providers:
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: v1.9.99 # potentially next release. Manifest from source files (development) are used.
+      - name: v1.10.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../config/default
         contract: v1beta1
         files:
