@@ -4450,6 +4450,14 @@ spec:
                       APIPort defines the kubernetes API port. If empty k0smotron
                       will pick it automatically.
                     type: integer
+                  externalTrafficPolicy:
+                    description: ExternalTrafficPolicy defines the external traffic
+                      policy for the service. Used only when service type is NodePort
+                      or LoadBalancer.
+                    enum:
+                    - Cluster
+                    - Local
+                    type: string
                   konnectivityPort:
                     default: 30132
                     description: |-

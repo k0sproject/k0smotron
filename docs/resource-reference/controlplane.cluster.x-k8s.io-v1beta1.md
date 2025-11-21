@@ -11021,6 +11021,15 @@ will pick it automatically.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>externalTrafficPolicy</b></td>
+        <td>enum</td>
+        <td>
+          ExternalTrafficPolicy defines the external traffic policy for the service. Used only when service type is NodePort or LoadBalancer.<br/>
+          <br/>
+            <i>Enum</i>: Cluster, Local<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>konnectivityPort</b></td>
         <td>integer</td>
         <td>
@@ -20775,6 +20784,15 @@ Service defines the service configuration.
 will pick it automatically.<br/>
           <br/>
             <i>Default</i>: 30443<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>externalTrafficPolicy</b></td>
+        <td>enum</td>
+        <td>
+          ExternalTrafficPolicy defines the external traffic policy for the service. Used only when service type is NodePort or LoadBalancer.<br/>
+          <br/>
+            <i>Enum</i>: Cluster, Local<br/>
         </td>
         <td>false</td>
       </tr><tr>
