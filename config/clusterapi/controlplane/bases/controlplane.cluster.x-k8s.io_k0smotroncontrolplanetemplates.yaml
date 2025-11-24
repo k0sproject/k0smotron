@@ -94,7 +94,7 @@ spec:
                         type: array
                       etcd:
                         default:
-                          image: quay.io/k0sproject/etcd:v3.6.6
+                          image: makhov/etcd:3.6.6
                           persistence: {}
                         description: Etcd defines the etcd configuration.
                         properties:
