@@ -104,26 +104,30 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 
 	// Write files first
 	for _, file := range p.cloudInit.Files {
+		p.log.Info("Uploading file", "path", file.Path, "permissions", file.Permissions)
 		if err := p.uploadFile(rigClient, file); err != nil {
 			return fmt.Errorf("failed to upload file: %w", err)
 		}
+		p.log.Info("Uploaded file", "path", file.Path, "permissions", file.Permissions)
 	}
 
 	if p.machine.Spec.CommandsAsScript {
 		// Run the install script
 		installScriptPath := filepath.Join(p.machine.Spec.WorkingDir, "k0s_install.sh")
+		p.log.Info("running install script", "command", installScriptPath)
 		output, err := rigClient.ExecOutput(installScriptPath)
 		if err != nil {
-			p.log.Error(err, "failed to run command", "output", output)
+			p.log.Error(err, "failed to run command", "command", installScriptPath, "output", output)
 			return fmt.Errorf("failed to run command: %w", err)
 		}
-		log.Info("executed command", "command", installScriptPath, "output", output)
+		log.Info("executed install script", "command", installScriptPath, "output", output)
 	} else {
 		// Run commands
 		for _, cmd := range p.cloudInit.Commands {
-			output, err := rigClient.ExecOutput(cmd)
+			p.log.Info("running command", "command", cmd)
+			output, err := rigClient.ExecOutputContext(ctx, cmd)
 			if err != nil {
-				p.log.Error(err, "failed to run command", "output", output)
+				p.log.Error(err, "failed to run command", "command", cmd, "output", output)
 				return fmt.Errorf("failed to run command: %w", err)
 			}
 			log.Info("executed command", "command", cmd, "output", output)
@@ -189,6 +193,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 
 	if mode == ModeNonK0s {
 		// If k0s is not the bootstrap provider, we have nothing to do.
+		p.log.Info("k0smotron is not the bootstrap provider and no cleanup commands specified, skipping cleanup")
 		return nil
 	}
 
@@ -219,9 +224,21 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 
 	p.log.Info("Cleaning up remote machine...")
 	for _, cmd := range cmds {
-		output, err := rigClient.ExecOutput(cmd)
+		output, err := rigClient.ExecOutputContext(ctx, cmd)
 		if err != nil {
-			p.log.Error(err, "failed to run command", "output", output)
+			// if k0s command is not installed, manually remove files added for k0s bootstrap.
+			if strings.Contains(err.Error(), "command not found") {
+				for _, file := range p.cloudInit.Files {
+					p.log.Info("Removing file", "path", file.Path)
+					err := rigClient.Sudo().FS().Remove(file.Path)
+					if err != nil {
+						p.log.Error(err, "failed to remove file", "path", file.Path)
+					} else {
+						p.log.Info("Removed file", "path", file.Path)
+					}
+				}
+			}
+			p.log.Error(err, "failed to run command", "command", cmd, "output", output)
 		}
 	}
 
