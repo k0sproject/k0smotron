@@ -108,7 +108,7 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	Monitoring MonitoringSpec `json:"monitoring,omitempty"`
 	// Etcd defines the etcd configuration.
-	//+kubebuilder:default={"image":"quay.io/k0sproject/etcd:v3.5.13","persistence":{}}
+	//+kubebuilder:default={"image":"quay.io/k0sproject/etcd:v3.6.6","persistence":{}}
 	Etcd EtcdSpec `json:"etcd,omitempty"`
 
 	// TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.

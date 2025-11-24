@@ -1953,7 +1953,7 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         <td>
           Etcd defines the etcd configuration.<br/>
           <br/>
-            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.6.6 persistence:map[]]<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11719,7 +11719,7 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         <td>
           Etcd defines the etcd configuration.<br/>
           <br/>
-            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.6.6 persistence:map[]]<br/>
         </td>
         <td>false</td>
       </tr><tr>
