@@ -42,6 +42,7 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 		"KineDataSourceURLPlaceholder": kineDataSourceURLPlaceholder,
 		"K0sControllerArgs":            getControllerFlags(kmc),
 		"PrivilegedPortIsUsed":         kmc.Spec.Service.APIPort <= 1024,
+		"UniversalSedInplace":          universalSedInplace,
 	})
 	if err != nil {
 		return v1.ConfigMap{}, err
@@ -106,15 +107,19 @@ func getControllerFlags(kmc *km.Cluster) string {
 	return strings.Join(flags, " ")
 }
 
-const entrypointTemplate = `
+const (
+	entrypointTemplate = `
 #!/bin/sh
+
+# Universal in-place "sedi" function for sed
+{{ .UniversalSedInplace }}
 
 # Put the k0s.yaml in place
 mkdir /etc/k0s && echo "$K0SMOTRON_K0S_YAML" > /etc/k0s/k0s.yaml
 
 # Substitute the kine datasource URL from the env var
 escaped_url=$(printf '%s' "$K0SMOTRON_KINE_DATASOURCE_URL" | sed 's/[&/\]/\\&/g')
-sed -i "s {{ .KineDataSourceURLPlaceholder }} $escaped_url g" /etc/k0s/k0s.yaml
+sedi "s|{{ .KineDataSourceURLPlaceholder }}|$escaped_url|g" /etc/k0s/k0s.yaml
 
 {{if .PrivilegedPortIsUsed}}
 apk add --no-cache libcap
@@ -124,3 +129,15 @@ apk add --no-cache libcap
 # Run the k0s controller
 k0s controller {{ .K0sControllerArgs }}
 `
+	universalSedInplace = `
+sedi() {
+    # Try GNU sed
+    if sed --version >/dev/null 2>&1; then
+        sed -i "$@"
+    else
+        # BSD sed (macOS) or BusyBox sed
+        sed -i '' "$@"
+    fi
+}
+`
+)
