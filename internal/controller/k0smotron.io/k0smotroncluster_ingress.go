@@ -29,6 +29,18 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 		return fmt.Errorf("failed to patch haproxy configmap for ingress: %w", err)
 	}
 
+	configMap, err = scope.generateKonnectivityIngressConfigMap(kmc)
+	if err != nil {
+		return fmt.Errorf("failed to generate ingress manifests configmap: %w", err)
+	}
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
+
+	err = scope.client.Patch(ctx, &configMap, client.Apply, patchOpts...)
+
+	if err != nil {
+		return fmt.Errorf("failed to patch haproxy configmap for ingress: %w", err)
+	}
+
 	var foundManifest bool
 	for _, manifest := range kmc.Spec.Manifests {
 		if manifest.Name == kmc.GetIngressManifestsConfigMapName() {
@@ -43,6 +55,15 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: kmc.GetIngressManifestsConfigMapName(),
+					},
+				},
+			},
+		}, corev1.Volume{
+			Name: "konnectivity",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
 					},
 				},
 			},
@@ -167,6 +188,115 @@ spec:
     app: k0smotron-haproxy
   sessionAffinity: None
   type: ClusterIP`, scope.clusterSettings.kubernetesServiceIP, scope.clusterSettings.kubernetesServiceIP),
+		},
+	}
+
+	return configMap, nil
+}
+
+func (scope *kmcScope) generateKonnectivityIngressConfigMap(kmc *km.Cluster) (corev1.ConfigMap, error) {
+	configMap := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
+			Namespace:   kmc.Namespace,
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
+		},
+		Data: map[string]string{
+			"konnectivity-agent.yaml": fmt.Sprintf(`apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:konnectivity-server
+  labels:
+    kubernetes.io/cluster-service: "true"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: system:konnectivity-server
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: konnectivity-agent
+  namespace: kube-system
+  labels:
+    kubernetes.io/cluster-service: "true"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: konnectivity-agent
+  namespace: kube-system
+  name: konnectivity-agent
+spec:
+  selector:
+    matchLabels:
+      k8s-app: konnectivity-agent
+  template:
+    metadata:
+      labels:
+        k8s-app: konnectivity-agent
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8093'
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        supplementalGroups: [0]
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: system-cluster-critical
+      tolerations:
+        - operator: Exists
+      containers:
+        - image: quay.io/k0sproject/apiserver-network-proxy-agent:v0.33.0
+          imagePullPolicy: IfNotPresent
+          name: konnectivity-agent
+          command: ["/proxy-agent"]
+          env:
+              - name: NODE_IP
+                valueFrom:
+                  fieldRef:
+                    fieldPath: status.hostIP
+          args:
+            - --logtostderr=true
+            - --ca-cert=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            - --proxy-server-host=%s
+            - --proxy-server-port=%d
+            - --service-account-token-path=/var/run/secrets/tokens/konnectivity-agent-token
+            - --agent-identifiers=host=$(NODE_IP)
+            - --agent-id=$(NODE_IP)
+          volumeMounts:
+            - mountPath: /var/run/secrets/tokens
+              name: konnectivity-agent-token
+          livenessProbe:
+            httpGet:
+              port: 8093
+              path: /healthz
+            initialDelaySeconds: 15
+            timeoutSeconds: 15
+          readinessProbe:
+            httpGet:
+              port: 8093
+              path: /readyz
+            initialDelaySeconds: 15
+            timeoutSeconds: 15
+      serviceAccountName: konnectivity-agent
+      volumes:
+        - name: konnectivity-agent-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: konnectivity-agent-token
+                  audience: system:konnectivity-server`, kmc.Spec.Ingress.KonnectivityHost, kmc.Spec.Ingress.Port),
 		},
 	}
 
