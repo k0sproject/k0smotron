@@ -138,6 +138,13 @@ spec:
         app: k0smotron-haproxy
     spec:
       hostNetwork: true
+      tolerations:
+        - key: "node.kubernetes.io/not-ready"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node.kubernetes.io/unreachable"
+          operator: "Exists"
+          effect: "NoSchedule"
       containers:
         - name: haproxy
           image: haproxy:2.8
