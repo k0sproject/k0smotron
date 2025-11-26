@@ -281,7 +281,7 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
 		}
 		v1beta1Spec["konnectivity"] = map[string]any{
 			"externalAddress": kmc.Spec.Ingress.KonnectivityHost,
-			"agentPort":       kmc.Spec.Ingress.Port,
+			"agentPort":       int64(kmc.Spec.Service.KonnectivityPort),
 		}
 	}
 

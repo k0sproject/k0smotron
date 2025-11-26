@@ -21,14 +21,18 @@ package e2e
 import (
 	"bytes"
 	"fmt"
+	"github.com/k0sproject/k0s/inttest/common"
+	"k8s.io/client-go/kubernetes"
 	"os/exec"
 	"path/filepath"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
 
 	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
+	podexec "github.com/k0sproject/k0smotron/internal/exec"
 	"github.com/k0sproject/k0smotron/internal/util"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -151,6 +155,19 @@ func ingressSupportSpec(t *testing.T) {
 	require.NoError(t, bootstrapClusterProxy.GetClient().List(ctx, machineList, client.InNamespace(workloadClusterNamespace), client.MatchingLabels{
 		clusterv1.ClusterNameLabel: workloadClusterName,
 	}), "Should list machines")
+
+	wrc, err := remote.RESTConfig(ctx, "ingress-test", bootstrapClusterProxy.GetClient(), client.ObjectKey{Namespace: workloadClusterNamespace, Name: workloadClusterName})
+	require.NoError(t, err, "Should get workload rest config")
+	wcs, err := kubernetes.NewForConfig(wrc)
+	require.NoError(t, err, "Should get workload clientset")
+	require.NoError(t, common.WaitForDaemonSet(ctx, wcs, "konnectivity-agent"))
+
+	podList := &corev1.PodList{}
+	err = bootstrapClusterProxy.GetClient().List(ctx, podList, client.InNamespace(testNamespace.Name))
+	require.NoError(t, err, "Should list k0smotron pods")
+	out, err := podexec.PodExecCmdOutput(ctx, bootstrapClusterProxy.GetClientSet(), bootstrapClusterProxy.GetRESTConfig(), podList.Items[0].Name, testNamespace.Name, "k0s kc logs -n kube-system ds/konnectivity-agent")
+	require.NoError(t, err)
+	t.Logf("Konnectivity agent logs:\n%s", string(out))
 
 	for _, m := range machineList.Items {
 		var (
