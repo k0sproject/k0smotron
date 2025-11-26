@@ -139,12 +139,12 @@ func TestKineDataSourceURLSubstitution(t *testing.T) {
 				if strings.Contains(line, "escaped_url=$(printf") && strings.Contains(line, "K0SMOTRON_KINE_DATASOURCE_URL") {
 					printfLine = line
 				}
-				if strings.Contains(line, "sed -i") && strings.Contains(line, "$escaped_url") {
+				if strings.Contains(line, "sedi") && strings.Contains(line, "$escaped_url") {
 					sedLine = line
 				}
 			}
 			require.NotEmpty(t, printfLine, "printf command not found in entrypoint script")
-			require.NotEmpty(t, sedLine, "sed command not found in entrypoint script")
+			require.NotEmpty(t, sedLine, "sedi command not found in entrypoint script")
 
 			testK0sConfig := `apiVersion: k0s.k0sproject.io/v1beta1
 kind: ClusterConfig
@@ -169,9 +169,9 @@ spec:
 			os.Setenv("K0SMOTRON_KINE_DATASOURCE_URL", tc.kineDataSourceURL)
 			t.Cleanup(func() { os.Unsetenv("K0SMOTRON_KINE_DATASOURCE_URL") })
 
-			actualSedCmd := strings.Replace(sedLine, "/etc/k0s/k0s.yaml", tmpFile.Name(), 1)
+			actualSediCmd := strings.Replace(sedLine, "/etc/k0s/k0s.yaml", tmpFile.Name(), 1)
 
-			combinedScript := printfLine + "\n" + actualSedCmd
+			combinedScript := universalSedInplace + "\n" + printfLine + "\n" + actualSediCmd
 
 			cmd := exec.Command("sh", "-c", combinedScript)
 			cmd.Env = append(os.Environ(), "K0SMOTRON_KINE_DATASOURCE_URL="+tc.kineDataSourceURL)
