@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -184,20 +184,20 @@ func TestResolveFilesErrorExtractingFileContent(t *testing.T) {
 	require.ErrorIs(t, err, errExtractingFileContent)
 }
 
-func newCluster(namespace string) *clusterv1.Cluster {
+func newCluster(namespace string) *clusterv2.Cluster {
 	clusterName := fmt.Sprintf("foo-%s", util.RandomString(6))
 
-	return &clusterv1.Cluster{
+	return &clusterv2.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Cluster",
-			APIVersion: clusterv1.GroupVersion.String(),
+			APIVersion: clusterv2.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      clusterName,
 		},
-		Spec: clusterv1.ClusterSpec{
-			ControlPlaneEndpoint: clusterv1.APIEndpoint{
+		Spec: clusterv2.ClusterSpec{
+			ControlPlaneEndpoint: clusterv2.APIEndpoint{
 				Host: "test.host",
 				Port: 9999,
 			},

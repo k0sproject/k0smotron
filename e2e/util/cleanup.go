@@ -26,7 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -55,7 +55,7 @@ func waitForClusterDeleted(ctx context.Context, input capiframework.WaitForClust
 	clusterNamespace := input.Cluster.GetNamespace()
 	// Note: dumpArtifactsOnDeletionTimeout is passed in as a func so it gets only executed if and after the Eventually failed.
 	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
-		cluster := &clusterv1.Cluster{}
+		cluster := &clusterv2.Cluster{}
 		key := client.ObjectKey{
 			Namespace: clusterNamespace,
 			Name:      clusterName,

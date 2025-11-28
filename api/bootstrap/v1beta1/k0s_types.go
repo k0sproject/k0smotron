@@ -18,11 +18,12 @@ package v1beta1
 
 import (
 	"github.com/k0sproject/k0smotron/internal/provisioner"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"path/filepath"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -46,12 +47,36 @@ type K0sWorkerConfig struct {
 	Status K0sWorkerConfigStatus `json:"status,omitempty"`
 }
 
-func (k *K0sWorkerConfig) GetConditions() clusterv1.Conditions {
-	return k.Status.Conditions
+// GetConditions implements conditions.Getter for v1beta2 conditions API
+func (k *K0sWorkerConfig) GetConditions() []metav1.Condition {
+	result := make([]metav1.Condition, len(k.Status.Conditions))
+	for i, c := range k.Status.Conditions {
+		result[i] = metav1.Condition{
+			Type:               string(c.Type),
+			Status:             metav1.ConditionStatus(c.Status),
+			ObservedGeneration: k.GetGeneration(),
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+		}
+	}
+	return result
 }
 
-func (k *K0sWorkerConfig) SetConditions(conditions clusterv1.Conditions) {
-	k.Status.Conditions = conditions
+// SetConditions implements conditions.Setter for v1beta2 conditions API
+func (k *K0sWorkerConfig) SetConditions(conditions []metav1.Condition) {
+	result := make(clusterv2.Conditions, len(conditions))
+	for i, c := range conditions {
+		result[i] = clusterv2.Condition{
+			Type:               clusterv2.ConditionType(c.Type),
+			Status:             corev1.ConditionStatus(c.Status),
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+			Severity:           clusterv2.ConditionSeverityInfo, // Default severity
+		}
+	}
+	k.Status.Conditions = result
 }
 
 // +kubebuilder:object:root=true
@@ -154,7 +179,7 @@ type K0sWorkerConfigStatus struct {
 
 	// Conditions defines current service state of the K0sWorkerConfig.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv2.Conditions `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -180,15 +205,39 @@ type K0sControllerConfigStatus struct {
 
 	// Conditions defines current service state of the K0sControllerConfig.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv2.Conditions `json:"conditions,omitempty"`
 }
 
-func (k *K0sControllerConfig) GetConditions() clusterv1.Conditions {
-	return k.Status.Conditions
+// GetConditions implements conditions.Getter for v1beta2 conditions API
+func (k *K0sControllerConfig) GetConditions() []metav1.Condition {
+	result := make([]metav1.Condition, len(k.Status.Conditions))
+	for i, c := range k.Status.Conditions {
+		result[i] = metav1.Condition{
+			Type:               string(c.Type),
+			Status:             metav1.ConditionStatus(c.Status),
+			ObservedGeneration: k.GetGeneration(),
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+		}
+	}
+	return result
 }
 
-func (k *K0sControllerConfig) SetConditions(conditions clusterv1.Conditions) {
-	k.Status.Conditions = conditions
+// SetConditions implements conditions.Setter for v1beta2 conditions API
+func (k *K0sControllerConfig) SetConditions(conditions []metav1.Condition) {
+	result := make(clusterv2.Conditions, len(conditions))
+	for i, c := range conditions {
+		result[i] = clusterv2.Condition{
+			Type:               clusterv2.ConditionType(c.Type),
+			Status:             corev1.ConditionStatus(c.Status),
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+			Severity:           clusterv2.ConditionSeverityInfo, // Default severity
+		}
+	}
+	k.Status.Conditions = result
 }
 
 // +kubebuilder:object:root=true

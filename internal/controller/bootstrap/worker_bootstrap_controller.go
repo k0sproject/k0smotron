@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
@@ -73,7 +73,7 @@ type Controller struct {
 type Scope struct {
 	Config              *bootstrapv1.K0sWorkerConfig
 	ConfigOwner         *bsutil.ConfigOwner
-	Cluster             *clusterv1.Cluster
+	Cluster             *clusterv2.Cluster
 	ingressSpec         *km.IngressSpec
 	client              client.Client
 	secretCachingClient client.Client
@@ -121,14 +121,14 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	log = log.WithValues("kind", configOwner.GetKind(), "version", configOwner.GetResourceVersion(), "name", configOwner.GetName())
 
-	machine := &clusterv1.Machine{}
+	machine := &clusterv2.Machine{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(configOwner.Object, machine); err != nil {
 		return ctrl.Result{}, fmt.Errorf("error converting %s to Machine: %w", configOwner.GetKind(), err)
 	}
 
 	// If the K0sWorkerConfig does not have a version set, use the machine's version.
-	if config.Spec.Version == "" && machine.Spec.Version != nil {
-		config.Spec.Version = *machine.Spec.Version
+	if config.Spec.Version == "" && machine.Spec.Version != "" {
+		config.Spec.Version = machine.Spec.Version
 	}
 
 	// If the version does not contain the k0s suffix, append it.
@@ -175,13 +175,14 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
-		conditions.SetSummary(config,
-			conditions.WithConditions(
-				bootstrapv1.DataSecretAvailableCondition,
-			),
+		err := conditions.SetSummaryCondition(config, config, string(bootstrapv1.DataSecretAvailableCondition),
+			conditions.ForConditionTypes{string(bootstrapv1.DataSecretAvailableCondition)},
 		)
+		if err != nil {
+			log.Error(err, "Failed to set summary condition")
+		}
 
-		err := patchHelper.Patch(ctx, config)
+		err = patchHelper.Patch(ctx, config)
 		if err != nil {
 			log.Error(err, "Failed to patch K0sWorkerConfig status")
 		}
@@ -195,20 +196,36 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}
 	err = r.setClientScope(ctx, cluster, scope)
 	if err != nil {
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.DataSecretGenerationFailedReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
 
 	// Control plane needs to be ready because worker needs to use controlplane API to retrieve a join token.
-	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() || !scope.Cluster.Status.ControlPlaneReady {
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForControlPlaneInitializationReason, clusterv1.ConditionSeverityInfo, "")
+	// ControlPlaneReady was removed in v1beta2, check conditions instead
+	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() || !conditions.IsTrue(cluster, "ControlPlaneReady") {
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.WaitingForControlPlaneInitializationReason,
+			Message: "",
+		})
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
 	log.Info("Generating bootstrap data")
 	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope)
 	if err != nil {
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.DataSecretGenerationFailedReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
 
@@ -217,10 +234,19 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	if err := r.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.DataSecretGenerationFailedReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
-	conditions.MarkTrue(config, bootstrapv1.DataSecretAvailableCondition)
+	conditions.Set(config, metav1.Condition{
+		Type:   string(bootstrapv1.DataSecretAvailableCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "DataSecretAvailable",
+	})
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
 
 	// Set the status to ready
@@ -425,7 +451,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 func createBootstrapSecret(scope *Scope, bootstrapData []byte, format string) *corev1.Secret {
 	// Initialize labels with cluster-name label
 	labels := map[string]string{
-		clusterv1.ClusterNameLabel: scope.Cluster.Name,
+		clusterv2.ClusterNameLabel: scope.Cluster.Name,
 	}
 
 	// Copy labels from secretMetadata if specified
@@ -467,19 +493,26 @@ func createBootstrapSecret(scope *Scope, bootstrapData []byte, format string) *c
 			"value":  bootstrapData,
 			"format": []byte(format),
 		},
-		Type: clusterv1.ClusterSecretType,
+		Type: clusterv2.ClusterSecretType,
 	}
 }
 
 // setClientScope set the cluster client scope depending on the control plane configuration. By default, it uses the management cluster
 // client if there is no external cluster reference provided.
-func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Cluster, scope *Scope) error {
+func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv2.Cluster, scope *Scope) error {
 	log := log.FromContext(ctx)
 
 	scope.client = r.Client
 	scope.secretCachingClient = r.SecretCachingClient
 
-	uControlPlane, err := external.Get(ctx, r.Client, cluster.Spec.ControlPlaneRef)
+	// In v1beta2, ControlPlaneRef is a ContractVersionedObjectReference, need to convert to ObjectReference
+	controlPlaneRef := &corev1.ObjectReference{
+		APIVersion: cluster.Spec.ControlPlaneRef.APIGroup + "/v1beta1", // Version inferred from contract
+		Kind:       cluster.Spec.ControlPlaneRef.Kind,
+		Name:       cluster.Spec.ControlPlaneRef.Name,
+		Namespace:  cluster.Namespace,
+	}
+	uControlPlane, err := external.Get(ctx, r.Client, controlPlaneRef)
 	if err != nil {
 		return err
 	}

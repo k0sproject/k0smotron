@@ -25,7 +25,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -40,8 +40,8 @@ const (
 )
 
 // DiscoveryAndWaitForCluster discovers a cluster object in a namespace and waits for the cluster infrastructure to be provisioned.
-func DiscoveryAndWaitForCluster(ctx context.Context, input framework.DiscoveryAndWaitForClusterInput, interval Interval) (*clusterv1.Cluster, error) {
-	var cluster *clusterv1.Cluster
+func DiscoveryAndWaitForCluster(ctx context.Context, input framework.DiscoveryAndWaitForClusterInput, interval Interval) (*clusterv2.Cluster, error) {
+	var cluster *clusterv2.Cluster
 	err := wait.PollUntilContextTimeout(ctx, retryableOperationInterval, retryableOperationTimeout, true, func(ctx context.Context) (done bool, err error) {
 		cluster, err = GetClusterByName(ctx, framework.GetClusterByNameInput{
 			Getter:    input.Getter,
@@ -65,8 +65,8 @@ func DiscoveryAndWaitForCluster(ctx context.Context, input framework.DiscoveryAn
 }
 
 // GetClusterByName returns a Cluster object given his name.
-func GetClusterByName(ctx context.Context, input framework.GetClusterByNameInput) (*clusterv1.Cluster, error) {
-	cluster := &clusterv1.Cluster{}
+func GetClusterByName(ctx context.Context, input framework.GetClusterByNameInput) (*clusterv2.Cluster, error) {
+	cluster := &clusterv2.Cluster{}
 	key := client.ObjectKey{
 		Namespace: input.Namespace,
 		Name:      input.Name,
@@ -83,8 +83,8 @@ func GetClusterByName(ctx context.Context, input framework.GetClusterByNameInput
 }
 
 // WaitForClusterToProvision will wait for a cluster to have a phase status of provisioned.
-func WaitForClusterToProvision(ctx context.Context, input framework.WaitForClusterToProvisionInput, interval Interval) (*clusterv1.Cluster, error) {
-	cluster := &clusterv1.Cluster{}
+func WaitForClusterToProvision(ctx context.Context, input framework.WaitForClusterToProvisionInput, interval Interval) (*clusterv2.Cluster, error) {
+	cluster := &clusterv2.Cluster{}
 	fmt.Println("Waiting for cluster to enter the provisioned phase")
 
 	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
@@ -95,7 +95,7 @@ func WaitForClusterToProvision(ctx context.Context, input framework.WaitForClust
 		if err := input.Getter.Get(ctx, key, cluster); err != nil {
 			return false, err
 		}
-		return cluster.Status.Phase == string(clusterv1.ClusterPhaseProvisioned), nil
+		return cluster.Status.Phase == string(clusterv2.ClusterPhaseProvisioned), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("timed out waiting for Cluster %s to provision: %w", klog.KObj(input.Cluster), err)
