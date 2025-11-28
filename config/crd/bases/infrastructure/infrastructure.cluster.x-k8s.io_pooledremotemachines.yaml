@@ -17,7 +17,20 @@ spec:
     singular: pooledremotemachine
   scope: Namespaced
   versions:
-  - name: v1beta1
+  - additionalPrinterColumns:
+    - description: IP address or DNS name of the remote machine
+      jsonPath: .spec.machine.address
+      name: Address
+      type: string
+    - description: Indicates if the machine is reserved
+      jsonPath: .status.reserved
+      name: Reserved
+      type: string
+    - description: Reference to the RemoteMachine
+      jsonPath: .status.machineRef.name
+      name: Remote Machine
+      type: string
+    name: v1beta1
     schema:
       openAPIV3Schema:
         properties:

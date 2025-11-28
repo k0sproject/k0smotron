@@ -140,6 +140,9 @@ type RemoteMachineList struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
+// +kubebuilder:printcolumn:name="Address",type=string,JSONPath=".spec.machine.address",description="IP address or DNS name of the remote machine"
+// +kubebuilder:printcolumn:name="Reserved",type=string,JSONPath=".status.reserved",description="Indicates if the machine is reserved"
+// +kubebuilder:printcolumn:name="Remote Machine",type=string,JSONPath=".status.machineRef.name",description="Reference to the RemoteMachine"
 
 type PooledRemoteMachine struct {
 	metav1.TypeMeta   `json:",inline"`

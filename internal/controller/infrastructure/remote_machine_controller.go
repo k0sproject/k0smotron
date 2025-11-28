@@ -19,6 +19,7 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
@@ -33,6 +34,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/finalizers"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -87,6 +89,10 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "Failed to get RemoteMachine")
+		return ctrl.Result{}, err
+	}
+
+	if finalizerAdded, err := finalizers.EnsureFinalizer(ctx, r.Client, rm, RemoteMachineFinalizer); err != nil || finalizerAdded {
 		return ctrl.Result{}, err
 	}
 
@@ -246,9 +252,32 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	if !controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
-		controllerutil.AddFinalizer(rm, RemoteMachineFinalizer)
-	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Running a goroutine to monitor if the RemoteMachine gets deleted during provisioning. This way we can delete
+	// proceed to cleanup immediately without waiting for the provisioning to timeout. For example in scenarios where
+	// the bootstrap process hangs and the controller needs to be able to delete the RemoteMachine. Controller-runtime
+	// only runs one Reconcile at a time per object, so we need to monitor deletion in a separate goroutine.
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				updatedRemoteMachine := &infrastructure.RemoteMachine{}
+				if err := r.Get(ctx, client.ObjectKeyFromObject(rm), updatedRemoteMachine); err == nil &&
+					!updatedRemoteMachine.DeletionTimestamp.IsZero() {
+					log.Info("Cancelling Bootstrap because the underlying machine has been deleted")
+					cancel()
+					return
+				}
+			}
+		}
+	}()
 
 	defer func() {
 		log.Info("Reconcile complete")
@@ -286,6 +315,10 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		if _, ok := m.Labels[l]; !ok {
 			m.Labels[l] = rm.Labels[l]
 		}
+	}
+
+	if len(m.Annotations) == 0 {
+		m.Annotations = make(map[string]string)
 	}
 	for k := range rm.Annotations {
 		if _, ok := m.Annotations[k]; !ok {
