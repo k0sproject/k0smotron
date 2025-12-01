@@ -28,6 +28,8 @@ metadata:
   name: ${CLUSTER_NAME}-cp
 spec:
   version: v1.34.1-k0s.0
+  service:
+    type: NodePort
   ingress:
     apiHost: kube-api.${KIND_IP}.nip.io
     konnectivityHost: konnectivity.${KIND_IP}.nip.io
