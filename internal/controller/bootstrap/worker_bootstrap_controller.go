@@ -373,7 +373,7 @@ func createIngressCommands(scope *Scope) []string {
 	return []string{
 		"mkdir -p /etc/haproxy/certs",
 		"cat /etc/haproxy/certs/server.crt /etc/haproxy/certs/server.key > /etc/haproxy/certs/server.pem",
-		"chmod 666 /etc/haproxy/certs/server.pem",
+		"chmod 755 /etc/haproxy/certs",
 	}
 }
 

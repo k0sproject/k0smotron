@@ -1,0 +1,8 @@
+resources:
+- ../bases/cluster-with-kcp.yaml
+- ../bases/md.yaml
+- mhc.yaml
+- ../bases/pooled-machines.yaml
+
+patches:
+- path: kcp-with-signal-listener-for-remediation.yaml

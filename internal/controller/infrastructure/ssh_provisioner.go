@@ -222,7 +222,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 		cmds = append(cmds, "k0s reset --kubelet-root-dir "+kubeletRootDir)
 	}
 
-	p.log.Info("Cleaning up remote machine...")
+	p.log.Info(fmt.Sprintf("Cleaning up remote machine '%s'...", p.machine.Name))
 	for _, cmd := range cmds {
 		output, err := rigClient.ExecOutputContext(ctx, cmd)
 		if err != nil {
@@ -269,6 +269,5 @@ func (p *SSHProvisioner) uploadFile(client *rig.Client, file provisioner.File) e
 		return fmt.Errorf("failed to write to remote file: %w", err)
 	}
 
-	p.log.Info("uploaded file", "path", file.Path, "permissions", perms)
 	return nil
 }

@@ -83,10 +83,18 @@ func k0smotronUpgradeSpec(t *testing.T) {
 
 	fmt.Println("Turning the new cluster into a management cluster with older versions of providers")
 
+	infraProviders := e2eConfig.InfrastructureProviders()
+	for i, p := range infraProviders {
+		if p == "k0sproject-k0smotron" {
+			infraProviders[i] = k0smotronProvider[0]
+			break
+		}
+	}
+
 	err = mothership.InitAndWatchControllerLogs(watchesCtx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
 		ClusterProxy:             managementClusterProxy,
 		ClusterctlConfigPath:     clusterctlConfigPath,
-		InfrastructureProviders:  e2eConfig.InfrastructureProviders(),
+		InfrastructureProviders:  infraProviders,
 		DisableMetricsCollection: true,
 		BootstrapProviders:       k0smotronProvider,
 		ControlPlaneProviders:    k0smotronProvider,
@@ -96,7 +104,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 
 	fmt.Println("THE MANAGEMENT CLUSTER WITH THE OLDER VERSION OF K0SMOTRON PROVIDERS IS UP&RUNNING!")
 
-	fmt.Println(fmt.Sprintf("Creating a namespace for hosting the %s test workload cluster", testName))
+	fmt.Printf("Creating a namespace for hosting the %s test workload cluster\n", testName)
 
 	testNamespace, testCancelWatches := framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
 		Creator:   managementClusterProxy.GetClient(),
@@ -115,16 +123,14 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		ClusterctlConfigPath: clusterctlConfigPath,
 		KubeconfigPath:       managementClusterProxy.GetKubeconfigPath(),
 		// no flavor specified, so it will use the default one "cluster-template"
-		Flavor: "",
-
-		Namespace:         workloadClusterNamespace,
-		ClusterName:       workloadClusterName,
-		KubernetesVersion: e2eConfig.MustGetVariable(KubernetesVersion),
-		// TODO: make replicas value configurable
-		ControlPlaneMachineCount: ptr.To[int64](3),
-		// TODO: make infra provider configurable
-		InfrastructureProvider: "docker",
-		LogFolder:              filepath.Join(artifactFolder, "clusters", managementClusterProxy.GetName()),
+		Flavor:                   "",
+		Namespace:                workloadClusterNamespace,
+		ClusterName:              workloadClusterName,
+		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
+		ControlPlaneMachineCount: ptr.To(int64(controlPlaneMachineCount)),
+		WorkerMachineCount:       ptr.To(int64(workerMachineCount)),
+		InfrastructureProvider:   infrastructureProvider,
+		LogFolder:                filepath.Join(artifactFolder, "clusters", managementClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME":    workloadClusterName,
 			"NAMESPACE":       workloadClusterNamespace,
@@ -133,8 +139,12 @@ func k0smotronUpgradeSpec(t *testing.T) {
 	})
 	require.NotNil(t, workloadClusterTemplate)
 
+	fmt.Println(string(workloadClusterTemplate))
+
 	require.Eventually(t, func() bool {
-		return managementClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate) == nil
+		err := managementClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate)
+		fmt.Println(err)
+		return err == nil
 	}, 10*time.Second, 1*time.Second, "Failed to apply the cluster template")
 
 	cluster, err := e2eutil.DiscoveryAndWaitForCluster(ctx, capiframework.DiscoveryAndWaitForClusterInput{
@@ -156,6 +166,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
 			clusterctlConfigPath,
+			infrastructureProvider,
 		)
 
 		testCancelWatches()
@@ -201,14 +212,15 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		latestK0smotronStableMinor, _ := getStableReleaseOfMinor(context.Background(), minor)
 		k0smotronVersion := []string{fmt.Sprintf("k0sproject-k0smotron:v%s", latestK0smotronStableMinor)}
 
-		fmt.Println(fmt.Sprintf("Upgrading the management cluster to k0smotron %s", latestK0smotronStableMinor))
+		fmt.Printf("Upgrading the management cluster to k0smotron %s\n", latestK0smotronStableMinor)
 
 		mothership.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
-			ClusterctlConfigPath:  clusterctlConfigPath,
-			ClusterProxy:          managementClusterProxy,
-			BootstrapProviders:    k0smotronVersion,
-			ControlPlaneProviders: k0smotronVersion,
-			LogFolder:             managementClusterLogFolder,
+			ClusterctlConfigPath:    clusterctlConfigPath,
+			ClusterProxy:            managementClusterProxy,
+			BootstrapProviders:      k0smotronVersion,
+			ControlPlaneProviders:   k0smotronVersion,
+			InfrastructureProviders: infraProviders,
+			LogFolder:               managementClusterLogFolder,
 		}, e2eutil.GetInterval(e2eConfig, "bootstrap", "wait-deployment-available"))
 
 		controlPlane, err := e2eutil.DiscoveryAndWaitForControlPlaneInitialized(ctx, capiframework.DiscoveryAndWaitForControlPlaneInitializedInput{
@@ -230,7 +242,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 
 		require.True(t, validateMachineRollout(preUpgradeMachineList, postUpgradeMachineList), "The machines in the workload cluster have been rolled out unexpectedly")
 
-		fmt.Println(fmt.Sprintf("THE MANAGEMENT CLUSTER WITH '%s' VERSION OF K0SMOTRON PROVIDERS WORKS!", latestK0smotronStableMinor))
+		fmt.Printf("THE MANAGEMENT CLUSTER WITH '%s' VERSION OF K0SMOTRON PROVIDERS WORKS!\n", latestK0smotronStableMinor)
 	}
 
 	fmt.Println("Upgrading the management cluster to development version of k0smotron")

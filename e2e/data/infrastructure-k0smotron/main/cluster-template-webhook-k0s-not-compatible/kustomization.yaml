@@ -1,0 +1,7 @@
+resources:
+- ../bases/cluster-with-kcp.yaml
+- ../bases/md.yaml
+- ../bases/pooled-machines.yaml
+
+patches:
+- path: invalid-kcp-patch.yaml

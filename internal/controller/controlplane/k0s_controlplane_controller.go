@@ -21,9 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"strings"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"

@@ -364,7 +364,6 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sContr
 	machineK0sConfig.K0s = nil
 
 	return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
-
 }
 
 // Deprecated: This function is kept for backward compatibility with clusters created with versions that does not add an annotation in the
