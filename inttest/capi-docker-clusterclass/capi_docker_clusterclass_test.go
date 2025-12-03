@@ -235,8 +235,6 @@ func (s *CAPIDockerClusterClassSuite) createCluster() {
 	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, clusterBytes, 0644))
 	out, err = exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
-
-	time.Sleep(5 * time.Minute)
 }
 
 func (s *CAPIDockerClusterClassSuite) deleteCluster() {

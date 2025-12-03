@@ -241,8 +241,8 @@ func deployHostingCluster() {
 		LogFolder:          filepath.Join(artifactFolder, "kind"),
 		ExtraPortMappings: []v1alpha4.PortMapping{
 			{
-				ContainerPort: 30443,
-				HostPort:      30443,
+				ContainerPort: 31443,
+				HostPort:      31443,
 			},
 		},
 	})
