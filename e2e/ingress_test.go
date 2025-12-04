@@ -23,10 +23,10 @@ import (
 	"fmt"
 	"github.com/k0sproject/k0s/inttest/common"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"os/exec"
 	"path/filepath"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
@@ -156,9 +156,10 @@ func ingressSupportSpec(t *testing.T) {
 		clusterv1.ClusterNameLabel: workloadClusterName,
 	}), "Should list machines")
 
-	wrc, err := remote.RESTConfig(ctx, "ingress-test", bootstrapClusterProxy.GetClient(), client.ObjectKey{Namespace: workloadClusterNamespace, Name: workloadClusterName})
-	require.NoError(t, err, "Should get workload rest config")
-	wcs, err := kubernetes.NewForConfig(wrc)
+	workloadCluster := bootstrapClusterProxy.GetWorkloadCluster(ctx, workloadClusterNamespace, workloadClusterName, capiframework.WithRESTConfigModifier(func(config *rest.Config) {
+		config.Host = "https://localhost:30443"
+	}))
+	wcs, err := kubernetes.NewForConfig(workloadCluster.GetRESTConfig())
 	require.NoError(t, err, "Should get workload clientset")
 	require.NoError(t, common.WaitForDaemonSet(ctx, wcs, "konnectivity-agent"))
 
@@ -167,7 +168,8 @@ func ingressSupportSpec(t *testing.T) {
 	require.NoError(t, err, "Should list k0smotron pods")
 	out, err := podexec.PodExecCmdOutput(ctx, bootstrapClusterProxy.GetClientSet(), bootstrapClusterProxy.GetRESTConfig(), podList.Items[0].Name, testNamespace.Name, "k0s kc logs -n kube-system ds/konnectivity-agent")
 	require.NoError(t, err)
-	t.Logf("Konnectivity agent logs:\n%s", string(out))
+	t.Logf("Konnectivity agent logs:\n%s", out)
+	require.Contains(t, out, "change detected in proxy")
 
 	for _, m := range machineList.Items {
 		var (

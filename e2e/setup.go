@@ -31,16 +31,17 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/yaml"
-
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0sproject/k0smotron/e2e/mothership"
-	"github.com/k0sproject/k0smotron/e2e/util"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+	"sigs.k8s.io/yaml"
+
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/e2e/mothership"
+	"github.com/k0sproject/k0smotron/e2e/util"
 )
 
 // Test suite constants for e2e config variables.
@@ -153,6 +154,16 @@ func setupMothership() error {
 			RequiresDockerSock: e2eConfig.HasDockerProvider(),
 			IPFamily:           e2eConfig.MustGetVariable(IPFamily),
 			LogFolder:          filepath.Join(artifactFolder, "kind"),
+			ExtraPortMappings: []v1alpha4.PortMapping{
+				{
+					ContainerPort: 32143, // haproxy ingress port
+					HostPort:      32143,
+				},
+				{
+					ContainerPort: 30443, // HCP api nodeport
+					HostPort:      30443,
+				},
+			},
 		})
 		if bootstrapClusterProvider == nil {
 			return errors.New("failed to create a management cluster")
