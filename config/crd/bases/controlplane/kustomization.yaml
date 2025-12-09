@@ -1,5 +1,0 @@
-resources:
-  - controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
-  - controlplane.cluster.x-k8s.io_k0scontrolplanetemplates.yaml
-  - controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
-  - controlplane.cluster.x-k8s.io_k0smotroncontrolplanetemplates.yaml
