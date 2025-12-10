@@ -18,8 +18,12 @@ package v1beta1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+var (
+	conflictingFileSourceMsg  = "only one of content or contentFrom may be specified for a single file"
+	conflictingContentFromMsg = "only one of contentFrom.secretKeyRef or contentFrom.configMapKeyRef may be specified for a single file"
+	pathConflictMsg           = "path property must be unique among all files"
+	noContentMsg              = "either content or contentFrom must be specified for a file"
+)
 
 func init() {
 	SchemeBuilder.Register(&K0sWorkerConfigTemplate{}, &K0sWorkerConfigTemplateList{})
