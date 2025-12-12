@@ -31,8 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	fakeremote "sigs.k8s.io/cluster-api/controllers/remote/fake"
 	"sigs.k8s.io/cluster-api/util"
@@ -350,7 +350,7 @@ func TestReconcileReturnErrorWhenClusterIsNotFound(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: "non-existing-cluster",
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -391,7 +391,7 @@ func TestReconcilePausedCluster(t *testing.T) {
 	cluster := newCluster(ns.Name)
 
 	// Cluster 'paused'.
-	cluster.Spec.Paused = true
+	cluster.Spec.Paused = ptr.To(true)
 
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
@@ -407,7 +407,7 @@ func TestReconcilePausedCluster(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -460,7 +460,7 @@ func TestReconcilePausedK0sWorkerConfig(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -516,7 +516,7 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -578,7 +578,7 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -616,7 +616,6 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, clusterv1.ReadyCondition))
 		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
 		assert.Equal(c, bootstrapv1.WaitingForControlPlaneInitializationReason, conditions.GetReason(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
-		assert.Equal(c, clusterv1.ConditionSeverityInfo, *conditions.GetSeverity(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
 
 		// Cluster.Spec.ControlPlaneEndpoint is set but Cluster.Status.ControlPlaneReady is false
 		cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
@@ -634,7 +633,6 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, clusterv1.ReadyCondition))
 		assert.True(c, conditions.IsFalse(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
 		assert.Equal(c, bootstrapv1.WaitingForControlPlaneInitializationReason, conditions.GetReason(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
-		assert.Equal(c, clusterv1.ConditionSeverityInfo, *conditions.GetSeverity(updatedK0sWorkerConfig, bootstrapv1.DataSecretAvailableCondition))
 	}, 10*time.Second, 100*time.Millisecond)
 }
 
@@ -646,7 +644,11 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
-	cluster.Status.ControlPlaneReady = true
+	conditions.Set(cluster, metav1.Condition{
+		Type:   string(cpv1beta1.ControlPlaneReadyCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "ControlPlaneReady",
+	})
 	require.NoError(t, testEnv.Status().Update(ctx, cluster))
 
 	machineForWorkerConfig := &clusterv1.Machine{
@@ -661,7 +663,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
@@ -739,11 +741,9 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 
 	cluster := newCluster(namespace)
 	cluster.Spec = clusterv1.ClusterSpec{
-		ControlPlaneRef: &corev1.ObjectReference{
-			Kind:       "K0sControlPlane",
-			Namespace:  namespace,
-			Name:       kcpName,
-			APIVersion: cpv1beta1.GroupVersion.String(),
+		ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+			Kind: "K0sControlPlane",
+			Name: kcpName,
 		},
 		ControlPlaneEndpoint: clusterv1.APIEndpoint{
 			Host: "test.endpoint",

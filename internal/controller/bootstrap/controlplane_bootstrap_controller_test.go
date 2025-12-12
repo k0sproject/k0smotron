@@ -32,8 +32,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -190,7 +190,7 @@ func TestReconcileReturnErrorWhenClusterControllerConfigBelongsIsNotFound(t *tes
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: "non-existing-cluster",
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForControllerConfig))
@@ -231,7 +231,7 @@ func TestReconcileControllerConfigPausedCluster(t *testing.T) {
 	cluster := newCluster(ns.Name)
 
 	// Cluster 'paused'.
-	cluster.Spec.Paused = true
+	cluster.Spec.Paused = ptr.To(true)
 
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
@@ -247,7 +247,7 @@ func TestReconcileControllerConfigPausedCluster(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForControllerConfig))
@@ -300,7 +300,7 @@ func TestReconcilePausedK0sControllerConfig(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForControllerConfig))
@@ -356,7 +356,7 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForControllerConfig))
@@ -418,7 +418,7 @@ func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForControllerConfig))
@@ -461,7 +461,6 @@ func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
 		assert.True(c, conditions.IsFalse(updatedK0sControllerConfig, clusterv1.ReadyCondition))
 		assert.True(c, conditions.IsFalse(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
 		assert.Equal(c, bootstrapv1.WaitingForControlPlaneInitializationReason, conditions.GetReason(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
-		assert.Equal(c, clusterv1.ConditionSeverityInfo, *conditions.GetSeverity(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
 	}, 10*time.Second, 100*time.Millisecond)
 }
 
@@ -489,7 +488,7 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineForControllerConfig))

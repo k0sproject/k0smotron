@@ -21,15 +21,16 @@ package e2e
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/k0sproject/k0s/inttest/common"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os/exec"
-	"path/filepath"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
-	"time"
 
 	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
 	podexec "github.com/k0sproject/k0smotron/internal/exec"

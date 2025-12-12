@@ -118,11 +118,11 @@ func controlplaneConditionsSpec(t *testing.T) {
 		if err := bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(controlPlane), controlPlane); err != nil {
 			return false
 		}
-		return conditions.IsTrue(controlPlane, cpv1beta1.ControlPlaneReadyCondition)
+		return conditions.IsTrue(controlPlane, string(cpv1beta1.ControlPlaneReadyCondition))
 	}, 5*time.Minute, 10*time.Second, "ControlPlaneReadyCondition should transition to True")
 
 	// Test: Verify that the condition has the correct final status
-	condition := conditions.Get(controlPlane, cpv1beta1.ControlPlaneReadyCondition)
+	condition := conditions.Get(controlPlane, string(cpv1beta1.ControlPlaneReadyCondition))
 	require.NotNil(t, condition, "ControlPlaneReadyCondition should exist")
 	require.Equal(t, corev1.ConditionTrue, condition.Status, "ControlPlaneReadyCondition should be True")
 

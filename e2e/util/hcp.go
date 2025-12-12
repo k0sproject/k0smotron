@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
