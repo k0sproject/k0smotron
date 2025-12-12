@@ -104,6 +104,10 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 }
 
 func getProvisioner(ignitionSpec *bootstrapv1.IgnitionSpec) provisioner.Provisioner {
+	//if isWindows {
+	//	return &provisioner.CloudBaseInitProvisioner{}
+	//}
+
 	if ignitionSpec != nil {
 		return &provisioner.IgnitionProvisioner{
 			Variant:          ignitionSpec.Variant,
