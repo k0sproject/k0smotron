@@ -17,8 +17,9 @@ limitations under the License.
 package provisioner
 
 const (
-	cloudInitProvisioningFormat = "cloud-config"
-	ignitionProvisioningFormat  = "ignition"
+	cloudInitProvisioningFormat     = "cloud-config"
+	ignitionProvisioningFormat      = "ignition"
+	powershellAWSProvisioningFormat = "powershell-aws"
 )
 
 // InputProvisionData holds the data needed for provisioning a machine.

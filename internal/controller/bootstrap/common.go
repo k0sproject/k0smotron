@@ -103,7 +103,11 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 	return args
 }
 
-func getProvisioner(ignitionSpec *bootstrapv1.IgnitionSpec) provisioner.Provisioner {
+func getProvisioner(ignitionSpec *bootstrapv1.IgnitionSpec, isWindows bool) provisioner.Provisioner {
+	if isWindows {
+		return &provisioner.PowerShellAWSProvisioner{}
+	}
+
 	if ignitionSpec != nil {
 		return &provisioner.IgnitionProvisioner{
 			Variant:          ignitionSpec.Variant,
