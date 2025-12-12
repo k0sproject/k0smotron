@@ -309,10 +309,155 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	}
 
 	commandsMap := make(map[provisioner.VarName]string)
+	var commands []string
+
+	if scope.Config.Spec.IsWindows {
+		var winFiles []provisioner.File
+		commands, winFiles = getWindowsCommands(scope)
+		files = append(files, winFiles...)
+	} else {
+		commands, commandsMap, err = getLinuxCommands(scope)
+		if err != nil {
+			return nil, fmt.Errorf("error generating linux commands: %w", err)
+		}
+	}
+
+	var (
+		customUserData string
+		vars           map[provisioner.VarName]string
+	)
+	if scope.Config.Spec.CustomUserDataRef != nil {
+		customUserData, err = resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
+		if err != nil {
+			return nil, fmt.Errorf("error extracting the contents of the provided custom worker user data: %w", err)
+		}
+		vars = commandsMap
+	}
+
+	return scope.provisioner.ToProvisionData(&provisioner.InputProvisionData{
+		Files:          files,
+		Commands:       commands,
+		CustomUserData: customUserData,
+		Vars:           vars,
+	})
+}
+
+func getWindowsCommands(scope *Scope) ([]string, []provisioner.File) {
+	//if scope.Config.Spec.K0sInstallDir == "/usr/local/bin" {
+	//	scope.Config.Spec.K0sInstallDir = "C:\\bootstrap"
+	//}
+	k0sPath := filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s.exe")
+
+	installScript := fmt.Sprintf(`$ErrorActionPreference = "Stop"
+Start-Transcript -Path C:\bootstrap.log -Append
+
+if (Test-Path C:\bootstrap.done) {
+    Write-Host "Bootstrap already completed, skipping."
+    exit 0
+}
+
+Write-Host "=== Register ScheduledTask to continue execution after reboot ==="
+
+$taskName = "k0s-bootstrap"
+
+if (-not (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
+    $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\bootstrap\k0s_install.ps1"
+	$trigger = New-ScheduledTaskTrigger -AtStartup
+	$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force
+}
+
+Write-Host "=== Checking Windows Containers feature using DISM ==="
+
+function Is-FeatureEnabled {
+  param([string]$Name)
+  $output = dism.exe /online /Get-Features
+  return $output -match "$Name\s+:\s+Enabled"
+}
+
+$featureName = "Containers"
+
+if (Is-FeatureEnabled $featureName) {
+  Write-Host "$featureName is already enabled. Nothing to do."
+} else {
+  Write-Host "$featureName is not enabled. Installing..."
+  $result = dism.exe /online /Enable-Feature /FeatureName:$featureName /All /NoRestart
+  $exitCode = $LASTEXITCODE
+  Write-Host "DISM exit code: $exitCode"
+
+  if ($exitCode -eq 0) {
+	  Write-Host "Feature installed successfully, no reboot required."
+  } elseif ($exitCode -eq 3010) {
+	  Write-Host "Feature installed successfully, reboot required."
+	  Restart-Computer -Force
+  } else {
+	  throw "DISM failed with exit code $exitCode"
+  }
+}
+
+# --- "Waiting for network..." ---
+
+while (-not (Get-NetAdapter | Where-Object Status -eq 'Up')) {
+    Start-Sleep -Seconds 5
+}
+
+Write-Host "Network is up"
+
+# --- Download and run k0s ---
+Write-Host "=== Downloading k0s binary ==="
+
+$k0sUrl = "https://get.k0sproject.io/%s/k0s-%s-amd64.exe"  # PoC supporting only amd64
+$dest = "%s"
+New-Item -ItemType Directory -Force -Path "%s" | Out-Null
+Invoke-WebRequest -Uri $k0sUrl -OutFile $dest -UseBasicParsing
+
+Write-Host "=== Executing k0s to check version ==="
+& $dest --version
+`, scope.Config.Spec.Version, scope.Config.Spec.Version, k0sPath, scope.Config.Spec.K0sInstallDir)
+
+	inlineCommands := scope.Config.Spec.PreStartCommands
+	// Download and enable containers and k0s bootstrap script
+	commands := []string{`powershell.exe -NoProfile -NonInteractive -File "C:\bootstrap\k0s_install.ps1"`}
+	// TODO: implement ingress support for Windows
+	//inlineCommands = append(inlineCommands, ingressCommands...)
+
+	installCmdParts := []string{
+		fmt.Sprintf(`%s install worker --token-file %s`, k0sPath, scope.Config.GetJoinTokenPath()),
+	}
+	installCmdParts = append(installCmdParts, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
+
+	inlineCommands = append(inlineCommands, strings.Join(installCmdParts, " "))
+	inlineCommands = append(inlineCommands, fmt.Sprintf(`& %s start`, k0sPath))
+	inlineCommands = append(inlineCommands, scope.Config.Spec.PostStartCommands...)
+
+	for _, cmd := range inlineCommands {
+		installScript += "\n" + cmd + "\n"
+	}
+
+	installScript += `
+Unregister-ScheduledTask -TaskName "k0s-bootstrap" -Confirm:$false -ErrorAction SilentlyContinue
+New-Item C:\bootstrap.done -ItemType File
+Stop-Transcript
+`
+
+	var files []provisioner.File
+	files = append(files, provisioner.File{
+		Path:        `C:\bootstrap\k0s_install.ps1`,
+		Permissions: "0644",
+		Content:     installScript,
+	})
+
+	return commands, files
+}
+
+func getLinuxCommands(scope *Scope) ([]string, map[provisioner.VarName]string, error) {
+	commandsMap := make(map[provisioner.VarName]string)
 
 	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
 	if err != nil {
-		return nil, fmt.Errorf("error generating download commands: %w", err)
+		return nil, nil, fmt.Errorf("error generating download commands: %w", err)
 	}
 	installCmd := createInstallCmd(scope)
 

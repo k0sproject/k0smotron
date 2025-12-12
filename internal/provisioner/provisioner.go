@@ -24,6 +24,7 @@ const (
 	CloudInitProvisioningFormat ProvisioningFormat = "cloud-config"
 	// IgnitionProvisioningFormat represents the ignition format.
 	IgnitionProvisioningFormat ProvisioningFormat = "ignition"
+	powershellAWSProvisioningFormat = "powershell-aws"
 )
 
 // InputProvisionData holds the data needed for provisioning a machine.

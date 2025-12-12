@@ -146,6 +146,10 @@ type K0sWorkerConfigSpec struct {
 
 	// WorkingDir specifies the working directory where k0smotron will place its files.
 	WorkingDir string `json:"workingDir,omitempty"`
+
+	// IsWindows specifies whether the target node is Windows.
+	// +kubebuilder:validation:Optional
+	IsWindows bool `json:"isWindows,omitempty"`
 }
 
 // JoinTokenSecretRef is a reference to a secret that contains the join token for k0s worker nodes.
