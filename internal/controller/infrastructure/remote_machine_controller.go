@@ -31,9 +31,10 @@ import (
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/finalizers"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -107,15 +108,13 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	mode := ModeNonK0s
-	if machine.Spec.Bootstrap.ConfigRef != nil {
-		switch machine.Spec.Bootstrap.ConfigRef.Kind {
-		case "K0sWorkerConfig":
-			mode = ModeWorker
-		case "K0sControllerConfig":
-			mode = ModeController
-		default:
-			mode = ModeNonK0s
-		}
+	switch machine.Spec.Bootstrap.ConfigRef.Kind {
+	case "K0sWorkerConfig":
+		mode = ModeWorker
+	case "K0sControllerConfig":
+		mode = ModeController
+	default:
+		mode = ModeNonK0s
 	}
 
 	log = log.WithValues("machine", machine.Name)
@@ -165,11 +164,11 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		// Bail out early if surrounding objects are not ready
-		if cluster.Spec.Paused || annotations.IsPaused(cluster, rm) {
+		if annotations.IsPaused(cluster, rm) {
 			log.Info("Cluster is paused, skipping RemoteMachine reconciliation")
 		}
 
-		if !cluster.Status.InfrastructureReady {
+		if !conditions.IsTrue(cluster, clusterv1.ClusterInfrastructureReadyCondition) {
 			log.Info("Cluster infrastructure is not ready yet")
 			return ctrl.Result{Requeue: true}, nil
 		}

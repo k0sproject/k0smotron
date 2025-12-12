@@ -17,12 +17,11 @@ limitations under the License.
 package v1beta1
 
 import (
+	"path/filepath"
+
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"path/filepath"
-
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -46,11 +45,13 @@ type K0sWorkerConfig struct {
 	Status K0sWorkerConfigStatus `json:"status,omitempty"`
 }
 
-func (k *K0sWorkerConfig) GetConditions() clusterv1.Conditions {
-	return k.Status.Conditions
+// GetConditions returns the set of conditions for this object.
+func (c *K0sWorkerConfig) GetConditions() []metav1.Condition {
+	return c.Status.Conditions
 }
 
-func (k *K0sWorkerConfig) SetConditions(conditions clusterv1.Conditions) {
+// SetConditions sets the conditions on the K0sWorkerConfig status.
+func (k *K0sWorkerConfig) SetConditions(conditions []metav1.Condition) {
 	k.Status.Conditions = conditions
 }
 
@@ -154,7 +155,7 @@ type K0sWorkerConfigStatus struct {
 
 	// Conditions defines current service state of the K0sWorkerConfig.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -180,14 +181,16 @@ type K0sControllerConfigStatus struct {
 
 	// Conditions defines current service state of the K0sControllerConfig.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-func (k *K0sControllerConfig) GetConditions() clusterv1.Conditions {
-	return k.Status.Conditions
+// GetConditions returns the set of conditions for this object.
+func (c *K0sControllerConfig) GetConditions() []metav1.Condition {
+	return c.Status.Conditions
 }
 
-func (k *K0sControllerConfig) SetConditions(conditions clusterv1.Conditions) {
+// SetConditions sets the conditions on the K0sControllerConfig status.
+func (k *K0sControllerConfig) SetConditions(conditions []metav1.Condition) {
 	k.Status.Conditions = conditions
 }
 

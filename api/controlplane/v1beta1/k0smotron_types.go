@@ -19,7 +19,6 @@ package v1beta1
 import (
 	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 const K0smotronControlPlaneFinalizer = "k0smotron.controlplane.cluster.x-k8s.io"
@@ -110,13 +109,13 @@ type K0smotronControlPlaneStatus struct {
 
 	// Conditions defines current service state of the K0smotronControlPlane.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-func (k *K0smotronControlPlane) GetConditions() clusterv1.Conditions {
+func (k *K0smotronControlPlane) GetConditions() []metav1.Condition {
 	return k.Status.Conditions
 }
 
-func (k *K0smotronControlPlane) SetConditions(conditions clusterv1.Conditions) {
+func (k *K0smotronControlPlane) SetConditions(conditions []metav1.Condition) {
 	k.Status.Conditions = conditions
 }
