@@ -194,6 +194,10 @@ spec:
                         - variant
                         - version
                         type: object
+                      isWindows:
+                        description: IsWindows specifies whether the target node is
+                          Windows.
+                        type: boolean
                       k0sInstallDir:
                         default: /usr/local/bin
                         description: |-
