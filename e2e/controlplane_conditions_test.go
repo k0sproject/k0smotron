@@ -28,7 +28,7 @@ import (
 	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
 	"github.com/k0sproject/k0smotron/internal/util"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
@@ -118,15 +118,15 @@ func controlplaneConditionsSpec(t *testing.T) {
 		if err := bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(controlPlane), controlPlane); err != nil {
 			return false
 		}
-		return conditions.IsTrue(controlPlane, cpv1beta1.ControlPlaneReadyCondition)
-	}, 5*time.Minute, 10*time.Second, "ControlPlaneReadyCondition should transition to True")
+		return conditions.IsTrue(controlPlane, string(cpv1beta1.ControlPlaneAvailableCondition))
+	}, 5*time.Minute, 10*time.Second, "ControlPlaneAvailableCondition should transition to True")
 
 	// Test: Verify that the condition has the correct final status
-	condition := conditions.Get(controlPlane, cpv1beta1.ControlPlaneReadyCondition)
-	require.NotNil(t, condition, "ControlPlaneReadyCondition should exist")
-	require.Equal(t, corev1.ConditionTrue, condition.Status, "ControlPlaneReadyCondition should be True")
+	condition := conditions.Get(controlPlane, string(cpv1beta1.ControlPlaneAvailableCondition))
+	require.NotNil(t, condition, "ControlPlaneAvailableCondition should exist")
+	require.Equal(t, metav1.ConditionTrue, condition.Status, "ControlPlaneAvailableCondition should be True")
 
 	// Test: Verify that the status is ready
 	require.True(t, controlPlane.Status.Ready, "K0smotronControlPlane should be ready")
-	require.True(t, controlPlane.Status.Initialized, "K0smotronControlPlane should be initialized")
+	require.True(t, controlPlane.Status.Initialization.ControlPlaneInitialized, "K0smotronControlPlane should be initialized")
 }

@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
@@ -127,8 +127,8 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}
 
 	// If the K0sWorkerConfig does not have a version set, use the machine's version.
-	if config.Spec.Version == "" && machine.Spec.Version != nil {
-		config.Spec.Version = *machine.Spec.Version
+	if config.Spec.Version == "" && machine.Spec.Version != "" {
+		config.Spec.Version = machine.Spec.Version
 	}
 
 	// If the version does not contain the k0s suffix, append it.
@@ -175,13 +175,26 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
-		conditions.SetSummary(config,
-			conditions.WithConditions(
-				bootstrapv1.DataSecretAvailableCondition,
-			),
+		err := conditions.SetSummaryCondition(config, config, string(bootstrapv1.ConfigReadyCondition),
+			conditions.ForConditionTypes{string(bootstrapv1.DataSecretAvailableCondition)},
+			// Using a custom merge strategy to override reasons applied during merge and to ignore some
+			// info message so the ready condition aggregation in other resources is less noisy.
+			conditions.CustomMergeStrategy{
+				MergeStrategy: conditions.DefaultMergeStrategy(
+					// Use custom reasons.
+					conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
+						bootstrapv1.ConfigNotReadyReason,
+						bootstrapv1.ConfigReadyUnknownReason,
+						bootstrapv1.ConfigReadyReason,
+					)),
+				),
+			},
 		)
+		if err != nil {
+			log.Error(err, "Failed to set summary condition")
+		}
 
-		err := patchHelper.Patch(ctx, config)
+		err = patchHelper.Patch(ctx, config)
 		if err != nil {
 			log.Error(err, "Failed to patch K0sWorkerConfig status")
 		}
@@ -195,20 +208,35 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}
 	err = r.setClientScope(ctx, cluster, scope)
 	if err != nil {
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.InternalErrorReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
 
 	// Control plane needs to be ready because worker needs to use controlplane API to retrieve a join token.
-	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() || !scope.Cluster.Status.ControlPlaneReady {
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForControlPlaneInitializationReason, clusterv1.ConditionSeverityInfo, "")
+	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() || !conditions.IsTrue(cluster, string(clusterv1.ClusterControlPlaneInitializedCondition)) {
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.WaitingForControlPlaneInitializationReason,
+			Message: "Control plane is not ready yet",
+		})
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
 	log.Info("Generating bootstrap data")
 	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope)
 	if err != nil {
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.DataSecretGenerationFailedReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
 
@@ -217,10 +245,20 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	if err := r.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionTrue,
+			Reason:  bootstrapv1.InternalErrorReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
-	conditions.MarkTrue(config, bootstrapv1.DataSecretAvailableCondition)
+	conditions.Set(config, metav1.Condition{
+		Type:    string(bootstrapv1.DataSecretAvailableCondition),
+		Status:  metav1.ConditionTrue,
+		Reason:  bootstrapv1.ConfigSecretAvailableReason,
+		Message: "Bootstrap secret created",
+	})
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
 
 	// Set the status to ready
@@ -479,7 +517,7 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 	scope.client = r.Client
 	scope.secretCachingClient = r.SecretCachingClient
 
-	uControlPlane, err := external.Get(ctx, r.Client, cluster.Spec.ControlPlaneRef)
+	uControlPlane, err := external.GetObjectFromContractVersionedRef(ctx, r.Client, cluster.Spec.ControlPlaneRef, cluster.Namespace)
 	if err != nil {
 		return err
 	}

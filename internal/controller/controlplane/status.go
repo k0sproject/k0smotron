@@ -26,8 +26,9 @@ import (
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -266,15 +267,15 @@ func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 // versionMatches checks if the machine version matches the kcp version taking the possibly missing suffix into account
 func versionMatches(machine *clusterv1.Machine, ver string) bool {
 
-	if machine.Spec.Version == nil || *machine.Spec.Version == "" {
+	if machine.Spec.Version == "" {
 		return false
 	}
 
-	if *machine.Spec.Version == ver {
+	if machine.Spec.Version == ver {
 		return true
 	}
 
-	machineVersion := *machine.Spec.Version
+	machineVersion := machine.Spec.Version
 	kcpVersion := ver
 
 	// If either of the versions is missing the suffix, we need to add it
@@ -306,8 +307,6 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, util.ObjectKey(cluster))
 	if err != nil {
 		logger.Info("Failed to create cluster client", "error", err)
-		// Set a condition for this so we can determine later if we should requeue the reconciliation
-		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "Unable to connect to the workload cluster API", clusterv1.ConditionSeverityWarning, "Failed to create cluster client: %v", err)
 		return
 	}
 	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -321,12 +320,16 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	}
 	err = client.Get(pingCtx, nsKey, ns)
 	if err != nil {
-		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "Unable to connect to the workload cluster API", clusterv1.ConditionSeverityWarning, "Failed to get namespace: %v", err)
+		logger.Info("Failed to ping the workload cluster API", "error", err)
 		return
 	}
 	logger.Info("Successfully pinged the workload cluster API")
 	// Set the conditions
-	conditions.MarkTrue(kcp, cpv1beta1.ControlPlaneReadyCondition)
+	conditions.Set(kcp, metav1.Condition{
+		Type:   string(cpv1beta1.ControlPlaneAvailableCondition),
+		Status: metav1.ConditionTrue,
+		Reason: cpv1beta1.ControlPlaneAvailableReason,
+	})
 	kcp.Status.Ready = true
 	kcp.Status.Initialized = true
 	kcp.Status.Initialization.ControlPlaneInitialized = true

@@ -239,9 +239,9 @@ func (s *CAPIDockerClusterClassSuite) createCluster() {
 
 func (s *CAPIDockerClusterClassSuite) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.Command("kubectl", "delete", "cluster", "docker-test-cluster").CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
-	out, err = exec.Command("kubectl", "delete", "-f", s.clusterClassYamlsPath).CombinedOutput()
+	out, err = exec.Command("kubectl", "delete", "clusterclass", "k0smotron-clusterclass").CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster class objects: %s", string(out))
 }
 
