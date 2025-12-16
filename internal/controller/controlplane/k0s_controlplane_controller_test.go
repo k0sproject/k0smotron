@@ -424,6 +424,16 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 		TunnelingNodePort: 9999,
 	}
 
+	// Custom labels and annotations for the kubeconfig Secret.
+	kcp.Spec.KubeconfigSecretMetadata = bootstrapv1.SecretMetadata{
+		Labels: map[string]string{
+			"custom-label": "custom-value",
+		},
+		Annotations: map[string]string{
+			"custom-annotation": "custom-value",
+		},
+	}
+
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
 	defer func(do ...client.Object) {
@@ -476,6 +486,15 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 			assert.Equal(c, "https://test.endpoint:6443", v.Server)
 			assert.Equal(c, "http://test.com:9999", v.ProxyURL)
 		}
+
+		// Verify custom labels and annotations are present in the proxied kubeconfig Secret.
+		for k, v := range kcp.Spec.KubeconfigSecretMetadata.Labels {
+			assert.Equal(c, v, kubeconfigProxiedSecret.Labels[k])
+		}
+		for k, v := range kcp.Spec.KubeconfigSecretMetadata.Annotations {
+			assert.Equal(c, v, kubeconfigProxiedSecret.Annotations[k])
+		}
+
 	}, 10*time.Second, 100*time.Millisecond)
 }
 
@@ -492,6 +511,16 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 		Mode:              "tunnel",
 		ServerAddress:     "test.com",
 		TunnelingNodePort: 9999,
+	}
+
+	// Custom labels and annotations for the kubeconfig Secret.
+	kcp.Spec.KubeconfigSecretMetadata = bootstrapv1.SecretMetadata{
+		Labels: map[string]string{
+			"custom-label": "custom-value",
+		},
+		Annotations: map[string]string{
+			"custom-annotation": "custom-value",
+		},
 	}
 
 	require.NoError(t, testEnv.Create(ctx, kcp))
@@ -544,6 +573,15 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
 			assert.Equal(c, "https://test.com:9999", v.Server)
 		}
+
+		// Verify custom labels and annotations are present in the proxied kubeconfig Secret.
+		for k, v := range kcp.Spec.KubeconfigSecretMetadata.Labels {
+			assert.Equal(c, v, kubeconfigProxiedSecret.Labels[k])
+		}
+		for k, v := range kcp.Spec.KubeconfigSecretMetadata.Annotations {
+			assert.Equal(c, v, kubeconfigProxiedSecret.Annotations[k])
+		}
+
 	}, 10*time.Second, 100*time.Millisecond)
 
 }

@@ -22,6 +22,9 @@ func LabelsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 	for k, v := range kmc.Labels {
 		labels[k] = v
 	}
+	for k, v := range kmc.Spec.KubeconfigSecretMetadata.Labels {
+		labels[k] = v
+	}
 	labels["component"] = "cluster"
 	return labels
 }
@@ -39,6 +42,12 @@ func LabelsForEtcdK0smotronCluster(kmc *km.Cluster) map[string]string {
 }
 
 func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {
+	if kmc.Annotations == nil {
+		kmc.Annotations = make(map[string]string)
+	}
+	for k, v := range kmc.Spec.KubeconfigSecretMetadata.Annotations {
+		kmc.Annotations[k] = v
+	}
 	return kmc.Annotations
 }
 

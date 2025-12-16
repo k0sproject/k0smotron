@@ -106,6 +106,15 @@ Resource Types:
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b><a href="#k0scontrolplanespeckubeconfigsecretmetadata">kubeconfigSecretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>replicas</b></td>
         <td>integer</td>
         <td>
@@ -815,6 +824,42 @@ More info: http://kubernetes.io/docs/user-guide/annotations<br/>
 (scope and select) objects. May match selectors of replication controllers
 and services.
 More info: http://kubernetes.io/docs/user-guide/labels<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.kubeconfigSecretMetadata
+<sup><sup>[↩ Parent](#k0scontrolplanespec)</sup></sup>
+
+
+
+KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2012,6 +2057,15 @@ This kubeconfig will be used to deploy the k0s control plane.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespeckubeconfigsecretmetadata">kubeconfigSecretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindex">manifests</a></b></td>
         <td>[]object</td>
         <td>
@@ -2494,6 +2548,42 @@ This kubeconfig will be used to deploy the k0s control plane.
         <td>string</td>
         <td>
           Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.kubeconfigSecretMetadata
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11778,6 +11868,15 @@ This kubeconfig will be used to deploy the k0s control plane.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespeckubeconfigsecretmetadata">kubeconfigSecretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindex">manifests</a></b></td>
         <td>[]object</td>
         <td>
@@ -12260,6 +12359,42 @@ This kubeconfig will be used to deploy the k0s control plane.
         <td>string</td>
         <td>
           Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.kubeconfigSecretMetadata
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
         </td>
         <td>false</td>
       </tr></tbody>

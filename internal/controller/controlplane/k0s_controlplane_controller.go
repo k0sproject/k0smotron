@@ -21,9 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"strings"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -263,10 +264,20 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 		}
 	}()
 
+	clusterKey := client.ObjectKey{
+		Name:      cluster.GetName(),
+		Namespace: cluster.GetNamespace(),
+	}
+
 	workloadClusterKubeconfigSecret, err := secret.GetFromNamespacedName(ctx, c.SecretCachingClient, capiutil.ObjectKey(cluster), secret.Kubeconfig)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return kubeconfig.CreateSecret(ctx, c.SecretCachingClient, cluster)
+			kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s", cluster.Spec.ControlPlaneEndpoint.String()))
+			if err != nil {
+				return err
+			}
+
+			return c.createKubeconfigSecret(ctx, kc, cluster, secret.Name(cluster.Name, secret.Kubeconfig), kcp.Spec.KubeconfigSecretMetadata)
 		}
 
 		return err
@@ -274,10 +285,6 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 	kubeconfigSecrets = append(kubeconfigSecrets, workloadClusterKubeconfigSecret)
 
 	if kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
-		clusterKey := client.ObjectKey{
-			Name:      cluster.GetName(),
-			Namespace: cluster.GetNamespace(),
-		}
 
 		if kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
 
@@ -296,7 +303,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 						kc.Clusters[cn].ProxyURL = fmt.Sprintf("http://%s:%d", kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort)
 					}
 
-					err = c.createKubeconfigSecret(ctx, kc, cluster, secretName)
+					err = c.createKubeconfigSecret(ctx, kc, cluster, secretName, kcp.Spec.KubeconfigSecretMetadata)
 					if err != nil {
 						return err
 					}
@@ -317,7 +324,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 						return err
 					}
 
-					err = c.createKubeconfigSecret(ctx, kc, cluster, secretName)
+					err = c.createKubeconfigSecret(ctx, kc, cluster, secretName, kcp.Spec.KubeconfigSecretMetadata)
 					if err != nil {
 						return err
 					}

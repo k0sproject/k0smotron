@@ -105,6 +105,11 @@ type K0sControlPlaneSpec struct {
 	// just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.
 	//+kubebuilder:validation:Optional
 	Version string `json:"version,omitempty"`
+	// KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+	// created for the workload cluster.
+	// Note: This metadata will have precedence over default labels/annotations on the Secret.
+	// +kubebuilder:validation:Optional
+	KubeconfigSecretMetadata bootstrapv1.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
 }
 
 type K0sControlPlaneMachineTemplate struct {

@@ -116,6 +116,22 @@ type ClusterSpec struct {
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+	// KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+	// created for the workload cluster.
+	// Note: This metadata will have precedence over default labels/annotations on the Secret.
+	// +kubebuilder:validation:Optional
+	KubeconfigSecretMetadata SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
+}
+
+// SecretMetadata defines metadata to be propagated to the bootstrap Secret
+type SecretMetadata struct {
+	// Labels to be added to the bootstrap Secret
+	// +kubebuilder:validation:Optional
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// Annotations to be added to the bootstrap Secret
+	// +kubebuilder:validation:Optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 // IngressSpec defines the ingress configuration for accessing the Kubernetes API and konnectivity server via host names
