@@ -294,6 +294,23 @@ spec:
                       k0smotron will place its files.
                     type: string
                 type: object
+              kubeconfigSecretMetadata:
+                description: |-
+                  KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+                  created for the workload cluster.
+                  Note: This metadata will have precedence over default labels/annotations on the Secret.
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations to be added to the bootstrap Secret
+                    type: object
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels to be added to the bootstrap Secret
+                    type: object
+                type: object
               machineTemplate:
                 properties:
                   infrastructureRef:
