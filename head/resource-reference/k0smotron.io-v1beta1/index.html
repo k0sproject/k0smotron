@@ -2011,6 +2011,15 @@ This kubeconfig will be used to deploy the k0s control plane.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#clusterspeckubeconfigsecretmetadata">kubeconfigSecretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterspecmanifestsindex">manifests</a></b></td>
         <td>[]object</td>
         <td>
@@ -2452,6 +2461,37 @@ This kubeconfig will be used to deploy the k0s control plane.</p>
         <td>string</td>
         <td>
           Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="clusterspeckubeconfigsecretmetadata">Cluster.spec.kubeconfigSecretMetadata<a class="headerlink" href="#clusterspeckubeconfigsecretmetadata" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#clusterspec">↩ Parent</a></sup></sup></p>
+<p>KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
         </td>
         <td>false</td>
       </tr></tbody>
