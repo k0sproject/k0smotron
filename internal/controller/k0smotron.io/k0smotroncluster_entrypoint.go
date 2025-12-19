@@ -115,7 +115,7 @@ const (
 {{ .UniversalSedInplace }}
 
 # Put the k0s.yaml in place
-mkdir /etc/k0s && echo "$K0SMOTRON_K0S_YAML" > /etc/k0s/k0s.yaml
+mkdir -p /etc/k0s && echo "$K0SMOTRON_K0S_YAML" > /etc/k0s/k0s.yaml
 
 # Substitute the kine datasource URL from the env var
 escaped_url=$(printf '%s' "$K0SMOTRON_KINE_DATASOURCE_URL" | sed 's/[&/\]/\\&/g')
