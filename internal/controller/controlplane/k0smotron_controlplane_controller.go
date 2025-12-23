@@ -155,6 +155,12 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	// for garbage collection purposes. Only if the K0smotronControlPlane is not being deleted, otherwise an infinite
 	// loop would be created creating the root owner - deleting it - creating it again.
 	if kcp.Spec.KubeconfigRef != nil && kcp.ObjectMeta.DeletionTimestamp.IsZero() {
+		// Ensure the namespace exists in the remote cluster before creating any resources
+		if err := util.EnsureNamespaceExists(ctx, kmcScope.client, cluster.Namespace); err != nil {
+			log.Error(err, "Error ensuring namespace exists in remote cluster")
+			return ctrl.Result{}, err
+		}
+
 		kmcScope.externalOwner, err = util.EnsureExternalOwner(ctx, cluster.Name, cluster.Namespace, kmcScope.client)
 		if err != nil {
 			log.Error(err, "Error ensuring external owner")
