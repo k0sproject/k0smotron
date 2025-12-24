@@ -108,7 +108,7 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	Monitoring MonitoringSpec `json:"monitoring,omitempty"`
 	// Etcd defines the etcd configuration.
-	//+kubebuilder:default={"image":"quay.io/k0sproject/etcd:v3.5.13","persistence":{}}
+	//+kubebuilder:default={"image":"makhov/etcd:3.6.6","persistence":{}}
 	Etcd EtcdSpec `json:"etcd,omitempty"`
 
 	// TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
@@ -192,9 +192,9 @@ type Mount struct {
 
 const (
 	defaultK0SImage   = "quay.io/k0sproject/k0s"
-	DefaultK0SVersion = "v1.27.9-k0s.0"
+	DefaultK0SVersion = "v1.34.2-k0s.0"
 	DefaultK0SSuffix  = "k0s.0"
-	DefaultEtcdImage  = "quay.io/k0sproject/etcd:v3.5.13"
+	DefaultEtcdImage  = "makhov/etcd:3.6.6"
 )
 
 func (c *ClusterSpec) GetImage() string {
