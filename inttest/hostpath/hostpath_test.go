@@ -134,7 +134,13 @@ func (s *HostPathSuite) createK0smotronCluster(ctx context.Context, kc *kubernet
 				"spec": {
 					"telemetry": {"enabled": false}
 				}
-			}
+			},
+            "mounts": [
+			    {
+			        "path": "/etc/k0s",
+					"emptyDir": {}
+			    }
+			]
 		}
 	  }
 `)
