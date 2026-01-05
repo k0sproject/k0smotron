@@ -191,7 +191,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		Config:      config,
 		ConfigOwner: configOwner,
 		Cluster:     cluster,
-		provisioner: getProvisioner(config.Spec.Ignition, config.Spec.IsWindows),
+		provisioner: getProvisioner(config.Spec.Provisioner, config.Spec.Ignition),
 	}
 	err = r.setClientScope(ctx, cluster, scope)
 	if err != nil {
@@ -297,9 +297,6 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 }
 
 func getWindowsCommands(scope *Scope) ([]string, []provisioner.File) {
-	//if scope.Config.Spec.K0sInstallDir == "/usr/local/bin" {
-	//	scope.Config.Spec.K0sInstallDir = "C:\\bootstrap"
-	//}
 	k0sPath := filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s.exe")
 
 	installScript := fmt.Sprintf(`$ErrorActionPreference = "Stop"
@@ -550,7 +547,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 }
 
 // createBootstrapSecret creates a bootstrap secret for the worker node
-func createBootstrapSecret(scope *Scope, bootstrapData []byte, format string) *corev1.Secret {
+func createBootstrapSecret(scope *Scope, bootstrapData []byte, format provisioner.ProvisioningFormat) *corev1.Secret {
 	// Initialize labels with cluster-name label
 	labels := map[string]string{
 		clusterv1.ClusterNameLabel: scope.Cluster.Name,

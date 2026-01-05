@@ -246,6 +246,46 @@ spec:
                     items:
                       type: string
                     type: array
+                  provisioner:
+                    description: Provisioner defines the provisioner configuration.
+                      Defaults to cloud-init.
+                    properties:
+                      ignition:
+                        description: IgnitionSpec defines the configuration for the
+                          Ignition provisioner.
+                        properties:
+                          additionalConfig:
+                            description: |-
+                              AdditionalConfig is an unstructured object that contains additional config to be merged
+                              with the generated one. The format follows Butane spec: https://coreos.github.io/butane/
+                            type: string
+                          variant:
+                            description: |-
+                              Variant declares which distribution variant the generated config is for.
+                              Check the supported variants and versions here:
+                              https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications
+                            enum:
+                            - fcos
+                            - flatcar
+                            - openshift
+                            - r4e
+                            - fiot
+                            type: string
+                          version:
+                            description: |-
+                              Version is the schema version of the Butane config to use
+                              Check the supported variants and versions here:
+                              https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications
+                            type: string
+                        required:
+                        - variant
+                        - version
+                        type: object
+                      type:
+                        description: ProvisioningFormat represents the format used
+                          for provisioning.
+                        type: string
+                    type: object
                   tunneling:
                     description: Tunneling defines the tunneling configuration for
                       the cluster.

@@ -36,7 +36,7 @@ func TestPowerShellAWS(t *testing.T) {
 		},
 	}
 
-	p := &PowerShellAWSProvisioner{}
+	p := &PowerShellXMLProvisioner{}
 
 	b, err := p.ToProvisionData(c)
 	if err != nil {
@@ -79,7 +79,7 @@ func TestCustomPowerShellAWS(t *testing.T) {
 `,
 	}
 
-	p := &PowerShellAWSProvisioner{}
+	p := &PowerShellXMLProvisioner{}
 
 	b, err := p.ToProvisionData(c)
 	if err != nil {

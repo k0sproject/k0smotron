@@ -16,10 +16,18 @@ limitations under the License.
 
 package provisioner
 
+// ProvisioningFormat represents the format used for provisioning.
+type ProvisioningFormat string
+
 const (
-	cloudInitProvisioningFormat     = "cloud-config"
-	ignitionProvisioningFormat      = "ignition"
-	powershellAWSProvisioningFormat = "powershell-aws"
+	// CloudInitProvisioningFormat represents the cloud-init format.
+	CloudInitProvisioningFormat ProvisioningFormat = "cloud-config"
+	// IgnitionProvisioningFormat represents the ignition format.
+	IgnitionProvisioningFormat ProvisioningFormat = "ignition"
+	// PowershellProvisioningFormat represents the format of powershell script.
+	PowershellProvisioningFormat ProvisioningFormat = "powershell"
+	// PowershellXMLProvisioningFormat represents the format of powershell script wrapped in XML tags. Suitable for AWS Windows user data.
+	PowershellXMLProvisioningFormat ProvisioningFormat = "powershell-xml"
 )
 
 // InputProvisionData holds the data needed for provisioning a machine.
@@ -43,5 +51,5 @@ type Provisioner interface {
 	// ToProvisionData converts the input provision data to a provisioner-specific format.
 	ToProvisionData(*InputProvisionData) ([]byte, error)
 	// GetFormat returns the format string of the provisioner.
-	GetFormat() string
+	GetFormat() ProvisioningFormat
 }

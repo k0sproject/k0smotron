@@ -66,8 +66,12 @@ type K0sWorkerConfigList struct {
 }
 
 type K0sWorkerConfigSpec struct {
+	// Provisioner defines the provisioner configuration. Defaults to cloud-init.
+	// +kubebuilder:validation:Optional
+	Provisioner ProvisionerSpec `json:"provisioner,omitempty"`
 	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 	// +kubebuilder:validation:Optional
+	// Deprecated: use provisioner.ignition instead
 	Ignition *IgnitionSpec `json:"ignition,omitempty"`
 	// K0sInstallDir specifies the directory where k0s binary will be installed.
 	// If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.
@@ -246,6 +250,9 @@ type ContentSourceRef struct {
 }
 
 type K0sConfigSpec struct {
+	// Provisioner defines the provisioner configuration. Defaults to cloud-init.
+	// +kubebuilder:validation:Optional
+	Provisioner ProvisionerSpec `json:"provisioner,omitempty"`
 	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 	// +kubebuilder:validation:Optional
 	Ignition *IgnitionSpec `json:"ignition,omitempty"`
@@ -334,6 +341,12 @@ type TunnelingSpec struct {
 	//+kubebuilder:validation:Enum=tunnel;proxy
 	//+kubebuilder:default=tunnel
 	Mode string `json:"mode,omitempty"`
+}
+
+// ProvisionerSpec defines the provisioner configuration.§
+type ProvisionerSpec struct {
+	Type     provisioner.ProvisioningFormat `json:"type,omitempty"`
+	Ignition *IgnitionSpec                  `json:"ignition,omitempty"`
 }
 
 // IgnitionSpec defines the configuration for the Ignition provisioner.
