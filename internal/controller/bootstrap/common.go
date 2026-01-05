@@ -109,6 +109,10 @@ func getProvisioner(provisionerSpec *bootstrapv2.ProvisionerSpec, isWindows bool
 	}
 
 	switch provisionerSpec.Type {
+	case provisioner.PowershellXMLProvisioningFormat:
+		return &provisioner.PowerShellXMLProvisioner{}
+	case provisioner.PowershellProvisioningFormat:
+		return &provisioner.PowerShellProvisioner{}
 	case provisioner.IgnitionProvisioningFormat:
 		return &provisioner.IgnitionProvisioner{
 			Variant:          provisionerSpec.Ignition.Variant,

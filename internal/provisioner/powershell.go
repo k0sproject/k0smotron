@@ -23,18 +23,13 @@ import (
 	"strings"
 )
 
-// PowerShellAWSProvisioner implements the Provisioner interface for cloud-init.
-type PowerShellAWSProvisioner struct{}
+// PowerShellProvisioner implements the Provisioner interface for cloud-init.
+type PowerShellProvisioner struct{}
 
 // ToProvisionData converts the input data to aws windows user data.
-func (c *PowerShellAWSProvisioner) ToProvisionData(input *InputProvisionData) ([]byte, error) {
+func (c *PowerShellProvisioner) ToProvisionData(input *InputProvisionData) ([]byte, error) {
 	var b bytes.Buffer
 
-	// Write the "header" first
-	_, err := b.WriteString("<powershell>\n")
-	if err != nil {
-		return nil, err
-	}
 	// ---- write_files ----
 	for _, f := range input.Files {
 		renderWriteFile(&b, f)
@@ -50,16 +45,10 @@ func (c *PowerShellAWSProvisioner) ToProvisionData(input *InputProvisionData) ([
 	}
 
 	if input.CustomUserData != "" {
-		_, err = b.WriteString(input.CustomUserData)
+		_, err := b.WriteString(input.CustomUserData)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	// Write the "footer"
-	_, err = b.WriteString("</powershell>\n")
-	if err != nil {
-		return nil, err
 	}
 
 	content := strings.ReplaceAll(b.String(), "\r\n", "\n")
@@ -68,8 +57,8 @@ func (c *PowerShellAWSProvisioner) ToProvisionData(input *InputProvisionData) ([
 }
 
 // GetFormat returns the format 'cloud-config' of the provisioner.
-func (c *PowerShellAWSProvisioner) GetFormat() string {
-	return powershellAWSProvisioningFormat
+func (c *PowerShellProvisioner) GetFormat() ProvisioningFormat {
+	return PowershellProvisioningFormat
 }
 
 func renderWriteFile(buf *bytes.Buffer, f File) {

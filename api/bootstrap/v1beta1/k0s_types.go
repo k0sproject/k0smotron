@@ -87,6 +87,9 @@ type K0sWorkerConfigList struct {
 
 // K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig
 type K0sWorkerConfigSpec struct {
+	// Provisioner defines the provisioner configuration. Defaults to cloud-init.
+	// +kubebuilder:validation:Optional
+	Provisioner ProvisionerSpec `json:"provisioner,omitempty"`
 	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 	// +kubebuilder:validation:Optional
 	Ignition *v1beta2.IgnitionSpec `json:"ignition,omitempty"`
@@ -237,6 +240,9 @@ type K0sControllerConfigSpec struct {
 }
 
 type K0sConfigSpec struct {
+	// Provisioner defines the provisioner configuration. Defaults to cloud-init.
+	// +kubebuilder:validation:Optional
+	Provisioner ProvisionerSpec `json:"provisioner,omitempty"`
 	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 	// +kubebuilder:validation:Optional
 	Ignition *v1beta2.IgnitionSpec `json:"ignition,omitempty"`

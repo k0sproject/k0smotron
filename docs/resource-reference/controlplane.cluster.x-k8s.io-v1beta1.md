@@ -248,6 +248,13 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecprovisioner">provisioner</a></b></td>
+        <td>object</td>
+        <td>
+          Provisioner defines the provisioner configuration. Defaults to cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0scontrolplanespeck0sconfigspectunneling">tunneling</a></b></td>
         <td>object</td>
         <td>
@@ -535,6 +542,88 @@ SecretRef is a reference to a secret that contains the content.
 
 
 Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.provisioner
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspec)</sup></sup>
+
+
+
+Provisioner defines the provisioner configuration. Defaults to cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecprovisionerignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          IgnitionSpec defines the configuration for the Ignition provisioner.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          ProvisioningFormat represents the format used for provisioning.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.provisioner.ignition
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecprovisioner)</sup></sup>
+
+
+
+IgnitionSpec defines the configuration for the Ignition provisioner.
 
 <table>
     <thead>
@@ -1384,6 +1473,13 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisioner">provisioner</a></b></td>
+        <td>object</td>
+        <td>
+          Provisioner defines the provisioner configuration. Defaults to cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspectunneling">tunneling</a></b></td>
         <td>object</td>
         <td>
@@ -1671,6 +1767,88 @@ SecretRef is a reference to a secret that contains the content.
 
 
 Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.provisioner
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspec)</sup></sup>
+
+
+
+Provisioner defines the provisioner configuration. Defaults to cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisionerignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          IgnitionSpec defines the configuration for the Ignition provisioner.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          ProvisioningFormat represents the format used for provisioning.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.provisioner.ignition
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisioner)</sup></sup>
+
+
+
+IgnitionSpec defines the configuration for the Ignition provisioner.
 
 <table>
     <thead>

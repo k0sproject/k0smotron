@@ -343,9 +343,6 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 }
 
 func getWindowsCommands(scope *Scope) ([]string, []provisioner.File) {
-	//if scope.Config.Spec.K0sInstallDir == "/usr/local/bin" {
-	//	scope.Config.Spec.K0sInstallDir = "C:\\bootstrap"
-	//}
 	k0sPath := filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s.exe")
 
 	installScript := fmt.Sprintf(`$ErrorActionPreference = "Stop"
