@@ -155,6 +155,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				}
 			}
 		} else {
+			// Ensure the namespace exists in the remote cluster before creating any resources
+			if err := kutil.EnsureNamespaceExists(ctx, kmcScope.client, kmc.Namespace); err != nil {
+				logger.Error(err, "Error ensuring namespace exists in remote cluster")
+				return ctrl.Result{}, err
+			}
+
 			kmcScope.externalOwner, err = kutil.EnsureExternalOwner(ctx, kmc.Name, kmc.Namespace, kmcScope.client)
 			if err != nil {
 				logger.Error(err, "Error ensuring external owner")

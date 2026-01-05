@@ -72,15 +72,6 @@ func remoteHCPSpec(t *testing.T) {
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 	namespace, _ := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
-	// Create same namespace in hosting cluster
-	nsForHostingCluster := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: namespace.GetName(),
-		},
-	}
-	err = hostingClusterProxy.GetClient().Create(ctx, nsForHostingCluster)
-	require.NoError(t, err)
-
 	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
