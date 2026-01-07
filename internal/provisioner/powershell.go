@@ -56,7 +56,7 @@ func (c *PowerShellProvisioner) ToProvisionData(input *InputProvisionData) ([]by
 	return []byte(content), nil
 }
 
-// GetFormat returns the format 'cloud-config' of the provisioner.
+// GetFormat returns the format 'powershell' of the provisioner.
 func (c *PowerShellProvisioner) GetFormat() ProvisioningFormat {
 	return PowershellProvisioningFormat
 }
