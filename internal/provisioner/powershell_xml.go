@@ -50,7 +50,7 @@ func (c *PowerShellXMLProvisioner) ToProvisionData(input *InputProvisionData) ([
 	return b.Bytes(), nil
 }
 
-// GetFormat returns the format 'cloud-config' of the provisioner.
+// GetFormat returns the format 'powershell-xml' of the provisioner.
 func (c *PowerShellXMLProvisioner) GetFormat() ProvisioningFormat {
 	return PowershellXMLProvisioningFormat
 }
