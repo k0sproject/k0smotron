@@ -249,6 +249,8 @@ func main() {
 		MaxConcurrentReconciles: concurrency,
 	}
 
+	_ = mgr.AddReadyzCheck("webhook-check", mgr.GetWebhookServer().StartedChecker())
+
 	if isControllerEnabled(bootstrapController) && runCAPIControllers {
 		if err = (&bootstrap.Controller{
 			Client:              mgr.GetClient(),
@@ -278,7 +280,6 @@ func main() {
 	}
 
 	if isControllerEnabled(controlPlaneController) {
-		_ = mgr.AddReadyzCheck("webhook-check", mgr.GetWebhookServer().StartedChecker())
 		if err = (&controller.ClusterReconciler{
 			Client:     mgr.GetClient(),
 			Scheme:     mgr.GetScheme(),
