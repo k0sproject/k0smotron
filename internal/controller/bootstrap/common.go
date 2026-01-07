@@ -119,6 +119,9 @@ func getProvisioner(provisionerSpec bootstrapv1.ProvisionerSpec, ignitionSpec *b
 	case provisioner.PowershellProvisioningFormat:
 		return &provisioner.PowerShellProvisioner{}
 	case provisioner.IgnitionProvisioningFormat:
+		if provisionerSpec.Ignition == nil {
+			return &provisioner.IgnitionProvisioner{}
+		}
 		return &provisioner.IgnitionProvisioner{
 			Variant:          provisionerSpec.Ignition.Variant,
 			Version:          provisionerSpec.Ignition.Version,

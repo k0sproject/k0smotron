@@ -251,8 +251,8 @@ spec:
                       Defaults to cloud-init.
                     properties:
                       ignition:
-                        description: IgnitionSpec defines the configuration for the
-                          Ignition provisioner.
+                        description: Ignition defines the ignition configuration.
+                          If empty, k0smotron will use cloud-init.
                         properties:
                           additionalConfig:
                             description: |-
@@ -282,8 +282,13 @@ spec:
                         - version
                         type: object
                       type:
-                        description: ProvisioningFormat represents the format used
-                          for provisioning.
+                        default: cloud-config
+                        description: Type is the provisioner format type.
+                        enum:
+                        - cloud-config
+                        - ignition
+                        - powershell
+                        - powershell-xml
                         type: string
                     type: object
                   tunneling:

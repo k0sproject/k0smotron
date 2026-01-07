@@ -538,14 +538,17 @@ Provisioner defines the provisioner configuration. Defaults to cloud-init.
         <td><b><a href="#k0scontrollerconfigspecprovisionerignition">ignition</a></b></td>
         <td>object</td>
         <td>
-          IgnitionSpec defines the configuration for the Ignition provisioner.<br/>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>type</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
-          ProvisioningFormat represents the format used for provisioning.<br/>
+          Type is the provisioner format type.<br/>
+          <br/>
+            <i>Enum</i>: cloud-config, ignition, powershell, powershell-xml<br/>
+            <i>Default</i>: cloud-config<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -557,7 +560,7 @@ Provisioner defines the provisioner configuration. Defaults to cloud-init.
 
 
 
-IgnitionSpec defines the configuration for the Ignition provisioner.
+Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 
 <table>
     <thead>
@@ -1300,14 +1303,17 @@ Provisioner defines the provisioner configuration. Defaults to cloud-init.
         <td><b><a href="#k0sworkerconfigspecprovisionerignition">ignition</a></b></td>
         <td>object</td>
         <td>
-          IgnitionSpec defines the configuration for the Ignition provisioner.<br/>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>type</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
-          ProvisioningFormat represents the format used for provisioning.<br/>
+          Type is the provisioner format type.<br/>
+          <br/>
+            <i>Enum</i>: cloud-config, ignition, powershell, powershell-xml<br/>
+            <i>Default</i>: cloud-config<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1319,7 +1325,7 @@ Provisioner defines the provisioner configuration. Defaults to cloud-init.
 
 
 
-IgnitionSpec defines the configuration for the Ignition provisioner.
+Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 
 <table>
     <thead>
@@ -2135,14 +2141,17 @@ Provisioner defines the provisioner configuration. Defaults to cloud-init.
         <td><b><a href="#k0sworkerconfigtemplatespectemplatespecprovisionerignition">ignition</a></b></td>
         <td>object</td>
         <td>
-          IgnitionSpec defines the configuration for the Ignition provisioner.<br/>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>type</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
-          ProvisioningFormat represents the format used for provisioning.<br/>
+          Type is the provisioner format type.<br/>
+          <br/>
+            <i>Enum</i>: cloud-config, ignition, powershell, powershell-xml<br/>
+            <i>Default</i>: cloud-config<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2154,7 +2163,7 @@ Provisioner defines the provisioner configuration. Defaults to cloud-init.
 
 
 
-IgnitionSpec defines the configuration for the Ignition provisioner.
+Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 
 <table>
     <thead>
