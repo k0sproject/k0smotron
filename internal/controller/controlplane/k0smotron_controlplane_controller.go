@@ -210,7 +210,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return c.reconcileDelete(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, kcp)
 	}
 
-	res, ready, err := c.reconcile(ctx, cluster, kcp, kmcScope)
+	res, err = c.reconcile(ctx, cluster, kcp, kmcScope)
 	if err != nil {
 		log.Error(err, "Reconciliation failed")
 		return res, err
@@ -221,11 +221,9 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return res, err
 	}
 
-	if !ready && kcp.Spec.Ingress == nil {
-		err = c.waitExternalAddress(ctx, cluster)
-		if err != nil {
-			return res, err
-		}
+	err = c.ensureExternalAddress(ctx, kcp, cluster)
+	if err != nil {
+		return res, err
 	}
 
 	kcp.Status.ExternalManagedControlPlane = true
@@ -233,8 +231,8 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	return res, err
 }
 
-// watchExternalAddress watches the external address of the control plane and updates the status accordingly
-func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *clusterv1.Cluster) error {
+// ensureExternalAddress watches the external address of the control plane and updates the status accordingly
+func (c *K0smotronController) ensureExternalAddress(ctx context.Context, kcp *cpv1beta1.K0smotronControlPlane, cluster *clusterv1.Cluster) error {
 	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 	log.Info("Starting to wait for external address")
 	startTime := time.Now()
@@ -244,15 +242,29 @@ func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *
 			log.Error(err, "Failed to get k0smotron Cluster")
 			return false, err
 		}
-		if k0smoCluster.Spec.ExternalAddress == "" {
-			elapsed := time.Since(startTime).Round(time.Second)
-			log.Info("External address not yet available", "elapsed", elapsed)
-			return false, nil
+
+		var (
+			host string
+			port int
+		)
+		if kcp.Spec.Ingress != nil {
+			host = k0smoCluster.Spec.Ingress.APIHost
+			port = int(k0smoCluster.Spec.Ingress.Port)
+			if port == 0 {
+				port = 443
+			}
+		} else {
+			if k0smoCluster.Spec.ExternalAddress == "" {
+				elapsed := time.Since(startTime).Round(time.Second)
+				log.Info("External address not yet available", "elapsed", elapsed)
+				return false, nil
+			}
+			log.Info("External address found", "address", k0smoCluster.Spec.ExternalAddress, "elapsed", time.Since(startTime).Round(time.Second))
+
+			// Get the external address of the control plane
+			host = k0smoCluster.Spec.ExternalAddress
+			port = k0smoCluster.Spec.Service.APIPort
 		}
-		log.Info("External address found", "address", k0smoCluster.Spec.ExternalAddress, "elapsed", time.Since(startTime).Round(time.Second))
-		// Get the external address of the control plane
-		host := k0smoCluster.Spec.ExternalAddress
-		port := k0smoCluster.Spec.Service.APIPort
 		// Update the Clusters endpoint if needed
 		if cluster.Spec.InfrastructureRef != nil && (cluster.Spec.ControlPlaneEndpoint.Host != host || cluster.Spec.ControlPlaneEndpoint.Port != int32(port)) {
 
@@ -292,7 +304,7 @@ func (c *K0smotronController) waitExternalAddress(ctx context.Context, cluster *
 	return nil
 }
 
-func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane, scope *kmcScope) (ctrl.Result, bool, error) {
+func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane, scope *kmcScope) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	if kcp.Spec.CertificateRefs == nil {
 		kcp.Spec.CertificateRefs = []kapi.CertificateRef{
@@ -315,14 +327,14 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		}
 
 		if err := ensureCertificates(ctx, cluster, kcp, scope); err != nil {
-			return ctrl.Result{}, false, fmt.Errorf("failed to ensure certificates for K0smotronControlPlane %s/%s: %w", kcp.Namespace, kcp.Name, err)
+			return ctrl.Result{}, fmt.Errorf("failed to ensure certificates for K0smotronControlPlane %s/%s: %w", kcp.Namespace, kcp.Name, err)
 		}
 	}
 
 	var err error
 	kcp.Spec.K0sConfig, err = enrichK0sConfigWithClusterData(cluster, kcp.Spec.K0sConfig)
 	if err != nil {
-		return ctrl.Result{}, false, fmt.Errorf("failed to enrich k0s config with cluster data for K0smotronControlPlane %s/%s", kcp.Namespace, kcp.Name)
+		return ctrl.Result{}, fmt.Errorf("failed to enrich k0s config with cluster data for K0smotronControlPlane %s/%s", kcp.Namespace, kcp.Name)
 	}
 
 	desiredK0smotronCluster := kapi.Cluster{
@@ -352,11 +364,11 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	err = c.Client.Get(ctx, types.NamespacedName{Name: desiredK0smotronCluster.Name, Namespace: desiredK0smotronCluster.Namespace}, &foundCluster)
 	if err != nil && apierrors.IsNotFound(err) {
 		if err := c.Client.Create(ctx, &desiredK0smotronCluster); err != nil {
-			return ctrl.Result{}, false, err
+			return ctrl.Result{}, err
 		}
 
 		logger.Info("Requeuing because k0smotron Cluster has just been created")
-		return ctrl.Result{RequeueAfter: 5 * time.Second, Requeue: true}, false, nil
+		return ctrl.Result{RequeueAfter: 5 * time.Second, Requeue: true}, nil
 	}
 
 	if kcp.Spec.ExternalAddress == "" {
@@ -365,21 +377,21 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 
 	isClusterSpecSynced, err := isClusterSpecSynced(foundCluster.Spec, kcp.Spec)
 	if err != nil {
-		return ctrl.Result{}, false, fmt.Errorf("error comparing cluster spec between k0smotron.Cluster and k0smotronControlPlane: %w", err)
+		return ctrl.Result{}, fmt.Errorf("error comparing cluster spec between k0smotron.Cluster and k0smotronControlPlane: %w", err)
 	}
 	if !isClusterSpecSynced {
 		patchHelper, err := patch.NewHelper(&foundCluster, c.Client)
 		if err != nil {
-			return ctrl.Result{}, false, err
+			return ctrl.Result{}, err
 		}
 
 		// Modidy current Cluster specification with the desired one.
 		foundCluster.Spec = kcp.Spec
 
-		return ctrl.Result{}, false, patchHelper.Patch(ctx, &foundCluster)
+		return ctrl.Result{}, patchHelper.Patch(ctx, &foundCluster)
 	}
 
-	return ctrl.Result{}, foundCluster.Status.Ready, nil
+	return ctrl.Result{}, nil
 }
 
 // isClusterSpecSynced compares ClusterSpecs while accounting for expected changes. The K0smotron Cluster controller may add additional data to the spec,
