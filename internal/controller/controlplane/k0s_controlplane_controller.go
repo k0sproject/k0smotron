@@ -44,16 +44,19 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	runtime "sigs.k8s.io/cluster-api/exp/runtime/api/v1alpha1"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -453,16 +456,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	if clusterIsUpdating {
 		log.Log.Info("Cluster is updating", "currentVersion", currentVersion, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
-		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
-			// If the cluster is running in single mode, we can't use the Recreate strategy
-			if kcp.Spec.K0sConfigSpec.Args != nil {
-				for _, arg := range kcp.Spec.K0sConfigSpec.Args {
-					if arg == "--single" {
-						return fmt.Errorf("UpdateRecreate strategy is not allowed when the cluster is running in single mode")
-					}
-				}
-			}
-		} else {
+		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
 			kubeClient, err := c.getKubeClient(ctx, cluster)
 			if err != nil {
 				return fmt.Errorf("error getting cluster client set for machine update: %w", err)
@@ -471,6 +465,22 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			err = c.createAutopilotPlan(ctx, kcp, cluster, kubeClient)
 			if err != nil {
 				return fmt.Errorf("error creating autopilot plan: %w", err)
+			}
+
+			for _, m := range desiredMachines {
+				err = c.markMachineForExternalUpdate(ctx, kcp, m)
+				if err != nil {
+					return fmt.Errorf("error marking machine %s for external update: %w", m.Name, err)
+				}
+			}
+		} else {
+			// If the cluster is running in single mode, we can't use the Recreate strategy
+			if kcp.Spec.K0sConfigSpec.Args != nil {
+				for _, arg := range kcp.Spec.K0sConfigSpec.Args {
+					if arg == "--single" {
+						return fmt.Errorf("Recreate and RecreateDeleteFirst strategies are not allowed when the cluster is running in single mode")
+					}
+				}
 			}
 		}
 	}
@@ -573,9 +583,26 @@ func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, kcp *cpv1b
 		return err
 	}
 
+	if versionMatches(machine, kcp.Spec.Version) {
+		delete(machine.Annotations, runtime.PendingHooksAnnotation)
+		conditions.MarkTrue(machine, "UpToDate")
+	}
+
 	machine.Spec.NodeDrainTimeout = kcp.Spec.MachineTemplate.NodeDrainTimeout
 	machine.Spec.NodeDeletionTimeout = kcp.Spec.MachineTemplate.NodeDeletionTimeout
 	machine.Spec.NodeVolumeDetachTimeout = kcp.Spec.MachineTemplate.NodeVolumeDetachTimeout
+
+	return patchHelper.Patch(ctx, machine)
+}
+
+func (c *K0sController) markMachineForExternalUpdate(ctx context.Context, _ *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+	patchHelper, err := patch.NewHelper(machine, c.Client)
+	if err != nil {
+		return err
+	}
+
+	annotations.AddAnnotations(machine, map[string]string{runtime.PendingHooksAnnotation: "ExternalUpdate"})
+	conditions.MarkFalse(machine, "UpToDate", "Waiting for update", clusterv1.ConditionSeverityInfo, "Machine marked for external update")
 
 	return patchHelper.Patch(ctx, machine)
 }
