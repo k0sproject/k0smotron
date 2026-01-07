@@ -17,10 +17,13 @@ limitations under the License.
 package v1beta1
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"path/filepath"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -378,4 +381,110 @@ func (k *K0sWorkerConfig) GetJoinTokenPath() string {
 		return "/etc/k0s.token"
 	}
 	return filepath.Join(k.Spec.WorkingDir, "k0s.token")
+}
+
+// Validate validates the K0sWorkerConfigSpec.
+func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	// TODO: validate Ignition
+	allErrs = append(allErrs, cs.validateVersion(pathPrefix)...)
+	allErrs = append(allErrs, cs.validateFiles(pathPrefix)...)
+
+	return allErrs
+}
+
+func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	knownPaths := map[string]struct{}{}
+
+	for i, file := range cs.Files {
+		if file.Content != "" && file.ContentFrom != nil {
+			allErrs = append(
+				allErrs,
+				field.Invalid(
+					pathPrefix.Child("files").Index(i),
+					file,
+					conflictingFileSourceMsg,
+				),
+			)
+		}
+
+		if file.ContentFrom == nil && file.Content == "" {
+			allErrs = append(
+				allErrs,
+				field.Invalid(
+					pathPrefix.Child("files").Index(i),
+					file,
+					noContentMsg,
+				),
+			)
+		}
+
+		if file.ContentFrom != nil {
+			if file.ContentFrom.SecretRef != nil && file.ContentFrom.ConfigMapRef != nil {
+				allErrs = append(
+					allErrs,
+					field.Invalid(
+						pathPrefix.Child("files").Index(i).Child("contentFrom"),
+						file.ContentFrom,
+						conflictingContentFromMsg,
+					),
+				)
+			}
+
+			if file.ContentFrom.SecretRef != nil && file.ContentFrom.SecretRef.Name == "" {
+				allErrs = append(
+					allErrs,
+					field.Required(
+						pathPrefix.Child("files").Index(i).Child("contentFrom").Child("secretRef").Child("name"),
+						"name is required",
+					),
+				)
+			}
+
+			if file.ContentFrom.ConfigMapRef != nil && file.ContentFrom.ConfigMapRef.Name == "" {
+				allErrs = append(
+					allErrs,
+					field.Required(
+						pathPrefix.Child("files").Index(i).Child("contentFrom").Child("configMapRef").Child("name"),
+						"name is required",
+					),
+				)
+			}
+		}
+		_, conflict := knownPaths[file.Path]
+		if conflict {
+			allErrs = append(
+				allErrs,
+				field.Invalid(
+					pathPrefix.Child("files").Index(i).Child("path"),
+					file,
+					pathConflictMsg,
+				),
+			)
+		}
+		knownPaths[file.Path] = struct{}{}
+	}
+
+	return allErrs
+}
+
+func (cs *K0sWorkerConfigSpec) validateVersion(pathPrefix *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if strings.Contains(cs.Version, "-k0s.") {
+		allErrs = append(
+			allErrs,
+			field.Invalid(
+				pathPrefix.Child("version"),
+				cs.Version,
+				"k0s specific versions must be specified using the '+k0s' suffix",
+			),
+		)
+		return allErrs
+	}
+
+	return allErrs
 }
