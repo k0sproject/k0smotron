@@ -72,9 +72,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export CLUSTERCTL_REPOSITORY_PATH="$GITHUB_WORKSPACE"
-          CLUSTER_TOPOLOGY=true clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure k0sproject-k0smotron,docker --config ./hack/capi-ci/config.yaml
+          CLUSTER_TOPOLOGY=true clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure k0sproject-k0smotron,docker --config ./hack/capi-ci/config.yaml --wait-providers
           kubectl wait --for=condition=available -n cert-manager deployment/cert-manager-webhook --timeout=300s
-
       - name: Install PVC provider
         run: |
           kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
