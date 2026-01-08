@@ -13,23 +13,24 @@ spec:
     services:
       cidrBlocks:
         - 10.128.0.0/12
+  controlPlaneEndpoint:
+    host: ${LOAD_BALANCER_ADDRESS}
+    port: 6443
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: K0smotronControlPlane
-    name: ${CLUSTER_NAME}-cp
+    name: ${CLUSTER_NAME}
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerCluster
+    kind: RemoteCluster
     name: ${CLUSTER_NAME}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0smotronControlPlane
 metadata:
-  name: ${CLUSTER_NAME}-cp
+  name: ${CLUSTER_NAME}
 spec:
   version: v1.34.1-k0s.0
-  service:
-    type: NodePort
   ingress:
     apiHost: kube-api.${KIND_IP}.nip.io
     konnectivityHost: konnectivity.${KIND_IP}.nip.io
@@ -47,7 +48,7 @@ spec:
         enabled: false
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerCluster
+kind: RemoteCluster
 metadata:
   name: ${CLUSTER_NAME}
   namespace: ${NAMESPACE}
@@ -80,8 +81,8 @@ spec:
           name: ${CLUSTER_NAME}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: DockerMachineTemplate
-        name: ${CLUSTER_NAME}
+        kind: RemoteMachineTemplate
+        name: ${CLUSTER_NAME}-worker
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: K0sWorkerConfigTemplate
@@ -94,11 +95,11 @@ spec:
       version: v1.34.1+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
+kind: RemoteMachineTemplate
 metadata:
-  name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}-worker
   namespace: ${NAMESPACE}
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.33.0
+      pool: worker-pool

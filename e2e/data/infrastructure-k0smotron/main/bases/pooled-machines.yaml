@@ -1,0 +1,90 @@
+# We create a pool of five machines to be used by the k0smotron infrastructure.
+# The e2e tests will create and delete machines from this pool as needed.
+
+#
+# MACHINE POOL FOR CONTROL PLANE NODES
+#
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: PooledRemoteMachine
+metadata:
+  name: ${CLUSTER_NAME}-1
+  namespace: ${NAMESPACE}
+spec:
+  pool: cp-pool
+  machine:
+    address: ${ADDRESS_1}
+    port: 22
+    user: root
+    sshKeyRef:
+      name: ${CLUSTER_NAME}-ssh-key
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: PooledRemoteMachine
+metadata:
+  name: ${CLUSTER_NAME}-2
+  namespace: ${NAMESPACE}
+spec:
+  pool: cp-pool
+  machine:
+    address: ${ADDRESS_2}
+    port: 22
+    user: root
+    sshKeyRef:
+      name: ${CLUSTER_NAME}-ssh-key
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: PooledRemoteMachine
+metadata:
+  name: ${CLUSTER_NAME}-3
+  namespace: ${NAMESPACE}
+spec:
+  pool: cp-pool
+  machine:
+    address: ${ADDRESS_3}
+    port: 22
+    user: root
+    sshKeyRef:
+      name: ${CLUSTER_NAME}-ssh-key
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: PooledRemoteMachine
+metadata:
+  name: ${CLUSTER_NAME}-4
+  namespace: ${NAMESPACE}
+spec:
+  pool: cp-pool
+  machine:
+    address: ${ADDRESS_4}
+    port: 22
+    user: root
+    sshKeyRef:
+      name: ${CLUSTER_NAME}-ssh-key
+---
+
+#
+# MACHINE POOL FOR WORKER NODES
+#
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: PooledRemoteMachine
+metadata:
+  name: ${CLUSTER_NAME}-5
+  namespace: ${NAMESPACE}
+spec:
+  pool: worker-pool
+  machine:
+    address: ${ADDRESS_5}
+    port: 22
+    user: root
+    sshKeyRef:
+      name: ${CLUSTER_NAME}-ssh-key
+---
+
+# SSH KEY SECRET FOR ACCESSING THE MACHINES IN THE POOL
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${CLUSTER_NAME}-ssh-key
+  namespace: ${NAMESPACE}
+data:
+   value: ${SSH_PRIVATE_KEY_BASE64}
+type: Opaque

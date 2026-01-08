@@ -3,7 +3,7 @@
 # - cluster-api
 # - bootstrap k0smotron
 # - control-plane k0smotron
-# - infrastructure aws
+# - infrastructure docker, aws, k0sproject-k0smotron
 images:
   - name: quay.io/k0sproject/k0smotron:latest
     loadBehavior: mustLoad
@@ -17,10 +17,96 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+          - sourcePath: "./data/shared/v1beta1/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
+  - name: k0sproject-k0smotron
+    type: InfrastructureProvider
+    versions:
+      - name: "{go://github.com/k0sproject/k0smotron@v1.5}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.5}/infrastructure-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v1.6}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.6}/infrastructure-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v1.7}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.7}/infrastructure-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v1.8}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.8}/infrastructure-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v1.9}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.9}/infrastructure-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: v1.10.99 # potentially next release. Manifest from source files (development) are used.
+        value: ../config/clusterapi/infrastructure
+        contract: v1beta1
+        files:
+          - sourcePath: "../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "image: k0s/k0smotron:latest"
+            new: "image: quay.io/k0sproject/k0smotron:latest" # For local testing, this image needs to be built before run e2e by using `make docker-build`
+    files:
+      - sourcePath: "./data/infrastructure-k0smotron/main/cluster-template.yaml"
+      - sourcePath: "./data/infrastructure-k0smotron/main/cluster-template-kcp-remediation.yaml"
+      - sourcePath: "./data/infrastructure-k0smotron/main/cluster-template-webhook-recreate-in-single-mode.yaml"
+      - sourcePath: "./data/infrastructure-k0smotron/main/cluster-template-webhook-k0s-not-compatible.yaml"
+      - sourcePath: "./data/infrastructure-k0smotron/main/cluster-template-machinedeployment.yaml"
+      - sourcePath: "./data/infrastructure-k0smotron/main/cluster-template-remote-hcp.yaml"
+      - sourcePath: "./data/infrastructure-k0smotron/main/cluster-template-ingress.yaml"
+  - name: docker
+    type: InfrastructureProvider
+    versions:
+      - name: "{go://sigs.k8s.io/cluster-api@v1.10}"
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.10}/infrastructure-components-development.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "./data/shared/v1beta1/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+    files:
+      - sourcePath: "./data/infrastructure-docker/main/cluster-template.yaml"
+      - sourcePath: "./data/infrastructure-docker/main/cluster-template-kcp-remediation.yaml"
+      - sourcePath: "./data/infrastructure-docker/main/cluster-template-webhook-recreate-in-single-mode.yaml"
+      - sourcePath: "./data/infrastructure-docker/main/cluster-template-webhook-k0s-not-compatible.yaml"
+      - sourcePath: "./data/infrastructure-docker/main/cluster-template-machinedeployment.yaml"
+      - sourcePath: "./data/infrastructure-docker/main/cluster-template-remote-hcp.yaml"
+      - sourcePath: "./data/infrastructure-docker/main/cluster-template-ingress.yaml"
   - name: aws
     type: InfrastructureProvider
     versions:
@@ -29,12 +115,12 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../data/shared/v1beta1_aws/metadata.yaml"
+          - sourcePath: ".data.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
     files:
-      - sourcePath: "../data/infrastructure-aws/cluster-template-ignition.yaml"
+      - sourcePath: "./data/infrastructure-aws/cluster-template-ignition.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -43,7 +129,7 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -52,7 +138,7 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -61,15 +147,15 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
       - name: v1.10.99 # potentially next release. Manifest from source files (development) are used.
-        value: ../../config/default
+        value: ../config/clusterapi/controlplane
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -83,7 +169,7 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -92,7 +178,7 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -101,15 +187,15 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
       - name: v1.10.99 # potentially next release. Manifest from source files (development) are used.
-        value: ../../config/default
+        value: ../config/clusterapi/bootstrap
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -119,17 +205,15 @@ providers:
 variables:
   KUBERNETES_VERSION_MANAGEMENT: "v1.30.0"
   KUBERNETES_VERSION: "v1.31.0"
-  KUBERNETES_VERSION_FIRST_UPGRADE_TO: "v1.30.2+k0s.0"
-  KUBERNETES_VERSION_SECOND_UPGRADE_TO: "v1.31.2+k0s.0"
+  KUBERNETES_VERSION_RMPOOL: "v1.33.0"
+  K0S_VERSION: "v1.30.1+k0s.0"
+  K0S_VERSION_FIRST_UPGRADE_TO: "v1.30.2+k0s.0"
+  K0S_VERSION_SECOND_UPGRADE_TO: "v1.31.2+k0s.0"
   IP_FAMILY: "IPv4"
   KIND_IMAGE_VERSION: "v1.30.0"
   # Enabling the feature flags by setting the env variables.
   CLUSTER_TOPOLOGY: "true"
   EXP_MACHINE_POOL: "true"
-  AWS_INSTANCE_TYPE: "t3.large" 
-  # Following feature flags are required to use Ignition as bootstrap data format in CAPA.
-  EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
-  EXP_BOOTSTRAP_FORMAT_IGNITION: "true"
 
 intervals:
   # The array is defined as [timeout, polling interval]
@@ -139,7 +223,7 @@ intervals:
   default/wait-control-plane: ["10m", "10s"]
   default/wait-worker-nodes: ["10m", "10s"]
   default/wait-machine-pool-nodes: ["10m", "10s"]
-  default/wait-delete-cluster: ["10m", "10s"]
+  default/wait-delete-cluster: ["3m", "10s"]
   default/wait-kube-proxy-upgrade: ["30m", "10s"]
   default/wait-machine-pool-upgrade: ["30m", "10s"]
   default/wait-nodes-ready: ["10m", "10s"]
@@ -154,11 +238,11 @@ intervals:
   workload-recreate-upgrade/wait-cluster: ["10m", "10s"]
   workload-recreate-upgrade/wait-control-plane: ["20m", "10s"]
   workload-recreate-upgrade/wait-worker-nodes: ["20m", "10s"]
+  workload-inplace-upgrade/wait-controllers: ["10m", "20s"]
   workload-inplace-upgrade/wait-cluster: ["10m", "10s"]
   workload-inplace-upgrade/wait-control-plane: ["20m", "10s"]
   workload-inplace-upgrade/wait-worker-nodes: ["20m", "10s"]
   machinedeployment/wait-cluster: ["20m", "10s"]
   machinedeployment/wait-control-plane: ["20m", "10s"]
   machinedeployment/wait-delete-cluster: ["20m", "10s"]
-  ignition/wait-controllers: ["10m", "10s"]
-  ignition/wait-machines: ["10m", "10s"]
+  ingress/wait-controllers: ["5m", "10s"]

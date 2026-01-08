@@ -20,6 +20,11 @@ package e2e
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"flag"
 	"fmt"
@@ -28,9 +33,17 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
+	"golang.org/x/crypto/ssh"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
+
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/e2e/mothership"
+	"github.com/k0sproject/k0smotron/e2e/util"
+	"github.com/k0sproject/k0smotron/e2e/util/poolprovisioner"
+	dockerprovisioner "github.com/k0sproject/k0smotron/e2e/util/poolprovisioner/docker"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
@@ -38,22 +51,21 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/yaml"
-
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0sproject/k0smotron/e2e/mothership"
-	"github.com/k0sproject/k0smotron/e2e/util"
 )
 
 // Test suite constants for e2e config variables.
 const (
-	KubernetesVersion                = "KUBERNETES_VERSION"
-	KubernetesVersionManagement      = "KUBERNETES_VERSION_MANAGEMENT"
-	KubernetesVersionFirstUpgradeTo  = "KUBERNETES_VERSION_FIRST_UPGRADE_TO"
-	KubernetesVersionSecondUpgradeTo = "KUBERNETES_VERSION_SECOND_UPGRADE_TO"
-	ControlPlaneMachineCount         = "CONTROL_PLANE_MACHINE_COUNT"
-	IPFamily                         = "IP_FAMILY"
-	SSHPublicKey                     = "SSH_PUBLIC_KEY"
-	SSHKeyName                       = "SSH_KEY_NAME"
+	KubernetesVersion           = "KUBERNETES_VERSION"
+	KubernetesVersionRmPool     = "KUBERNETES_VERSION_RMPOOL"
+	KubernetesVersionManagement = "KUBERNETES_VERSION_MANAGEMENT"
+	K0sVersion                  = "K0S_VERSION"
+	K0sVersionFirstUpgradeTo    = "K0S_VERSION_FIRST_UPGRADE_TO"
+	K0sVersionSecondUpgradeTo   = "K0S_VERSION_SECOND_UPGRADE_TO"
+	ControlPlaneMachineCount    = "CONTROL_PLANE_MACHINE_COUNT"
+	IPFamily                    = "IP_FAMILY"
+	SSHPublicKey                = "SSH_PUBLIC_KEY"
+	SSHKeyName                  = "SSH_KEY_NAME"
+	PoolProvisioner             = "POOL_PROVISIONER"
 )
 
 var (
@@ -90,6 +102,15 @@ var (
 
 	// managementClusterProxy allows to interact with the management cluster to be used for the e2e tests.
 	bootstrapClusterProxy capiframework.ClusterProxy
+
+	// controlPlaneMachineCount is the number of control plane machines to create in the workload clusters.
+	controlPlaneMachineCount int
+
+	// workerMachineCount is the number of worker machines to create in the workload clusters.
+	workerMachineCount int
+
+	// infrastructureProvider is the infrastructure provider to use for the tests. Default is k0smotron.
+	infrastructureProvider string
 )
 
 func init() {
@@ -98,6 +119,9 @@ func init() {
 	flag.BoolVar(&skipCleanup, "skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
 	flag.StringVar(&artifactFolder, "artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.BoolVar(&useExistingCluster, "use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
+	flag.IntVar(&controlPlaneMachineCount, "control-plane-machine-count", 3, "number of control plane machines")
+	flag.IntVar(&workerMachineCount, "worker-machine-count", 1, "number of worker machines")
+	flag.StringVar(&infrastructureProvider, "infrastructure-provider", "k0sproject-k0smotron", "infrastructure provider to use for the tests")
 
 	// On the k0smotron side we avoid using Gomega for assertions but since we want to use the
 	// cluster-api framework as much as possible, the framework assertions require registering
@@ -116,7 +140,7 @@ func setupAndRun(t *testing.T, test func(t *testing.T)) {
 			tearDown(bootstrapClusterProvider, bootstrapClusterProxy)
 		}
 	}()
-	err := setupMothership()
+	err := setup()
 	if err != nil {
 		panic(err)
 	}
@@ -124,11 +148,89 @@ func setupAndRun(t *testing.T, test func(t *testing.T)) {
 	test(t)
 }
 
-func setupMothership() error {
+func setupPoolMachinesConfigEnv(ctx context.Context, replicas int, nodeVersion string, e2eConfig *clusterctl.E2EConfig) error {
+	switch os.Getenv(PoolProvisioner) {
+	case "docker", "":
+		poolprovisioner.PoolProvisioner = &dockerprovisioner.Provisioner{}
+	// TODO: add AWS as provisioner
+	default:
+		return fmt.Errorf("unknown pool provisioner: %s", os.Getenv(PoolProvisioner))
+	}
+
+	// Create keypair to allow SSH for k0s provisioning by the infrastructure controller.
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf("generate private key: %v", err)
+	}
+	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
+	privBlock := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privDER,
+	}
+	privPEM := pem.EncodeToMemory(privBlock)
+	privB64 := base64.StdEncoding.EncodeToString(privPEM)
+	// Format used in the cluster templates
+	e2eConfig.Variables["SSH_PRIVATE_KEY_BASE64"] = privB64
+	// Marshal public key for authorized_keys
+	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return fmt.Errorf("marshal public key: %v", err)
+	}
+	pubAuthorized := ssh.MarshalAuthorizedKey(pub)
+
+	err = poolprovisioner.PoolProvisioner.Provision(ctx, replicas, nodeVersion, pubAuthorized)
+	if err != nil {
+		return fmt.Errorf("provision pool machines: %w", err)
+	}
+
+	// Load Balancer is created only for Docker provisioner at the moment. Check type of the provisioner
+	if _, ok := poolprovisioner.PoolProvisioner.(*dockerprovisioner.Provisioner); ok {
+		e2eConfig.Variables["LOAD_BALANCER_ADDRESS"] = dockerprovisioner.GetLoadBalancerIPAddress()
+	}
+
+	for i, address := range poolprovisioner.PoolProvisioner.GetRemoteMachinesAddresses() {
+		// Format: ADDRESS_0, ADDRESS_1, ... is used in the cluster templates
+		e2eConfig.Variables[fmt.Sprintf("ADDRESS_%d", i+1)] = address
+	}
+
+	return nil
+}
+
+func setup() error {
 	var err error
 	e2eConfig, err = loadE2EConfig(ctx, configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load e2e config: %w", err)
+	}
+
+	// Since we share the declaration of the e2e test configuration in the same file with that of the infrastructure providers,
+	// we remove those that are not necessary for this test and thus avoid creating local clusterctl repositories with unnecessary providers.
+	filteredNonUsedProviders := []clusterctl.ProviderConfig{}
+	for _, provider := range e2eConfig.Providers {
+		if provider.Type == string(clusterctlv1.InfrastructureProviderType) && provider.Name != infrastructureProvider {
+			continue
+		}
+		filteredNonUsedProviders = append(filteredNonUsedProviders, provider)
+	}
+	e2eConfig.Providers = filteredNonUsedProviders
+
+	// If k0smotron provider is used, we need to create the virtual machines beforehand.
+	if hasK0smotronProvider(e2eConfig) {
+		// We add one extra machine for the load balancer because when a rolling upgrade happens,
+		// we need to have an extra machine to avoid downtime.
+		replicas := controlPlaneMachineCount + workerMachineCount + 1
+		// We create the pool machines and set the ADDRESS_X environment variables corresponding to
+		// each machine IP address.
+		err := setupPoolMachinesConfigEnv(ctx, replicas, e2eConfig.MustGetVariable(KubernetesVersionRmPool), e2eConfig)
+		if err != nil {
+			if poolprovisioner.PoolProvisioner != nil {
+				cleanupErr := poolprovisioner.PoolProvisioner.Clean(ctx)
+				if cleanupErr != nil {
+					klog.Errorf("failed to clean up pool machines after setup failure: %v", cleanupErr)
+				}
+			}
+			panic(fmt.Errorf("failed to setup pool machines: %w", err))
+		}
 	}
 
 	if clusterctlConfig == "" {
@@ -173,7 +275,19 @@ func setupMothership() error {
 		fmt.Println("Using an existing bootstrap cluster")
 	}
 
-	bootstrapClusterProxy = capiframework.NewClusterProxy("bootstrap", kubeconfigPath, scheme, framework.WithMachineLogCollector(framework.DockerLogCollector{}))
+	var opts []capiframework.Option
+	switch infrastructureProvider {
+	case "docker":
+		opts = append(opts, framework.WithMachineLogCollector(framework.DockerLogCollector{}))
+	case "k0sproject-k0smotron":
+		// At the momento only docker provisioner is supported for k0smotron so we can safely cast here.
+		dockerProvisioner := poolprovisioner.PoolProvisioner.(*dockerprovisioner.Provisioner)
+		opts = append(opts, framework.WithMachineLogCollector(dockerprovisioner.RemoteMachineLogCollector{
+			Provisioner: dockerProvisioner,
+		}))
+	}
+
+	bootstrapClusterProxy = capiframework.NewClusterProxy("bootstrap", kubeconfigPath, scheme, opts...)
 	if bootstrapClusterProxy == nil {
 		return errors.New("failed to get a management cluster proxy")
 	}
@@ -192,6 +306,15 @@ func setupMothership() error {
 	}
 
 	return nil
+}
+
+func hasK0smotronProvider(c *clusterctl.E2EConfig) bool {
+	for _, i := range c.InfrastructureProviders() {
+		if i == "k0sproject-k0smotron" {
+			return true
+		}
+	}
+	return false
 }
 
 func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClusterProxy framework.ClusterProxy) {

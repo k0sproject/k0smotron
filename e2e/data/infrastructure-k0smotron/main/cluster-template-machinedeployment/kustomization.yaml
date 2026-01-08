@@ -1,0 +1,4 @@
+resources:
+- ../bases/md.yaml
+- ../bases/pooled-machines.yaml
+- ../bases/cluster-with-hcp.yaml

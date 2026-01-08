@@ -1,0 +1,8 @@
+resources:
+- ../bases/cluster-with-hcp.yaml
+- ../bases/md.yaml
+- ../bases/pooled-machines.yaml
+- external-cluster-kubeconfig-reference.yaml
+
+patches:
+- path: hcp-with-external-cluster-patch.yaml

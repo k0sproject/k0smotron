@@ -21,15 +21,18 @@ package e2e
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/k0sproject/k0s/inttest/common"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os/exec"
-	"path/filepath"
+
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
-	"time"
 
 	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
 	podexec "github.com/k0sproject/k0smotron/internal/exec"
@@ -84,18 +87,20 @@ func ingressSupportSpec(t *testing.T) {
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
 		ClusterctlConfigPath:     clusterctlConfigPath,
 		KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-		InfrastructureProvider:   "docker",
+		InfrastructureProvider:   infrastructureProvider,
 		Flavor:                   "ingress",
 		Namespace:                workloadClusterNamespace,
 		ClusterName:              workloadClusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: ptr.To[int64](1),
+		ControlPlaneMachineCount: ptr.To(int64(controlPlaneMachineCount)),
+		WorkerMachineCount:       ptr.To(int64(workerMachineCount)),
 		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME": workloadClusterName,
 			"NAMESPACE":    workloadClusterNamespace,
 			"KIND_IP":      kindIP,
-			"HAPROXY_PORT": "32143", // HAProxy svc NodePort for HTTPS
+			"HAPROXY_PORT": "32143",   // HAProxy svc NodePort for HTTPS
+			"K0S_VERSION":  "v1.34.1", // k0s version since ingress support was added
 		},
 	})
 
@@ -124,6 +129,7 @@ func ingressSupportSpec(t *testing.T) {
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
 			clusterctlConfigPath,
+			infrastructureProvider,
 		)
 
 		testCancelWatches()
@@ -147,7 +153,7 @@ func ingressSupportSpec(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		return md.Status.ReadyReplicas == 2
+		return md.Status.ReadyReplicas == int32(workerMachineCount)
 	}, 5*time.Minute, 10*time.Second, "MachineDeployment failed to become ready")
 
 	fmt.Println("Check kube api connection from the nodes through the proxy")
@@ -171,12 +177,43 @@ func ingressSupportSpec(t *testing.T) {
 	t.Logf("Konnectivity agent logs:\n%s", out)
 	require.Contains(t, out, "change detected in proxy")
 
-	for _, m := range machineList.Items {
+	workerContainerNames := []string{}
+	// TODO: Once other VM provisioners are supported (like AWS EC2 service), this logic should be updated
+	if infrastructureProvider == "k0sproject-k0smotron" {
+		cmd := exec.Command("docker", "ps", "--filter", "name=^remote-machine-", "--format", "{{.Names}}")
+		output, err := cmd.Output()
+		require.NoError(t, err, "Should list remote-machine containers")
+		containerNames := bytes.Split(bytes.TrimSpace(output), []byte{'\n'})
+
+		// All machines belongs to worker nodes
+		machineIPs := make(map[string]struct{})
+		for _, m := range machineList.Items {
+			machineIPs[m.Status.Addresses[0].Address] = struct{}{}
+		}
+
+		for _, name := range containerNames {
+			cmd := exec.Command("docker", "inspect", "-f", "'{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'", string(name))
+			output, err := cmd.Output()
+			require.NoError(t, err, "Should get remote-machine IP")
+			containerIP := strings.Trim(string(output), "'\n")
+			if _, exists := machineIPs[containerIP]; exists {
+				workerContainerNames = append(workerContainerNames, string(name))
+			}
+		}
+		require.Equal(t, workerMachineCount, len(workerContainerNames), "Should have %d remote-machine containers", workerMachineCount)
+
+	} else {
+		for _, m := range machineList.Items {
+			workerContainerNames = append(workerContainerNames, m.Name)
+		}
+	}
+
+	for _, wName := range workerContainerNames {
 		var (
 			stdout bytes.Buffer
 			stderr bytes.Buffer
 		)
-		cmd := exec.Command("docker", "exec", m.Name, "curl", "https://10.128.0.1/healthz", "--cacert", "/etc/haproxy/certs/ca.crt")
+		cmd := exec.Command("docker", "exec", wName, "curl", "https://10.128.0.1/healthz", "--cacert", "/etc/haproxy/certs/ca.crt")
 		cmd.Stdout = &stdout
 		cmd.Stderr = &stderr
 		err = cmd.Run()

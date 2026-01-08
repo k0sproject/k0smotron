@@ -72,18 +72,16 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.NoError(t, err)
 
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
-		ClusterctlConfigPath: clusterctlConfigPath,
-		KubeconfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
-		// select cluster templates
-		Flavor: "kcp-remediation",
-
+		ClusterctlConfigPath:     clusterctlConfigPath,
+		KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+		Flavor:                   "kcp-remediation",
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: ptr.To[int64](3),
-		// TODO: make infra provider configurable
-		InfrastructureProvider: "docker",
-		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+		ControlPlaneMachineCount: ptr.To(int64(controlPlaneMachineCount)),
+		WorkerMachineCount:       ptr.To(int64(workerMachineCount)),
+		InfrastructureProvider:   infrastructureProvider,
+		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME": clusterName,
 			"NAMESPACE":    namespace.Name,
@@ -103,6 +101,22 @@ func controlplaneRemediationSpec(t *testing.T) {
 		Name:      clusterName,
 	}, util.GetInterval(e2eConfig, testName, "wait-cluster"))
 	require.NoError(t, err)
+
+	defer func() {
+		util.DumpSpecResourcesAndCleanup(
+			ctx,
+			testName,
+			bootstrapClusterProxy,
+			artifactFolder,
+			namespace,
+			cancelWatches,
+			cluster,
+			util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
+			skipCleanup,
+			clusterctlConfigPath,
+			infrastructureProvider,
+		)
+	}()
 
 	// The first CP machine comes up but it does not complete bootstrap
 
@@ -183,7 +197,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.NoError(c, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(firstMachineReplacement), firstMachineReplacement))
 		assert.NotNil(c, firstMachineReplacement.Status.NodeRef)
-	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", firstMachineReplacementName)
+	}, 5*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", firstMachineReplacementName)
 
 	fmt.Println("FIRST CONTROL PLANE MACHINE UP AND RUNNING!")
 	fmt.Println("START PROVISIONING OF SECOND CONTROL PLANE MACHINE!")
@@ -262,7 +276,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.NoError(c, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(secondMachineReplacement), secondMachineReplacement))
 		assert.NotNil(c, secondMachineReplacement.Status.NodeRef)
-	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", secondMachineReplacementName)
+	}, 5*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", secondMachineReplacementName)
 
 	fmt.Println("SECOND CONTROL PLANE MACHINE UP AND RUNNING!")
 	fmt.Println("START PROVISIONING OF THIRD CONTROL PLANE MACHINE!")
@@ -302,7 +316,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.NoError(c, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(thirdMachine), thirdMachine))
 		assert.NotNil(c, thirdMachine.Status.NodeRef)
-	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", thirdMachineName)
+	}, 5*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", thirdMachineName)
 
 	fmt.Println("ALL THE CONTROL PLANE MACHINES SUCCESSFULLY PROVISIONED!")
 
@@ -321,12 +335,13 @@ func controlplaneRemediationSpec(t *testing.T) {
 		Status:             "False",
 		LastTransitionTime: metav1.Time{Time: time.Now()},
 	}
-	framework.PatchNodeCondition(ctx, framework.PatchNodeConditionInput{
+	err = util.PatchNodeCondition(ctx, util.PatchNodeConditionInput{
 		ClusterProxy:  bootstrapClusterProxy,
 		Cluster:       cluster,
 		NodeCondition: unhealthyNodeCondition,
 		Machine:       *thirdMachine, // TODO: make this a pointer.
 	})
+	require.NoError(t, err, "Failed to patch node condition for machine %d", thirdMachineName)
 
 	fmt.Printf("Wait for the third CP machine to be remediated, and the replacement machine to come up, but again get stuck with the Machine not completing the bootstrap\n")
 	allMachines, newMachines, err = util.WaitForMachines(ctx, util.WaitForMachinesInput{
@@ -367,7 +382,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.NoError(c, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(thirdMachineReplacement), thirdMachineReplacement))
 		assert.NotNil(c, thirdMachineReplacement.Status.NodeRef)
-	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", thirdMachineReplacementName)
+	}, 5*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", thirdMachineReplacementName)
 
 	fmt.Println("ALL THE CONTROL PLANE MACHINES SUCCESSFULLY REMEDIATED AND PROVISIONED!")
 }

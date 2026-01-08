@@ -1,0 +1,62 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: "${K0S_VERSION}"
+  updateStrategy: Recreate
+  k0sConfigSpec:
+    args:
+    - --enable-worker
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+        telemetry:
+          enabled: false
+        network:
+          controlPlaneLoadBalancing:
+            enabled: false
+    files:
+    - path: /usr/local/bin/wait-signal.sh
+      content: |
+        #!/bin/bash
+
+        set -o errexit
+        set -o pipefail
+
+        echo "Waiting for signal..."
+
+        TOKEN=$1
+        SERVER=$2
+        NAMESPACE=$3
+
+        while true;
+        do
+          sleep 1s
+
+          signal=$(curl -k -s --header "Authorization: Bearer $TOKEN" $SERVER/api/v1/namespaces/$NAMESPACE/configmaps/mhc-test | jq -r .data.signal?)
+          echo "signal $signal"
+
+          if [ "$signal" == "pass" ]; then
+            curl -k -s --header "Authorization: Bearer $TOKEN" -XPATCH -H "Content-Type: application/strategic-merge-patch+json" --data '{"data": {"signal": "ack-pass"}}' $SERVER/api/v1/namespaces/$NAMESPACE/configmaps/mhc-test
+            exit 0
+          fi
+        done
+      permissions: "0777"
+    preStartCommands:
+    - /usr/local/bin/wait-signal.sh "${TOKEN}" "${SERVER}" "${NAMESPACE}"
+
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: RemoteMachineTemplate
+      name: ${CLUSTER_NAME}-cp
+      namespace: ${NAMESPACE}

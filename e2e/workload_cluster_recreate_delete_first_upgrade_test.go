@@ -59,15 +59,14 @@ func workloadClusterRecreateDeleteFirstUpgradeSpec(t *testing.T) {
 		ClusterctlConfigPath: clusterctlConfigPath,
 		KubeconfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
 		// no flavor specified, so it will use the default one "cluster-template"
-		Flavor: "",
-
+		Flavor:                   "",
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: ptr.To[int64](3),
-		// TODO: make infra provider configurable
-		InfrastructureProvider: "docker",
-		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+		ControlPlaneMachineCount: ptr.To(int64(controlPlaneMachineCount)),
+		WorkerMachineCount:       ptr.To(int64(workerMachineCount)),
+		InfrastructureProvider:   infrastructureProvider,
+		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME":    clusterName,
 			"NAMESPACE":       namespace.Name,
@@ -99,6 +98,7 @@ func workloadClusterRecreateDeleteFirstUpgradeSpec(t *testing.T) {
 			util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
 			clusterctlConfigPath,
+			infrastructureProvider,
 		)
 	}()
 
@@ -113,7 +113,7 @@ func workloadClusterRecreateDeleteFirstUpgradeSpec(t *testing.T) {
 		ClusterProxy:                     bootstrapClusterProxy,
 		Cluster:                          cluster,
 		ControlPlane:                     controlPlane,
-		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(KubernetesVersionFirstUpgradeTo),
+		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(K0sVersionFirstUpgradeTo),
 		WaitForKubeProxyUpgradeInterval:  util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"),
 		WaitForControlPlaneReadyInterval: util.GetInterval(e2eConfig, testName, "wait-control-plane"),
 	})
@@ -124,7 +124,7 @@ func workloadClusterRecreateDeleteFirstUpgradeSpec(t *testing.T) {
 		ClusterProxy:                     bootstrapClusterProxy,
 		Cluster:                          cluster,
 		ControlPlane:                     controlPlane,
-		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(KubernetesVersionSecondUpgradeTo),
+		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(K0sVersionSecondUpgradeTo),
 		WaitForKubeProxyUpgradeInterval:  util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"),
 		WaitForControlPlaneReadyInterval: util.GetInterval(e2eConfig, testName, "wait-control-plane"),
 	})

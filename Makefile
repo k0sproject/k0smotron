@@ -15,7 +15,8 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 CRDOC ?= $(LOCALBIN)/crdoc
 
 ## e2e configuration
-E2E_CONF_FILE ?= $(shell pwd)/e2e/config/docker.yaml
+E2E_CONF_FILE ?= $(shell pwd)/e2e/config.yaml
+E2E_INFRASTRUCTURE_PROVIDER ?= k0sproject-k0smotron
 SKIP_RESOURCE_CLEANUP ?= false
 # Artifacts folder generated for e2e tests
 ARTIFACTS ?= $(shell pwd)/_artifacts
@@ -116,7 +117,9 @@ vet: ## Run go vet against code.
 test: $(ENVTEST)
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $(GO_TEST_DIRS) -run '$(TEST_NAME)' -coverprofile cover.out
 
+## Template by infrastructure provider for e2e tests
 DOCKER_TEMPLATES := e2e/data/infrastructure-docker
+K0SMOTRON_TEMPLATES := e2e/data/infrastructure-k0smotron
 
 .PHONY: generate-e2e-templates-main
 generate-e2e-templates-main: $(KUSTOMIZE)
@@ -127,6 +130,14 @@ generate-e2e-templates-main: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-ingress --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-ingress.yaml
+	$(KUSTOMIZE) build $(K0SMOTRON_TEMPLATES)/main/cluster-template --load-restrictor LoadRestrictionsNone > $(K0SMOTRON_TEMPLATES)/main/cluster-template.yaml
+	$(KUSTOMIZE) build $(K0SMOTRON_TEMPLATES)/main/cluster-template-webhook-recreate-in-single-mode --load-restrictor LoadRestrictionsNone > $(K0SMOTRON_TEMPLATES)/main/cluster-template-webhook-recreate-in-single-mode.yaml
+	$(KUSTOMIZE) build $(K0SMOTRON_TEMPLATES)/main/cluster-template-webhook-k0s-not-compatible --load-restrictor LoadRestrictionsNone > $(K0SMOTRON_TEMPLATES)/main/cluster-template-webhook-k0s-not-compatible.yaml
+	$(KUSTOMIZE) build $(K0SMOTRON_TEMPLATES)/main/cluster-template-kcp-remediation --load-restrictor LoadRestrictionsNone > $(K0SMOTRON_TEMPLATES)/main/cluster-template-kcp-remediation.yaml
+	$(KUSTOMIZE) build $(K0SMOTRON_TEMPLATES)/main/cluster-template-remote-hcp --load-restrictor LoadRestrictionsNone > $(K0SMOTRON_TEMPLATES)/main/cluster-template-remote-hcp.yaml
+	$(KUSTOMIZE) build $(K0SMOTRON_TEMPLATES)/main/cluster-template-ingress --load-restrictor LoadRestrictionsNone > $(K0SMOTRON_TEMPLATES)/main/cluster-template-ingress.yaml
+	$(KUSTOMIZE) build $(K0SMOTRON_TEMPLATES)/main/cluster-template-machinedeployment --load-restrictor LoadRestrictionsNone > $(K0SMOTRON_TEMPLATES)/main/cluster-template-machinedeployment.yaml
+
 
 
 e2e: generate-e2e-templates-main
@@ -135,6 +146,7 @@ e2e: generate-e2e-templates-main
 	    -artifacts-folder="$(ARTIFACTS)" \
 	    -config="$(E2E_CONF_FILE)" \
 	    -skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
+		-infrastructure-provider=$(E2E_INFRASTRUCTURE_PROVIDER) \
 		-timeout=30m
 
 e2e-aws:
@@ -143,7 +155,7 @@ e2e-aws:
 	@[ -n "$$AWS_REGION" ] || (echo "AWS_REGION not defined"; exit 1)
 	@[ -n "$$AWS_B64ENCODED_CREDENTIALS" ] || (echo "AWS_B64ENCODED_CREDENTIALS not defined"; exit 1)
 	@[ -n "$$SSH_PUBLIC_KEY" ] || (echo "SSH_PUBLIC_KEY not defined"; exit 1)
-	$(MAKE) e2e TEST_NAME="${TEST_NAME}" E2E_CONF_FILE="$(shell pwd)/e2e/config/aws.yaml"
+	$(MAKE) e2e TEST_NAME="${TEST_NAME}" E2E_INFRASTRUCTURE_PROVIDER=aws
 
 ##@ Build
 
