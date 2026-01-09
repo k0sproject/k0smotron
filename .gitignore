@@ -1,5 +1,6 @@
 # Generated files
 install.yaml
+extension-webhook-install.yaml
 bootstrap-components.yaml
 control-plane-components.yaml
 infrastructure-components.yaml

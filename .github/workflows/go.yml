@@ -84,11 +84,21 @@ jobs:
         run: |
           make release
 
+      - name: Generate inplace-extension install yaml
+        run: |
+          make release-extension-webhook
+
       - name: Upload install yaml
         uses: actions/upload-artifact@v4
         with:
           name: install-yaml
           path: install.yaml
+
+      - name: Upload inplace-extension yaml
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-webhook-install-yaml
+          path: extension-webhook-install.yaml
 
   unittest:
     name: Unit & Integration tests
@@ -245,6 +255,7 @@ jobs:
           - TestControlplaneRemediation
           - TestControlplaneConditions
           - TestWorkloadClusterInplaceUpgrade
+          - TestWorkloadClusterCAPIInplaceUpgrade
           - TestWorkloadClusterRecreateUpgrade
           - TestWorkloadClusterRecreateDeleteFirstUpgrade
           - TestAdmissionWebhookRecreateStrategyInSingleMode

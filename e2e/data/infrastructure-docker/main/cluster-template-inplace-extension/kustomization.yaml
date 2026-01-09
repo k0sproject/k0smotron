@@ -1,0 +1,4 @@
+resources:
+- ../bases/cluster-with-kcp.yaml
+- ./extension_config.yaml
+- ./md.yaml

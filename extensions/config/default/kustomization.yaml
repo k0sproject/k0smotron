@@ -1,0 +1,47 @@
+namespace: k0smotron
+
+resources:
+- ../webhook
+- ../certmanager
+- ../rbac
+
+patches:
+# Enable webhook with corresponding certificate mount.
+- path: deployment_patch.yaml
+
+
+replacements:
+- source: # Add cert-manager annotation to the webhook Service
+    kind: Service
+    version: v1
+    name: extension-webhook-service
+    fieldPath: .metadata.name # namespace of the service
+  targets:
+    - select:
+        kind: Certificate
+        group: cert-manager.io
+        version: v1
+      fieldPaths:
+        - .spec.dnsNames.0
+        - .spec.dnsNames.1
+      options:
+        delimiter: '.'
+        index: 0
+        create: true
+- source:
+    kind: Service
+    version: v1
+    name: extension-webhook-service
+    fieldPath: .metadata.namespace # namespace of the service
+  targets:
+    - select:
+        kind: Certificate
+        group: cert-manager.io
+        version: v1
+      fieldPaths:
+        - .spec.dnsNames.0
+        - .spec.dnsNames.1
+      options:
+        delimiter: '.'
+        index: 1
+        create: true

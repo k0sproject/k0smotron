@@ -2,7 +2,29 @@
 
 k0smotron supports three update strategies to update the control plane in the Cluster API clusters:
 
-- `InPlace` (default): uses [k0s autopilot](https://docs.k0sproject.io/stable/autopilot/) to update the k0s version on the control plane nodes in-place without recycling the machines.
+- `InPlace` (default): updates the control plane nodes in-place without recycling the machines.
+  By default, this uses [k0s autopilot](https://docs.k0sproject.io/stable/autopilot/).
+
+  Starting from **Cluster API core v1.12.0**, `InPlace` can leverage **Experimental Cluster API in-place updates** when all of the following requirements are met:
+
+  - Cluster API core **v1.12.0 or newer**
+
+  - Feature gate `EXP_IN_PLACE_UPDATES=true` in Cluster API core.
+
+  - The **k0smotron in-place version update extension** is installed in the management cluster.
+
+  The extension can be installed with:
+  ```bash
+    kubectl apply --server-side=true -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/extension-inplace-version-update.yaml
+  ```
+
+  More about inplace updates in CAPI [here.](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240807-in-place-updates.md)
+
+  !!! note 
+
+      If the requirements for Cluster API in-place updates are not met, the original in-place update approach is used, where only the control plane machines are updated.
+
+  
 - `Recreate`: uses the Cluster API workflow to update the control plane by creating new machines for the control plane and decommissioning the old ones.
 - `RecreateDeleteFirst`: similar to `Recreate`, but deletes the old machines before creating the new ones. This strategy is suitable for clusters with limited resources.
 
