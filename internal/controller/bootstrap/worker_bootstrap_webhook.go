@@ -97,9 +97,10 @@ func (v *K0sWorkerConfigValidator) validate(c bootstrapv1.K0sWorkerConfigSpec, n
 }
 
 // SetupK0sWorkerConfigWebhookWithManager registers the webhook for K0sWorkerConfig in the manager.
-func (v *K0sWorkerConfigValidator) SetupK0sWorkerConfigWebhookWithManager(mgr ctrl.Manager) error {
+func SetupK0sWorkerConfigWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&v1beta1.K0sWorkerConfig{}).
-		WithValidator(v).
+		WithValidator(&K0sWorkerConfigValidator{}).
+		WithDefaulter(&K0sWorkerConfigDefaulter{}).
 		Complete()
 }
