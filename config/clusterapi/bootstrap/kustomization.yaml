@@ -1,3 +1,5 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 # Adds namespace to all resources.
 namespace: k0smotron
 
@@ -9,33 +11,14 @@ namespace: k0smotron
 namePrefix: k0smotron-
 nameSuffix: -bootstrap
 
-# Labels to add to all resources and selectors.
-#labels:
-#- includeSelectors: true
-#  pairs:
-#    someName: someValue
-
 resources:
-- ../../rbac
+- ./crd
+- ./rbac
 - ../../manager
-- ../k0smotron.io
 - ../../certmanager
 - ./webhook
-- ./bases/bootstrap.cluster.x-k8s.io_k0scontrollerconfigs.yaml
-- ./bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigs.yaml
-- ./bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
-# [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
-# crd/kustomization.yaml
-#- ../webhook
-# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
-#- ../certmanager
-# [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-#- ../prometheus
 
 patches:
-# Protect the /metrics endpoint by putting it behind auth.
-# If you want your controller-manager to expose the /metrics
-# endpoint w/o any authn/z, please comment the following line.
 - path: manager_config_patch.yaml
 - path: patches/webhook_in_k0sworkerconfig.yaml
 - path: patches/cainjection_in_k0sworkerconfig.yaml
