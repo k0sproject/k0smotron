@@ -50,7 +50,6 @@ import (
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/k0sproject/k0smotron/inttest/util/watch"
 	"github.com/sirupsen/logrus"
-	deprecatedclusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
@@ -341,10 +340,10 @@ func WaitForSecret(ctx context.Context, kc *kubernetes.Clientset, name string, n
 }
 
 // GetCluster retrieves a cluster object from the cluster API server
-func GetCluster(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*deprecatedclusterv1.Cluster, error) {
-	url := fmt.Sprintf("apis/cluster.x-k8s.io/v1beta1/namespaces/%s/clusters/%s", namespace, name)
+func GetCluster(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*clusterv1.Cluster, error) {
+	url := fmt.Sprintf("apis/cluster.x-k8s.io/v1beta2/namespaces/%s/clusters/%s", namespace, name)
 
-	cluster := &deprecatedclusterv1.Cluster{}
+	cluster := &clusterv1.Cluster{}
 
 	err := kc.RESTClient().
 		Get().
@@ -356,8 +355,8 @@ func GetCluster(ctx context.Context, kc *kubernetes.Clientset, name string, name
 }
 
 // UpdateCluster updates the given cluster object in the cluster API server
-func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *deprecatedclusterv1.Cluster) error {
-	url := fmt.Sprintf("apis/cluster.x-k8s.io/v1beta1/namespaces/%s/clusters/%s", cluster.Namespace, cluster.Name)
+func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *clusterv1.Cluster) error {
+	url := fmt.Sprintf("apis/cluster.x-k8s.io/v1beta2/namespaces/%s/clusters/%s", cluster.Namespace, cluster.Name)
 
 	clusterJSON, err := json.Marshal(cluster)
 	if err != nil {
