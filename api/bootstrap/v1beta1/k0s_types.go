@@ -20,12 +20,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/k0sproject/k0smotron/internal/provisioner"
+	"github.com/k0sproject/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -66,8 +67,12 @@ type K0sWorkerConfigList struct {
 }
 
 type K0sWorkerConfigSpec struct {
+	// Provisioner defines the provisioner configuration. Defaults to cloud-init.
+	// +kubebuilder:validation:Optional
+	Provisioner ProvisionerSpec `json:"provisioner,omitempty"`
 	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 	// +kubebuilder:validation:Optional
+	// Deprecated: use provisioner.ignition instead
 	Ignition *IgnitionSpec `json:"ignition,omitempty"`
 	// K0sInstallDir specifies the directory where k0s binary will be installed.
 	// If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.
@@ -125,6 +130,10 @@ type K0sWorkerConfigSpec struct {
 
 	// WorkingDir specifies the working directory where k0smotron will place its files.
 	WorkingDir string `json:"workingDir,omitempty"`
+
+	// IsWindows specifies whether the target node is Windows.
+	// +kubebuilder:validation:Optional
+	IsWindows bool `json:"isWindows,omitempty"`
 }
 
 // SecretMetadata defines metadata to be propagated to the bootstrap Secret
@@ -242,6 +251,9 @@ type ContentSourceRef struct {
 }
 
 type K0sConfigSpec struct {
+	// Provisioner defines the provisioner configuration. Defaults to cloud-init.
+	// +kubebuilder:validation:Optional
+	Provisioner ProvisionerSpec `json:"provisioner,omitempty"`
 	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 	// +kubebuilder:validation:Optional
 	Ignition *IgnitionSpec `json:"ignition,omitempty"`
@@ -332,6 +344,18 @@ type TunnelingSpec struct {
 	Mode string `json:"mode,omitempty"`
 }
 
+// ProvisionerSpec defines the provisioner configuration.
+type ProvisionerSpec struct {
+	//+kubebuilder:validation:Enum=cloud-config;ignition;powershell;powershell-xml
+	// Type is the provisioner format type.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=cloud-config
+	Type provisioner.ProvisioningFormat `json:"type,omitempty"`
+	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+	// +kubebuilder:validation:Optional
+	Ignition *IgnitionSpec `json:"ignition,omitempty"`
+}
+
 // IgnitionSpec defines the configuration for the Ignition provisioner.
 type IgnitionSpec struct {
 	// Variant declares which distribution variant the generated config is for.
@@ -390,6 +414,7 @@ func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList 
 	// TODO: validate Ignition
 	allErrs = append(allErrs, cs.validateVersion(pathPrefix)...)
 	allErrs = append(allErrs, cs.validateFiles(pathPrefix)...)
+	allErrs = append(allErrs, cs.validateWindows(pathPrefix)...)
 
 	return allErrs
 }
@@ -484,6 +509,42 @@ func (cs *K0sWorkerConfigSpec) validateVersion(pathPrefix *field.Path) field.Err
 			),
 		)
 		return allErrs
+	}
+
+	return allErrs
+}
+
+var minWindowsVersion = version.MustParse("v1.34.2+k0s.0")
+
+func (cs *K0sWorkerConfigSpec) validateWindows(pathPrefix *field.Path) field.ErrorList {
+	if !cs.IsWindows {
+		return field.ErrorList{}
+	}
+
+	var allErrs field.ErrorList
+
+	ver, err := version.NewVersion(cs.Version)
+	if err != nil {
+		allErrs = append(
+			allErrs,
+			field.Invalid(
+				pathPrefix.Child("version"),
+				cs.Version,
+				"invalid version format",
+			),
+		)
+		return allErrs
+	}
+
+	if ver.LessThan(minWindowsVersion) {
+		allErrs = append(
+			allErrs,
+			field.Invalid(
+				pathPrefix.Child("version"),
+				cs.Version,
+				"windows worker nodes require k0s version v1.34.2+k0s.0 or higher",
+			),
+		)
 	}
 
 	return allErrs

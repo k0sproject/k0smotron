@@ -103,7 +103,8 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 	return args
 }
 
-func getProvisioner(ignitionSpec *bootstrapv1.IgnitionSpec) provisioner.Provisioner {
+func getProvisioner(provisionerSpec bootstrapv1.ProvisionerSpec, ignitionSpec *bootstrapv1.IgnitionSpec) provisioner.Provisioner {
+
 	if ignitionSpec != nil {
 		return &provisioner.IgnitionProvisioner{
 			Variant:          ignitionSpec.Variant,
@@ -111,5 +112,24 @@ func getProvisioner(ignitionSpec *bootstrapv1.IgnitionSpec) provisioner.Provisio
 			AdditionalConfig: ignitionSpec.AdditionalConfig,
 		}
 	}
-	return &provisioner.CloudInitProvisioner{}
+
+	switch provisionerSpec.Type {
+	case provisioner.PowershellXMLProvisioningFormat:
+		return &provisioner.PowerShellXMLProvisioner{}
+	case provisioner.PowershellProvisioningFormat:
+		return &provisioner.PowerShellProvisioner{}
+	case provisioner.IgnitionProvisioningFormat:
+		if provisionerSpec.Ignition == nil {
+			return &provisioner.IgnitionProvisioner{}
+		}
+		return &provisioner.IgnitionProvisioner{
+			Variant:          provisionerSpec.Ignition.Variant,
+			Version:          provisionerSpec.Ignition.Version,
+			AdditionalConfig: provisionerSpec.Ignition.AdditionalConfig,
+		}
+	case provisioner.CloudInitProvisioningFormat:
+		return &provisioner.CloudInitProvisioner{}
+	default:
+		return &provisioner.CloudInitProvisioner{}
+	}
 }

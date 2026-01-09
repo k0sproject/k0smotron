@@ -171,7 +171,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		Cluster:           cluster,
 		WorkerEnabled:     false,
 		currentKCPVersion: currentKCPVersion,
-		provisioner:       getProvisioner(config.Spec.Ignition),
+		provisioner:       getProvisioner(config.Spec.Provisioner, config.Spec.Ignition),
 		installArgs:       append([]string{}, config.Spec.Args...),
 	}
 

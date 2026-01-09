@@ -172,6 +172,13 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrollerconfigspecprovisioner">provisioner</a></b></td>
+        <td>object</td>
+        <td>
+          Provisioner defines the provisioner configuration. Defaults to cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0scontrollerconfigspectunneling">tunneling</a></b></td>
         <td>object</td>
         <td>
@@ -511,6 +518,91 @@ with the generated one. The format follows Butane spec: https://coreos.github.io
 </table>
 
 
+### K0sControllerConfig.spec.provisioner
+<sup><sup>[↩ Parent](#k0scontrollerconfigspec)</sup></sup>
+
+
+
+Provisioner defines the provisioner configuration. Defaults to cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrollerconfigspecprovisionerignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type is the provisioner format type.<br/>
+          <br/>
+            <i>Enum</i>: cloud-config, ignition, powershell, powershell-xml<br/>
+            <i>Default</i>: cloud-config<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControllerConfig.spec.provisioner.ignition
+<sup><sup>[↩ Parent](#k0scontrollerconfigspecprovisioner)</sup></sup>
+
+
+
+Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### K0sControllerConfig.spec.tunneling
 <sup><sup>[↩ Parent](#k0scontrollerconfigspec)</sup></sup>
 
@@ -801,7 +893,15 @@ If specified the version field is ignored and what ever version is downloaded fr
         <td><b><a href="#k0sworkerconfigspecignition">ignition</a></b></td>
         <td>object</td>
         <td>
-          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+Deprecated: use provisioner.ignition instead<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>isWindows</b></td>
+        <td>boolean</td>
+        <td>
+          IsWindows specifies whether the target node is Windows.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -833,6 +933,13 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0sworkerconfigspecprovisioner">provisioner</a></b></td>
+        <td>object</td>
+        <td>
+          Provisioner defines the provisioner configuration. Defaults to cloud-init.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1129,6 +1236,92 @@ SecretRef is a reference to a secret that contains the content.
 
 ### K0sWorkerConfig.spec.ignition
 <sup><sup>[↩ Parent](#k0sworkerconfigspec)</sup></sup>
+
+
+
+Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+Deprecated: use provisioner.ignition instead
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfig.spec.provisioner
+<sup><sup>[↩ Parent](#k0sworkerconfigspec)</sup></sup>
+
+
+
+Provisioner defines the provisioner configuration. Defaults to cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0sworkerconfigspecprovisionerignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type is the provisioner format type.<br/>
+          <br/>
+            <i>Enum</i>: cloud-config, ignition, powershell, powershell-xml<br/>
+            <i>Default</i>: cloud-config<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfig.spec.provisioner.ignition
+<sup><sup>[↩ Parent](#k0sworkerconfigspecprovisioner)</sup></sup>
 
 
 
@@ -1538,7 +1731,15 @@ If specified the version field is ignored and what ever version is downloaded fr
         <td><b><a href="#k0sworkerconfigtemplatespectemplatespecignition">ignition</a></b></td>
         <td>object</td>
         <td>
-          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+Deprecated: use provisioner.ignition instead<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>isWindows</b></td>
+        <td>boolean</td>
+        <td>
+          IsWindows specifies whether the target node is Windows.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1570,6 +1771,13 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         <td>[]string</td>
         <td>
           PreStartCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecprovisioner">provisioner</a></b></td>
+        <td>object</td>
+        <td>
+          Provisioner defines the provisioner configuration. Defaults to cloud-init.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1866,6 +2074,92 @@ SecretRef is a reference to a secret that contains the content.
 
 ### K0sWorkerConfigTemplate.spec.template.spec.ignition
 <sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespec)</sup></sup>
+
+
+
+Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+Deprecated: use provisioner.ignition instead
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec.template.spec.provisioner
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespec)</sup></sup>
+
+
+
+Provisioner defines the provisioner configuration. Defaults to cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0sworkerconfigtemplatespectemplatespecprovisionerignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type is the provisioner format type.<br/>
+          <br/>
+            <i>Enum</i>: cloud-config, ignition, powershell, powershell-xml<br/>
+            <i>Default</i>: cloud-config<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sWorkerConfigTemplate.spec.template.spec.provisioner.ignition
+<sup><sup>[↩ Parent](#k0sworkerconfigtemplatespectemplatespecprovisioner)</sup></sup>
 
 
 
