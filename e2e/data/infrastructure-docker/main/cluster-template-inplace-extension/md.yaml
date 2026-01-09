@@ -1,0 +1,54 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  replicas: 1
+  clusterName: ${CLUSTER_NAME}
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+      pool: worker-pool-1
+  rollout:
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1 #IMPORTANT: This must be 1 to allow in-place upgrades. We can't set it to 0 here. 
+      type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+        pool: worker-pool-1
+    spec:
+      version: v1.30.1+k0s.0
+      clusterName: ${CLUSTER_NAME}
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: K0sWorkerConfigTemplate
+          name: ${CLUSTER_NAME}-wct
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: DockerMachineTemplate
+        name: ${CLUSTER_NAME}-worker-dmt
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-wct
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      version: v1.30.1+k0s.0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DockerMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-worker-dmt
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      customImage: kindest/node:v1.31.0
