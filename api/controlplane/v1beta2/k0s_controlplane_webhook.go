@@ -19,6 +19,8 @@ package v1beta2
 import (
 	"context"
 	"fmt"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	"strings"
 
 	"github.com/k0sproject/version"
@@ -29,6 +31,7 @@ import (
 )
 
 // +kubebuilder:webhook:path=/validate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane,mutating=false,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=create;update,versions=v1beta2,name=validate-k0scontrolplane-v1beta2.k0smotron.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/mutate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane,mutating=true,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=create;update,versions=v1beta2,name=mutate-k0scontrolplane-v1beta2.k0smotron.io,admissionReviewVersions=v1
 
 // K0sControlPlaneValidator struct is responsible for validating the K0sControlPlane resource when it is created, updated, or deleted.
 //
@@ -36,7 +39,28 @@ import (
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 type K0sControlPlaneValidator struct{}
 
+// K0sControlPlaneDefaulter struct is responsible for setting default values for the K0sControlPlane resource when it is created or updated.
+type K0sControlPlaneDefaulter struct{}
+
 var _ webhook.CustomValidator = &K0sControlPlaneValidator{}
+var _ webhook.CustomDefaulter = &K0sControlPlaneDefaulter{}
+
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type K0sControlPlane.
+func (d *K0sControlPlaneDefaulter) Default(_ context.Context, obj runtime.Object) error {
+	kcp, ok := obj.(*v1beta1.K0sControlPlane)
+	if !ok {
+		return fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
+	}
+
+	if kcp.Spec.K0sConfigSpec.Ignition != nil {
+		kcp.Spec.K0sConfigSpec.Provisioner = bootstrapv1.ProvisionerSpec{
+			Type:     provisioner.IgnitionProvisioningFormat,
+			Ignition: kcp.Spec.K0sConfigSpec.Ignition,
+		}
+	}
+
+	return nil
+}
 
 // validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
 func (v *K0sControlPlaneValidator) validateVersionSuffix(version string) admission.Warnings {
@@ -99,9 +123,22 @@ func validateK0sControlPlane(kcp *K0sControlPlane) error {
 		return err
 	}
 
+	if err := denyIncompatibleProvisioners(kcp); err != nil {
+		return err
+	}
+
 	// nolint:revive
 	if err := denyRecreateOnSingleClusters(kcp); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func denyIncompatibleProvisioners(kcp *K0sControlPlane) error {
+	if kcp.Spec.K0sConfigSpec.Provisioner.Type == provisioner.PowershellXMLProvisioningFormat ||
+		kcp.Spec.K0sConfigSpec.Provisioner.Type == provisioner.PowershellProvisioningFormat {
+		return fmt.Errorf("K0sControlPlane does not support powershell and powershell-xml provisioning formats")
 	}
 
 	return nil
@@ -119,6 +156,7 @@ func denyIncompatibleK0sVersions(kcp *K0sControlPlane) error {
 	if vv, ok := incompatibleVersions[v.Core().String()]; ok {
 		return fmt.Errorf("version %s is not compatible with K0sControlPlane, use %s", kcp.Spec.Version, vv)
 	}
+
 
 	return nil
 }
@@ -140,9 +178,10 @@ func denyRecreateOnSingleClusters(kcp *K0sControlPlane) error {
 }
 
 // SetupK0sControlPlaneWebhookWithManager registers the webhook for K0sControlPlane in the manager.
-func (v *K0sControlPlaneValidator) SetupK0sControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
+func SetupK0sControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&K0sControlPlane{}).
-		WithValidator(v).
+		WithValidator(&K0sControlPlaneValidator{}).
+		WithDefaulter(&K0sControlPlaneDefaulter{}).
 		Complete()
 }
