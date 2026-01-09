@@ -47,7 +47,7 @@ import (
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	"k8s.io/kubectl/pkg/scheme"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
@@ -61,7 +61,7 @@ import (
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	kubeadmConfig "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmConfig "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 )
 
 func TestK0sConfigEnrichment(t *testing.T) {
@@ -78,11 +78,11 @@ func TestK0sConfigEnrichment(t *testing.T) {
 		{
 			cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Services: &clusterv1.NetworkRanges{
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						Services: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"10.96.0.0/12"},
 						},
-						Pods: &clusterv1.NetworkRanges{
+						Pods: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"10.244.0.0/16"},
 						},
 					},
@@ -100,11 +100,11 @@ func TestK0sConfigEnrichment(t *testing.T) {
 		{
 			cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						Services: &clusterv1.NetworkRanges{
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						Services: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"10.96.0.0/12"},
 						},
-						Pods: &clusterv1.NetworkRanges{
+						Pods: clusterv1.NetworkRanges{
 							CIDRBlocks: []string{"10.244.0.0/16"},
 						},
 					},
@@ -132,7 +132,7 @@ func TestK0sConfigEnrichment(t *testing.T) {
 		{
 			cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
+					ClusterNetwork: clusterv1.ClusterNetwork{
 						ServiceDomain: "cluster.local",
 					},
 				},
@@ -213,7 +213,7 @@ func TestReconcilePausedCluster(t *testing.T) {
 	cluster, kcp, _ := createClusterWithControlPlane(ns.Name)
 
 	// Cluster 'paused'.
-	cluster.Spec.Paused = true
+	cluster.Spec.Paused = ptr.To(true)
 
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
@@ -923,12 +923,18 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachineTemplate",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -947,12 +953,18 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachineTemplate",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -969,7 +981,19 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachine",
+				Name:     "machine-for-controller-infra",
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
+			},
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineNotRelatedToControlPlane))
@@ -1011,7 +1035,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		}
 		require.Equal(t, expectedLabels, m.Labels)
 		require.True(t, metav1.IsControlledBy(m, kcp))
-		require.Equal(t, kcp.Spec.Version, *m.Spec.Version)
+		require.Equal(t, kcp.Spec.Version, m.Spec.Version)
 	}
 }
 
@@ -1067,12 +1091,18 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachineTemplate",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -1107,12 +1137,18 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachineTemplate",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -1147,12 +1183,18 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachineTemplate",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -1185,7 +1227,19 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachine",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
+			},
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineNotRelatedToControlPlane))
@@ -1221,7 +1275,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 			}
 			assert.Equal(c, expectedLabels, m.Labels)
 			assert.True(c, metav1.IsControlledBy(m, kcp))
-			assert.Equal(c, kcp.Spec.Version, *m.Spec.Version)
+			assert.Equal(c, kcp.Spec.Version, m.Spec.Version)
 		}
 	}, 10*time.Second, 100*time.Millisecond)
 }
@@ -1278,12 +1332,18 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.29.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.29.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachineTemplate",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -1317,12 +1377,18 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachineTemplate",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -1355,12 +1421,18 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.29.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.29.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachine",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -1398,7 +1470,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 			}
 			assert.Equal(c, expectedLabels, m.Labels)
 			assert.True(c, metav1.IsControlledBy(m, kcp))
-			assert.Equal(c, kcp.Spec.Version, *m.Spec.Version)
+			assert.Equal(c, kcp.Spec.Version, m.Spec.Version)
 		}
 	}, 5*time.Second, 100*time.Millisecond)
 }
@@ -1436,12 +1508,18 @@ func TestReconcileDeleteControlPlanes(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachineTemplate",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -1460,12 +1538,18 @@ func TestReconcileDeleteControlPlanes(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     ptr.To("v1.30.0"),
-			InfrastructureRef: corev1.ObjectReference{
-				Kind:       "GenericInfrastructureMachineTemplate",
-				Namespace:  ns.Name,
-				Name:       gmt.GetName(),
-				APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachineTemplate",
+				Name:     gmt.GetName(),
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
 			},
 		},
 	}
@@ -1540,7 +1624,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 		BlockOwnerDeletion: ptr.To(true),
 		UID:                cluster.UID,
 	})
-	require.True(t, conditions.IsFalse(kcp, cpv1beta1.ControlPlaneReadyCondition))
+	require.False(t, conditions.IsFalse(kcp, string(cpv1beta1.ControlPlaneAvailableCondition)))
 
 	// Expected secrets are created
 	caSecret, err := secret.GetFromNamespacedName(ctx, testEnv, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name}, secret.ClusterCA)
@@ -1581,9 +1665,9 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	require.Len(t, machineList.Items, 1)
 	machine := machineList.Items[0]
 	require.True(t, strings.HasPrefix(machine.Name, kcp.Name))
-	require.Equal(t, "v1.30.0+k0s.0", *machine.Spec.Version)
+	require.Equal(t, "v1.30.0+k0s.0", machine.Spec.Version)
 	// Newly cloned infra objects should have the infraref annotation.
-	infraObj, err := external.Get(ctx, r.Client, &machine.Spec.InfrastructureRef)
+	infraObj, err := external.GetObjectFromContractVersionedRef(ctx, r.Client, machine.Spec.InfrastructureRef, machine.Namespace)
 	require.NoError(t, err)
 	require.Equal(t, gmt.GetName(), infraObj.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation])
 	require.Equal(t, gmt.GroupVersionKind().GroupKind().String(), infraObj.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation])
@@ -1747,11 +1831,10 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 
 	cluster := newCluster(&types.NamespacedName{Name: kcpName, Namespace: namespace})
 	cluster.Spec = clusterv1.ClusterSpec{
-		ControlPlaneRef: &corev1.ObjectReference{
-			Kind:       "K0sControlPlane",
-			Namespace:  namespace,
-			Name:       kcpName,
-			APIVersion: cpv1beta1.GroupVersion.String(),
+		ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
+			Kind:     "K0sControlPlane",
+			Name:     kcpName,
+			APIGroup: cpv1beta1.GroupVersion.Group,
 		},
 		ControlPlaneEndpoint: clusterv1.APIEndpoint{
 			Host: "test.endpoint",

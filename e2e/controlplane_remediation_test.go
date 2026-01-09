@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -131,7 +131,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	}
 
 	require.NoError(t, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(firstMachine), firstMachine))
-	require.Nil(t, firstMachine.Status.NodeRef)
+	require.False(t, firstMachine.Status.NodeRef.IsDefined())
 	fmt.Printf("Machine %s is up but still bootstrapping\n", firstMachineName)
 
 	// Intentionally trigger remediation on the first CP, and validate the first machine is deleted and a replacement should come up.
@@ -163,7 +163,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 		},
 	}
 	require.NoError(t, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(firstMachineReplacement), firstMachineReplacement), "Failed to get machine %d", firstMachineReplacementName)
-	require.Nil(t, firstMachineReplacement.Status.NodeRef)
+	require.False(t, firstMachineReplacement.Status.NodeRef.IsDefined())
 	fmt.Printf("Machine %s is up but still bootstrapping \n", firstMachineReplacementName)
 
 	// The firstMachine replacement is up, meaning that the test validated that remediation of the first CP machine works (note: first CP is a special case because the cluster is not initialized yet).
@@ -182,7 +182,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	fmt.Printf("Waiting for Machine %s to be provisioned\n", firstMachineReplacementName)
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.NoError(c, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(firstMachineReplacement), firstMachineReplacement))
-		assert.NotNil(c, firstMachineReplacement.Status.NodeRef)
+		assert.True(c, firstMachineReplacement.Status.NodeRef.IsDefined())
 	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", firstMachineReplacementName)
 
 	fmt.Println("FIRST CONTROL PLANE MACHINE UP AND RUNNING!")
@@ -209,7 +209,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 		},
 	}
 	require.NoError(t, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(secondMachine), secondMachine), "Failed to get machine %d", secondMachineName)
-	require.Nil(t, secondMachine.Status.NodeRef)
+	require.False(t, secondMachine.Status.NodeRef.IsDefined())
 	fmt.Printf("Machine %s is up but still bootstrapping\n", secondMachineName)
 
 	// Intentionally trigger remediation on the second CP and validate that also this one is deleted and a replacement should come up.
@@ -242,7 +242,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 		},
 	}
 	require.NoError(t, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(secondMachineReplacement), secondMachineReplacement), "Failed to get machine %d", secondMachineReplacementName)
-	require.Nil(t, secondMachineReplacement.Status.NodeRef)
+	require.False(t, secondMachineReplacement.Status.NodeRef.IsDefined())
 	fmt.Printf("Machine %s is up but still bootstrapping\n", secondMachineReplacementName)
 
 	// The secondMachine replacement is up, meaning that the test validated that remediation of the second CP machine works (note: this test remediation after the cluster is initialized, but not yet fully provisioned).
@@ -261,7 +261,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	fmt.Printf("Waiting for Machine %s to be provisioned\n", secondMachineReplacementName)
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.NoError(c, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(secondMachineReplacement), secondMachineReplacement))
-		assert.NotNil(c, secondMachineReplacement.Status.NodeRef)
+		assert.True(c, secondMachineReplacement.Status.NodeRef.IsDefined())
 	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", secondMachineReplacementName)
 
 	fmt.Println("SECOND CONTROL PLANE MACHINE UP AND RUNNING!")
@@ -288,7 +288,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 		},
 	}
 	require.NoError(t, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(thirdMachine), thirdMachine), "Failed to get machine %d", thirdMachineName)
-	require.Nil(t, thirdMachine.Status.NodeRef)
+	require.False(t, thirdMachine.Status.NodeRef.IsDefined())
 	fmt.Printf("Machine %s is up but still bootstrapping\n", thirdMachineName)
 
 	fmt.Printf("Unblock bootstrap for Machine %s and wait for it to be provisioned\n", thirdMachineName)
@@ -301,7 +301,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	fmt.Printf("Waiting for Machine %s to be provisioned\n", thirdMachineName)
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.NoError(c, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(thirdMachine), thirdMachine))
-		assert.NotNil(c, thirdMachine.Status.NodeRef)
+		assert.True(c, thirdMachine.Status.NodeRef.IsDefined())
 	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", thirdMachineName)
 
 	fmt.Println("ALL THE CONTROL PLANE MACHINES SUCCESSFULLY PROVISIONED!")
@@ -349,7 +349,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 		},
 	}
 	require.NoError(t, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(thirdMachineReplacement), thirdMachineReplacement), "Failed to get machine %d", thirdMachineReplacement)
-	require.Nil(t, thirdMachineReplacement.Status.NodeRef)
+	require.False(t, thirdMachineReplacement.Status.NodeRef.IsDefined())
 	fmt.Printf("Machine %s is up but still bootstrapping\n", thirdMachineReplacementName)
 
 	// The thirdMachine replacement is up, meaning that the test validated that remediation of the third CP machine works (note: this test remediation after the cluster is fully provisioned).
@@ -366,7 +366,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	fmt.Printf("Waiting for Machine %s to be provisioned\n", thirdMachineReplacementName)
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.NoError(c, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(thirdMachineReplacement), thirdMachineReplacement))
-		assert.NotNil(c, thirdMachineReplacement.Status.NodeRef)
+		assert.True(c, thirdMachineReplacement.Status.NodeRef.IsDefined())
 	}, 3*time.Minute, 10*time.Second, "Machine %s failed to be provisioned", thirdMachineReplacementName)
 
 	fmt.Println("ALL THE CONTROL PLANE MACHINES SUCCESSFULLY REMEDIATED AND PROVISIONED!")

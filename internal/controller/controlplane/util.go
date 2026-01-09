@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
@@ -154,19 +154,22 @@ func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cl
 }
 
 func enrichK0sConfigWithClusterData(cluster *clusterv1.Cluster, k0sConfig *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	if cluster.Spec.ClusterNetwork == nil {
-		return k0sConfig, nil
+	clusterNetworkValues := make(map[string]interface{})
+	podCIDRBlocks := cluster.Spec.ClusterNetwork.Pods.String()
+	if podCIDRBlocks != "" {
+		clusterNetworkValues["podCIDR"] = podCIDRBlocks
 	}
 
-	clusterNetworkValues := make(map[string]interface{})
-	if cluster.Spec.ClusterNetwork.Pods != nil {
-		clusterNetworkValues["podCIDR"] = cluster.Spec.ClusterNetwork.Pods.String()
-	}
-	if cluster.Spec.ClusterNetwork.Services != nil {
-		clusterNetworkValues["serviceCIDR"] = cluster.Spec.ClusterNetwork.Services.String()
+	serviceCIDRBlocks := cluster.Spec.ClusterNetwork.Services.String()
+	if serviceCIDRBlocks != "" {
+		clusterNetworkValues["serviceCIDR"] = serviceCIDRBlocks
 	}
 	if cluster.Spec.ClusterNetwork.ServiceDomain != "" {
 		clusterNetworkValues["clusterDomain"] = cluster.Spec.ClusterNetwork.ServiceDomain
+	}
+
+	if len(clusterNetworkValues) == 0 {
+		return k0sConfig, nil
 	}
 
 	if k0sConfig == nil {

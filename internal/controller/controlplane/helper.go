@@ -29,13 +29,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/imdario/mergo"
 	"github.com/k0sproject/version"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"k8s.io/utils/ptr"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util/collections"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -54,7 +54,7 @@ var (
 	errMachineWithoutK0sConfigAnnotation = fmt.Errorf("k0s config annotation not found on machine")
 )
 
-func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
+func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
 	machine, err := c.generateMachine(ctx, name, cluster, kcp, infraRef, failureDomain)
 	if err != nil {
 		return nil, fmt.Errorf("error generating machine: %w", err)
@@ -95,7 +95,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 	return nil
 }
 
-func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef corev1.ObjectReference, failureDomain *string) (*clusterv1.Machine, error) {
+func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
 	v := kcp.Spec.Version
 
 	labels := controlPlaneCommonLabelsForCluster(kcp, cluster.Name)
@@ -134,20 +134,17 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			Annotations: annotations,
 		},
 		Spec: clusterv1.MachineSpec{
-			Version:       &v,
+			Version:       v,
 			ClusterName:   cluster.Name,
 			FailureDomain: failureDomain,
 			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: &corev1.ObjectReference{
-					APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
-					Kind:       "K0sControllerConfig",
-					Name:       name,
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Kind:     "K0sControllerConfig",
+					Name:     name,
+					APIGroup: bootstrapv1.GroupVersion.Group,
 				},
 			},
-			InfrastructureRef:       infraRef,
-			NodeDrainTimeout:        kcp.Spec.MachineTemplate.NodeDrainTimeout,
-			NodeDeletionTimeout:     kcp.Spec.MachineTemplate.NodeDeletionTimeout,
-			NodeVolumeDetachTimeout: kcp.Spec.MachineTemplate.NodeVolumeDetachTimeout,
+			InfrastructureRef: infraRef,
 		},
 	}
 
@@ -196,7 +193,7 @@ func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta1.K0sControlPlane, 
 func (c *K0sController) getInfraMachines(ctx context.Context, machines collections.Machines) (map[string]*unstructured.Unstructured, error) {
 	result := map[string]*unstructured.Unstructured{}
 	for _, m := range machines {
-		infraMachine, err := external.Get(ctx, c.Client, &m.Spec.InfrastructureRef)
+		infraMachine, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, m.Spec.InfrastructureRef, m.Namespace)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				continue
@@ -674,6 +671,17 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 		Error()
 }
 
+func filterControlPlaneFailureDomains(cluster clusterv1.Cluster) []clusterv1.FailureDomain {
+	var cpFailureDomains []clusterv1.FailureDomain
+	for _, spec := range cluster.Status.FailureDomains {
+		if ptr.Deref(spec.ControlPlane, false) {
+			cpFailureDomains = append(cpFailureDomains, spec)
+		}
+	}
+
+	return cpFailureDomains
+}
+
 // minVersion returns the minimum version from a list of machines
 func minVersion(machines collections.Machines) (string, error) {
 	if machines == nil || machines.Len() == 0 {
@@ -682,9 +690,9 @@ func minVersion(machines collections.Machines) (string, error) {
 
 	versions := make([]*version.Version, 0, len(machines))
 	for _, m := range machines {
-		v, err := version.NewVersion(*m.Spec.Version)
+		v, err := version.NewVersion(m.Spec.Version)
 		if err != nil {
-			return "", fmt.Errorf("failed to parse version %s: %w", *m.Spec.Version, err)
+			return "", fmt.Errorf("failed to parse version %s: %w", m.Spec.Version, err)
 		}
 
 		versions = append(versions, v)

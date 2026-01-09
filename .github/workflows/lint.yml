@@ -28,7 +28,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.12'
+          go-version: '1.24'
 
       - name: Go caches
         uses: actions/cache@v4

@@ -42,8 +42,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/certs"
@@ -88,9 +88,10 @@ type K0sController struct {
 
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list
+// +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
 func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
@@ -412,7 +413,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		configurationHasChanged bool
 	)
 	for _, m := range activeMachines.SortedByCreationTimestamp() {
-		if m.Spec.Version == nil || (!versionMatches(m, kcp.Spec.Version)) {
+		if m.Spec.Version == "" || (!versionMatches(m, kcp.Spec.Version)) {
 			clusterIsUpdating = true
 			if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
 				desiredMachines.Insert(m)
@@ -534,14 +535,12 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return fmt.Errorf("error creating machine from template: %w", err)
 		}
 
-		infraRef := corev1.ObjectReference{
-			APIVersion: infraMachine.GetAPIVersion(),
-			Kind:       infraMachine.GetKind(),
-			Name:       infraMachine.GetName(),
-			Namespace:  kcp.Namespace,
+		infraRef := clusterv1.ContractVersionedObjectReference{
+			Kind:     infraMachine.GetKind(),
+			Name:     infraMachine.GetName(),
+			APIGroup: clusterv1.GroupVersionInfrastructure.Group,
 		}
-
-		selectedFailureDomain := failuredomains.PickFewest(ctx, cluster.Status.FailureDomains.FilterControlPlane(), activeMachines, deletedMachines)
+		selectedFailureDomain := failuredomains.PickFewest(ctx, filterControlPlaneFailureDomains(*cluster), activeMachines, deletedMachines)
 		machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
 		if err != nil {
 			return fmt.Errorf("error creating machine: %w", err)
@@ -572,10 +571,6 @@ func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, kcp *cpv1b
 	if err != nil {
 		return err
 	}
-
-	machine.Spec.NodeDrainTimeout = kcp.Spec.MachineTemplate.NodeDrainTimeout
-	machine.Spec.NodeDeletionTimeout = kcp.Spec.MachineTemplate.NodeDeletionTimeout
-	machine.Spec.NodeVolumeDetachTimeout = kcp.Spec.MachineTemplate.NodeVolumeDetachTimeout
 
 	return patchHelper.Patch(ctx, machine)
 }

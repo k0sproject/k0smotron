@@ -22,7 +22,7 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 func init() {
@@ -41,8 +41,8 @@ const (
 )
 
 const (
-	// ControlPlaneReadyCondition documents the status of the control plane
-	ControlPlaneReadyCondition clusterv1.ConditionType = "ControlPlaneReady"
+	// ControlPlaneAvailableCondition denotes that the control plane is available
+	ControlPlaneAvailableCondition = "Available"
 
 	// RemediationInProgressAnnotation is used to keep track that a remediation is in progress,
 	// and more specifically it tracks that the system is in between having deleted an unhealthy machine
@@ -116,28 +116,11 @@ type K0sControlPlaneMachineTemplate struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
-	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
+	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 
 	// InfrastructureRef is a required reference to a custom resource
 	// offered by an infrastructure provider.
 	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
-
-	// NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
-	// The default value is 0, meaning that the node can be drained without any time limitations.
-	// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
-	// +optional
-	NodeDrainTimeout *metav1.Duration `json:"nodeDrainTimeout,omitempty"`
-
-	// NodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
-	// to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.
-	// +optional
-	NodeVolumeDetachTimeout *metav1.Duration `json:"nodeVolumeDetachTimeout,omitempty"`
-
-	// NodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
-	// hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
-	// If no value is provided, the default value for this property of the Machine resource will be used.
-	// +optional
-	NodeDeletionTimeout *metav1.Duration `json:"nodeDeletionTimeout,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -206,14 +189,16 @@ type K0sControlPlaneStatus struct {
 
 	// Conditions defines current service state of the K0sControlPlane.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-func (k *K0sControlPlane) GetConditions() clusterv1.Conditions {
+// GetConditions returns the conditions of the K0sControlPlane status.
+func (k *K0sControlPlane) GetConditions() []metav1.Condition {
 	return k.Status.Conditions
 }
 
-func (k *K0sControlPlane) SetConditions(conditions clusterv1.Conditions) {
+// SetConditions sets the conditions on the K0sControlPlane status.
+func (k *K0sControlPlane) SetConditions(conditions []metav1.Condition) {
 	k.Status.Conditions = conditions
 }
 

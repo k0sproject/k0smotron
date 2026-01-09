@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -176,7 +176,7 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 
 			if isWorker {
 				mProviderId := m.Spec.ProviderID
-				if mProviderId == nil || *mProviderId == "" {
+				if mProviderId == "" {
 					continue
 				}
 
