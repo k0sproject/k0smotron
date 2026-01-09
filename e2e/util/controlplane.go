@@ -136,7 +136,7 @@ func DiscoveryAndWaitForControlPlaneInitialized(ctx context.Context, input capif
 		return nil, fmt.Errorf("couldn't get the control plane for the cluster %s: %w", klog.KObj(input.Cluster), err)
 	}
 
-	fmt.Printf("Waiting for the first control plane machine managed by %s to be provisioned", klog.KObj(controlPlane))
+	fmt.Printf("Waiting for the first control plane machine managed by %s to be provisioned\n", klog.KObj(controlPlane))
 	err = WaitForOneK0sControlPlaneMachineToExist(ctx, WaitForOneK0sControlPlaneMachineToExistInput{
 		Lister:       input.Lister,
 		Cluster:      input.Cluster,

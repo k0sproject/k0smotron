@@ -179,13 +179,14 @@ func setupMothership() error {
 	}
 
 	err = mothership.InitAndWatchControllerLogs(watchesCtx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
-		ClusterProxy:             bootstrapClusterProxy,
-		ClusterctlConfigPath:     clusterctlConfigPath,
-		InfrastructureProviders:  e2eConfig.InfrastructureProviders(),
-		DisableMetricsCollection: true,
-		BootstrapProviders:       []string{"k0sproject-k0smotron"},
-		ControlPlaneProviders:    []string{"k0sproject-k0smotron"},
-		LogFolder:                filepath.Join(artifactFolder, "capi"),
+		ClusterProxy:              bootstrapClusterProxy,
+		ClusterctlConfigPath:      clusterctlConfigPath,
+		InfrastructureProviders:   e2eConfig.InfrastructureProviders(),
+		DisableMetricsCollection:  true,
+		BootstrapProviders:        []string{"k0sproject-k0smotron"},
+		ControlPlaneProviders:     []string{"k0sproject-k0smotron"},
+		RuntimeExtensionProviders: []string{"k0sproject-k0smotron"},
+		LogFolder:                 filepath.Join(artifactFolder, "capi"),
 	}, util.GetInterval(e2eConfig, "bootstrap", "wait-deployment-available"))
 	if err != nil {
 		return fmt.Errorf("failed to init management cluster: %w", err)

@@ -852,8 +852,6 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         <td>
           UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
 By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
-          <br/>
-            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1593,8 +1591,6 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         <td>
           UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
 By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
-          <br/>
-            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr><tr>
