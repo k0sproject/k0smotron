@@ -10,10 +10,36 @@ permissions:
   contents: read    # This is required for actions/checkout
   
 jobs:
-  # TODO: instead of building the image for the nightly tests, we could cuse the one published to ttl.sh. If the image no longer exists there,
-  # the tests would fail, which is acceptable, meaning that the development version has already been tested against AWS the night before.
+  # check-main-changes check if the development version has changed in the last 24 hours. If not, the nightly tests are skipped meaning that 
+  # the nightly e2e tests have already been run for the current development version.
+  check-main-changes:
+    name: Check for changes on main
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      
+      - name: Check commits in last 24h
+        id: check
+        run: |
+          git fetch origin main
+
+          if git log origin/main --since="24 hours ago" --oneline | grep .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected in the last 24 hours on main branch."
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes detected in the last 24 hours on main branch. Skipping nightly tests execution."
+          fi
   build:
     name: Build artifacts
+    needs: check-main-changes
+    if: needs.check-main-changes.outputs.changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
