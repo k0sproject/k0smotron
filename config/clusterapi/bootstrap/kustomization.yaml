@@ -62,6 +62,14 @@ replacements:
           index: 0
           create: true
       - select:
+          kind: MutatingWebhookConfiguration
+        fieldPaths:
+          - .metadata.annotations.[cert-manager.io/inject-ca-from]
+        options:
+          delimiter: '/'
+          index: 0
+          create: true
+      - select:
           kind: CustomResourceDefinition
         fieldPaths:
           - .metadata.annotations.[cert-manager.io/inject-ca-from]
@@ -78,6 +86,14 @@ replacements:
     targets:
       - select:
           kind: ValidatingWebhookConfiguration
+        fieldPaths:
+          - .metadata.annotations.[cert-manager.io/inject-ca-from]
+        options:
+          delimiter: '/'
+          index: 1
+          create: true
+      - select:
+          kind: MutatingWebhookConfiguration
         fieldPaths:
           - .metadata.annotations.[cert-manager.io/inject-ca-from]
         options:
