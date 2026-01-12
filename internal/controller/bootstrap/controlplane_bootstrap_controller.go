@@ -38,9 +38,10 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -131,8 +132,8 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// If the K0sWorkerConfig does not have a version set, use the machine's version.
-	if config.Spec.Version == "" && machine.Spec.Version != nil {
-		config.Spec.Version = *machine.Spec.Version
+	if config.Spec.Version == "" && machine.Spec.Version != "" {
+		config.Spec.Version = machine.Spec.Version
 	}
 	// If the version does not contain the k0s suffix, append it.
 	if config.Spec.Version != "" && !strings.Contains(config.Spec.Version, "+k0s.") {
@@ -196,13 +197,29 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	oldConfig := config.DeepCopy()
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
-		conditions.SetSummary(config,
-			conditions.WithConditions(
+		err := conditions.SetSummaryCondition(config, config, string(bootstrapv1.ConfigReadyCondition),
+			conditions.ForConditionTypes{
 				bootstrapv1.DataSecretAvailableCondition,
-			),
+			},
+			// Using a custom merge strategy to override reasons applied during merge and to ignore some
+			// info message so the ready condition aggregation in other resources is less noisy.
+			conditions.CustomMergeStrategy{
+				MergeStrategy: conditions.DefaultMergeStrategy(
+					// Use custom reasons.
+					conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
+						bootstrapv1.ConfigNotReadyReason,
+						bootstrapv1.ConfigReadyUnknownReason,
+						bootstrapv1.ConfigReadyReason,
+					)),
+				),
+			},
 		)
+		if err != nil {
+			log.Error(err, "Failed to set summary condition")
+		}
+
 		config.Spec = oldConfig.Spec
-		err := patchHelper.Patch(ctx, config)
+		err = patchHelper.Patch(ctx, config)
 		if err != nil {
 			log.Error(err, "Failed to patch K0sControllerConfig status")
 		}
@@ -210,20 +227,35 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		log.Info("control plane endpoint is not set")
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForControlPlaneInitializationReason, clusterv1.ConditionSeverityInfo, "")
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.WaitingForControlPlaneInitializationReason,
+			Message: "Control plane endpoint is not set",
+		})
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
 	}
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	if err != nil {
 		err = fmt.Errorf("error collecting machines: %w", err)
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.InternalErrorReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
 
 	if machines.Len() == 0 {
 		log.Info("No control plane machines found, waiting for machines to be created")
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForInfrastructureInitializationReason, clusterv1.ConditionSeverityInfo, "")
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.WaitingForInfrastructureInitializationReason,
+			Message: "No control plane machines found, waiting for machines to be created",
+		})
 		return ctrl.Result{Requeue: true}, nil
 	}
 	scope.machines = machines
@@ -234,11 +266,21 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		// the IP of the first controller when has not yet been surfaced. This is required to create a join token. It is needed to
 		// wait for the addresses to be set.
 		if errors.Is(err, errInitialControllerMachineNotInitialize) {
-			conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.WaitingForInfrastructureInitializationReason, clusterv1.ConditionSeverityInfo, "")
+			conditions.Set(config, metav1.Condition{
+				Type:    string(bootstrapv1.DataSecretAvailableCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  bootstrapv1.WaitingForInfrastructureInitializationReason,
+				Message: err.Error(),
+			})
 			return ctrl.Result{RequeueAfter: time.Second * 30}, nil
 		}
 
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.InternalErrorReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
 
@@ -273,10 +315,20 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	if err := c.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
-		conditions.MarkFalse(config, bootstrapv1.DataSecretAvailableCondition, bootstrapv1.DataSecretGenerationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.InternalErrorReason,
+			Message: err.Error(),
+		})
 		return ctrl.Result{}, err
 	}
-	conditions.MarkTrue(config, bootstrapv1.DataSecretAvailableCondition)
+	conditions.Set(config, metav1.Condition{
+		Type:    string(bootstrapv1.DataSecretAvailableCondition),
+		Status:  metav1.ConditionTrue,
+		Reason:  bootstrapv1.ConfigSecretAvailableReason,
+		Message: "Bootstrap secret created",
+	})
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
 
 	// Set the status to ready
@@ -441,13 +493,11 @@ func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *C
 	frpToken := string(frpSecret.Data["value"])
 
 	localIP := "10.96.0.1"
-	if scope.Cluster.Spec.ClusterNetwork != nil && scope.Cluster.Spec.ClusterNetwork.Services != nil {
-		kubeSvcIP, err := constants.GetAPIServerVirtualIP(scope.Cluster.Spec.ClusterNetwork.Services.String())
-		if err != nil {
-			return nil, err
-		}
-		localIP = kubeSvcIP.String()
+	kubeSvcIP, err := constants.GetAPIServerVirtualIP(scope.Cluster.Spec.ClusterNetwork.Services.String())
+	if err != nil {
+		return nil, err
 	}
+	localIP = kubeSvcIP.String()
 
 	var modeConfig string
 	if scope.Config.Spec.Tunneling.Mode == "proxy" {
@@ -678,7 +728,8 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 	name := firstControllerMachine.Name
 
 	if extAddr == "" && intAddr == "" && intIPv4Addr == "" {
-		machineImpl, err := c.getMachineImplementation(ctx, firstControllerMachine)
+
+		machineImpl, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, firstControllerMachine.Spec.InfrastructureRef, firstControllerMachine.Namespace)
 		if err != nil {
 			return "", fmt.Errorf("error getting machine implementation: %w", err)
 		}
@@ -724,23 +775,6 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 	}
 
 	return "", fmt.Errorf("no address found for machine %s: %w", name, errInitialControllerMachineNotInitialize)
-}
-
-func (c *ControlPlaneController) getMachineImplementation(ctx context.Context, machine *clusterv1.Machine) (*unstructured.Unstructured, error) {
-	infRef := machine.Spec.InfrastructureRef
-
-	machineImpl := new(unstructured.Unstructured)
-	machineImpl.SetAPIVersion(infRef.APIVersion)
-	machineImpl.SetKind(infRef.Kind)
-	machineImpl.SetName(infRef.Name)
-
-	key := client.ObjectKey{Name: infRef.Name, Namespace: infRef.Namespace}
-
-	err := c.Get(ctx, key, machineImpl)
-	if err != nil {
-		return nil, fmt.Errorf("error getting machine implementation object: %w", err)
-	}
-	return machineImpl, nil
 }
 
 func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) ([]string, map[provisioner.VarName]string, error) {
@@ -941,5 +975,5 @@ func (o machinesByVersionAndCreationTimestamp) Less(i, j int) bool {
 	if o[i].CreationTimestamp.Equal(&o[j].CreationTimestamp) {
 		return o[i].Name < o[j].Name
 	}
-	return *o[i].Spec.Version < *o[j].Spec.Version && o[i].CreationTimestamp.Before(&o[j].CreationTimestamp)
+	return o[i].Spec.Version < o[j].Spec.Version && o[i].CreationTimestamp.Before(&o[j].CreationTimestamp)
 }

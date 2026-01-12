@@ -12,12 +12,12 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: "{go://sigs.k8s.io/cluster-api@v1.10}"
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.10}/core-components.yaml
+      - name: "{go://sigs.k8s.io/cluster-api@v1.11}"
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.11}/core-components.yaml
         type: url
-        contract: v1beta1
+        contract: v1beta2
         files:
-          - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+          - sourcePath: "../data/shared/v1beta2/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"

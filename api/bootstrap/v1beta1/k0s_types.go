@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -35,6 +35,21 @@ func init() {
 	SchemeBuilder.Register(&K0sWorkerConfig{}, &K0sWorkerConfigList{})
 	SchemeBuilder.Register(&K0sControllerConfig{}, &K0sControllerConfigList{})
 }
+
+const (
+	// ConfigReadyCondition is true if the Config resource is not deleted,
+	// and both DataSecretCreated, CertificatesAvailable conditions are true.
+	ConfigReadyCondition = clusterv1.ReadyCondition
+
+	// ConfigReadyReason surfaces when the Config resource is ready.
+	ConfigReadyReason = clusterv1.ReadyReason
+
+	// ConfigNotReadyReason surfaces when the Config resource is not ready.
+	ConfigNotReadyReason = clusterv1.NotReadyReason
+
+	// ConfigReadyUnknownReason surfaces when Config resource readiness is unknown.
+	ConfigReadyUnknownReason = clusterv1.ReadyUnknownReason
+)
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
@@ -49,12 +64,14 @@ type K0sWorkerConfig struct {
 	Status K0sWorkerConfigStatus `json:"status,omitempty"`
 }
 
-func (k *K0sWorkerConfig) GetConditions() clusterv1.Conditions {
-	return k.Status.Conditions
+// GetConditions returns the set of conditions for this object.
+func (c *K0sWorkerConfig) GetConditions() []metav1.Condition {
+	return c.Status.Conditions
 }
 
-func (k *K0sWorkerConfig) SetConditions(conditions clusterv1.Conditions) {
-	k.Status.Conditions = conditions
+// SetConditions sets the conditions on the K0sWorkerConfig status.
+func (c *K0sWorkerConfig) SetConditions(conditions []metav1.Condition) {
+	c.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true
@@ -157,7 +174,7 @@ type K0sWorkerConfigStatus struct {
 
 	// Conditions defines current service state of the K0sWorkerConfig.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -183,15 +200,17 @@ type K0sControllerConfigStatus struct {
 
 	// Conditions defines current service state of the K0sControllerConfig.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-func (k *K0sControllerConfig) GetConditions() clusterv1.Conditions {
-	return k.Status.Conditions
+// GetConditions returns the set of conditions for this object.
+func (c *K0sControllerConfig) GetConditions() []metav1.Condition {
+	return c.Status.Conditions
 }
 
-func (k *K0sControllerConfig) SetConditions(conditions clusterv1.Conditions) {
-	k.Status.Conditions = conditions
+// SetConditions sets the conditions on the K0sControllerConfig status.
+func (c *K0sControllerConfig) SetConditions(conditions []metav1.Condition) {
+	c.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true

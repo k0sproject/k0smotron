@@ -33,14 +33,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -98,6 +99,7 @@ type kmcScope struct {
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0smotroncontrolplanes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
 func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
@@ -266,13 +268,10 @@ func (c *K0smotronController) ensureExternalAddress(ctx context.Context, kcp *cp
 			port = k0smoCluster.Spec.Service.APIPort
 		}
 		// Update the Clusters endpoint if needed
-		if cluster.Spec.InfrastructureRef != nil && (cluster.Spec.ControlPlaneEndpoint.Host != host || cluster.Spec.ControlPlaneEndpoint.Port != int32(port)) {
-
-			// Get the infrastructure cluster object
-			infraCluster := &unstructured.Unstructured{}
-			infraCluster.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
-			if err := c.Client.Get(ctx, types.NamespacedName{Namespace: cluster.Namespace, Name: cluster.Spec.InfrastructureRef.Name}, infraCluster); err != nil {
-				log.Error(err, "Failed to get infrastructure cluster")
+		if cluster.Spec.InfrastructureRef.IsDefined() && (cluster.Spec.ControlPlaneEndpoint.Host != host || cluster.Spec.ControlPlaneEndpoint.Port != int32(port)) {
+			infraCluster, err := external.GetObjectFromContractVersionedRef(ctx, c, cluster.Spec.InfrastructureRef, cluster.Namespace)
+			if err != nil {
+				log.Error(err, "Failed to get infrastructure cluster from versioned ref")
 				return false, err
 			}
 			log.Info("Found infrastructure cluster")
@@ -525,7 +524,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	// we should also requeue to retry the connection.
 	if kcp.Status.UnavailableReplicas > 0 ||
 		desiredVersion.String() != kcp.Status.Version ||
-		!conditions.IsTrue(kcp, cpv1beta1.ControlPlaneReadyCondition) {
+		!conditions.IsTrue(kcp, string(cpv1beta1.ControlPlaneAvailableCondition)) {
 		return ErrNotReady
 	}
 
@@ -571,7 +570,12 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
 	if err != nil {
 		logger.Info("Failed to create cluster client", "error", err)
-		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "ClusterClientCreationFailed", clusterv1.ConditionSeverityWarning, "Failed to create cluster client: %v", err)
+		conditions.Set(kcp, metav1.Condition{
+			Type:    string(cpv1beta1.ControlPlaneAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  "ClusterClientCreationFailed",
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -587,14 +591,23 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	err = client.Get(pingCtx, nsKey, ns)
 	if err != nil {
 		logger.Info("Failed to get workload cluster namespace", "error", err)
-		conditions.MarkFalse(kcp, cpv1beta1.ControlPlaneReadyCondition, "KubeSystemNamespaceNotAccessible", clusterv1.ConditionSeverityWarning, "Failed to get kube-system namespace: %v", err)
+		conditions.Set(kcp, metav1.Condition{
+			Type:    string(cpv1beta1.ControlPlaneAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  "KubeSystemNamespaceNotAccessible",
+			Message: err.Error(),
+		})
 		return
 	}
 
 	logger.Info("Successfully verified workload cluster API availability")
 
 	// Set condition for successful API access
-	conditions.MarkTrue(kcp, cpv1beta1.ControlPlaneReadyCondition)
+	conditions.Set(kcp, metav1.Condition{
+		Type:   string(cpv1beta1.ControlPlaneAvailableCondition),
+		Status: metav1.ConditionTrue,
+		Reason: cpv1beta1.ControlPlaneAvailableReason,
+	})
 
 	kcp.Status.Ready = true
 	kcp.Status.Initialized = true
@@ -619,20 +632,8 @@ func (scope *kmcScope) getK0sVersionRunningInPod(ctx context.Context, pod *corev
 func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, cluster *clusterv1.Cluster, ready bool) error {
 	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 
-	// Skip if no infrastructure reference exists
-	if cluster.Spec.InfrastructureRef == nil {
-		return nil
-	}
-
-	// Get the infrastructure object
-	infraObj := &unstructured.Unstructured{}
-	infraObj.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
-	infraObjKey := types.NamespacedName{
-		Namespace: cluster.Spec.InfrastructureRef.Namespace,
-		Name:      cluster.Spec.InfrastructureRef.Name,
-	}
-
-	if err := c.Client.Get(ctx, infraObjKey, infraObj); err != nil {
+	infraObj, err := external.GetObjectFromContractVersionedRef(ctx, c, cluster.Spec.InfrastructureRef, cluster.Namespace)
+	if err != nil {
 		return fmt.Errorf("failed to get Infrastructure object: %w", err)
 	}
 

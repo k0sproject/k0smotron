@@ -16,8 +16,6 @@ limitations under the License.
 
 package v1beta1
 
-import clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-
 // Conditions and condition Reasons for the K0sControllerConfig and K0sWorkerConfig objects
 // FROM: https://github.com/kubernetes-sigs/cluster-api/blob/main/bootstrap/kubeadm/api/v1beta1/condition_consts.go
 
@@ -27,22 +25,29 @@ const (
 	// NOTE: When the DataSecret generation starts the process completes immediately and within the
 	// same reconciliation, so the user will always see a transition from Wait to Generated without having
 	// evidence that BootstrapSecret generation is started/in progress.
-	DataSecretAvailableCondition clusterv1.ConditionType = "DataSecretAvailable"
+	DataSecretAvailableCondition = "DataSecretAvailable"
 
-	// DataSecretGenerationFailedReason (Severity=Warning) documents a BootstrapConfig controller detecting
+	// DataSecretGenerationFailedReason documents a BootstrapConfig controller detecting
 	// an error while generating a data secret; those kind of errors are usually due to misconfigurations
 	// and user intervention is required to get them fixed.
 	DataSecretGenerationFailedReason = "DataSecretGenerationFailed"
 
-	// WaitingForControlPlaneInitializationReason (Severity=Info) documents a bootstrap secret generation process
+	// WaitingForControlPlaneInitializationReason documents a bootstrap secret generation process
 	// waiting for the control plane to be initialized.
 	//
 	// NOTE: This is a pre-condition for starting to create worker machines.
 	WaitingForControlPlaneInitializationReason = "WaitingForControlPlaneInitialization"
 
-	// WaitingForInfrastructureInitializationReason (Severity=Info) documents a bootstrap secret generation process
+	// WaitingForInfrastructureInitializationReason documents a bootstrap secret generation process
 	// waiting for the infrastructure to be initialized.
 	//
 	// NOTE: This is a pre-condition for starting to create controller machines.
 	WaitingForInfrastructureInitializationReason = "WaitingForControlPlaneInitialization"
+
+	// InternalErrorReason documents a BootstrapConfig controller detecting
+	// an internal error while processing the BootstrapConfig.
+	InternalErrorReason = "InternalError"
+
+	// ConfigSecretAvailableReason documents the fact that a config secret with the bootstrap data is available.
+	ConfigSecretAvailableReason = "Available"
 )

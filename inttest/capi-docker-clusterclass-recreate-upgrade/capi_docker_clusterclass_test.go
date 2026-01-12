@@ -321,7 +321,7 @@ metadata:
 spec:
   topology:
     class: k0smotron-clusterclass
-    version: v1.30.0
+    version: v1.30.0+k0s.0
     workers:
       machineDeployments:
       - class: docker-test-default-worker

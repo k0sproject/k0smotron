@@ -34,7 +34,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -121,7 +121,7 @@ func TestMachinedeployment(t *testing.T) {
 			if err != nil {
 				return false
 			}
-			return md.Status.ReadyReplicas == 2
+			return *md.Status.ReadyReplicas == 2
 		}, 5*time.Minute, 10*time.Second, "MachineDeployment failed to become ready")
 
 		fmt.Print("Verifying worker nodes are ready in the workload cluster\n")
