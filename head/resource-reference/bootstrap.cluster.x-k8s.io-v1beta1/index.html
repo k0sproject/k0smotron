@@ -2413,7 +2413,7 @@ If empty, k0smotron will use the default one.<br/>
 
 <h3 id="k0scontrollerconfigstatusconditionsindex">K0sControllerConfig.status.conditions[index]<a class="headerlink" href="#k0scontrollerconfigstatusconditionsindex" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrollerconfigstatus">↩ Parent</a></sup></sup></p>
-<p>Condition defines an observation of a Cluster API resource operational state.</p>
+<p>Condition contains details for one aspect of the current state of this API Resource.</p>
 <table>
     <thead>
         <tr>
@@ -2428,26 +2428,9 @@ If empty, k0smotron will use the default one.<br/>
         <td>string</td>
         <td>
           lastTransitionTime is the last time the condition transitioned from one status to another.
-This should be when the underlying condition changed. If that is not known, then using the time when
-the API field changed is acceptable.<br/>
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>status</b></td>
-        <td>string</td>
-        <td>
-          status of the condition, one of True, False, Unknown.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>type</b></td>
-        <td>string</td>
-        <td>
-          type of condition in CamelCase or in foo.example.com/CamelCase.
-Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
-can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -2455,25 +2438,46 @@ can be useful (see .node.status.conditions), the ability to deconflict is import
         <td>string</td>
         <td>
           message is a human readable message indicating details about the transition.
-This field may be empty.<br/>
+This may be an empty string.<br/>
         </td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
         <td><b>reason</b></td>
         <td>string</td>
         <td>
-          reason is the reason for the condition's last transition in CamelCase.
-The specific API may choose whether or not this field is considered a guaranteed API.
-This field may be empty.<br/>
+          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.<br/>
         </td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
-        <td><b>severity</b></td>
+        <td><b>status</b></td>
+        <td>enum</td>
+        <td>
+          status of the condition, one of True, False, Unknown.<br/>
+          <br/>
+            <i>Enum</i>: True, False, Unknown<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
         <td>string</td>
         <td>
-          severity provides an explicit classification of Reason code, so the users or machines can immediately
-understand the current situation and act accordingly.
-The Severity field MUST be set only when Status=False.<br/>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 0<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2971,7 +2975,7 @@ with the generated one. The format follows Butane spec: https://coreos.github.io
 
 <h3 id="k0sworkerconfigstatusconditionsindex">K0sWorkerConfig.status.conditions[index]<a class="headerlink" href="#k0sworkerconfigstatusconditionsindex" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0sworkerconfigstatus">↩ Parent</a></sup></sup></p>
-<p>Condition defines an observation of a Cluster API resource operational state.</p>
+<p>Condition contains details for one aspect of the current state of this API Resource.</p>
 <table>
     <thead>
         <tr>
@@ -2986,26 +2990,9 @@ with the generated one. The format follows Butane spec: https://coreos.github.io
         <td>string</td>
         <td>
           lastTransitionTime is the last time the condition transitioned from one status to another.
-This should be when the underlying condition changed. If that is not known, then using the time when
-the API field changed is acceptable.<br/>
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>status</b></td>
-        <td>string</td>
-        <td>
-          status of the condition, one of True, False, Unknown.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>type</b></td>
-        <td>string</td>
-        <td>
-          type of condition in CamelCase or in foo.example.com/CamelCase.
-Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
-can be useful (see .node.status.conditions), the ability to deconflict is important.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -3013,25 +3000,46 @@ can be useful (see .node.status.conditions), the ability to deconflict is import
         <td>string</td>
         <td>
           message is a human readable message indicating details about the transition.
-This field may be empty.<br/>
+This may be an empty string.<br/>
         </td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
         <td><b>reason</b></td>
         <td>string</td>
         <td>
-          reason is the reason for the condition's last transition in CamelCase.
-The specific API may choose whether or not this field is considered a guaranteed API.
-This field may be empty.<br/>
+          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.<br/>
         </td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
-        <td><b>severity</b></td>
+        <td><b>status</b></td>
+        <td>enum</td>
+        <td>
+          status of the condition, one of True, False, Unknown.<br/>
+          <br/>
+            <i>Enum</i>: True, False, Unknown<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
         <td>string</td>
         <td>
-          severity provides an explicit classification of Reason code, so the users or machines can immediately
-understand the current situation and act accordingly.
-The Severity field MUST be set only when Status=False.<br/>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 0<br/>
         </td>
         <td>false</td>
       </tr></tbody>
