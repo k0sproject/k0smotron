@@ -111,7 +111,8 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			sts := generateEtcdStatefulSet(tc.cluster, nil, 1)
+			sts, err := generateEtcdStatefulSet(tc.cluster, nil, 1)
+			assert.NoError(t, err)
 			resources := sts.Spec.Template.Spec.Containers[0].Resources
 			tc.want(t, resources)
 		})
@@ -154,10 +155,195 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
-			sts := generateEtcdStatefulSet(tc.cluster, nil, 1)
+			sts, err := generateEtcdStatefulSet(tc.cluster, nil, 1)
+			assert.NoError(t, err)
 			for _, w := range tc.want {
 				assert.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
 			}
 		})
 	}
+}
+
+func TestEtcd_podTemplateMerge(t *testing.T) {
+	tests := []struct {
+		name    string
+		cluster *km.Cluster
+		want    func(t *testing.T, sts *km.Cluster)
+	}{
+		{
+			name: "PodTemplate with nodeSelector",
+			cluster: &km.Cluster{
+				Spec: km.ClusterSpec{
+					Etcd: km.EtcdSpec{
+						PodTemplate: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								NodeSelector: map[string]string{
+									"node-type": "etcd",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: func(t *testing.T, cluster *km.Cluster) {
+				sts, err := generateEtcdStatefulSet(cluster, nil, 1)
+				assert.NoError(t, err)
+				assert.Equal(t, "etcd", sts.Spec.Template.Spec.NodeSelector["node-type"])
+			},
+		},
+		{
+			name: "PodTemplate with tolerations",
+			cluster: &km.Cluster{
+				Spec: km.ClusterSpec{
+					Etcd: km.EtcdSpec{
+						PodTemplate: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Tolerations: []corev1.Toleration{
+									{
+										Key:      "node-role.kubernetes.io/etcd",
+										Operator: corev1.TolerationOpExists,
+										Effect:   corev1.TaintEffectNoSchedule,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: func(t *testing.T, cluster *km.Cluster) {
+				sts, err := generateEtcdStatefulSet(cluster, nil, 1)
+				assert.NoError(t, err)
+				assert.Len(t, sts.Spec.Template.Spec.Tolerations, 1)
+				assert.Equal(t, "node-role.kubernetes.io/etcd", sts.Spec.Template.Spec.Tolerations[0].Key)
+			},
+		},
+		{
+			name: "PodTemplate with sidecar container",
+			cluster: &km.Cluster{
+				Spec: km.ClusterSpec{
+					Etcd: km.EtcdSpec{
+						PodTemplate: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name:  "sidecar",
+										Image: "sidecar:latest",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: func(t *testing.T, cluster *km.Cluster) {
+				sts, err := generateEtcdStatefulSet(cluster, nil, 1)
+				assert.NoError(t, err)
+				// Should have both etcd container and sidecar
+				assert.Len(t, sts.Spec.Template.Spec.Containers, 2)
+				containerNames := make(map[string]bool)
+				for _, c := range sts.Spec.Template.Spec.Containers {
+					containerNames[c.Name] = true
+				}
+				assert.True(t, containerNames["etcd"], "etcd container should exist")
+				assert.True(t, containerNames["sidecar"], "sidecar container should exist")
+			},
+		},
+		{
+			name: "PodTemplate overriding etcd container resources",
+			cluster: &km.Cluster{
+				Spec: km.ClusterSpec{
+					Etcd: km.EtcdSpec{
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("100m"),
+								corev1.ResourceMemory: resource.MustParse("128Mi"),
+							},
+						},
+						PodTemplate: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name: "etcd",
+										Resources: corev1.ResourceRequirements{
+											Requests: corev1.ResourceList{
+												corev1.ResourceCPU:    resource.MustParse("200m"),
+												corev1.ResourceMemory: resource.MustParse("256Mi"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: func(t *testing.T, cluster *km.Cluster) {
+				sts, err := generateEtcdStatefulSet(cluster, nil, 1)
+				assert.NoError(t, err)
+				etcdContainer := findContainer(sts.Spec.Template.Spec.Containers, "etcd")
+				assert.NotNil(t, etcdContainer)
+				// PodTemplate should override the Resources field from EtcdSpec.Resources
+				assert.Equal(t, resource.MustParse("200m"), *etcdContainer.Resources.Requests.Cpu())
+				assert.Equal(t, resource.MustParse("256Mi"), *etcdContainer.Resources.Requests.Memory())
+			},
+		},
+		{
+			name: "PodTemplate with priorityClassName",
+			cluster: &km.Cluster{
+				Spec: km.ClusterSpec{
+					Etcd: km.EtcdSpec{
+						PodTemplate: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								PriorityClassName: "high-priority",
+							},
+						},
+					},
+				},
+			},
+			want: func(t *testing.T, cluster *km.Cluster) {
+				sts, err := generateEtcdStatefulSet(cluster, nil, 1)
+				assert.NoError(t, err)
+				assert.Equal(t, "high-priority", sts.Spec.Template.Spec.PriorityClassName)
+			},
+		},
+		{
+			name: "PodTemplate with runtimeClassName",
+			cluster: &km.Cluster{
+				Spec: km.ClusterSpec{
+					Etcd: km.EtcdSpec{
+						PodTemplate: &corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								RuntimeClassName: stringPtr("gvisor"),
+							},
+						},
+					},
+				},
+			},
+			want: func(t *testing.T, cluster *km.Cluster) {
+				sts, err := generateEtcdStatefulSet(cluster, nil, 1)
+				assert.NoError(t, err)
+				assert.NotNil(t, sts.Spec.Template.Spec.RuntimeClassName)
+				assert.Equal(t, "gvisor", *sts.Spec.Template.Spec.RuntimeClassName)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.want(t, tc.cluster)
+		})
+	}
+}
+
+func findContainer(containers []corev1.Container, name string) *corev1.Container {
+	for i := range containers {
+		if containers[i].Name == name {
+			return &containers[i]
+		}
+	}
+	return nil
+}
+
+func stringPtr(s string) *string {
+	return &s
 }

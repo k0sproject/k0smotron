@@ -19,6 +19,7 @@ package k0smotronio
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"text/template"
@@ -34,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -210,14 +212,17 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 		}
 	}
 
-	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas)
+	statefulSet, err := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas)
+	if err != nil {
+		return fmt.Errorf("failed to generate etcd statefulset: %w", err)
+	}
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
 	return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 }
 
-func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32) apps.StatefulSet {
+func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32) (apps.StatefulSet, error) {
 	labels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 
 	size := kmc.Spec.Etcd.Persistence.Size
@@ -392,7 +397,60 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 		}
 	}
 
-	return statefulSet
+	// Apply user-provided PodTemplate using strategic merge patch
+	if kmc.Spec.Etcd.PodTemplate != nil {
+		if err := applyPodTemplate(&statefulSet.Spec.Template, kmc.Spec.Etcd.PodTemplate); err != nil {
+			return apps.StatefulSet{}, fmt.Errorf("failed to apply etcd podTemplate: %w", err)
+		}
+	}
+
+	return statefulSet, nil
+}
+
+// applyPodTemplate applies user-provided PodTemplate to the base template using strategic merge patch
+func applyPodTemplate(base *v1.PodTemplateSpec, user *v1.PodTemplateSpec) error {
+	// Merge metadata (labels and annotations)
+	if user.ObjectMeta.Labels != nil {
+		if base.ObjectMeta.Labels == nil {
+			base.ObjectMeta.Labels = make(map[string]string)
+		}
+		for k, v := range user.ObjectMeta.Labels {
+			base.ObjectMeta.Labels[k] = v
+		}
+	}
+	if user.ObjectMeta.Annotations != nil {
+		if base.ObjectMeta.Annotations == nil {
+			base.ObjectMeta.Annotations = make(map[string]string)
+		}
+		for k, v := range user.ObjectMeta.Annotations {
+			base.ObjectMeta.Annotations[k] = v
+		}
+	}
+
+	// Use strategic merge patch for PodSpec
+	baseJSON, err := json.Marshal(base.Spec)
+	if err != nil {
+		return fmt.Errorf("failed to marshal base PodSpec: %w", err)
+	}
+
+	userJSON, err := json.Marshal(user.Spec)
+	if err != nil {
+		return fmt.Errorf("failed to marshal user PodSpec: %w", err)
+	}
+
+	// Use strategic merge patch with the scheme to get proper type information
+	mergedJSON, err := strategicpatch.StrategicMergePatch(baseJSON, userJSON, &v1.PodSpec{})
+	if err != nil {
+		return fmt.Errorf("failed to merge PodSpec: %w", err)
+	}
+
+	var mergedSpec v1.PodSpec
+	if err := json.Unmarshal(mergedJSON, &mergedSpec); err != nil {
+		return fmt.Errorf("failed to unmarshal merged PodSpec: %w", err)
+	}
+
+	base.Spec = mergedSpec
+	return nil
 }
 
 func initialCluster(kmc *km.Cluster, replicas int32) string {
