@@ -358,6 +358,22 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
 			os.Exit(1)
 		}
+
+		if err = (&infrastructure.PodMachineController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "PodMachine")
+			os.Exit(1)
+		}
+
+		if err = (&infrastructure.PodClusterController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "PodCluster")
+			os.Exit(1)
+		}
 	}
 
 	// ProviderID controller needs to run if either bootstrap or infrastructure controllers are running
