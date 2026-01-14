@@ -391,6 +391,22 @@ func main() {
 			os.Exit(1)
 		}
 
+		if err = (&infrastructure.PodMachineController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "PodMachine")
+			os.Exit(1)
+		}
+
+		if err = (&infrastructure.PodClusterController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "PodCluster")
+			os.Exit(1)
+		}
+
 		if err = infrastructurev1beta2.SetupRemoteMachineWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook for RemoteMachine", "webhook", "RemoteMachine")
 			os.Exit(1)

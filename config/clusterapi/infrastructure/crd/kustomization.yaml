@@ -1,4 +1,7 @@
 resources:
+ - ./bases/infrastructure.cluster.x-k8s.io_podclusters.yaml
+ - ./bases/infrastructure.cluster.x-k8s.io_podmachines.yaml
+ - ./bases/infrastructure.cluster.x-k8s.io_podmachinetemplates.yaml
  - ./bases/infrastructure.cluster.x-k8s.io_pooledremotemachines.yaml
  - ./bases/infrastructure.cluster.x-k8s.io_remoteclusters.yaml
  - ./bases/infrastructure.cluster.x-k8s.io_remoteclustertemplates.yaml

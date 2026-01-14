@@ -5,6 +5,9 @@ groups:
   - group: infrastructure.cluster.x-k8s.io
     version: v1beta2
     kinds:
+      - name: PodCluster
+      - name: PodMachine
+      - name: PodMachineTemplate
       - name: PooledRemoteMachine
       - name: RemoteCluster
       - name: RemoteClusterTemplate

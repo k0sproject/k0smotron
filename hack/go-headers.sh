@@ -75,6 +75,11 @@ missing=0
 updated=0
 
 while IFS= read -r file; do
+  # git ls-files still lists tracked files deleted in the working tree.
+  if [[ ! -f "${file}" ]]; then
+    continue
+  fi
+
   if has_apache_header "${file}"; then
     continue
   fi
