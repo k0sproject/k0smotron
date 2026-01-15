@@ -23,3 +23,13 @@ spec:
       limits:
         cpu: 200m
         memory: 256Mi
+  # Example podTemplate to customize k0s control plane pod
+  # This allows overriding probe settings, adding sidecar containers, etc.
+  # podTemplate:
+  #   spec:
+  #     containers:
+  #       - name: controller
+  #         readinessProbe:
+  #           initialDelaySeconds: 120
+  #         livenessProbe:
+  #           initialDelaySeconds: 180

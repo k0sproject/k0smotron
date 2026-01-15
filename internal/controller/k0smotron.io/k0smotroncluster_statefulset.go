@@ -306,10 +306,7 @@ data:
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
-	// We calculate the hash of the statefulset template and store it in the annotations
-	// This is used to detect changes in the statefulset template and trigger a rollout
-	// We exclude some fields below from the hash calculation to avoid unnecessary rollouts
-	annotationHash := controller.ComputeHash(&statefulSet.Spec.Template, statefulSet.Status.CollisionCount)
+	// Set default probes for the controller container
 	statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 		InitialDelaySeconds: 60,
 		PeriodSeconds:       10,
@@ -322,6 +319,18 @@ data:
 		PeriodSeconds:       10,
 		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
 	}
+
+	// Apply user-provided PodTemplate using strategic merge patch
+	if kmc.Spec.PodTemplate != nil {
+		if err := applyPodTemplate(&statefulSet.Spec.Template, kmc.Spec.PodTemplate); err != nil {
+			return apps.StatefulSet{}, fmt.Errorf("failed to apply podTemplate: %w", err)
+		}
+	}
+
+	// We calculate the hash of the statefulset template and store it in the annotations
+	// This is used to detect changes in the statefulset template and trigger a rollout
+	// The hash is calculated after all modifications (probes, podTemplate) are applied
+	annotationHash := controller.ComputeHash(&statefulSet.Spec.Template, statefulSet.Status.CollisionCount)
 
 	statefulSet.Annotations = map[string]string{
 		statefulSetAnnotation: annotationHash,
