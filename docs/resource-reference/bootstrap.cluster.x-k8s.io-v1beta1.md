@@ -903,13 +903,6 @@ Deprecated: use provisioner.ignition instead<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>isWindows</b></td>
-        <td>boolean</td>
-        <td>
-          IsWindows specifies whether the target node is Windows.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>k0sInstallDir</b></td>
         <td>string</td>
         <td>
@@ -917,6 +910,16 @@ Deprecated: use provisioner.ignition instead<br/>
 If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.<br/>
           <br/>
             <i>Default</i>: /usr/local/bin<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>platform</b></td>
+        <td>enum</td>
+        <td>
+          Platform specifies the target platform for the worker node.<br/>
+          <br/>
+            <i>Enum</i>: linux, windows<br/>
+            <i>Default</i>: linux<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1745,13 +1748,6 @@ Deprecated: use provisioner.ignition instead<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>isWindows</b></td>
-        <td>boolean</td>
-        <td>
-          IsWindows specifies whether the target node is Windows.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>k0sInstallDir</b></td>
         <td>string</td>
         <td>
@@ -1759,6 +1755,16 @@ Deprecated: use provisioner.ignition instead<br/>
 If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.<br/>
           <br/>
             <i>Default</i>: /usr/local/bin<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>platform</b></td>
+        <td>enum</td>
+        <td>
+          Platform specifies the target platform for the worker node.<br/>
+          <br/>
+            <i>Enum</i>: linux, windows<br/>
+            <i>Default</i>: linux<br/>
         </td>
         <td>false</td>
       </tr><tr>

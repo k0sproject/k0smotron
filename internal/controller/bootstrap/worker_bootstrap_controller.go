@@ -311,11 +311,15 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	commandsMap := make(map[provisioner.VarName]string)
 	var commands []string
 
-	if scope.Config.Spec.IsWindows {
+	switch scope.Config.Spec.Platform {
+	case bootstrapv1.PlatformWindows:
 		var winFiles []provisioner.File
 		commands, winFiles = getWindowsCommands(scope)
 		files = append(files, winFiles...)
-	} else {
+	case bootstrapv1.PlatformLinux:
+		// Linux is the default platform
+		fallthrough
+	default:
 		commands, commandsMap, err = getLinuxCommands(scope)
 		if err != nil {
 			return nil, fmt.Errorf("error generating linux commands: %w", err)

@@ -123,7 +123,7 @@ func Test_getWindowsCommands(t *testing.T) {
 			scope: &Scope{
 				Config: &bootstrapv1.K0sWorkerConfig{
 					Spec: bootstrapv1.K0sWorkerConfigSpec{
-						IsWindows: true,
+						Platform: bootstrapv1.PlatformWindows,
 					},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{}}},
