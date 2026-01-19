@@ -248,7 +248,7 @@ jobs:
           - TestWorkloadClusterRecreateUpgrade
           - TestWorkloadClusterRecreateDeleteFirstUpgrade
           - TestAdmissionWebhookRecreateStrategyInSingleMode
-          - TestAdmissionWebhookK0sNotCompatible
+          - TestAdmissionWebhookK0sVersionNotCompatible
           - TestK0smotronUpgrade
           - TestMachineDeployment
           - TestRemoteHostedControlPlanes

@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func TestMachinedeployment(t *testing.T) {
+func TestMachineDeployment(t *testing.T) {
 	setupAndRun(t, func(t *testing.T) {
 		testName := "machinedeployment"
 
@@ -155,8 +155,8 @@ func verifyK0smotronControlPlaneVersionFormat(ctx context.Context, t *testing.T,
 			return false
 		}
 
-		if version != "v1.32.2" {
-			t.Errorf("Expected version %s, but got: %s", "v1.32.2", version)
+		if version != "v1.32.2+k0s.0" {
+			t.Errorf("Expected version %s, but got: %s", "v1.32.2+k0s.0", version)
 			return false
 		}
 
