@@ -1,0 +1,152 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 192.168.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+        - 10.128.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane
+    name: ${CLUSTER_NAME}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-mt-cp
+  namespace: default
+spec:
+  template:
+    spec:
+      uncompressedUserData: false
+      ami:
+        # Replace with your AMI ID
+        id: ami-0fa91bc90632c73c9 # Ubuntu in eu-north-1
+      instanceType: t3.large
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io # Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`
+      cloudInit:
+        # Makes CAPA use k0s bootstrap cloud-init directly and not via SSM
+        # Simplifies the VPC setup as we do not need custom SSM endpoints etc.
+        insecureSkipSecretsManager: true
+      sshKeyName: ${SSH_KEY_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-mt-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      publicIP: true
+      #      uncompressedUserData: false
+      ami:
+        # Replace with your AMI ID
+        id: ami-010e40c6557403885 # Windows in eu-north-1
+      instanceType: t3.medium
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io # Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`
+      cloudInit:
+        # Makes CAPA use k0s bootstrap cloud-init directly and not via SSM
+        # Simplifies the VPC setup as we do not need custom SSM endpoints etc.
+        insecureSkipSecretsManager: true
+      sshKeyName: ${SSH_KEY_NAME}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: aws-test
+spec:
+  replicas: 1
+  version: v1.34.2+k0s.0
+  updateStrategy: Recreate
+  k0sConfigSpec:
+    args:
+      - --enable-worker
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+        telemetry:
+          enabled: false
+        network:
+          provider: calico
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: AWSMachineTemplate
+      name: ${CLUSTER_NAME}-mt-cp
+      namespace: default
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  region: eu-north-1
+  sshKeyName: ${SSH_KEY_NAME}
+  controlPlaneLoadBalancer:
+    healthCheckProtocol: TCP
+  network:
+    additionalControlPlaneIngressRules:
+      - description: "k0s controller join API"
+        protocol: tcp
+        fromPort: 9443
+        toPort: 9443
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md
+  namespace: default
+spec:
+  clusterName: aws-test-cluster
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: aws-test-cluster
+      pool: worker-pool-1
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: aws-test-cluster
+        pool: worker-pool-1
+    spec:
+      clusterName: aws-test-cluster
+      bootstrap:
+        configRef: # This triggers our controller to create cloud-init secret
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: K0sWorkerConfigTemplate
+          name: ${CLUSTER_NAME}-machine-config
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        name: ${CLUSTER_NAME}-mt-worker
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-machine-config
+spec:
+  template:
+    spec:
+      version: v1.34.2+k0s.0
+      platform: windows
+      provisioner:
+        type: powershell-xml
