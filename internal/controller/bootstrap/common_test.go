@@ -1,3 +1,5 @@
+//go:build envtest
+
 package bootstrap
 
 import (
