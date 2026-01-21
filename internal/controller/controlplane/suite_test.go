@@ -1,3 +1,5 @@
+//go:build envtest
+
 /*
 Copyright 2024.
 

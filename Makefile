@@ -113,8 +113,12 @@ vet: ## Run go vet against code.
 	go vet $(GO_PKGS)
 
 .PHONY: test
-test: $(ENVTEST)
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $(GO_TEST_DIRS) -run '$(TEST_NAME)' -coverprofile cover.out
+test:
+	go test $(GO_TEST_DIRS) -run '$(TEST_NAME)' -coverprofile cover.out
+
+.PHONY: envtest-setup
+envtest: $(ENVTEST)
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $(GO_TEST_DIRS) -run '$(TEST_NAME)' -tags envtest -coverprofile cover.out
 
 DOCKER_TEMPLATES := e2e/data/infrastructure-docker
 
@@ -248,8 +252,7 @@ controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessar
 $(CONTROLLER_GEN): Makefile.variables | $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 
-.PHONY: envtest
-envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
+envtest-setup: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.18
 
