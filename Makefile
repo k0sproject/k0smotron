@@ -304,6 +304,7 @@ smoketests: $(smoketests)
 clean:
 	-$(MAKE) -C inttest clean
 	rm -f hack/lint/.golangci-lint.stamp
+	chmod -R +w ${LOCALBIN} || true # envtest may have created read-only dirs and files
 	rm -rf \
 	  $(generate_targets) \
 	  $(manifests_targets) \
