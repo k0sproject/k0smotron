@@ -121,6 +121,14 @@ type ClusterSpec struct {
 	// Note: This metadata will have precedence over default labels/annotations on the Secret.
 	// +kubebuilder:validation:Optional
 	KubeconfigSecretMetadata SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
+	// PodTemplate defines the pod template specification for k0s control plane pods.
+	// This allows full customization of the k0s control plane pod spec, including containers, volumes,
+	// scheduling constraints, and other pod-level settings.
+	// The template will be merged with k0smotron's default k0s control plane pod configuration using
+	// strategic merge patch semantics. This means containers are merged by name, allowing
+	// you to override the controller container or add sidecar containers.
+	//+kubebuilder:validation:Optional
+	PodTemplate *v1.PodTemplateSpec `json:"podTemplate,omitempty"`
 }
 
 // SecretMetadata defines metadata to be propagated to the bootstrap Secret
@@ -367,6 +375,14 @@ type EtcdSpec struct {
 	// Resources defines the compute resource requirements for the etcd container.
 	//+kubebuilder:validation:Optional
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+	// PodTemplate defines the pod template specification for etcd pods.
+	// This allows full customization of the etcd pod spec, including containers, volumes,
+	// scheduling constraints, and other pod-level settings.
+	// The template will be merged with k0smotron's default etcd pod configuration using
+	// strategic merge patch semantics. This means containers are merged by name, allowing
+	// you to override the etcd container or add sidecar containers.
+	//+kubebuilder:validation:Optional
+	PodTemplate *v1.PodTemplateSpec `json:"podTemplate,omitempty"`
 }
 
 type DefragJob struct {
