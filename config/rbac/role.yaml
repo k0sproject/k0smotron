@@ -11,6 +11,8 @@ rules:
   - events
   - persistentvolumeclaims
   - persistentvolumes
+  - pods
+  - pods/status
   - secrets
   - services
   verbs:
@@ -32,15 +34,6 @@ rules:
   resources:
   - nodes
   verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  verbs:
-  - delete
   - get
   - list
   - watch
@@ -157,6 +150,10 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - '*'
+  - podclusters
+  - podclusters/status
+  - podmachines
+  - podmachines/status
   - pooledremotemachines
   - pooledremotemachines/status
   - remoteclusters
@@ -171,6 +168,13 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - podclusters/finalizers
+  - podmachines/finalizers
+  verbs:
+  - update
 - apiGroups:
   - k0smotron.io
   resources:
