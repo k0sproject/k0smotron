@@ -23,7 +23,7 @@ import (
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/stretchr/testify/require"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -487,7 +487,7 @@ func Test_machineStatusCompute(t *testing.T) {
 			Spec: cpv1beta1.K0sControlPlaneSpec{
 				Version:  "v1.31.0",
 				Replicas: 2,
-				K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+				K0sConfigSpec: bootstrapv2.K0sConfigSpec{
 					Args: []string{"--enable-worker"},
 				},
 			},

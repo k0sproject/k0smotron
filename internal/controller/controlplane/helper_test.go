@@ -21,7 +21,7 @@ package controlplane
 import (
 	"testing"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 		name             string
 		machine          *clusterv1.Machine
 		kcp              *cpv1beta1.K0sControlPlane
-		bootstrapConfigs map[string]bootstrapv1.K0sControllerConfig
+		bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig
 		configHasChanged bool
 	}{
 		{
@@ -49,7 +49,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 			},
 			kcp: &cpv1beta1.K0sControlPlane{
 				Spec: cpv1beta1.K0sControlPlaneSpec{
-					K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+					K0sConfigSpec: bootstrapv2.K0sConfigSpec{
 						K0s: &unstructured.Unstructured{
 							Object: map[string]interface{}{
 								"apiVersion": "k0s.k0sproject.io/v1beta1",
@@ -88,10 +88,10 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					Ready: true,
 				},
 			},
-			bootstrapConfigs: map[string]bootstrapv1.K0sControllerConfig{
+			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
 				"test": {
-					Spec: bootstrapv1.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{
+					Spec: bootstrapv2.K0sControllerConfigSpec{
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							K0s: &unstructured.Unstructured{
 								Object: map[string]interface{}{
 									"apiVersion": "k0s.k0sproject.io/v1beta1",
@@ -142,7 +142,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 			},
 			kcp: &cpv1beta1.K0sControlPlane{
 				Spec: cpv1beta1.K0sControlPlaneSpec{
-					K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+					K0sConfigSpec: bootstrapv2.K0sConfigSpec{
 						K0sInstallDir: "/opt",
 						K0s: &unstructured.Unstructured{
 							Object: map[string]interface{}{
@@ -182,10 +182,10 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					Ready: true,
 				},
 			},
-			bootstrapConfigs: map[string]bootstrapv1.K0sControllerConfig{
+			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
 				"test": {
-					Spec: bootstrapv1.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{
+					Spec: bootstrapv2.K0sControllerConfigSpec{
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							K0sInstallDir: "/usr/local/bin",
 							K0s: &unstructured.Unstructured{
 								Object: map[string]interface{}{
@@ -237,7 +237,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 			},
 			kcp: &cpv1beta1.K0sControlPlane{
 				Spec: cpv1beta1.K0sControlPlaneSpec{
-					K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+					K0sConfigSpec: bootstrapv2.K0sConfigSpec{
 						Args: []string{
 							"--enable-worker",
 						},
@@ -279,10 +279,10 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					Ready: true,
 				},
 			},
-			bootstrapConfigs: map[string]bootstrapv1.K0sControllerConfig{
+			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
 				"test": {
-					Spec: bootstrapv1.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{
+					Spec: bootstrapv2.K0sControllerConfigSpec{
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							K0s: &unstructured.Unstructured{
 								Object: map[string]interface{}{
 									"apiVersion": "k0s.k0sproject.io/v1beta1",

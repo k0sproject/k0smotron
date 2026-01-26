@@ -55,7 +55,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
@@ -75,7 +75,7 @@ var minVersionForETCDMemberCRD = version.MustParse("v1.31.6")
 var errInitialControllerMachineNotInitialize = errors.New("initial controller machine has not completed its initialization")
 
 type ControllerScope struct {
-	Config            *bootstrapv1.K0sControllerConfig
+	Config            *bootstrapv2.K0sControllerConfig
 	ConfigOwner       *bsutil.ConfigOwner
 	Cluster           *clusterv1.Cluster
 	WorkerEnabled     bool
@@ -100,7 +100,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	log.Info("Reconciling K0sControllerConfig")
 
 	// Lookup the config object
-	config := &bootstrapv1.K0sControllerConfig{}
+	config := &bootstrapv2.K0sControllerConfig{}
 	if err := c.Get(ctx, req.NamespacedName, config); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("K0sControllerConfig not found")
@@ -174,7 +174,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		Cluster:           cluster,
 		WorkerEnabled:     false,
 		currentKCPVersion: currentKCPVersion,
-		provisioner:       getProvisioner(config.Spec.Ignition),
+		provisioner:       getProvisioner(&config.Spec.Provisioner),
 		installArgs:       append([]string{}, config.Spec.Args...),
 	}
 
@@ -199,9 +199,9 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	oldConfig := config.DeepCopy()
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
-		err := conditions.SetSummaryCondition(config, config, string(bootstrapv1.ConfigReadyCondition),
+		err := conditions.SetSummaryCondition(config, config, string(bootstrapv2.ConfigReadyCondition),
 			conditions.ForConditionTypes{
-				bootstrapv1.DataSecretAvailableCondition,
+				bootstrapv2.DataSecretAvailableCondition,
 			},
 			// Using a custom merge strategy to override reasons applied during merge and to ignore some
 			// info message so the ready condition aggregation in other resources is less noisy.
@@ -209,9 +209,9 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 				MergeStrategy: conditions.DefaultMergeStrategy(
 					// Use custom reasons.
 					conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
-						bootstrapv1.ConfigNotReadyReason,
-						bootstrapv1.ConfigReadyUnknownReason,
-						bootstrapv1.ConfigReadyReason,
+						bootstrapv2.ConfigNotReadyReason,
+						bootstrapv2.ConfigReadyUnknownReason,
+						bootstrapv2.ConfigReadyReason,
 					)),
 				),
 			},
@@ -230,9 +230,9 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		log.Info("control plane endpoint is not set")
 		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
 			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv1.WaitingForControlPlaneInitializationReason,
+			Reason:  bootstrapv2.WaitingForControlPlaneInitializationReason,
 			Message: "Control plane endpoint is not set",
 		})
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
@@ -242,9 +242,9 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	if err != nil {
 		err = fmt.Errorf("error collecting machines: %w", err)
 		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
 			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv1.InternalErrorReason,
+			Reason:  bootstrapv2.InternalErrorReason,
 			Message: err.Error(),
 		})
 		return ctrl.Result{}, err
@@ -253,9 +253,9 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	if machines.Len() == 0 {
 		log.Info("No control plane machines found, waiting for machines to be created")
 		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
 			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv1.WaitingForInfrastructureInitializationReason,
+			Reason:  bootstrapv2.WaitingForInfrastructureInitializationReason,
 			Message: "No control plane machines found, waiting for machines to be created",
 		})
 		return ctrl.Result{Requeue: true}, nil
@@ -269,18 +269,18 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		// wait for the addresses to be set.
 		if errors.Is(err, errInitialControllerMachineNotInitialize) {
 			conditions.Set(config, metav1.Condition{
-				Type:    string(bootstrapv1.DataSecretAvailableCondition),
+				Type:    string(bootstrapv2.DataSecretAvailableCondition),
 				Status:  metav1.ConditionFalse,
-				Reason:  bootstrapv1.WaitingForInfrastructureInitializationReason,
+				Reason:  bootstrapv2.WaitingForInfrastructureInitializationReason,
 				Message: err.Error(),
 			})
 			return ctrl.Result{RequeueAfter: time.Second * 30}, nil
 		}
 
 		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
 			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv1.InternalErrorReason,
+			Reason:  bootstrapv2.InternalErrorReason,
 			Message: err.Error(),
 		})
 		return ctrl.Result{}, err
@@ -301,7 +301,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: bootstrapv1.GroupVersion.String(),
+					APIVersion: bootstrapv2.GroupVersion.String(),
 					Kind:       config.Kind,
 					Name:       config.Name,
 					UID:        config.UID,
@@ -319,17 +319,17 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	if err := c.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
 		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
 			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv1.InternalErrorReason,
+			Reason:  bootstrapv2.InternalErrorReason,
 			Message: err.Error(),
 		})
 		return ctrl.Result{}, err
 	}
 	conditions.Set(config, metav1.Condition{
-		Type:    string(bootstrapv1.DataSecretAvailableCondition),
+		Type:    string(bootstrapv2.DataSecretAvailableCondition),
 		Status:  metav1.ConditionTrue,
-		Reason:  bootstrapv1.ConfigSecretAvailableReason,
+		Reason:  bootstrapv2.ConfigSecretAvailableReason,
 		Message: "Bootstrap secret created",
 	})
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
@@ -635,7 +635,7 @@ func createTokenSecret(tokenID, tokenSecret string) *corev1.Secret {
 func (c *ControlPlaneController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
-		For(&bootstrapv1.K0sControllerConfig{}).
+		For(&bootstrapv2.K0sControllerConfig{}).
 		Complete(c)
 }
 
@@ -782,7 +782,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 
 func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) ([]string, map[provisioner.VarName]string, error) {
 	commandsMap := make(map[provisioner.VarName]string)
-	commands := scope.Config.Spec.PreStartCommands
+	commands := scope.Config.Spec.PreK0sCommands
 
 	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
 	if err != nil {

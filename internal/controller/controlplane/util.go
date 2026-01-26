@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv1beta2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
 )
@@ -75,7 +75,7 @@ func (c *K0sController) generateKubeconfig(ctx context.Context, clusterKey clien
 
 }
 
-func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Config, cluster *clusterv1.Cluster, secretName string, secretMetadata bootstrapv1beta1.SecretMetadata) error {
+func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Config, cluster *clusterv1.Cluster, secretName string, secretMetadata bootstrapv1beta2.SecretMetadata) error {
 	cfgBytes, err := clientcmd.Write(*cfg)
 	if err != nil {
 		return fmt.Errorf("failed to serialize config to yaml: %w", err)
