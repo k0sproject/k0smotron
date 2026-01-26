@@ -558,7 +558,10 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 		kmc.Status.Replicas = 0
 		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 	} else if err == nil {
-		detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
+		version, found := detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
+		if found {
+			kmc.Spec.Version = version
+		}
 
 		if !isStatefulSetsEqual(&statefulSet, foundStatefulSet) {
 			return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
@@ -583,13 +586,14 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 }
 
 // If the version is empty from the spec, we try to detect it from the statefulset image.
-func detectAndSetCurrentClusterVersion(foundStatefulSet *apps.StatefulSet, kmc *km.Cluster) {
+func detectAndSetCurrentClusterVersion(foundStatefulSet *apps.StatefulSet, kmc *km.Cluster) (version string, found bool) {
 	if kmc.Spec.Version == "" {
 		imageParts := strings.Split(foundStatefulSet.Spec.Template.Spec.Containers[0].Image, ":")
 		if len(imageParts) > 1 && versionRegex.Match([]byte(imageParts[1])) {
-			kmc.Spec.Version = imageParts[1]
+			return imageParts[1], true
 		}
 	}
+	return "", false
 }
 
 func isStatefulSetsEqual(newSts, oldSts *apps.StatefulSet) bool {
