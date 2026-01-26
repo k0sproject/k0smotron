@@ -19,10 +19,13 @@ package featuregate
 const (
 	// CloudInitVars enables storing k0smotron-generated command and files in cloud-init variables
 	CloudInitVars Feature = "CloudInitVars"
+	// InPlaceUpdates enables in-place updates of the Kuebernetes nodes
+	InPlaceUpdates Feature = "InPlaceUpdates"
 )
 
 var effectiveFeatureGates *FeatureGates
 
 var defaultFeatureMap = map[Feature]FeatureGate{
-	CloudInitVars: {Enabled: false},
+	CloudInitVars:  {Enabled: false},
+	InPlaceUpdates: {Enabled: true},
 }
