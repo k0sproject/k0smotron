@@ -57,7 +57,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 )
@@ -620,9 +620,9 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 	return nil
 }
 
-func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, k0sConfigSpec *bootstrapv1.K0sConfigSpec, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
+func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, k0sConfigSpec *bootstrapv2.K0sConfigSpec, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
 
-	controllerConfig := bootstrapv1.K0sControllerConfig{
+	controllerConfig := bootstrapv2.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
 			Kind:       "K0sControllerConfig",
@@ -641,7 +641,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 				Controller:         ptr.To(true),
 			}},
 		},
-		Spec: bootstrapv1.K0sControllerConfigSpec{
+		Spec: bootstrapv2.K0sControllerConfigSpec{
 			Version:       kcp.Spec.Version,
 			K0sConfigSpec: k0sConfigSpec,
 		},

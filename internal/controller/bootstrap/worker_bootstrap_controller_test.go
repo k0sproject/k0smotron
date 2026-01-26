@@ -19,11 +19,15 @@ limitations under the License.
 package bootstrap
 
 import (
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 )
 
 func Test_createInstallCmd(t *testing.T) {
@@ -36,7 +40,7 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with default config",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{},
+				Config: &bootstrapv2.K0sWorkerConfig{},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
 					"metadata": map[string]interface{}{"name": "test"},
 				}}},
@@ -46,8 +50,8 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with args",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
 						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
 					},
 				},
@@ -60,8 +64,8 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with useSystemHostname set",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
 						UseSystemHostname: true,
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
 					},
@@ -75,8 +79,8 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with extra args and useSystemHostname not set",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
 						UseSystemHostname: false,
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
 					},
@@ -90,8 +94,8 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with extra args and useSystemHostname set",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
 						UseSystemHostname: true,
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
 					},
@@ -106,6 +110,135 @@ func Test_createInstallCmd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.want, createInstallCmd(tt.scope))
+		})
+	}
+}
+
+func Test_createBootstrapSecret(t *testing.T) {
+	tests := []struct {
+		name                string
+		scope               *Scope
+		bootstrapData       []byte
+		expectedLabels      map[string]string
+		expectedAnnotations map[string]string
+	}{
+		{
+			name: "with custom metadata",
+			scope: &Scope{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-config",
+						Namespace: "test-ns",
+						UID:       "test-uid",
+					},
+					TypeMeta: metav1.TypeMeta{
+						Kind: "K0sWorkerConfig",
+					},
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
+						SecretMetadata: &bootstrapv2.SecretMetadata{
+							Labels: map[string]string{
+								"custom-label": "foo",
+							},
+							Annotations: map[string]string{
+								"custom-anno": "bar",
+							},
+						},
+					},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-cluster",
+					},
+				},
+			},
+			bootstrapData: []byte("test-bootstrap-data"),
+			expectedLabels: map[string]string{
+				"custom-label":             "foo",
+				clusterv1.ClusterNameLabel: "test-cluster",
+			},
+			expectedAnnotations: map[string]string{
+				"custom-anno": "bar",
+			},
+		},
+		{
+			name: "without custom metadata",
+			scope: &Scope{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-config",
+						Namespace: "test-ns",
+						UID:       "test-uid",
+					},
+					TypeMeta: metav1.TypeMeta{
+						Kind: "K0sWorkerConfig",
+					},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-cluster",
+					},
+				},
+			},
+			bootstrapData: []byte("test-bootstrap-data"),
+			expectedLabels: map[string]string{
+				clusterv1.ClusterNameLabel: "test-cluster",
+			},
+			expectedAnnotations: map[string]string{},
+		},
+		{
+			name: "with nil secret metadata",
+			scope: &Scope{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-config",
+						Namespace: "test-ns",
+						UID:       "test-uid",
+					},
+					TypeMeta: metav1.TypeMeta{
+						Kind: "K0sWorkerConfig",
+					},
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
+						SecretMetadata: nil,
+					},
+				},
+				Cluster: &clusterv1.Cluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-cluster",
+					},
+				},
+			},
+			bootstrapData: []byte("test-bootstrap-data"),
+			expectedLabels: map[string]string{
+				clusterv1.ClusterNameLabel: "test-cluster",
+			},
+			expectedAnnotations: map[string]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			secret := createBootstrapSecret(tt.scope, tt.bootstrapData, "cloud-config")
+
+			// Check basic properties
+			require.Equal(t, tt.scope.Config.Name, secret.Name)
+			require.Equal(t, tt.scope.Config.Namespace, secret.Namespace)
+			require.Equal(t, clusterv1.ClusterSecretType, secret.Type)
+			require.Equal(t, tt.bootstrapData, secret.Data["value"])
+			require.Equal(t, "cloud-config", string(secret.Data["format"]))
+
+			// Check labels
+			require.Equal(t, tt.expectedLabels, secret.Labels)
+
+			// Check annotations
+			require.Equal(t, tt.expectedAnnotations, secret.Annotations)
+
+			// Check owner references
+			require.Len(t, secret.OwnerReferences, 1)
+			require.Equal(t, bootstrapv2.GroupVersion.String(), secret.OwnerReferences[0].APIVersion)
+			require.Equal(t, tt.scope.Config.Kind, secret.OwnerReferences[0].Kind)
+			require.Equal(t, tt.scope.Config.Name, secret.OwnerReferences[0].Name)
+			require.Equal(t, tt.scope.Config.UID, secret.OwnerReferences[0].UID)
+			require.True(t, *secret.OwnerReferences[0].Controller)
 		})
 	}
 }

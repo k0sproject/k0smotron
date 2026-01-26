@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
 
@@ -77,7 +77,7 @@ func TestK0sConfigEnrichment(t *testing.T) {
 			},
 			kcp: &cpv1beta1.K0sControlPlane{
 				Spec: cpv1beta1.K0sControlPlaneSpec{
-					K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+					K0sConfigSpec: bootstrapv2.K0sConfigSpec{
 						K0s: &unstructured.Unstructured{Object: map[string]interface{}{
 							"spec": map[string]interface{}{
 								"network": map[string]interface{}{"serviceCIDR": "10.98.0.0/12"},

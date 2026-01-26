@@ -19,7 +19,7 @@ package v1beta1
 import (
 	"slices"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -91,7 +91,7 @@ type K0sControlPlane struct {
 }
 
 type K0sControlPlaneSpec struct {
-	K0sConfigSpec   bootstrapv1.K0sConfigSpec       `json:"k0sConfigSpec"`
+	K0sConfigSpec   bootstrapv2.K0sConfigSpec       `json:"k0sConfigSpec"`
 	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate"`
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
@@ -109,7 +109,7 @@ type K0sControlPlaneSpec struct {
 	// created for the workload cluster.
 	// Note: This metadata will have precedence over default labels/annotations on the Secret.
 	// +kubebuilder:validation:Optional
-	KubeconfigSecretMetadata bootstrapv1.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
+	KubeconfigSecretMetadata bootstrapv2.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
 }
 
 type K0sControlPlaneMachineTemplate struct {

@@ -19,14 +19,15 @@ limitations under the License.
 package bootstrap
 
 import (
-	"github.com/k0sproject/version"
 	"testing"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 )
 
 func Test_createCPInstallCmd(t *testing.T) {
@@ -39,12 +40,12 @@ func Test_createCPInstallCmd(t *testing.T) {
 		{
 			name: "with default config",
 			scope: &ControllerScope{
-				Config: &bootstrapv1.K0sControllerConfig{
+				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test",
 					},
-					Spec: bootstrapv1.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{},
+					Spec: bootstrapv2.K0sControllerConfigSpec{
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
 					},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
@@ -56,12 +57,12 @@ func Test_createCPInstallCmd(t *testing.T) {
 		{
 			name: "with args",
 			scope: &ControllerScope{
-				Config: &bootstrapv1.K0sControllerConfig{
+				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test",
 					},
-					Spec: bootstrapv1.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{
+					Spec: bootstrapv2.K0sControllerConfigSpec{
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							Args: []string{"--enable-worker", "--labels=k0sproject.io/foo=bar"},
 						},
 					},
@@ -91,11 +92,11 @@ func TestController_genK0sCommands(t *testing.T) {
 		{
 			scope: &ControllerScope{
 				currentKCPVersion: version.MustParse("v1.31.0"),
-				Config: &bootstrapv1.K0sControllerConfig{
+				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
-					Spec: bootstrapv1.K0sControllerConfigSpec{
+					Spec: bootstrapv2.K0sControllerConfigSpec{
 						Version:       "v1.31.0",
-						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{},
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
 					},
 				},
 			},
@@ -112,11 +113,11 @@ func TestController_genK0sCommands(t *testing.T) {
 		{
 			scope: &ControllerScope{
 				currentKCPVersion: version.MustParse("v1.31.6"),
-				Config: &bootstrapv1.K0sControllerConfig{
+				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
-					Spec: bootstrapv1.K0sControllerConfigSpec{
+					Spec: bootstrapv2.K0sControllerConfigSpec{
 						Version:       "v1.31.6",
-						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{},
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
 					},
 				},
 			},
@@ -130,11 +131,11 @@ func TestController_genK0sCommands(t *testing.T) {
 		{
 			scope: &ControllerScope{
 				currentKCPVersion: version.MustParse("v1.31.6+k0s.0"),
-				Config: &bootstrapv1.K0sControllerConfig{
+				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
-					Spec: bootstrapv1.K0sControllerConfigSpec{
+					Spec: bootstrapv2.K0sControllerConfigSpec{
 						Version:       "v1.31.6+k0s.0",
-						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{},
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
 					},
 				},
 			},
