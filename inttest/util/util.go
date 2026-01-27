@@ -47,7 +47,7 @@ import (
 
 	kexec "github.com/k0sproject/k0smotron/internal/exec"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util/watch"
 	"github.com/sirupsen/logrus"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -377,11 +377,11 @@ func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *clust
 
 }
 
-func GetK0sControlPlane(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*cpv1beta1.K0sControlPlane, error) {
+func GetK0sControlPlane(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*cpv1beta2.K0sControlPlane, error) {
 
-	url := fmt.Sprintf("apis/controlplane.cluster.x-k8s.io/v1beta1/namespaces/%s/k0scontrolplanes/%s", namespace, name)
+	url := fmt.Sprintf("apis/controlplane.cluster.x-k8s.io/v1beta2/namespaces/%s/k0scontrolplanes/%s", namespace, name)
 
-	cp := &cpv1beta1.K0sControlPlane{}
+	cp := &cpv1beta2.K0sControlPlane{}
 
 	err := kc.RESTClient().
 		Get().

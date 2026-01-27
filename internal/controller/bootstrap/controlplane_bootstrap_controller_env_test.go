@@ -24,7 +24,7 @@ import (
 	"time"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -511,7 +511,7 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 
 	k0sControllerConfig := &bootstrapv1.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta2",
 			Kind:       "K0sControllerConfig",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -538,7 +538,7 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 		SecretCachingClient: secretCachingClient,
 	}
 
-	kcp := &cpv1beta1.K0sControlPlane{
+	kcp := &cpv1beta2.K0sControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my-kcp",
 			UID:  "1",
@@ -563,7 +563,7 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 	caCert := clusterCerts.GetByPurpose(secret.ClusterCA)
 	caCertSecret := caCert.AsSecret(
 		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
-		*metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")),
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
 	)
 	require.NoError(t, testEnv.Create(ctx, caCertSecret))
 

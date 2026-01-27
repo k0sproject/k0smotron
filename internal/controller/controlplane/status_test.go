@@ -24,7 +24,7 @@ import (
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/require"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
@@ -33,7 +33,7 @@ import (
 func TestPlanStatusCompute(t *testing.T) {
 	t.Run("plan without commands", func(t *testing.T) {
 
-		var kcp *cpv1beta1.K0sControlPlane
+		var kcp *cpv1beta2.K0sControlPlane
 
 		rc := planStatus{
 			plan: autopilot.Plan{
@@ -64,7 +64,7 @@ func TestPlanStatusCompute(t *testing.T) {
 	})
 
 	t.Run("plan without a K0sUpdate", func(t *testing.T) {
-		var kcp *cpv1beta1.K0sControlPlane
+		var kcp *cpv1beta2.K0sControlPlane
 
 		rc := planStatus{
 			plan: autopilot.Plan{
@@ -110,8 +110,8 @@ func TestPlanStatusCompute(t *testing.T) {
 	})
 
 	t.Run("plan state unsupported", func(t *testing.T) {
-		originalKcp := &cpv1beta1.K0sControlPlane{}
-		expectedKcp := &cpv1beta1.K0sControlPlane{}
+		originalKcp := &cpv1beta2.K0sControlPlane{}
+		expectedKcp := &cpv1beta2.K0sControlPlane{}
 
 		rc := planStatus{
 			plan: autopilot.Plan{
@@ -137,11 +137,11 @@ func TestPlanStatusCompute(t *testing.T) {
 	})
 
 	t.Run("plan is completed", func(t *testing.T) {
-		originalKcp := &cpv1beta1.K0sControlPlane{
-			Spec: cpv1beta1.K0sControlPlaneSpec{
+		originalKcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Replicas: 2,
 			},
-			Status: cpv1beta1.K0sControlPlaneStatus{
+			Status: cpv1beta2.K0sControlPlaneStatus{
 				UpdatedReplicas:     0,
 				ReadyReplicas:       2,
 				UnavailableReplicas: 0,
@@ -149,11 +149,11 @@ func TestPlanStatusCompute(t *testing.T) {
 				Version:             "v1.31.0+k0s.0",
 			},
 		}
-		expectedKcp := &cpv1beta1.K0sControlPlane{
-			Spec: cpv1beta1.K0sControlPlaneSpec{
+		expectedKcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Replicas: 2,
 			},
-			Status: cpv1beta1.K0sControlPlaneStatus{
+			Status: cpv1beta2.K0sControlPlaneStatus{
 				UpdatedReplicas:     2,
 				ReadyReplicas:       2,
 				UnavailableReplicas: 0,
@@ -188,8 +188,8 @@ func TestPlanStatusCompute(t *testing.T) {
 	})
 
 	t.Run("plan is mutating controlplane", func(t *testing.T) {
-		originalKcp := &cpv1beta1.K0sControlPlane{
-			Status: cpv1beta1.K0sControlPlaneStatus{
+		originalKcp := &cpv1beta2.K0sControlPlane{
+			Status: cpv1beta2.K0sControlPlaneStatus{
 				UpdatedReplicas:     0,
 				ReadyReplicas:       4,
 				UnavailableReplicas: 0,
@@ -198,8 +198,8 @@ func TestPlanStatusCompute(t *testing.T) {
 			},
 		}
 
-		expectedKcp := &cpv1beta1.K0sControlPlane{
-			Status: cpv1beta1.K0sControlPlaneStatus{
+		expectedKcp := &cpv1beta2.K0sControlPlane{
+			Status: cpv1beta2.K0sControlPlaneStatus{
 				UpdatedReplicas:     1,
 				ReadyReplicas:       2,
 				UnavailableReplicas: 2,
@@ -253,8 +253,8 @@ func TestPlanStatusCompute(t *testing.T) {
 
 func Test_machineStatusCompute(t *testing.T) {
 	t.Run("test no machines", func(t *testing.T) {
-		kcp := &cpv1beta1.K0sControlPlane{
-			Spec: cpv1beta1.K0sControlPlaneSpec{
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0",
 				Replicas: 3,
 			},
@@ -271,8 +271,8 @@ func Test_machineStatusCompute(t *testing.T) {
 	})
 
 	t.Run("test all machines are ready", func(t *testing.T) {
-		kcp := &cpv1beta1.K0sControlPlane{
-			Spec: cpv1beta1.K0sControlPlaneSpec{
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0",
 				Replicas: 2,
 			},
@@ -310,8 +310,8 @@ func Test_machineStatusCompute(t *testing.T) {
 	})
 
 	t.Run("test all machines are ready but not using suffix", func(t *testing.T) {
-		kcp := &cpv1beta1.K0sControlPlane{
-			Spec: cpv1beta1.K0sControlPlaneSpec{
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0+k0s.0",
 				Replicas: 2,
 			},
@@ -349,8 +349,8 @@ func Test_machineStatusCompute(t *testing.T) {
 	})
 
 	t.Run("test non existent machines are unavailable", func(t *testing.T) {
-		kcp := &cpv1beta1.K0sControlPlane{
-			Spec: cpv1beta1.K0sControlPlaneSpec{
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0",
 				Replicas: 3,
 			},
@@ -388,8 +388,8 @@ func Test_machineStatusCompute(t *testing.T) {
 	})
 
 	t.Run("test some machines are not ready", func(t *testing.T) {
-		kcp := &cpv1beta1.K0sControlPlane{
-			Spec: cpv1beta1.K0sControlPlaneSpec{
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0",
 				Replicas: 2,
 			},
@@ -435,8 +435,8 @@ func Test_machineStatusCompute(t *testing.T) {
 	})
 
 	t.Run("machines provisioned but kcp not using --enable-worker", func(t *testing.T) {
-		kcp := &cpv1beta1.K0sControlPlane{
-			Spec: cpv1beta1.K0sControlPlaneSpec{
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0",
 				Replicas: 2,
 			},
@@ -483,8 +483,8 @@ func Test_machineStatusCompute(t *testing.T) {
 	})
 
 	t.Run("some machines stuck as provisioned but kcp using --enable-worker", func(t *testing.T) {
-		kcp := &cpv1beta1.K0sControlPlane{
-			Spec: cpv1beta1.K0sControlPlaneSpec{
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0",
 				Replicas: 2,
 				K0sConfigSpec: bootstrapv2.K0sConfigSpec{

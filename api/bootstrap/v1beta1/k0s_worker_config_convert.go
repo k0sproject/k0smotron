@@ -6,11 +6,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
+var _ conversion.Convertible = &K0sWorkerConfig{}
+var _ conversion.Convertible = &K0sWorkerConfigList{}
+var _ conversion.Convertible = &K0sWorkerConfigTemplate{}
+
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (kwcv1beta1 *K0sWorkerConfig) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0sWorkerConfig)
 	dst.ObjectMeta = kwcv1beta1.ObjectMeta
-
 	dst.Spec = k0sWorkerConfigV1beta1ToV1beta2Spec(kwcv1beta1.Spec)
 	return nil
 }

@@ -36,7 +36,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/inttest/util"
 )
@@ -123,7 +123,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 			Do(ctx).
 			Into(&cluster)
 
-		clusterIDAnnotation, found := cluster.GetAnnotations()[cpv1beta1.K0sClusterIDAnnotation]
+		clusterIDAnnotation, found := cluster.GetAnnotations()[cpv1beta2.K0sClusterIDAnnotation]
 		return found && strings.Contains(clusterIDAnnotation, "kube-system"), nil
 	})
 	s.Require().NoError(err)

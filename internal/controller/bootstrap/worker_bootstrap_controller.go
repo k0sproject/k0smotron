@@ -47,7 +47,7 @@ import (
 
 	"github.com/go-logr/logr"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
@@ -529,7 +529,7 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 
 	// Only K0smotronControlPlane might store controlplane certificates in an external cluster. Otherwise, certificates are store in mothership.
 	if uControlPlane.GetKind() == "K0smotronControlPlane" {
-		kcp := &cpv1beta1.K0smotronControlPlane{}
+		kcp := &cpv1beta2.K0smotronControlPlane{}
 		key := client.ObjectKey{
 			Namespace: uControlPlane.GetNamespace(),
 			Name:      uControlPlane.GetName(),

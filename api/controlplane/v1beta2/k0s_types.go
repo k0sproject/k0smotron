@@ -1,6 +1,4 @@
 /*
-
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,14 +12,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1beta2
 
 import (
 	"slices"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
@@ -29,6 +26,17 @@ import (
 func init() {
 	SchemeBuilder.Register(&K0sControlPlane{}, &K0sControlPlaneList{})
 }
+
+type UpdateStrategy string
+
+const (
+	// UpdateInPlace is the default update strategy and it updates the control plane nodes in place using k0s autopilot.
+	UpdateInPlace UpdateStrategy = "InPlace"
+	// UpdateRecreate recreates control plane nodes one by one starting from creating a spare node.
+	UpdateRecreate UpdateStrategy = "Recreate"
+	// UpdateRecreateDeleteFirst recreates control plane nodes one by one starting from deleting an existing node.
+	UpdateRecreateDeleteFirst UpdateStrategy = "RecreateDeleteFirst"
+)
 
 const (
 	// ControlPlaneAvailableCondition denotes that the control plane is available
@@ -58,8 +66,9 @@ const (
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
-// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=control-plane-k0smotron"
+// +kubebuilder:storageversion
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 // +kubebuilder:printcolumn:name="API Server Available",type=boolean,JSONPath=".status.ready",description="This denotes that the target API Server is ready to receive requests"
 // +kubebuilder:printcolumn:name="Desired",type=integer,JSONPath=".spec.replicas",description="Total number of machines desired by this control plane",priority=10
@@ -67,7 +76,7 @@ const (
 // +kubebuilder:printcolumn:name="Ready",type=integer,JSONPath=".status.readyReplicas",description="Total number of fully running and ready control plane instances"
 // +kubebuilder:printcolumn:name="Updated",type=integer,JSONPath=".status.updatedReplicas",description="Total number of non-terminated machines targeted by this control plane that have the desired template spec"
 // +kubebuilder:printcolumn:name="Unavailable",type=integer,JSONPath=".status.unavailableReplicas",description="Total number of unavailable control plane instances targeted by this control plane"
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of K0sControlPlane"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=".metadata.creationTimestamp",description="Time duration since creation of K0sControlPlane"
 // +kubebuilder:printcolumn:name="Version",type=string,JSONPath=".spec.version",description="Kubernetes version associated with this control plane"
 
 type K0sControlPlane struct {
@@ -80,9 +89,23 @@ type K0sControlPlane struct {
 	Status K0sControlPlaneStatus `json:"status,omitempty"`
 }
 
+// GetConditions returns the conditions of the K0sControlPlane status.
+func (k *K0sControlPlane) GetConditions() []metav1.Condition {
+	return k.Status.Conditions
+}
+
+// SetConditions sets the conditions on the K0sControlPlane status.
+func (k *K0sControlPlane) SetConditions(conditions []metav1.Condition) {
+	k.Status.Conditions = conditions
+}
+
+func (k *K0sControlPlane) WorkerEnabled() bool {
+	return slices.Contains(k.Spec.K0sConfigSpec.Args, "--enable-worker")
+}
+
 type K0sControlPlaneSpec struct {
-	K0sConfigSpec   bootstrapv1.K0sConfigSpec            `json:"k0sConfigSpec"`
-	MachineTemplate *cpv2.K0sControlPlaneMachineTemplate `json:"machineTemplate"`
+	K0sConfigSpec   bootstrapv2.K0sConfigSpec       `json:"k0sConfigSpec"`
+	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate"`
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
 	Replicas int32 `json:"replicas,omitempty"`
@@ -90,7 +113,7 @@ type K0sControlPlaneSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:validation:Enum=InPlace;Recreate;RecreateDeleteFirst
 	//+kubebuilder:default=InPlace
-	UpdateStrategy cpv2.UpdateStrategy `json:"updateStrategy,omitempty"`
+	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
 	// Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
 	// just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.
 	//+kubebuilder:validation:Optional
@@ -100,6 +123,17 @@ type K0sControlPlaneSpec struct {
 	// Note: This metadata will have precedence over default labels/annotations on the Secret.
 	// +kubebuilder:validation:Optional
 	KubeconfigSecretMetadata bootstrapv2.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
+}
+
+type K0sControlPlaneMachineTemplate struct {
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
+
+	// InfrastructureRef is a required reference to a custom resource
+	// offered by an infrastructure provider.
+	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
 }
 
 // +kubebuilder:object:root=true
@@ -169,18 +203,4 @@ type K0sControlPlaneStatus struct {
 	// Conditions defines current service state of the K0sControlPlane.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
-}
-
-// GetConditions returns the conditions of the K0sControlPlane status.
-func (k *K0sControlPlane) GetConditions() []metav1.Condition {
-	return k.Status.Conditions
-}
-
-// SetConditions sets the conditions on the K0sControlPlane status.
-func (k *K0sControlPlane) SetConditions(conditions []metav1.Condition) {
-	k.Status.Conditions = conditions
-}
-
-func (k *K0sControlPlane) WorkerEnabled() bool {
-	return slices.Contains(k.Spec.K0sConfigSpec.Args, "--enable-worker")
 }

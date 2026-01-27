@@ -53,7 +53,6 @@ const (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
-// +kubebuilder:conversion-gen=./api/bootstrap/v1beta2
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=bootstrap-k0smotron"
@@ -65,9 +64,6 @@ type K0sWorkerConfig struct {
 	Spec   K0sWorkerConfigSpec   `json:"spec,omitempty"`
 	Status K0sWorkerConfigStatus `json:"status,omitempty"`
 }
-
-// Hub marks K0sWorkerConfig as a conversion hub.
-func (*K0sWorkerConfig) Hub() {}
 
 // GetConditions returns the set of conditions for this object.
 func (c *K0sWorkerConfig) GetConditions() []metav1.Condition {
@@ -86,9 +82,6 @@ type K0sWorkerConfigList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []K0sWorkerConfig `json:"items"`
 }
-
-// Hub marks K0sWorkerConfigList as a conversion hub.
-func (*K0sWorkerConfigList) Hub() {}
 
 // ProvisionerSpec defines the provisioner configuration.
 type ProvisionerSpec struct {
@@ -140,11 +133,11 @@ type K0sWorkerConfigSpec struct {
 
 	// PreK0sCommands specifies commands to be run before starting k0s worker.
 	// +kubebuilder:validation:Optional
-	PreK0sCommands []string `json:"preStartCommands,omitempty"`
+	PreK0sCommands []string `json:"preK0sCommands,omitempty"`
 
 	// PostK0sCommands specifies commands to be run after starting k0s worker.
 	// +kubebuilder:validation:Optional
-	PostK0sCommands []string `json:"postStartCommands,omitempty"`
+	PostK0sCommands []string `json:"postK0sCommands,omitempty"`
 
 	// PreInstallK0s specifies whether k0s binary is pre-installed on the node.
 	// +kubebuilder:validation:Optional
@@ -211,9 +204,6 @@ type K0sControllerConfig struct {
 	Status K0sControllerConfigStatus `json:"status,omitempty"`
 }
 
-// Hub marks K0sControllerConfig as a conversion hub.
-func (*K0sControllerConfig) Hub() {}
-
 type K0sControllerConfigStatus struct {
 	// Ready indicates the Bootstrapdata field is ready to be consumed
 	Ready bool `json:"ready,omitempty"`
@@ -244,9 +234,6 @@ type K0sControllerConfigList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []K0sControllerConfig `json:"items"`
 }
-
-// Hub marks K0sControllerConfigList as a conversion hub.
-func (*K0sControllerConfigList) Hub() {}
 
 type K0sControllerConfigSpec struct {
 	// Version is the version of k0s to use. In case this is not set, k0smotron will use

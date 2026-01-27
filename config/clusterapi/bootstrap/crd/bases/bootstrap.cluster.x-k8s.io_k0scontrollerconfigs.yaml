@@ -18,7 +18,8 @@ spec:
     singular: k0scontrollerconfig
   scope: Namespaced
   versions:
-  - name: v1beta1
+  - deprecated: true
+    name: v1beta1
     schema:
       openAPIV3Schema:
         properties:

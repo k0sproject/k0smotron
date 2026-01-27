@@ -23,7 +23,7 @@ import (
 	"time"
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,7 +44,7 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		cluster, kcp, _ := createClusterWithControlPlane(ns.Name)
 		require.NoError(t, testEnv.Create(ctx, cluster))
 
-		kcp.Spec.UpdateStrategy = cpv1beta1.UpdateInPlace
+		kcp.Spec.UpdateStrategy = cpv1beta2.UpdateInPlace
 		require.NoError(t, testEnv.Create(ctx, kcp))
 
 		defer func(do ...client.Object) {
@@ -106,7 +106,7 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
 		require.NoError(t, testEnv.Create(ctx, cluster))
 
-		kcp.Spec.UpdateStrategy = cpv1beta1.UpdateInPlace
+		kcp.Spec.UpdateStrategy = cpv1beta2.UpdateInPlace
 		require.NoError(t, testEnv.Create(ctx, kcp))
 
 		firstMachinesForKCP := &clusterv1.Machine{
@@ -186,7 +186,7 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
 		require.NoError(t, testEnv.Create(ctx, cluster))
 
-		kcp.Spec.UpdateStrategy = cpv1beta1.UpdateRecreate
+		kcp.Spec.UpdateStrategy = cpv1beta2.UpdateRecreate
 		require.NoError(t, testEnv.Create(ctx, kcp))
 
 		firstMachinesForKCP := &clusterv1.Machine{
