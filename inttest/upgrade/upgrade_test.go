@@ -87,7 +87,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 
 	s.T().Log("deploying development k0smotron operator")
 	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
-	s.Require().NoError(util.ApplyFromYAML(s.Context(), kc, rc, os.Getenv("K0SMOTRON_INSTALL_YAML")))
+	s.Require().NoError(util.ApplyFromYAML(s.Context(), kc, rc, os.Getenv("K0SMOTRON_STANDALONE_INSTALL_YAML")))
 	s.Require().NoError(util.WaitForRolloutCompleted(s.Context(), kc, "k0smotron-controller-manager", "k0smotron"))
 
 	s.forceControllerRecreation(s.Context(), pod.Name, kc)
