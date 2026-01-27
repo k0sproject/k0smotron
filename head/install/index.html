@@ -379,6 +379,39 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#installation-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation modes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#k0smotron-standalone" class="md-nav__link">
+    <span class="md-ellipsis">
+      k0smotron standalone
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-api-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster API integration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#known-limitations" class="md-nav__link">
     <span class="md-ellipsis">
       Known limitations
@@ -400,24 +433,6 @@ You are not currently viewing the documentation for the current stable release o
   <a href="#software-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       Software prerequisites
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#full-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Full installation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#per-module-installation-for-cluster-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      Per-module installation for Cluster API
     </span>
   </a>
   
@@ -1922,6 +1937,39 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#installation-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation modes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#k0smotron-standalone" class="md-nav__link">
+    <span class="md-ellipsis">
+      k0smotron standalone
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-api-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster API integration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#known-limitations" class="md-nav__link">
     <span class="md-ellipsis">
       Known limitations
@@ -1943,24 +1991,6 @@ You are not currently viewing the documentation for the current stable release o
   <a href="#software-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       Software prerequisites
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#full-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Full installation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#per-module-installation-for-cluster-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      Per-module installation for Cluster API
     </span>
   </a>
   
@@ -1988,13 +2018,41 @@ Kubernetes cluster that allows for creation and management of the k0s
 control plane.</p>
 <div class="admonition warning">
 <p class="admonition-title">Pre-requisites</p>
-<p>Before installing k0smotron, ensure that you have <a href="https://cert-manager.io/docs/installation/">cert-manager</a> installed</p>
+<p>Before installing k0smotron, ensure that you have <a href="https://cert-manager.io/docs/installation/">cert-manager</a> installed when using the <code>kubectl apply</code> method.<br />
+If you use <code>clusterctl</code>, cert-manager is installed automatically as part of the process.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">TL;DR</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.2/install.yaml
 </code></pre></div>
 </div>
+<h2 id="installation-modes">Installation modes<a class="headerlink" href="#installation-modes" title="Permanent link">#</a></h2>
+<p>k0smotron can be deployed in two modes: k0smotron standalone or as a Cluster API integration</p>
+<h3 id="k0smotron-standalone">k0smotron standalone<a class="headerlink" href="#k0smotron-standalone" title="Permanent link">#</a></h3>
+<p>This mode installs only the k0smotron operator: </p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.2/install-standalone.yaml
+</code></pre></div>
+<p>For more details, see the <a href="../usage-overview/#standalone">Standalone</a> usage section.</p>
+<h3 id="cluster-api-integration">Cluster API integration<a class="headerlink" href="#cluster-api-integration" title="Permanent link">#</a></h3>
+<p>Deploys k0smotron as a full Cluster API provider (<strong>bootstrap, control plane, and infrastructure</strong>).<br />
+This installation embeds the standalone components, so there is no need to install standalone separately. For more details, see the <a href="../usage-overview/#cluster-api-integration">Cluster API integration</a> usage section.</p>
+<p>There are two options for installing in CAPI mode:</p>
+<h4 id="declarative-deployment-with-kubectl-apply">Declarative deployment with <code>kubectl apply</code>:<a class="headerlink" href="#declarative-deployment-with-kubectl-apply" title="Permanent link">#</a></h4>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.2/install.yaml
+</code></pre></div>
+<p>This installs <strong>all components</strong>: k0smotron operator, bootstrap provider, control plane provider, and infrastructure provider.
+It requires cert-manager to be preinstalled.</p>
+<div class="admonition note">
+<p class="admonition-title">TL;DR</p>
+<p>In order to run k0smotron CAPI controllers, Cluster API controllers must be installed first.</p>
+</div>
+<h4 id="per-module-installation-for-cluster-api">Per-module installation for Cluster API<a class="headerlink" href="#per-module-installation-for-cluster-api" title="Permanent link">#</a></h4>
+<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--bootstrap<span class="w"> </span>k0sproject-k0smotron<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--control-plane<span class="w"> </span>k0sproject-k0smotron<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--infrastructure<span class="w"> </span>k0sproject-k0smotron
+</code></pre></div>
+<p>In this case, <code>clusterctl</code> also ensures that <code>cert-manager</code> is installed automatically.</p>
+<p>To start using the k0smotron Cluster API, refer to <a href="../cluster-api/">Cluster API</a>.</p>
 <h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">#</a></h2>
 <p>Areas in which k0smotron is currently limited include:</p>
 <ul>
@@ -2041,31 +2099,6 @@ workloads, see <a href="https://docs.k0sproject.io/stable/system-requirements/">
 <li>Optional. Load balancer provider for ensuring high availability of the
   control plane.</li>
 </ul>
-<h2 id="full-installation">Full installation<a class="headerlink" href="#full-installation" title="Permanent link">#</a></h2>
-<p>A full k0smotron installation implies the following components:</p>
-<ul>
-<li>k0smotron operator</li>
-<li>Custom Resource Definitions</li>
-<li>Role-based access control rules</li>
-<li>Bootstrap provider</li>
-<li>Infrastructure provider</li>
-<li>Control plane provider</li>
-</ul>
-<p>To install the full version of k0smotron:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.2/install.yaml
-</code></pre></div>
-<p>Now, you can create your first control planes using k0smotron either as a
-standalone manager, or as a Cluster API provider. For use case details, see
-<a href="../usage-overview/">k0smotron usage</a>.</p>
-<h2 id="per-module-installation-for-cluster-api">Per-module installation for Cluster API<a class="headerlink" href="#per-module-installation-for-cluster-api" title="Permanent link">#</a></h2>
-<p>k0smotron is compatible with <code>clusterctl</code> and can act as a Cluster API
-bootstrap, infrastructure, and control plane provider. You can use
-<code>clusterctl</code> to install each k0smotron Cluster API module separately:</p>
-<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--bootstrap<span class="w"> </span>k0sproject-k0smotron<span class="w"> </span><span class="se">\</span>
-<span class="w">                </span>--control-plane<span class="w"> </span>k0sproject-k0smotron<span class="w"> </span><span class="se">\</span>
-<span class="w">                </span>--infrastructure<span class="w"> </span>k0sproject-k0smotron
-</code></pre></div>
-<p>To start using the k0smotron Cluster API, refer to <a href="../cluster-api/">Cluster API</a>.</p>
 
 
 
