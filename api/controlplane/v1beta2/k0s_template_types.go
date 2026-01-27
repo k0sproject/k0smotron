@@ -1,8 +1,7 @@
-package v1beta1
+package v1beta2
 
 import (
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
@@ -13,7 +12,9 @@ func init() {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
+// +kubebuilder:storageversion
+// +kubebuilder:conversion-gen=./api/controlplane/v1beta2
 
 type K0sControlPlaneTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -33,14 +34,14 @@ type K0sControlPlaneTemplateResource struct {
 }
 
 type K0sControlPlaneTemplateResourceSpec struct {
-	K0sConfigSpec   bootstrapv1.K0sConfigSpec                    `json:"k0sConfigSpec"`
-	MachineTemplate *cpv2.K0sControlPlaneTemplateMachineTemplate `json:"machineTemplate,omitempty"`
-	Version         string                                       `json:"version,omitempty"`
+	K0sConfigSpec   bootstrapv2.K0sConfigSpec               `json:"k0sConfigSpec"`
+	MachineTemplate *K0sControlPlaneTemplateMachineTemplate `json:"machineTemplate,omitempty"`
+	Version         string                                  `json:"version,omitempty"`
 	// UpdateStrategy defines the strategy to use when updating the control plane.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:validation:Enum=InPlace;Recreate;RecreateDeleteFirst
 	//+kubebuilder:default=InPlace
-	UpdateStrategy cpv2.UpdateStrategy `json:"updateStrategy,omitempty"`
+	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
 }
 
 // K0sControlPlaneTemplateMachineTemplate defines the template for Machines

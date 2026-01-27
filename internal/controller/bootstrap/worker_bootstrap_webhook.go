@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// +kubebuilder:webhook:path=/validate-bootstrap-cluster-x-k8s-io-v1beta1-k0sworkerconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs,verbs=create;update,versions=v1beta1,name=validate-k0sworkerconfig-v1beta1.k0smotron.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-bootstrap-cluster-x-k8s-io-v1beta2-k0sworkerconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs,verbs=create;update,versions=v1beta2,name=validate-k0sworkerconfig-v1beta2.k0smotron.io,admissionReviewVersions=v1
 
 // K0sWorkerConfigValidator implements a validation webhook for K0sWorkerConfig.
 type K0sWorkerConfigValidator struct{}
@@ -75,7 +75,7 @@ func (v *K0sWorkerConfigValidator) validate(c bootstrapv2.K0sWorkerConfigSpec, n
 // SetupK0sWorkerConfigWebhookWithManager registers the webhook for K0sWorkerConfig in the manager.
 func (v *K0sWorkerConfigValidator) SetupK0sWorkerConfigWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&v1beta1.K0sWorkerConfig{}).
+		For(&v1beta2.K0sWorkerConfig{}).
 		WithValidator(v).
 		Complete()
 }

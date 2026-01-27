@@ -6,6 +6,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
+var _ conversion.Convertible = &K0sControllerConfig{}
+var _ conversion.Convertible = &K0sControllerConfigList{}
+
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (kccv1beta1 *K0sControllerConfig) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0sControllerConfig)
@@ -20,12 +23,12 @@ func k0sControllerConfigV1beta1ToV1beta2Spec(spec K0sControllerConfigSpec) v1bet
 		Version: spec.Version,
 	}
 	if spec.K0sConfigSpec != nil {
-		res.K0sConfigSpec = k0sConfigSpecV1beta1ToV1beta2(spec.K0sConfigSpec)
+		res.K0sConfigSpec = ConvertK0sConfigSpecV1beta1ToV1beta2(spec.K0sConfigSpec)
 	}
 	return res
 }
 
-func k0sConfigSpecV1beta1ToV1beta2(spec *K0sConfigSpec) *v1beta2.K0sConfigSpec {
+func ConvertK0sConfigSpecV1beta1ToV1beta2(spec *K0sConfigSpec) *v1beta2.K0sConfigSpec {
 	if spec == nil {
 		return nil
 	}
@@ -63,21 +66,21 @@ func (kccv1beta1 *K0sControllerConfig) ConvertFrom(srcRaw conversion.Hub) error 
 	src := srcRaw.(*v1beta2.K0sControllerConfig)
 	kccv1beta1.ObjectMeta = src.ObjectMeta
 
-	kccv1beta1.Spec = k0sControllerConfigV1beta2ToV1beta1Spec(src.Spec)
+	kccv1beta1.Spec = k0sControllerConfigSpecV1beta2ToV1beta1(src.Spec)
 	return nil
 }
 
-func k0sControllerConfigV1beta2ToV1beta1Spec(spec v1beta2.K0sControllerConfigSpec) K0sControllerConfigSpec {
+func k0sControllerConfigSpecV1beta2ToV1beta1(spec v1beta2.K0sControllerConfigSpec) K0sControllerConfigSpec {
 	res := K0sControllerConfigSpec{
 		Version: spec.Version,
 	}
 	if spec.K0sConfigSpec != nil {
-		res.K0sConfigSpec = k0sConfigSpecV1beta2ToV1beta1(spec.K0sConfigSpec)
+		res.K0sConfigSpec = ConvertK0sConfigSpecV1beta2ToV1beta1(spec.K0sConfigSpec)
 	}
 	return res
 }
 
-func k0sConfigSpecV1beta2ToV1beta1(spec *v1beta2.K0sConfigSpec) *K0sConfigSpec {
+func ConvertK0sConfigSpecV1beta2ToV1beta1(spec *v1beta2.K0sConfigSpec) *K0sConfigSpec {
 	if spec == nil {
 		return nil
 	}

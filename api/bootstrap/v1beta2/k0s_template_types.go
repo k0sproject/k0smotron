@@ -64,6 +64,3 @@ type K0sWorkerConfigTemplateList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []K0sWorkerConfigTemplate `json:"items"`
 }
-
-// Hub marks K0sWorkerConfigTemplateList as a conversion hub.
-func (*K0sWorkerConfigTemplateList) Hub() {}

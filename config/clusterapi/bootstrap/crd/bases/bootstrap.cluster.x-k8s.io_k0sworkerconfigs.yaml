@@ -18,7 +18,8 @@ spec:
     singular: k0sworkerconfig
   scope: Namespaced
   versions:
-  - name: v1beta1
+  - deprecated: true
+    name: v1beta1
     schema:
       openAPIV3Schema:
         properties:
@@ -390,7 +391,7 @@ spec:
                   K0sInstallDir specifies the directory where k0s binary will be installed.
                   If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.
                 type: string
-              postStartCommands:
+              postK0sCommands:
                 description: PostK0sCommands specifies commands to be run after starting
                   k0s worker.
                 items:
@@ -400,7 +401,7 @@ spec:
                 description: PreInstallK0s specifies whether k0s binary is pre-installed
                   on the node.
                 type: boolean
-              preStartCommands:
+              preK0sCommands:
                 description: PreK0sCommands specifies commands to be run before starting
                   k0s worker.
                 items:

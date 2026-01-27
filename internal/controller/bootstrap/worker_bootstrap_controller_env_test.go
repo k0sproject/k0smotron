@@ -24,7 +24,7 @@ import (
 	"time"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -528,7 +528,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 
 	k0sWorkerConfig := &bootstrapv1.K0sWorkerConfig{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta2",
 			Kind:       "K0sWorkerConfig",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -562,7 +562,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	caCert := clusterCerts.GetByPurpose(secret.ClusterCA)
 	caCertSecret := caCert.AsSecret(
 		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
-		*metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")),
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
 	)
 	require.NoError(t, testEnv.Create(ctx, caCertSecret))
 
@@ -594,7 +594,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	}, 20*time.Second, 100*time.Millisecond)
 }
 
-func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta1.K0sControlPlane, *unstructured.Unstructured) {
+func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta2.K0sControlPlane, *unstructured.Unstructured) {
 	kcpName := fmt.Sprintf("kcp-foo-%s", util.RandomString(6))
 
 	cluster := newCluster(namespace)
@@ -602,7 +602,7 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
 			Kind:     "K0sControlPlane",
 			Name:     kcpName,
-			APIGroup: cpv1beta1.GroupVersion.Group,
+			APIGroup: cpv1beta2.GroupVersion.Group,
 		},
 		ControlPlaneEndpoint: clusterv1.APIEndpoint{
 			Host: "test.endpoint",
@@ -610,9 +610,9 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		},
 	}
 
-	kcp := &cpv1beta1.K0sControlPlane{
+	kcp := &cpv1beta2.K0sControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: cpv1beta1.GroupVersion.String(),
+			APIVersion: cpv1beta2.GroupVersion.String(),
 			Kind:       "K0sControlPlane",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -627,10 +627,10 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 					UID:        "1",
 				},
 			},
-			Finalizers: []string{cpv1beta1.K0sControlPlaneFinalizer},
+			Finalizers: []string{cpv1beta2.K0sControlPlaneFinalizer},
 		},
-		Spec: cpv1beta1.K0sControlPlaneSpec{
-			MachineTemplate: &cpv1beta1.K0sControlPlaneMachineTemplate{
+		Spec: cpv1beta2.K0sControlPlaneSpec{
+			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "GenericInfrastructureMachineTemplate",
 					Namespace:  namespace,
@@ -638,7 +638,7 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 				},
 			},
-			UpdateStrategy: cpv1beta1.UpdateRecreate,
+			UpdateStrategy: cpv1beta2.UpdateRecreate,
 			Replicas:       int32(1),
 			Version:        "v1.30.0",
 		},

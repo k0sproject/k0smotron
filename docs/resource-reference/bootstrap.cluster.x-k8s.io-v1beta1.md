@@ -2944,7 +2944,7 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>postStartCommands</b></td>
+        <td><b>postK0sCommands</b></td>
         <td>[]string</td>
         <td>
           PostK0sCommands specifies commands to be run after starting k0s worker.<br/>
@@ -2958,7 +2958,7 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>preStartCommands</b></td>
+        <td><b>preK0sCommands</b></td>
         <td>[]string</td>
         <td>
           PreK0sCommands specifies commands to be run before starting k0s worker.<br/>
@@ -3722,7 +3722,7 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>postStartCommands</b></td>
+        <td><b>postK0sCommands</b></td>
         <td>[]string</td>
         <td>
           PostK0sCommands specifies commands to be run after starting k0s worker.<br/>
@@ -3736,7 +3736,7 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>preStartCommands</b></td>
+        <td><b>preK0sCommands</b></td>
         <td>[]string</td>
         <td>
           PreK0sCommands specifies commands to be run before starting k0s worker.<br/>

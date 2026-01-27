@@ -22,11 +22,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	bootstrapv1beta2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
-func (c *K0sController) getMachineTemplate(ctx context.Context, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
+func (c *K0sController) getMachineTemplate(ctx context.Context, kcp *cpv1beta2.K0sControlPlane) (*unstructured.Unstructured, error) {
 	infRef := kcp.Spec.MachineTemplate.InfrastructureRef
 
 	infraMachineTemplate := new(unstructured.Unstructured)
@@ -188,7 +188,7 @@ func enrichK0sConfigWithClusterData(cluster *clusterv1.Cluster, k0sConfig *unstr
 	return k0sConfig, err
 }
 
-func controlPlaneCommonLabelsForCluster(kcp *cpv1beta1.K0sControlPlane, clusterName string) map[string]string {
+func controlPlaneCommonLabelsForCluster(kcp *cpv1beta2.K0sControlPlane, clusterName string) map[string]string {
 	labels := map[string]string{}
 
 	// Add the labels from the MachineTemplate.
