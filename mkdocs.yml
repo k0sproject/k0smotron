@@ -30,6 +30,7 @@ nav:
       - Worker Node Bootstrap: capi-bootstrap.md
       - Remote Machine Provider: capi-remote.md
       - Ingress support: ingress-support.md
+      - Ignition support: ignition-support.md
       - ClusterClass: capi-clusterclass.md
       - Health Checks: capi-machine-health-checks.md
       - Examples:
