@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// +kubebuilder:webhook:path=/validate-bootstrap-cluster-x-k8s-io-v1beta1-k0sworkerconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs,verbs=create;update,versions=v1beta1,name=validate-k0sworkerconfig-v1beta1.k0smotron.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-bootstrap-cluster-x-k8s-io-v1beta2-k0sworkerconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs,verbs=create;update,versions=v1beta2,name=validate-k0sworkerconfig-v1beta2.k0smotron.io,admissionReviewVersions=v1
 
 // K0sWorkerConfigValidator implements a validation webhook for K0sWorkerConfig.
 type K0sWorkerConfigValidator struct{}
@@ -39,7 +39,7 @@ var _ webhook.CustomValidator = &K0sWorkerConfigValidator{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (v *K0sWorkerConfigValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	c, ok := obj.(*bootstrapv1.K0sWorkerConfig)
+	c, ok := obj.(*bootstrapv2.K0sWorkerConfig)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a K0sWorkerConfig but got a %T", obj))
 	}
@@ -49,7 +49,7 @@ func (v *K0sWorkerConfigValidator) ValidateCreate(_ context.Context, obj runtime
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
-	newC, ok := newObj.(*bootstrapv1.K0sWorkerConfig)
+	newC, ok := newObj.(*bootstrapv2.K0sWorkerConfig)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a K0sWorkerConfig but got a %T", newObj))
 	}
@@ -62,20 +62,20 @@ func (v *K0sWorkerConfigValidator) ValidateDelete(_ context.Context, _ runtime.O
 	return nil, nil
 }
 
-func (v *K0sWorkerConfigValidator) validate(c bootstrapv1.K0sWorkerConfigSpec, name string) error {
+func (v *K0sWorkerConfigValidator) validate(c bootstrapv2.K0sWorkerConfigSpec, name string) error {
 	allErrs := c.Validate(field.NewPath("spec"))
 
 	if len(allErrs) == 0 {
 		return nil
 	}
 
-	return apierrors.NewInvalid(bootstrapv1.GroupVersion.WithKind("K0sWorkerConfig").GroupKind(), name, allErrs)
+	return apierrors.NewInvalid(bootstrapv2.GroupVersion.WithKind("K0sWorkerConfig").GroupKind(), name, allErrs)
 }
 
 // SetupK0sWorkerConfigWebhookWithManager registers the webhook for K0sWorkerConfig in the manager.
 func (v *K0sWorkerConfigValidator) SetupK0sWorkerConfigWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&v1beta1.K0sWorkerConfig{}).
+		For(&v1beta2.K0sWorkerConfig{}).
 		WithValidator(v).
 		Complete()
 }

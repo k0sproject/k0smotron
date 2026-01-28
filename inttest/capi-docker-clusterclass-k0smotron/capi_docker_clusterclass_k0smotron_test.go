@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -94,14 +94,14 @@ func (s *CAPIDockerClusterClassK0smotronSuite) TestCAPIDocker() {
 	s.Require().NoError(util.WaitForStatefulSet(s.ctx, s.client, "kmc-docker-test-cluster", "default"))
 
 	crdConfig := *s.restConfig
-	crdConfig.ContentConfig.GroupVersion = &cpv1beta1.GroupVersion
+	crdConfig.ContentConfig.GroupVersion = &cpv1beta2.GroupVersion
 	crdConfig.APIPath = "/apis"
 	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
 	crdConfig.UserAgent = rest.DefaultKubernetesUserAgent()
 	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
 	s.Require().NoError(err)
 	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		var kcps cpv1beta1.K0smotronControlPlaneList
+		var kcps cpv1beta2.K0smotronControlPlaneList
 		err = crdRestClient.Get().Resource("k0smotroncontrolplanes").Namespace("default").Do(ctx).Into(&kcps)
 		if err != nil || len(kcps.Items) == 0 {
 			return false, nil

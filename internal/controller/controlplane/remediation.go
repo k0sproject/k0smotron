@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (retErr error) {
+func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (retErr error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
@@ -52,7 +52,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 	if err != nil {
 		return err
 	}
-	if _, ok := kcp.Annotations[cpv1beta1.RemediationInProgressAnnotation]; ok {
+	if _, ok := kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation]; ok {
 		log.Info("Another remediation is already in progress. Skipping remediation.")
 		return nil
 	}
@@ -138,7 +138,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 	// Mark controlplane to track that remediation is in progress and do not proceed until machine is gone.
 	// This annotation is removed when new controlplane creates a new machine.
 	annotations.AddAnnotations(kcp, map[string]string{
-		cpv1beta1.RemediationInProgressAnnotation: "true",
+		cpv1beta2.RemediationInProgressAnnotation: "true",
 	})
 
 	return nil

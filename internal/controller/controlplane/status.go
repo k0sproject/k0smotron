@@ -40,7 +40,7 @@ import (
 	"github.com/go-logr/logr"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/k0sproject/version"
 )
 
@@ -54,10 +54,10 @@ var (
 // Implementations of this interface will provide logic to compute the control plane
 // status based on the upgrade strategy for the controlplane.
 type replicaStatusComputer interface {
-	compute(*cpv1beta1.K0sControlPlane) error
+	compute(*cpv1beta2.K0sControlPlane) error
 }
 
-func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv1.Cluster) error {
+func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, cluster *clusterv1.Cluster) error {
 	logger := log.FromContext(ctx)
 
 	defer func() {
@@ -78,11 +78,11 @@ func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sCont
 	return sc.compute(kcp)
 }
 
-func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (replicaStatusComputer, error) {
+func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (replicaStatusComputer, error) {
 	logger := log.FromContext(ctx)
 
 	switch kcp.Spec.UpdateStrategy {
-	case cpv1beta1.UpdateInPlace:
+	case cpv1beta2.UpdateInPlace:
 		kc, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
 			return nil, err
@@ -108,7 +108,7 @@ func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *
 		}
 
 		return &planStatus{plan}, nil
-	case cpv1beta1.UpdateRecreate, cpv1beta1.UpdateRecreateDeleteFirst:
+	case cpv1beta2.UpdateRecreate, cpv1beta2.UpdateRecreateDeleteFirst:
 		return newMachineStatusComputer(ctx, c.Client, cluster)
 	default:
 		return nil, errors.New("upgrade strategy not found")
@@ -119,7 +119,7 @@ type planStatus struct {
 	plan autopilot.Plan
 }
 
-func (ic *planStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
+func (ic *planStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 	logger := log.FromContext(context.Background())
 
 	if len(ic.plan.Spec.Commands) == 0 || len(ic.plan.Status.Commands) == 0 {
@@ -196,7 +196,7 @@ func newMachineStatusComputer(ctx context.Context, c client.Client, cluster *clu
 	return ms, nil
 }
 
-func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
+func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 	kcp.Status.Replicas = int32(len(rc.machines))
 	readyReplicas := 0
 	updatedReplicas := 0
@@ -297,7 +297,7 @@ func versionMatches(machine *clusterv1.Machine, ver string) bool {
 	return vKCP.Equal(vMachine)
 }
 
-func (c *K0sController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, logger logr.Logger) {
+func (c *K0sController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, logger logr.Logger) {
 	kcp.Status.Ready = false
 	logger.Info("Computed status", "status", kcp.Status)
 	// Check if the control plane is ready by connecting to the API server
@@ -326,9 +326,9 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	logger.Info("Successfully pinged the workload cluster API")
 	// Set the conditions
 	conditions.Set(kcp, metav1.Condition{
-		Type:   string(cpv1beta1.ControlPlaneAvailableCondition),
+		Type:   string(cpv1beta2.ControlPlaneAvailableCondition),
 		Status: metav1.ConditionTrue,
-		Reason: cpv1beta1.ControlPlaneAvailableReason,
+		Reason: cpv1beta2.ControlPlaneAvailableReason,
 	})
 	kcp.Status.Ready = true
 	kcp.Status.Initialized = true
@@ -336,7 +336,7 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 
 	// Set the k0s cluster ID annotation
 	annotations.AddAnnotations(cluster, map[string]string{
-		cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
+		cpv1beta2.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
 	})
 }
 

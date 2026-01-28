@@ -20,7 +20,8 @@ import (
 	"slices"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	corev1 "k8s.io/api/core/v1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	cpv2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
@@ -28,17 +29,6 @@ import (
 func init() {
 	SchemeBuilder.Register(&K0sControlPlane{}, &K0sControlPlaneList{})
 }
-
-type UpdateStrategy string
-
-const (
-	// UpdateInPlace is the default update strategy and it updates the control plane nodes in place using k0s autopilot.
-	UpdateInPlace UpdateStrategy = "InPlace"
-	// UpdateRecreate recreates control plane nodes one by one starting from creating a spare node.
-	UpdateRecreate UpdateStrategy = "Recreate"
-	// UpdateRecreateDeleteFirst recreates control plane nodes one by one starting from deleting an existing node.
-	UpdateRecreateDeleteFirst UpdateStrategy = "RecreateDeleteFirst"
-)
 
 const (
 	// ControlPlaneAvailableCondition denotes that the control plane is available
@@ -91,8 +81,8 @@ type K0sControlPlane struct {
 }
 
 type K0sControlPlaneSpec struct {
-	K0sConfigSpec   bootstrapv1.K0sConfigSpec       `json:"k0sConfigSpec"`
-	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate"`
+	K0sConfigSpec   bootstrapv1.K0sConfigSpec            `json:"k0sConfigSpec"`
+	MachineTemplate *cpv2.K0sControlPlaneMachineTemplate `json:"machineTemplate"`
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
 	Replicas int32 `json:"replicas,omitempty"`
@@ -100,7 +90,7 @@ type K0sControlPlaneSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:validation:Enum=InPlace;Recreate;RecreateDeleteFirst
 	//+kubebuilder:default=InPlace
-	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
+	UpdateStrategy cpv2.UpdateStrategy `json:"updateStrategy,omitempty"`
 	// Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
 	// just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.
 	//+kubebuilder:validation:Optional
@@ -109,18 +99,7 @@ type K0sControlPlaneSpec struct {
 	// created for the workload cluster.
 	// Note: This metadata will have precedence over default labels/annotations on the Secret.
 	// +kubebuilder:validation:Optional
-	KubeconfigSecretMetadata bootstrapv1.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
-}
-
-type K0sControlPlaneMachineTemplate struct {
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	// +optional
-	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
-
-	// InfrastructureRef is a required reference to a custom resource
-	// offered by an infrastructure provider.
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
+	KubeconfigSecretMetadata bootstrapv2.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
 }
 
 // +kubebuilder:object:root=true

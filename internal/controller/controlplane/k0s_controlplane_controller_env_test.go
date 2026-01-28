@@ -61,8 +61,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	kubeadmConfig "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 )
 
@@ -175,8 +175,8 @@ func TestReconcileTunneling(t *testing.T) {
 	cluster, kcp, _ := createClusterWithControlPlane(ns.Name)
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	kcp.Spec.K0sConfigSpec = bootstrapv1.K0sConfigSpec{
-		Tunneling: bootstrapv1.TunnelingSpec{
+	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
+		Tunneling: bootstrapv2.TunnelingSpec{
 			Enabled: true,
 		},
 	}
@@ -326,7 +326,7 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
 	// Tunneling mode = 'proxy'
-	kcp.Spec.K0sConfigSpec.Tunneling = bootstrapv1.TunnelingSpec{
+	kcp.Spec.K0sConfigSpec.Tunneling = bootstrapv2.TunnelingSpec{
 		Enabled:           true,
 		Mode:              "proxy",
 		ServerAddress:     "test.com",
@@ -334,7 +334,7 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 	}
 
 	// Custom labels and annotations for the kubeconfig Secret.
-	kcp.Spec.KubeconfigSecretMetadata = bootstrapv1.SecretMetadata{
+	kcp.Spec.KubeconfigSecretMetadata = bootstrapv2.SecretMetadata{
 		Labels: map[string]string{
 			"custom-label": "custom-value",
 		},
@@ -369,7 +369,7 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 	caCert := clusterCerts.GetByPurpose(secret.ClusterCA)
 	caCertSecret := caCert.AsSecret(
 		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
-		*metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")),
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
 	)
 	require.NoError(t, testEnv.Create(ctx, caCertSecret))
 
@@ -415,7 +415,7 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
 	// Tunneling mode = 'tunnel'
-	kcp.Spec.K0sConfigSpec.Tunneling = bootstrapv1.TunnelingSpec{
+	kcp.Spec.K0sConfigSpec.Tunneling = bootstrapv2.TunnelingSpec{
 		Enabled:           true,
 		Mode:              "tunnel",
 		ServerAddress:     "test.com",
@@ -423,7 +423,7 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 	}
 
 	// Custom labels and annotations for the kubeconfig Secret.
-	kcp.Spec.KubeconfigSecretMetadata = bootstrapv1.SecretMetadata{
+	kcp.Spec.KubeconfigSecretMetadata = bootstrapv2.SecretMetadata{
 		Labels: map[string]string{
 			"custom-label": "custom-value",
 		},
@@ -458,7 +458,7 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 	caCert := clusterCerts.GetByPurpose(secret.ClusterCA)
 	caCertSecret := caCert.AsSecret(
 		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
-		*metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")),
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
 	)
 	require.NoError(t, testEnv.Create(ctx, caCertSecret))
 
@@ -507,12 +507,12 @@ func TestReconcileKubeconfigCertsRotation(t *testing.T) {
 	}(kcp, cluster, ns)
 
 	type tunneligSpec struct {
-		bootstrapv1.TunnelingSpec
+		bootstrapv2.TunnelingSpec
 		secretName string
 	}
 	tunnelingSpecs := []tunneligSpec{
 		{
-			TunnelingSpec: bootstrapv1.TunnelingSpec{
+			TunnelingSpec: bootstrapv2.TunnelingSpec{
 				Enabled:           true,
 				Mode:              "proxy",
 				ServerAddress:     "test.com",
@@ -521,7 +521,7 @@ func TestReconcileKubeconfigCertsRotation(t *testing.T) {
 			secretName: secret.Name(cluster.Name+"-proxied", secret.Kubeconfig),
 		},
 		{
-			TunnelingSpec: bootstrapv1.TunnelingSpec{
+			TunnelingSpec: bootstrapv2.TunnelingSpec{
 				Enabled:           true,
 				Mode:              "tunnel",
 				ServerAddress:     "test.com",
@@ -577,7 +577,7 @@ func TestReconcileKubeconfigCertsRotation(t *testing.T) {
 				KeyFile:  "ca.key",
 			},
 		}
-		require.NoError(t, cc.LookupOrGenerateCached(ctx, secretCachingClient, testEnv, util.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane"))))
+		require.NoError(t, cc.LookupOrGenerateCached(ctx, secretCachingClient, testEnv, util.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))))
 
 		r := &K0sController{
 			Client:              testEnv,
@@ -637,7 +637,7 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
 	// Enable '.spec.network.nodeLocalLoadBalancing'
-	kcp.Spec.K0sConfigSpec = bootstrapv1.K0sConfigSpec{
+	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
 		K0s: &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
@@ -700,7 +700,7 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
 	// Disable '.spec.network.nodeLocalLoadBalancing'
-	kcp.Spec.K0sConfigSpec = bootstrapv1.K0sConfigSpec{
+	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
 		K0s: &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
@@ -753,7 +753,7 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
 	// With '.spec.k0sConfigSpec.Tunneling.ServerAddress'
-	kcp.Spec.K0sConfigSpec = bootstrapv1.K0sConfigSpec{
+	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
 		K0s: &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
@@ -767,7 +767,7 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 				},
 			},
 		},
-		Tunneling: bootstrapv1.TunnelingSpec{
+		Tunneling: bootstrapv2.TunnelingSpec{
 			ServerAddress: "my-tunneling-server-address.com",
 		},
 	}
@@ -818,7 +818,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		require.NoError(t, testEnv.Cleanup(ctx, do...))
 	}(kcp, gmt, cluster, ns)
 
-	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane"))
+	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))
 
 	firstMachineRelatedToControlPlane := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -964,7 +964,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		require.NoError(t, testEnv.Cleanup(ctx, do...))
 	}(kcp, gmt, cluster, ns)
 
-	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane"))
+	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))
 
 	frt := &fakeRoundTripper{}
 	fakeClient := &restfake.RESTClient{
@@ -1017,7 +1017,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 	}
 	firstMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, firstMachineRelatedToControlPlane))
-	firstControllerConfig := &bootstrapv1.K0sControllerConfig{
+	firstControllerConfig := &bootstrapv2.K0sControllerConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
 			Namespace: ns.Name,
@@ -1063,7 +1063,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 	}
 	secondMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, secondMachineRelatedToControlPlane))
-	secondControllerConfig := &bootstrapv1.K0sControllerConfig{
+	secondControllerConfig := &bootstrapv2.K0sControllerConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
 			Namespace: ns.Name,
@@ -1109,7 +1109,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 	}
 	thirdMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, thirdMachineRelatedToControlPlane))
-	thirdControllerConfig := &bootstrapv1.K0sControllerConfig{
+	thirdControllerConfig := &bootstrapv2.K0sControllerConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 2),
 			Namespace: ns.Name,
@@ -1152,7 +1152,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineNotRelatedToControlPlane))
-	notRelatedControllerConfig := &bootstrapv1.K0sControllerConfig{
+	notRelatedControllerConfig := &bootstrapv2.K0sControllerConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "external-machine",
 			Namespace: ns.Name,
@@ -1205,7 +1205,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		require.NoError(t, testEnv.Cleanup(ctx, do...))
 	}(kcp, gmt, cluster, ns)
 
-	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane"))
+	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))
 
 	frt := &fakeRoundTripper{}
 	fakeClient := &restfake.RESTClient{
@@ -1258,7 +1258,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 	}
 	firstMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, firstMachineRelatedToControlPlane))
-	firstControllerConfig := &bootstrapv1.K0sControllerConfig{
+	firstControllerConfig := &bootstrapv2.K0sControllerConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
 			Namespace: ns.Name,
@@ -1303,7 +1303,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 	}
 	secondMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, secondMachineRelatedToControlPlane))
-	secondControllerConfig := &bootstrapv1.K0sControllerConfig{
+	secondControllerConfig := &bootstrapv2.K0sControllerConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
 			Namespace: ns.Name,
@@ -1347,7 +1347,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 	}
 	thirdMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, thirdMachineRelatedToControlPlane))
-	thirdControllerConfig := &bootstrapv1.K0sControllerConfig{
+	thirdControllerConfig := &bootstrapv2.K0sControllerConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 2),
 			Namespace: ns.Name,
@@ -1533,7 +1533,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 		BlockOwnerDeletion: ptr.To(true),
 		UID:                cluster.UID,
 	})
-	require.False(t, conditions.IsFalse(kcp, string(cpv1beta1.ControlPlaneAvailableCondition)))
+	require.False(t, conditions.IsFalse(kcp, string(cpv1beta2.ControlPlaneAvailableCondition)))
 
 	// Expected secrets are created
 	caSecret, err := secret.GetFromNamespacedName(ctx, testEnv, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name}, secret.ClusterCA)
@@ -1581,7 +1581,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	require.Equal(t, gmt.GetName(), infraObj.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation])
 	require.Equal(t, gmt.GroupVersionKind().GroupKind().String(), infraObj.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation])
 
-	k0sBootstrapConfigList := &bootstrapv1.K0sControllerConfigList{}
+	k0sBootstrapConfigList := &bootstrapv2.K0sControllerConfigList{}
 	require.NoError(t, testEnv.GetAPIReader().List(ctx, k0sBootstrapConfigList, client.InNamespace(cluster.Namespace)))
 	require.Len(t, k0sBootstrapConfigList.Items, 1)
 
@@ -1735,7 +1735,7 @@ func createNode() *corev1.Node {
 	}
 }
 
-func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta1.K0sControlPlane, *unstructured.Unstructured) {
+func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta2.K0sControlPlane, *unstructured.Unstructured) {
 	kcpName := fmt.Sprintf("kcp-foo-%s", util.RandomString(6))
 
 	cluster := newCluster(&types.NamespacedName{Name: kcpName, Namespace: namespace})
@@ -1743,7 +1743,7 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		ControlPlaneRef: clusterv1.ContractVersionedObjectReference{
 			Kind:     "K0sControlPlane",
 			Name:     kcpName,
-			APIGroup: cpv1beta1.GroupVersion.Group,
+			APIGroup: cpv1beta2.GroupVersion.Group,
 		},
 		ControlPlaneEndpoint: clusterv1.APIEndpoint{
 			Host: "test.endpoint",
@@ -1751,9 +1751,9 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		},
 	}
 
-	kcp := &cpv1beta1.K0sControlPlane{
+	kcp := &cpv1beta2.K0sControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: cpv1beta1.GroupVersion.String(),
+			APIVersion: cpv1beta2.GroupVersion.String(),
 			Kind:       "K0sControlPlane",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -1768,10 +1768,10 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 					UID:        "1",
 				},
 			},
-			Finalizers: []string{cpv1beta1.K0sControlPlaneFinalizer},
+			Finalizers: []string{cpv1beta2.K0sControlPlaneFinalizer},
 		},
-		Spec: cpv1beta1.K0sControlPlaneSpec{
-			MachineTemplate: &cpv1beta1.K0sControlPlaneMachineTemplate{
+		Spec: cpv1beta2.K0sControlPlaneSpec{
+			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "GenericInfrastructureMachineTemplate",
 					Namespace:  namespace,
@@ -1779,7 +1779,7 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
 				},
 			},
-			UpdateStrategy: cpv1beta1.UpdateRecreate,
+			UpdateStrategy: cpv1beta2.UpdateRecreate,
 			Replicas:       int32(1),
 			Version:        "v1.30.0",
 		},

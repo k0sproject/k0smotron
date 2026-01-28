@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
 	"github.com/k0sproject/k0smotron/internal/util"
 	"github.com/stretchr/testify/require"
@@ -118,11 +118,11 @@ func controlplaneConditionsSpec(t *testing.T) {
 		if err := bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(controlPlane), controlPlane); err != nil {
 			return false
 		}
-		return conditions.IsTrue(controlPlane, string(cpv1beta1.ControlPlaneAvailableCondition))
+		return conditions.IsTrue(controlPlane, string(cpv1beta2.ControlPlaneAvailableCondition))
 	}, 5*time.Minute, 10*time.Second, "ControlPlaneAvailableCondition should transition to True")
 
 	// Test: Verify that the condition has the correct final status
-	condition := conditions.Get(controlPlane, string(cpv1beta1.ControlPlaneAvailableCondition))
+	condition := conditions.Get(controlPlane, string(cpv1beta2.ControlPlaneAvailableCondition))
 	require.NotNil(t, condition, "ControlPlaneAvailableCondition should exist")
 	require.Equal(t, metav1.ConditionTrue, condition.Status, "ControlPlaneAvailableCondition should be True")
 
