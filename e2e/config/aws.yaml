@@ -66,7 +66,7 @@ providers:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
       - name: v1.10.99 # potentially next release. Manifest from source files (development) are used.
-        value: ../../config/default
+        value: ../../config/clusterapi/controlplane
         contract: v1beta1
         files:
           - sourcePath: "../../metadata.yaml"
@@ -106,7 +106,7 @@ providers:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
       - name: v1.10.99 # potentially next release. Manifest from source files (development) are used.
-        value: ../../config/default
+        value: ../../config/clusterapi/bootstrap
         contract: v1beta1
         files:
           - sourcePath: "../../metadata.yaml"
