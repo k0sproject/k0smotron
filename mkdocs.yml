@@ -48,6 +48,7 @@ nav:
         - Using OCI registry to pull k0s: capi-use-oci-registry.md
         - Cilium with kube-proxy replacement (HCP): capi-examples/cilium-kube-proxy-replacement.md
       - Advanced:
+        - Component customization: capi-advanced/components.md
         - Cloud init customization: capi-advanced/cloud-init.md
     - Monitoring: monitoring.md
   - Update:
