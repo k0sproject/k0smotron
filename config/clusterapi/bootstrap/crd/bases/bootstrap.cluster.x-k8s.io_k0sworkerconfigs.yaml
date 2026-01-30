@@ -585,6 +585,13 @@ spec:
                 description: DataSecretName is the name of the secret that stores
                   the bootstrap data script.
                 type: string
+              initialization:
+                description: Initialization represents the initialization status of
+                  the worker node
+                properties:
+                  dataSecretCreated:
+                    type: boolean
+                type: object
               ready:
                 description: Ready indicates the Bootstrapdata field is ready to be
                   consumed

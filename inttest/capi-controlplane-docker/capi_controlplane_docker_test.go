@@ -119,7 +119,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 		var cluster v1beta1.Cluster
 		err = s.client.RESTClient().
 			Get().
-			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/clusters/docker-test-cluster").
+			AbsPath("/apis/cluster.x-k8s.io/v1beta2/namespaces/default/clusters/docker-test-cluster").
 			Do(ctx).
 			Into(&cluster)
 

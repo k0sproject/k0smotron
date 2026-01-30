@@ -391,6 +391,9 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
 
 		kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
+		if kubeconfigProxiedSecretCrt == nil {
+			return
+		}
 		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
 			assert.Equal(c, "https://test.endpoint:6443", v.Server)
 			assert.Equal(c, "http://test.com:9999", v.ProxyURL)

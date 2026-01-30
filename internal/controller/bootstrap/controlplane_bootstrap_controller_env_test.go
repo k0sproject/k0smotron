@@ -379,7 +379,8 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 	}(k0sControllerConfig, cluster, machineForControllerConfig, ns)
 
 	r := &ControlPlaneController{
-		Client: testEnv,
+		Client:              testEnv,
+		SecretCachingClient: testEnv,
 	}
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sControllerConfig)})
@@ -579,8 +580,9 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sControllerConfig), updatedK0sControllerConfig))
 
 		assert.True(c, updatedK0sControllerConfig.Status.Ready)
-		assert.NotNil(c, updatedK0sControllerConfig.Status.DataSecretName)
-		assert.Equal(c, *updatedK0sControllerConfig.Status.DataSecretName, updatedK0sControllerConfig.Name)
+		if assert.NotNil(c, updatedK0sControllerConfig.Status.DataSecretName) {
+			assert.Equal(c, *updatedK0sControllerConfig.Status.DataSecretName, updatedK0sControllerConfig.Name)
+		}
 		assert.True(c, conditions.IsTrue(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
 	}, 20*time.Second, 100*time.Millisecond)
 }

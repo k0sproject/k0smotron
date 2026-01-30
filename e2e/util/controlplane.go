@@ -26,7 +26,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,14 +38,14 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func WaitForControlPlaneToBeReady(ctx context.Context, client crclient.Client, cp *cpv1beta2.K0sControlPlane, interval Interval) error {
+func WaitForControlPlaneToBeReady(ctx context.Context, client crclient.Client, cp *cpv1beta1.K0sControlPlane, interval Interval) error {
 	fmt.Println("Waiting for the control plane to be ready")
 
 	controlplaneObjectKey := crclient.ObjectKey{
 		Name:      cp.Name,
 		Namespace: cp.Namespace,
 	}
-	controlplane := &cpv1beta2.K0sControlPlane{}
+	controlplane := &cpv1beta1.K0sControlPlane{}
 	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
 		if err := client.Get(ctx, controlplaneObjectKey, controlplane); err != nil {
 			return false, errors.Wrapf(err, "failed to get controlplane")
@@ -79,7 +79,7 @@ type UpgradeControlPlaneAndWaitForUpgradeInput struct {
 	GetLister                        capiframework.GetLister
 	ClusterProxy                     capiframework.ClusterProxy
 	Cluster                          *clusterv1.Cluster
-	ControlPlane                     *cpv1beta2.K0sControlPlane
+	ControlPlane                     *cpv1beta1.K0sControlPlane
 	KubernetesUpgradeVersion         string
 	WaitForKubeProxyUpgradeInterval  Interval
 	WaitForControlPlaneReadyInterval Interval
@@ -118,9 +118,9 @@ func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input Upgrad
 	}, input.WaitForKubeProxyUpgradeInterval)
 }
 
-func DiscoveryAndWaitForControlPlaneInitialized(ctx context.Context, input capiframework.DiscoveryAndWaitForControlPlaneInitializedInput, interval Interval) (*cpv1beta2.K0sControlPlane, error) {
-	var controlPlane *cpv1beta2.K0sControlPlane
-	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
+func DiscoveryAndWaitForControlPlaneInitialized(ctx context.Context, input capiframework.DiscoveryAndWaitForControlPlaneInitializedInput, interval Interval) (*cpv1beta1.K0sControlPlane, error) {
+	var controlPlane *cpv1beta1.K0sControlPlane
+	err := wait.PollUntilContextTimeout(ctx, time.Second, 10*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		controlPlane, err = getK0sControlPlaneByCluster(ctx, GetK0sControlPlaneByClusterInput{
 			Lister:      input.Lister,
 			ClusterName: input.Cluster.Name,
@@ -155,8 +155,8 @@ type GetK0sControlPlaneByClusterInput struct {
 	Namespace   string
 }
 
-func getK0sControlPlaneByCluster(ctx context.Context, input GetK0sControlPlaneByClusterInput) (*cpv1beta2.K0sControlPlane, error) {
-	controlPlaneList := &cpv1beta2.K0sControlPlaneList{}
+func getK0sControlPlaneByCluster(ctx context.Context, input GetK0sControlPlaneByClusterInput) (*cpv1beta1.K0sControlPlane, error) {
+	controlPlaneList := &cpv1beta1.K0sControlPlaneList{}
 	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		return input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...) == nil, nil
 	})
@@ -188,7 +188,7 @@ func byClusterOptions(name, namespace string) []crclient.ListOption {
 type WaitForOneK0sControlPlaneMachineToExistInput struct {
 	Lister       capiframework.Lister
 	Cluster      *clusterv1.Cluster
-	ControlPlane *cpv1beta2.K0sControlPlane
+	ControlPlane *cpv1beta1.K0sControlPlane
 }
 
 // WaitForOneK0sControlPlaneMachineToExist will wait until all control plane machines have node refs.

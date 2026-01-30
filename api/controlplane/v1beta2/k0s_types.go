@@ -85,7 +85,7 @@ type K0sControlPlane struct {
 
 	Spec K0sControlPlaneSpec `json:"spec,omitempty"`
 
-	// +kubebuilder:default={version:"",ready:false,initialized:false,initialization:{controlPlaneInitialized:false}}
+	// +kubebuilder:default={version:"",ready:false,initialization:{controlPlaneInitialized:false}}
 	Status K0sControlPlaneStatus `json:"status,omitempty"`
 }
 
@@ -148,14 +148,6 @@ type K0sControlPlaneStatus struct {
 	// Ready denotes that the control plane is ready
 	// +optional
 	Ready bool `json:"ready"`
-
-	// initialized denotes that the K0sControlPlane API Server is initialized and thus
-	// it can accept requests.
-	// NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
-	// The value of this field is never updated after provisioning is completed. Please use conditions
-	// to check the operational state of the control plane.
-	// +optional
-	Initialized bool `json:"initialized"`
 
 	// initialization represents the initialization status of the control plane
 	// +optional

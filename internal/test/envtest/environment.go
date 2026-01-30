@@ -19,7 +19,6 @@ package envtest
 import (
 	"context"
 	"fmt"
-	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
 	"os"
 	"path"
 	"path/filepath"
@@ -181,11 +180,15 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 			panic(errors.Wrapf(err, "failed to write the test env kubeconfig"))
 		}
 	}
-	if err = (&controlplane.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+	if err = (&cpv1beta2.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
 		panic(errors.Wrapf(err, "unable to create validation webhook"))
 	}
 
-	if err = (&controlplane.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
+	if err = (&cpv1beta2.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
+		panic(errors.Wrapf(err, "unable to create validation webhook"))
+	}
+
+	if err = (&bootstrapv1beta2.K0sWorkerConfigValidator{}).SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
 		panic(errors.Wrapf(err, "unable to create validation webhook"))
 	}
 

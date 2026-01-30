@@ -174,8 +174,9 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 			assert.NoError(t, err)
 			ms, ok := rc.(*machineStatus)
 			assert.True(t, ok)
-			assert.Len(t, ms.machines, 1)
-			assert.Equal(t, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
+			if assert.Len(t, ms.machines, 1) {
+				assert.Equal(t, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
+			}
 		}, 10*time.Second, 100*time.Millisecond)
 
 	})
@@ -238,8 +239,9 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 			assert.NoError(t, err)
 			ms, ok := rc.(*machineStatus)
 			assert.True(t, ok)
-			assert.Len(t, ms.machines, 1)
-			assert.Equal(t, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
+			if assert.Len(t, ms.machines, 1) {
+				assert.Equal(t, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
+			}
 		}, 10*time.Second, 100*time.Millisecond)
 	})
 }

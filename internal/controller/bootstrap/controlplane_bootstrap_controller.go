@@ -336,6 +336,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Set the status to ready
 	config.Status.Ready = true
+	config.Status.Initialization.DataSecretCreated = true
 	config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
 
 	log.Info("Reconciled succesfully")
@@ -413,8 +414,8 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		customUserData string
 		vars           map[provisioner.VarName]string
 	)
-	if scope.Config.Spec.CustomUserDataRef != nil {
-		customUserData, err = resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
+	if scope.Config.Spec.Provisioner.CustomUserDataRef != nil {
+		customUserData, err = resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.Provisioner.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom controller user data: %w", err)
 		}

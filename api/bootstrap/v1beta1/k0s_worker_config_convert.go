@@ -7,7 +7,6 @@ import (
 )
 
 var _ conversion.Convertible = &K0sWorkerConfig{}
-var _ conversion.Convertible = &K0sWorkerConfigList{}
 var _ conversion.Convertible = &K0sWorkerConfigTemplate{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
@@ -15,6 +14,14 @@ func (kwcv1beta1 *K0sWorkerConfig) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0sWorkerConfig)
 	dst.ObjectMeta = kwcv1beta1.ObjectMeta
 	dst.Spec = k0sWorkerConfigV1beta1ToV1beta2Spec(kwcv1beta1.Spec)
+	dst.Status = v1beta2.K0sWorkerConfigStatus{
+		Ready:          kwcv1beta1.Status.Ready,
+		DataSecretName: kwcv1beta1.Status.DataSecretName,
+		Conditions:     kwcv1beta1.Status.Conditions,
+	}
+	if kwcv1beta1.Status.DataSecretName != nil && *kwcv1beta1.Status.DataSecretName != "" {
+		dst.Status.Initialization.DataSecretCreated = true
+	}
 	return nil
 }
 
@@ -55,6 +62,11 @@ func (kwcv1beta1 *K0sWorkerConfig) ConvertFrom(srcRaw conversion.Hub) error {
 	kwcv1beta1.ObjectMeta = src.ObjectMeta
 
 	kwcv1beta1.Spec = k0sWorkerConfigV1beta2ToV1beta1Spec(src.Spec)
+	kwcv1beta1.Status = K0sWorkerConfigStatus{
+		Ready:          src.Status.Ready,
+		DataSecretName: src.Status.DataSecretName,
+		Conditions:     src.Status.Conditions,
+	}
 	return nil
 }
 
@@ -77,34 +89,6 @@ func k0sWorkerConfigV1beta2ToV1beta1Spec(spec v1beta2.K0sWorkerConfigSpec) K0sWo
 	}
 
 	return res
-}
-
-// ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
-func (kwcv1beta1 *K0sWorkerConfigList) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sWorkerConfigList)
-	dst.ListMeta = kwcv1beta1.ListMeta
-	for _, item := range kwcv1beta1.Items {
-		converted := v1beta2.K0sWorkerConfig{}
-		if err := item.ConvertTo(&converted); err != nil {
-			return err
-		}
-		dst.Items = append(dst.Items, converted)
-	}
-	return nil
-}
-
-// ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
-func (kwcv1beta1 *K0sWorkerConfigList) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sWorkerConfigList)
-	kwcv1beta1.ListMeta = src.ListMeta
-	for _, item := range src.Items {
-		converted := K0sWorkerConfig{}
-		if err := converted.ConvertFrom(&item); err != nil {
-			return err
-		}
-		kwcv1beta1.Items = append(kwcv1beta1.Items, converted)
-	}
-	return nil
 }
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).

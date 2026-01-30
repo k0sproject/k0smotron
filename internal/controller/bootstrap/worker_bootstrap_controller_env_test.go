@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -554,7 +554,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	r := &Controller{
 		Client:                testEnv,
 		workloadClusterClient: workloadClient,
-		SecretCachingClient:   secretCachingClient,
+		SecretCachingClient:   testEnv,
 	}
 
 	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
@@ -577,6 +577,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 		updatedK0sWorkerConfig := &bootstrapv1.K0sWorkerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
 
+		fmt.Println(updatedK0sWorkerConfig.Status)
 		assert.True(c, updatedK0sWorkerConfig.Status.Ready)
 		assert.NotNil(c, updatedK0sWorkerConfig.Status.DataSecretName)
 		if updatedK0sWorkerConfig.Status.DataSecretName != nil {

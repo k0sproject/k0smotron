@@ -10,6 +10,7 @@ resources:
 patches:
 - path: patches/webhook_in_k0scontrolplanes.yaml
 - path: patches/webhook_in_k0sworkerconfig.yaml
+- path: patches/webhook_in_k0scontrollerconfig.yaml
 - path: patches/cainjection_in_k0scontrolplanes.yaml
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD

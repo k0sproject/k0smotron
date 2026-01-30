@@ -7,14 +7,22 @@ import (
 )
 
 var _ conversion.Convertible = &K0sControllerConfig{}
-var _ conversion.Convertible = &K0sControllerConfigList{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (kccv1beta1 *K0sControllerConfig) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0sControllerConfig)
-	dst.ObjectMeta = kccv1beta1.ObjectMeta
+	dst.ObjectMeta = *kccv1beta1.ObjectMeta.DeepCopy()
 
 	dst.Spec = k0sControllerConfigV1beta1ToV1beta2Spec(kccv1beta1.Spec)
+	dst.Status = v1beta2.K0sControllerConfigStatus{
+		Ready:          kccv1beta1.Status.Ready,
+		DataSecretName: kccv1beta1.Status.DataSecretName,
+		Conditions:     kccv1beta1.Status.Conditions,
+	}
+	if kccv1beta1.Status.DataSecretName != nil && *kccv1beta1.Status.DataSecretName != "" {
+		dst.Status.Initialization.DataSecretCreated = true
+	}
+
 	return nil
 }
 
@@ -28,6 +36,7 @@ func k0sControllerConfigV1beta1ToV1beta2Spec(spec K0sControllerConfigSpec) v1bet
 	return res
 }
 
+// ConvertK0sConfigSpecV1beta1ToV1beta2 converts K0sConfigSpec from v1beta1 to v1beta2, handling the changes in the provisioner field.
 func ConvertK0sConfigSpecV1beta1ToV1beta2(spec *K0sConfigSpec) *v1beta2.K0sConfigSpec {
 	if spec == nil {
 		return nil
@@ -67,6 +76,12 @@ func (kccv1beta1 *K0sControllerConfig) ConvertFrom(srcRaw conversion.Hub) error 
 	kccv1beta1.ObjectMeta = src.ObjectMeta
 
 	kccv1beta1.Spec = k0sControllerConfigSpecV1beta2ToV1beta1(src.Spec)
+	kccv1beta1.Status = K0sControllerConfigStatus{
+		Ready:          src.Status.Ready,
+		DataSecretName: src.Status.DataSecretName,
+		Conditions:     src.Status.Conditions,
+	}
+
 	return nil
 }
 
@@ -80,6 +95,7 @@ func k0sControllerConfigSpecV1beta2ToV1beta1(spec v1beta2.K0sControllerConfigSpe
 	return res
 }
 
+// ConvertK0sConfigSpecV1beta2ToV1beta1 converts K0sConfigSpec from v1beta2 to v1beta1, handling the changes in the provisioner field.
 func ConvertK0sConfigSpecV1beta2ToV1beta1(spec *v1beta2.K0sConfigSpec) *K0sConfigSpec {
 	if spec == nil {
 		return nil
@@ -95,39 +111,13 @@ func ConvertK0sConfigSpecV1beta2ToV1beta1(spec *v1beta2.K0sConfigSpec) *K0sConfi
 		PreInstalledK0s:   spec.PreInstalledK0s,
 		DownloadURL:       spec.DownloadURL,
 		Tunneling:         spec.Tunneling,
-		CustomUserDataRef: spec.CustomUserDataRef,
 		WorkingDir:        spec.WorkingDir,
 	}
 	if spec.Provisioner.Type == provisioner.IgnitionProvisioningFormat {
 		res.Ignition = spec.Provisioner.Ignition
 	}
+	if spec.Provisioner.CustomUserDataRef != nil {
+		res.CustomUserDataRef = spec.Provisioner.CustomUserDataRef
+	}
 	return res
-}
-
-// ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
-func (kccv1beta1 *K0sControllerConfigList) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sControllerConfigList)
-	dst.ListMeta = kccv1beta1.ListMeta
-	for _, item := range kccv1beta1.Items {
-		converted := v1beta2.K0sControllerConfig{}
-		if err := item.ConvertTo(&converted); err != nil {
-			return err
-		}
-		dst.Items = append(dst.Items, converted)
-	}
-	return nil
-}
-
-// ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
-func (kccv1beta1 *K0sControllerConfigList) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sControllerConfigList)
-	kccv1beta1.ListMeta = src.ListMeta
-	for _, item := range src.Items {
-		converted := K0sControllerConfig{}
-		if err := converted.ConvertFrom(&item); err != nil {
-			return err
-		}
-		kccv1beta1.Items = append(kccv1beta1.Items, converted)
-	}
-	return nil
 }

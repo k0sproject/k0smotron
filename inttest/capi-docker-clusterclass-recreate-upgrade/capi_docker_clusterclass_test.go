@@ -178,7 +178,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	kcpList := &cpv1beta2.K0sControlPlaneList{}
 	err = s.client.RESTClient().Get().
-		AbsPath(`/apisbootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"1/namespaces/default/k0scontrolplanes`).
+		AbsPath(`/apis/controlplane.cluster.x-k8s.io/v1beta2/namespaces/default/k0scontrolplanes`).
 		Param("limit", "1").
 		Param("labelSelector", "cluster.x-k8s.io/cluster-name=docker-test-cluster").
 		Do(context.Background()).
@@ -459,12 +459,12 @@ spec:
     machineInfrastructure:
       ref:
         kind: DockerMachineTemplate
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: docker-test-machine-template
         namespace: default
   infrastructure:
     ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: k0smotron-docker-cluster-tmpl
       namespace: default
@@ -480,7 +480,7 @@ spec:
             namespace: default
         infrastructure:
           ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
             name: docker-test-machine-template
             namespace: default

@@ -424,7 +424,7 @@ func DeleteCluster(clusterName string) error {
 }
 
 func GetControlPlaneMachinesByKcpName(ctx context.Context, kcpName string, namespace string, c *kubernetes.Clientset) ([]clusterv1.Machine, error) {
-	apiPath := fmt.Sprintf("/apis/cluster.x-k8s.io/v1beta1/namespaces/%s/machines", namespace)
+	apiPath := fmt.Sprintf("/apis/cluster.x-k8s.io/v1beta2/namespaces/%s/machines", namespace)
 	res, err := c.RESTClient().Get().AbsPath(apiPath).DoRaw(ctx)
 	if err != nil {
 		return nil, err

@@ -267,6 +267,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	// Set the status to ready
 	scope.Config.Status.Ready = true
+	scope.Config.Status.Initialization.DataSecretCreated = true
 	scope.Config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
 
 	log.Info("Reconciled succesfully")
