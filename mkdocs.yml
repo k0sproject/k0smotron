@@ -47,6 +47,7 @@ nav:
         - Remote Machine with Okta ASA: capi-remotemachine-okta-asa.md
         - Using OCI registry to pull k0s: capi-use-oci-registry.md
       - Advanced:
+        - Component customization: capi-advanced/components.md
         - Cloud init customization: capi-advanced/cloud-init.md
     - Monitoring: monitoring.md
   - Update:
