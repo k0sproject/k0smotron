@@ -33,6 +33,7 @@ nav:
       - Ignition support: ignition-support.md
       - ClusterClass: capi-clusterclass.md
       - Health Checks: capi-machine-health-checks.md
+      - Generated Resources: generated-resources.md
       - Examples:
         - Software prerequisites: capi-examples.md
         - AWS (HCP): capi-aws.md
