@@ -43,9 +43,10 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 				Spec: km.ClusterSpec{},
 			},
 			want: map[string]string{
-				"app":       "k0smotron",
-				"cluster":   "test",
-				"component": "cluster",
+				"app":                         "k0smotron",
+				"cluster":                     "test",
+				"component":                   "control-plane",
+				"app.kubernetes.io/component": "control-plane",
 			},
 		},
 		{
@@ -60,10 +61,11 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 				Spec: km.ClusterSpec{},
 			},
 			want: map[string]string{
-				"app":       "k0smotron",
-				"cluster":   "test",
-				"component": "cluster",
-				"test":      "test",
+				"app":                         "k0smotron",
+				"cluster":                     "test",
+				"component":                   "control-plane",
+				"app.kubernetes.io/component": "control-plane",
+				"test":                        "test",
 			},
 		},
 		{
@@ -84,11 +86,12 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"app":       "k0smotron",
-				"cluster":   "test",
-				"component": "cluster",
-				"test":      "test",
-				"foo":       "bar",
+				"app":                         "k0smotron",
+				"cluster":                     "test",
+				"component":                   "control-plane",
+				"app.kubernetes.io/component": "control-plane",
+				"test":                        "test",
+				"foo":                         "bar",
 			},
 		},
 		{
@@ -109,10 +112,11 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"app":       "k0smotron",
-				"cluster":   "test",
-				"component": "cluster",
-				"test":      "foobar",
+				"app":                         "k0smotron",
+				"cluster":                     "test",
+				"component":                   "control-plane",
+				"app.kubernetes.io/component": "control-plane",
+				"test":                        "foobar",
 			},
 		},
 	}

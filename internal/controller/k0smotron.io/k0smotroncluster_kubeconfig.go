@@ -67,7 +67,7 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetAdminConfigSecretName(),
 			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronCluster(kmc),
+			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, "kubeconfig"),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		StringData: map[string]string{"value": processedOutput},

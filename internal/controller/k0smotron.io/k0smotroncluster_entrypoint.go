@@ -56,7 +56,7 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetEntrypointConfigMapName(),
 			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronCluster(kmc),
+			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, "control-plane"),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Data: map[string]string{

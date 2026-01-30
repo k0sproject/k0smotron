@@ -793,6 +793,9 @@ token = ` + frpToken + `
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      frpsCMName,
 			Namespace: kcp.GetNamespace(),
+			Labels: map[string]string{
+				"app.kubernetes.io/component": "tunneling",
+			},
 		},
 		Data: map[string]string{
 			"frps.ini": frpsConfig,
@@ -813,19 +816,24 @@ token = ` + frpToken + `
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf(FRPDeploymentNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
+			Labels: map[string]string{
+				"app.kubernetes.io/component": "tunneling",
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"k0smotron_cluster": kcp.GetName(),
-					"app":               "frps",
+					"k0smotron_cluster":           kcp.GetName(),
+					"app":                         "frps",
+					"app.kubernetes.io/component": "tunneling",
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"k0smotron_cluster": kcp.GetName(),
-						"app":               "frps",
+						"k0smotron_cluster":           kcp.GetName(),
+						"app":                         "frps",
+						"app.kubernetes.io/component": "tunneling",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -882,11 +890,15 @@ token = ` + frpToken + `
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf(FRPServiceNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
+			Labels: map[string]string{
+				"app.kubernetes.io/component": "tunneling",
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				"k0smotron_cluster": kcp.GetName(),
-				"app":               "frps",
+				"k0smotron_cluster":           kcp.GetName(),
+				"app":                         "frps",
+				"app.kubernetes.io/component": "tunneling",
 			},
 			Ports: []corev1.ServicePort{{
 				Name:       "api",

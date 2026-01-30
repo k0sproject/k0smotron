@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+// DefaultK0smotronClusterLabels returns the default labels (app, cluster).
 func DefaultK0smotronClusterLabels(kmc *km.Cluster) map[string]string {
 	return map[string]string{
 		"app":     "k0smotron",
@@ -17,6 +18,9 @@ func DefaultK0smotronClusterLabels(kmc *km.Cluster) map[string]string {
 	}
 }
 
+// LabelsForK0smotronCluster returns base labels (app, cluster, user labels) without a component.
+// Use when building custom label sets or when the resource is not component-specific.
+// For component-specific resources, use LabelsForK0smotronComponent (or helpers like LabelsForK0smotronControlPlane).
 func LabelsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 	labels := DefaultK0smotronClusterLabels(kmc)
 	for k, v := range kmc.Labels {
@@ -25,20 +29,27 @@ func LabelsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 	for k, v := range kmc.Spec.KubeconfigSecretMetadata.Labels {
 		labels[k] = v
 	}
-	labels["component"] = "cluster"
 	return labels
 }
 
-func LabelsForK0smotronControlPlane(kmc *km.Cluster) map[string]string {
+// LabelsForK0smotronComponent returns base labels plus component and app.kubernetes.io/component.
+func LabelsForK0smotronComponent(kmc *km.Cluster, component string) map[string]string {
 	labels := LabelsForK0smotronCluster(kmc)
+	labels["component"] = component
+	labels["app.kubernetes.io/component"] = component
+	return labels
+}
+
+// LabelsForK0smotronControlPlane returns labels for K0smotron control plane resources.
+func LabelsForK0smotronControlPlane(kmc *km.Cluster) map[string]string {
+	labels := LabelsForK0smotronComponent(kmc, "control-plane")
 	labels["cluster.x-k8s.io/control-plane"] = "true"
 	return labels
 }
 
+// LabelsForEtcdK0smotronCluster returns labels for K0smotron etcd resources.
 func LabelsForEtcdK0smotronCluster(kmc *km.Cluster) map[string]string {
-	labels := LabelsForK0smotronCluster(kmc)
-	labels["component"] = "etcd"
-	return labels
+	return LabelsForK0smotronComponent(kmc, "etcd")
 }
 
 func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {

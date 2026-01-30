@@ -88,6 +88,7 @@ func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster) (corev
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetIngressManifestsConfigMapName(),
 			Namespace:   kmc.Namespace,
+			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, "ingress"),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Data: map[string]string{
@@ -210,6 +211,7 @@ func (scope *kmcScope) generateKonnectivityIngressConfigMap(kmc *km.Cluster) (co
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
 			Namespace:   kmc.Namespace,
+			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, "ingress"),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Data: map[string]string{
@@ -327,7 +329,7 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 			Name:        kmc.GetIngressName(),
 			Namespace:   kmc.Namespace,
 			Annotations: annotations,
-			Labels:      kcontrollerutil.LabelsForK0smotronCluster(kmc),
+			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, "ingress"),
 		},
 		Spec: v1.IngressSpec{
 			IngressClassName: kmc.Spec.Ingress.ClassName,
