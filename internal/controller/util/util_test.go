@@ -56,11 +56,11 @@ func TestLabelsForK0smotronComponent_SetsComponentLabels(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "mycluster"},
 		Spec:       km.ClusterSpec{},
 	}
-	got := LabelsForK0smotronComponent(kmc, "config")
+	got := LabelsForK0smotronComponent(kmc, ComponentConfig)
 	assert.Equal(t, "k0smotron", got["app"])
 	assert.Equal(t, "mycluster", got["cluster"])
-	assert.Equal(t, "config", got["component"])
-	assert.Equal(t, "config", got["app.kubernetes.io/component"])
+	assert.Equal(t, ComponentConfig, got["component"])
+	assert.Equal(t, ComponentConfig, got["app.kubernetes.io/component"])
 }
 
 func TestLabelsForK0smotronControlPlane(t *testing.T) {
@@ -71,8 +71,8 @@ func TestLabelsForK0smotronControlPlane(t *testing.T) {
 	got := LabelsForK0smotronControlPlane(kmc)
 	assert.Equal(t, "k0smotron", got["app"])
 	assert.Equal(t, "mycluster", got["cluster"])
-	assert.Equal(t, "control-plane", got["component"])
-	assert.Equal(t, "control-plane", got["app.kubernetes.io/component"])
+	assert.Equal(t, ComponentControlPlane, got["component"])
+	assert.Equal(t, ComponentControlPlane, got["app.kubernetes.io/component"])
 	assert.Equal(t, "true", got["cluster.x-k8s.io/control-plane"])
 }
 
@@ -84,6 +84,6 @@ func TestLabelsForEtcdK0smotronCluster(t *testing.T) {
 	got := LabelsForEtcdK0smotronCluster(kmc)
 	assert.Equal(t, "k0smotron", got["app"])
 	assert.Equal(t, "mycluster", got["cluster"])
-	assert.Equal(t, "etcd", got["component"])
-	assert.Equal(t, "etcd", got["app.kubernetes.io/component"])
+	assert.Equal(t, ComponentEtcd, got["component"])
+	assert.Equal(t, ComponentEtcd, got["app.kubernetes.io/component"])
 }

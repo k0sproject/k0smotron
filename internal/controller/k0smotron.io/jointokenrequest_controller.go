@@ -177,7 +177,7 @@ func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, to
 		"k0smotron.io/cluster-uid":    string(jtr.Status.ClusterUID),
 		"k0smotron.io/role":           jtr.Spec.Role,
 		"k0smotron.io/token-request":  jtr.Name,
-		"app.kubernetes.io/component": "jointoken",
+		"app.kubernetes.io/component": util.ComponentJointoken,
 	}
 	for k, v := range jtr.Labels {
 		labels[k] = v

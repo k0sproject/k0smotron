@@ -468,7 +468,7 @@ func createBootstrapSecret(scope *Scope, bootstrapData []byte, format string) *c
 	// Initialize labels with cluster-name label
 	labels := map[string]string{
 		clusterv1.ClusterNameLabel:    scope.Cluster.Name,
-		"app.kubernetes.io/component": "bootstrap",
+		"app.kubernetes.io/component": util.ComponentBootstrap,
 	}
 
 	// Copy labels from secretMetadata if specified

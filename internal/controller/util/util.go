@@ -10,6 +10,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+// Component label values for app.kubernetes.io/component (and legacy "component").
+// Use these constants so component names are defined in one place.
+const (
+	ComponentBootstrap    = "bootstrap"
+	ComponentConfig       = "config"
+	ComponentControlPlane = "control-plane"
+	ComponentEtcd         = "etcd"
+	ComponentIngress      = "ingress"
+	ComponentJointoken    = "jointoken"
+	ComponentKubeconfig   = "kubeconfig"
+	ComponentMonitoring   = "monitoring"
+	ComponentTunneling    = "tunneling"
+)
+
 // DefaultK0smotronClusterLabels returns the default labels (app, cluster).
 func DefaultK0smotronClusterLabels(kmc *km.Cluster) map[string]string {
 	return map[string]string{
@@ -42,14 +56,14 @@ func LabelsForK0smotronComponent(kmc *km.Cluster, component string) map[string]s
 
 // LabelsForK0smotronControlPlane returns labels for K0smotron control plane resources.
 func LabelsForK0smotronControlPlane(kmc *km.Cluster) map[string]string {
-	labels := LabelsForK0smotronComponent(kmc, "control-plane")
+	labels := LabelsForK0smotronComponent(kmc, ComponentControlPlane)
 	labels["cluster.x-k8s.io/control-plane"] = "true"
 	return labels
 }
 
 // LabelsForEtcdK0smotronCluster returns labels for K0smotron etcd resources.
 func LabelsForEtcdK0smotronCluster(kmc *km.Cluster) map[string]string {
-	return LabelsForK0smotronComponent(kmc, "etcd")
+	return LabelsForK0smotronComponent(kmc, ComponentEtcd)
 }
 
 func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {

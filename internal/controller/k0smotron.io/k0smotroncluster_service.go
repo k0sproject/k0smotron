@@ -88,7 +88,7 @@ func generateService(kmc *km.Cluster) v1.Service {
 
 	// Copy both Cluster level labels and Service labels
 	labels := map[string]string{}
-	for k, v := range util.LabelsForK0smotronComponent(kmc, "control-plane") {
+	for k, v := range util.LabelsForK0smotronComponent(kmc, util.ComponentControlPlane) {
 		labels[k] = v
 	}
 	for k, v := range kmc.Spec.Service.Labels {

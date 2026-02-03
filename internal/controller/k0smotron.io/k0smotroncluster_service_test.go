@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,8 +46,8 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 			want: map[string]string{
 				"app":                         "k0smotron",
 				"cluster":                     "test",
-				"component":                   "control-plane",
-				"app.kubernetes.io/component": "control-plane",
+				"component":                   util.ComponentControlPlane,
+				"app.kubernetes.io/component": util.ComponentControlPlane,
 			},
 		},
 		{
@@ -63,8 +64,8 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 			want: map[string]string{
 				"app":                         "k0smotron",
 				"cluster":                     "test",
-				"component":                   "control-plane",
-				"app.kubernetes.io/component": "control-plane",
+				"component":                   util.ComponentControlPlane,
+				"app.kubernetes.io/component": util.ComponentControlPlane,
 				"test":                        "test",
 			},
 		},
@@ -88,8 +89,8 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 			want: map[string]string{
 				"app":                         "k0smotron",
 				"cluster":                     "test",
-				"component":                   "control-plane",
-				"app.kubernetes.io/component": "control-plane",
+				"component":                   util.ComponentControlPlane,
+				"app.kubernetes.io/component": util.ComponentControlPlane,
 				"test":                        "test",
 				"foo":                         "bar",
 			},
@@ -114,8 +115,8 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 			want: map[string]string{
 				"app":                         "k0smotron",
 				"cluster":                     "test",
-				"component":                   "control-plane",
-				"app.kubernetes.io/component": "control-plane",
+				"component":                   util.ComponentControlPlane,
+				"app.kubernetes.io/component": util.ComponentControlPlane,
 				"test":                        "foobar",
 			},
 		},
