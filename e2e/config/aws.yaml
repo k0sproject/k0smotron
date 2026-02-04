@@ -34,7 +34,8 @@ providers:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
     files:
-      - sourcePath: "../data/infrastructure-aws/cluster-template-ignition.yaml"
+      - sourcePath: "../data/infrastructure-aws/cluster-template-ignition-flatcar.yaml"
+      - sourcePath: "../data/infrastructure-aws/cluster-template-ignition-fedora.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -126,7 +127,6 @@ variables:
   # Enabling the feature flags by setting the env variables.
   CLUSTER_TOPOLOGY: "true"
   EXP_MACHINE_POOL: "true"
-  AWS_INSTANCE_TYPE: "t3.large" 
   # Following feature flags are required to use Ignition as bootstrap data format in CAPA.
   EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
   EXP_BOOTSTRAP_FORMAT_IGNITION: "true"

@@ -1,0 +1,7 @@
+resources:
+- ../bases/cluster-with-ignition-provisioner.yaml
+
+patches:
+- path: k0scontrolplane-patch.yaml
+- path: k0sworkerconfigtemplate-patch.yaml
+- path: aws-machine-template-patch.yaml

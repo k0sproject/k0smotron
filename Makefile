@@ -161,8 +161,14 @@ generate-e2e-templates-main: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-ingress --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-ingress.yaml
 
+AWS_TEMPLATES := e2e/data/infrastructure-aws
 
-e2e: generate-e2e-templates-main
+.PHONY: generate-aws-e2e-templates
+generate-aws-e2e-templates: $(KUSTOMIZE)
+	$(KUSTOMIZE) build $(AWS_TEMPLATES)/cluster-template-ignition-fedora --load-restrictor LoadRestrictionsNone > $(AWS_TEMPLATES)/cluster-template-ignition-fedora.yaml
+	$(KUSTOMIZE) build $(AWS_TEMPLATES)/cluster-template-ignition-flatcar --load-restrictor LoadRestrictionsNone > $(AWS_TEMPLATES)/cluster-template-ignition-flatcar.yaml
+
+e2e: generate-e2e-templates-main generate-aws-e2e-templates
 	set +x;
 	PATH="${LOCALBIN}:${PATH}" go test -v -tags e2e -run '$(TEST_NAME)' ./e2e  \
 	    -artifacts-folder="$(ARTIFACTS)" \

@@ -34,7 +34,6 @@ spec:
         version: "3.4"
       ami:
         id: ami-00d12617b68dbc62f # Flatcar Container Linux stable 3975.2.1 (HVM) in eu-west-1
-      instanceType: ${AWS_INSTANCE_TYPE}
       publicIP: true
       iamInstanceProfile: control-plane.cluster-api-provider-aws.sigs.k8s.io
       uncompressedUserData: false
@@ -50,19 +49,6 @@ spec:
   version: v1.30.2+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
-    # Flatcar, as inmutable OS, needs k0s in /opt/bin. It cannot write k0s binary in the default /usr/local/bin.
-    k0sInstallDir: /opt/bin 
-    ignition:
-      variant: flatcar
-      version: 1.1.0
-      additionalConfig: |
-        variant: flatcar
-        version: 1.1.0
-        passwd:
-          users:
-            - name: core
-              ssh_authorized_keys:
-                - ssh-rsa ${SSH_PUBLIC_KEY}
     args:
       - --enable-worker
       - --debug
@@ -141,18 +127,4 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   template:
-    spec:
-      version: v1.30.2+k0s.0
-      # Flatcar, as inmutable OS, needs k0s in /opt/bin. It cannot write k0s binary in the default /usr/local/bin.
-      k0sInstallDir: /opt/bin 
-      ignition:
-        variant: flatcar
-        version: 1.1.0
-        additionalConfig: |
-          variant: flatcar
-          version: 1.1.0
-          passwd:
-            users:
-              - name: core
-                ssh_authorized_keys:
-                  - ssh-rsa ${SSH_PUBLIC_KEY}
+    spec: {}

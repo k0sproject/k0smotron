@@ -1,0 +1,18 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-aws-test
+  namespace: ${NAMESPACE}
+spec:
+  k0sConfigSpec:
+    ignition:
+      variant: fcos
+      version: 1.4.0
+      additionalConfig: |
+        variant: fcos
+        version: 1.4.0
+        passwd:
+          users:
+            - name: core
+              ssh_authorized_keys:
+                - ssh-rsa ${SSH_PUBLIC_KEY}

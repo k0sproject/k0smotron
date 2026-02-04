@@ -58,7 +58,7 @@ func ignitionProvisioningSpec(t *testing.T) {
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
 		ClusterctlConfigPath: clusterctlConfigPath,
 		KubeconfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
-		Flavor:               "ignition",
+		Flavor:               "ignition-flatcar",
 
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
@@ -75,8 +75,6 @@ func ignitionProvisioningSpec(t *testing.T) {
 		},
 	})
 	require.NotNil(t, workloadClusterTemplate)
-
-	fmt.Println(string(workloadClusterTemplate))
 
 	require.Eventually(t, func() bool {
 		return bootstrapClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate) == nil
