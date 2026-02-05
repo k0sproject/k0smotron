@@ -13,15 +13,17 @@ import (
 // Component label values for app.kubernetes.io/component (and legacy "component").
 // Use these constants so component names are defined in one place.
 const (
-	ComponentBootstrap    = "bootstrap"
-	ComponentConfig       = "config"
-	ComponentControlPlane = "control-plane"
-	ComponentEtcd         = "etcd"
-	ComponentIngress      = "ingress"
-	ComponentJointoken    = "jointoken"
-	ComponentKubeconfig   = "kubeconfig"
-	ComponentMonitoring   = "monitoring"
-	ComponentTunneling    = "tunneling"
+	ComponentBootstrap     = "bootstrap"
+	ComponentClusterConfig = "cluster-config"
+	ComponentConfig        = "config"
+	ComponentControlPlane  = "control-plane"
+	ComponentEntrypoint    = "entrypoint"
+	ComponentEtcd          = "etcd"
+	ComponentIngress       = "ingress"
+	ComponentJointoken     = "jointoken"
+	ComponentKubeconfig    = "kubeconfig"
+	ComponentMonitoring    = "monitoring"
+	ComponentTunneling     = "tunneling"
 )
 
 // DefaultK0smotronClusterLabels returns the default labels (app, cluster).
