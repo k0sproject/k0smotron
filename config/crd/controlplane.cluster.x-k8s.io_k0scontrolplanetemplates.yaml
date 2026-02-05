@@ -354,6 +354,8 @@ spec:
   - name: v1beta2
     schema:
       openAPIV3Schema:
+        description: K0sControlPlaneTemplate describes a k0s control plane configuration
+          template.
         properties:
           apiVersion:
             description: |-
@@ -373,8 +375,12 @@ spec:
           metadata:
             type: object
           spec:
+            description: K0sControlPlaneTemplateSpec describes a k0s control plane
+              template's spec.
             properties:
               template:
+                description: K0sControlPlaneTemplateResource describes the data needed
+                  to create a K0sControlPlane from a template.
                 properties:
                   metadata:
                     properties:
@@ -396,8 +402,11 @@ spec:
                         type: string
                     type: object
                   spec:
+                    description: K0sControlPlaneTemplateResourceSpec defines the desired
+                      state of K0sControlPlaneTemplate.
                     properties:
                       k0sConfigSpec:
+                        description: K0sConfigSpec defines the k0s configuration specification.
                         properties:
                           args:
                             description: |-

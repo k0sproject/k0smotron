@@ -1975,7 +1975,7 @@ Resource Types:
 
 
 
-
+K0sControllerConfig describes a k0s controller configuration.
 
 <table>
     <thead>
@@ -2007,14 +2007,14 @@ Resource Types:
         <td><b><a href="#k0scontrollerconfigspec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControllerConfigSpec describes a k0s controller configuration's spec.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrollerconfigstatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControllerConfigStatus defines the observed state of K0sControllerConfig<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2026,7 +2026,7 @@ Resource Types:
 
 
 
-
+K0sControllerConfigSpec describes a k0s controller configuration's spec.
 
 <table>
     <thead>
@@ -2614,7 +2614,7 @@ If empty, k0smotron will use the default one.<br/>
 
 
 
-
+K0sControllerConfigStatus defines the observed state of K0sControllerConfig
 
 <table>
     <thead>
@@ -2768,7 +2768,7 @@ Initialization represents the initialization status of the worker node
 
 
 
-
+K0sWorkerConfig describes a k0s worker configuration.
 
 <table>
     <thead>
@@ -2800,14 +2800,14 @@ Initialization represents the initialization status of the worker node
         <td><b><a href="#k0sworkerconfigspec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigSpec describes a k0s worker configuration's spec.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0sworkerconfigstatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2819,7 +2819,7 @@ Initialization represents the initialization status of the worker node
 
 
 
-
+K0sWorkerConfigSpec describes a k0s worker configuration's spec.
 
 <table>
     <thead>
@@ -3317,7 +3317,7 @@ SecretMetadata specifies metadata (labels and annotations) to be propagated to t
 
 
 
-
+K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig
 
 <table>
     <thead>
@@ -3471,7 +3471,7 @@ Initialization represents the initialization status of the worker node
 
 
 
-
+K0sWorkerConfigTemplate describes a k0s worker configuration template.
 
 <table>
     <thead>
@@ -3503,7 +3503,7 @@ Initialization represents the initialization status of the worker node
         <td><b><a href="#k0sworkerconfigtemplatespec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigTemplateSpec describes a k0s worker configuration template's spec.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3515,7 +3515,7 @@ Initialization represents the initialization status of the worker node
 
 
 
-
+K0sWorkerConfigTemplateSpec describes a k0s worker configuration template's spec.
 
 <table>
     <thead>
@@ -3530,7 +3530,7 @@ Initialization represents the initialization status of the worker node
         <td><b><a href="#k0sworkerconfigtemplatespectemplate-1">template</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigTemplateResource describes the data needed to create a K0sWorkerConfig from a template.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3542,7 +3542,7 @@ Initialization represents the initialization status of the worker node
 
 
 
-
+K0sWorkerConfigTemplateResource describes the data needed to create a K0sWorkerConfig from a template.
 
 <table>
     <thead>
@@ -3564,7 +3564,7 @@ Initialization represents the initialization status of the worker node
         <td><b><a href="#k0sworkerconfigtemplatespectemplatespec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigSpec describes a k0s worker configuration's spec.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3631,7 +3631,7 @@ Initialization represents the initialization status of the worker node
 
 
 
-
+K0sWorkerConfigSpec describes a k0s worker configuration's spec.
 
 <table>
     <thead>

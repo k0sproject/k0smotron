@@ -377,6 +377,7 @@ func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *clust
 
 }
 
+// GetK0sControlPlane retrieves a k0scontrolplane object from the cluster API server
 func GetK0sControlPlane(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*cpv1beta2.K0sControlPlane, error) {
 
 	url := fmt.Sprintf("apis/controlplane.cluster.x-k8s.io/v1beta2/namespaces/%s/k0scontrolplanes/%s", namespace, name)

@@ -16,6 +16,7 @@ func init() {
 // +kubebuilder:storageversion
 // +kubebuilder:conversion-gen=./api/controlplane/v1beta2
 
+// K0sControlPlaneTemplate describes a k0s control plane configuration template.
 type K0sControlPlaneTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -23,16 +24,19 @@ type K0sControlPlaneTemplate struct {
 	Spec K0sControlPlaneTemplateSpec `json:"spec,omitempty"`
 }
 
+// K0sControlPlaneTemplateSpec describes a k0s control plane template's spec.
 type K0sControlPlaneTemplateSpec struct {
 	Template K0sControlPlaneTemplateResource `json:"template,omitempty"`
 }
 
+// K0sControlPlaneTemplateResource describes the data needed to create a K0sControlPlane from a template.
 type K0sControlPlaneTemplateResource struct {
 	// +kubebuilder:validation:Optional
 	ObjectMeta metav1.ObjectMeta                   `json:"metadata,omitempty"`
 	Spec       K0sControlPlaneTemplateResourceSpec `json:"spec,omitempty"`
 }
 
+// K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlaneTemplate.
 type K0sControlPlaneTemplateResourceSpec struct {
 	K0sConfigSpec   bootstrapv2.K0sConfigSpec               `json:"k0sConfigSpec"`
 	MachineTemplate *K0sControlPlaneTemplateMachineTemplate `json:"machineTemplate,omitempty"`
@@ -76,6 +80,7 @@ type K0sControlPlaneTemplateMachineTemplate struct {
 
 // +kubebuilder:object:root=true
 
+// K0sControlPlaneTemplateList contains a list of K0sControlPlaneTemplate.
 type K0sControlPlaneTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

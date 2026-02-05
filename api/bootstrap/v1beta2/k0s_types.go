@@ -57,6 +57,7 @@ const (
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=bootstrap-k0smotron"
 
+// K0sWorkerConfig describes a k0s worker configuration.
 type K0sWorkerConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -77,6 +78,7 @@ func (c *K0sWorkerConfig) SetConditions(conditions []metav1.Condition) {
 
 // +kubebuilder:object:root=true
 
+// K0sWorkerConfigList contains a list of K0sWorkerConfig.
 type K0sWorkerConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -100,6 +102,7 @@ type ProvisionerSpec struct {
 	CustomUserDataRef *ContentSource `json:"customUserDataRef,omitempty"`
 }
 
+// K0sWorkerConfigSpec describes a k0s worker configuration's spec.
 type K0sWorkerConfigSpec struct {
 	// Provisioner defines the provisioner configuration. Defaults to cloud-init.
 	// +kubebuilder:validation:Optional
@@ -167,6 +170,7 @@ type SecretMetadata struct {
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
+// JoinTokenSecretRef is a reference to a secret that contains the join token.
 type JoinTokenSecretRef struct {
 	// Name is the name of the secret
 	// +kubebuilder:validation:Required
@@ -176,6 +180,7 @@ type JoinTokenSecretRef struct {
 	Key string `json:"key"`
 }
 
+// K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig
 type K0sWorkerConfigStatus struct {
 	// Ready indicates the Bootstrapdata field is ready to be consumed
 	Ready bool `json:"ready,omitempty"`
@@ -193,6 +198,7 @@ type K0sWorkerConfigStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
+// StatusInitialization represents the initialization status of the worker node
 type StatusInitialization struct {
 	DataSecretCreated bool `json:"dataSecretCreated,omitempty"`
 }
@@ -204,6 +210,7 @@ type StatusInitialization struct {
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=bootstrap-k0smotron"
 
+// K0sControllerConfig describes a k0s controller configuration.
 type K0sControllerConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -212,6 +219,7 @@ type K0sControllerConfig struct {
 	Status K0sControllerConfigStatus `json:"status,omitempty"`
 }
 
+// K0sControllerConfigStatus defines the observed state of K0sControllerConfig
 type K0sControllerConfigStatus struct {
 	// Ready indicates the Bootstrapdata field is ready to be consumed
 	Ready bool `json:"ready,omitempty"`
@@ -241,12 +249,14 @@ func (c *K0sControllerConfig) SetConditions(conditions []metav1.Condition) {
 
 // +kubebuilder:object:root=true
 
+// K0sControllerConfigList contains a list of K0sControllerConfig.
 type K0sControllerConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []K0sControllerConfig `json:"items"`
 }
 
+// K0sControllerConfigSpec describes a k0s controller configuration's spec.
 type K0sControllerConfigSpec struct {
 	// Version is the version of k0s to use. In case this is not set, k0smotron will use
 	// a version field of the Machine object. If it's empty, the latest version is used.
@@ -286,6 +296,7 @@ type ContentSourceRef struct {
 	Key string `json:"key"`
 }
 
+// K0sConfigSpec defines the k0s configuration specification.
 type K0sConfigSpec struct {
 	// Provisioner defines the provisioner configuration. Defaults to cloud-init.
 	// +kubebuilder:validation:Optional
@@ -349,6 +360,7 @@ type K0sConfigSpec struct {
 	WorkingDir string `json:"workingDir,omitempty"`
 }
 
+// TunnelingSpec defines the tunneling configuration.
 type TunnelingSpec struct {
 	// Enabled specifies whether tunneling is enabled.
 	//+kubebuilder:validation:Optional
@@ -411,19 +423,19 @@ func (kcs *K0sConfigSpec) GetJoinTokenPath() string {
 }
 
 // GetK0sConfigPath returns the full path to the k0s.yaml file in the working directory.
-func (k *K0sWorkerConfig) GetK0sConfigPath() string {
-	if k.Spec.WorkingDir == "" {
+func (c *K0sWorkerConfig) GetK0sConfigPath() string {
+	if c.Spec.WorkingDir == "" {
 		return "/etc/k0s.yaml"
 	}
-	return filepath.Join(k.Spec.WorkingDir, "k0s.yaml")
+	return filepath.Join(c.Spec.WorkingDir, "k0s.yaml")
 }
 
 // GetJoinTokenPath returns the full path to the k0s token file in the working directory.
-func (k *K0sWorkerConfig) GetJoinTokenPath() string {
-	if k.Spec.WorkingDir == "" {
+func (c *K0sWorkerConfig) GetJoinTokenPath() string {
+	if c.Spec.WorkingDir == "" {
 		return "/etc/k0s.token"
 	}
-	return filepath.Join(k.Spec.WorkingDir, "k0s.token")
+	return filepath.Join(c.Spec.WorkingDir, "k0s.token")
 }
 
 // Validate validates the K0sWorkerConfigSpec.

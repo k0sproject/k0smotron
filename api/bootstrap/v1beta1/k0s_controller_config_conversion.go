@@ -9,17 +9,17 @@ import (
 var _ conversion.Convertible = &K0sControllerConfig{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
-func (kccv1beta1 *K0sControllerConfig) ConvertTo(dstRaw conversion.Hub) error {
+func (c *K0sControllerConfig) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0sControllerConfig)
-	dst.ObjectMeta = *kccv1beta1.ObjectMeta.DeepCopy()
+	dst.ObjectMeta = *c.ObjectMeta.DeepCopy()
 
-	dst.Spec = k0sControllerConfigV1beta1ToV1beta2Spec(kccv1beta1.Spec)
+	dst.Spec = k0sControllerConfigV1beta1ToV1beta2Spec(c.Spec)
 	dst.Status = v1beta2.K0sControllerConfigStatus{
-		Ready:          kccv1beta1.Status.Ready,
-		DataSecretName: kccv1beta1.Status.DataSecretName,
-		Conditions:     kccv1beta1.Status.Conditions,
+		Ready:          c.Status.Ready,
+		DataSecretName: c.Status.DataSecretName,
+		Conditions:     c.Status.Conditions,
 	}
-	if kccv1beta1.Status.DataSecretName != nil && *kccv1beta1.Status.DataSecretName != "" {
+	if c.Status.DataSecretName != nil && *c.Status.DataSecretName != "" {
 		dst.Status.Initialization.DataSecretCreated = true
 	}
 
@@ -71,12 +71,12 @@ func ConvertK0sConfigSpecV1beta1ToV1beta2(spec *K0sConfigSpec) *v1beta2.K0sConfi
 }
 
 // ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
-func (kccv1beta1 *K0sControllerConfig) ConvertFrom(srcRaw conversion.Hub) error {
+func (c *K0sControllerConfig) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta2.K0sControllerConfig)
-	kccv1beta1.ObjectMeta = src.ObjectMeta
+	c.ObjectMeta = src.ObjectMeta
 
-	kccv1beta1.Spec = k0sControllerConfigSpecV1beta2ToV1beta1(src.Spec)
-	kccv1beta1.Status = K0sControllerConfigStatus{
+	c.Spec = k0sControllerConfigSpecV1beta2ToV1beta1(src.Spec)
+	c.Status = K0sControllerConfigStatus{
 		Ready:          src.Status.Ready,
 		DataSecretName: src.Status.DataSecretName,
 		Conditions:     src.Status.Conditions,

@@ -262,6 +262,8 @@ spec:
   - name: v1beta2
     schema:
       openAPIV3Schema:
+        description: K0sWorkerConfigTemplate describes a k0s worker configuration
+          template.
         properties:
           apiVersion:
             description: |-
@@ -281,8 +283,12 @@ spec:
           metadata:
             type: object
           spec:
+            description: K0sWorkerConfigTemplateSpec describes a k0s worker configuration
+              template's spec.
             properties:
               template:
+                description: K0sWorkerConfigTemplateResource describes the data needed
+                  to create a K0sWorkerConfig from a template.
                 properties:
                   metadata:
                     properties:
@@ -304,6 +310,8 @@ spec:
                         type: string
                     type: object
                   spec:
+                    description: K0sWorkerConfigSpec describes a k0s worker configuration's
+                      spec.
                     properties:
                       args:
                         description: |-

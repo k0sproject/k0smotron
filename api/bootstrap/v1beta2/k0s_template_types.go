@@ -38,6 +38,7 @@ func init() {
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=bootstrap-k0smotron"
 
+// K0sWorkerConfigTemplate describes a k0s worker configuration template.
 type K0sWorkerConfigTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -45,12 +46,12 @@ type K0sWorkerConfigTemplate struct {
 	Spec K0sWorkerConfigTemplateSpec `json:"spec,omitempty"`
 }
 
-func (*K0sWorkerConfigTemplate) Hub() {}
-
+// K0sWorkerConfigTemplateSpec describes a k0s worker configuration template's spec.
 type K0sWorkerConfigTemplateSpec struct {
 	Template K0sWorkerConfigTemplateResource `json:"template,omitempty"`
 }
 
+// K0sWorkerConfigTemplateResource describes the data needed to create a K0sWorkerConfig from a template.
 type K0sWorkerConfigTemplateResource struct {
 	// +kubebuilder:validation:Optional
 	ObjectMeta metav1.ObjectMeta   `json:"metadata,omitempty"`
@@ -59,6 +60,7 @@ type K0sWorkerConfigTemplateResource struct {
 
 // +kubebuilder:object:root=true
 
+// K0sWorkerConfigTemplateList contains a list of K0sWorkerConfigTemplate.
 type K0sWorkerConfigTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

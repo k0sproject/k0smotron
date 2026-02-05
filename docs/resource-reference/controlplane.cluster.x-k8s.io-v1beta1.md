@@ -103,7 +103,7 @@ Resource Types:
         <td><b><a href="#k0scontrolplanespecmachinetemplate">machineTemplate</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -652,7 +652,7 @@ If empty, k0smotron will use the default one.<br/>
 
 
 
-
+K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.
 
 <table>
     <thead>
@@ -21871,7 +21871,7 @@ Resource Types:
 
 
 
-
+K0sControlPlane describes a k0s control plane for a Cluster API managed cluster.
 
 <table>
     <thead>
@@ -21903,14 +21903,14 @@ Resource Types:
         <td><b><a href="#k0scontrolplanespec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneSpec defines the desired state of K0sControlPlane<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanestatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneStatus defines the observed state of K0sControlPlaneb<br/>
           <br/>
             <i>Default</i>: map[initialization:map[controlPlaneInitialized:false] ready:false version:]<br/>
         </td>
@@ -21924,7 +21924,7 @@ Resource Types:
 
 
 
-
+K0sControlPlaneSpec defines the desired state of K0sControlPlane
 
 <table>
     <thead>
@@ -21939,14 +21939,14 @@ Resource Types:
         <td><b><a href="#k0scontrolplanespeck0sconfigspec-1">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sConfigSpec defines the k0s configuration specification.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanespecmachinetemplate-1">machineTemplate</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -21995,7 +21995,7 @@ just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select
 
 
 
-
+K0sConfigSpec defines the k0s configuration specification.
 
 <table>
     <thead>
@@ -22573,7 +22573,7 @@ If empty, k0smotron will use the default one.<br/>
 
 
 
-
+K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.
 
 <table>
     <thead>
@@ -22767,7 +22767,7 @@ Note: This metadata will have precedence over default labels/annotations on the 
 
 
 
-
+K0sControlPlaneStatus defines the observed state of K0sControlPlaneb
 
 <table>
     <thead>
@@ -22982,7 +22982,7 @@ initialization represents the initialization status of the control plane
 
 
 
-
+K0sControlPlaneTemplate describes a k0s control plane configuration template.
 
 <table>
     <thead>
@@ -23014,7 +23014,7 @@ initialization represents the initialization status of the control plane
         <td><b><a href="#k0scontrolplanetemplatespec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneTemplateSpec describes a k0s control plane template's spec.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -23026,7 +23026,7 @@ initialization represents the initialization status of the control plane
 
 
 
-
+K0sControlPlaneTemplateSpec describes a k0s control plane template's spec.
 
 <table>
     <thead>
@@ -23041,7 +23041,7 @@ initialization represents the initialization status of the control plane
         <td><b><a href="#k0scontrolplanetemplatespectemplate-1">template</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneTemplateResource describes the data needed to create a K0sControlPlane from a template.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -23053,7 +23053,7 @@ initialization represents the initialization status of the control plane
 
 
 
-
+K0sControlPlaneTemplateResource describes the data needed to create a K0sControlPlane from a template.
 
 <table>
     <thead>
@@ -23075,7 +23075,7 @@ initialization represents the initialization status of the control plane
         <td><b><a href="#k0scontrolplanetemplatespectemplatespec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlaneTemplate.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -23142,7 +23142,7 @@ initialization represents the initialization status of the control plane
 
 
 
-
+K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlaneTemplate.
 
 <table>
     <thead>
@@ -23157,7 +23157,7 @@ initialization represents the initialization status of the control plane
         <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspec-1">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sConfigSpec defines the k0s configuration specification.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -23198,7 +23198,7 @@ be configured on the K0sControlPlaneTemplate.<br/>
 
 
 
-
+K0sConfigSpec defines the k0s configuration specification.
 
 <table>
     <thead>
@@ -23878,7 +23878,7 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
 
 
 
-
+K0smotronControlPlane is the Schema for the K0smotronControlPlanes API
 
 <table>
     <thead>
@@ -23917,7 +23917,7 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
         <td><b><a href="#k0smotroncontrolplanestatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane<br/>
           <br/>
             <i>Default</i>: map[conditions:[map[lastTransitionTime:1970-01-01T00:00:00Z message:Waiting for cluster topology to be reconciled reason:ControlPlaneDoesNotExist status:Unknown type:ControlPlaneReady]] initialization:map[controlPlaneInitialized:false] initialized:false ready:false version:]<br/>
         </td>
@@ -33698,7 +33698,7 @@ merge patch.<br/>
 
 
 
-
+K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
 
 <table>
     <thead>

@@ -313,6 +313,8 @@ spec:
                     type: object
                 type: object
               machineTemplate:
+                description: K0sControlPlaneMachineTemplate describes the data needed
+                  to create a Machine from a template.
                 properties:
                   infrastructureRef:
                     description: |-
@@ -591,6 +593,8 @@ spec:
     name: v1beta2
     schema:
       openAPIV3Schema:
+        description: K0sControlPlane describes a k0s control plane for a Cluster API
+          managed cluster.
         properties:
           apiVersion:
             description: |-
@@ -610,8 +614,10 @@ spec:
           metadata:
             type: object
           spec:
+            description: K0sControlPlaneSpec defines the desired state of K0sControlPlane
             properties:
               k0sConfigSpec:
+                description: K0sConfigSpec defines the k0s configuration specification.
                 properties:
                   args:
                     description: |-
@@ -871,6 +877,8 @@ spec:
                     type: object
                 type: object
               machineTemplate:
+                description: K0sControlPlaneMachineTemplate describes the data needed
+                  to create a Machine from a template.
                 properties:
                   infrastructureRef:
                     description: |-
@@ -973,6 +981,7 @@ spec:
                 controlPlaneInitialized: false
               ready: false
               version: ""
+            description: K0sControlPlaneStatus defines the observed state of K0sControlPlaneb
             properties:
               conditions:
                 description: Conditions defines current service state of the K0sControlPlane.

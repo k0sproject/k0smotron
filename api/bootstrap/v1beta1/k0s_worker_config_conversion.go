@@ -10,16 +10,16 @@ var _ conversion.Convertible = &K0sWorkerConfig{}
 var _ conversion.Convertible = &K0sWorkerConfigTemplate{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
-func (kwcv1beta1 *K0sWorkerConfig) ConvertTo(dstRaw conversion.Hub) error {
+func (k *K0sWorkerConfig) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0sWorkerConfig)
-	dst.ObjectMeta = kwcv1beta1.ObjectMeta
-	dst.Spec = k0sWorkerConfigV1beta1ToV1beta2Spec(kwcv1beta1.Spec)
+	dst.ObjectMeta = k.ObjectMeta
+	dst.Spec = k0sWorkerConfigV1beta1ToV1beta2Spec(k.Spec)
 	dst.Status = v1beta2.K0sWorkerConfigStatus{
-		Ready:          kwcv1beta1.Status.Ready,
-		DataSecretName: kwcv1beta1.Status.DataSecretName,
-		Conditions:     kwcv1beta1.Status.Conditions,
+		Ready:          k.Status.Ready,
+		DataSecretName: k.Status.DataSecretName,
+		Conditions:     k.Status.Conditions,
 	}
-	if kwcv1beta1.Status.DataSecretName != nil && *kwcv1beta1.Status.DataSecretName != "" {
+	if k.Status.DataSecretName != nil && *k.Status.DataSecretName != "" {
 		dst.Status.Initialization.DataSecretCreated = true
 	}
 	return nil
@@ -57,12 +57,12 @@ func k0sWorkerConfigV1beta1ToV1beta2Spec(spec K0sWorkerConfigSpec) v1beta2.K0sWo
 }
 
 // ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
-func (kwcv1beta1 *K0sWorkerConfig) ConvertFrom(srcRaw conversion.Hub) error {
+func (k *K0sWorkerConfig) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta2.K0sWorkerConfig)
-	kwcv1beta1.ObjectMeta = src.ObjectMeta
+	k.ObjectMeta = src.ObjectMeta
 
-	kwcv1beta1.Spec = k0sWorkerConfigV1beta2ToV1beta1Spec(src.Spec)
-	kwcv1beta1.Status = K0sWorkerConfigStatus{
+	k.Spec = k0sWorkerConfigV1beta2ToV1beta1Spec(src.Spec)
+	k.Status = K0sWorkerConfigStatus{
 		Ready:          src.Status.Ready,
 		DataSecretName: src.Status.DataSecretName,
 		Conditions:     src.Status.Conditions,

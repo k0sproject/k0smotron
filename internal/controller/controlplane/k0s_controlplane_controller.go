@@ -569,7 +569,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	return nil
 }
 
-func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) error {
+func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, _ *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) error {
 	patchHelper, err := patch.NewHelper(machine, c.Client)
 	if err != nil {
 		return err
@@ -578,7 +578,7 @@ func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, kcp *cpv1b
 	return patchHelper.Patch(ctx, machine)
 }
 
-func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) error {
+func (c *K0sController) runMachineDeletionSequence(ctx context.Context, _ *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) error {
 	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
 		return fmt.Errorf("error deleting machine from template: %w", err)
 	}

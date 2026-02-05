@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// K0smotronControlPlaneFinalizer is the finalizer used by K0smotronControlPlane to clean up resources.
 const K0smotronControlPlaneFinalizer = "k0smotron.controlplane.cluster.x-k8s.io"
 
 func init() {
@@ -42,6 +43,7 @@ func init() {
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=".metadata.creationTimestamp",description="Time duration since creation of K0sControlPlane"
 // +kubebuilder:printcolumn:name="Version",type=string,JSONPath=".spec.version",description="Kubernetes version associated with this control plane"
 
+// K0smotronControlPlane is the Schema for the K0smotronControlPlanes API
 type K0smotronControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -63,6 +65,7 @@ func (k *K0smotronControlPlane) SetConditions(conditions []metav1.Condition) {
 
 // +kubebuilder:object:root=true
 
+// K0smotronControlPlaneList contains a list of K0smotronControlPlane.
 type K0smotronControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -79,6 +82,7 @@ type Initialization struct {
 	ControlPlaneInitialized bool `json:"controlPlaneInitialized"`
 }
 
+// K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
 type K0smotronControlPlaneStatus struct {
 	// Ready denotes that the control plane is ready
 	// +optional

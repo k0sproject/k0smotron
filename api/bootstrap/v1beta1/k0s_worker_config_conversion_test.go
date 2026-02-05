@@ -7,7 +7,7 @@ import (
 )
 
 func TestK0sWorkerConfig_ConvertTo(t *testing.T) {
-	old := &K0sWorkerConfig{
+	oldObj := &K0sWorkerConfig{
 		Spec: K0sWorkerConfigSpec{
 			PreStartCommands: []string{
 				"echo pre-start-1",
@@ -15,8 +15,8 @@ func TestK0sWorkerConfig_ConvertTo(t *testing.T) {
 		},
 	}
 
-	new := &v1beta2.K0sWorkerConfig{}
-	err := old.ConvertTo(new)
+	newObj := &v1beta2.K0sWorkerConfig{}
+	err := oldObj.ConvertTo(newObj)
 	require.NoError(t, err)
-	require.Equal(t, []string{"echo pre-start-1"}, new.Spec.PreK0sCommands)
+	require.Equal(t, []string{"echo pre-start-1"}, newObj.Spec.PreK0sCommands)
 }
