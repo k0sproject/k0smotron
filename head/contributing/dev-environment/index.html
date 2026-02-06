@@ -1522,6 +1522,19 @@ You are not currently viewing the documentation for the current stable release o
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Development environment
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1533,6 +1546,67 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-tilt-for-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Tilt for Development
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Tilt for Development">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standalone-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standalone Mode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capi-integration-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      CAPI Integration Mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1863,6 +1937,56 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-tilt-for-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Tilt for Development
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Tilt for Development">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standalone-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standalone Mode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capi-integration-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      CAPI Integration Mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1928,6 +2052,103 @@ to a <code>kind.conf</code> file:</p>
  deployed using Docker. It uses the Kubernetes configuration from <code>kind.conf</code>.</p>
 </li>
 </ol>
+<h2 id="use-tilt-for-development">Use Tilt for Development<a class="headerlink" href="#use-tilt-for-development" title="Permanent link">#</a></h2>
+<p>Using <a href="https://docs.tilt.dev/index.html">Tilt</a> can help when you want a fast development loop without spending time setting up a full environment. <strong>k0smotron</strong> provides different development environment setups depending on the mode you want to work in: <a href="../../usage-overview">standalone or CAPI integration</a>. </p>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h3>
+<p>Before starting, ensure the following tools are installed and available in your environment:</p>
+<ul>
+<li><strong>Go</strong>: Required to build k0smotron components.</li>
+</ul>
+<ul>
+<li><strong>Docker</strong>: Used by Tilt to build container images.</li>
+</ul>
+<ul>
+<li><strong>kind</strong>: Used to create local Kubernetes clusters for development.</li>
+</ul>
+<ul>
+<li><strong>kubectl</strong>: Required to interact with Kubernetes clusters.</li>
+</ul>
+<ul>
+<li><strong>Tilt</strong>: Used to manage the development environment and enable live reload.</li>
+</ul>
+<hr />
+<h3 id="standalone-mode">Standalone Mode<a class="headerlink" href="#standalone-mode" title="Permanent link">#</a></h3>
+<p>For standalone mode, you first need a management cluster where the required providers will be deployed. You can create a local cluster using <code>kind</code> by running:</p>
+<div class="highlight"><pre><span></span><code>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--config<span class="w"> </span>config/samples/capi/docker/kind.yaml
+</code></pre></div>
+<p>Once the management cluster is created, deploy your development version of k0smotron in standalone mode by running:</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>tilt-standalone-env
+</code></pre></div>
+<p>In k0smotron, the Tilt development environment for standalone mode is configured to <strong>rebuild the k0smotron controller manager and redeploy it to the cluster whenever standalone-related code changes.</strong> This allows developers to quickly verify how changes behave in the cluster without manually rebuilding, loading images, or restarting the k0smotron deployment.</p>
+<hr />
+<h4 id="run-headless-delve-debugger-for-k0smotron-controller-manager">Run headless delve debugger for k0smotron controller manager<a class="headerlink" href="#run-headless-delve-debugger-for-k0smotron-controller-manager" title="Permanent link">#</a></h4>
+<p>Alternatively, you can run the k0smotron controller manager with a <strong>headless Delve debugger</strong> and attach to it remotely.</p>
+<p>To start the development environment with Delve enabled, use the <code>DEBUG</code> variable set to <code>true</code>:</p>
+<div class="highlight"><pre><span></span><code>make tilt-standalone-env DEBUG=true
+</code></pre></div>
+<p>Once the k0smotron controller manager is listening on port <code>30000</code> for external connections, you can attach to it from your IDE.
+For example, in <strong>VS Code</strong>, you can add the following debug configuration to attach to the k0smotron controller manager:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Use IntelliSense to learn about possible attributes.</span>
+<span class="w">    </span><span class="c1">// Hover to view descriptions of existing attributes.</span>
+<span class="w">    </span><span class="c1">// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387</span>
+<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.2.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;configurations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Connect to k0smotron controller manager&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;go&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;request&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;attach&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;remote&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30001</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;apiVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;showLog&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;substitutePath&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="p">{</span>
+<span class="w">                    </span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workspaceFolder}&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">&quot;to&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workspaceFolder}&quot;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<hr />
+<h3 id="capi-integration-mode">CAPI Integration Mode<a class="headerlink" href="#capi-integration-mode" title="Permanent link">#</a></h3>
+<p>To set up a development environment using Tilt with <strong>k0smotron integrated as a CAPI provider</strong>, you need to clone both the <strong>cluster-api</strong> repository and the <strong>k0smotron</strong> repository locally. The general steps to set up a CAPI development environment using Tilt can be found in the <a href="https://cluster-api.sigs.k8s.io/developer/core/tilt">Cluster API documentation</a>.</p>
+<p>The k0smotron-specific configuration required to enable k0smotron as a provider and to create a development environment integrated with Cluster API is located in <code>tilt-provider.yaml</code>. For an initial setup, the configuration provided in this file should be sufficient. To activate it in your local <strong>cluster-api</strong> development environment, follow these steps:</p>
+<ol>
+<li>In the <code>tilt-settings.yaml</code> file of your local <strong>cluster-api</strong> project, set the path to your local <strong>k0smotron</strong> repository.</li>
+<li>Enable the k0smotron provider by adding <code>k0smotron</code> to the <code>enable_providers</code> list.</li>
+</ol>
+<p>A minimal example of a <code>tilt-settings.yaml</code> file in the <strong>cluster-api</strong> project looks like this:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">default_registry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcr.io/your-project-name-here</span>
+
+<span class="nt">enable_providers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubeadm-bootstrap</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubeadm-control-plane</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron</span>
+
+<span class="nt">provider_repos</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;k0smotron-project-path&gt;</span><span class="w"> </span><span class="c1"># Path to your local k0smotron repository</span>
+
+<span class="nt">debug</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">core</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">continue</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30000</span>
+<span class="w">  </span><span class="nt">k0smotron</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">continue</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30001</span>
+
+<span class="nt">kustomize_substitutions</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">EXP_IN_PLACE_UPDATES</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+</code></pre></div>
+<p>Now you can run <code>make tilt-up</code> target in the <strong>cluster-api</strong> project to start the development environment.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Cluster API <code>make tilt-up</code> target already provisions and deploys the management cluster, so no additional management cluster setup is required.</p>
+</div>
 
 
 
