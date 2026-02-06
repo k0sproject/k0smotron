@@ -218,7 +218,13 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 }
 
 func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32) apps.StatefulSet {
-	labels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
+	// StatefulSet selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
+	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
+	labels := make(map[string]string, len(selectorLabels)+1)
+	for k, v := range selectorLabels {
+		labels[k] = v
+	}
+	labels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
 
 	size := kmc.Spec.Etcd.Persistence.Size
 
@@ -263,7 +269,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 		Spec: apps.StatefulSetSpec{
 			ServiceName: kmc.GetEtcdServiceName(),
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+				MatchLabels: selectorLabels,
 			},
 			Replicas:            &replicas,
 			PodManagementPolicy: apps.ParallelPodManagement,

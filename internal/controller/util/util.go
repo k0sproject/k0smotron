@@ -34,9 +34,9 @@ func DefaultK0smotronClusterLabels(kmc *km.Cluster) map[string]string {
 	}
 }
 
-// LabelsForK0smotronCluster returns base labels (app, cluster, user labels) without a component.
-// Use when building custom label sets or when the resource is not component-specific.
-// For component-specific resources, use LabelsForK0smotronComponent (or helpers like LabelsForK0smotronControlPlane).
+// LabelsForK0smotronCluster returns base labels (app, cluster, user labels) with legacy component=cluster.
+// Use when building custom label sets or for immutable selectors (StatefulSet, Deployment).
+// For component-specific metadata (ConfigMap, Secret, etc.), use LabelsForK0smotronComponent.
 func LabelsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 	labels := DefaultK0smotronClusterLabels(kmc)
 	for k, v := range kmc.Labels {
@@ -45,27 +45,31 @@ func LabelsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 	for k, v := range kmc.Spec.KubeconfigSecretMetadata.Labels {
 		labels[k] = v
 	}
+	labels["component"] = "cluster"
 	return labels
 }
 
-// LabelsForK0smotronComponent returns base labels plus component and app.kubernetes.io/component.
+// LabelsForK0smotronComponent adds app.kubernetes.io/component to base labels.
+// The legacy "component" label value from LabelsForK0smotronCluster is preserved.
+// Do not use for immutable selectors (StatefulSet, Deployment); use LabelsForK0smotronControlPlane or LabelsForEtcdK0smotronCluster for those.
 func LabelsForK0smotronComponent(kmc *km.Cluster, component string) map[string]string {
 	labels := LabelsForK0smotronCluster(kmc)
-	labels["component"] = component
 	labels["app.kubernetes.io/component"] = component
 	return labels
 }
 
-// LabelsForK0smotronControlPlane returns labels for K0smotron control plane resources.
+// LabelsForK0smotronControlPlane returns labels for K0smotron control plane resources (selector-safe, same as main).
 func LabelsForK0smotronControlPlane(kmc *km.Cluster) map[string]string {
-	labels := LabelsForK0smotronComponent(kmc, ComponentControlPlane)
+	labels := LabelsForK0smotronCluster(kmc)
 	labels["cluster.x-k8s.io/control-plane"] = "true"
 	return labels
 }
 
-// LabelsForEtcdK0smotronCluster returns labels for K0smotron etcd resources.
+// LabelsForEtcdK0smotronCluster returns labels for K0smotron etcd resources (selector-safe, same as main).
 func LabelsForEtcdK0smotronCluster(kmc *km.Cluster) map[string]string {
-	return LabelsForK0smotronComponent(kmc, ComponentEtcd)
+	labels := LabelsForK0smotronCluster(kmc)
+	labels["component"] = "etcd"
+	return labels
 }
 
 func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {

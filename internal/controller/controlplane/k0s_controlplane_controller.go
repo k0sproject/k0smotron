@@ -808,6 +808,11 @@ token = ` + frpToken + `
 		return fmt.Errorf("error creating ConfigMap: %w", err)
 	}
 
+	// Deployment selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
+	frpsSelectorLabels := map[string]string{
+		"k0smotron_cluster": kcp.GetName(),
+		"app":               "frps",
+	}
 	frpsDeployment := appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -817,16 +822,14 @@ token = ` + frpToken + `
 			Name:      fmt.Sprintf(FRPDeploymentNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
 			Labels: map[string]string{
+				"k0smotron_cluster":           kcp.GetName(),
+				"app":                         "frps",
 				"app.kubernetes.io/component": util.ComponentTunneling,
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"k0smotron_cluster":           kcp.GetName(),
-					"app":                         "frps",
-					"app.kubernetes.io/component": util.ComponentTunneling,
-				},
+				MatchLabels: frpsSelectorLabels,
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -891,15 +894,13 @@ token = ` + frpToken + `
 			Name:      fmt.Sprintf(FRPServiceNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
 			Labels: map[string]string{
-				"app.kubernetes.io/component": util.ComponentTunneling,
-			},
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
 				"k0smotron_cluster":           kcp.GetName(),
 				"app":                         "frps",
 				"app.kubernetes.io/component": util.ComponentTunneling,
 			},
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: frpsSelectorLabels,
 			Ports: []corev1.ServicePort{{
 				Name:       "api",
 				Protocol:   corev1.ProtocolTCP,

@@ -46,7 +46,7 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 			want: map[string]string{
 				"app":                         "k0smotron",
 				"cluster":                     "test",
-				"component":                   util.ComponentControlPlane,
+				"component":                   "cluster",
 				"app.kubernetes.io/component": util.ComponentControlPlane,
 			},
 		},
@@ -64,7 +64,7 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 			want: map[string]string{
 				"app":                         "k0smotron",
 				"cluster":                     "test",
-				"component":                   util.ComponentControlPlane,
+				"component":                   "cluster",
 				"app.kubernetes.io/component": util.ComponentControlPlane,
 				"test":                        "test",
 			},
@@ -89,7 +89,7 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 			want: map[string]string{
 				"app":                         "k0smotron",
 				"cluster":                     "test",
-				"component":                   util.ComponentControlPlane,
+				"component":                   "cluster",
 				"app.kubernetes.io/component": util.ComponentControlPlane,
 				"test":                        "test",
 				"foo":                         "bar",
@@ -115,7 +115,7 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 			want: map[string]string{
 				"app":                         "k0smotron",
 				"cluster":                     "test",
-				"component":                   util.ComponentControlPlane,
+				"component":                   "cluster",
 				"app.kubernetes.io/component": util.ComponentControlPlane,
 				"test":                        "foobar",
 			},
