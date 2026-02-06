@@ -224,6 +224,11 @@ ifndef ignore-not-found
   ignore-not-found = false
 endif
 
+.PHONY: tilt-standalone-env
+tilt-standalone-env: 
+	$(MAKE) release-standalone IMG=k0smotron-controller-manager
+	tilt up $(if $(DEBUG),-- --debug)
+
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/clusterapi/all/manager && $(KUSTOMIZE) edit set image k0s/k0smotron=${IMG}
