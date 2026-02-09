@@ -34,7 +34,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -51,7 +50,6 @@ import (
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
-	kutil "github.com/k0sproject/k0smotron/internal/util"
 )
 
 const (
@@ -355,15 +353,15 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	client := r.workloadClusterClient
 	if client == nil {
 		var err error
-		client, err = remote.NewClusterClient(ctx, "k0smotron", r.Client, capiutil.ObjectKey(scope.Cluster))
+		client, err = util.GetControllerRuntimeClient(ctx, r.Client, scope.Cluster, nil)
 		if err != nil {
 			return "", fmt.Errorf("failed to create child cluster client: %w", err)
 		}
 	}
 
 	// Create the token using the child cluster client
-	tokenID := kutil.RandomString(6)
-	tokenSecret := kutil.RandomString(16)
+	tokenID := util.RandomString(6)
+	tokenSecret := util.RandomString(16)
 	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
 	if err := client.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -400,7 +398,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		joinURL = fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port)
 	}
 
-	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, joinURL, "kubelet-bootstrap")
+	joinToken, err := util.CreateK0sJoinToken(ca.KeyPair.Cert, token, joinURL, "kubelet-bootstrap")
 	if err != nil {
 		return "", fmt.Errorf("failed to create join token: %w", err)
 	}

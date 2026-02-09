@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
@@ -64,7 +65,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, fmt.Errorf("can't get cluster %s/%s: %w", machine.Namespace, machine.Spec.ClusterName, err)
 	}
 
-	childClient, err := k0smoutil.GetKubeClient(context.Background(), p.Client, cluster)
+	childClient, err := k0smoutil.GetKubeClientSet(context.Background(), p.Client, cluster, bootstrapv1beta1.TunnelingSpec{})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("can't get kube client for cluster %s/%s: %w. may not be created yet", machine.Namespace, machine.Spec.ClusterName, err)
 	}

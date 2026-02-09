@@ -33,7 +33,6 @@ import (
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
-	"github.com/k0sproject/k0smotron/internal/util"
 )
 
 const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDER__"
@@ -173,7 +172,7 @@ func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[
 		}
 	}
 
-	return util.ReconcileDynamicConfig(ctx, kmc, c, u)
+	return kcontrollerutil.ReconcileDynamicConfig(ctx, kmc, c, u, nil)
 }
 
 func detectExternalAddress(ctx context.Context, c client.Client) (string, error) {

@@ -507,8 +507,8 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 	return nil
 }
 
-func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster) error {
-	kubeClient, err := c.getKubeClient(ctx, cluster)
+func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+	kubeClient, err := c.getKubeClient(ctx, cluster, kcp.Spec.K0sConfigSpec.Tunneling)
 	if err != nil {
 		return fmt.Errorf("error getting kube client: %w", err)
 	}

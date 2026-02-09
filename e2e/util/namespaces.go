@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/k0sproject/k0smotron/internal/util"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
