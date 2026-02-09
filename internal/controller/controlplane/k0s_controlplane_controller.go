@@ -793,6 +793,9 @@ token = ` + frpToken + `
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      frpsCMName,
 			Namespace: kcp.GetNamespace(),
+			Labels: map[string]string{
+				"app.kubernetes.io/component": util.ComponentTunneling,
+			},
 		},
 		Data: map[string]string{
 			"frps.ini": frpsConfig,
@@ -805,6 +808,11 @@ token = ` + frpToken + `
 		return fmt.Errorf("error creating ConfigMap: %w", err)
 	}
 
+	// Deployment selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
+	frpsSelectorLabels := map[string]string{
+		"k0smotron_cluster": kcp.GetName(),
+		"app":               "frps",
+	}
 	frpsDeployment := appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -813,19 +821,22 @@ token = ` + frpToken + `
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf(FRPDeploymentNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
+			Labels: map[string]string{
+				"k0smotron_cluster":           kcp.GetName(),
+				"app":                         "frps",
+				"app.kubernetes.io/component": util.ComponentTunneling,
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"k0smotron_cluster": kcp.GetName(),
-					"app":               "frps",
-				},
+				MatchLabels: frpsSelectorLabels,
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"k0smotron_cluster": kcp.GetName(),
-						"app":               "frps",
+						"k0smotron_cluster":           kcp.GetName(),
+						"app":                         "frps",
+						"app.kubernetes.io/component": util.ComponentTunneling,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -882,12 +893,14 @@ token = ` + frpToken + `
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf(FRPServiceNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
+			Labels: map[string]string{
+				"k0smotron_cluster":           kcp.GetName(),
+				"app":                         "frps",
+				"app.kubernetes.io/component": util.ComponentTunneling,
+			},
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"k0smotron_cluster": kcp.GetName(),
-				"app":               "frps",
-			},
+			Selector: frpsSelectorLabels,
 			Ports: []corev1.ServicePort{{
 				Name:       "api",
 				Protocol:   corev1.ProtocolTCP,

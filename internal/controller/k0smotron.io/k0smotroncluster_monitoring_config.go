@@ -56,7 +56,7 @@ func (scope *kmcScope) generateMonitoringCM(kmc *km.Cluster) (v1.ConfigMap, erro
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetMonitoringConfigMapName(),
 			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronCluster(kmc),
+			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentMonitoring),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Data: map[string]string{

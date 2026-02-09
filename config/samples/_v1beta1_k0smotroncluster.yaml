@@ -5,6 +5,7 @@ metadata:
     app.kubernetes.io/name: cluster
     app.kubernetes.io/instance: sample
     app.kubernetes.io/part-of: k0smotron
+    app.kubernetes.io/component: cluster
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: k0smotron
   name: sample

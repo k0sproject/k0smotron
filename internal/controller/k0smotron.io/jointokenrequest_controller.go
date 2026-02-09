@@ -173,10 +173,11 @@ func (r *JoinTokenRequestReconciler) reconcileSecret(ctx context.Context, jtr km
 
 func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, token string) (v1.Secret, error) {
 	labels := map[string]string{
-		clusterLabel:                 jtr.Spec.ClusterRef.Name,
-		"k0smotron.io/cluster-uid":   string(jtr.Status.ClusterUID),
-		"k0smotron.io/role":          jtr.Spec.Role,
-		"k0smotron.io/token-request": jtr.Name,
+		clusterLabel:                  jtr.Spec.ClusterRef.Name,
+		"k0smotron.io/cluster-uid":    string(jtr.Status.ClusterUID),
+		"k0smotron.io/role":           jtr.Spec.Role,
+		"k0smotron.io/token-request":  jtr.Name,
+		"app.kubernetes.io/component": util.ComponentJointoken,
 	}
 	for k, v := range jtr.Labels {
 		labels[k] = v

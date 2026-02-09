@@ -86,13 +86,20 @@ func generateService(kmc *km.Cluster) v1.Service {
 			})
 	}
 
-	// Copy both Cluster level labels and Service labels
-	labels := map[string]string{}
+	// Selector must match pods (same as main); ObjectMeta gets app.kubernetes.io/component.
+	selectorLabels := map[string]string{}
 	for k, v := range util.LabelsForK0smotronCluster(kmc) {
-		labels[k] = v
+		selectorLabels[k] = v
 	}
 	for k, v := range kmc.Spec.Service.Labels {
-		labels[k] = v
+		selectorLabels[k] = v
+	}
+	metadataLabels := map[string]string{}
+	for k, v := range util.LabelsForK0smotronComponent(kmc, util.ComponentControlPlane) {
+		metadataLabels[k] = v
+	}
+	for k, v := range kmc.Spec.Service.Labels {
+		metadataLabels[k] = v
 	}
 
 	// Copy both Cluster level annotations and Service annotations
@@ -112,12 +119,12 @@ func generateService(kmc *km.Cluster) v1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Namespace:   kmc.Namespace,
-			Labels:      labels,
+			Labels:      metadataLabels,
 			Annotations: annotations,
 		},
 		Spec: v1.ServiceSpec{
 			Type:                  kmc.Spec.Service.Type,
-			Selector:              labels,
+			Selector:              selectorLabels,
 			Ports:                 ports,
 			ExternalTrafficPolicy: kmc.Spec.Service.ExternalTrafficPolicy,
 		},

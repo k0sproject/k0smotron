@@ -54,7 +54,13 @@ func findStatefulSetPod(ctx context.Context, statefulSet string, namespace strin
 
 func (scope *kmcScope) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
 
-	labels := util.LabelsForK0smotronControlPlane(kmc)
+	// StatefulSet selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
+	selectorLabels := util.LabelsForK0smotronControlPlane(kmc)
+	labels := make(map[string]string, len(selectorLabels)+1)
+	for k, v := range selectorLabels {
+		labels[k] = v
+	}
+	labels["app.kubernetes.io/component"] = util.ComponentControlPlane
 	annotations := util.AnnotationsForK0smotronCluster(kmc)
 
 	statefulSet := apps.StatefulSet{
@@ -69,7 +75,7 @@ func (scope *kmcScope) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, e
 		},
 		Spec: apps.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+				MatchLabels: selectorLabels,
 			},
 			Replicas: &kmc.Spec.Replicas,
 			Template: v1.PodTemplateSpec{
