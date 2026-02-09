@@ -397,7 +397,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	files = append(files, resolvedFiles...)
 
 	if scope.currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
-		files = append(files, genShutdownServiceFiles(scope.Config.Spec.K0sInstallDir)...)
+		files = append(files, genShutdownServiceFiles(getShutdownFilesDir(scope.Config.Spec.WorkingDir), scope.Config.Spec.K0sInstallDir)...)
 	}
 
 	commands, commandsMap, err := c.genK0sCommands(scope, installCmd)
@@ -791,9 +791,10 @@ func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installC
 	commands = append(commands, downloadCommands...)
 
 	if scope.currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
-		commands = append(commands, "(command -v systemctl > /dev/null 2>&1 && (cp /k0s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start --no-block k0sleave.service) || true)")
-		commands = append(commands, "(command -v rc-service > /dev/null 2>&1 && (cp /k0s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)")
-		commands = append(commands, "(command -v service > /dev/null 2>&1 && (cp /k0s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)")
+		shutdownFilesDir := getShutdownFilesDir(scope.Config.Spec.WorkingDir)
+		commands = append(commands, fmt.Sprintf("(command -v systemctl > /dev/null 2>&1 && (cp %s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start --no-block k0sleave.service) || true)", shutdownFilesDir))
+		commands = append(commands, fmt.Sprintf("(command -v rc-service > /dev/null 2>&1 && (cp %s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)", shutdownFilesDir))
+		commands = append(commands, fmt.Sprintf("(command -v service > /dev/null 2>&1 && (cp %s/k0sleave-sysv /etc/init.d/k0sleave && update-rc.d k0sleave defaults && service k0sleave start) || true)", shutdownFilesDir))
 	}
 	startCmd := fmt.Sprintf("%s start", filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s"))
 	commands = append(commands, installCmd, startCmd)
@@ -803,7 +804,7 @@ func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installC
 	return commands, commandsMap, nil
 }
 
-func genShutdownServiceFiles(k0sInstallDir string) []provisioner.File {
+func genShutdownServiceFiles(workingDir string, k0sInstallDir string) []provisioner.File {
 	k0sPath := filepath.Join(k0sInstallDir, "k0s")
 	return []provisioner.File{
 		{
@@ -824,7 +825,7 @@ if [ $IS_LEAVING = "true" ]; then
 fi
 `, k0sPath),
 		}, {
-			Path:        "/k0s/k0sleave.service",
+			Path:        fmt.Sprintf("%s/k0sleave.service", workingDir),
 			Permissions: "0644",
 			Content: `[Unit]
 Description=k0s etcd leave service
@@ -843,7 +844,7 @@ WantedBy=multi-user.target
 `,
 		},
 		{
-			Path:        "/k0s/k0sleave-openrc",
+			Path:        fmt.Sprintf("%s/k0sleave-openrc", workingDir),
 			Permissions: "0644",
 			Content: `#!/sbin/openrc-run
 
@@ -853,7 +854,7 @@ command="/etc/bin/k0sleave.sh"
 		`,
 		},
 		{
-			Path:        "/k0s/k0sleave-sysv",
+			Path:        fmt.Sprintf("%s/k0sleave-sysv", workingDir),
 			Permissions: "0644",
 			Content: `#!/bin/sh
 # For RedHat and cousins:
@@ -965,6 +966,14 @@ func getFirstRunningMachineWithLatestVersion(machines collections.Machines) *clu
 	}
 	sort.Sort(res)
 	return res[0]
+}
+
+func getShutdownFilesDir(configuredWorkingDir string) string {
+	if configuredWorkingDir == "" {
+		// default to '/etc/k0s' if no working dir is configured.
+		return "/etc/k0s"
+	}
+	return configuredWorkingDir
 }
 
 // machinesByCreationTimestamp sorts a list of Machine by creation timestamp, using their names as a tie breaker.

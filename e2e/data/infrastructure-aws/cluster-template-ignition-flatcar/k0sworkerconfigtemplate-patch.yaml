@@ -1,0 +1,21 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-machine-config
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      version: v1.30.2+k0s.0
+      k0sInstallDir: /opt/bin # Flatcar, as inmutable OS, needs k0s in /opt/bin. It cannot write k0s binary in the default /usr/local/bin.
+      ignition:
+        variant: flatcar
+        version: 1.1.0
+        additionalConfig: |
+          variant: flatcar
+          version: 1.1.0
+          passwd:
+            users:
+              - name: core
+                ssh_authorized_keys:
+                  - ssh-rsa ${SSH_PUBLIC_KEY}

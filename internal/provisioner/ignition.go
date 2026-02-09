@@ -18,17 +18,15 @@ package provisioner
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"text/template"
 
-	butil "github.com/coreos/butane/base/util"
-	bbase "github.com/coreos/butane/base/v0_5"
+	"github.com/coreos/butane/config"
 	bcommon "github.com/coreos/butane/config/common"
-	"github.com/coreos/butane/translate"
-	"gopkg.in/yaml.v2"
-	"k8s.io/utils/ptr"
+	"gopkg.in/yaml.v3"
 )
 
 const ignitionSystemdTemplate = `[Unit]
@@ -54,24 +52,20 @@ type IgnitionProvisioner struct {
 
 // ToProvisionData converts the input data to Ignition user data.
 func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte, error) {
-	files := []bbase.File{}
+	files := []map[string]interface{}{}
 	for _, f := range input.Files {
-		modeInt, err := strconv.ParseInt(f.Permissions, 8, 32)
+		mi, err := strconv.ParseInt(f.Permissions, 8, 32)
 		if err != nil {
 			return nil, err
 		}
-		mode := int(modeInt)
-
-		files = append(files, bbase.File{
-			Path: f.Path,
-			Contents: bbase.Resource{
-				Inline: &f.Content,
-			},
-			Mode: &mode,
+		files = append(files, map[string]interface{}{
+			"path":     f.Path,
+			"contents": map[string]string{"inline": f.Content},
+			"mode":     int(mi),
 		})
 	}
 
-	units := []bbase.Unit{}
+	units := []map[string]interface{}{}
 	if len(input.Commands) > 0 {
 		var buf bytes.Buffer
 		tmpl, err := template.New("systemd").Parse(ignitionSystemdTemplate)
@@ -83,50 +77,103 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 			return nil, fmt.Errorf("error executing systemd template: %w", err)
 		}
 
-		units = append(units, bbase.Unit{
-			Name:     "k0s-bootstrap.service",
-			Enabled:  ptr.To(true),
-			Contents: ptr.To(buf.String()),
+		units = append(units, map[string]interface{}{
+			"name":     "k0s-bootstrap.service",
+			"enabled":  true,
+			"contents": buf.String(),
 		})
 	}
 
-	butaneConfig := bbase.Config{
-		Variant: i.Variant,
-		Version: i.Version,
-		Storage: bbase.Storage{
-			Files: files,
+	// translate initial Butane config (without additionalConfig) to Ignition JSON
+	initialButaneCfg := map[string]interface{}{
+		"variant": i.Variant,
+		"version": i.Version,
+		"storage": map[string]interface{}{"files": files},
+		"systemd": map[string]interface{}{"units": units},
+	}
+	butaneYaml, err := yaml.Marshal(initialButaneCfg)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling butane config: %w", err)
+	}
+	initIgn, _, err := config.TranslateBytes(
+		butaneYaml,
+		bcommon.TranslateBytesOptions{
+			TranslateOptions: bcommon.TranslateOptions{NoResourceAutoCompression: true},
+			Pretty:           true,
 		},
-		Systemd: bbase.Systemd{
-			Units: units,
-		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error translating butane config: %w", err)
 	}
 
-	initConfig, _, _ := butaneConfig.ToIgn3_4Unvalidated(bcommon.TranslateOptions{NoResourceAutoCompression: true})
+	// Get ignition spec version from initial config
+	type ignVersion struct {
+		Ignition struct {
+			Version string `json:"version"`
+		} `json:"ignition"`
+	}
+
+	var initIgnVersion ignVersion
+	if err := json.Unmarshal(initIgn, &initIgnVersion); err != nil {
+		return nil, fmt.Errorf("error unmarshaling ignition version: %w", err)
+	}
+
+	initIgnEncoded := base64.StdEncoding.EncodeToString(initIgn)
+
+	ignMerge := []map[string]string{
+		{
+			"source": "data:application/json;base64," + initIgnEncoded,
+		},
+	}
 
 	if i.AdditionalConfig != "" {
-		ac := &bbase.Config{}
-		err := yaml.Unmarshal([]byte(i.AdditionalConfig), ac)
+		// translate additional Butane YAML to Ignition JSON
+		addIgn, _, err := config.TranslateBytes(
+			[]byte(i.AdditionalConfig),
+			bcommon.TranslateBytesOptions{
+				TranslateOptions: bcommon.TranslateOptions{NoResourceAutoCompression: true},
+				Pretty:           true,
+			},
+		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error translating additional config: %w", err)
 		}
 
-		additionalConfig, _, _ := ac.ToIgn3_4Unvalidated(bcommon.TranslateOptions{NoResourceAutoCompression: true})
-		mergedConfig, _ := butil.MergeTranslatedConfigs(initConfig, translate.TranslationSet{}, additionalConfig, translate.TranslationSet{})
+		additionalIgnEncoded := base64.StdEncoding.EncodeToString(addIgn)
 
-		ignData, err := json.MarshalIndent(mergedConfig, "", "  ")
-		if err != nil {
-			return nil, fmt.Errorf("error marshalling ignition config: %w", err)
+		ignMerge = append(ignMerge, map[string]string{
+			"source": "data:application/json;base64," + additionalIgnEncoded,
+		})
+
+		// Get ignition spec version from additional config
+		var additionalCfgIgnVersion ignVersion
+		if err := json.Unmarshal(addIgn, &additionalCfgIgnVersion); err != nil {
+			return nil, fmt.Errorf("error unmarshaling ignition version: %w", err)
 		}
 
-		return ignData, nil
+		if initIgnVersion.Ignition.Version != additionalCfgIgnVersion.Ignition.Version {
+			return nil, fmt.Errorf("mismatched Ignition versions between initial config (%s) and additional config (%s)",
+				initIgnVersion.Ignition.Version, additionalCfgIgnVersion.Ignition.Version)
+		}
+
 	}
 
-	ignData, err := json.MarshalIndent(initConfig, "", "  ")
+	// build final Ignition config with merge sources (initial + additional)
+	finalIgnitionCfg := map[string]interface{}{
+		"ignition": map[string]interface{}{
+			"version": initIgnVersion.Ignition.Version,
+			"config": map[string]interface{}{
+				"merge": ignMerge,
+			},
+		},
+	}
+
+	finalIgnitionBytes, err := json.Marshal(finalIgnitionCfg)
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling ignition config: %w", err)
+		return nil, fmt.Errorf("error marshaling final ignition config: %w", err)
 	}
 
-	return ignData, nil
+	return finalIgnitionBytes, nil
 }
 
 // GetFormat returns the format 'ignition' of the provisioner.

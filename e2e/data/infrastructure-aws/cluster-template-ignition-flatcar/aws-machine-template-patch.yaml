@@ -1,0 +1,11 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-aws-test-mt
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      ami:
+        id: ami-00d12617b68dbc62f
+      instanceType: t3.large

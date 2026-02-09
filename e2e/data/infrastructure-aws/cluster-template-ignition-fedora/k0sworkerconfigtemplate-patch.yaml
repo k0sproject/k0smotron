@@ -1,0 +1,20 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-machine-config
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      version: v1.30.2+k0s.0
+      ignition:
+        variant: fcos
+        version: 1.4.0
+        additionalConfig: |
+          variant: fcos
+          version: 1.4.0
+          passwd:
+            users:
+              - name: core
+                ssh_authorized_keys:
+                  - ssh-rsa ${SSH_PUBLIC_KEY}
