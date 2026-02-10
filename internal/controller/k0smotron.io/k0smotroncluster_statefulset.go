@@ -277,6 +277,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("kmc-%s-telemetry-config", kmc.Name),
 			Namespace: kmc.Namespace,
+			Labels:    kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentTelemetry),
 		},
 		Data: map[string]string{
 			"configmap.yaml": `

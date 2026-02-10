@@ -24,6 +24,7 @@ const (
 	ComponentJointoken     = "jointoken"
 	ComponentKubeconfig    = "kubeconfig"
 	ComponentMonitoring    = "monitoring"
+	ComponentTelemetry     = "telemetry"
 	ComponentTunneling     = "tunneling"
 )
 
