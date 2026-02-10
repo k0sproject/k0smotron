@@ -277,6 +277,7 @@ spec:
                     type: string
                 required:
                 - name
+                - namespace
                 type: object
               kubeconfigSecretMetadata:
                 description: |-
