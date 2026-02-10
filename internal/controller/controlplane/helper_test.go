@@ -85,7 +85,9 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 				Status: cpv1beta2.K0sControlPlaneStatus{
-					Ready: true,
+					Initialization: cpv1beta2.Initialization{
+						ControlPlaneInitialized: true,
+					},
 				},
 			},
 			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
@@ -179,7 +181,9 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 				Status: cpv1beta2.K0sControlPlaneStatus{
-					Ready: true,
+					Initialization: cpv1beta2.Initialization{
+						ControlPlaneInitialized: true,
+					},
 				},
 			},
 			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
@@ -276,7 +280,9 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 				Status: cpv1beta2.K0sControlPlaneStatus{
-					Ready: true,
+					Initialization: cpv1beta2.Initialization{
+						ControlPlaneInitialized: true,
+					},
 				},
 			},
 			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{

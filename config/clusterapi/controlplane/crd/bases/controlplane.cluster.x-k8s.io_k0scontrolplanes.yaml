@@ -979,10 +979,15 @@ spec:
             default:
               initialization:
                 controlPlaneInitialized: false
-              ready: false
               version: ""
             description: K0sControlPlaneStatus defines the observed state of K0sControlPlaneb
             properties:
+              availableReplicas:
+                description: availableReplicas is the number of available replicas
+                  for this ControlPlane. A machine is considered available when Machine's
+                  Available condition is true.
+                format: int32
+                type: integer
               conditions:
                 description: Conditions defines current service state of the K0sControlPlane.
                 items:
@@ -1053,9 +1058,6 @@ spec:
                       plane is initialized
                     type: boolean
                 type: object
-              ready:
-                description: Ready denotes that the control plane is ready
-                type: boolean
               readyReplicas:
                 description: readyReplicas is the total number of fully running and
                   ready control plane machines.
@@ -1075,19 +1077,10 @@ spec:
                   describe.. The string will be in the same format as the query-param syntax.
                   More info about label selectors: http://kubernetes.io/docs/user-guide/labels#label-selectors
                 type: string
-              unavailableReplicas:
-                description: |-
-                  unavailableReplicas is the total number of unavailable machines targeted by this control plane.
-                  This is the total number of machines that are still required for
-                  the deployment to have 100% available capacity. They may either
-                  be machines that are running but not yet ready or machines
-                  that still have not been created.
-                format: int32
-                type: integer
-              updatedReplicas:
-                description: |-
-                  updatedReplicas is the total number of non-terminated machines targeted by this control plane
-                  that have the desired template spec.
+              upToDateReplicas:
+                description: upToDateReplicas is the number of up-to-date replicas
+                  targeted by this ControlPlane. A machine is considered available
+                  when Machine's  UpToDate condition is true.
                 format: int32
                 type: integer
               version:

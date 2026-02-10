@@ -19,6 +19,7 @@ limitations under the License.
 package controlplane
 
 import (
+	"k8s.io/utils/ptr"
 	"testing"
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -26,7 +27,7 @@ import (
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/require"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
 )
 
@@ -142,11 +143,11 @@ func TestPlanStatusCompute(t *testing.T) {
 				Replicas: 2,
 			},
 			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpdatedReplicas:     0,
-				ReadyReplicas:       2,
-				UnavailableReplicas: 0,
-				Replicas:            2,
-				Version:             "v1.31.0+k0s.0",
+				UpToDateReplicas:  ptr.To[int32](0),
+				ReadyReplicas:     2,
+				AvailableReplicas: ptr.To[int32](2),
+				Replicas:          2,
+				Version:           "v1.31.0+k0s.0",
 			},
 		}
 		expectedKcp := &cpv1beta2.K0sControlPlane{
@@ -154,11 +155,11 @@ func TestPlanStatusCompute(t *testing.T) {
 				Replicas: 2,
 			},
 			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpdatedReplicas:     2,
-				ReadyReplicas:       2,
-				UnavailableReplicas: 0,
-				Replicas:            2,
-				Version:             "v1.31.0+k0s.0",
+				UpToDateReplicas:  ptr.To[int32](2),
+				ReadyReplicas:     2,
+				AvailableReplicas: ptr.To[int32](2),
+				Replicas:          2,
+				Version:           "v1.31.0+k0s.0",
 			},
 		}
 
@@ -190,21 +191,21 @@ func TestPlanStatusCompute(t *testing.T) {
 	t.Run("plan is mutating controlplane", func(t *testing.T) {
 		originalKcp := &cpv1beta2.K0sControlPlane{
 			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpdatedReplicas:     0,
-				ReadyReplicas:       4,
-				UnavailableReplicas: 0,
-				Replicas:            4,
-				Version:             "v1.31.0+k0s.0",
+				UpToDateReplicas:  ptr.To[int32](0),
+				ReadyReplicas:     4,
+				AvailableReplicas: ptr.To[int32](4),
+				Replicas:          4,
+				Version:           "v1.31.0+k0s.0",
 			},
 		}
 
 		expectedKcp := &cpv1beta2.K0sControlPlane{
 			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpdatedReplicas:     1,
-				ReadyReplicas:       2,
-				UnavailableReplicas: 2,
-				Replicas:            4,
-				Version:             "v1.31.0+k0s.0",
+				UpToDateReplicas:  ptr.To[int32](1),
+				ReadyReplicas:     2,
+				AvailableReplicas: ptr.To[int32](2),
+				Replicas:          4,
+				Version:           "v1.31.0+k0s.0",
 			},
 		}
 
@@ -278,20 +279,20 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.31.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 		}
@@ -303,8 +304,8 @@ func Test_machineStatusCompute(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, int32(2), kcp.Status.Replicas)
-		require.Equal(t, int32(0), kcp.Status.UnavailableReplicas)
-		require.Equal(t, int32(1), kcp.Status.UpdatedReplicas)
+		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
+		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
 		require.Equal(t, int32(2), kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 	})
@@ -317,20 +318,20 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.31.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 		}
@@ -342,8 +343,8 @@ func Test_machineStatusCompute(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, int32(2), kcp.Status.Replicas)
-		require.Equal(t, int32(0), kcp.Status.UnavailableReplicas)
-		require.Equal(t, int32(1), kcp.Status.UpdatedReplicas)
+		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
+		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
 		require.Equal(t, int32(2), kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0+k0s.0", kcp.Status.Version)
 	})
@@ -356,20 +357,20 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.31.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 		}
@@ -381,8 +382,8 @@ func Test_machineStatusCompute(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, int32(2), kcp.Status.Replicas)
-		require.Equal(t, int32(1), kcp.Status.UnavailableReplicas)
-		require.Equal(t, int32(1), kcp.Status.UpdatedReplicas)
+		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
+		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
 		require.Equal(t, int32(2), kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 	})
@@ -395,28 +396,28 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.31.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseProvisioning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseProvisioning),
 				},
 			},
-			"machine3": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine3": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseFailed),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseFailed),
 				},
 			},
 		}
@@ -428,8 +429,8 @@ func Test_machineStatusCompute(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, int32(3), kcp.Status.Replicas)
-		require.Equal(t, int32(2), kcp.Status.UnavailableReplicas)
-		require.Equal(t, int32(1), kcp.Status.UpdatedReplicas)
+		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
+		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
 		require.Equal(t, int32(1), kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 	})
@@ -442,28 +443,28 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.31.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseProvisioned),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseProvisioned),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseProvisioning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseProvisioning),
 				},
 			},
-			"machine3": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine3": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseFailed),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseFailed),
 				},
 			},
 		}
@@ -475,8 +476,8 @@ func Test_machineStatusCompute(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, int32(3), kcp.Status.Replicas)
-		require.Equal(t, int32(2), kcp.Status.UnavailableReplicas)
-		require.Equal(t, int32(1), kcp.Status.UpdatedReplicas)
+		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
+		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
 		require.Equal(t, int32(1), kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 
@@ -493,20 +494,20 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine1": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.31.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseProvisioned),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseProvisioned),
 				},
 			},
-			"machine2": &clusterv1.Machine{
-				Spec: clusterv1.MachineSpec{
+			"machine2": &clusterv2.Machine{
+				Spec: clusterv2.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv1.MachineStatus{
-					Phase: string(clusterv1.MachinePhaseRunning),
+				Status: clusterv2.MachineStatus{
+					Phase: string(clusterv2.MachinePhaseRunning),
 				},
 			},
 		}
@@ -518,8 +519,8 @@ func Test_machineStatusCompute(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, int32(2), kcp.Status.Replicas)
-		require.Equal(t, int32(1), kcp.Status.UnavailableReplicas)
-		require.Equal(t, int32(1), kcp.Status.UpdatedReplicas)
+		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
+		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
 		require.Equal(t, int32(1), kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 
@@ -528,7 +529,7 @@ func Test_machineStatusCompute(t *testing.T) {
 
 func Test_versionMatches(t *testing.T) {
 	type args struct {
-		machine *clusterv1.Machine
+		machine *clusterv2.Machine
 		ver     string
 	}
 	tests := []struct {
@@ -539,8 +540,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "version matches, both without suffix",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: "v1.31.0",
 					},
 				},
@@ -551,8 +552,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "version does not match",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: "v1.31.0",
 					},
 				},
@@ -563,8 +564,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "semver version match, machine version is missing the suffix",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: "v1.31.0",
 					},
 				},
@@ -575,8 +576,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "semver version match, kcp version is missing the suffix",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: "v1.31.0+k0s.0",
 					},
 				},
@@ -587,8 +588,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "versions match, both with the suffix",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: "v1.31.0+k0s.0",
 					},
 				},
@@ -599,8 +600,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "versions do not match, machine version is missing",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: "",
 					},
 				},
@@ -611,8 +612,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "versions do not match, machine version is empty",
 			args: args{
-				machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
+				machine: &clusterv2.Machine{
+					Spec: clusterv2.MachineSpec{
 						Version: "",
 					},
 				},

@@ -192,14 +192,14 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		}
 		log.Info("Status updated successfully")
 
-		if kcp.Status.Ready {
+		if kcp.Status.Initialization.ControlPlaneInitialized {
 			if perr := clusterPatchHelper.Patch(ctx, cluster); perr != nil {
 				err = fmt.Errorf("failed to patch cluster: %w", perr)
 			}
 		}
 
 		// Requeue the reconciliation if the status is not ready
-		if !kcp.Status.Ready {
+		if !kcp.Status.Initialization.ControlPlaneInitialized {
 			log.Info("Requeuing reconciliation in 20sec since the control plane is not ready")
 			res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
 		}
@@ -447,7 +447,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	go func() {
 		// The k8s API of the workload cluster must be available to make requests.
-		if kcp.Status.Ready {
+		if kcp.Status.Initialization.ControlPlaneInitialized {
 			err = c.deleteOldControlNodes(ctx, cluster)
 			if err != nil {
 				logger.Error(err, "Error deleting old control nodes")
@@ -589,7 +589,7 @@ func (c *K0sController) runMachineDeletionSequence(ctx context.Context, _ *clust
 func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) error {
 	logger := log.FromContext(ctx)
 
-	if kcp.Status.Ready {
+	if kcp.Status.Initialization.ControlPlaneInitialized {
 		kubeClient, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
 			return fmt.Errorf("error getting cluster client set for deletion: %w", err)

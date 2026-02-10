@@ -84,7 +84,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 	}()
 	// Ensure that the cluster remains available during and after the remediation process. The remediation must not
 	// compromise the cluster's ability to serve workloads or cause disruption to the control plane's functionality.
-	if kcp.Status.Ready {
+	if kcp.Status.Initialization.ControlPlaneInitialized {
 		// The cluster MUST have more than one replica, because this is the smallest cluster size that allows any etcd failure tolerance.
 		if !(machines.Len() > 1) {
 			log.Info("A control plane machine needs remediation, but the number of current replicas is less or equal to 1. Skipping remediation", "replicas", machines.Len())

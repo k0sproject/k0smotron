@@ -21912,7 +21912,7 @@ K0sControlPlane describes a k0s control plane for a Cluster API managed cluster.
         <td>
           K0sControlPlaneStatus defines the observed state of K0sControlPlaneb<br/>
           <br/>
-            <i>Default</i>: map[initialization:map[controlPlaneInitialized:false] ready:false version:]<br/>
+            <i>Default</i>: map[initialization:map[controlPlaneInitialized:false] version:]<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -22779,6 +22779,15 @@ K0sControlPlaneStatus defines the observed state of K0sControlPlaneb
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>availableReplicas</b></td>
+        <td>integer</td>
+        <td>
+          availableReplicas is the number of available replicas for this ControlPlane. A machine is considered available when Machine's Available condition is true.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0scontrolplanestatusconditionsindex-1">conditions</a></b></td>
         <td>[]object</td>
         <td>
@@ -22797,13 +22806,6 @@ K0sControlPlaneStatus defines the observed state of K0sControlPlaneb
         <td>object</td>
         <td>
           initialization represents the initialization status of the control plane<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>ready</b></td>
-        <td>boolean</td>
-        <td>
-          Ready denotes that the control plane is ready<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -22837,24 +22839,10 @@ More info about label selectors: http://kubernetes.io/docs/user-guide/labels#lab
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>unavailableReplicas</b></td>
+        <td><b>upToDateReplicas</b></td>
         <td>integer</td>
         <td>
-          unavailableReplicas is the total number of unavailable machines targeted by this control plane.
-This is the total number of machines that are still required for
-the deployment to have 100% available capacity. They may either
-be machines that are running but not yet ready or machines
-that still have not been created.<br/>
-          <br/>
-            <i>Format</i>: int32<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>updatedReplicas</b></td>
-        <td>integer</td>
-        <td>
-          updatedReplicas is the total number of non-terminated machines targeted by this control plane
-that have the desired template spec.<br/>
+          upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's  UpToDate condition is true.<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
@@ -23919,7 +23907,7 @@ K0smotronControlPlane is the Schema for the K0smotronControlPlanes API
         <td>
           K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane<br/>
           <br/>
-            <i>Default</i>: map[conditions:[map[lastTransitionTime:1970-01-01T00:00:00Z message:Waiting for cluster topology to be reconciled reason:ControlPlaneDoesNotExist status:Unknown type:ControlPlaneReady]] initialization:map[controlPlaneInitialized:false] initialized:false ready:false version:]<br/>
+            <i>Default</i>: map[conditions:[map[lastTransitionTime:1970-01-01T00:00:00Z message:Waiting for cluster topology to be reconciled reason:ControlPlaneDoesNotExist status:Unknown type:ControlPlaneReady]] initialization:map[controlPlaneInitialized:false] version:]<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -33710,6 +33698,15 @@ K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>availableReplicas</b></td>
+        <td>integer</td>
+        <td>
+          availableReplicas is the number of available replicas for this ControlPlane. A machine is considered available when Machine's Available condition is true.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanestatusconditionsindex-1">conditions</a></b></td>
         <td>[]object</td>
         <td>
@@ -33728,24 +33725,6 @@ K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
         <td>object</td>
         <td>
           initialization represents the initialization status of the control plane<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>initialized</b></td>
-        <td>boolean</td>
-        <td>
-          initialized denotes that the K0smotronControlPlane API Server is initialized and thus
-it can accept requests.
-NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
-The value of this field is never updated after provisioning is completed. Please use conditions
-to check the operational state of the control plane.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>ready</b></td>
-        <td>boolean</td>
-        <td>
-          Ready denotes that the control plane is ready<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -33774,22 +33753,10 @@ to check the operational state of the control plane.<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>unavailableReplicas</b></td>
+        <td><b>upToDateReplicas</b></td>
         <td>integer</td>
         <td>
-          unavailableReplicas is the total number of unavailable pods targeted by this control plane.
-This is the total number of pods with Condition Ready = false.
-They may either be pods that are running but not yet ready.<br/>
-          <br/>
-            <i>Format</i>: int32<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>updatedReplicas</b></td>
-        <td>integer</td>
-        <td>
-          updatedReplicas is the total number of pods targeted by this control plane
-that have the desired version.<br/>
+          upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's  UpToDate condition is true.<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>

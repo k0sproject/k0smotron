@@ -87,7 +87,7 @@ type K0sControlPlane struct {
 
 	Spec K0sControlPlaneSpec `json:"spec,omitempty"`
 
-	// +kubebuilder:default={version:"",ready:false,initialization:{controlPlaneInitialized:false}}
+	// +kubebuilder:default={version:"",initialization:{controlPlaneInitialized:false}}
 	Status K0sControlPlaneStatus `json:"status,omitempty"`
 }
 
@@ -152,10 +152,6 @@ type K0sControlPlaneList struct {
 
 // K0sControlPlaneStatus defines the observed state of K0sControlPlaneb
 type K0sControlPlaneStatus struct {
-	// Ready denotes that the control plane is ready
-	// +optional
-	Ready bool `json:"ready"`
-
 	// initialization represents the initialization status of the control plane
 	// +optional
 	Initialization Initialization `json:"initialization,omitempty"`
@@ -182,22 +178,17 @@ type K0sControlPlaneStatus struct {
 	// +optional
 	Selector string `json:"selector"`
 
-	// unavailableReplicas is the total number of unavailable machines targeted by this control plane.
-	// This is the total number of machines that are still required for
-	// the deployment to have 100% available capacity. They may either
-	// be machines that are running but not yet ready or machines
-	// that still have not been created.
-	// +optional
-	UnavailableReplicas int32 `json:"unavailableReplicas"`
-
 	// readyReplicas is the total number of fully running and ready control plane machines.
 	// +optional
 	ReadyReplicas int32 `json:"readyReplicas"`
 
-	// updatedReplicas is the total number of non-terminated machines targeted by this control plane
-	// that have the desired template spec.
+	// availableReplicas is the number of available replicas for this ControlPlane. A machine is considered available when Machine's Available condition is true.
 	// +optional
-	UpdatedReplicas int32 `json:"updatedReplicas"`
+	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
+
+	// upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's  UpToDate condition is true.
+	// +optional
+	UpToDateReplicas *int32 `json:"upToDateReplicas,omitempty"`
 
 	// Conditions defines current service state of the K0sControlPlane.
 	// +optional

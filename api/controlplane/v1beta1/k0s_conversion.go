@@ -3,6 +3,7 @@ package v1beta1
 import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
@@ -16,15 +17,14 @@ func (kcpv1beta1 *K0sControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 
 	dst.Spec = k0sControlPlaneSpecV1beta1ToV1beta2(kcpv1beta1.Spec)
 	dst.Status = v1beta2.K0sControlPlaneStatus{
-		Ready:                       kcpv1beta1.Status.Ready,
 		Initialization:              v1beta2.Initialization{ControlPlaneInitialized: kcpv1beta1.Status.Initialized},
 		ExternalManagedControlPlane: kcpv1beta1.Status.ExternalManagedControlPlane,
 		Replicas:                    kcpv1beta1.Status.Replicas,
 		Version:                     kcpv1beta1.Status.Version,
 		Selector:                    kcpv1beta1.Status.Selector,
-		UnavailableReplicas:         kcpv1beta1.Status.UnavailableReplicas,
 		ReadyReplicas:               kcpv1beta1.Status.ReadyReplicas,
-		UpdatedReplicas:             kcpv1beta1.Status.UpdatedReplicas,
+		UpToDateReplicas:            &kcpv1beta1.Status.UpdatedReplicas,
+		AvailableReplicas:           ptr.To(kcpv1beta1.Status.Replicas - kcpv1beta1.Status.UnavailableReplicas),
 		Conditions:                  kcpv1beta1.Status.Conditions,
 	}
 	return nil
@@ -57,7 +57,7 @@ func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 		KubeconfigSecretMetadata: src.Spec.KubeconfigSecretMetadata,
 	}
 	kcpv1beta1.Status = K0sControlPlaneStatus{
-		Ready:       src.Status.Ready,
+		Ready:       src.Status.ReadyReplicas > 0,
 		Initialized: src.Status.Initialization.ControlPlaneInitialized,
 		Initialization: Initialization{
 			ControlPlaneInitialized: src.Status.Initialization.ControlPlaneInitialized,
@@ -66,9 +66,9 @@ func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 		Replicas:                    src.Status.Replicas,
 		Version:                     src.Status.Version,
 		Selector:                    src.Status.Selector,
-		UnavailableReplicas:         src.Status.UnavailableReplicas,
+		UnavailableReplicas:         src.Status.Replicas - *src.Status.AvailableReplicas,
 		ReadyReplicas:               src.Status.ReadyReplicas,
-		UpdatedReplicas:             src.Status.UpdatedReplicas,
+		UpdatedReplicas:             *src.Status.UpToDateReplicas,
 		Conditions:                  src.Status.Conditions,
 	}
 

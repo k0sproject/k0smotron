@@ -275,7 +275,7 @@ func WaitForK0smotronControlPlaneToBeReady(ctx context.Context, client crclient.
 			return false, nil
 		}
 
-		ready, found, err := unstructured.NestedBool(status, "ready")
+		ready, found, err := unstructured.NestedBool(status, "initialization", "controlPlaneInitialized")
 		if err != nil || !found {
 			return false, nil
 		}

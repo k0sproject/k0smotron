@@ -196,7 +196,7 @@ func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.
 			Do(ctx).
 			Into(&kcp)
 
-		return kcp.Status.Ready, nil
+		return kcp.Status.Initialization.ControlPlaneInitialized, nil
 	})
 
 	s.Require().NoError(err)

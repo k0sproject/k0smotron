@@ -142,6 +142,16 @@ func (in *K0sControlPlaneSpec) DeepCopy() *K0sControlPlaneSpec {
 func (in *K0sControlPlaneStatus) DeepCopyInto(out *K0sControlPlaneStatus) {
 	*out = *in
 	out.Initialization = in.Initialization
+	if in.AvailableReplicas != nil {
+		in, out := &in.AvailableReplicas, &out.AvailableReplicas
+		*out = new(int32)
+		**out = **in
+	}
+	if in.UpToDateReplicas != nil {
+		in, out := &in.UpToDateReplicas, &out.UpToDateReplicas
+		*out = new(int32)
+		**out = **in
+	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make([]v1.Condition, len(*in))
@@ -382,6 +392,16 @@ func (in *K0smotronControlPlaneList) DeepCopyObject() runtime.Object {
 func (in *K0smotronControlPlaneStatus) DeepCopyInto(out *K0smotronControlPlaneStatus) {
 	*out = *in
 	out.Initialization = in.Initialization
+	if in.AvailableReplicas != nil {
+		in, out := &in.AvailableReplicas, &out.AvailableReplicas
+		*out = new(int32)
+		**out = **in
+	}
+	if in.UpToDateReplicas != nil {
+		in, out := &in.UpToDateReplicas, &out.UpToDateReplicas
+		*out = new(int32)
+		**out = **in
+	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make([]v1.Condition, len(*in))

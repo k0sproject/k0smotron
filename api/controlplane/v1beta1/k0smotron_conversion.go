@@ -2,6 +2,7 @@ package v1beta1
 
 import (
 	"github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
@@ -12,17 +13,15 @@ func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 
 	dst.Spec = k.Spec
 	dst.Status = v1beta2.K0smotronControlPlaneStatus{
-		Ready:       k.Status.Ready,
-		Initialized: k.Status.Initialized,
 		Initialization: v1beta2.Initialization{
 			ControlPlaneInitialized: k.Status.Initialized,
 		},
 		ExternalManagedControlPlane: k.Status.ExternalManagedControlPlane,
 		Version:                     k.Status.Version,
 		Replicas:                    k.Status.Replicas,
-		UpdatedReplicas:             k.Status.UpdatedReplicas,
+		UpToDateReplicas:            &k.Status.UpdatedReplicas,
 		ReadyReplicas:               k.Status.ReadyReplicas,
-		UnavailableReplicas:         k.Status.UnavailableReplicas,
+		AvailableReplicas:           ptr.To(k.Status.Replicas - k.Status.UnavailableReplicas),
 		Selector:                    k.Status.Selector,
 		Conditions:                  k.Status.Conditions,
 	}
@@ -35,7 +34,7 @@ func (k *K0smotronControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
 	k.Spec = (src.Spec)
 	k.Status = K0smotronControlPlaneStatus{
-		Ready:       src.Status.Ready,
+		Ready:       src.Status.ReadyReplicas > 0,
 		Initialized: src.Status.Initialization.ControlPlaneInitialized,
 		Initialization: Initialization{
 			ControlPlaneInitialized: src.Status.Initialization.ControlPlaneInitialized,
@@ -43,9 +42,9 @@ func (k *K0smotronControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 		ExternalManagedControlPlane: src.Status.ExternalManagedControlPlane,
 		Version:                     src.Status.Version,
 		Replicas:                    src.Status.Replicas,
-		UpdatedReplicas:             src.Status.UpdatedReplicas,
+		UpdatedReplicas:             *src.Status.UpToDateReplicas,
 		ReadyReplicas:               src.Status.ReadyReplicas,
-		UnavailableReplicas:         src.Status.UnavailableReplicas,
+		UnavailableReplicas:         src.Status.Replicas - *src.Status.AvailableReplicas,
 		Selector:                    src.Status.Selector,
 		Conditions:                  src.Status.Conditions,
 	}

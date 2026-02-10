@@ -226,14 +226,14 @@ func isCPReady(cp *cpv1beta2.K0sControlPlane, expectedVersion string) bool {
 	if cp.Status.ReadyReplicas != cp.Spec.Replicas {
 		return false
 	}
-	if cp.Status.UpdatedReplicas != cp.Spec.Replicas {
+	if cp.Status.UpToDateReplicas == nil || *cp.Status.UpToDateReplicas != cp.Spec.Replicas {
 		return false
 	}
 	if cp.Status.Version != expectedVersion {
 		return false
 	}
 
-	return cp.Status.Ready
+	return cp.Status.Initialization.ControlPlaneInitialized
 }
 
 func (s *CAPIDockerClusterClassSuite) createCluster() {

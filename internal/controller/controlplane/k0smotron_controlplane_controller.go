@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/utils/ptr"
 	"reflect"
 	"strings"
 	"time"
@@ -200,7 +201,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			return
 		}
 
-		derr = c.patchInfrastructureStatus(ctx, cluster, kcp.Status.Ready)
+		derr = c.patchInfrastructureStatus(ctx, cluster, kcp.Status.Initialization.ControlPlaneInitialized)
 		if derr != nil {
 			log.Error(derr, "Failed to patch Infrastructure object status")
 			err = kerrors.NewAggregate([]error{err, derr})
@@ -459,7 +460,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 
 	kcp.Status.Replicas = int32(len(contolPlanePods.Items))
 
-	var updatedReplicas, readyReplicas, unavailableReplicas int
+	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
 
 	desiredVersionStr := kcp.Spec.Version
 	if !strings.Contains(desiredVersionStr, "-k0s.") && !strings.Contains(desiredVersionStr, "+k0s.") {
@@ -483,6 +484,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		}
 		if isPodReady {
 			readyReplicas++
+			availableReplicas++
 		} else {
 			unavailableReplicas++
 			// if pod is unavailable subsequent checks do not apply
@@ -500,7 +502,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		}
 
 		if desiredVersion.Equal(currentVersion) {
-			updatedReplicas++
+			upToDateReplicas++
 		}
 
 		if currentVersion.LessThan(&minimumVersion) {
@@ -508,9 +510,9 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		}
 	}
 
-	kcp.Status.UpdatedReplicas = int32(updatedReplicas)
+	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
 	kcp.Status.ReadyReplicas = int32(readyReplicas)
-	kcp.Status.UnavailableReplicas = int32(unavailableReplicas)
+	kcp.Status.AvailableReplicas = ptr.To(kcp.Status.Replicas - int32(unavailableReplicas))
 
 	if kcp.Status.ReadyReplicas > 0 {
 		kcp.Status.Version = minimumVersion.String()
@@ -522,7 +524,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
 	// Additionally, if the ControlPlaneReadyCondition is false (e.g., due to DNS resolution failures),
 	// we should also requeue to retry the connection.
-	if kcp.Status.UnavailableReplicas > 0 ||
+	if unavailableReplicas > 0 ||
 		desiredVersion.String() != kcp.Status.Version ||
 		!conditions.IsTrue(kcp, string(cpv1beta2.ControlPlaneAvailableCondition)) {
 		return ErrNotReady
@@ -609,8 +611,6 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 		Reason: cpv1beta2.ControlPlaneAvailableReason,
 	})
 
-	kcp.Status.Ready = true
-	kcp.Status.Initialized = true
 	kcp.Status.Initialization.ControlPlaneInitialized = true
 
 	// Set the k0s cluster ID annotation

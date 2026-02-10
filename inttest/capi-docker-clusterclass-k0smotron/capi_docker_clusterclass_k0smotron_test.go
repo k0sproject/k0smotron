@@ -110,9 +110,9 @@ func (s *CAPIDockerClusterClassK0smotronSuite) TestCAPIDocker() {
 		kcp := kcps.Items[0]
 
 		ready := kcp.Status.ReadyReplicas == 2 &&
-			kcp.Status.UnavailableReplicas == 0 &&
-			kcp.Status.Ready &&
-			kcp.Status.UpdatedReplicas == 2 &&
+			kcp.Status.AvailableReplicas != nil && *kcp.Status.AvailableReplicas == 2 &&
+			kcp.Status.Initialization.ControlPlaneInitialized &&
+			kcp.Status.UpToDateReplicas != nil && *kcp.Status.UpToDateReplicas == 2 &&
 			kcp.Status.Version == "v1.27.2+k0s.0"
 
 		return ready, nil

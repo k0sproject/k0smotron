@@ -49,7 +49,7 @@ type K0smotronControlPlane struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              kmapi.ClusterSpec `json:"spec,omitempty"`
 
-	// +kubebuilder:default={version:"",ready:false,initialized:false,initialization:{controlPlaneInitialized:false},conditions: {{type: "ControlPlaneReady", status: "Unknown", reason:"ControlPlaneDoesNotExist", message:"Waiting for cluster topology to be reconciled", lastTransitionTime: "1970-01-01T00:00:00Z"}}}
+	// +kubebuilder:default={version:"",initialization:{controlPlaneInitialized:false},conditions: {{type: "ControlPlaneReady", status: "Unknown", reason:"ControlPlaneDoesNotExist", message:"Waiting for cluster topology to be reconciled", lastTransitionTime: "1970-01-01T00:00:00Z"}}}
 	Status K0smotronControlPlaneStatus `json:"status,omitempty"`
 }
 
@@ -84,16 +84,6 @@ type Initialization struct {
 
 // K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
 type K0smotronControlPlaneStatus struct {
-	// Ready denotes that the control plane is ready
-	// +optional
-	Ready bool `json:"ready"`
-	// initialized denotes that the K0smotronControlPlane API Server is initialized and thus
-	// it can accept requests.
-	// NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
-	// The value of this field is never updated after provisioning is completed. Please use conditions
-	// to check the operational state of the control plane.
-	// +optional
-	Initialized bool `json:"initialized"`
 
 	// initialization represents the initialization status of the control plane
 	// +optional
@@ -109,20 +99,21 @@ type K0smotronControlPlaneStatus struct {
 	// replicas is the total number of pods targeted by this control plane
 	// +optional
 	Replicas int32 `json:"replicas"`
-	// updatedReplicas is the total number of pods targeted by this control plane
-	// that have the desired version.
-	// +optional
-	UpdatedReplicas int32 `json:"updatedReplicas"`
+
 	// readyReplicas is the total number of fully running and ready control plane pods.
 	// +optional
 	ReadyReplicas int32 `json:"readyReplicas"`
-	// unavailableReplicas is the total number of unavailable pods targeted by this control plane.
-	// This is the total number of pods with Condition Ready = false.
-	// They may either be pods that are running but not yet ready.
-	// +optional
-	UnavailableReplicas int32 `json:"unavailableReplicas"`
+
 	// selector is the label selector for pods that should match the replicas count.
 	Selector string `json:"selector,omitempty"`
+
+	// availableReplicas is the number of available replicas for this ControlPlane. A machine is considered available when Machine's Available condition is true.
+	// +optional
+	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
+
+	// upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's  UpToDate condition is true.
+	// +optional
+	UpToDateReplicas *int32 `json:"upToDateReplicas,omitempty"`
 
 	// Conditions defines current service state of the K0smotronControlPlane.
 	// +optional
