@@ -554,10 +554,6 @@ spec:
       jsonPath: .metadata.labels['cluster\.x-k8s\.io/cluster-name']
       name: Cluster
       type: string
-    - description: This denotes that the target API Server is ready to receive requests
-      jsonPath: .status.ready
-      name: API Server Available
-      type: boolean
     - description: Total number of machines desired by this control plane
       jsonPath: .spec.replicas
       name: Desired
@@ -572,15 +568,13 @@ spec:
       jsonPath: .status.readyReplicas
       name: Ready
       type: integer
-    - description: Total number of non-terminated machines targeted by this control
-        plane that have the desired template spec
-      jsonPath: .status.updatedReplicas
-      name: Updated
+    - description: Total number of up-to-date replicas targeted by this ControlPlane
+      jsonPath: .status.upToDateReplicas
+      name: UpToDate
       type: integer
-    - description: Total number of unavailable control plane instances targeted by
-        this control plane
-      jsonPath: .status.unavailableReplicas
-      name: Unavailable
+    - description: Total number of available replicas for this ControlPlane
+      jsonPath: .status.availableReplicas
+      name: Available
       type: integer
     - description: Time duration since creation of K0sControlPlane
       jsonPath: .metadata.creationTimestamp
