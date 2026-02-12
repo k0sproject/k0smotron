@@ -408,7 +408,7 @@ type KubeconfigRef struct {
 	//+kubebuilder:validation:Required
 	Name string `json:"name"`
 	// Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.
-	//+kubebuilder:validation:Optional
+	//+kubebuilder:validation:Required
 	Namespace string `json:"namespace,omitempty"`
 	// Key is the key in the secret containing the kubeconfig of the hosting cluster.
 	//+kubebuilder:validation:Optional
