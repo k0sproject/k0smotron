@@ -21910,7 +21910,7 @@ K0sControlPlane describes a k0s control plane for a Cluster API managed cluster.
         <td><b><a href="#k0scontrolplanestatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          K0sControlPlaneStatus defines the observed state of K0sControlPlaneb<br/>
+          K0sControlPlaneStatus defines the observed state of K0sControlPlane<br/>
           <br/>
             <i>Default</i>: map[initialization:map[controlPlaneInitialized:false] version:]<br/>
         </td>
@@ -22767,7 +22767,7 @@ Note: This metadata will have precedence over default labels/annotations on the 
 
 
 
-K0sControlPlaneStatus defines the observed state of K0sControlPlaneb
+K0sControlPlaneStatus defines the observed state of K0sControlPlane
 
 <table>
     <thead>
@@ -22805,7 +22805,8 @@ K0sControlPlaneStatus defines the observed state of K0sControlPlaneb
         <td><b><a href="#k0scontrolplanestatusinitialization-1">initialization</a></b></td>
         <td>object</td>
         <td>
-          initialization represents the initialization status of the control plane<br/>
+          initialization represents the initialization status of the control plane
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -22842,7 +22843,7 @@ More info about label selectors: http://kubernetes.io/docs/user-guide/labels#lab
         <td><b>upToDateReplicas</b></td>
         <td>integer</td>
         <td>
-          upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's  UpToDate condition is true.<br/>
+          upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's UpToDate condition is true.<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
@@ -22942,6 +22943,7 @@ with respect to the current state of the instance.<br/>
 
 
 initialization represents the initialization status of the control plane
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
 
 <table>
     <thead>
@@ -23907,7 +23909,7 @@ K0smotronControlPlane is the Schema for the K0smotronControlPlanes API
         <td>
           K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane<br/>
           <br/>
-            <i>Default</i>: map[conditions:[map[lastTransitionTime:1970-01-01T00:00:00Z message:Waiting for cluster topology to be reconciled reason:ControlPlaneDoesNotExist status:Unknown type:ControlPlaneReady]] initialization:map[controlPlaneInitialized:false] version:]<br/>
+            <i>Default</i>: map[conditions:[map[lastTransitionTime:1970-01-01T00:00:00Z message:Waiting for cluster topology to be reconciled reason:ControlPlaneDoesNotExist status:Unknown type:Available]] initialization:map[controlPlaneInitialized:false] version:]<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -24490,19 +24492,19 @@ This kubeconfig will be used to deploy the k0s control plane.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>key</b></td>
         <td>string</td>
         <td>
           Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
           <br/>
             <i>Default</i>: value<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>namespace</b></td>
-        <td>string</td>
-        <td>
-          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -33724,7 +33726,8 @@ K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
         <td><b><a href="#k0smotroncontrolplanestatusinitialization-1">initialization</a></b></td>
         <td>object</td>
         <td>
-          initialization represents the initialization status of the control plane<br/>
+          initialization represents the initialization status of the control plane
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -33756,7 +33759,7 @@ K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
         <td><b>upToDateReplicas</b></td>
         <td>integer</td>
         <td>
-          upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's  UpToDate condition is true.<br/>
+          upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's UpToDate condition is true.<br/>
           <br/>
             <i>Format</i>: int32<br/>
         </td>
@@ -33856,6 +33859,7 @@ with respect to the current state of the instance.<br/>
 
 
 initialization represents the initialization status of the control plane
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
 
 <table>
     <thead>

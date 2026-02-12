@@ -1526,7 +1526,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, client.ObjectKey{Name: kcp.Name, Namespace: kcp.Namespace}, kcp))
 	require.NotEmpty(t, kcp.Status.Selector)
 	require.Equal(t, "v1.30.0+k0s.0", kcp.Status.Version)
-	require.Equal(t, kcp.Status.Replicas, int32(1))
+	require.Equal(t, ptr.Deref(kcp.Status.Replicas, 0), int32(1))
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(gmt), gmt))
 	require.Contains(t, gmt.GetOwnerReferences(), metav1.OwnerReference{
 		APIVersion:         clusterv1.GroupVersion.String(),

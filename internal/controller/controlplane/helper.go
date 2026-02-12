@@ -324,7 +324,7 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 	// Skip the check if the K0sControlPlane is not ready
 	if kcp.Status.Initialization.ControlPlaneInitialized == nil ||
 		!*kcp.Status.Initialization.ControlPlaneInitialized ||
-		kcp.Spec.Replicas != kcp.Status.Replicas {
+		kcp.Spec.Replicas != ptr.Deref(kcp.Status.Replicas, 0) {
 		return false
 	}
 

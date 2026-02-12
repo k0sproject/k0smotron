@@ -149,11 +149,12 @@ type K0sControlPlaneList struct {
 	Items           []K0sControlPlane `json:"items"`
 }
 
-// K0sControlPlaneStatus defines the observed state of K0sControlPlaneb
+// K0sControlPlaneStatus defines the observed state of K0sControlPlane
 type K0sControlPlaneStatus struct {
 	// initialization represents the initialization status of the control plane
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
 	// +optional
-	Initialization Initialization `json:"initialization,omitempty"`
+	Initialization Initialization `json:"initialization,omitempty,omitzero"`
 
 	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
 	// +optional
@@ -162,7 +163,7 @@ type K0sControlPlaneStatus struct {
 	// replicas is the total number of non-terminated machines targeted by this control plane
 	// (their labels match the selector).
 	// +optional
-	Replicas int32 `json:"replicas"`
+	Replicas *int32 `json:"replicas,omitempty"`
 
 	// version represents the minimum Kubernetes version for the control plane machines
 	// in the cluster.
@@ -179,13 +180,13 @@ type K0sControlPlaneStatus struct {
 
 	// readyReplicas is the total number of fully running and ready control plane machines.
 	// +optional
-	ReadyReplicas int32 `json:"readyReplicas"`
+	ReadyReplicas *int32 `json:"readyReplicas,omitempty"`
 
 	// availableReplicas is the number of available replicas for this ControlPlane. A machine is considered available when Machine's Available condition is true.
 	// +optional
 	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
 
-	// upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's  UpToDate condition is true.
+	// upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's UpToDate condition is true.
 	// +optional
 	UpToDateReplicas *int32 `json:"upToDateReplicas,omitempty"`
 

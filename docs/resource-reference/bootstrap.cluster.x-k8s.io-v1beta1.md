@@ -2646,13 +2646,6 @@ K0sControllerConfigStatus defines the observed state of K0sControllerConfig
           Initialization represents the initialization status of the worker node<br/>
         </td>
         <td>false</td>
-      </tr><tr>
-        <td><b>ready</b></td>
-        <td>boolean</td>
-        <td>
-          Ready indicates the Bootstrapdata field is ready to be consumed<br/>
-        </td>
-        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -3347,13 +3340,6 @@ K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig
         <td>object</td>
         <td>
           Initialization represents the initialization status of the worker node<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>ready</b></td>
-        <td>boolean</td>
-        <td>
-          Ready indicates the Bootstrapdata field is ready to be consumed<br/>
         </td>
         <td>false</td>
       </tr></tbody>

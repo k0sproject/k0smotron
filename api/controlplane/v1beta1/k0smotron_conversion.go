@@ -18,9 +18,9 @@ func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 		},
 		ExternalManagedControlPlane: k.Status.ExternalManagedControlPlane,
 		Version:                     k.Status.Version,
-		Replicas:                    k.Status.Replicas,
-		UpToDateReplicas:            &k.Status.UpdatedReplicas,
-		ReadyReplicas:               k.Status.ReadyReplicas,
+		Replicas:                    ptr.To(k.Status.Replicas),
+		UpToDateReplicas:            ptr.To(k.Status.UpdatedReplicas),
+		ReadyReplicas:               ptr.To(k.Status.ReadyReplicas),
 		AvailableReplicas:           ptr.To(k.Status.Replicas - k.Status.UnavailableReplicas),
 		Selector:                    k.Status.Selector,
 		Conditions:                  k.Status.Conditions,
@@ -34,17 +34,17 @@ func (k *K0smotronControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
 	k.Spec = (src.Spec)
 	k.Status = K0smotronControlPlaneStatus{
-		Ready:       src.Status.ReadyReplicas > 0,
+		Ready:       ptr.Deref(src.Status.ReadyReplicas, 0) > 0,
 		Initialized: ptr.Deref(src.Status.Initialization.ControlPlaneInitialized, false),
 		Initialization: Initialization{
 			ControlPlaneInitialized: ptr.Deref(src.Status.Initialization.ControlPlaneInitialized, false),
 		},
 		ExternalManagedControlPlane: src.Status.ExternalManagedControlPlane,
 		Version:                     src.Status.Version,
-		Replicas:                    src.Status.Replicas,
-		UpdatedReplicas:             *src.Status.UpToDateReplicas,
-		ReadyReplicas:               src.Status.ReadyReplicas,
-		UnavailableReplicas:         src.Status.Replicas - *src.Status.AvailableReplicas,
+		Replicas:                    ptr.Deref(src.Status.Replicas, 0),
+		UpdatedReplicas:             ptr.Deref(src.Status.UpToDateReplicas, 0),
+		ReadyReplicas:               ptr.Deref(src.Status.ReadyReplicas, 0),
+		UnavailableReplicas:         ptr.Deref(src.Status.Replicas, 0) - ptr.Deref(src.Status.AvailableReplicas, 0),
 		Selector:                    src.Status.Selector,
 		Conditions:                  src.Status.Conditions,
 	}

@@ -5355,6 +5355,7 @@ spec:
                     type: string
                 required:
                 - name
+                - namespace
                 type: object
               kubeconfigSecretMetadata:
                 description: |-
@@ -9969,7 +9970,7 @@ spec:
                 message: Waiting for cluster topology to be reconciled
                 reason: ControlPlaneDoesNotExist
                 status: Unknown
-                type: ControlPlaneReady
+                type: Available
               initialization:
                 controlPlaneInitialized: false
               version: ""
@@ -10044,8 +10045,10 @@ spec:
                   set to true if the Node objects do not exist in the cluster.
                 type: boolean
               initialization:
-                description: initialization represents the initialization status of
-                  the control plane
+                description: |-
+                  initialization represents the initialization status of the control plane
+                  NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+                minProperties: 1
                 properties:
                   controlPlaneInitialized:
                     description: controlPlaneInitialized indicates whether the control
@@ -10069,7 +10072,7 @@ spec:
               upToDateReplicas:
                 description: upToDateReplicas is the number of up-to-date replicas
                   targeted by this ControlPlane. A machine is considered available
-                  when Machine's  UpToDate condition is true.
+                  when Machine's UpToDate condition is true.
                 format: int32
                 type: integer
               version:

@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/ptr"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
@@ -196,7 +197,7 @@ func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.
 			Do(ctx).
 			Into(&kcp)
 
-		return kcp.Status.Initialization.ControlPlaneInitialized, nil
+		return ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false), nil
 	})
 
 	s.Require().NoError(err)

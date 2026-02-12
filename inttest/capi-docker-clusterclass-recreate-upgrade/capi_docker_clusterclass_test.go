@@ -47,6 +47,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"k8s.io/utils/ptr"
 )
 
 type CAPIDockerClusterClassSuite struct {
@@ -223,17 +224,17 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 }
 
 func isCPReady(cp *cpv1beta2.K0sControlPlane, expectedVersion string) bool {
-	if cp.Status.ReadyReplicas != cp.Spec.Replicas {
+	if ptr.Deref(cp.Status.ReadyReplicas, 0) != cp.Spec.Replicas {
 		return false
 	}
-	if cp.Status.UpToDateReplicas == nil || *cp.Status.UpToDateReplicas != cp.Spec.Replicas {
+	if ptr.Deref(cp.Status.UpToDateReplicas, 0) != cp.Spec.Replicas {
 		return false
 	}
 	if cp.Status.Version != expectedVersion {
 		return false
 	}
 
-	return cp.Status.Initialization.ControlPlaneInitialized
+	return ptr.Deref(cp.Status.Initialization.ControlPlaneInitialized, false)
 }
 
 func (s *CAPIDockerClusterClassSuite) createCluster() {

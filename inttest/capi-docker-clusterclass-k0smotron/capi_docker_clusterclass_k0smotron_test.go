@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/ptr"
 )
 
 type CAPIDockerClusterClassK0smotronSuite struct {
@@ -109,10 +110,10 @@ func (s *CAPIDockerClusterClassK0smotronSuite) TestCAPIDocker() {
 
 		kcp := kcps.Items[0]
 
-		ready := kcp.Status.ReadyReplicas == 2 &&
-			kcp.Status.AvailableReplicas != nil && *kcp.Status.AvailableReplicas == 2 &&
-			kcp.Status.Initialization.ControlPlaneInitialized &&
-			kcp.Status.UpToDateReplicas != nil && *kcp.Status.UpToDateReplicas == 2 &&
+		ready := ptr.Deref(kcp.Status.ReadyReplicas, 0) == 2 &&
+			ptr.Deref(kcp.Status.AvailableReplicas, 0) == 2 &&
+			ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) &&
+			ptr.Deref(kcp.Status.UpToDateReplicas, 0) == 2 &&
 			kcp.Status.Version == "v1.27.2+k0s.0"
 
 		return ready, nil

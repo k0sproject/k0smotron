@@ -458,7 +458,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		return err
 	}
 
-	kcp.Status.Replicas = int32(len(contolPlanePods.Items))
+	kcp.Status.Replicas = ptr.To(int32(len(contolPlanePods.Items)))
 
 	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
 
@@ -511,10 +511,10 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	}
 
 	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
-	kcp.Status.ReadyReplicas = int32(readyReplicas)
-	kcp.Status.AvailableReplicas = ptr.To(kcp.Status.Replicas - int32(unavailableReplicas))
+	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
+	kcp.Status.AvailableReplicas = ptr.To(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
 
-	if kcp.Status.ReadyReplicas > 0 {
+	if ptr.Deref(kcp.Status.ReadyReplicas, 0) > 0 {
 		kcp.Status.Version = minimumVersion.String()
 	}
 
@@ -659,7 +659,7 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 			infraObj,
 			client.RawPatch(
 				types.MergePatchType,
-				fmt.Appendf(nil, `{"status": {"ready": %t}}`, ready),
+				fmt.Appendf(nil, `{"status": {"ready": %t}}`, ptr.Deref(ready, false)),
 			),
 		)
 		if err != nil {

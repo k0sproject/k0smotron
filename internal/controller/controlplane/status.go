@@ -175,8 +175,8 @@ func (ic *planStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 		return errUnsupportedPlanState
 	}
 	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
-	kcp.Status.AvailableReplicas = ptr.To(kcp.Status.Replicas - int32(unavailableReplicas))
-	kcp.Status.ReadyReplicas = int32(readyReplicas)
+	kcp.Status.AvailableReplicas = ptr.To(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
+	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
 
 	// If status.updatedReplicas is not equal to desired ones by the spec, the control plane upgrade is not ready
 	// so we return an error to retry the status computation later.
@@ -205,7 +205,7 @@ func newMachineStatusComputer(ctx context.Context, c client.Client, cluster *clu
 }
 
 func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
-	kcp.Status.Replicas = int32(len(rc.machines))
+	kcp.Status.Replicas = ptr.To(int32(len(rc.machines)))
 	readyReplicas := 0
 	unavailableReplicas := 0
 	upToDateReplicas := 0
@@ -238,7 +238,7 @@ func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 		unavailableReplicas += int(kcp.Spec.Replicas) - rc.machines.Len()
 	}
 
-	kcp.Status.ReadyReplicas = int32(readyReplicas)
+	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
 	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
 	kcp.Status.AvailableReplicas = ptr.To(int32(rc.machines.Len() - unavailableReplicas))
 

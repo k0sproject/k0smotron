@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -89,10 +90,10 @@ func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *c
 		}
 
 		desiredReplicas := controlplane.Spec.Replicas
-		statusReplicas := controlplane.Status.Replicas
-		updatedReplicas := *controlplane.Status.UpToDateReplicas
-		readyReplicas := controlplane.Status.ReadyReplicas
-		availableReplicas := *controlplane.Status.AvailableReplicas
+		statusReplicas := ptr.Deref(controlplane.Status.Replicas, 0)
+		updatedReplicas := ptr.Deref(controlplane.Status.UpToDateReplicas, 0)
+		readyReplicas := ptr.Deref(controlplane.Status.ReadyReplicas, 0)
+		availableReplicas := ptr.Deref(controlplane.Status.AvailableReplicas, 0)
 
 		if statusReplicas != desiredReplicas ||
 			updatedReplicas != desiredReplicas ||

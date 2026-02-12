@@ -144,9 +144,9 @@ func TestPlanStatusCompute(t *testing.T) {
 			},
 			Status: cpv1beta2.K0sControlPlaneStatus{
 				UpToDateReplicas:  ptr.To[int32](0),
-				ReadyReplicas:     2,
+				ReadyReplicas:     ptr.To[int32](2),
 				AvailableReplicas: ptr.To[int32](2),
-				Replicas:          2,
+				Replicas:          ptr.To[int32](2),
 				Version:           "v1.31.0+k0s.0",
 			},
 		}
@@ -156,9 +156,9 @@ func TestPlanStatusCompute(t *testing.T) {
 			},
 			Status: cpv1beta2.K0sControlPlaneStatus{
 				UpToDateReplicas:  ptr.To[int32](2),
-				ReadyReplicas:     2,
+				ReadyReplicas:     ptr.To[int32](2),
 				AvailableReplicas: ptr.To[int32](2),
-				Replicas:          2,
+				Replicas:          ptr.To[int32](2),
 				Version:           "v1.31.0+k0s.0",
 			},
 		}
@@ -192,9 +192,9 @@ func TestPlanStatusCompute(t *testing.T) {
 		originalKcp := &cpv1beta2.K0sControlPlane{
 			Status: cpv1beta2.K0sControlPlaneStatus{
 				UpToDateReplicas:  ptr.To[int32](0),
-				ReadyReplicas:     4,
+				ReadyReplicas:     ptr.To[int32](4),
 				AvailableReplicas: ptr.To[int32](4),
-				Replicas:          4,
+				Replicas:          ptr.To[int32](4),
 				Version:           "v1.31.0+k0s.0",
 			},
 		}
@@ -202,9 +202,9 @@ func TestPlanStatusCompute(t *testing.T) {
 		expectedKcp := &cpv1beta2.K0sControlPlane{
 			Status: cpv1beta2.K0sControlPlaneStatus{
 				UpToDateReplicas:  ptr.To[int32](1),
-				ReadyReplicas:     2,
+				ReadyReplicas:     ptr.To[int32](2),
 				AvailableReplicas: ptr.To[int32](2),
-				Replicas:          4,
+				Replicas:          ptr.To[int32](4),
 				Version:           "v1.31.0+k0s.0",
 			},
 		}
@@ -267,7 +267,7 @@ func Test_machineStatusCompute(t *testing.T) {
 		err := rc.compute(kcp)
 
 		require.NoError(t, err)
-		require.Zero(t, kcp.Status.Replicas)
+		require.Zero(t, ptr.Deref(kcp.Status.Replicas, 0))
 		require.Empty(t, kcp.Status.Version)
 	})
 
@@ -303,10 +303,10 @@ func Test_machineStatusCompute(t *testing.T) {
 		err := rc.compute(kcp)
 
 		require.NoError(t, err)
-		require.Equal(t, int32(2), kcp.Status.Replicas)
+		require.Equal(t, int32(2), *kcp.Status.Replicas)
 		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
-		require.Equal(t, int32(2), kcp.Status.ReadyReplicas)
+		require.Equal(t, int32(2), *kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 	})
 
@@ -342,10 +342,10 @@ func Test_machineStatusCompute(t *testing.T) {
 		err := rc.compute(kcp)
 
 		require.NoError(t, err)
-		require.Equal(t, int32(2), kcp.Status.Replicas)
+		require.Equal(t, int32(2), *kcp.Status.Replicas)
 		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
-		require.Equal(t, int32(2), kcp.Status.ReadyReplicas)
+		require.Equal(t, int32(2), *kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0+k0s.0", kcp.Status.Version)
 	})
 
@@ -381,10 +381,10 @@ func Test_machineStatusCompute(t *testing.T) {
 		err := rc.compute(kcp)
 
 		require.NoError(t, err)
-		require.Equal(t, int32(2), kcp.Status.Replicas)
+		require.Equal(t, int32(2), *kcp.Status.Replicas)
 		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
-		require.Equal(t, int32(2), kcp.Status.ReadyReplicas)
+		require.Equal(t, int32(2), *kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 	})
 
@@ -428,10 +428,10 @@ func Test_machineStatusCompute(t *testing.T) {
 		err := rc.compute(kcp)
 
 		require.NoError(t, err)
-		require.Equal(t, int32(3), kcp.Status.Replicas)
+		require.Equal(t, int32(3), *kcp.Status.Replicas)
 		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
-		require.Equal(t, int32(1), kcp.Status.ReadyReplicas)
+		require.Equal(t, int32(1), *kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 	})
 
@@ -475,10 +475,10 @@ func Test_machineStatusCompute(t *testing.T) {
 		err := rc.compute(kcp)
 
 		require.NoError(t, err)
-		require.Equal(t, int32(3), kcp.Status.Replicas)
+		require.Equal(t, int32(3), *kcp.Status.Replicas)
 		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
-		require.Equal(t, int32(1), kcp.Status.ReadyReplicas)
+		require.Equal(t, int32(1), *kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 
 	})
@@ -518,10 +518,10 @@ func Test_machineStatusCompute(t *testing.T) {
 		err := rc.compute(kcp)
 
 		require.NoError(t, err)
-		require.Equal(t, int32(2), kcp.Status.Replicas)
+		require.Equal(t, int32(2), *kcp.Status.Replicas)
 		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
-		require.Equal(t, int32(1), kcp.Status.ReadyReplicas)
+		require.Equal(t, int32(1), *kcp.Status.ReadyReplicas)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 
 	})
