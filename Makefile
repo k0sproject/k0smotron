@@ -23,7 +23,7 @@ ARTIFACTS ?= $(shell pwd)/_artifacts
 # Image URL to use all building/pushing image targets
 IMG ?= quay.io/k0sproject/k0smotron:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.26.0
+ENVTEST_K8S_VERSION = 1.32.0
 
 # GO_TEST_DIRS is a list of directories to run go test on, excluding inttests
 GO_TEST_DIRS ?= ./api/... ./cmd/... ./internal/...
@@ -284,7 +284,7 @@ $(CONTROLLER_GEN): Makefile.variables | $(LOCALBIN)
 
 envtest-setup: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.18
+	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.22
 
 .PHONY: docs
 docs:
