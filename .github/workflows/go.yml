@@ -47,10 +47,11 @@ jobs:
           # Build Docker image and create image bundle
           make k0smotron-image-bundle.tar
 
-      - name: Publish the previously built imageto ttl.sh with the commit sha
+      - name: Publish the previously built image to ttl.sh with the commit sha
         run: |
           docker tag quay.io/k0sproject/k0smotron:latest ttl.sh/k0smotron-${{ github.sha }}
           docker push ttl.sh/k0smotron-${{ github.sha }}
+          echo "Docker image: ttl.sh/k0smotron-${{ github.sha }}" >>$GITHUB_STEP_SUMMARY
 
       - name: Upload image bundle
         uses: actions/upload-artifact@v4
