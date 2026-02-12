@@ -14,7 +14,7 @@ func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec = k.Spec
 	dst.Status = v1beta2.K0smotronControlPlaneStatus{
 		Initialization: v1beta2.Initialization{
-			ControlPlaneInitialized: k.Status.Initialized,
+			ControlPlaneInitialized: &k.Status.Initialized,
 		},
 		ExternalManagedControlPlane: k.Status.ExternalManagedControlPlane,
 		Version:                     k.Status.Version,
@@ -35,9 +35,9 @@ func (k *K0smotronControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 	k.Spec = (src.Spec)
 	k.Status = K0smotronControlPlaneStatus{
 		Ready:       src.Status.ReadyReplicas > 0,
-		Initialized: src.Status.Initialization.ControlPlaneInitialized,
+		Initialized: ptr.Deref(src.Status.Initialization.ControlPlaneInitialized, false),
 		Initialization: Initialization{
-			ControlPlaneInitialized: src.Status.Initialization.ControlPlaneInitialized,
+			ControlPlaneInitialized: ptr.Deref(src.Status.Initialization.ControlPlaneInitialized, false),
 		},
 		ExternalManagedControlPlane: src.Status.ExternalManagedControlPlane,
 		Version:                     src.Status.Version,

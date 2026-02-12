@@ -19,6 +19,7 @@ limitations under the License.
 package controlplane
 
 import (
+	"k8s.io/utils/ptr"
 	"testing"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
@@ -86,7 +87,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 				},
 				Status: cpv1beta2.K0sControlPlaneStatus{
 					Initialization: cpv1beta2.Initialization{
-						ControlPlaneInitialized: true,
+						ControlPlaneInitialized: ptr.To(true),
 					},
 				},
 			},
@@ -182,7 +183,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 				},
 				Status: cpv1beta2.K0sControlPlaneStatus{
 					Initialization: cpv1beta2.Initialization{
-						ControlPlaneInitialized: true,
+						ControlPlaneInitialized: ptr.To(true),
 					},
 				},
 			},
@@ -281,7 +282,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 				},
 				Status: cpv1beta2.K0sControlPlaneStatus{
 					Initialization: cpv1beta2.Initialization{
-						ControlPlaneInitialized: true,
+						ControlPlaneInitialized: ptr.To(true),
 					},
 				},
 			},

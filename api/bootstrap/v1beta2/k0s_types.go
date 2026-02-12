@@ -182,9 +182,6 @@ type JoinTokenSecretRef struct {
 
 // K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig
 type K0sWorkerConfigStatus struct {
-	// Ready indicates the Bootstrapdata field is ready to be consumed
-	Ready bool `json:"ready,omitempty"`
-
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional
 	DataSecretName *string `json:"dataSecretName,omitempty"`
@@ -200,7 +197,7 @@ type K0sWorkerConfigStatus struct {
 
 // StatusInitialization represents the initialization status of the worker node
 type StatusInitialization struct {
-	DataSecretCreated bool `json:"dataSecretCreated,omitempty"`
+	DataSecretCreated *bool `json:"dataSecretCreated,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -221,9 +218,6 @@ type K0sControllerConfig struct {
 
 // K0sControllerConfigStatus defines the observed state of K0sControllerConfig
 type K0sControllerConfigStatus struct {
-	// Ready indicates the Bootstrapdata field is ready to be consumed
-	Ready bool `json:"ready,omitempty"`
-
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional
 	DataSecretName *string `json:"dataSecretName,omitempty"`

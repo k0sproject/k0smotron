@@ -17,7 +17,7 @@ func (kcpv1beta1 *K0sControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 
 	dst.Spec = k0sControlPlaneSpecV1beta1ToV1beta2(kcpv1beta1.Spec)
 	dst.Status = v1beta2.K0sControlPlaneStatus{
-		Initialization:              v1beta2.Initialization{ControlPlaneInitialized: kcpv1beta1.Status.Initialized},
+		Initialization:              v1beta2.Initialization{ControlPlaneInitialized: &kcpv1beta1.Status.Initialized},
 		ExternalManagedControlPlane: kcpv1beta1.Status.ExternalManagedControlPlane,
 		Replicas:                    kcpv1beta1.Status.Replicas,
 		Version:                     kcpv1beta1.Status.Version,
@@ -58,18 +58,24 @@ func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 	}
 	kcpv1beta1.Status = K0sControlPlaneStatus{
 		Ready:       src.Status.ReadyReplicas > 0,
-		Initialized: src.Status.Initialization.ControlPlaneInitialized,
+		Initialized: ptr.Deref(src.Status.Initialization.ControlPlaneInitialized, false),
 		Initialization: Initialization{
-			ControlPlaneInitialized: src.Status.Initialization.ControlPlaneInitialized,
+			ControlPlaneInitialized: ptr.Deref(src.Status.Initialization.ControlPlaneInitialized, false),
 		},
 		ExternalManagedControlPlane: src.Status.ExternalManagedControlPlane,
 		Replicas:                    src.Status.Replicas,
 		Version:                     src.Status.Version,
 		Selector:                    src.Status.Selector,
-		UnavailableReplicas:         src.Status.Replicas - *src.Status.AvailableReplicas,
+		UnavailableReplicas:         src.Status.Replicas,
 		ReadyReplicas:               src.Status.ReadyReplicas,
-		UpdatedReplicas:             *src.Status.UpToDateReplicas,
 		Conditions:                  src.Status.Conditions,
+	}
+	if src.Status.UpToDateReplicas != nil {
+		kcpv1beta1.Status.UpdatedReplicas = *src.Status.UpToDateReplicas
+	}
+
+	if src.Status.AvailableReplicas != nil {
+		kcpv1beta1.Status.UnavailableReplicas = src.Status.Replicas - *src.Status.AvailableReplicas
 	}
 
 	return nil

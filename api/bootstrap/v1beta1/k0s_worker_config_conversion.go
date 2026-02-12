@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
@@ -15,12 +16,11 @@ func (k *K0sWorkerConfig) ConvertTo(dstRaw conversion.Hub) error {
 	dst.ObjectMeta = k.ObjectMeta
 	dst.Spec = k0sWorkerConfigV1beta1ToV1beta2Spec(k.Spec)
 	dst.Status = v1beta2.K0sWorkerConfigStatus{
-		Ready:          k.Status.Ready,
 		DataSecretName: k.Status.DataSecretName,
 		Conditions:     k.Status.Conditions,
-	}
-	if k.Status.DataSecretName != nil && *k.Status.DataSecretName != "" {
-		dst.Status.Initialization.DataSecretCreated = true
+		Initialization: v1beta2.StatusInitialization{
+			DataSecretCreated: ptr.To(k.Status.Ready),
+		},
 	}
 	return nil
 }
@@ -63,9 +63,11 @@ func (k *K0sWorkerConfig) ConvertFrom(srcRaw conversion.Hub) error {
 
 	k.Spec = k0sWorkerConfigV1beta2ToV1beta1Spec(src.Spec)
 	k.Status = K0sWorkerConfigStatus{
-		Ready:          src.Status.Ready,
 		DataSecretName: src.Status.DataSecretName,
 		Conditions:     src.Status.Conditions,
+	}
+	if src.Status.Initialization.DataSecretCreated != nil {
+		k.Status.Ready = *src.Status.Initialization.DataSecretCreated
 	}
 	return nil
 }

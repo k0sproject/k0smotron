@@ -611,7 +611,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 		Reason: cpv1beta2.ControlPlaneAvailableReason,
 	})
 
-	kcp.Status.Initialization.ControlPlaneInitialized = true
+	kcp.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
 
 	// Set the k0s cluster ID annotation
 	annotations.AddAnnotations(cluster, map[string]string{
@@ -629,7 +629,7 @@ func (scope *kmcScope) getK0sVersionRunningInPod(ctx context.Context, pod *corev
 }
 
 // patchInfrastructureStatus updates the ready status of the infrastructure object referenced by the cluster
-func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, cluster *clusterv1.Cluster, ready bool) error {
+func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, cluster *clusterv1.Cluster, ready *bool) error {
 	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 
 	infraObj, err := external.GetObjectFromContractVersionedRef(ctx, c, cluster.Spec.InfrastructureRef, cluster.Namespace)
@@ -650,7 +650,7 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 	}
 
 	// Only patch if status is not set or different from desired value
-	if !found || currentReady != ready {
+	if !found || currentReady != ptr.Deref(ready, false) {
 		log.Info("Patching Infrastructure object status", "ready", ready)
 
 		// Apply the patch

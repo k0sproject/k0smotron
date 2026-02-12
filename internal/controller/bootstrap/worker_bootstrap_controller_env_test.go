@@ -374,7 +374,7 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, k0sWorkerConfig))
 
 	// Bootstrap data is already crreated.
-	k0sWorkerConfig.Status.Ready = true
+	k0sWorkerConfig.Status.Initialization.DataSecretCreated = ptr.To(true)
 	require.NoError(t, testEnv.Status().Update(ctx, k0sWorkerConfig))
 
 	defer func(do ...client.Object) {
@@ -578,7 +578,8 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
 
 		fmt.Println(updatedK0sWorkerConfig.Status)
-		assert.True(c, updatedK0sWorkerConfig.Status.Ready)
+		assert.NotNil(c, updatedK0sWorkerConfig.Status.Initialization.DataSecretCreated)
+		assert.True(c, *updatedK0sWorkerConfig.Status.Initialization.DataSecretCreated)
 		assert.NotNil(c, updatedK0sWorkerConfig.Status.DataSecretName)
 		if updatedK0sWorkerConfig.Status.DataSecretName != nil {
 			assert.Equal(c, *updatedK0sWorkerConfig.Status.DataSecretName, updatedK0sWorkerConfig.Name)

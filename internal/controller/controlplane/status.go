@@ -337,7 +337,7 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 		Status: metav1.ConditionTrue,
 		Reason: cpv1beta2.ControlPlaneAvailableReason,
 	})
-	kcp.Status.Initialization.ControlPlaneInitialized = true
+	kcp.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
 
 	// Set the k0s cluster ID annotation
 	annotations.AddAnnotations(cluster, map[string]string{

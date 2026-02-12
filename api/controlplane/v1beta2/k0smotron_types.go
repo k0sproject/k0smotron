@@ -78,7 +78,7 @@ func (*K0smotronControlPlaneList) Hub() {}
 type Initialization struct {
 	// controlPlaneInitialized indicates whether the control plane is initialized
 	// +optional
-	ControlPlaneInitialized bool `json:"controlPlaneInitialized"`
+	ControlPlaneInitialized *bool `json:"controlPlaneInitialized"`
 }
 
 // K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane

@@ -185,7 +185,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	}
 
-	if scope.Config.Status.Ready {
+	if scope.Config.Status.Initialization.DataSecretCreated != nil && *scope.Config.Status.Initialization.DataSecretCreated {
 		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
 		log.Info("Bootstrapdata already created, reconciled succesfully")
 		return ctrl.Result{}, nil
@@ -335,8 +335,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
 
 	// Set the status to ready
-	config.Status.Ready = true
-	config.Status.Initialization.DataSecretCreated = true
+	config.Status.Initialization.DataSecretCreated = ptr.To(true)
 	config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
 
 	log.Info("Reconciled succesfully")

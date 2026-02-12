@@ -322,7 +322,9 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 
 func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
 	// Skip the check if the K0sControlPlane is not ready
-	if !kcp.Status.Initialization.ControlPlaneInitialized || kcp.Spec.Replicas != kcp.Status.Replicas {
+	if kcp.Status.Initialization.ControlPlaneInitialized == nil ||
+		!*kcp.Status.Initialization.ControlPlaneInitialized ||
+		kcp.Spec.Replicas != kcp.Status.Replicas {
 		return false
 	}
 

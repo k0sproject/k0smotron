@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
@@ -15,12 +16,11 @@ func (c *K0sControllerConfig) ConvertTo(dstRaw conversion.Hub) error {
 
 	dst.Spec = k0sControllerConfigV1beta1ToV1beta2Spec(c.Spec)
 	dst.Status = v1beta2.K0sControllerConfigStatus{
-		Ready:          c.Status.Ready,
 		DataSecretName: c.Status.DataSecretName,
 		Conditions:     c.Status.Conditions,
-	}
-	if c.Status.DataSecretName != nil && *c.Status.DataSecretName != "" {
-		dst.Status.Initialization.DataSecretCreated = true
+		Initialization: v1beta2.StatusInitialization{
+			DataSecretCreated: ptr.To(c.Status.Ready),
+		},
 	}
 
 	return nil
@@ -77,9 +77,12 @@ func (c *K0sControllerConfig) ConvertFrom(srcRaw conversion.Hub) error {
 
 	c.Spec = k0sControllerConfigSpecV1beta2ToV1beta1(src.Spec)
 	c.Status = K0sControllerConfigStatus{
-		Ready:          src.Status.Ready,
+		Ready:          false,
 		DataSecretName: src.Status.DataSecretName,
 		Conditions:     src.Status.Conditions,
+	}
+	if src.Status.Initialization.DataSecretCreated != nil {
+		c.Status.Ready = *src.Status.Initialization.DataSecretCreated
 	}
 
 	return nil
