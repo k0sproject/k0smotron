@@ -1,11 +1,17 @@
 package v1beta1
 
 import (
+<<<<<<< HEAD
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	"github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	kmcv1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+=======
+	"github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
+>>>>>>> b53d523c (v1beta2 (#1339))
 )
 
 // ConvertTo converts this version (v1beta2) to the hub version (v1beta2 - self).

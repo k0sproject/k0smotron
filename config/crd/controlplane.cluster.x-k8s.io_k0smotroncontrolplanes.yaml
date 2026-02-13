@@ -5302,6 +5302,16 @@ spec:
                   If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+<<<<<<< HEAD
+=======
+              kineDataSourceSecretName:
+                description: KineDataSourceSecretName defines the name of kine datasource
+                  URL secret.
+                type: string
+              kineDataSourceURL:
+                description: KineDataSourceURL defines the kine datasource URL.
+                type: string
+>>>>>>> b53d523c (v1beta2 (#1339))
               kubeconfigRef:
                 description: |-
                   KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
@@ -9181,6 +9191,7 @@ spec:
                   - path
                   type: object
                 type: array
+<<<<<<< HEAD
               patches:
                 description: |-
                   Patches defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
@@ -9229,6 +9240,8 @@ spec:
                   - target
                   type: object
                 type: array
+=======
+>>>>>>> b53d523c (v1beta2 (#1339))
               persistence:
                 description: |-
                   Persistence defines the persistence configuration. If empty k0smotron
@@ -9677,7 +9690,11 @@ spec:
                 default: 1
                 description: |-
                   Replicas is the desired number of replicas of the k0s control planes.
+<<<<<<< HEAD
                   If unspecified, defaults to 1. If the value is above 1, k0smotron requires spec.storage.kine.dataSourceURL to be set.
+=======
+                  If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
+>>>>>>> b53d523c (v1beta2 (#1339))
                   Recommended value is 3.
                 format: int32
                 type: integer
@@ -9799,6 +9816,7 @@ spec:
                 description: ServiceAccount defines the service account to be used
                   by both k0s and etcd StatefulSets.
                 type: string
+<<<<<<< HEAD
               storage:
                 description: Storage defines the storage backend configuration.
                 properties:
@@ -9979,6 +9997,8 @@ spec:
                     - nats
                     type: string
                 type: object
+=======
+>>>>>>> b53d523c (v1beta2 (#1339))
               topologySpreadConstraints:
                 description: |-
                   TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
