@@ -26,13 +26,14 @@ resources:
 patches:
 - path: manager_config_patch.yaml
 - path: patches/webhook_in_k0sworkerconfig.yaml
+- path: patches/webhook_in_k0scontrollerconfig.yaml
 - path: patches/cainjection_in_k0sworkerconfig.yaml
 - path: patches/manager_webhook_patch.yaml
 - path: patches/webhook_service_patch.yaml
 - path: patches/certificate_patch.yaml
 
 configurations:
-#- kustomizeconfig.yaml
+- kustomizeconfig.yaml
 #
 #
 ## [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in

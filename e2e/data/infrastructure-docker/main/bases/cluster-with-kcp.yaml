@@ -57,6 +57,8 @@ spec:
         network:
           controlPlaneLoadBalancing:
             enabled: false
+    preStartCommands:
+    - echo "Pre start command executed"
     files:
     - path: /tmp/test-file-secret
       contentFrom:

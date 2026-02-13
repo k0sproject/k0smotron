@@ -3,6 +3,7 @@
 Packages:
 
 - [controlplane.cluster.x-k8s.io/v1beta1](#controlplaneclusterx-k8siov1beta1)
+- [controlplane.cluster.x-k8s.io/v1beta2](#controlplaneclusterx-k8siov1beta2)
 
 # controlplane.cluster.x-k8s.io/v1beta1
 
@@ -102,7 +103,7 @@ Resource Types:
         <td><b><a href="#k0scontrolplanespecmachinetemplate">machineTemplate</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -651,7 +652,7 @@ If empty, k0smotron will use the default one.<br/>
 
 
 
-
+K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.
 
 <table>
     <thead>
@@ -22028,6 +22029,12036 @@ Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
 the values array must be non-empty. If the operator is Exists or DoesNotExist,
 the values array must be empty. This array is replaced during a strategic
 merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+# controlplane.cluster.x-k8s.io/v1beta2
+
+Resource Types:
+
+- [K0sControlPlane](#k0scontrolplane)
+
+- [K0sControlPlaneTemplate](#k0scontrolplanetemplate)
+
+- [K0smotronControlPlane](#k0smotroncontrolplane)
+
+
+
+
+## K0sControlPlane
+<sup><sup>[↩ Parent](#controlplaneclusterx-k8siov1beta2 )</sup></sup>
+
+
+
+
+
+
+K0sControlPlane describes a k0s control plane for a Cluster API managed cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>controlplane.cluster.x-k8s.io/v1beta2</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>K0sControlPlane</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespec-1">spec</a></b></td>
+        <td>object</td>
+        <td>
+          K0sControlPlaneSpec defines the desired state of K0sControlPlane<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanestatus-1">status</a></b></td>
+        <td>object</td>
+        <td>
+          K0sControlPlaneStatus defines the observed state of K0sControlPlane<br/>
+          <br/>
+            <i>Default</i>: map[initialization:map[controlPlaneInitialized:false] version:]<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec
+<sup><sup>[↩ Parent](#k0scontrolplane-1)</sup></sup>
+
+
+
+K0sControlPlaneSpec defines the desired state of K0sControlPlane
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspec-1">k0sConfigSpec</a></b></td>
+        <td>object</td>
+        <td>
+          K0sConfigSpec defines the k0s configuration specification.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplate-1">machineTemplate</a></b></td>
+        <td>object</td>
+        <td>
+          K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeckubeconfigsecretmetadata-1">kubeconfigSecretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>updateStrategy</b></td>
+        <td>enum</td>
+        <td>
+          UpdateStrategy defines the strategy to use when updating the control plane.<br/>
+          <br/>
+            <i>Enum</i>: InPlace, Recreate, RecreateDeleteFirst<br/>
+            <i>Default</i>: InPlace<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
+just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec
+<sup><sup>[↩ Parent](#k0scontrolplanespec-1)</sup></sup>
+
+
+
+K0sConfigSpec defines the k0s configuration specification.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args specifies extra arguments to be passed to k0s controller.
+See: https://docs.k0sproject.io/stable/cli/k0s_controller/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>downloadURL</b></td>
+        <td>string</td>
+        <td>
+          DownloadURL specifies the URL from which to download the k0s binary.
+If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
+Supported protocols are: http, https, oci. Using 'oci' scheme requires 'oras' to be installed on the target system.
+
+If 'oci' schema is used and the OCI registry requires authentication, make sure to set up the authentication beforehand
+by adding a file to the Files section that contains the necessary config for ORAS. See: https://oras.land/docs/how_to_guides/authentication/
+The file must be placed at `/root` directory (HOME for cloud-init execution time) and named `config.json`.
+NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecfilesindex-1">files</a></b></td>
+        <td>[]object</td>
+        <td>
+          Files specifies extra files to be passed to user_data upon creation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0s</b></td>
+        <td>object</td>
+        <td>
+          K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
+If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0sInstallDir</b></td>
+        <td>string</td>
+        <td>
+          K0sInstallDir specifies the directory where k0s binary will be installed.
+If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.<br/>
+          <br/>
+            <i>Default</i>: /usr/local/bin<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>postK0sCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PostK0sCommands specifies commands to be run after starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preInstalledK0s</b></td>
+        <td>boolean</td>
+        <td>
+          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preK0sCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PreK0sCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecprovisioner">provisioner</a></b></td>
+        <td>object</td>
+        <td>
+          Provisioner defines the provisioner configuration. Defaults to cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecsecretmetadata">secretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspectunneling-1">tunneling</a></b></td>
+        <td>object</td>
+        <td>
+          Tunneling defines the tunneling configuration for the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>useSystemHostname</b></td>
+        <td>boolean</td>
+        <td>
+          UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>workingDir</b></td>
+        <td>string</td>
+        <td>
+          WorkingDir specifies the working directory where k0smotron will place its files.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.files[index]
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspec-1)</sup></sup>
+
+
+
+File defines a file to be passed to user_data upon creation.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecfilesindexcontentfrom-1">contentFrom</a></b></td>
+        <td>object</td>
+        <td>
+          ContentFrom specifies the source of the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>permissions</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.files[index].contentFrom
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecfilesindex-1)</sup></sup>
+
+
+
+ContentFrom specifies the source of the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecfilesindexcontentfromconfigmapref-1">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecfilesindexcontentfromsecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.files[index].contentFrom.configMapRef
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecfilesindexcontentfrom-1)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.files[index].contentFrom.secretRef
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecfilesindexcontentfrom-1)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.provisioner
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspec-1)</sup></sup>
+
+
+
+Provisioner defines the provisioner configuration. Defaults to cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecprovisionercustomuserdataref">customUserDataRef</a></b></td>
+        <td>object</td>
+        <td>
+          CustomUserDataRef is a reference to a secret or a configmap that contains the custom user data.
+Provided user-data will be merged with the one generated by k0smotron. Note that you may want to specify the merge type.
+See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecprovisionerignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type is the provisioner format type.<br/>
+          <br/>
+            <i>Enum</i>: cloud-config, ignition, powershell, powershell-xml<br/>
+            <i>Default</i>: cloud-config<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.provisioner.customUserDataRef
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecprovisioner)</sup></sup>
+
+
+
+CustomUserDataRef is a reference to a secret or a configmap that contains the custom user data.
+Provided user-data will be merged with the one generated by k0smotron. Note that you may want to specify the merge type.
+See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecprovisionercustomuserdatarefconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecprovisionercustomuserdatarefsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.provisioner.customUserDataRef.configMapRef
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecprovisionercustomuserdataref)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.provisioner.customUserDataRef.secretRef
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecprovisionercustomuserdataref)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.provisioner.ignition
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecprovisioner)</sup></sup>
+
+
+
+Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.secretMetadata
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspec-1)</sup></sup>
+
+
+
+SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.tunneling
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspec-1)</sup></sup>
+
+
+
+Tunneling defines the tunneling configuration for the cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled specifies whether tunneling is enabled.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>enum</td>
+        <td>
+          Mode describes tunneling mode.
+If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Enum</i>: tunnel, proxy<br/>
+            <i>Default</i>: tunnel<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serverAddress</b></td>
+        <td>string</td>
+        <td>
+          Server address of the tunneling server.
+If empty, k0smotron will try to detect worker node address for.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serverNodePort</b></td>
+        <td>integer</td>
+        <td>
+          NodePort to publish for server port of the tunneling server.
+If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 31700<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tunnelingNodePort</b></td>
+        <td>integer</td>
+        <td>
+          NodePort to publish for tunneling port.
+If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 31443<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate
+<sup><sup>[↩ Parent](#k0scontrolplanespec-1)</sup></sup>
+
+
+
+K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplateinfrastructureref-1">infrastructureRef</a></b></td>
+        <td>object</td>
+        <td>
+          InfrastructureRef is a required reference to a custom resource
+offered by an infrastructure provider.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatemetadata-1">metadata</a></b></td>
+        <td>object</td>
+        <td>
+          Standard object's metadata.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.infrastructureRef
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate-1)</sup></sup>
+
+
+
+InfrastructureRef is a required reference to a custom resource
+offered by an infrastructure provider.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>
+          API version of the referent.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>
+          If referring to a piece of an object instead of an entire object, this string
+should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+For example, if the object reference is to a container within a pod, this would take on a value like:
+"spec.containers{name}" (where "name" refers to the name of the container that triggered
+the event) or if no container name is specified "spec.containers[2]" (container with
+index 2 in this pod). This syntax is chosen only to have some well-defined way of
+referencing a part of an object.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind of the referent.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>resourceVersion</b></td>
+        <td>string</td>
+        <td>
+          Specific resourceVersion to which this reference is made, if any.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>uid</b></td>
+        <td>string</td>
+        <td>
+          UID of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.metadata
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate-1)</sup></sup>
+
+
+
+Standard object's metadata.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          annotations is an unstructured key value map stored with a resource that may be
+set by external tools to store and retrieve arbitrary metadata. They are not
+queryable and should be preserved when modifying objects.
+More info: http://kubernetes.io/docs/user-guide/annotations<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          labels is a map of string keys and values that can be used to organize and categorize
+(scope and select) objects. May match selectors of replication controllers
+and services.
+More info: http://kubernetes.io/docs/user-guide/labels<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.kubeconfigSecretMetadata
+<sup><sup>[↩ Parent](#k0scontrolplanespec-1)</sup></sup>
+
+
+
+KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.status
+<sup><sup>[↩ Parent](#k0scontrolplane-1)</sup></sup>
+
+
+
+K0sControlPlaneStatus defines the observed state of K0sControlPlane
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>availableReplicas</b></td>
+        <td>integer</td>
+        <td>
+          availableReplicas is the number of available replicas for this ControlPlane. A machine is considered available when Machine's Available condition is true.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanestatusconditionsindex-1">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Conditions defines current service state of the K0sControlPlane.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>externalManagedControlPlane</b></td>
+        <td>boolean</td>
+        <td>
+          externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanestatusinitialization-1">initialization</a></b></td>
+        <td>object</td>
+        <td>
+          initialization represents the initialization status of the control plane
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readyReplicas</b></td>
+        <td>integer</td>
+        <td>
+          readyReplicas is the total number of fully running and ready control plane machines.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          replicas is the total number of non-terminated machines targeted by this control plane
+(their labels match the selector).<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>selector</b></td>
+        <td>string</td>
+        <td>
+          selector is the label selector in string format to avoid introspection
+by clients, and is used to provide the CRD-based integration for the
+scale subresource and additional integrations for things like kubectl
+describe.. The string will be in the same format as the query-param syntax.
+More info about label selectors: http://kubernetes.io/docs/user-guide/labels#label-selectors<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>upToDateReplicas</b></td>
+        <td>integer</td>
+        <td>
+          upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's UpToDate condition is true.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          version represents the minimum Kubernetes version for the control plane machines
+in the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.status.conditions[index]
+<sup><sup>[↩ Parent](#k0scontrolplanestatus-1)</sup></sup>
+
+
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is a human readable message indicating details about the transition.
+This may be an empty string.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>enum</td>
+        <td>
+          status of the condition, one of True, False, Unknown.<br/>
+          <br/>
+            <i>Enum</i>: True, False, Unknown<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.status.initialization
+<sup><sup>[↩ Parent](#k0scontrolplanestatus-1)</sup></sup>
+
+
+
+initialization represents the initialization status of the control plane
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>controlPlaneInitialized</b></td>
+        <td>boolean</td>
+        <td>
+          controlPlaneInitialized indicates whether the control plane is initialized<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+## K0sControlPlaneTemplate
+<sup><sup>[↩ Parent](#controlplaneclusterx-k8siov1beta2 )</sup></sup>
+
+
+
+
+
+
+K0sControlPlaneTemplate describes a k0s control plane configuration template.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>controlplane.cluster.x-k8s.io/v1beta2</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>K0sControlPlaneTemplate</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespec-1">spec</a></b></td>
+        <td>object</td>
+        <td>
+          K0sControlPlaneTemplateSpec describes a k0s control plane template's spec.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec
+<sup><sup>[↩ Parent](#k0scontrolplanetemplate-1)</sup></sup>
+
+
+
+K0sControlPlaneTemplateSpec describes a k0s control plane template's spec.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplate-1">template</a></b></td>
+        <td>object</td>
+        <td>
+          K0sControlPlaneTemplateResource describes the data needed to create a K0sControlPlane from a template.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespec-1)</sup></sup>
+
+
+
+K0sControlPlaneTemplateResource describes the data needed to create a K0sControlPlane from a template.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatemetadata-1">metadata</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespec-1">spec</a></b></td>
+        <td>object</td>
+        <td>
+          K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlaneTemplate.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.metadata
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplate-1)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplate-1)</sup></sup>
+
+
+
+K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlaneTemplate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspec-1">k0sConfigSpec</a></b></td>
+        <td>object</td>
+        <td>
+          K0sConfigSpec defines the k0s configuration specification.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespecmachinetemplate-1">machineTemplate</a></b></td>
+        <td>object</td>
+        <td>
+          K0sControlPlaneTemplateMachineTemplate defines the template for Machines
+in a K0sControlPlaneMachineTemplate object.
+NOTE: K0sControlPlaneTemplateMachineTemplate is similar to K0sControlPlaneMachineTemplate but
+omits ObjectMeta and InfrastructureRef fields. These fields do not make sense on the K0sControlPlaneTemplate,
+because they are calculated by the Cluster topology reconciler during reconciliation and thus cannot
+be configured on the K0sControlPlaneTemplate.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>updateStrategy</b></td>
+        <td>enum</td>
+        <td>
+          UpdateStrategy defines the strategy to use when updating the control plane.<br/>
+          <br/>
+            <i>Enum</i>: InPlace, Recreate, RecreateDeleteFirst<br/>
+            <i>Default</i>: InPlace<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespec-1)</sup></sup>
+
+
+
+K0sConfigSpec defines the k0s configuration specification.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args specifies extra arguments to be passed to k0s controller.
+See: https://docs.k0sproject.io/stable/cli/k0s_controller/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>downloadURL</b></td>
+        <td>string</td>
+        <td>
+          DownloadURL specifies the URL from which to download the k0s binary.
+If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
+Supported protocols are: http, https, oci. Using 'oci' scheme requires 'oras' to be installed on the target system.
+
+If 'oci' schema is used and the OCI registry requires authentication, make sure to set up the authentication beforehand
+by adding a file to the Files section that contains the necessary config for ORAS. See: https://oras.land/docs/how_to_guides/authentication/
+The file must be placed at `/root` directory (HOME for cloud-init execution time) and named `config.json`.
+NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindex-1">files</a></b></td>
+        <td>[]object</td>
+        <td>
+          Files specifies extra files to be passed to user_data upon creation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0s</b></td>
+        <td>object</td>
+        <td>
+          K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
+If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0sInstallDir</b></td>
+        <td>string</td>
+        <td>
+          K0sInstallDir specifies the directory where k0s binary will be installed.
+If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.<br/>
+          <br/>
+            <i>Default</i>: /usr/local/bin<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>postK0sCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PostK0sCommands specifies commands to be run after starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preInstalledK0s</b></td>
+        <td>boolean</td>
+        <td>
+          PreInstallK0s specifies whether k0s binary is pre-installed on the node.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>preK0sCommands</b></td>
+        <td>[]string</td>
+        <td>
+          PreK0sCommands specifies commands to be run before starting k0s worker.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisioner">provisioner</a></b></td>
+        <td>object</td>
+        <td>
+          Provisioner defines the provisioner configuration. Defaults to cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecsecretmetadata">secretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspectunneling-1">tunneling</a></b></td>
+        <td>object</td>
+        <td>
+          Tunneling defines the tunneling configuration for the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>useSystemHostname</b></td>
+        <td>boolean</td>
+        <td>
+          UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>workingDir</b></td>
+        <td>string</td>
+        <td>
+          WorkingDir specifies the working directory where k0smotron will place its files.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.files[index]
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspec-1)</sup></sup>
+
+
+
+File defines a file to be passed to user_data upon creation.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfrom-1">contentFrom</a></b></td>
+        <td>object</td>
+        <td>
+          ContentFrom specifies the source of the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>permissions</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.files[index].contentFrom
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindex-1)</sup></sup>
+
+
+
+ContentFrom specifies the source of the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfromconfigmapref-1">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfromsecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.files[index].contentFrom.configMapRef
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfrom-1)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.files[index].contentFrom.secretRef
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecfilesindexcontentfrom-1)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.provisioner
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspec-1)</sup></sup>
+
+
+
+Provisioner defines the provisioner configuration. Defaults to cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisionercustomuserdataref">customUserDataRef</a></b></td>
+        <td>object</td>
+        <td>
+          CustomUserDataRef is a reference to a secret or a configmap that contains the custom user data.
+Provided user-data will be merged with the one generated by k0smotron. Note that you may want to specify the merge type.
+See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisionerignition">ignition</a></b></td>
+        <td>object</td>
+        <td>
+          Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type is the provisioner format type.<br/>
+          <br/>
+            <i>Enum</i>: cloud-config, ignition, powershell, powershell-xml<br/>
+            <i>Default</i>: cloud-config<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.provisioner.customUserDataRef
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisioner)</sup></sup>
+
+
+
+CustomUserDataRef is a reference to a secret or a configmap that contains the custom user data.
+Provided user-data will be merged with the one generated by k0smotron. Note that you may want to specify the merge type.
+See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisionercustomuserdatarefconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisionercustomuserdatarefsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.provisioner.customUserDataRef.configMapRef
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisionercustomuserdataref)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.provisioner.customUserDataRef.secretRef
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisionercustomuserdataref)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.provisioner.ignition
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecprovisioner)</sup></sup>
+
+
+
+Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>variant</b></td>
+        <td>enum</td>
+        <td>
+          Variant declares which distribution variant the generated config is for.
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+          <br/>
+            <i>Enum</i>: fcos, flatcar, openshift, r4e, fiot<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the schema version of the Butane config to use
+Check the supported variants and versions here:
+https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>additionalConfig</b></td>
+        <td>string</td>
+        <td>
+          AdditionalConfig is an unstructured object that contains additional config to be merged
+with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.secretMetadata
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspec-1)</sup></sup>
+
+
+
+SecretMetadata specifies metadata (labels and annotations) to be propagated to the bootstrap Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.tunneling
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspec-1)</sup></sup>
+
+
+
+Tunneling defines the tunneling configuration for the cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled specifies whether tunneling is enabled.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>enum</td>
+        <td>
+          Mode describes tunneling mode.
+If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Enum</i>: tunnel, proxy<br/>
+            <i>Default</i>: tunnel<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serverAddress</b></td>
+        <td>string</td>
+        <td>
+          Server address of the tunneling server.
+If empty, k0smotron will try to detect worker node address for.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serverNodePort</b></td>
+        <td>integer</td>
+        <td>
+          NodePort to publish for server port of the tunneling server.
+If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 31700<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tunnelingNodePort</b></td>
+        <td>integer</td>
+        <td>
+          NodePort to publish for tunneling port.
+If empty, k0smotron will use the default one.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 31443<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.machineTemplate
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespec-1)</sup></sup>
+
+
+
+K0sControlPlaneTemplateMachineTemplate defines the template for Machines
+in a K0sControlPlaneMachineTemplate object.
+NOTE: K0sControlPlaneTemplateMachineTemplate is similar to K0sControlPlaneMachineTemplate but
+omits ObjectMeta and InfrastructureRef fields. These fields do not make sense on the K0sControlPlaneTemplate,
+because they are calculated by the Cluster topology reconciler during reconciliation and thus cannot
+be configured on the K0sControlPlaneTemplate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespecmachinetemplatemetadata-1">metadata</a></b></td>
+        <td>object</td>
+        <td>
+          Standard object's metadata.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeDeletionTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
+hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+If no value is provided, the default value for this property of the Machine resource will be used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeDrainTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
+The default value is 0, meaning that the node can be drained without any time limitations.
+NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeVolumeDetachTimeout</b></td>
+        <td>string</td>
+        <td>
+          NodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
+to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.machineTemplate.metadata
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespecmachinetemplate-1)</sup></sup>
+
+
+
+Standard object's metadata.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          annotations is an unstructured key value map stored with a resource that may be
+set by external tools to store and retrieve arbitrary metadata. They are not
+queryable and should be preserved when modifying objects.
+More info: http://kubernetes.io/docs/user-guide/annotations<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          labels is a map of string keys and values that can be used to organize and categorize
+(scope and select) objects. May match selectors of replication controllers
+and services.
+More info: http://kubernetes.io/docs/user-guide/labels<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+## K0smotronControlPlane
+<sup><sup>[↩ Parent](#controlplaneclusterx-k8siov1beta2 )</sup></sup>
+
+
+
+
+
+
+K0smotronControlPlane is the Schema for the K0smotronControlPlanes API
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>controlplane.cluster.x-k8s.io/v1beta2</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>K0smotronControlPlane</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespec-1">spec</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterSpec defines the desired state of K0smotronCluster<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanestatus-1">status</a></b></td>
+        <td>object</td>
+        <td>
+          K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane<br/>
+          <br/>
+            <i>Default</i>: map[conditions:[map[lastTransitionTime:1970-01-01T00:00:00Z message:Waiting for cluster topology to be reconciled reason:ControlPlaneDoesNotExist status:Unknown type:Available]] initialization:map[controlPlaneInitialized:false] version:]<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec
+<sup><sup>[↩ Parent](#k0smotroncontrolplane-1)</sup></sup>
+
+
+
+ClusterSpec defines the desired state of K0smotronCluster
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespeccertificaterefsindex-1">certificateRefs</a></b></td>
+        <td>[]object</td>
+        <td>
+          CertificateRefs defines the certificate references.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>controllerPlaneFlags</b></td>
+        <td>[]string</td>
+        <td>
+          ControlPlaneFlags allows to configure additional flags for k0s
+control plane and to override existing ones. The default flags are
+kept unless they are overriden explicitly. Flags with arguments must
+be specified as a single string, e.g. --some-flag=argument<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecetcd-1">etcd</a></b></td>
+        <td>object</td>
+        <td>
+          Etcd defines the etcd configuration.<br/>
+          <br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>externalAddress</b></td>
+        <td>string</td>
+        <td>
+          ExternalAddress defines k0s external address. See https://docs.k0sproject.io/stable/configuration/#specapi
+Will be detected automatically for service type LoadBalancer.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the k0s image to be deployed. If empty k0smotron
+will pick it automatically. Must not include the image tag.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/k0s<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecingress-1">ingress</a></b></td>
+        <td>object</td>
+        <td>
+          Ingress defines the ingress configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>k0sConfig</b></td>
+        <td>object</td>
+        <td>
+          k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
+If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kineDataSourceSecretName</b></td>
+        <td>string</td>
+        <td>
+          KineDataSourceSecretName defines the name of kine datasource URL secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kineDataSourceURL</b></td>
+        <td>string</td>
+        <td>
+          KineDataSourceURL defines the kine datasource URL.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespeckubeconfigref-1">kubeconfigRef</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespeckubeconfigsecretmetadata-1">kubeconfigSecretMetadata</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindex-1">manifests</a></b></td>
+        <td>[]object</td>
+        <td>
+          Manifests allows to specify list of volumes with manifests to be
+deployed in the cluster. The volumes will be mounted
+in /var/lib/k0s/manifests/<manifests.name>, for this reason each
+manifest is a stack. K0smotron allows any kind of volume, but the
+recommendation is to use secrets and configmaps.
+For more information check:
+https://docs.k0sproject.io/stable/manifests/ and
+https://kubernetes.io/docs/concepts/storage/volumes<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmonitoring-1">monitoring</a></b></td>
+        <td>object</td>
+        <td>
+          Monitoring defines the monitoring configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindex-1">mounts</a></b></td>
+        <td>[]object</td>
+        <td>
+          Mounts allows to specify list of volumes with any files to be
+mounted in the controlplane pod. K0smotron allows any kind of volume, but the
+recommendation is to use secrets and configmaps.
+For more information check:
+https://kubernetes.io/docs/concepts/storage/volumes<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistence-1">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration. If empty k0smotron
+will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          Replicas is the desired number of replicas of the k0s control planes.
+If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
+Recommended value is 3.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Default</i>: 1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecresources-1">resources</a></b></td>
+        <td>object</td>
+        <td>
+          Resources describes the compute resource requirements for the control plane pods.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecservice-1">service</a></b></td>
+        <td>object</td>
+        <td>
+          Service defines the service configuration.<br/>
+          <br/>
+            <i>Default</i>: map[apiPort:30443 konnectivityPort:30132 type:ClusterIP]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>serviceAccount</b></td>
+        <td>string</td>
+        <td>
+          ServiceAccount defines the service account to be used by both k0s and etcd StatefulSets.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespectopologyspreadconstraintsindex-1">topologySpreadConstraints</a></b></td>
+        <td>[]object</td>
+        <td>
+          TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
+See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version defines the k0s version to be deployed. If empty k0smotron
+will pick it automatically.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.certificateRefs[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Enum</i>: ca, sa, proxy, etcd, apiserver-etcd-client, etcd-peer, etcd-server<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.etcd
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+Etcd defines the etcd configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd image to be deployed.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecetcddefragjob-1">defragJob</a></b></td>
+        <td>object</td>
+        <td>
+          DefragJob defines the etcd defragmentation job configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecetcdpersistence-1">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecetcdresources-1">resources</a></b></td>
+        <td>object</td>
+        <td>
+          Resources defines the compute resource requirements for the etcd container.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.etcd.defragJob
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd-1)</sup></sup>
+
+
+
+DefragJob defines the etcd defragmentation job configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables the etcd defragmentation job.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd defragmentation job image.<br/>
+          <br/>
+            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>rule</b></td>
+        <td>string</td>
+        <td>
+          Rule defines the etcd defragmentation job defrag-rule.
+For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
+          <br/>
+            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>schedule</b></td>
+        <td>string</td>
+        <td>
+          Schedule defines the etcd defragmentation job schedule.<br/>
+          <br/>
+            <i>Default</i>: 0 12 * * *<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.etcd.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd-1)</sup></sup>
+
+
+
+Persistence defines the persistence configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the etcd volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.etcd.resources
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd-1)</sup></sup>
+
+
+
+Resources defines the compute resource requirements for the etcd container.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecetcdresourcesclaimsindex-1">claims</a></b></td>
+        <td>[]object</td>
+        <td>
+          Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This field depends on the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.etcd.resources.claims[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcdresources-1)</sup></sup>
+
+
+
+ResourceClaim references one entry in PodSpec.ResourceClaims.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.ingress
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+Ingress defines the ingress configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>apiHost</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>konnectivityHost</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations defines extra annotations to be added to the ingress controller service.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>className</b></td>
+        <td>string</td>
+        <td>
+          ClassName defines the ingress class name to be used by the ingress controller.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>deploy</b></td>
+        <td>boolean</td>
+        <td>
+          Deploy defines whether to deploy an ingress resource for the cluster or let the user do it manually.
+Default: true<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>
+          Port defines the port used by the ingress controller<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Default</i>: 443<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.kubeconfigRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
+          <br/>
+            <i>Default</i>: value<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.kubeconfigSecretMetadata
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+created for the workload cluster.
+Note: This metadata will have precedence over default labels/annotations on the Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+Volume represents a named volume in a pod that may be accessed by any container in the pod.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          name of the volume.
+Must be a DNS_LABEL and unique within the pod.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexawselasticblockstore-1">awsElasticBlockStore</a></b></td>
+        <td>object</td>
+        <td>
+          awsElasticBlockStore represents an AWS Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexazuredisk-1">azureDisk</a></b></td>
+        <td>object</td>
+        <td>
+          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexazurefile-1">azureFile</a></b></td>
+        <td>object</td>
+        <td>
+          azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexcephfs-1">cephfs</a></b></td>
+        <td>object</td>
+        <td>
+          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexcinder-1">cinder</a></b></td>
+        <td>object</td>
+        <td>
+          cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexconfigmap-1">configMap</a></b></td>
+        <td>object</td>
+        <td>
+          configMap represents a configMap that should populate this volume<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexcsi-1">csi</a></b></td>
+        <td>object</td>
+        <td>
+          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexdownwardapi-1">downwardAPI</a></b></td>
+        <td>object</td>
+        <td>
+          downwardAPI represents downward API about the pod that should populate this volume<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexemptydir-1">emptyDir</a></b></td>
+        <td>object</td>
+        <td>
+          emptyDir represents a temporary directory that shares a pod's lifetime.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeral-1">ephemeral</a></b></td>
+        <td>object</td>
+        <td>
+          ephemeral represents a volume that is handled by a cluster storage driver.
+The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
+and deleted when the pod is removed.
+
+Use this if:
+a) the volume is only needed while the pod runs,
+b) features of normal volumes like restoring from snapshot or capacity
+   tracking are needed,
+c) the storage driver is specified through a storage class, and
+d) the storage driver supports dynamic volume provisioning through
+   a PersistentVolumeClaim (see EphemeralVolumeSource for more
+   information on the connection between this volume type
+   and PersistentVolumeClaim).
+
+Use PersistentVolumeClaim or one of the vendor-specific
+APIs for volumes that persist for longer than the lifecycle
+of an individual pod.
+
+Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
+be used that way - see the documentation of the driver for
+more information.
+
+A pod can use both types of ephemeral volumes and
+persistent volumes at the same time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexfc-1">fc</a></b></td>
+        <td>object</td>
+        <td>
+          fc represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexflexvolume-1">flexVolume</a></b></td>
+        <td>object</td>
+        <td>
+          flexVolume represents a generic volume resource that is
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexflocker-1">flocker</a></b></td>
+        <td>object</td>
+        <td>
+          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexgcepersistentdisk-1">gcePersistentDisk</a></b></td>
+        <td>object</td>
+        <td>
+          gcePersistentDisk represents a GCE Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexgitrepo-1">gitRepo</a></b></td>
+        <td>object</td>
+        <td>
+          gitRepo represents a git repository at a particular revision.
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
+EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
+into the Pod's container.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexglusterfs-1">glusterfs</a></b></td>
+        <td>object</td>
+        <td>
+          glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexhostpath-1">hostPath</a></b></td>
+        <td>object</td>
+        <td>
+          hostPath represents a pre-existing file or directory on the host
+machine that is directly exposed to the container. This is generally
+used for system agents or other privileged things that are allowed
+to see the host machine. Most containers will NOT need this.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindeximage-1">image</a></b></td>
+        <td>object</td>
+        <td>
+          image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexiscsi-1">iscsi</a></b></td>
+        <td>object</td>
+        <td>
+          iscsi represents an ISCSI Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+More info: https://kubernetes.io/docs/concepts/storage/volumes/#iscsi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexnfs-1">nfs</a></b></td>
+        <td>object</td>
+        <td>
+          nfs represents an NFS mount on the host that shares a pod's lifetime
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexpersistentvolumeclaim-1">persistentVolumeClaim</a></b></td>
+        <td>object</td>
+        <td>
+          persistentVolumeClaimVolumeSource represents a reference to a
+PersistentVolumeClaim in the same namespace.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexphotonpersistentdisk-1">photonPersistentDisk</a></b></td>
+        <td>object</td>
+        <td>
+          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexportworxvolume-1">portworxVolume</a></b></td>
+        <td>object</td>
+        <td>
+          portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojected-1">projected</a></b></td>
+        <td>object</td>
+        <td>
+          projected items for all in one resources secrets, configmaps, and downward API<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexquobyte-1">quobyte</a></b></td>
+        <td>object</td>
+        <td>
+          quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexrbd-1">rbd</a></b></td>
+        <td>object</td>
+        <td>
+          rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexscaleio-1">scaleIO</a></b></td>
+        <td>object</td>
+        <td>
+          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexsecret-1">secret</a></b></td>
+        <td>object</td>
+        <td>
+          secret represents a secret that should populate this volume.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexstorageos-1">storageos</a></b></td>
+        <td>object</td>
+        <td>
+          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexvspherevolume-1">vsphereVolume</a></b></td>
+        <td>object</td>
+        <td>
+          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].awsElasticBlockStore
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+awsElasticBlockStore represents an AWS Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>volumeID</b></td>
+        <td>string</td>
+        <td>
+          volumeID is unique ID of the persistent disk resource in AWS (Amazon EBS volume).
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type of the volume that you want to mount.
+Tip: Ensure that the filesystem type is supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>partition</b></td>
+        <td>integer</td>
+        <td>
+          partition is the partition in the volume that you want to mount.
+If omitted, the default is to mount by volume name.
+Examples: For volume /dev/sda1, you specify the partition as "1".
+Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly value true will force the readOnly setting in VolumeMounts.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].azureDisk
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>diskName</b></td>
+        <td>string</td>
+        <td>
+          diskName is the Name of the data disk in the blob storage<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>diskURI</b></td>
+        <td>string</td>
+        <td>
+          diskURI is the URI of data disk in the blob storage<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>cachingMode</b></td>
+        <td>string</td>
+        <td>
+          cachingMode is the Host Caching mode: None, Read Only, Read Write.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is Filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+          <br/>
+            <i>Default</i>: ext4<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          kind expected values are Shared: multiple blob disks per storage account  Dedicated: single blob disk per storage account  Managed: azure managed data disk (only in managed availability set). defaults to shared<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly Defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].azureFile
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>secretName</b></td>
+        <td>string</td>
+        <td>
+          secretName is the  name of secret that contains Azure Storage Account Name and Key<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>shareName</b></td>
+        <td>string</td>
+        <td>
+          shareName is the azure share Name<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].cephfs
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>monitors</b></td>
+        <td>[]string</td>
+        <td>
+          monitors is Required: Monitors is a collection of Ceph monitors
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is Optional: Used as the mounted root, rather than the full Ceph tree, default is /<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly is Optional: Defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>secretFile</b></td>
+        <td>string</td>
+        <td>
+          secretFile is Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexcephfssecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is Optional: SecretRef is reference to the authentication secret for User, default is empty.
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>string</td>
+        <td>
+          user is optional: User is the rados user name, default is admin
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].cephfs.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexcephfs-1)</sup></sup>
+
+
+
+secretRef is Optional: SecretRef is reference to the authentication secret for User, default is empty.
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].cinder
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>volumeID</b></td>
+        <td>string</td>
+        <td>
+          volumeID used to identify the volume in cinder.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexcindersecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is optional: points to a secret object containing parameters used to connect
+to OpenStack.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].cinder.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexcinder-1)</sup></sup>
+
+
+
+secretRef is optional: points to a secret object containing parameters used to connect
+to OpenStack.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].configMap
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+configMap represents a configMap that should populate this volume
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>defaultMode</b></td>
+        <td>integer</td>
+        <td>
+          defaultMode is optional: mode bits used to set permissions on created files by default.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+Defaults to 0644.
+Directories within the path are not affected by this setting.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexconfigmapitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          items if unspecified, each key-value pair in the Data field of the referenced
+ConfigMap will be projected into the volume as a file whose name is the
+key and content is the value. If specified, the listed keys will be
+projected into the specified paths, and unlisted keys will not be
+present. If a key is specified which is not present in the ConfigMap,
+the volume setup will error unless it is marked optional. Paths must be
+relative and may not contain the '..' path or start with '..'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          optional specify whether the ConfigMap or its keys must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].configMap.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexconfigmap-1)</sup></sup>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the key to project.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the relative path of the file to map the key to.
+May not be an absolute path.
+May not contain the path element '..'.
+May not start with the string '..'.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode is Optional: mode bits used to set permissions on this file.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].csi
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>driver</b></td>
+        <td>string</td>
+        <td>
+          driver is the name of the CSI driver that handles this volume.
+Consult with your admin for the correct name as registered in the cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType to mount. Ex. "ext4", "xfs", "ntfs".
+If not provided, the empty value is passed to the associated CSI driver
+which will determine the default filesystem to apply.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexcsinodepublishsecretref-1">nodePublishSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          nodePublishSecretRef is a reference to the secret object containing
+sensitive information to pass to the CSI driver to complete the CSI
+NodePublishVolume and NodeUnpublishVolume calls.
+This field is optional, and  may be empty if no secret is required. If the
+secret object contains more than one secret, all secret references are passed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly specifies a read-only configuration for the volume.
+Defaults to false (read/write).<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeAttributes</b></td>
+        <td>map[string]string</td>
+        <td>
+          volumeAttributes stores driver-specific properties that are passed to the CSI
+driver. Consult your driver's documentation for supported values.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].csi.nodePublishSecretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexcsi-1)</sup></sup>
+
+
+
+nodePublishSecretRef is a reference to the secret object containing
+sensitive information to pass to the CSI driver to complete the CSI
+NodePublishVolume and NodeUnpublishVolume calls.
+This field is optional, and  may be empty if no secret is required. If the
+secret object contains more than one secret, all secret references are passed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].downwardAPI
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+downwardAPI represents downward API about the pod that should populate this volume
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>defaultMode</b></td>
+        <td>integer</td>
+        <td>
+          Optional: mode bits to use on created files by default. Must be a
+Optional: mode bits used to set permissions on created files by default.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+Defaults to 0644.
+Directories within the path are not affected by this setting.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexdownwardapiitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          Items is a list of downward API volume file<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].downwardAPI.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexdownwardapi-1)</sup></sup>
+
+
+
+DownwardAPIVolumeFile represents information to create the file containing the pod field
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexdownwardapiitemsindexfieldref-1">fieldRef</a></b></td>
+        <td>object</td>
+        <td>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          Optional: mode bits used to set permissions on this file, must be an octal value
+between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexdownwardapiitemsindexresourcefieldref-1">resourceFieldRef</a></b></td>
+        <td>object</td>
+        <td>
+          Selects a resource of the container: only resources limits and requests
+(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].downwardAPI.items[index].fieldRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexdownwardapiitemsindex-1)</sup></sup>
+
+
+
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>
+          Path of the field to select in the specified API version.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>
+          Version of the schema the FieldPath is written in terms of, defaults to "v1".<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].downwardAPI.items[index].resourceFieldRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexdownwardapiitemsindex-1)</sup></sup>
+
+
+
+Selects a resource of the container: only resources limits and requests
+(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>resource</b></td>
+        <td>string</td>
+        <td>
+          Required: resource to select<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>containerName</b></td>
+        <td>string</td>
+        <td>
+          Container name: required for volumes, optional for env vars<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>divisor</b></td>
+        <td>int or string</td>
+        <td>
+          Specifies the output format of the exposed resources, defaults to "1"<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].emptyDir
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+emptyDir represents a temporary directory that shares a pod's lifetime.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>medium</b></td>
+        <td>string</td>
+        <td>
+          medium represents what type of storage medium should back this directory.
+The default is "" which means to use the node's default medium.
+Must be an empty string (default) or Memory.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>sizeLimit</b></td>
+        <td>int or string</td>
+        <td>
+          sizeLimit is the total amount of local storage required for this EmptyDir volume.
+The size limit is also applicable for memory medium.
+The maximum usage on memory medium EmptyDir would be the minimum value between
+the SizeLimit specified here and the sum of memory limits of all containers in a pod.
+The default is nil which means that the limit is undefined.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].ephemeral
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+ephemeral represents a volume that is handled by a cluster storage driver.
+The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
+and deleted when the pod is removed.
+
+Use this if:
+a) the volume is only needed while the pod runs,
+b) features of normal volumes like restoring from snapshot or capacity
+   tracking are needed,
+c) the storage driver is specified through a storage class, and
+d) the storage driver supports dynamic volume provisioning through
+   a PersistentVolumeClaim (see EphemeralVolumeSource for more
+   information on the connection between this volume type
+   and PersistentVolumeClaim).
+
+Use PersistentVolumeClaim or one of the vendor-specific
+APIs for volumes that persist for longer than the lifecycle
+of an individual pod.
+
+Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
+be used that way - see the documentation of the driver for
+more information.
+
+A pod can use both types of ephemeral volumes and
+persistent volumes at the same time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplate-1">volumeClaimTemplate</a></b></td>
+        <td>object</td>
+        <td>
+          Will be used to create a stand-alone PVC to provision the volume.
+The pod in which this EphemeralVolumeSource is embedded will be the
+owner of the PVC, i.e. the PVC will be deleted together with the
+pod.  The name of the PVC will be `<pod name>-<volume name>` where
+`<volume name>` is the name from the `PodSpec.Volumes` array
+entry. Pod validation will reject the pod if the concatenated name
+is not valid for a PVC (for example, too long).
+
+An existing PVC with that name that is not owned by the pod
+will *not* be used for the pod to avoid using an unrelated
+volume by mistake. Starting the pod is then blocked until
+the unrelated PVC is removed. If such a pre-created PVC is
+meant to be used by the pod, the PVC has to updated with an
+owner reference to the pod once the pod exists. Normally
+this should not be necessary, but it may be useful when
+manually reconstructing a broken cluster.
+
+This field is read-only and no changes will be made by Kubernetes
+to the PVC after it has been created.
+
+Required, must not be nil.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeral-1)</sup></sup>
+
+
+
+Will be used to create a stand-alone PVC to provision the volume.
+The pod in which this EphemeralVolumeSource is embedded will be the
+owner of the PVC, i.e. the PVC will be deleted together with the
+pod.  The name of the PVC will be `<pod name>-<volume name>` where
+`<volume name>` is the name from the `PodSpec.Volumes` array
+entry. Pod validation will reject the pod if the concatenated name
+is not valid for a PVC (for example, too long).
+
+An existing PVC with that name that is not owned by the pod
+will *not* be used for the pod to avoid using an unrelated
+volume by mistake. Starting the pod is then blocked until
+the unrelated PVC is removed. If such a pre-created PVC is
+meant to be used by the pod, the PVC has to updated with an
+owner reference to the pod once the pod exists. Normally
+this should not be necessary, but it may be useful when
+manually reconstructing a broken cluster.
+
+This field is read-only and no changes will be made by Kubernetes
+to the PVC after it has been created.
+
+Required, must not be nil.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespec-1">spec</a></b></td>
+        <td>object</td>
+        <td>
+          The specification for the PersistentVolumeClaim. The entire content is
+copied unchanged into the PVC that gets created from this
+template. The same fields as in a PersistentVolumeClaim
+are also valid here.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatemetadata-1">metadata</a></b></td>
+        <td>object</td>
+        <td>
+          May contain labels and annotations that will be copied into the PVC
+when creating it. No other fields are allowed and will be rejected during
+validation.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.spec
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplate-1)</sup></sup>
+
+
+
+The specification for the PersistentVolumeClaim. The entire content is
+copied unchanged into the PVC that gets created from this
+template. The same fields as in a PersistentVolumeClaim
+are also valid here.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>accessModes</b></td>
+        <td>[]string</td>
+        <td>
+          accessModes contains the desired access modes the volume should have.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecdatasource-1">dataSource</a></b></td>
+        <td>object</td>
+        <td>
+          dataSource field can be used to specify either:
+* An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+* An existing PVC (PersistentVolumeClaim)
+If the provisioner or an external controller can support the specified data source,
+it will create a new volume based on the contents of the specified data source.
+When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
+and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecdatasourceref-1">dataSourceRef</a></b></td>
+        <td>object</td>
+        <td>
+          dataSourceRef specifies the object from which to populate the volume with data, if a non-empty
+volume is desired. This may be any object from a non-empty API group (non
+core object) or a PersistentVolumeClaim object.
+When this field is specified, volume binding will only succeed if the type of
+the specified object matches some installed volume populator or dynamic
+provisioner.
+This field will replace the functionality of the dataSource field and as such
+if both fields are non-empty, they must have the same value. For backwards
+compatibility, when namespace isn't specified in dataSourceRef,
+both fields (dataSource and dataSourceRef) will be set to the same
+value automatically if one of them is empty and the other is non-empty.
+When namespace is specified in dataSourceRef,
+dataSource isn't set to the same value and must be empty.
+There are three important differences between dataSource and dataSourceRef:
+* While dataSource only allows two specific types of objects, dataSourceRef
+  allows any non-core object, as well as PersistentVolumeClaim objects.
+* While dataSource ignores disallowed values (dropping them), dataSourceRef
+  preserves all values, and generates an error if a disallowed value is
+  specified.
+* While dataSource only allows local objects, dataSourceRef allows objects
+  in any namespaces.
+(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
+(Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecresources-1">resources</a></b></td>
+        <td>object</td>
+        <td>
+          resources represents the minimum resources the volume should have.
+If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+that are lower than previous value but must still be higher than capacity recorded in the
+status field of the claim.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecselector-1">selector</a></b></td>
+        <td>object</td>
+        <td>
+          selector is a label query over volumes to consider for binding.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClassName</b></td>
+        <td>string</td>
+        <td>
+          storageClassName is the name of the StorageClass required by the claim.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string or nil value indicates that no
+VolumeAttributesClass will be applied to the claim. If the claim enters an Infeasible error state,
+this field can be reset to its previous value (including nil) to cancel the modification.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeMode</b></td>
+        <td>string</td>
+        <td>
+          volumeMode defines what type of volume is required by the claim.
+Value of Filesystem is implied when not included in claim spec.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>
+          volumeName is the binding reference to the PersistentVolume backing this claim.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.dataSource
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespec-1)</sup></sup>
+
+
+
+dataSource field can be used to specify either:
+* An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+* An existing PVC (PersistentVolumeClaim)
+If the provisioner or an external controller can support the specified data source,
+it will create a new volume based on the contents of the specified data source.
+When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
+and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+If the namespace is specified, then dataSourceRef will not be copied to dataSource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the type of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>
+          APIGroup is the group for the resource being referenced.
+If APIGroup is not specified, the specified Kind must be in the core API group.
+For any other third-party types, APIGroup is required.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.dataSourceRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespec-1)</sup></sup>
+
+
+
+dataSourceRef specifies the object from which to populate the volume with data, if a non-empty
+volume is desired. This may be any object from a non-empty API group (non
+core object) or a PersistentVolumeClaim object.
+When this field is specified, volume binding will only succeed if the type of
+the specified object matches some installed volume populator or dynamic
+provisioner.
+This field will replace the functionality of the dataSource field and as such
+if both fields are non-empty, they must have the same value. For backwards
+compatibility, when namespace isn't specified in dataSourceRef,
+both fields (dataSource and dataSourceRef) will be set to the same
+value automatically if one of them is empty and the other is non-empty.
+When namespace is specified in dataSourceRef,
+dataSource isn't set to the same value and must be empty.
+There are three important differences between dataSource and dataSourceRef:
+* While dataSource only allows two specific types of objects, dataSourceRef
+  allows any non-core object, as well as PersistentVolumeClaim objects.
+* While dataSource ignores disallowed values (dropping them), dataSourceRef
+  preserves all values, and generates an error if a disallowed value is
+  specified.
+* While dataSource only allows local objects, dataSourceRef allows objects
+  in any namespaces.
+(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
+(Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the type of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>
+          APIGroup is the group for the resource being referenced.
+If APIGroup is not specified, the specified Kind must be in the core API group.
+For any other third-party types, APIGroup is required.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of resource being referenced
+Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details.
+(Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.resources
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespec-1)</sup></sup>
+
+
+
+resources represents the minimum resources the volume should have.
+If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+that are lower than previous value but must still be higher than capacity recorded in the
+status field of the claim.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.selector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespec-1)</sup></sup>
+
+
+
+selector is a label query over volumes to consider for binding.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecselectormatchexpressionsindex-1">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.spec.selector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplatespecselector-1)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].ephemeral.volumeClaimTemplate.metadata
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexephemeralvolumeclaimtemplate-1)</sup></sup>
+
+
+
+May contain labels and annotations that will be copied into the PVC
+when creating it. No other fields are allowed and will be rejected during
+validation.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].fc
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+fc represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>lun</b></td>
+        <td>integer</td>
+        <td>
+          lun is Optional: FC target lun number<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly is Optional: Defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>targetWWNs</b></td>
+        <td>[]string</td>
+        <td>
+          targetWWNs is Optional: FC target worldwide names (WWNs)<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>wwids</b></td>
+        <td>[]string</td>
+        <td>
+          wwids Optional: FC volume world wide identifiers (wwids)
+Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].flexVolume
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+flexVolume represents a generic volume resource that is
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>driver</b></td>
+        <td>string</td>
+        <td>
+          driver is the name of the driver to use for this volume.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". The default filesystem depends on FlexVolume script.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>options</b></td>
+        <td>map[string]string</td>
+        <td>
+          options is Optional: this field holds extra command options if any.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly is Optional: defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexflexvolumesecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is Optional: secretRef is reference to the secret object containing
+sensitive information to pass to the plugin scripts. This may be
+empty if no secret object is specified. If the secret object
+contains more than one secret, all secrets are passed to the plugin
+scripts.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].flexVolume.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexflexvolume-1)</sup></sup>
+
+
+
+secretRef is Optional: secretRef is reference to the secret object containing
+sensitive information to pass to the plugin scripts. This may be
+empty if no secret object is specified. If the secret object
+contains more than one secret, all secrets are passed to the plugin
+scripts.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].flocker
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>datasetName</b></td>
+        <td>string</td>
+        <td>
+          datasetName is Name of the dataset stored as metadata -> name on the dataset for Flocker
+should be considered as deprecated<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>datasetUUID</b></td>
+        <td>string</td>
+        <td>
+          datasetUUID is the UUID of the dataset. This is unique identifier of a Flocker dataset<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].gcePersistentDisk
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+gcePersistentDisk represents a GCE Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pdName</b></td>
+        <td>string</td>
+        <td>
+          pdName is unique name of the PD resource in GCE. Used to identify the disk in GCE.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is filesystem type of the volume that you want to mount.
+Tip: Ensure that the filesystem type is supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>partition</b></td>
+        <td>integer</td>
+        <td>
+          partition is the partition in the volume that you want to mount.
+If omitted, the default is to mount by volume name.
+Examples: For volume /dev/sda1, you specify the partition as "1".
+Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the ReadOnly setting in VolumeMounts.
+Defaults to false.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].gitRepo
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+gitRepo represents a git repository at a particular revision.
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
+EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
+into the Pod's container.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>repository</b></td>
+        <td>string</td>
+        <td>
+          repository is the URL<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>directory</b></td>
+        <td>string</td>
+        <td>
+          directory is the target directory name.
+Must not contain or start with '..'.  If '.' is supplied, the volume directory will be the
+git repository.  Otherwise, if specified, the volume will contain the git repository in
+the subdirectory with the given name.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>revision</b></td>
+        <td>string</td>
+        <td>
+          revision is the commit hash for the specified revision.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].glusterfs
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>endpoints</b></td>
+        <td>string</td>
+        <td>
+          endpoints is the endpoint name that details Glusterfs topology.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the Glusterfs volume path.
+More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the Glusterfs volume to be mounted with read-only permissions.
+Defaults to false.
+More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].hostPath
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+hostPath represents a pre-existing file or directory on the host
+machine that is directly exposed to the container. This is generally
+used for system agents or other privileged things that are allowed
+to see the host machine. Most containers will NOT need this.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path of the directory on the host.
+If the path is a symlink, it will follow the link to the real path.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type for HostPath Volume
+Defaults to ""
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].image
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pullPolicy</b></td>
+        <td>string</td>
+        <td>
+          Policy for pulling OCI objects. Possible values are:
+Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reference</b></td>
+        <td>string</td>
+        <td>
+          Required: Image or artifact reference to be used.
+Behaves in the same way as pod.spec.containers[*].image.
+Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+More info: https://kubernetes.io/docs/concepts/containers/images
+This field is optional to allow higher level config management to default or override
+container images in workload controllers like Deployments and StatefulSets.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].iscsi
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+iscsi represents an ISCSI Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+More info: https://kubernetes.io/docs/concepts/storage/volumes/#iscsi
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>iqn</b></td>
+        <td>string</td>
+        <td>
+          iqn is the target iSCSI Qualified Name.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>lun</b></td>
+        <td>integer</td>
+        <td>
+          lun represents iSCSI Target Lun number.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetPortal</b></td>
+        <td>string</td>
+        <td>
+          targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port
+is other than default (typically TCP ports 860 and 3260).<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>chapAuthDiscovery</b></td>
+        <td>boolean</td>
+        <td>
+          chapAuthDiscovery defines whether support iSCSI Discovery CHAP authentication<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>chapAuthSession</b></td>
+        <td>boolean</td>
+        <td>
+          chapAuthSession defines whether support iSCSI Session CHAP authentication<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type of the volume that you want to mount.
+Tip: Ensure that the filesystem type is supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>initiatorName</b></td>
+        <td>string</td>
+        <td>
+          initiatorName is the custom iSCSI Initiator Name.
+If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface
+<target portal>:<volume name> will be created for the connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>iscsiInterface</b></td>
+        <td>string</td>
+        <td>
+          iscsiInterface is the interface Name that uses an iSCSI transport.
+Defaults to 'default' (tcp).<br/>
+          <br/>
+            <i>Default</i>: default<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>portals</b></td>
+        <td>[]string</td>
+        <td>
+          portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port
+is other than default (typically TCP ports 860 and 3260).<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the ReadOnly setting in VolumeMounts.
+Defaults to false.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexiscsisecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is the CHAP Secret for iSCSI target and initiator authentication<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].iscsi.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexiscsi-1)</sup></sup>
+
+
+
+secretRef is the CHAP Secret for iSCSI target and initiator authentication
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].nfs
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+nfs represents an NFS mount on the host that shares a pod's lifetime
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path that is exported by the NFS server.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>server</b></td>
+        <td>string</td>
+        <td>
+          server is the hostname or IP address of the NFS server.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the NFS export to be mounted with read-only permissions.
+Defaults to false.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].persistentVolumeClaim
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+persistentVolumeClaimVolumeSource represents a reference to a
+PersistentVolumeClaim in the same namespace.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>claimName</b></td>
+        <td>string</td>
+        <td>
+          claimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly Will force the ReadOnly setting in VolumeMounts.
+Default false.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].photonPersistentDisk
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pdID</b></td>
+        <td>string</td>
+        <td>
+          pdID is the ID that identifies Photon Controller persistent disk<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].portworxVolume
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>volumeID</b></td>
+        <td>string</td>
+        <td>
+          volumeID uniquely identifies a Portworx volume<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fSType represents the filesystem type to mount
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+projected items for all in one resources secrets, configmaps, and downward API
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>defaultMode</b></td>
+        <td>integer</td>
+        <td>
+          defaultMode are the mode bits used to set permissions on created files by default.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+Directories within the path are not affected by this setting.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex-1">sources</a></b></td>
+        <td>[]object</td>
+        <td>
+          sources is the list of volume projections. Each entry in this list
+handles one source.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojected-1)</sup></sup>
+
+
+
+Projection that may be projected along with other supported volume types.
+Exactly one of these fields must be set.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundle-1">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexconfigmap-1">configMap</a></b></td>
+        <td>object</td>
+        <td>
+          configMap information about the configMap data to project<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexdownwardapi-1">downwardAPI</a></b></td>
+        <td>object</td>
+        <td>
+          downwardAPI information about the downwardAPI data to project<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexpodcertificate-1">podCertificate</a></b></td>
+        <td>object</td>
+        <td>
+          Projects an auto-rotating credential bundle (private key and certificate
+chain) that the pod can use either as a TLS client or server.
+
+Kubelet generates a private key and uses it to send a
+PodCertificateRequest to the named signer.  Once the signer approves the
+request and issues a certificate chain, Kubelet writes the key and
+certificate chain to the pod filesystem.  The pod does not start until
+certificates have been issued for each podCertificate projected volume
+source in its spec.
+
+Kubelet will begin trying to rotate the certificate at the time indicated
+by the signer using the PodCertificateRequest.Status.BeginRefreshAt
+timestamp.
+
+Kubelet can write a single file, indicated by the credentialBundlePath
+field, or separate files, indicated by the keyPath and
+certificateChainPath fields.
+
+The credential bundle is a single file in PEM format.  The first PEM
+entry is the private key (in PKCS#8 format), and the remaining PEM
+entries are the certificate chain issued by the signer (typically,
+signers will return their certificate chain in leaf-to-root order).
+
+Prefer using the credential bundle format, since your application code
+can read it atomically.  If you use keyPath and certificateChainPath,
+your application must make two separate file reads. If these coincide
+with a certificate rotation, it is possible that the private key and leaf
+certificate you read may not correspond to each other.  Your application
+will need to check for this condition, and re-read until they are
+consistent.
+
+The named signer controls chooses the format of the certificate it
+issues; consult the signer implementation's documentation to learn how to
+use the certificates it issues.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexsecret-1">secret</a></b></td>
+        <td>object</td>
+        <td>
+          secret information about the secret data to project<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexserviceaccounttoken-1">serviceAccountToken</a></b></td>
+        <td>object</td>
+        <td>
+          serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector-1">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundle-1)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex-1">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexclustertrustbundlelabelselector-1)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].configMap
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+configMap information about the configMap data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexconfigmapitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          items if unspecified, each key-value pair in the Data field of the referenced
+ConfigMap will be projected into the volume as a file whose name is the
+key and content is the value. If specified, the listed keys will be
+projected into the specified paths, and unlisted keys will not be
+present. If a key is specified which is not present in the ConfigMap,
+the volume setup will error unless it is marked optional. Paths must be
+relative and may not contain the '..' path or start with '..'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          optional specify whether the ConfigMap or its keys must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].configMap.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexconfigmap-1)</sup></sup>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the key to project.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the relative path of the file to map the key to.
+May not be an absolute path.
+May not contain the path element '..'.
+May not start with the string '..'.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode is Optional: mode bits used to set permissions on this file.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].downwardAPI
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+downwardAPI information about the downwardAPI data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexdownwardapiitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          Items is a list of DownwardAPIVolume file<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].downwardAPI.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexdownwardapi-1)</sup></sup>
+
+
+
+DownwardAPIVolumeFile represents information to create the file containing the pod field
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexdownwardapiitemsindexfieldref-1">fieldRef</a></b></td>
+        <td>object</td>
+        <td>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          Optional: mode bits used to set permissions on this file, must be an octal value
+between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexdownwardapiitemsindexresourcefieldref-1">resourceFieldRef</a></b></td>
+        <td>object</td>
+        <td>
+          Selects a resource of the container: only resources limits and requests
+(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].downwardAPI.items[index].fieldRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexdownwardapiitemsindex-1)</sup></sup>
+
+
+
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>
+          Path of the field to select in the specified API version.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>
+          Version of the schema the FieldPath is written in terms of, defaults to "v1".<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].downwardAPI.items[index].resourceFieldRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexdownwardapiitemsindex-1)</sup></sup>
+
+
+
+Selects a resource of the container: only resources limits and requests
+(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>resource</b></td>
+        <td>string</td>
+        <td>
+          Required: resource to select<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>containerName</b></td>
+        <td>string</td>
+        <td>
+          Container name: required for volumes, optional for env vars<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>divisor</b></td>
+        <td>int or string</td>
+        <td>
+          Specifies the output format of the exposed resources, defaults to "1"<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].podCertificate
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+Projects an auto-rotating credential bundle (private key and certificate
+chain) that the pod can use either as a TLS client or server.
+
+Kubelet generates a private key and uses it to send a
+PodCertificateRequest to the named signer.  Once the signer approves the
+request and issues a certificate chain, Kubelet writes the key and
+certificate chain to the pod filesystem.  The pod does not start until
+certificates have been issued for each podCertificate projected volume
+source in its spec.
+
+Kubelet will begin trying to rotate the certificate at the time indicated
+by the signer using the PodCertificateRequest.Status.BeginRefreshAt
+timestamp.
+
+Kubelet can write a single file, indicated by the credentialBundlePath
+field, or separate files, indicated by the keyPath and
+certificateChainPath fields.
+
+The credential bundle is a single file in PEM format.  The first PEM
+entry is the private key (in PKCS#8 format), and the remaining PEM
+entries are the certificate chain issued by the signer (typically,
+signers will return their certificate chain in leaf-to-root order).
+
+Prefer using the credential bundle format, since your application code
+can read it atomically.  If you use keyPath and certificateChainPath,
+your application must make two separate file reads. If these coincide
+with a certificate rotation, it is possible that the private key and leaf
+certificate you read may not correspond to each other.  Your application
+will need to check for this condition, and re-read until they are
+consistent.
+
+The named signer controls chooses the format of the certificate it
+issues; consult the signer implementation's documentation to learn how to
+use the certificates it issues.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>keyType</b></td>
+        <td>string</td>
+        <td>
+          The type of keypair Kubelet will generate for the pod.
+
+Valid values are "RSA3072", "RSA4096", "ECDSAP256", "ECDSAP384",
+"ECDSAP521", and "ED25519".<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Kubelet's generated CSRs will be addressed to this signer.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>certificateChainPath</b></td>
+        <td>string</td>
+        <td>
+          Write the certificate chain at this path in the projected volume.
+
+Most applications should use credentialBundlePath.  When using keyPath
+and certificateChainPath, your application needs to check that the key
+and leaf certificate are consistent, because it is possible to read the
+files mid-rotation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>credentialBundlePath</b></td>
+        <td>string</td>
+        <td>
+          Write the credential bundle at this path in the projected volume.
+
+The credential bundle is a single file that contains multiple PEM blocks.
+The first PEM block is a PRIVATE KEY block, containing a PKCS#8 private
+key.
+
+The remaining blocks are CERTIFICATE blocks, containing the issued
+certificate chain from the signer (leaf and any intermediates).
+
+Using credentialBundlePath lets your Pod's application code make a single
+atomic read that retrieves a consistent key and certificate chain.  If you
+project them to separate files, your application code will need to
+additionally check that the leaf certificate was issued to the key.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>keyPath</b></td>
+        <td>string</td>
+        <td>
+          Write the key at this path in the projected volume.
+
+Most applications should use credentialBundlePath.  When using keyPath
+and certificateChainPath, your application needs to check that the key
+and leaf certificate are consistent, because it is possible to read the
+files mid-rotation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>maxExpirationSeconds</b></td>
+        <td>integer</td>
+        <td>
+          maxExpirationSeconds is the maximum lifetime permitted for the
+certificate.
+
+Kubelet copies this value verbatim into the PodCertificateRequests it
+generates for this projection.
+
+If omitted, kube-apiserver will set it to 86400(24 hours). kube-apiserver
+will reject values shorter than 3600 (1 hour).  The maximum allowable
+value is 7862400 (91 days).
+
+The signer implementation is then free to issue a certificate with any
+lifetime *shorter* than MaxExpirationSeconds, but no shorter than 3600
+seconds (1 hour).  This constraint is enforced by kube-apiserver.
+`kubernetes.io` signers will never issue certificates with a lifetime
+longer than 24 hours.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].secret
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+secret information about the secret data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexsecretitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          items if unspecified, each key-value pair in the Data field of the referenced
+Secret will be projected into the volume as a file whose name is the
+key and content is the value. If specified, the listed keys will be
+projected into the specified paths, and unlisted keys will not be
+present. If a key is specified which is not present in the Secret,
+the volume setup will error unless it is marked optional. Paths must be
+relative and may not contain the '..' path or start with '..'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          optional field specify whether the Secret or its key must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].secret.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindexsecret-1)</sup></sup>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the key to project.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the relative path of the file to map the key to.
+May not be an absolute path.
+May not contain the path element '..'.
+May not start with the string '..'.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode is Optional: mode bits used to set permissions on this file.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].projected.sources[index].serviceAccountToken
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+serviceAccountToken is information about the serviceAccountToken data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the path relative to the mount point of the file to project the
+token into.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>audience</b></td>
+        <td>string</td>
+        <td>
+          audience is the intended audience of the token. A recipient of a token
+must identify itself with an identifier specified in the audience of the
+token, and otherwise should reject the token. The audience defaults to the
+identifier of the apiserver.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>expirationSeconds</b></td>
+        <td>integer</td>
+        <td>
+          expirationSeconds is the requested duration of validity of the service
+account token. As the token approaches expiration, the kubelet volume
+plugin will proactively rotate the service account token. The kubelet will
+start trying to rotate the token if the token is older than 80 percent of
+its time to live or if the token is older than 24 hours.Defaults to 1 hour
+and must be at least 10 minutes.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].quobyte
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>registry</b></td>
+        <td>string</td>
+        <td>
+          registry represents a single or multiple Quobyte Registry services
+specified as a string as host:port pair (multiple entries are separated with commas)
+which acts as the central registry for volumes<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>volume</b></td>
+        <td>string</td>
+        <td>
+          volume is a string that references an already created Quobyte volume by name.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>group</b></td>
+        <td>string</td>
+        <td>
+          group to map volume access to
+Default is no group<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the Quobyte volume to be mounted with read-only permissions.
+Defaults to false.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tenant</b></td>
+        <td>string</td>
+        <td>
+          tenant owning the given Quobyte volume in the Backend
+Used with dynamically provisioned Quobyte volumes, value is set by the plugin<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>string</td>
+        <td>
+          user to map volume access to
+Defaults to serivceaccount user<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].rbd
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          image is the rados image name.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>monitors</b></td>
+        <td>[]string</td>
+        <td>
+          monitors is a collection of Ceph monitors.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type of the volume that you want to mount.
+Tip: Ensure that the filesystem type is supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>keyring</b></td>
+        <td>string</td>
+        <td>
+          keyring is the path to key ring for RBDUser.
+Default is /etc/ceph/keyring.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: /etc/ceph/keyring<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>pool</b></td>
+        <td>string</td>
+        <td>
+          pool is the rados pool name.
+Default is rbd.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: rbd<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the ReadOnly setting in VolumeMounts.
+Defaults to false.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexrbdsecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is name of the authentication secret for RBDUser. If provided
+overrides keyring.
+Default is nil.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>string</td>
+        <td>
+          user is the rados user name.
+Default is admin.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: admin<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].rbd.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexrbd-1)</sup></sup>
+
+
+
+secretRef is name of the authentication secret for RBDUser. If provided
+overrides keyring.
+Default is nil.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].scaleIO
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>gateway</b></td>
+        <td>string</td>
+        <td>
+          gateway is the host address of the ScaleIO API Gateway.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexscaleiosecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef references to the secret for ScaleIO user and other
+sensitive information. If this is not provided, Login operation will fail.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>system</b></td>
+        <td>string</td>
+        <td>
+          system is the name of the storage system as configured in ScaleIO.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs".
+Default is "xfs".<br/>
+          <br/>
+            <i>Default</i>: xfs<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protectionDomain</b></td>
+        <td>string</td>
+        <td>
+          protectionDomain is the name of the ScaleIO Protection Domain for the configured storage.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly Defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>sslEnabled</b></td>
+        <td>boolean</td>
+        <td>
+          sslEnabled Flag enable/disable SSL communication with Gateway, default false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageMode</b></td>
+        <td>string</td>
+        <td>
+          storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
+Default is ThinProvisioned.<br/>
+          <br/>
+            <i>Default</i>: ThinProvisioned<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storagePool</b></td>
+        <td>string</td>
+        <td>
+          storagePool is the ScaleIO Storage Pool associated with the protection domain.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>
+          volumeName is the name of a volume already created in the ScaleIO system
+that is associated with this volume source.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].scaleIO.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexscaleio-1)</sup></sup>
+
+
+
+secretRef references to the secret for ScaleIO user and other
+sensitive information. If this is not provided, Login operation will fail.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].secret
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+secret represents a secret that should populate this volume.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#secret
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>defaultMode</b></td>
+        <td>integer</td>
+        <td>
+          defaultMode is Optional: mode bits used to set permissions on created files by default.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values
+for mode bits. Defaults to 0644.
+Directories within the path are not affected by this setting.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexsecretitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          items If unspecified, each key-value pair in the Data field of the referenced
+Secret will be projected into the volume as a file whose name is the
+key and content is the value. If specified, the listed keys will be
+projected into the specified paths, and unlisted keys will not be
+present. If a key is specified which is not present in the Secret,
+the volume setup will error unless it is marked optional. Paths must be
+relative and may not contain the '..' path or start with '..'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          optional field specify whether the Secret or its keys must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>secretName</b></td>
+        <td>string</td>
+        <td>
+          secretName is the name of the secret in the pod's namespace to use.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].secret.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexsecret-1)</sup></sup>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the key to project.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the relative path of the file to map the key to.
+May not be an absolute path.
+May not contain the path element '..'.
+May not start with the string '..'.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode is Optional: mode bits used to set permissions on this file.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].storageos
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmanifestsindexstorageossecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef specifies the secret to use for obtaining the StorageOS API
+credentials.  If not specified, default values will be attempted.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>
+          volumeName is the human-readable name of the StorageOS volume.  Volume
+names are only unique within a namespace.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeNamespace</b></td>
+        <td>string</td>
+        <td>
+          volumeNamespace specifies the scope of the volume within StorageOS.  If no
+namespace is specified then the Pod's namespace will be used.  This allows the
+Kubernetes name scoping to be mirrored within StorageOS for tighter integration.
+Set VolumeName to any name to override the default behaviour.
+Set to "default" if you are not using namespaces within StorageOS.
+Namespaces that do not pre-exist within StorageOS will be created.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].storageos.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindexstorageos-1)</sup></sup>
+
+
+
+secretRef specifies the secret to use for obtaining the StorageOS API
+credentials.  If not specified, default values will be attempted.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.manifests[index].vsphereVolume
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmanifestsindex-1)</sup></sup>
+
+
+
+vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>volumePath</b></td>
+        <td>string</td>
+        <td>
+          volumePath is the path that identifies vSphere volume vmdk<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storagePolicyID</b></td>
+        <td>string</td>
+        <td>
+          storagePolicyID is the storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storagePolicyName</b></td>
+        <td>string</td>
+        <td>
+          storagePolicyName is the storage Policy Based Management (SPBM) profile name.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.monitoring
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+Monitoring defines the monitoring configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
+them as usual kubernetes pod metrics.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>prometheusImage</b></td>
+        <td>string</td>
+        <td>
+          PrometheusImage defines the image used for the prometheus sidecar.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/prometheus:v2.44.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>proxyImage</b></td>
+        <td>string</td>
+        <td>
+          ProxyImage defines the image used for the nginx proxy sidecar.<br/>
+          <br/>
+            <i>Default</i>: nginx:1.19.10<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexawselasticblockstore-1">awsElasticBlockStore</a></b></td>
+        <td>object</td>
+        <td>
+          awsElasticBlockStore represents an AWS Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexazuredisk-1">azureDisk</a></b></td>
+        <td>object</td>
+        <td>
+          azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexazurefile-1">azureFile</a></b></td>
+        <td>object</td>
+        <td>
+          azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexcephfs-1">cephfs</a></b></td>
+        <td>object</td>
+        <td>
+          cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexcinder-1">cinder</a></b></td>
+        <td>object</td>
+        <td>
+          cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexconfigmap-1">configMap</a></b></td>
+        <td>object</td>
+        <td>
+          configMap represents a configMap that should populate this volume<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexcsi-1">csi</a></b></td>
+        <td>object</td>
+        <td>
+          csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexdownwardapi-1">downwardAPI</a></b></td>
+        <td>object</td>
+        <td>
+          downwardAPI represents downward API about the pod that should populate this volume<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexemptydir-1">emptyDir</a></b></td>
+        <td>object</td>
+        <td>
+          emptyDir represents a temporary directory that shares a pod's lifetime.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeral-1">ephemeral</a></b></td>
+        <td>object</td>
+        <td>
+          ephemeral represents a volume that is handled by a cluster storage driver.
+The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
+and deleted when the pod is removed.
+
+Use this if:
+a) the volume is only needed while the pod runs,
+b) features of normal volumes like restoring from snapshot or capacity
+   tracking are needed,
+c) the storage driver is specified through a storage class, and
+d) the storage driver supports dynamic volume provisioning through
+   a PersistentVolumeClaim (see EphemeralVolumeSource for more
+   information on the connection between this volume type
+   and PersistentVolumeClaim).
+
+Use PersistentVolumeClaim or one of the vendor-specific
+APIs for volumes that persist for longer than the lifecycle
+of an individual pod.
+
+Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
+be used that way - see the documentation of the driver for
+more information.
+
+A pod can use both types of ephemeral volumes and
+persistent volumes at the same time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexfc-1">fc</a></b></td>
+        <td>object</td>
+        <td>
+          fc represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexflexvolume-1">flexVolume</a></b></td>
+        <td>object</td>
+        <td>
+          flexVolume represents a generic volume resource that is
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexflocker-1">flocker</a></b></td>
+        <td>object</td>
+        <td>
+          flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexgcepersistentdisk-1">gcePersistentDisk</a></b></td>
+        <td>object</td>
+        <td>
+          gcePersistentDisk represents a GCE Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexgitrepo-1">gitRepo</a></b></td>
+        <td>object</td>
+        <td>
+          gitRepo represents a git repository at a particular revision.
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
+EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
+into the Pod's container.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexglusterfs-1">glusterfs</a></b></td>
+        <td>object</td>
+        <td>
+          glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexhostpath-1">hostPath</a></b></td>
+        <td>object</td>
+        <td>
+          hostPath represents a pre-existing file or directory on the host
+machine that is directly exposed to the container. This is generally
+used for system agents or other privileged things that are allowed
+to see the host machine. Most containers will NOT need this.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindeximage-1">image</a></b></td>
+        <td>object</td>
+        <td>
+          image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexiscsi-1">iscsi</a></b></td>
+        <td>object</td>
+        <td>
+          iscsi represents an ISCSI Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+More info: https://kubernetes.io/docs/concepts/storage/volumes/#iscsi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexnfs-1">nfs</a></b></td>
+        <td>object</td>
+        <td>
+          nfs represents an NFS mount on the host that shares a pod's lifetime
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexpersistentvolumeclaim-1">persistentVolumeClaim</a></b></td>
+        <td>object</td>
+        <td>
+          persistentVolumeClaimVolumeSource represents a reference to a
+PersistentVolumeClaim in the same namespace.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexphotonpersistentdisk-1">photonPersistentDisk</a></b></td>
+        <td>object</td>
+        <td>
+          photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexportworxvolume-1">portworxVolume</a></b></td>
+        <td>object</td>
+        <td>
+          portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojected-1">projected</a></b></td>
+        <td>object</td>
+        <td>
+          projected items for all in one resources secrets, configmaps, and downward API<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexquobyte-1">quobyte</a></b></td>
+        <td>object</td>
+        <td>
+          quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexrbd-1">rbd</a></b></td>
+        <td>object</td>
+        <td>
+          rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          ReadOnly specifies whether the volume should be mounted as read-only. (default: false, except for ConfigMaps and Secrets)<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexscaleio-1">scaleIO</a></b></td>
+        <td>object</td>
+        <td>
+          scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexsecret-1">secret</a></b></td>
+        <td>object</td>
+        <td>
+          secret represents a secret that should populate this volume.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexstorageos-1">storageos</a></b></td>
+        <td>object</td>
+        <td>
+          storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexvspherevolume-1">vsphereVolume</a></b></td>
+        <td>object</td>
+        <td>
+          vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].awsElasticBlockStore
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+awsElasticBlockStore represents an AWS Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>volumeID</b></td>
+        <td>string</td>
+        <td>
+          volumeID is unique ID of the persistent disk resource in AWS (Amazon EBS volume).
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type of the volume that you want to mount.
+Tip: Ensure that the filesystem type is supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>partition</b></td>
+        <td>integer</td>
+        <td>
+          partition is the partition in the volume that you want to mount.
+If omitted, the default is to mount by volume name.
+Examples: For volume /dev/sda1, you specify the partition as "1".
+Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly value true will force the readOnly setting in VolumeMounts.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].azureDisk
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+are redirected to the disk.csi.azure.com CSI driver.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>diskName</b></td>
+        <td>string</td>
+        <td>
+          diskName is the Name of the data disk in the blob storage<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>diskURI</b></td>
+        <td>string</td>
+        <td>
+          diskURI is the URI of data disk in the blob storage<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>cachingMode</b></td>
+        <td>string</td>
+        <td>
+          cachingMode is the Host Caching mode: None, Read Only, Read Write.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is Filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+          <br/>
+            <i>Default</i>: ext4<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          kind expected values are Shared: multiple blob disks per storage account  Dedicated: single blob disk per storage account  Managed: azure managed data disk (only in managed availability set). defaults to shared<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly Defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].azureFile
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+are redirected to the file.csi.azure.com CSI driver.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>secretName</b></td>
+        <td>string</td>
+        <td>
+          secretName is the  name of secret that contains Azure Storage Account Name and Key<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>shareName</b></td>
+        <td>string</td>
+        <td>
+          shareName is the azure share Name<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].cephfs
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>monitors</b></td>
+        <td>[]string</td>
+        <td>
+          monitors is Required: Monitors is a collection of Ceph monitors
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is Optional: Used as the mounted root, rather than the full Ceph tree, default is /<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly is Optional: Defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>secretFile</b></td>
+        <td>string</td>
+        <td>
+          secretFile is Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexcephfssecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is Optional: SecretRef is reference to the authentication secret for User, default is empty.
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>string</td>
+        <td>
+          user is optional: User is the rados user name, default is admin
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].cephfs.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexcephfs-1)</sup></sup>
+
+
+
+secretRef is Optional: SecretRef is reference to the authentication secret for User, default is empty.
+More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].cinder
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+cinder represents a cinder volume attached and mounted on kubelets host machine.
+Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+are redirected to the cinder.csi.openstack.org CSI driver.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>volumeID</b></td>
+        <td>string</td>
+        <td>
+          volumeID used to identify the volume in cinder.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.
+More info: https://examples.k8s.io/mysql-cinder-pd/README.md<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexcindersecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is optional: points to a secret object containing parameters used to connect
+to OpenStack.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].cinder.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexcinder-1)</sup></sup>
+
+
+
+secretRef is optional: points to a secret object containing parameters used to connect
+to OpenStack.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].configMap
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+configMap represents a configMap that should populate this volume
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>defaultMode</b></td>
+        <td>integer</td>
+        <td>
+          defaultMode is optional: mode bits used to set permissions on created files by default.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+Defaults to 0644.
+Directories within the path are not affected by this setting.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexconfigmapitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          items if unspecified, each key-value pair in the Data field of the referenced
+ConfigMap will be projected into the volume as a file whose name is the
+key and content is the value. If specified, the listed keys will be
+projected into the specified paths, and unlisted keys will not be
+present. If a key is specified which is not present in the ConfigMap,
+the volume setup will error unless it is marked optional. Paths must be
+relative and may not contain the '..' path or start with '..'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          optional specify whether the ConfigMap or its keys must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].configMap.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexconfigmap-1)</sup></sup>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the key to project.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the relative path of the file to map the key to.
+May not be an absolute path.
+May not contain the path element '..'.
+May not start with the string '..'.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode is Optional: mode bits used to set permissions on this file.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].csi
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>driver</b></td>
+        <td>string</td>
+        <td>
+          driver is the name of the CSI driver that handles this volume.
+Consult with your admin for the correct name as registered in the cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType to mount. Ex. "ext4", "xfs", "ntfs".
+If not provided, the empty value is passed to the associated CSI driver
+which will determine the default filesystem to apply.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexcsinodepublishsecretref-1">nodePublishSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          nodePublishSecretRef is a reference to the secret object containing
+sensitive information to pass to the CSI driver to complete the CSI
+NodePublishVolume and NodeUnpublishVolume calls.
+This field is optional, and  may be empty if no secret is required. If the
+secret object contains more than one secret, all secret references are passed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly specifies a read-only configuration for the volume.
+Defaults to false (read/write).<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeAttributes</b></td>
+        <td>map[string]string</td>
+        <td>
+          volumeAttributes stores driver-specific properties that are passed to the CSI
+driver. Consult your driver's documentation for supported values.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].csi.nodePublishSecretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexcsi-1)</sup></sup>
+
+
+
+nodePublishSecretRef is a reference to the secret object containing
+sensitive information to pass to the CSI driver to complete the CSI
+NodePublishVolume and NodeUnpublishVolume calls.
+This field is optional, and  may be empty if no secret is required. If the
+secret object contains more than one secret, all secret references are passed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].downwardAPI
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+downwardAPI represents downward API about the pod that should populate this volume
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>defaultMode</b></td>
+        <td>integer</td>
+        <td>
+          Optional: mode bits to use on created files by default. Must be a
+Optional: mode bits used to set permissions on created files by default.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+Defaults to 0644.
+Directories within the path are not affected by this setting.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexdownwardapiitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          Items is a list of downward API volume file<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].downwardAPI.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexdownwardapi-1)</sup></sup>
+
+
+
+DownwardAPIVolumeFile represents information to create the file containing the pod field
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexdownwardapiitemsindexfieldref-1">fieldRef</a></b></td>
+        <td>object</td>
+        <td>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          Optional: mode bits used to set permissions on this file, must be an octal value
+between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexdownwardapiitemsindexresourcefieldref-1">resourceFieldRef</a></b></td>
+        <td>object</td>
+        <td>
+          Selects a resource of the container: only resources limits and requests
+(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].downwardAPI.items[index].fieldRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexdownwardapiitemsindex-1)</sup></sup>
+
+
+
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>
+          Path of the field to select in the specified API version.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>
+          Version of the schema the FieldPath is written in terms of, defaults to "v1".<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].downwardAPI.items[index].resourceFieldRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexdownwardapiitemsindex-1)</sup></sup>
+
+
+
+Selects a resource of the container: only resources limits and requests
+(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>resource</b></td>
+        <td>string</td>
+        <td>
+          Required: resource to select<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>containerName</b></td>
+        <td>string</td>
+        <td>
+          Container name: required for volumes, optional for env vars<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>divisor</b></td>
+        <td>int or string</td>
+        <td>
+          Specifies the output format of the exposed resources, defaults to "1"<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].emptyDir
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+emptyDir represents a temporary directory that shares a pod's lifetime.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>medium</b></td>
+        <td>string</td>
+        <td>
+          medium represents what type of storage medium should back this directory.
+The default is "" which means to use the node's default medium.
+Must be an empty string (default) or Memory.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>sizeLimit</b></td>
+        <td>int or string</td>
+        <td>
+          sizeLimit is the total amount of local storage required for this EmptyDir volume.
+The size limit is also applicable for memory medium.
+The maximum usage on memory medium EmptyDir would be the minimum value between
+the SizeLimit specified here and the sum of memory limits of all containers in a pod.
+The default is nil which means that the limit is undefined.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].ephemeral
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+ephemeral represents a volume that is handled by a cluster storage driver.
+The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
+and deleted when the pod is removed.
+
+Use this if:
+a) the volume is only needed while the pod runs,
+b) features of normal volumes like restoring from snapshot or capacity
+   tracking are needed,
+c) the storage driver is specified through a storage class, and
+d) the storage driver supports dynamic volume provisioning through
+   a PersistentVolumeClaim (see EphemeralVolumeSource for more
+   information on the connection between this volume type
+   and PersistentVolumeClaim).
+
+Use PersistentVolumeClaim or one of the vendor-specific
+APIs for volumes that persist for longer than the lifecycle
+of an individual pod.
+
+Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
+be used that way - see the documentation of the driver for
+more information.
+
+A pod can use both types of ephemeral volumes and
+persistent volumes at the same time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplate-1">volumeClaimTemplate</a></b></td>
+        <td>object</td>
+        <td>
+          Will be used to create a stand-alone PVC to provision the volume.
+The pod in which this EphemeralVolumeSource is embedded will be the
+owner of the PVC, i.e. the PVC will be deleted together with the
+pod.  The name of the PVC will be `<pod name>-<volume name>` where
+`<volume name>` is the name from the `PodSpec.Volumes` array
+entry. Pod validation will reject the pod if the concatenated name
+is not valid for a PVC (for example, too long).
+
+An existing PVC with that name that is not owned by the pod
+will *not* be used for the pod to avoid using an unrelated
+volume by mistake. Starting the pod is then blocked until
+the unrelated PVC is removed. If such a pre-created PVC is
+meant to be used by the pod, the PVC has to updated with an
+owner reference to the pod once the pod exists. Normally
+this should not be necessary, but it may be useful when
+manually reconstructing a broken cluster.
+
+This field is read-only and no changes will be made by Kubernetes
+to the PVC after it has been created.
+
+Required, must not be nil.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].ephemeral.volumeClaimTemplate
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexephemeral-1)</sup></sup>
+
+
+
+Will be used to create a stand-alone PVC to provision the volume.
+The pod in which this EphemeralVolumeSource is embedded will be the
+owner of the PVC, i.e. the PVC will be deleted together with the
+pod.  The name of the PVC will be `<pod name>-<volume name>` where
+`<volume name>` is the name from the `PodSpec.Volumes` array
+entry. Pod validation will reject the pod if the concatenated name
+is not valid for a PVC (for example, too long).
+
+An existing PVC with that name that is not owned by the pod
+will *not* be used for the pod to avoid using an unrelated
+volume by mistake. Starting the pod is then blocked until
+the unrelated PVC is removed. If such a pre-created PVC is
+meant to be used by the pod, the PVC has to updated with an
+owner reference to the pod once the pod exists. Normally
+this should not be necessary, but it may be useful when
+manually reconstructing a broken cluster.
+
+This field is read-only and no changes will be made by Kubernetes
+to the PVC after it has been created.
+
+Required, must not be nil.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespec-1">spec</a></b></td>
+        <td>object</td>
+        <td>
+          The specification for the PersistentVolumeClaim. The entire content is
+copied unchanged into the PVC that gets created from this
+template. The same fields as in a PersistentVolumeClaim
+are also valid here.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatemetadata-1">metadata</a></b></td>
+        <td>object</td>
+        <td>
+          May contain labels and annotations that will be copied into the PVC
+when creating it. No other fields are allowed and will be rejected during
+validation.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].ephemeral.volumeClaimTemplate.spec
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplate-1)</sup></sup>
+
+
+
+The specification for the PersistentVolumeClaim. The entire content is
+copied unchanged into the PVC that gets created from this
+template. The same fields as in a PersistentVolumeClaim
+are also valid here.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>accessModes</b></td>
+        <td>[]string</td>
+        <td>
+          accessModes contains the desired access modes the volume should have.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespecdatasource-1">dataSource</a></b></td>
+        <td>object</td>
+        <td>
+          dataSource field can be used to specify either:
+* An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+* An existing PVC (PersistentVolumeClaim)
+If the provisioner or an external controller can support the specified data source,
+it will create a new volume based on the contents of the specified data source.
+When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
+and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespecdatasourceref-1">dataSourceRef</a></b></td>
+        <td>object</td>
+        <td>
+          dataSourceRef specifies the object from which to populate the volume with data, if a non-empty
+volume is desired. This may be any object from a non-empty API group (non
+core object) or a PersistentVolumeClaim object.
+When this field is specified, volume binding will only succeed if the type of
+the specified object matches some installed volume populator or dynamic
+provisioner.
+This field will replace the functionality of the dataSource field and as such
+if both fields are non-empty, they must have the same value. For backwards
+compatibility, when namespace isn't specified in dataSourceRef,
+both fields (dataSource and dataSourceRef) will be set to the same
+value automatically if one of them is empty and the other is non-empty.
+When namespace is specified in dataSourceRef,
+dataSource isn't set to the same value and must be empty.
+There are three important differences between dataSource and dataSourceRef:
+* While dataSource only allows two specific types of objects, dataSourceRef
+  allows any non-core object, as well as PersistentVolumeClaim objects.
+* While dataSource ignores disallowed values (dropping them), dataSourceRef
+  preserves all values, and generates an error if a disallowed value is
+  specified.
+* While dataSource only allows local objects, dataSourceRef allows objects
+  in any namespaces.
+(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
+(Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespecresources-1">resources</a></b></td>
+        <td>object</td>
+        <td>
+          resources represents the minimum resources the volume should have.
+If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+that are lower than previous value but must still be higher than capacity recorded in the
+status field of the claim.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespecselector-1">selector</a></b></td>
+        <td>object</td>
+        <td>
+          selector is a label query over volumes to consider for binding.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClassName</b></td>
+        <td>string</td>
+        <td>
+          storageClassName is the name of the StorageClass required by the claim.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string or nil value indicates that no
+VolumeAttributesClass will be applied to the claim. If the claim enters an Infeasible error state,
+this field can be reset to its previous value (including nil) to cancel the modification.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeMode</b></td>
+        <td>string</td>
+        <td>
+          volumeMode defines what type of volume is required by the claim.
+Value of Filesystem is implied when not included in claim spec.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>
+          volumeName is the binding reference to the PersistentVolume backing this claim.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].ephemeral.volumeClaimTemplate.spec.dataSource
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespec-1)</sup></sup>
+
+
+
+dataSource field can be used to specify either:
+* An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+* An existing PVC (PersistentVolumeClaim)
+If the provisioner or an external controller can support the specified data source,
+it will create a new volume based on the contents of the specified data source.
+When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
+and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+If the namespace is specified, then dataSourceRef will not be copied to dataSource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the type of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>
+          APIGroup is the group for the resource being referenced.
+If APIGroup is not specified, the specified Kind must be in the core API group.
+For any other third-party types, APIGroup is required.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].ephemeral.volumeClaimTemplate.spec.dataSourceRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespec-1)</sup></sup>
+
+
+
+dataSourceRef specifies the object from which to populate the volume with data, if a non-empty
+volume is desired. This may be any object from a non-empty API group (non
+core object) or a PersistentVolumeClaim object.
+When this field is specified, volume binding will only succeed if the type of
+the specified object matches some installed volume populator or dynamic
+provisioner.
+This field will replace the functionality of the dataSource field and as such
+if both fields are non-empty, they must have the same value. For backwards
+compatibility, when namespace isn't specified in dataSourceRef,
+both fields (dataSource and dataSourceRef) will be set to the same
+value automatically if one of them is empty and the other is non-empty.
+When namespace is specified in dataSourceRef,
+dataSource isn't set to the same value and must be empty.
+There are three important differences between dataSource and dataSourceRef:
+* While dataSource only allows two specific types of objects, dataSourceRef
+  allows any non-core object, as well as PersistentVolumeClaim objects.
+* While dataSource ignores disallowed values (dropping them), dataSourceRef
+  preserves all values, and generates an error if a disallowed value is
+  specified.
+* While dataSource only allows local objects, dataSourceRef allows objects
+  in any namespaces.
+(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
+(Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the type of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>
+          APIGroup is the group for the resource being referenced.
+If APIGroup is not specified, the specified Kind must be in the core API group.
+For any other third-party types, APIGroup is required.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of resource being referenced
+Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details.
+(Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].ephemeral.volumeClaimTemplate.spec.resources
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespec-1)</sup></sup>
+
+
+
+resources represents the minimum resources the volume should have.
+If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+that are lower than previous value but must still be higher than capacity recorded in the
+status field of the claim.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].ephemeral.volumeClaimTemplate.spec.selector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespec-1)</sup></sup>
+
+
+
+selector is a label query over volumes to consider for binding.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespecselectormatchexpressionsindex-1">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].ephemeral.volumeClaimTemplate.spec.selector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplatespecselector-1)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].ephemeral.volumeClaimTemplate.metadata
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexephemeralvolumeclaimtemplate-1)</sup></sup>
+
+
+
+May contain labels and annotations that will be copied into the PVC
+when creating it. No other fields are allowed and will be rejected during
+validation.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].fc
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+fc represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>lun</b></td>
+        <td>integer</td>
+        <td>
+          lun is Optional: FC target lun number<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly is Optional: Defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>targetWWNs</b></td>
+        <td>[]string</td>
+        <td>
+          targetWWNs is Optional: FC target worldwide names (WWNs)<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>wwids</b></td>
+        <td>[]string</td>
+        <td>
+          wwids Optional: FC volume world wide identifiers (wwids)
+Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].flexVolume
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+flexVolume represents a generic volume resource that is
+provisioned/attached using an exec based plugin.
+Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>driver</b></td>
+        <td>string</td>
+        <td>
+          driver is the name of the driver to use for this volume.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". The default filesystem depends on FlexVolume script.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>options</b></td>
+        <td>map[string]string</td>
+        <td>
+          options is Optional: this field holds extra command options if any.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly is Optional: defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexflexvolumesecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is Optional: secretRef is reference to the secret object containing
+sensitive information to pass to the plugin scripts. This may be
+empty if no secret object is specified. If the secret object
+contains more than one secret, all secrets are passed to the plugin
+scripts.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].flexVolume.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexflexvolume-1)</sup></sup>
+
+
+
+secretRef is Optional: secretRef is reference to the secret object containing
+sensitive information to pass to the plugin scripts. This may be
+empty if no secret object is specified. If the secret object
+contains more than one secret, all secrets are passed to the plugin
+scripts.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].flocker
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>datasetName</b></td>
+        <td>string</td>
+        <td>
+          datasetName is Name of the dataset stored as metadata -> name on the dataset for Flocker
+should be considered as deprecated<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>datasetUUID</b></td>
+        <td>string</td>
+        <td>
+          datasetUUID is the UUID of the dataset. This is unique identifier of a Flocker dataset<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].gcePersistentDisk
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+gcePersistentDisk represents a GCE Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pdName</b></td>
+        <td>string</td>
+        <td>
+          pdName is unique name of the PD resource in GCE. Used to identify the disk in GCE.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is filesystem type of the volume that you want to mount.
+Tip: Ensure that the filesystem type is supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>partition</b></td>
+        <td>integer</td>
+        <td>
+          partition is the partition in the volume that you want to mount.
+If omitted, the default is to mount by volume name.
+Examples: For volume /dev/sda1, you specify the partition as "1".
+Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the ReadOnly setting in VolumeMounts.
+Defaults to false.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].gitRepo
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+gitRepo represents a git repository at a particular revision.
+Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
+EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
+into the Pod's container.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>repository</b></td>
+        <td>string</td>
+        <td>
+          repository is the URL<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>directory</b></td>
+        <td>string</td>
+        <td>
+          directory is the target directory name.
+Must not contain or start with '..'.  If '.' is supplied, the volume directory will be the
+git repository.  Otherwise, if specified, the volume will contain the git repository in
+the subdirectory with the given name.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>revision</b></td>
+        <td>string</td>
+        <td>
+          revision is the commit hash for the specified revision.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].glusterfs
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>endpoints</b></td>
+        <td>string</td>
+        <td>
+          endpoints is the endpoint name that details Glusterfs topology.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the Glusterfs volume path.
+More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the Glusterfs volume to be mounted with read-only permissions.
+Defaults to false.
+More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].hostPath
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+hostPath represents a pre-existing file or directory on the host
+machine that is directly exposed to the container. This is generally
+used for system agents or other privileged things that are allowed
+to see the host machine. Most containers will NOT need this.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path of the directory on the host.
+If the path is a symlink, it will follow the link to the real path.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type for HostPath Volume
+Defaults to ""
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].image
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pullPolicy</b></td>
+        <td>string</td>
+        <td>
+          Policy for pulling OCI objects. Possible values are:
+Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reference</b></td>
+        <td>string</td>
+        <td>
+          Required: Image or artifact reference to be used.
+Behaves in the same way as pod.spec.containers[*].image.
+Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+More info: https://kubernetes.io/docs/concepts/containers/images
+This field is optional to allow higher level config management to default or override
+container images in workload controllers like Deployments and StatefulSets.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].iscsi
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+iscsi represents an ISCSI Disk resource that is attached to a
+kubelet's host machine and then exposed to the pod.
+More info: https://kubernetes.io/docs/concepts/storage/volumes/#iscsi
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>iqn</b></td>
+        <td>string</td>
+        <td>
+          iqn is the target iSCSI Qualified Name.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>lun</b></td>
+        <td>integer</td>
+        <td>
+          lun represents iSCSI Target Lun number.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetPortal</b></td>
+        <td>string</td>
+        <td>
+          targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port
+is other than default (typically TCP ports 860 and 3260).<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>chapAuthDiscovery</b></td>
+        <td>boolean</td>
+        <td>
+          chapAuthDiscovery defines whether support iSCSI Discovery CHAP authentication<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>chapAuthSession</b></td>
+        <td>boolean</td>
+        <td>
+          chapAuthSession defines whether support iSCSI Session CHAP authentication<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type of the volume that you want to mount.
+Tip: Ensure that the filesystem type is supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>initiatorName</b></td>
+        <td>string</td>
+        <td>
+          initiatorName is the custom iSCSI Initiator Name.
+If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface
+<target portal>:<volume name> will be created for the connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>iscsiInterface</b></td>
+        <td>string</td>
+        <td>
+          iscsiInterface is the interface Name that uses an iSCSI transport.
+Defaults to 'default' (tcp).<br/>
+          <br/>
+            <i>Default</i>: default<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>portals</b></td>
+        <td>[]string</td>
+        <td>
+          portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port
+is other than default (typically TCP ports 860 and 3260).<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the ReadOnly setting in VolumeMounts.
+Defaults to false.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexiscsisecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is the CHAP Secret for iSCSI target and initiator authentication<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].iscsi.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexiscsi-1)</sup></sup>
+
+
+
+secretRef is the CHAP Secret for iSCSI target and initiator authentication
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].nfs
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+nfs represents an NFS mount on the host that shares a pod's lifetime
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path that is exported by the NFS server.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>server</b></td>
+        <td>string</td>
+        <td>
+          server is the hostname or IP address of the NFS server.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the NFS export to be mounted with read-only permissions.
+Defaults to false.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].persistentVolumeClaim
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+persistentVolumeClaimVolumeSource represents a reference to a
+PersistentVolumeClaim in the same namespace.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>claimName</b></td>
+        <td>string</td>
+        <td>
+          claimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly Will force the ReadOnly setting in VolumeMounts.
+Default false.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].photonPersistentDisk
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pdID</b></td>
+        <td>string</td>
+        <td>
+          pdID is the ID that identifies Photon Controller persistent disk<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].portworxVolume
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+is on.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>volumeID</b></td>
+        <td>string</td>
+        <td>
+          volumeID uniquely identifies a Portworx volume<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fSType represents the filesystem type to mount
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+projected items for all in one resources secrets, configmaps, and downward API
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>defaultMode</b></td>
+        <td>integer</td>
+        <td>
+          defaultMode are the mode bits used to set permissions on created files by default.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+Directories within the path are not affected by this setting.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindex-1">sources</a></b></td>
+        <td>[]object</td>
+        <td>
+          sources is the list of volume projections. Each entry in this list
+handles one source.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojected-1)</sup></sup>
+
+
+
+Projection that may be projected along with other supported volume types.
+Exactly one of these fields must be set.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundle-1">clusterTrustBundle</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexconfigmap-1">configMap</a></b></td>
+        <td>object</td>
+        <td>
+          configMap information about the configMap data to project<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexdownwardapi-1">downwardAPI</a></b></td>
+        <td>object</td>
+        <td>
+          downwardAPI information about the downwardAPI data to project<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexpodcertificate-1">podCertificate</a></b></td>
+        <td>object</td>
+        <td>
+          Projects an auto-rotating credential bundle (private key and certificate
+chain) that the pod can use either as a TLS client or server.
+
+Kubelet generates a private key and uses it to send a
+PodCertificateRequest to the named signer.  Once the signer approves the
+request and issues a certificate chain, Kubelet writes the key and
+certificate chain to the pod filesystem.  The pod does not start until
+certificates have been issued for each podCertificate projected volume
+source in its spec.
+
+Kubelet will begin trying to rotate the certificate at the time indicated
+by the signer using the PodCertificateRequest.Status.BeginRefreshAt
+timestamp.
+
+Kubelet can write a single file, indicated by the credentialBundlePath
+field, or separate files, indicated by the keyPath and
+certificateChainPath fields.
+
+The credential bundle is a single file in PEM format.  The first PEM
+entry is the private key (in PKCS#8 format), and the remaining PEM
+entries are the certificate chain issued by the signer (typically,
+signers will return their certificate chain in leaf-to-root order).
+
+Prefer using the credential bundle format, since your application code
+can read it atomically.  If you use keyPath and certificateChainPath,
+your application must make two separate file reads. If these coincide
+with a certificate rotation, it is possible that the private key and leaf
+certificate you read may not correspond to each other.  Your application
+will need to check for this condition, and re-read until they are
+consistent.
+
+The named signer controls chooses the format of the certificate it
+issues; consult the signer implementation's documentation to learn how to
+use the certificates it issues.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexsecret-1">secret</a></b></td>
+        <td>object</td>
+        <td>
+          secret information about the secret data to project<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexserviceaccounttoken-1">serviceAccountToken</a></b></td>
+        <td>object</td>
+        <td>
+          serviceAccountToken is information about the serviceAccountToken data to project<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].clusterTrustBundle
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
+of ClusterTrustBundle objects in an auto-updating file.
+
+Alpha, gated by the ClusterTrustBundleProjection feature gate.
+
+ClusterTrustBundle objects can either be selected by name, or by the
+combination of signer name and a label selector.
+
+Kubelet performs aggressive normalization of the PEM contents written
+into the pod filesystem.  Esoteric PEM features such as inter-block
+comments and block headers are stripped.  Certificates are deduplicated.
+The ordering of certificates within the file is arbitrary, and Kubelet
+may change the order over time.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Relative path from the volume root to write the bundle.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundlelabelselector-1">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Select a single ClusterTrustBundle by object name.  Mutually-exclusive
+with signerName and labelSelector.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          If true, don't block pod startup if the referenced ClusterTrustBundle(s)
+aren't available.  If using name, then the named ClusterTrustBundle is
+allowed not to exist.  If using signerName, then the combination of
+signerName and labelSelector is allowed to match zero
+ClusterTrustBundles.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Select all ClusterTrustBundles that match this signer name.
+Mutually-exclusive with name.  The contents of all selected
+ClusterTrustBundles will be unified and deduplicated.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].clusterTrustBundle.labelSelector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundle-1)</sup></sup>
+
+
+
+Select all ClusterTrustBundles that match this label selector.  Only has
+effect if signerName is set.  Mutually-exclusive with name.  If unset,
+interpreted as "match nothing".  If set but empty, interpreted as "match
+everything".
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundlelabelselectormatchexpressionsindex-1">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].clusterTrustBundle.labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindexclustertrustbundlelabelselector-1)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].configMap
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+configMap information about the configMap data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexconfigmapitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          items if unspecified, each key-value pair in the Data field of the referenced
+ConfigMap will be projected into the volume as a file whose name is the
+key and content is the value. If specified, the listed keys will be
+projected into the specified paths, and unlisted keys will not be
+present. If a key is specified which is not present in the ConfigMap,
+the volume setup will error unless it is marked optional. Paths must be
+relative and may not contain the '..' path or start with '..'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          optional specify whether the ConfigMap or its keys must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].configMap.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindexconfigmap-1)</sup></sup>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the key to project.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the relative path of the file to map the key to.
+May not be an absolute path.
+May not contain the path element '..'.
+May not start with the string '..'.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode is Optional: mode bits used to set permissions on this file.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].downwardAPI
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+downwardAPI information about the downwardAPI data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexdownwardapiitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          Items is a list of DownwardAPIVolume file<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].downwardAPI.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindexdownwardapi-1)</sup></sup>
+
+
+
+DownwardAPIVolumeFile represents information to create the file containing the pod field
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexdownwardapiitemsindexfieldref-1">fieldRef</a></b></td>
+        <td>object</td>
+        <td>
+          Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          Optional: mode bits used to set permissions on this file, must be an octal value
+between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexdownwardapiitemsindexresourcefieldref-1">resourceFieldRef</a></b></td>
+        <td>object</td>
+        <td>
+          Selects a resource of the container: only resources limits and requests
+(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].downwardAPI.items[index].fieldRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindexdownwardapiitemsindex-1)</sup></sup>
+
+
+
+Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>
+          Path of the field to select in the specified API version.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>
+          Version of the schema the FieldPath is written in terms of, defaults to "v1".<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].downwardAPI.items[index].resourceFieldRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindexdownwardapiitemsindex-1)</sup></sup>
+
+
+
+Selects a resource of the container: only resources limits and requests
+(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>resource</b></td>
+        <td>string</td>
+        <td>
+          Required: resource to select<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>containerName</b></td>
+        <td>string</td>
+        <td>
+          Container name: required for volumes, optional for env vars<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>divisor</b></td>
+        <td>int or string</td>
+        <td>
+          Specifies the output format of the exposed resources, defaults to "1"<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].podCertificate
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+Projects an auto-rotating credential bundle (private key and certificate
+chain) that the pod can use either as a TLS client or server.
+
+Kubelet generates a private key and uses it to send a
+PodCertificateRequest to the named signer.  Once the signer approves the
+request and issues a certificate chain, Kubelet writes the key and
+certificate chain to the pod filesystem.  The pod does not start until
+certificates have been issued for each podCertificate projected volume
+source in its spec.
+
+Kubelet will begin trying to rotate the certificate at the time indicated
+by the signer using the PodCertificateRequest.Status.BeginRefreshAt
+timestamp.
+
+Kubelet can write a single file, indicated by the credentialBundlePath
+field, or separate files, indicated by the keyPath and
+certificateChainPath fields.
+
+The credential bundle is a single file in PEM format.  The first PEM
+entry is the private key (in PKCS#8 format), and the remaining PEM
+entries are the certificate chain issued by the signer (typically,
+signers will return their certificate chain in leaf-to-root order).
+
+Prefer using the credential bundle format, since your application code
+can read it atomically.  If you use keyPath and certificateChainPath,
+your application must make two separate file reads. If these coincide
+with a certificate rotation, it is possible that the private key and leaf
+certificate you read may not correspond to each other.  Your application
+will need to check for this condition, and re-read until they are
+consistent.
+
+The named signer controls chooses the format of the certificate it
+issues; consult the signer implementation's documentation to learn how to
+use the certificates it issues.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>keyType</b></td>
+        <td>string</td>
+        <td>
+          The type of keypair Kubelet will generate for the pod.
+
+Valid values are "RSA3072", "RSA4096", "ECDSAP256", "ECDSAP384",
+"ECDSAP521", and "ED25519".<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>signerName</b></td>
+        <td>string</td>
+        <td>
+          Kubelet's generated CSRs will be addressed to this signer.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>certificateChainPath</b></td>
+        <td>string</td>
+        <td>
+          Write the certificate chain at this path in the projected volume.
+
+Most applications should use credentialBundlePath.  When using keyPath
+and certificateChainPath, your application needs to check that the key
+and leaf certificate are consistent, because it is possible to read the
+files mid-rotation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>credentialBundlePath</b></td>
+        <td>string</td>
+        <td>
+          Write the credential bundle at this path in the projected volume.
+
+The credential bundle is a single file that contains multiple PEM blocks.
+The first PEM block is a PRIVATE KEY block, containing a PKCS#8 private
+key.
+
+The remaining blocks are CERTIFICATE blocks, containing the issued
+certificate chain from the signer (leaf and any intermediates).
+
+Using credentialBundlePath lets your Pod's application code make a single
+atomic read that retrieves a consistent key and certificate chain.  If you
+project them to separate files, your application code will need to
+additionally check that the leaf certificate was issued to the key.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>keyPath</b></td>
+        <td>string</td>
+        <td>
+          Write the key at this path in the projected volume.
+
+Most applications should use credentialBundlePath.  When using keyPath
+and certificateChainPath, your application needs to check that the key
+and leaf certificate are consistent, because it is possible to read the
+files mid-rotation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>maxExpirationSeconds</b></td>
+        <td>integer</td>
+        <td>
+          maxExpirationSeconds is the maximum lifetime permitted for the
+certificate.
+
+Kubelet copies this value verbatim into the PodCertificateRequests it
+generates for this projection.
+
+If omitted, kube-apiserver will set it to 86400(24 hours). kube-apiserver
+will reject values shorter than 3600 (1 hour).  The maximum allowable
+value is 7862400 (91 days).
+
+The signer implementation is then free to issue a certificate with any
+lifetime *shorter* than MaxExpirationSeconds, but no shorter than 3600
+seconds (1 hour).  This constraint is enforced by kube-apiserver.
+`kubernetes.io` signers will never issue certificates with a lifetime
+longer than 24 hours.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].secret
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+secret information about the secret data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexprojectedsourcesindexsecretitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          items if unspecified, each key-value pair in the Data field of the referenced
+Secret will be projected into the volume as a file whose name is the
+key and content is the value. If specified, the listed keys will be
+projected into the specified paths, and unlisted keys will not be
+present. If a key is specified which is not present in the Secret,
+the volume setup will error unless it is marked optional. Paths must be
+relative and may not contain the '..' path or start with '..'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          optional field specify whether the Secret or its key must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].secret.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindexsecret-1)</sup></sup>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the key to project.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the relative path of the file to map the key to.
+May not be an absolute path.
+May not contain the path element '..'.
+May not start with the string '..'.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode is Optional: mode bits used to set permissions on this file.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].projected.sources[index].serviceAccountToken
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexprojectedsourcesindex-1)</sup></sup>
+
+
+
+serviceAccountToken is information about the serviceAccountToken data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the path relative to the mount point of the file to project the
+token into.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>audience</b></td>
+        <td>string</td>
+        <td>
+          audience is the intended audience of the token. A recipient of a token
+must identify itself with an identifier specified in the audience of the
+token, and otherwise should reject the token. The audience defaults to the
+identifier of the apiserver.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>expirationSeconds</b></td>
+        <td>integer</td>
+        <td>
+          expirationSeconds is the requested duration of validity of the service
+account token. As the token approaches expiration, the kubelet volume
+plugin will proactively rotate the service account token. The kubelet will
+start trying to rotate the token if the token is older than 80 percent of
+its time to live or if the token is older than 24 hours.Defaults to 1 hour
+and must be at least 10 minutes.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].quobyte
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>registry</b></td>
+        <td>string</td>
+        <td>
+          registry represents a single or multiple Quobyte Registry services
+specified as a string as host:port pair (multiple entries are separated with commas)
+which acts as the central registry for volumes<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>volume</b></td>
+        <td>string</td>
+        <td>
+          volume is a string that references an already created Quobyte volume by name.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>group</b></td>
+        <td>string</td>
+        <td>
+          group to map volume access to
+Default is no group<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the Quobyte volume to be mounted with read-only permissions.
+Defaults to false.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tenant</b></td>
+        <td>string</td>
+        <td>
+          tenant owning the given Quobyte volume in the Backend
+Used with dynamically provisioned Quobyte volumes, value is set by the plugin<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>string</td>
+        <td>
+          user to map volume access to
+Defaults to serivceaccount user<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].rbd
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
+Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          image is the rados image name.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>monitors</b></td>
+        <td>[]string</td>
+        <td>
+          monitors is a collection of Ceph monitors.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type of the volume that you want to mount.
+Tip: Ensure that the filesystem type is supported by the host operating system.
+Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>keyring</b></td>
+        <td>string</td>
+        <td>
+          keyring is the path to key ring for RBDUser.
+Default is /etc/ceph/keyring.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: /etc/ceph/keyring<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>pool</b></td>
+        <td>string</td>
+        <td>
+          pool is the rados pool name.
+Default is rbd.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: rbd<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly here will force the ReadOnly setting in VolumeMounts.
+Defaults to false.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexrbdsecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef is name of the authentication secret for RBDUser. If provided
+overrides keyring.
+Default is nil.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>string</td>
+        <td>
+          user is the rados user name.
+Default is admin.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: admin<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].rbd.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexrbd-1)</sup></sup>
+
+
+
+secretRef is name of the authentication secret for RBDUser. If provided
+overrides keyring.
+Default is nil.
+More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].scaleIO
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>gateway</b></td>
+        <td>string</td>
+        <td>
+          gateway is the host address of the ScaleIO API Gateway.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexscaleiosecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef references to the secret for ScaleIO user and other
+sensitive information. If this is not provided, Login operation will fail.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>system</b></td>
+        <td>string</td>
+        <td>
+          system is the name of the storage system as configured in ScaleIO.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs".
+Default is "xfs".<br/>
+          <br/>
+            <i>Default</i>: xfs<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protectionDomain</b></td>
+        <td>string</td>
+        <td>
+          protectionDomain is the name of the ScaleIO Protection Domain for the configured storage.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly Defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>sslEnabled</b></td>
+        <td>boolean</td>
+        <td>
+          sslEnabled Flag enable/disable SSL communication with Gateway, default false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageMode</b></td>
+        <td>string</td>
+        <td>
+          storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
+Default is ThinProvisioned.<br/>
+          <br/>
+            <i>Default</i>: ThinProvisioned<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storagePool</b></td>
+        <td>string</td>
+        <td>
+          storagePool is the ScaleIO Storage Pool associated with the protection domain.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>
+          volumeName is the name of a volume already created in the ScaleIO system
+that is associated with this volume source.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].scaleIO.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexscaleio-1)</sup></sup>
+
+
+
+secretRef references to the secret for ScaleIO user and other
+sensitive information. If this is not provided, Login operation will fail.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].secret
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+secret represents a secret that should populate this volume.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#secret
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>defaultMode</b></td>
+        <td>integer</td>
+        <td>
+          defaultMode is Optional: mode bits used to set permissions on created files by default.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values
+for mode bits. Defaults to 0644.
+Directories within the path are not affected by this setting.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexsecretitemsindex-1">items</a></b></td>
+        <td>[]object</td>
+        <td>
+          items If unspecified, each key-value pair in the Data field of the referenced
+Secret will be projected into the volume as a file whose name is the
+key and content is the value. If specified, the listed keys will be
+projected into the specified paths, and unlisted keys will not be
+present. If a key is specified which is not present in the Secret,
+the volume setup will error unless it is marked optional. Paths must be
+relative and may not contain the '..' path or start with '..'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          optional field specify whether the Secret or its keys must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>secretName</b></td>
+        <td>string</td>
+        <td>
+          secretName is the name of the secret in the pod's namespace to use.
+More info: https://kubernetes.io/docs/concepts/storage/volumes#secret<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].secret.items[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexsecret-1)</sup></sup>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the key to project.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>
+          path is the relative path of the file to map the key to.
+May not be an absolute path.
+May not contain the path element '..'.
+May not start with the string '..'.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode is Optional: mode bits used to set permissions on this file.
+Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
+YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+If not specified, the volume defaultMode will be used.
+This might be in conflict with other options that affect the file
+mode, like fsGroup, and the result can be other mode bits set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].storageos
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is the filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readOnly</b></td>
+        <td>boolean</td>
+        <td>
+          readOnly defaults to false (read/write). ReadOnly here will force
+the ReadOnly setting in VolumeMounts.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecmountsindexstorageossecretref-1">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          secretRef specifies the secret to use for obtaining the StorageOS API
+credentials.  If not specified, default values will be attempted.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>
+          volumeName is the human-readable name of the StorageOS volume.  Volume
+names are only unique within a namespace.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeNamespace</b></td>
+        <td>string</td>
+        <td>
+          volumeNamespace specifies the scope of the volume within StorageOS.  If no
+namespace is specified then the Pod's namespace will be used.  This allows the
+Kubernetes name scoping to be mirrored within StorageOS for tighter integration.
+Set VolumeName to any name to override the default behaviour.
+Set to "default" if you are not using namespaces within StorageOS.
+Namespaces that do not pre-exist within StorageOS will be created.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].storageos.secretRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindexstorageos-1)</sup></sup>
+
+
+
+secretRef specifies the secret to use for obtaining the StorageOS API
+credentials.  If not specified, default values will be attempted.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.mounts[index].vsphereVolume
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecmountsindex-1)</sup></sup>
+
+
+
+vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+are redirected to the csi.vsphere.vmware.com CSI driver.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>volumePath</b></td>
+        <td>string</td>
+        <td>
+          volumePath is the path that identifies vSphere volume vmdk<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>fsType</b></td>
+        <td>string</td>
+        <td>
+          fsType is filesystem type to mount.
+Must be a filesystem type supported by the host operating system.
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storagePolicyID</b></td>
+        <td>string</td>
+        <td>
+          storagePolicyID is the storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storagePolicyName</b></td>
+        <td>string</td>
+        <td>
+          storagePolicyName is the storage Policy Based Management (SPBM) profile name.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+Persistence defines the persistence configuration. If empty k0smotron
+will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Default</i>: emptyDir<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>hostPath</b></td>
+        <td>string</td>
+        <td>
+          HostPath defines the host path configuration. Will be used as is in case of .spec.persistence.type is hostPath.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaim-1">persistentVolumeClaim</a></b></td>
+        <td>object</td>
+        <td>
+          PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistence-1)</sup></sup>
+
+
+
+PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>
+          APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimmetadata-1">metadata</a></b></td>
+        <td>object</td>
+        <td>
+          Standard object's metadata.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspec-1">spec</a></b></td>
+        <td>object</td>
+        <td>
+          spec defines the desired characteristics of a volume requested by a pod author.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatus-1">status</a></b></td>
+        <td>object</td>
+        <td>
+          status represents the current information/status of a persistent volume claim.
+Read-only.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.metadata
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaim-1)</sup></sup>
+
+
+
+Standard object's metadata.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finalizers</b></td>
+        <td>[]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.spec
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaim-1)</sup></sup>
+
+
+
+spec defines the desired characteristics of a volume requested by a pod author.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>accessModes</b></td>
+        <td>[]string</td>
+        <td>
+          accessModes contains the desired access modes the volume should have.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecdatasource-1">dataSource</a></b></td>
+        <td>object</td>
+        <td>
+          dataSource field can be used to specify either:
+* An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+* An existing PVC (PersistentVolumeClaim)
+If the provisioner or an external controller can support the specified data source,
+it will create a new volume based on the contents of the specified data source.
+When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
+and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecdatasourceref-1">dataSourceRef</a></b></td>
+        <td>object</td>
+        <td>
+          dataSourceRef specifies the object from which to populate the volume with data, if a non-empty
+volume is desired. This may be any object from a non-empty API group (non
+core object) or a PersistentVolumeClaim object.
+When this field is specified, volume binding will only succeed if the type of
+the specified object matches some installed volume populator or dynamic
+provisioner.
+This field will replace the functionality of the dataSource field and as such
+if both fields are non-empty, they must have the same value. For backwards
+compatibility, when namespace isn't specified in dataSourceRef,
+both fields (dataSource and dataSourceRef) will be set to the same
+value automatically if one of them is empty and the other is non-empty.
+When namespace is specified in dataSourceRef,
+dataSource isn't set to the same value and must be empty.
+There are three important differences between dataSource and dataSourceRef:
+* While dataSource only allows two specific types of objects, dataSourceRef
+  allows any non-core object, as well as PersistentVolumeClaim objects.
+* While dataSource ignores disallowed values (dropping them), dataSourceRef
+  preserves all values, and generates an error if a disallowed value is
+  specified.
+* While dataSource only allows local objects, dataSourceRef allows objects
+  in any namespaces.
+(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
+(Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecresources-1">resources</a></b></td>
+        <td>object</td>
+        <td>
+          resources represents the minimum resources the volume should have.
+If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+that are lower than previous value but must still be higher than capacity recorded in the
+status field of the claim.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecselector-1">selector</a></b></td>
+        <td>object</td>
+        <td>
+          selector is a label query over volumes to consider for binding.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClassName</b></td>
+        <td>string</td>
+        <td>
+          storageClassName is the name of the StorageClass required by the claim.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.
+If specified, the CSI driver will create or update the volume with the attributes defined
+in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,
+it can be changed after the claim is created. An empty string or nil value indicates that no
+VolumeAttributesClass will be applied to the claim. If the claim enters an Infeasible error state,
+this field can be reset to its previous value (including nil) to cancel the modification.
+If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be
+set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
+exists.
+More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeMode</b></td>
+        <td>string</td>
+        <td>
+          volumeMode defines what type of volume is required by the claim.
+Value of Filesystem is implied when not included in claim spec.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>
+          volumeName is the binding reference to the PersistentVolume backing this claim.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.spec.dataSource
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspec-1)</sup></sup>
+
+
+
+dataSource field can be used to specify either:
+* An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+* An existing PVC (PersistentVolumeClaim)
+If the provisioner or an external controller can support the specified data source,
+it will create a new volume based on the contents of the specified data source.
+When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
+and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+If the namespace is specified, then dataSourceRef will not be copied to dataSource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the type of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>
+          APIGroup is the group for the resource being referenced.
+If APIGroup is not specified, the specified Kind must be in the core API group.
+For any other third-party types, APIGroup is required.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.spec.dataSourceRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspec-1)</sup></sup>
+
+
+
+dataSourceRef specifies the object from which to populate the volume with data, if a non-empty
+volume is desired. This may be any object from a non-empty API group (non
+core object) or a PersistentVolumeClaim object.
+When this field is specified, volume binding will only succeed if the type of
+the specified object matches some installed volume populator or dynamic
+provisioner.
+This field will replace the functionality of the dataSource field and as such
+if both fields are non-empty, they must have the same value. For backwards
+compatibility, when namespace isn't specified in dataSourceRef,
+both fields (dataSource and dataSourceRef) will be set to the same
+value automatically if one of them is empty and the other is non-empty.
+When namespace is specified in dataSourceRef,
+dataSource isn't set to the same value and must be empty.
+There are three important differences between dataSource and dataSourceRef:
+* While dataSource only allows two specific types of objects, dataSourceRef
+  allows any non-core object, as well as PersistentVolumeClaim objects.
+* While dataSource ignores disallowed values (dropping them), dataSourceRef
+  preserves all values, and generates an error if a disallowed value is
+  specified.
+* While dataSource only allows local objects, dataSourceRef allows objects
+  in any namespaces.
+(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
+(Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the type of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of resource being referenced<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>
+          APIGroup is the group for the resource being referenced.
+If APIGroup is not specified, the specified Kind must be in the core API group.
+For any other third-party types, APIGroup is required.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of resource being referenced
+Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details.
+(Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.spec.resources
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspec-1)</sup></sup>
+
+
+
+resources represents the minimum resources the volume should have.
+If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+that are lower than previous value but must still be higher than capacity recorded in the
+status field of the claim.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.spec.selector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspec-1)</sup></sup>
+
+
+
+selector is a label query over volumes to consider for binding.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecselectormatchexpressionsindex-1">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.spec.selector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimspecselector-1)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.status
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaim-1)</sup></sup>
+
+
+
+status represents the current information/status of a persistent volume claim.
+Read-only.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>accessModes</b></td>
+        <td>[]string</td>
+        <td>
+          accessModes contains the actual access modes the volume backing the PVC has.
+More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>allocatedResourceStatuses</b></td>
+        <td>map[string]string</td>
+        <td>
+          allocatedResourceStatuses stores status of resource being resized for the given PVC.
+Key names follow standard Kubernetes label syntax. Valid values are either:
+	* Un-prefixed keys:
+		- storage - the capacity of the volume.
+	* Custom resources must use implementation-defined prefixed names such as "example.com/my-custom-resource"
+Apart from above values - keys that are unprefixed or have kubernetes.io prefix are considered
+reserved and hence may not be used.
+
+ClaimResourceStatus can be in any of following states:
+	- ControllerResizeInProgress:
+		State set when resize controller starts resizing the volume in control-plane.
+	- ControllerResizeFailed:
+		State set when resize has failed in resize controller with a terminal error.
+	- NodeResizePending:
+		State set when resize controller has finished resizing the volume but further resizing of
+		volume is needed on the node.
+	- NodeResizeInProgress:
+		State set when kubelet starts resizing the volume.
+	- NodeResizeFailed:
+		State set when resizing has failed in kubelet with a terminal error. Transient errors don't set
+		NodeResizeFailed.
+For example: if expanding a PVC for more capacity - this field can be one of the following states:
+	- pvc.status.allocatedResourceStatus['storage'] = "ControllerResizeInProgress"
+     - pvc.status.allocatedResourceStatus['storage'] = "ControllerResizeFailed"
+     - pvc.status.allocatedResourceStatus['storage'] = "NodeResizePending"
+     - pvc.status.allocatedResourceStatus['storage'] = "NodeResizeInProgress"
+     - pvc.status.allocatedResourceStatus['storage'] = "NodeResizeFailed"
+When this field is not set, it means that no resize operation is in progress for the given PVC.
+
+A controller that receives PVC update with previously unknown resourceName or ClaimResourceStatus
+should ignore the update for the purpose it was designed. For example - a controller that
+only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
+resources associated with PVC.
+
+This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>allocatedResources</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          allocatedResources tracks the resources allocated to a PVC including its capacity.
+Key names follow standard Kubernetes label syntax. Valid values are either:
+	* Un-prefixed keys:
+		- storage - the capacity of the volume.
+	* Custom resources must use implementation-defined prefixed names such as "example.com/my-custom-resource"
+Apart from above values - keys that are unprefixed or have kubernetes.io prefix are considered
+reserved and hence may not be used.
+
+Capacity reported here may be larger than the actual capacity when a volume expansion operation
+is requested.
+For storage quota, the larger value from allocatedResources and PVC.spec.resources is used.
+If allocatedResources is not set, PVC.spec.resources alone is used for quota calculation.
+If a volume expansion capacity request is lowered, allocatedResources is only
+lowered if there are no expansion operations in progress and if the actual volume capacity
+is equal or lower than the requested capacity.
+
+A controller that receives PVC update with previously unknown resourceName
+should ignore the update for the purpose it was designed. For example - a controller that
+only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
+resources associated with PVC.
+
+This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>capacity</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          capacity represents the actual resources of the underlying volume.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatusconditionsindex-1">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          conditions is the current Condition of persistent volume claim. If underlying persistent volume is being
+resized then the Condition will be set to 'Resizing'.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>currentVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
+When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatusmodifyvolumestatus-1">modifyVolumeStatus</a></b></td>
+        <td>object</td>
+        <td>
+          ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>phase</b></td>
+        <td>string</td>
+        <td>
+          phase represents the current phase of PersistentVolumeClaim.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.status.conditions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatus-1)</sup></sup>
+
+
+
+PersistentVolumeClaimCondition contains details about state of pvc
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Status is the status of the condition.
+Can be True, False, Unknown.
+More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=state%20of%20pvc-,conditions.status,-(string)%2C%20required<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type is the type of the condition.
+More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#:~:text=set%20to%20%27ResizeStarted%27.-,PersistentVolumeClaimCondition,-contains%20details%20about<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>lastProbeTime</b></td>
+        <td>string</td>
+        <td>
+          lastProbeTime is the time we probed the condition.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is the time the condition transitioned from one status to another.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is the human-readable message indicating details about last transition.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason is a unique, this should be a short, machine understandable string that gives the reason
+for condition's last transition. If it reports "Resizing" that means the underlying
+persistent volume is being resized.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.status.modifyVolumeStatus
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatus-1)</sup></sup>
+
+
+
+ModifyVolumeStatus represents the status object of ControllerModifyVolume operation.
+When this is unset, there is no ModifyVolume operation being attempted.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status is the status of the ControllerModifyVolume operation. It can be in any of following states:
+ - Pending
+   Pending indicates that the PersistentVolumeClaim cannot be modified due to unmet requirements, such as
+   the specified VolumeAttributesClass not existing.
+ - InProgress
+   InProgress indicates that the volume is being modified.
+ - Infeasible
+  Infeasible indicates that the request has been rejected as invalid by the CSI driver. To
+	  resolve the error, a valid VolumeAttributesClass needs to be specified.
+Note: New statuses can be added in the future. Consumers should check for unknown statuses and fail appropriately.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetVolumeAttributesClassName</b></td>
+        <td>string</td>
+        <td>
+          targetVolumeAttributesClassName is the name of the VolumeAttributesClass the PVC currently being reconciled<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.resources
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+Resources describes the compute resource requirements for the control plane pods.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecresourcesclaimsindex-1">claims</a></b></td>
+        <td>[]object</td>
+        <td>
+          Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This field depends on the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.resources.claims[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecresources-1)</sup></sup>
+
+
+
+ResourceClaim references one entry in PodSpec.ResourceClaims.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.service
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+Service defines the service configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Service Type string describes ingress methods for a service<br/>
+          <br/>
+            <i>Enum</i>: ClusterIP, NodePort, LoadBalancer<br/>
+            <i>Default</i>: ClusterIP<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          Annotations defines extra annotations to be added to the service.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>apiPort</b></td>
+        <td>integer</td>
+        <td>
+          APIPort defines the kubernetes API port. If empty k0smotron
+will pick it automatically.<br/>
+          <br/>
+            <i>Default</i>: 30443<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>externalTrafficPolicy</b></td>
+        <td>enum</td>
+        <td>
+          ExternalTrafficPolicy defines the external traffic policy for the service. Used only when service type is NodePort or LoadBalancer.<br/>
+          <br/>
+            <i>Enum</i>: Cluster, Local<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>konnectivityPort</b></td>
+        <td>integer</td>
+        <td>
+          KonnectivityPort defines the konnectivity port. If empty k0smotron
+will pick it automatically.<br/>
+          <br/>
+            <i>Default</i>: 30132<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          Labels defines extra labels to be added to the service.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>loadBalancerClass</b></td>
+        <td>string</td>
+        <td>
+          LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.topologySpreadConstraints[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+TopologySpreadConstraint specifies how to spread matching pods among the given topology.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>maxSkew</b></td>
+        <td>integer</td>
+        <td>
+          MaxSkew describes the degree to which pods may be unevenly distributed.
+When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference
+between the number of matching pods in the target topology and the global minimum.
+The global minimum is the minimum number of matching pods in an eligible domain
+or zero if the number of eligible domains is less than MinDomains.
+For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same
+labelSelector spread as 2/2/1:
+In this case, the global minimum is 1.
+| zone1 | zone2 | zone3 |
+|  P P  |  P P  |   P   |
+- if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 2/2/2;
+scheduling it onto zone1(zone2) would make the ActualSkew(3-1) on zone1(zone2)
+violate MaxSkew(1).
+- if MaxSkew is 2, incoming pod can be scheduled onto any zone.
+When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence
+to topologies that satisfy it.
+It's a required field. Default value is 1 and 0 is not allowed.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>topologyKey</b></td>
+        <td>string</td>
+        <td>
+          TopologyKey is the key of node labels. Nodes that have a label with this key
+and identical values are considered to be in the same topology.
+We consider each <key, value> as a "bucket", and try to put balanced number
+of pods into each bucket.
+We define a domain as a particular instance of a topology.
+Also, we define an eligible domain as a domain whose nodes meet the requirements of
+nodeAffinityPolicy and nodeTaintsPolicy.
+e.g. If TopologyKey is "kubernetes.io/hostname", each Node is a domain of that topology.
+And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology.
+It's a required field.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>whenUnsatisfiable</b></td>
+        <td>string</td>
+        <td>
+          WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy
+the spread constraint.
+- DoNotSchedule (default) tells the scheduler not to schedule it.
+- ScheduleAnyway tells the scheduler to schedule the pod in any location,
+  but giving higher precedence to topologies that would help reduce the
+  skew.
+A constraint is considered "Unsatisfiable" for an incoming pod
+if and only if every possible node assignment for that pod would violate
+"MaxSkew" on some topology.
+For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same
+labelSelector spread as 3/1/1:
+| zone1 | zone2 | zone3 |
+| P P P |   P   |   P   |
+If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled
+to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies
+MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler
+won't make it *more* imbalanced.
+It's a required field.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespectopologyspreadconstraintsindexlabelselector-1">labelSelector</a></b></td>
+        <td>object</td>
+        <td>
+          LabelSelector is used to find matching pods.
+Pods that match this label selector are counted to determine the number of pods
+in their corresponding topology domain.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabelKeys</b></td>
+        <td>[]string</td>
+        <td>
+          MatchLabelKeys is a set of pod label keys to select the pods over which
+spreading will be calculated. The keys are used to lookup values from the
+incoming pod labels, those key-value labels are ANDed with labelSelector
+to select the group of existing pods over which spreading will be calculated
+for the incoming pod. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector.
+MatchLabelKeys cannot be set when LabelSelector isn't set.
+Keys that don't exist in the incoming pod labels will
+be ignored. A null or empty list means only match against labelSelector.
+
+This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>minDomains</b></td>
+        <td>integer</td>
+        <td>
+          MinDomains indicates a minimum number of eligible domains.
+When the number of eligible domains with matching topology keys is less than minDomains,
+Pod Topology Spread treats "global minimum" as 0, and then the calculation of Skew is performed.
+And when the number of eligible domains with matching topology keys equals or greater than minDomains,
+this value has no effect on scheduling.
+As a result, when the number of eligible domains is less than minDomains,
+scheduler won't schedule more than maxSkew Pods to those domains.
+If value is nil, the constraint behaves as if MinDomains is equal to 1.
+Valid values are integers greater than 0.
+When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
+
+For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
+labelSelector spread as 2/2/2:
+| zone1 | zone2 | zone3 |
+|  P P  |  P P  |  P P  |
+The number of domains is less than 5(MinDomains), so "global minimum" is treated as 0.
+In this situation, new pod with the same labelSelector cannot be scheduled,
+because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones,
+it will violate MaxSkew.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeAffinityPolicy</b></td>
+        <td>string</td>
+        <td>
+          NodeAffinityPolicy indicates how we will treat Pod's nodeAffinity/nodeSelector
+when calculating pod topology spread skew. Options are:
+- Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
+- Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
+
+If this value is nil, the behavior is equivalent to the Honor policy.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeTaintsPolicy</b></td>
+        <td>string</td>
+        <td>
+          NodeTaintsPolicy indicates how we will treat node taints when calculating
+pod topology spread skew. Options are:
+- Honor: nodes without taints, along with tainted nodes for which the incoming pod
+has a toleration, are included.
+- Ignore: node taints are ignored. All nodes are included.
+
+If this value is nil, the behavior is equivalent to the Ignore policy.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.topologySpreadConstraints[index].labelSelector
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespectopologyspreadconstraintsindex-1)</sup></sup>
+
+
+
+LabelSelector is used to find matching pods.
+Pods that match this label selector are counted to determine the number of pods
+in their corresponding topology domain.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespectopologyspreadconstraintsindexlabelselectormatchexpressionsindex-1">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.topologySpreadConstraints[index].labelSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespectopologyspreadconstraintsindexlabelselector-1)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.status
+<sup><sup>[↩ Parent](#k0smotroncontrolplane-1)</sup></sup>
+
+
+
+K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>availableReplicas</b></td>
+        <td>integer</td>
+        <td>
+          availableReplicas is the number of available replicas for this ControlPlane. A machine is considered available when Machine's Available condition is true.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanestatusconditionsindex-1">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Conditions defines current service state of the K0smotronControlPlane.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>externalManagedControlPlane</b></td>
+        <td>boolean</td>
+        <td>
+          externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanestatusinitialization-1">initialization</a></b></td>
+        <td>object</td>
+        <td>
+          initialization represents the initialization status of the control plane
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>readyReplicas</b></td>
+        <td>integer</td>
+        <td>
+          readyReplicas is the total number of fully running and ready control plane pods.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          replicas is the total number of pods targeted by this control plane<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>selector</b></td>
+        <td>string</td>
+        <td>
+          selector is the label selector for pods that should match the replicas count.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>upToDateReplicas</b></td>
+        <td>integer</td>
+        <td>
+          upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's UpToDate condition is true.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          version represents the minimum Kubernetes version for the control plane pods
+in the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.status.conditions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanestatus-1)</sup></sup>
+
+
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is a human readable message indicating details about the transition.
+This may be an empty string.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>enum</td>
+        <td>
+          status of the condition, one of True, False, Unknown.<br/>
+          <br/>
+            <i>Enum</i>: True, False, Unknown<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.status.initialization
+<sup><sup>[↩ Parent](#k0smotroncontrolplanestatus-1)</sup></sup>
+
+
+
+initialization represents the initialization status of the control plane
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>controlPlaneInitialized</b></td>
+        <td>boolean</td>
+        <td>
+          controlPlaneInitialized indicates whether the control plane is initialized<br/>
         </td>
         <td>false</td>
       </tr></tbody>

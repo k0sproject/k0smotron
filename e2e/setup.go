@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/k0sproject/k0smotron/e2e/mothership"
 	"github.com/k0sproject/k0smotron/e2e/util"
 )
@@ -208,6 +209,10 @@ func initScheme() (*runtime.Scheme, error) {
 	s := runtime.NewScheme()
 	capiframework.TryAddDefaultSchemes(s)
 	err := cpv1beta1.AddToScheme(s)
+	if err != nil {
+		return nil, err
+	}
+	err = cpv1beta2.AddToScheme(s)
 	if err != nil {
 		return nil, err
 	}

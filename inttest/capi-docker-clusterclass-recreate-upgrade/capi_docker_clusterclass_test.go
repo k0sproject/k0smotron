@@ -46,7 +46,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"k8s.io/utils/ptr"
 )
 
 type CAPIDockerClusterClassSuite struct {
@@ -176,9 +177,9 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	})
 	s.Require().NoError(err)
 
-	kcpList := &cpv1beta1.K0sControlPlaneList{}
+	kcpList := &cpv1beta2.K0sControlPlaneList{}
 	err = s.client.RESTClient().Get().
-		AbsPath(`/apis/controlplane.cluster.x-k8s.io/v1beta1/namespaces/default/k0scontrolplanes`).
+		AbsPath(`/apis/controlplane.cluster.x-k8s.io/v1beta2/namespaces/default/k0scontrolplanes`).
 		Param("limit", "1").
 		Param("labelSelector", "cluster.x-k8s.io/cluster-name=docker-test-cluster").
 		Do(context.Background()).
@@ -222,18 +223,18 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.Require().NoError(err)
 }
 
-func isCPReady(cp *cpv1beta1.K0sControlPlane, expectedVersion string) bool {
-	if cp.Status.ReadyReplicas != cp.Spec.Replicas {
+func isCPReady(cp *cpv1beta2.K0sControlPlane, expectedVersion string) bool {
+	if ptr.Deref(cp.Status.ReadyReplicas, 0) != cp.Spec.Replicas {
 		return false
 	}
-	if cp.Status.UpdatedReplicas != cp.Spec.Replicas {
+	if ptr.Deref(cp.Status.UpToDateReplicas, 0) != cp.Spec.Replicas {
 		return false
 	}
 	if cp.Status.Version != expectedVersion {
 		return false
 	}
 
-	return cp.Status.Ready
+	return ptr.Deref(cp.Status.Initialization.ControlPlaneInitialized, false)
 }
 
 func (s *CAPIDockerClusterClassSuite) createCluster() {
@@ -459,12 +460,12 @@ spec:
     machineInfrastructure:
       ref:
         kind: DockerMachineTemplate
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: docker-test-machine-template
         namespace: default
   infrastructure:
     ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: k0smotron-docker-cluster-tmpl
       namespace: default
@@ -480,7 +481,7 @@ spec:
             namespace: default
         infrastructure:
           ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
             name: docker-test-machine-template
             namespace: default

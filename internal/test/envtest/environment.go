@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	goruntime "runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"time"
 
 	"github.com/pkg/errors"
@@ -40,7 +41,9 @@ import (
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 
 	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv1beta2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	infrastructurev1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -87,7 +90,9 @@ func init() {
 	utilruntime.Must(clusterv1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(k0smotronv1beta1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(bootstrapv1beta1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(bootstrapv1beta2.AddToScheme(scheme.Scheme))
 	utilruntime.Must(cpv1beta1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(cpv1beta2.AddToScheme(scheme.Scheme))
 	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme.Scheme))
 }
 
@@ -114,6 +119,9 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 			genericInfrastructureMachineCRD,
 			genericInfrastructureMachineTemplateCRD,
 		},
+		WebhookInstallOptions: envtest.WebhookInstallOptions{
+			Paths: []string{"../../../config/clusterapi/all/webhook"},
+		},
 	}
 
 	if _, err := env.Start(); err != nil {
@@ -135,6 +143,12 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 				},
 			},
 		},
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Host:    env.WebhookInstallOptions.LocalServingHost,
+			Port:    env.WebhookInstallOptions.LocalServingPort,
+			CertDir: env.WebhookInstallOptions.LocalServingCertDir,
+		}),
+
 		Client: client.Options{
 			Cache: &client.CacheOptions{
 				DisableFor: []client.Object{
@@ -165,6 +179,17 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 		if err := os.WriteFile(kubeconfigPath, config, 0o600); err != nil {
 			panic(errors.Wrapf(err, "failed to write the test env kubeconfig"))
 		}
+	}
+	if err = (&cpv1beta2.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+		panic(errors.Wrapf(err, "unable to create validation webhook"))
+	}
+
+	if err = (&cpv1beta2.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
+		panic(errors.Wrapf(err, "unable to create validation webhook"))
+	}
+
+	if err = (&bootstrapv1beta2.K0sWorkerConfigValidator{}).SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
+		panic(errors.Wrapf(err, "unable to create validation webhook"))
 	}
 
 	return &Environment{
