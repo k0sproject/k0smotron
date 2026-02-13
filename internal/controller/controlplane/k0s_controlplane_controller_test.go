@@ -25,19 +25,18 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 )
 
 func TestK0sConfigEnrichment(t *testing.T) {
 	var testCases = []struct {
 		cluster *clusterv1.Cluster
-		kcp     *cpv1beta1.K0sControlPlane
+		kcp     *cpv1beta2.K0sControlPlane
 		want    *unstructured.Unstructured
 	}{
 		{
 			cluster: &clusterv1.Cluster{},
-			kcp:     &cpv1beta1.K0sControlPlane{},
+			kcp:     &cpv1beta2.K0sControlPlane{},
 			want:    nil,
 		},
 		{

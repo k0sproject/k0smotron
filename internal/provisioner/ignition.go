@@ -177,6 +177,6 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 }
 
 // GetFormat returns the format 'ignition' of the provisioner.
-func (i *IgnitionProvisioner) GetFormat() string {
-	return ignitionProvisioningFormat
+func (i *IgnitionProvisioner) GetFormat() ProvisioningFormat {
+	return IgnitionProvisioningFormat
 }
