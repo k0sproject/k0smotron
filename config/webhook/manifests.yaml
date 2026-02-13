@@ -10,14 +10,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-controlplane-cluster-x-k8s-io-v1beta1-k0scontrolplane
+      path: /validate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane
   failurePolicy: Fail
-  name: validate-k0scontrolplane-v1beta1.k0smotron.io
+  name: validate-k0scontrolplane-v1beta2.k0smotron.io
   rules:
   - apiGroups:
     - controlplane.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -30,14 +30,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-controlplane-cluster-x-k8s-io-v1beta1-k0smotroncontrolplane
+      path: /validate-controlplane-cluster-x-k8s-io-v1beta2-k0smotroncontrolplane
   failurePolicy: Fail
-  name: validate-k0smotroncontrolplane-v1beta1.k0smotron.io
+  name: validate-k0smotroncontrolplane-v1beta2.k0smotron.io
   rules:
   - apiGroups:
     - controlplane.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE

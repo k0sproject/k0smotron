@@ -43,8 +43,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 )
 
 const (
@@ -55,7 +55,7 @@ var (
 	errMachineWithoutK0sConfigAnnotation = fmt.Errorf("k0s config annotation not found on machine")
 )
 
-func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
+func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
 	machine, err := c.generateMachine(ctx, name, cluster, kcp, infraRef, failureDomain)
 	if err != nil {
 		return nil, fmt.Errorf("error generating machine: %w", err)
@@ -71,12 +71,12 @@ func (c *K0sController) createMachine(ctx context.Context, name string, cluster 
 
 	// Remove the annotation tracking that a remediation is in progress.
 	// A remediation is completed when the replacement machine has been created above.
-	delete(kcp.Annotations, cpv1beta1.RemediationInProgressAnnotation)
+	delete(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
 
 	return machine, nil
 }
 
-func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv1beta1.K0sControlPlane) error {
+func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv1beta2.K0sControlPlane) error {
 	machine := &clusterv1.Machine{
 
 		TypeMeta: metav1.TypeMeta{
@@ -96,7 +96,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 	return nil
 }
 
-func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
+func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
 	v := kcp.Spec.Version
 
 	labels := controlPlaneCommonLabelsForCluster(kcp, cluster.Name)
@@ -109,7 +109,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 
 	annotations := map[string]string{
-		cpv1beta1.K0ControlPlanePreTerminateHookCleanupAnnotation: "",
+		cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation: "",
 	}
 	// Add the annotations from the MachineTemplate.
 	// Note: we intentionally don't use the map directly to ensure we don't modify the map in KCP.
@@ -119,7 +119,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	if err != nil {
 		return nil, err
 	}
-	annotations[cpv1beta1.MachineK0sConfigAnnotation] = k0sConfigAnnotationValue
+	annotations[cpv1beta2.MachineK0sConfigAnnotation] = k0sConfigAnnotationValue
 
 	machine := &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{
@@ -140,7 +140,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 				ConfigRef: clusterv1.ContractVersionedObjectReference{
 					Kind:     "K0sControllerConfig",
 					Name:     name,
-					APIGroup: bootstrapv1.GroupVersion.Group,
+					APIGroup: bootstrapv2.GroupVersion.Group,
 				},
 			},
 			InfrastructureRef: infraRef,
@@ -150,7 +150,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	return machine, nil
 }
 
-func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta1.K0sControlPlane, machineName string) (string, error) {
+func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta2.K0sControlPlane, machineName string) (string, error) {
 	// We make a copy of the K0sControlPlane to avoid modifying the original object with a value that is specific to a machine.
 	kcpCopy := kcp.DeepCopy()
 
@@ -204,10 +204,10 @@ func (c *K0sController) getInfraMachines(ctx context.Context, machines collectio
 	return result, nil
 }
 
-func (c *K0sController) getBootstrapConfigs(ctx context.Context, machines collections.Machines) (map[string]bootstrapv1.K0sControllerConfig, error) {
-	result := map[string]bootstrapv1.K0sControllerConfig{}
+func (c *K0sController) getBootstrapConfigs(ctx context.Context, machines collections.Machines) (map[string]bootstrapv2.K0sControllerConfig, error) {
+	result := map[string]bootstrapv2.K0sControllerConfig{}
 	for _, m := range machines {
-		var b bootstrapv1.K0sControllerConfig
+		var b bootstrapv2.K0sControllerConfig
 		err := c.Client.Get(ctx, client.ObjectKey{Namespace: m.Namespace, Name: m.Name}, &b)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -220,7 +220,7 @@ func (c *K0sController) getBootstrapConfigs(ctx context.Context, machines collec
 	return result, nil
 }
 
-func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
+func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (*unstructured.Unstructured, error) {
 	infraMachine, err := c.generateMachineFromTemplate(ctx, name, cluster, kcp)
 	if err != nil {
 		return nil, err
@@ -275,7 +275,7 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 	return infraMachine, nil
 }
 
-func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (*unstructured.Unstructured, error) {
+func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (*unstructured.Unstructured, error) {
 	infraMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
 	if err != nil {
 		return nil, err
@@ -315,9 +315,11 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	return infraMachine, nil
 }
 
-func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sControllerConfig, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
+func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
 	// Skip the check if the K0sControlPlane is not ready
-	if !kcp.Status.Ready || kcp.Spec.Replicas != kcp.Status.Replicas {
+	if kcp.Status.Initialization.ControlPlaneInitialized == nil ||
+		!*kcp.Status.Initialization.ControlPlaneInitialized ||
+		kcp.Spec.Replicas != ptr.Deref(kcp.Status.Replicas, 0) {
 		return false
 	}
 
@@ -365,7 +367,7 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv1.K0sContr
 //
 // deprecatedIsK0sConfigChanged compares the K0sConfigSpec in the K0sControlPlane with the one in the K0sControllerConfig used to bootstrap
 // the Machine.
-func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv1.K0sControllerConfig, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
+func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
 	kcpK0sConfigSpecCopy := kcp.Spec.K0sConfigSpec.DeepCopy()
 	bootstrapConfigCopy := bootstrapConfig.DeepCopy()
 	kcpK0sConfigSpecCopy.Args = uniqueArgs(kcpK0sConfigSpecCopy.Args)
@@ -404,13 +406,13 @@ func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv1.K0sControllerConf
 		(!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig) && !reflect.DeepEqual(kcpStorageConfigEtcdWithName, bootstrapStorageConfig))
 }
 
-func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv1.K0sConfigSpec, error) {
-	k0sConfigAnnotationValue, ok := machine.GetAnnotations()[cpv1beta1.MachineK0sConfigAnnotation]
+func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv2.K0sConfigSpec, error) {
+	k0sConfigAnnotationValue, ok := machine.GetAnnotations()[cpv1beta2.MachineK0sConfigAnnotation]
 	if !ok {
 		return nil, errMachineWithoutK0sConfigAnnotation
 	}
 
-	k0sConfigSpec := &bootstrapv1.K0sConfigSpec{}
+	k0sConfigSpec := &bootstrapv2.K0sConfigSpec{}
 	if err := json.Unmarshal([]byte(k0sConfigAnnotationValue), k0sConfigSpec); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal K0sConfigSpec: %w", err)
 	}
@@ -418,7 +420,7 @@ func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv1.K0sConfigSpec
 	return k0sConfigSpec, nil
 }
 
-func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) bool {
+func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
 	if machine == nil {
 		return false
 	}
@@ -557,7 +559,7 @@ func (c *K0sController) deleteControlNode(ctx context.Context, name string, clie
 	return nil
 }
 
-func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv1.Cluster, clientset *kubernetes.Clientset) error {
+func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, cluster *clusterv1.Cluster, clientset *kubernetes.Clientset) error {
 	if clientset == nil {
 		return nil
 	}
@@ -701,7 +703,7 @@ func minVersion(machines collections.Machines) (string, error) {
 // removeArgsGeneratedInControllerConfigReconcile removes '--config /etc/k0s.yaml' arg generated by the bootstrap controller
 // that should not be included when comparing if the k0s configuration has changed because control plane k0s config will not
 // include it.
-func removeArgsGeneratedInControllerConfigReconcile(bootstrapConfig *bootstrapv1.K0sControllerConfig) {
+func removeArgsGeneratedInControllerConfigReconcile(bootstrapConfig *bootstrapv2.K0sControllerConfig) {
 	argsWithoutConfig := []string{}
 	for _, arg := range bootstrapConfig.Spec.K0sConfigSpec.Args {
 		if arg != "--config" && arg != bootstrapConfig.Spec.GetK0sConfigPath() {

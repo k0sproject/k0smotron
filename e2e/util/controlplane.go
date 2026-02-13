@@ -120,7 +120,7 @@ func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input Upgrad
 
 func DiscoveryAndWaitForControlPlaneInitialized(ctx context.Context, input capiframework.DiscoveryAndWaitForControlPlaneInitializedInput, interval Interval) (*cpv1beta1.K0sControlPlane, error) {
 	var controlPlane *cpv1beta1.K0sControlPlane
-	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(ctx, time.Second, 10*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		controlPlane, err = getK0sControlPlaneByCluster(ctx, GetK0sControlPlaneByClusterInput{
 			Lister:      input.Lister,
 			ClusterName: input.Cluster.Name,
@@ -261,7 +261,7 @@ func WaitForK0smotronControlPlaneToBeReady(ctx context.Context, client crclient.
 	}
 
 	kcp := &unstructured.Unstructured{}
-	kcp.SetAPIVersion("controlplane.cluster.x-k8s.io/v1beta1")
+	kcp.SetAPIVersion("controlplane.cluster.x-k8s.io/v1beta2")
 	kcp.SetKind("K0smotronControlPlane")
 
 	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
@@ -275,7 +275,7 @@ func WaitForK0smotronControlPlaneToBeReady(ctx context.Context, client crclient.
 			return false, nil
 		}
 
-		ready, found, err := unstructured.NestedBool(status, "ready")
+		ready, found, err := unstructured.NestedBool(status, "initialization", "controlPlaneInitialized")
 		if err != nil || !found {
 			return false, nil
 		}

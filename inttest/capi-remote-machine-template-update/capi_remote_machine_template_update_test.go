@@ -179,6 +179,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 		}
 
 		expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
+		fmt.Println(expectedProviderID, rm.Spec.ProviderID)
 		return rm.Status.Ready && expectedProviderID == rm.Spec.ProviderID, nil
 	})
 	s.Require().NoError(err)

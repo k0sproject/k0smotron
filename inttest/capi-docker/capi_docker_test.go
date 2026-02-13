@@ -25,11 +25,12 @@ import (
 	"testing"
 	"time"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/ptr"
 
 	"github.com/k0sproject/k0smotron/inttest/util"
 	"github.com/stretchr/testify/suite"
@@ -179,7 +180,7 @@ func (s *CAPIDockerSuite) deleteCluster() {
 func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.Config) {
 
 	crdConfig := *rc
-	crdConfig.ContentConfig.GroupVersion = &cpv1beta1.GroupVersion
+	crdConfig.ContentConfig.GroupVersion = &cpv1beta2.GroupVersion
 	crdConfig.APIPath = "/apis"
 	crdConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme.Scheme)
 	crdConfig.UserAgent = rest.DefaultKubernetesUserAgent()
@@ -187,7 +188,7 @@ func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.
 	s.Require().NoError(err)
 
 	err = wait.PollUntilContextCancel(ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		var kcp cpv1beta1.K0smotronControlPlane
+		var kcp cpv1beta2.K0smotronControlPlane
 		err = crdRestClient.
 			Get().
 			Resource("k0smotroncontrolplanes").
@@ -196,7 +197,7 @@ func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.
 			Do(ctx).
 			Into(&kcp)
 
-		return kcp.Status.Ready, nil
+		return ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false), nil
 	})
 
 	s.Require().NoError(err)
@@ -212,7 +213,7 @@ func (s *CAPIDockerSuite) checkClusterIDAnnotation(ctx context.Context) {
 			Into(&cluster)
 
 		s.T().Log(cluster)
-		clusterIDAnnotation, found := cluster.GetAnnotations()[cpv1beta1.K0sClusterIDAnnotation]
+		clusterIDAnnotation, found := cluster.GetAnnotations()[cpv1beta2.K0sClusterIDAnnotation]
 		return found && strings.Contains(clusterIDAnnotation, "kube-system"), nil
 	})
 
