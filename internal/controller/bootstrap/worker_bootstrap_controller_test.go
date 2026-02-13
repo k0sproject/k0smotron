@@ -19,11 +19,14 @@ limitations under the License.
 package bootstrap
 
 import (
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
-	"testing"
+
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 )
 
 func Test_createInstallCmd(t *testing.T) {
@@ -46,8 +49,8 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with args",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
 						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
 					},
 				},
@@ -60,8 +63,8 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with useSystemHostname set",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
 						UseSystemHostname: true,
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
 					},
@@ -75,8 +78,8 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with extra args and useSystemHostname not set",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
 						UseSystemHostname: false,
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
 					},
@@ -90,8 +93,8 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with extra args and useSystemHostname set",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
 						UseSystemHostname: true,
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
 					},
