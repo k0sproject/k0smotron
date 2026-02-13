@@ -27,7 +27,7 @@ import (
 
 	"github.com/k0sproject/k0smotron/e2e/mothership"
 	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
-	"github.com/k0sproject/k0smotron/internal/util"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"

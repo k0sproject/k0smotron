@@ -42,7 +42,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
@@ -58,7 +57,6 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
-	kutil "github.com/k0sproject/k0smotron/internal/util"
 	"github.com/k0sproject/version"
 )
 
@@ -452,12 +450,12 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	}
 
 	// Create the token using the child cluster client
-	tokenID := kutil.RandomString(6)
-	tokenSecret := kutil.RandomString(16)
+	tokenID := util.RandomString(6)
+	tokenSecret := util.RandomString(16)
 	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
 	tokenKubeSecret := createTokenSecret(tokenID, tokenSecret)
 
-	chCS, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(scope.Cluster))
+	chCS, err := util.GetControllerRuntimeClient(ctx, c.Client, scope.Cluster, &scope.Config.Spec.Tunneling)
 	if err != nil {
 		log.Error(err, "Failed to getting child cluster client set")
 		return nil, err
@@ -475,7 +473,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		return nil, err
 	}
 
-	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, host, "controller-bootstrap")
+	joinToken, err := util.CreateK0sJoinToken(ca.KeyPair.Cert, token, host, "controller-bootstrap")
 
 	files = append(files, provisioner.File{
 		Path:        scope.Config.Spec.GetJoinTokenPath(),

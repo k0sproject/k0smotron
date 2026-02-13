@@ -145,12 +145,12 @@ func (c *K0sController) regenerateKubeconfigSecret(ctx context.Context, kubeconf
 	return c.Update(ctx, kubeconfigSecret)
 }
 
-func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
+func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cluster, tunnelingSpec bootstrapv1beta1.TunnelingSpec) (*kubernetes.Clientset, error) {
 	if c.workloadClusterKubeClient != nil {
 		return c.workloadClusterKubeClient, nil
 	}
 
-	return k0smoutil.GetKubeClient(ctx, c.SecretCachingClient, cluster)
+	return k0smoutil.GetKubeClientSet(ctx, c.SecretCachingClient, cluster, tunnelingSpec)
 }
 
 func enrichK0sConfigWithClusterData(cluster *clusterv1.Cluster, k0sConfig *unstructured.Unstructured) (*unstructured.Unstructured, error) {

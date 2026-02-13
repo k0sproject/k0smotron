@@ -33,8 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	podexec "github.com/k0sproject/k0smotron/internal/exec"
-	"github.com/k0sproject/k0smotron/internal/util"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
