@@ -187,5 +187,76 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 		kmc.Spec.ExternalAddress = util.FindNodeAddress(nodes)
 	}
 
+	if err := scope.reconcileEndpointConfigMap(ctx, kmc); err != nil {
+		return fmt.Errorf("failed to reconcile endpoint configmap: %w", err)
+	}
+
 	return nil
+}
+
+// reconcileEndpointConfigMap reconciles the endpoint ConfigMap in the management cluster
+// and ensures it is added to the manifests list for deployment into the child cluster.
+func (scope *kmcScope) reconcileEndpointConfigMap(ctx context.Context, kmc *km.Cluster) error {
+	if kmc.Spec.ExternalAddress == "" {
+		return nil
+	}
+
+	configMap := generateEndpointConfigMap(kmc)
+
+	_ = util.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
+	if err := scope.client.Patch(ctx, &configMap, client.Apply, patchOpts...); err != nil {
+		return err
+	}
+
+	var found bool
+	for _, manifest := range kmc.Spec.Manifests {
+		if manifest.Name == kmc.GetEndpointConfigMapName() {
+			found = true
+			break
+		}
+	}
+	if !found {
+		kmc.Spec.Manifests = append(kmc.Spec.Manifests, v1.Volume{
+			Name: kmc.GetEndpointConfigMapName(),
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: kmc.GetEndpointConfigMapName(),
+					},
+				},
+			},
+		})
+	}
+
+	return nil
+}
+
+// generateEndpointConfigMap creates a ConfigMap that contains a manifest with
+// the API server endpoint into the child cluster. This allows workloads in the child cluster
+// (e.g., Cilium with kubeProxyReplacement) to discover the API server
+// address without requiring it to be known upfront.
+func generateEndpointConfigMap(kmc *km.Cluster) v1.ConfigMap {
+	return v1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        kmc.GetEndpointConfigMapName(),
+			Namespace:   kmc.Namespace,
+			Labels:      util.LabelsForK0smotronComponent(kmc, util.ComponentControlPlane),
+			Annotations: util.AnnotationsForK0smotronCluster(kmc),
+		},
+		Data: map[string]string{
+			"endpoint.yaml": fmt.Sprintf(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: control-plane-endpoint
+  namespace: kube-system
+data:
+  apiServerHost: %q
+  apiServerPort: %q
+`, kmc.Spec.ExternalAddress, fmt.Sprintf("%d", kmc.Spec.Service.APIPort)),
+		},
+	}
 }
