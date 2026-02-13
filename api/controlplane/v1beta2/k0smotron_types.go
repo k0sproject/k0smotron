@@ -1,0 +1,122 @@
+/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1beta2
+
+import (
+	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// K0smotronControlPlaneFinalizer is the finalizer used by K0smotronControlPlane to clean up resources.
+const K0smotronControlPlaneFinalizer = "k0smotron.controlplane.cluster.x-k8s.io"
+
+func init() {
+	SchemeBuilder.Register(&K0smotronControlPlane{}, &K0smotronControlPlaneList{})
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=control-plane-k0smotron"
+// +kubebuilder:storageversion
+// +kubebuilder:conversion-gen=./api/controlplane/v1beta2
+// +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
+// +kubebuilder:printcolumn:name="Desired",type=integer,JSONPath=".spec.replicas",description="Total number of machines desired by this control plane",priority=10
+// +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=".status.replicas",description="Total number of non-terminated machines targeted by this control plane"
+// +kubebuilder:printcolumn:name="Ready",type=integer,JSONPath=".status.readyReplicas",description="Total number of fully running and ready control plane instances"
+// +kubebuilder:printcolumn:name="UpToDate",type=integer,JSONPath=".status.upToDateReplicas",description="Total number of up-to-date replicas targeted by this ControlPlane"
+// +kubebuilder:printcolumn:name="Available",type=integer,JSONPath=".status.availableReplicas",description="Total number of available replicas for this ControlPlane"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=".metadata.creationTimestamp",description="Time duration since creation of K0sControlPlane"
+// +kubebuilder:printcolumn:name="Version",type=string,JSONPath=".spec.version",description="Kubernetes version associated with this control plane"
+
+// K0smotronControlPlane is the Schema for the K0smotronControlPlanes API
+type K0smotronControlPlane struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              kmapi.ClusterSpec `json:"spec,omitempty"`
+
+	// +kubebuilder:default={version:"",initialization:{controlPlaneInitialized:false},conditions: {{type: "Available", status: "Unknown", reason:"ControlPlaneDoesNotExist", message:"Waiting for cluster topology to be reconciled", lastTransitionTime: "1970-01-01T00:00:00Z"}}}
+	Status K0smotronControlPlaneStatus `json:"status,omitempty"`
+}
+
+// GetConditions returns conditions of the K0smotronControlPlane status.
+func (k *K0smotronControlPlane) GetConditions() []metav1.Condition {
+	return k.Status.Conditions
+}
+
+// SetConditions sets the conditions on the K0smotronControlPlane status.
+func (k *K0smotronControlPlane) SetConditions(conditions []metav1.Condition) {
+	k.Status.Conditions = conditions
+}
+
+// +kubebuilder:object:root=true
+
+// K0smotronControlPlaneList contains a list of K0smotronControlPlane.
+type K0smotronControlPlaneList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []K0smotronControlPlane `json:"items"`
+}
+
+// Hub marks K0smotronControlPlaneList as a conversion hub.
+func (*K0smotronControlPlaneList) Hub() {}
+
+// Initialization represents the initialization status of the control plane
+// +kubebuilder:validation:MinProperties=1
+type Initialization struct {
+	// controlPlaneInitialized indicates whether the control plane is initialized
+	// +optional
+	ControlPlaneInitialized *bool `json:"controlPlaneInitialized,omitempty"`
+}
+
+// K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
+type K0smotronControlPlaneStatus struct {
+
+	// initialization represents the initialization status of the control plane
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+	// +optional
+	Initialization Initialization `json:"initialization,omitempty,omitzero"`
+
+	// externalManagedControlPlane is a bool that should be set to true if the Node objects do not exist in the cluster.
+	// +optional
+	ExternalManagedControlPlane bool `json:"externalManagedControlPlane"`
+	// version represents the minimum Kubernetes version for the control plane pods
+	// in the cluster.
+	// +optional
+	Version string `json:"version"`
+	// replicas is the total number of pods targeted by this control plane
+	// +optional
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// readyReplicas is the total number of fully running and ready control plane pods.
+	// +optional
+	ReadyReplicas *int32 `json:"readyReplicas,omitempty"`
+
+	// selector is the label selector for pods that should match the replicas count.
+	Selector string `json:"selector,omitempty"`
+
+	// availableReplicas is the number of available replicas for this ControlPlane. A machine is considered available when Machine's Available condition is true.
+	// +optional
+	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
+
+	// upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's UpToDate condition is true.
+	// +optional
+	UpToDateReplicas *int32 `json:"upToDateReplicas,omitempty"`
+
+	// Conditions defines current service state of the K0smotronControlPlane.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}

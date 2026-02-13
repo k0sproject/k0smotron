@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/utils/ptr"
 	"strings"
 	"time"
 
@@ -28,7 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -40,7 +41,7 @@ import (
 	"github.com/go-logr/logr"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/k0sproject/version"
 )
 
@@ -54,10 +55,10 @@ var (
 // Implementations of this interface will provide logic to compute the control plane
 // status based on the upgrade strategy for the controlplane.
 type replicaStatusComputer interface {
-	compute(*cpv1beta1.K0sControlPlane) error
+	compute(*cpv1beta2.K0sControlPlane) error
 }
 
-func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, cluster *clusterv1.Cluster) error {
+func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, cluster *clusterv2.Cluster) error {
 	logger := log.FromContext(ctx)
 
 	defer func() {
@@ -78,11 +79,11 @@ func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta1.K0sCont
 	return sc.compute(kcp)
 }
 
-func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (replicaStatusComputer, error) {
+func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *clusterv2.Cluster, kcp *cpv1beta2.K0sControlPlane) (replicaStatusComputer, error) {
 	logger := log.FromContext(ctx)
 
 	switch kcp.Spec.UpdateStrategy {
-	case cpv1beta1.UpdateInPlace:
+	case cpv1beta2.UpdateInPlace:
 		kc, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
 			return nil, err
@@ -108,7 +109,7 @@ func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *
 		}
 
 		return &planStatus{plan}, nil
-	case cpv1beta1.UpdateRecreate, cpv1beta1.UpdateRecreateDeleteFirst:
+	case cpv1beta2.UpdateRecreate, cpv1beta2.UpdateRecreateDeleteFirst:
 		return newMachineStatusComputer(ctx, c.Client, cluster)
 	default:
 		return nil, errors.New("upgrade strategy not found")
@@ -119,7 +120,7 @@ type planStatus struct {
 	plan autopilot.Plan
 }
 
-func (ic *planStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
+func (ic *planStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 	logger := log.FromContext(context.Background())
 
 	if len(ic.plan.Spec.Commands) == 0 || len(ic.plan.Status.Commands) == 0 {
@@ -136,6 +137,8 @@ func (ic *planStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 	updatedReplicas := 0
 	readyReplicas := 0
 	unavailableReplicas := 0
+	upToDateReplicas := 0
+	availableReplicas := 0
 	switch ic.plan.Status.State {
 	case core.PlanCompleted:
 		// If the Plan is completed, the status of the control plane is updated with the version
@@ -144,16 +147,21 @@ func (ic *planStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 		// When the update is completed, it is safe to say that the number of updated replicas
 		// and ready replicas is as desired.
 		updatedReplicas = int(kcp.Spec.Replicas)
+		upToDateReplicas = int(kcp.Spec.Replicas)
+		availableReplicas = int(kcp.Spec.Replicas)
 		readyReplicas = int(kcp.Spec.Replicas)
 	case core.PlanSchedulableWait, core.PlanSchedulable:
 		for _, c := range ic.plan.Status.Commands[0].K0sUpdate.Controllers {
 			switch c.State {
 			case core.SignalCompleted:
 				updatedReplicas++
+				upToDateReplicas++
+				availableReplicas++
 				readyReplicas++
 			case core.SignalPending:
 				// Controller is still available.
 				readyReplicas++
+				availableReplicas++
 			case core.SignalSent:
 				// When the controller state is 'SignalSent', the controlplane is undergoing the
 				// update so it cannot be considered as available.
@@ -166,13 +174,13 @@ func (ic *planStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 		// TODO: Surface this error reason as a status.condition for controlplane
 		return errUnsupportedPlanState
 	}
-	kcp.Status.UpdatedReplicas = int32(updatedReplicas)
-	kcp.Status.ReadyReplicas = int32(readyReplicas)
-	kcp.Status.UnavailableReplicas = int32(unavailableReplicas)
+	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
+	kcp.Status.AvailableReplicas = ptr.To(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
+	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
 
 	// If status.updatedReplicas is not equal to desired ones by the spec, the control plane upgrade is not ready
 	// so we return an error to retry the status computation later.
-	if kcp.Status.UpdatedReplicas != kcp.Spec.Replicas {
+	if *kcp.Status.UpToDateReplicas != kcp.Spec.Replicas {
 		return errUpgradeNotCompleted
 	}
 
@@ -183,7 +191,7 @@ type machineStatus struct {
 	machines collections.Machines
 }
 
-func newMachineStatusComputer(ctx context.Context, c client.Client, cluster *clusterv1.Cluster) (replicaStatusComputer, error) {
+func newMachineStatusComputer(ctx context.Context, c client.Client, cluster *clusterv2.Cluster) (replicaStatusComputer, error) {
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get machines: %w", err)
@@ -196,17 +204,17 @@ func newMachineStatusComputer(ctx context.Context, c client.Client, cluster *clu
 	return ms, nil
 }
 
-func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
-	kcp.Status.Replicas = int32(len(rc.machines))
+func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
+	kcp.Status.Replicas = ptr.To(int32(len(rc.machines)))
 	readyReplicas := 0
-	updatedReplicas := 0
 	unavailableReplicas := 0
+	upToDateReplicas := 0
 	// Count the machines in different states
 	for _, machine := range rc.machines {
 		switch machine.Status.Phase {
-		case string(clusterv1.MachinePhaseRunning):
+		case string(clusterv2.MachinePhaseRunning):
 			readyReplicas++
-		case string(clusterv1.MachinePhaseProvisioned):
+		case string(clusterv2.MachinePhaseProvisioned):
 			// If we're running without --enable-worker, the machine will never transition
 			// to running state, so we need to count it as ready when it's provisioned
 			if !kcp.WorkerEnabled() {
@@ -214,14 +222,14 @@ func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 			} else {
 				unavailableReplicas++
 			}
-		case string(clusterv1.MachinePhaseDeleting), string(clusterv1.MachinePhaseDeleted):
+		case string(clusterv2.MachinePhaseDeleting), string(clusterv2.MachinePhaseDeleted):
 			// Do nothing
 		default:
 			unavailableReplicas++
 		}
 
 		if versionMatches(machine, kcp.Spec.Version) {
-			updatedReplicas++
+			upToDateReplicas++
 		}
 	}
 
@@ -230,9 +238,9 @@ func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 		unavailableReplicas += int(kcp.Spec.Replicas) - rc.machines.Len()
 	}
 
-	kcp.Status.ReadyReplicas = int32(readyReplicas)
-	kcp.Status.UpdatedReplicas = int32(updatedReplicas)
-	kcp.Status.UnavailableReplicas = int32(unavailableReplicas)
+	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
+	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
+	kcp.Status.AvailableReplicas = ptr.To(int32(rc.machines.Len() - unavailableReplicas))
 
 	// Find the lowest version
 	lowestMachineVersion, err := minVersion(rc.machines)
@@ -265,7 +273,7 @@ func (rc *machineStatus) compute(kcp *cpv1beta1.K0sControlPlane) error {
 }
 
 // versionMatches checks if the machine version matches the kcp version taking the possibly missing suffix into account
-func versionMatches(machine *clusterv1.Machine, ver string) bool {
+func versionMatches(machine *clusterv2.Machine, ver string) bool {
 
 	if machine.Spec.Version == "" {
 		return false
@@ -297,8 +305,7 @@ func versionMatches(machine *clusterv1.Machine, ver string) bool {
 	return vKCP.Equal(vMachine)
 }
 
-func (c *K0sController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, logger logr.Logger) {
-	kcp.Status.Ready = false
+func (c *K0sController) computeAvailability(ctx context.Context, cluster *clusterv2.Cluster, kcp *cpv1beta2.K0sControlPlane, logger logr.Logger) {
 	logger.Info("Computed status", "status", kcp.Status)
 	// Check if the control plane is ready by connecting to the API server
 	// and checking if the control plane is initialized
@@ -326,17 +333,15 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	logger.Info("Successfully pinged the workload cluster API")
 	// Set the conditions
 	conditions.Set(kcp, metav1.Condition{
-		Type:   string(cpv1beta1.ControlPlaneAvailableCondition),
+		Type:   string(cpv1beta2.ControlPlaneAvailableCondition),
 		Status: metav1.ConditionTrue,
-		Reason: cpv1beta1.ControlPlaneAvailableReason,
+		Reason: cpv1beta2.ControlPlaneAvailableReason,
 	})
-	kcp.Status.Ready = true
-	kcp.Status.Initialized = true
-	kcp.Status.Initialization.ControlPlaneInitialized = true
+	kcp.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
 
 	// Set the k0s cluster ID annotation
 	annotations.AddAnnotations(cluster, map[string]string{
-		cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
+		cpv1beta2.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
 	})
 }
 

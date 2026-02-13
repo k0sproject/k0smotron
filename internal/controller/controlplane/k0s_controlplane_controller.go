@@ -58,8 +58,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 )
 
@@ -107,7 +107,7 @@ type K0sController struct {
 // Reconcile reconciles a K0sControlPlane object.
 func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
-	kcp := &cpv1beta1.K0sControlPlane{}
+	kcp := &cpv1beta2.K0sControlPlane{}
 
 	defer func() {
 		version := ""
@@ -124,7 +124,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, err
 	}
 
-	if finalizerAdded, err := util.EnsureFinalizer(ctx, c.Client, kcp, cpv1beta1.K0sControlPlaneFinalizer); err != nil || finalizerAdded {
+	if finalizerAdded, err := util.EnsureFinalizer(ctx, c.Client, kcp, cpv1beta2.K0sControlPlaneFinalizer); err != nil || finalizerAdded {
 		return ctrl.Result{}, err
 	}
 
@@ -201,14 +201,14 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		}
 		log.Info("Status updated successfully")
 
-		if kcp.Status.Ready {
+		if ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
 			if perr := clusterPatchHelper.Patch(ctx, cluster); perr != nil {
 				err = fmt.Errorf("failed to patch cluster: %w", perr)
 			}
 		}
 
 		// Requeue the reconciliation if the status is not ready
-		if !kcp.Status.Ready {
+		if !ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
 			log.Info("Requeuing reconciliation in 20sec since the control plane is not ready")
 			res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
 		}
@@ -249,7 +249,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 }
 
-func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
 	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
 
 	if cluster.Spec.ControlPlaneEndpoint.IsZero() {
@@ -351,7 +351,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 	return nil
 }
 
-func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
 	var err error
 	kcp.Spec.K0sConfigSpec.K0s, err = enrichK0sConfigWithClusterData(cluster, kcp.Spec.K0sConfigSpec.K0s)
 	if err != nil {
@@ -376,7 +376,7 @@ func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluste
 	return nil
 }
 
-func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
 	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
 
 	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
@@ -427,7 +427,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	for _, m := range activeMachines.SortedByCreationTimestamp() {
 		if m.Spec.Version == "" || (!versionMatches(m, kcp.Spec.Version)) {
 			clusterIsUpdating = true
-			if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
+			if kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace {
 				desiredMachines.Insert(m)
 			} else {
 				machineNamesToDelete[m.Name] = true
@@ -456,7 +456,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	go func() {
 		// The k8s API of the workload cluster must be available to make requests.
-		if kcp.Status.Ready {
+		if ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
 			err = c.deleteOldControlNodes(ctx, cluster)
 			if err != nil {
 				logger.Error(err, "Error deleting old control nodes")
@@ -466,7 +466,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	if clusterIsUpdating {
 		log.Log.Info("Cluster is updating", "currentVersion", currentVersion, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
-		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
+		if kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreate {
 			// If the cluster is running in single mode, we can't use the Recreate strategy
 			if kcp.Spec.K0sConfigSpec.Args != nil {
 				if slices.Contains(kcp.Spec.K0sConfigSpec.Args, "--single") {
@@ -585,7 +585,7 @@ func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, machine *c
 	return patchHelper.Patch(ctx, machine)
 }
 
-func (c *K0sController) runMachineDeletionSequence(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+func (c *K0sController) runMachineDeletionSequence(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) error {
 	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
 		return fmt.Errorf("error deleting machine from template: %w", err)
 	}
@@ -593,10 +593,10 @@ func (c *K0sController) runMachineDeletionSequence(ctx context.Context, kcp *cpv
 	return nil
 }
 
-func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) error {
 	logger := log.FromContext(ctx)
 
-	if kcp.Status.Ready {
+	if ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
 		kubeClient, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
 			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
@@ -627,11 +627,11 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 	return nil
 }
 
-func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, k0sConfigSpec *bootstrapv1.K0sConfigSpec, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
+func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, k0sConfigSpec *bootstrapv2.K0sConfigSpec, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
 
-	controllerConfig := bootstrapv1.K0sControllerConfig{
+	controllerConfig := bootstrapv2.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta2",
 			Kind:       "K0sControllerConfig",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -648,7 +648,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 				Controller:         ptr.To(true),
 			}},
 		},
-		Spec: bootstrapv1.K0sControllerConfigSpec{
+		Spec: bootstrapv2.K0sControllerConfigSpec{
 			Version:       kcp.Spec.Version,
 			K0sConfigSpec: k0sConfigSpec,
 		},
@@ -688,14 +688,14 @@ func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName str
 	return nil
 }
 
-func (c *K0sController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+func (c *K0sController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
-	return certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0sControlPlane")))
+	return certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")))
 }
 
-func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
 	log := log.FromContext(ctx)
 	if kcp.Spec.K0sConfigSpec.K0s != nil {
 		nllbEnabled, found, err := unstructured.NestedBool(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
@@ -744,18 +744,18 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 	return nil
 }
 
-func isRecreateDeleteFirstPossible(kcp *cpv1beta1.K0sControlPlane, clusterHasChanged bool, machineNamesToDelete map[string]bool, desiredMachines collections.Machines) bool {
+func isRecreateDeleteFirstPossible(kcp *cpv1beta2.K0sControlPlane, clusterHasChanged bool, machineNamesToDelete map[string]bool, desiredMachines collections.Machines) bool {
 	if !clusterHasChanged {
 		return false
 	}
 	return kcp.Spec.Replicas >= 3 && // if we have at least 3 replicas
 		// and we are running recreate delete first strategy
-		kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreateDeleteFirst &&
+		kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreateDeleteFirst &&
 		// and the number of machines we have and the ones we want to delete is more or equal to the desired replicas
 		len(machineNamesToDelete)+len(desiredMachines) >= int(kcp.Spec.Replicas)
 }
 
-func (c *K0sController) reconcileTunneling(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+func (c *K0sController) reconcileTunneling(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
 	if !kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
 		return nil
 	}
@@ -933,7 +933,7 @@ token = ` + frpToken + `
 	return nil
 }
 
-func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (ctrl.Result, error) {
+func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
 	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster)
@@ -945,7 +945,7 @@ func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.
 
 	if len(cpMachines) == 0 {
 		// No machines left, we can finally delete the K0sControlPlane by removing the finalizer.
-		controllerutil.RemoveFinalizer(kcp, cpv1beta1.K0sControlPlaneFinalizer)
+		controllerutil.RemoveFinalizer(kcp, cpv1beta2.K0sControlPlaneFinalizer)
 		return ctrl.Result{}, nil
 	}
 
@@ -978,7 +978,7 @@ func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.
 }
 
 func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.Context, machine *clusterv1.Machine) error {
-	if _, exists := machine.Annotations[cpv1beta1.K0ControlPlanePreTerminateHookCleanupAnnotation]; !exists {
+	if _, exists := machine.Annotations[cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation]; !exists {
 		// Nothing to do, the annotation is not set (anymore) on the Machine
 		return nil
 	}
@@ -987,7 +987,7 @@ func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.
 	log.Info("Removing pre-terminate hook from control plane Machine")
 
 	machineOriginal := machine.DeepCopy()
-	delete(machine.Annotations, cpv1beta1.K0ControlPlanePreTerminateHookCleanupAnnotation)
+	delete(machine.Annotations, cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation)
 	if err := c.Client.Patch(ctx, machine, client.MergeFrom(machineOriginal)); err != nil {
 		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine: %w", err)
 	}
@@ -995,7 +995,7 @@ func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.
 	return nil
 }
 
-func (c *K0sController) detectNodeIP(ctx context.Context, _ *cpv1beta1.K0sControlPlane) (string, error) {
+func (c *K0sController) detectNodeIP(ctx context.Context, _ *cpv1beta2.K0sControlPlane) (string, error) {
 	nodes, err := c.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return "", err
@@ -1004,7 +1004,7 @@ func (c *K0sController) detectNodeIP(ctx context.Context, _ *cpv1beta1.K0sContro
 	return util.FindNodeAddress(nodes), nil
 }
 
-func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (string, error) {
+func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (string, error) {
 	secretName := fmt.Sprintf(FRPTokenNameTemplate, cluster.Name)
 
 	var existingSecret corev1.Secret
@@ -1046,7 +1046,7 @@ func (c *K0sController) SetupWithManager(mgr ctrl.Manager, opts controller.Optio
 	// Check if the cluster.x-k8s.io API is available and if not, don't try to watch for Machine objects
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
-		For(&cpv1beta1.K0sControlPlane{}).
+		For(&cpv1beta2.K0sControlPlane{}).
 		Owns(&clusterv1.Machine{}).
 		Complete(c)
 }

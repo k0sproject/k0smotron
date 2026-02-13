@@ -47,8 +47,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
@@ -75,7 +75,7 @@ type Controller struct {
 
 // Scope contains the information required to generate the bootstrap data for a worker machine.
 type Scope struct {
-	Config              *bootstrapv1.K0sWorkerConfig
+	Config              *bootstrapv2.K0sWorkerConfig
 	ConfigOwner         *bsutil.ConfigOwner
 	Cluster             *clusterv1.Cluster
 	ingressSpec         *km.IngressSpec
@@ -101,7 +101,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	log.Info("Reconciling K0sConfig")
 
 	// Lookup the config object
-	config := &bootstrapv1.K0sWorkerConfig{}
+	config := &bootstrapv2.K0sWorkerConfig{}
 	if err := r.Get(ctx, req.NamespacedName, config); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("K0sConfig not found")
@@ -171,7 +171,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{}, nil
 	}
 
-	if config.Status.Ready {
+	if config.Status.Initialization.DataSecretCreated != nil && *config.Status.Initialization.DataSecretCreated {
 		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
 		log.Info("Bootstrapdata already created, reconciled succesfully")
 		return ctrl.Result{}, nil
@@ -184,17 +184,17 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
-		err := conditions.SetSummaryCondition(config, config, string(bootstrapv1.ConfigReadyCondition),
-			conditions.ForConditionTypes{string(bootstrapv1.DataSecretAvailableCondition)},
+		err := conditions.SetSummaryCondition(config, config, string(bootstrapv2.ConfigReadyCondition),
+			conditions.ForConditionTypes{string(bootstrapv2.DataSecretAvailableCondition)},
 			// Using a custom merge strategy to override reasons applied during merge and to ignore some
 			// info message so the ready condition aggregation in other resources is less noisy.
 			conditions.CustomMergeStrategy{
 				MergeStrategy: conditions.DefaultMergeStrategy(
 					// Use custom reasons.
 					conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
-						bootstrapv1.ConfigNotReadyReason,
-						bootstrapv1.ConfigReadyUnknownReason,
-						bootstrapv1.ConfigReadyReason,
+						bootstrapv2.ConfigNotReadyReason,
+						bootstrapv2.ConfigReadyUnknownReason,
+						bootstrapv2.ConfigReadyReason,
 					)),
 				),
 			},
@@ -213,14 +213,14 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		Config:      config,
 		ConfigOwner: configOwner,
 		Cluster:     cluster,
-		provisioner: getProvisioner(config.Spec.Ignition),
+		provisioner: getProvisioner(&config.Spec.Provisioner),
 	}
 	err = r.setClientScope(ctx, cluster, scope)
 	if err != nil {
 		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
 			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv1.InternalErrorReason,
+			Reason:  bootstrapv2.InternalErrorReason,
 			Message: err.Error(),
 		})
 		return ctrl.Result{}, err
@@ -229,9 +229,9 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	// Control plane needs to be ready because worker needs to use controlplane API to retrieve a join token.
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() || !conditions.IsTrue(cluster, string(clusterv1.ClusterControlPlaneInitializedCondition)) {
 		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
 			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv1.WaitingForControlPlaneInitializationReason,
+			Reason:  bootstrapv2.WaitingForControlPlaneInitializationReason,
 			Message: "Control plane is not ready yet",
 		})
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
@@ -241,9 +241,9 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope)
 	if err != nil {
 		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
 			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv1.DataSecretGenerationFailedReason,
+			Reason:  bootstrapv2.DataSecretGenerationFailedReason,
 			Message: err.Error(),
 		})
 		return ctrl.Result{}, err
@@ -255,23 +255,23 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	if err := r.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
 		log.Error(err, "Failed to patch bootstrap secret")
 		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
 			Status:  metav1.ConditionTrue,
-			Reason:  bootstrapv1.InternalErrorReason,
+			Reason:  bootstrapv2.InternalErrorReason,
 			Message: err.Error(),
 		})
 		return ctrl.Result{}, err
 	}
 	conditions.Set(config, metav1.Condition{
-		Type:    string(bootstrapv1.DataSecretAvailableCondition),
+		Type:    string(bootstrapv2.DataSecretAvailableCondition),
 		Status:  metav1.ConditionTrue,
-		Reason:  bootstrapv1.ConfigSecretAvailableReason,
+		Reason:  bootstrapv2.ConfigSecretAvailableReason,
 		Message: "Bootstrap secret created",
 	})
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
 
 	// Set the status to ready
-	scope.Config.Status.Ready = true
+	scope.Config.Status.Initialization.DataSecretCreated = ptr.To(true)
 	scope.Config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
 
 	log.Info("Reconciled succesfully")
@@ -323,14 +323,14 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 		`(echo "Not a supported init system"; false)`
 
 	ingressCommands := createIngressCommands(scope)
-	commands := scope.Config.Spec.PreStartCommands
+	commands := scope.Config.Spec.PreK0sCommands
 	commands = append(commands, downloadCommands...)
 	commandsMap[provisioner.VarK0sDownloadCommands] = strings.Join(downloadCommands, " && ")
 	commands = append(commands, ingressCommands...)
 	commands = append(commands, installCmd, startCmd)
 	commandsMap[provisioner.VarK0sInstallCommand] = installCmd
 	commandsMap[provisioner.VarK0sStartCommand] = startCmd
-	commands = append(commands, scope.Config.Spec.PostStartCommands...)
+	commands = append(commands, scope.Config.Spec.PostK0sCommands...)
 	// Create the sentinel file as the last step so we know all previous _stuff_ has completed
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
@@ -339,8 +339,8 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 		customUserData string
 		vars           map[provisioner.VarName]string
 	)
-	if scope.Config.Spec.CustomUserDataRef != nil {
-		customUserData, err = resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
+	if scope.Config.Spec.Provisioner.CustomUserDataRef != nil {
+		customUserData, err = resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.Provisioner.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom worker user data: %w", err)
 		}
@@ -425,13 +425,13 @@ func createIngressCommands(scope *Scope) []string {
 }
 
 func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) ([]provisioner.File, error) {
-	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv1.File{
+	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv2.File{
 		{
 			File: provisioner.File{
 				Path: "/etc/haproxy/certs/ca.crt",
 			},
-			ContentFrom: &bootstrapv1.ContentSource{
-				SecretRef: &bootstrapv1.ContentSourceRef{
+			ContentFrom: &bootstrapv2.ContentSource{
+				SecretRef: &bootstrapv2.ContentSourceRef{
 					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
 					Key:  "tls.crt",
 				},
@@ -441,8 +441,8 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			File: provisioner.File{
 				Path: "/etc/haproxy/certs/server.crt",
 			},
-			ContentFrom: &bootstrapv1.ContentSource{
-				SecretRef: &bootstrapv1.ContentSourceRef{
+			ContentFrom: &bootstrapv2.ContentSource{
+				SecretRef: &bootstrapv2.ContentSourceRef{
 					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
 					Key:  "tls.crt",
 				},
@@ -452,8 +452,8 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			File: provisioner.File{
 				Path: "/etc/haproxy/certs/server.key",
 			},
-			ContentFrom: &bootstrapv1.ContentSource{
-				SecretRef: &bootstrapv1.ContentSourceRef{
+			ContentFrom: &bootstrapv2.ContentSource{
+				SecretRef: &bootstrapv2.ContentSourceRef{
 					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
 					Key:  "tls.key",
 				},
@@ -469,7 +469,7 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 }
 
 // createBootstrapSecret creates a bootstrap secret for the worker node
-func createBootstrapSecret(scope *Scope, bootstrapData []byte, format string) *corev1.Secret {
+func createBootstrapSecret(scope *Scope, bootstrapData []byte, format provisioner.ProvisioningFormat) *corev1.Secret {
 	// Initialize labels with cluster-name label
 	labels := map[string]string{
 		clusterv1.ClusterNameLabel:    scope.Cluster.Name,
@@ -499,7 +499,7 @@ func createBootstrapSecret(scope *Scope, bootstrapData []byte, format string) *c
 			Annotations: annotations,
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: bootstrapv1.GroupVersion.String(),
+					APIVersion: bootstrapv2.GroupVersion.String(),
 					Kind:       scope.Config.Kind,
 					Name:       scope.Config.Name,
 					UID:        scope.Config.UID,
@@ -530,7 +530,7 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 
 	// Only K0smotronControlPlane might store controlplane certificates in an external cluster. Otherwise, certificates are store in mothership.
 	if uControlPlane.GetKind() == "K0smotronControlPlane" {
-		kcp := &cpv1beta1.K0smotronControlPlane{}
+		kcp := &cpv1beta2.K0smotronControlPlane{}
 		key := client.ObjectKey{
 			Namespace: uControlPlane.GetNamespace(),
 			Name:      uControlPlane.GetName(),
@@ -569,6 +569,6 @@ func createInstallCmd(scope *Scope) string {
 func (r *Controller) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
-		For(&bootstrapv1.K0sWorkerConfig{}).
+		For(&bootstrapv2.K0sWorkerConfig{}).
 		Complete(r)
 }

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -19,7 +19,7 @@ var (
 	errExtractingFileContent = errors.New("failed to get file content from source")
 )
 
-func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, contentFrom *bootstrapv1.ContentSource) (string, error) {
+func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, contentFrom *bootstrapv2.ContentSource) (string, error) {
 	switch {
 	case contentFrom.SecretRef != nil:
 		s := &corev1.Secret{}
@@ -51,7 +51,7 @@ func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clu
 }
 
 // resolveFiles extracts the content from the given source (ConfigMap or Secret) and returns a list of cloudinit.File containing the extracted data.
-func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, filesToResolve []bootstrapv1.File) ([]provisioner.File, error) {
+func resolveFiles(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, filesToResolve []bootstrapv2.File) ([]provisioner.File, error) {
 	var files []provisioner.File
 	for _, file := range filesToResolve {
 		if file.ContentFrom != nil {
@@ -103,13 +103,18 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 	return args
 }
 
-func getProvisioner(ignitionSpec *bootstrapv1.IgnitionSpec) provisioner.Provisioner {
-	if ignitionSpec != nil {
+func getProvisioner(provisionerSpec *bootstrapv2.ProvisionerSpec) provisioner.Provisioner {
+	switch provisionerSpec.Type {
+	case provisioner.IgnitionProvisioningFormat:
 		return &provisioner.IgnitionProvisioner{
-			Variant:          ignitionSpec.Variant,
-			Version:          ignitionSpec.Version,
-			AdditionalConfig: ignitionSpec.AdditionalConfig,
+			Variant:          provisionerSpec.Ignition.Variant,
+			Version:          provisionerSpec.Ignition.Version,
+			AdditionalConfig: provisionerSpec.Ignition.AdditionalConfig,
 		}
+	case provisioner.CloudInitProvisioningFormat:
+		// Cloud-init is the default
+		fallthrough
+	default:
+		return &provisioner.CloudInitProvisioner{}
 	}
-	return &provisioner.CloudInitProvisioner{}
 }
