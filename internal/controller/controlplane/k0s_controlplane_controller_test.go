@@ -25,19 +25,19 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 )
 
 func TestK0sConfigEnrichment(t *testing.T) {
 	var testCases = []struct {
 		cluster *clusterv1.Cluster
-		kcp     *cpv1beta1.K0sControlPlane
+		kcp     *cpv1beta2.K0sControlPlane
 		want    *unstructured.Unstructured
 	}{
 		{
 			cluster: &clusterv1.Cluster{},
-			kcp:     &cpv1beta1.K0sControlPlane{},
+			kcp:     &cpv1beta2.K0sControlPlane{},
 			want:    nil,
 		},
 		{
@@ -53,7 +53,7 @@ func TestK0sConfigEnrichment(t *testing.T) {
 					},
 				},
 			},
-			kcp: &cpv1beta1.K0sControlPlane{},
+			kcp: &cpv1beta2.K0sControlPlane{},
 			want: &unstructured.Unstructured{Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
@@ -75,9 +75,9 @@ func TestK0sConfigEnrichment(t *testing.T) {
 					},
 				},
 			},
-			kcp: &cpv1beta1.K0sControlPlane{
-				Spec: cpv1beta1.K0sControlPlaneSpec{
-					K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+			kcp: &cpv1beta2.K0sControlPlane{
+				Spec: cpv1beta2.K0sControlPlaneSpec{
+					K0sConfigSpec: bootstrapv2.K0sConfigSpec{
 						K0s: &unstructured.Unstructured{Object: map[string]interface{}{
 							"spec": map[string]interface{}{
 								"network": map[string]interface{}{"serviceCIDR": "10.98.0.0/12"},
@@ -102,7 +102,7 @@ func TestK0sConfigEnrichment(t *testing.T) {
 					},
 				},
 			},
-			kcp: &cpv1beta1.K0sControlPlane{},
+			kcp: &cpv1beta2.K0sControlPlane{},
 			want: &unstructured.Unstructured{Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",

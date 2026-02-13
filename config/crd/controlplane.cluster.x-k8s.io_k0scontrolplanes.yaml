@@ -7,6 +7,7 @@ metadata:
   labels:
     cluster.x-k8s.io/provider: control-plane-k0smotron
     cluster.x-k8s.io/v1beta1: v1beta1
+    cluster.x-k8s.io/v1beta2: v1beta2
   name: k0scontrolplanes.controlplane.cluster.x-k8s.io
 spec:
   group: controlplane.cluster.x-k8s.io
@@ -312,6 +313,8 @@ spec:
                     type: object
                 type: object
               machineTemplate:
+                description: K0sControlPlaneMachineTemplate describes the data needed
+                  to create a Machine from a template.
                 properties:
                   infrastructureRef:
                     description: |-
@@ -529,6 +532,551 @@ spec:
                 description: |-
                   updatedReplicas is the total number of non-terminated machines targeted by this control plane
                   that have the desired template spec.
+                format: int32
+                type: integer
+              version:
+                description: |-
+                  version represents the minimum Kubernetes version for the control plane machines
+                  in the cluster.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources:
+      scale:
+        labelSelectorPath: .status.selector
+        specReplicasPath: .spec.replicas
+        statusReplicasPath: .status.replicas
+      status: {}
+  - additionalPrinterColumns:
+    - description: Cluster
+      jsonPath: .metadata.labels['cluster\.x-k8s\.io/cluster-name']
+      name: Cluster
+      type: string
+    - description: Total number of machines desired by this control plane
+      jsonPath: .spec.replicas
+      name: Desired
+      priority: 10
+      type: integer
+    - description: Total number of non-terminated machines targeted by this control
+        plane
+      jsonPath: .status.replicas
+      name: Replicas
+      type: integer
+    - description: Total number of fully running and ready control plane instances
+      jsonPath: .status.readyReplicas
+      name: Ready
+      type: integer
+    - description: Total number of up-to-date replicas targeted by this ControlPlane
+      jsonPath: .status.upToDateReplicas
+      name: UpToDate
+      type: integer
+    - description: Total number of available replicas for this ControlPlane
+      jsonPath: .status.availableReplicas
+      name: Available
+      type: integer
+    - description: Time duration since creation of K0sControlPlane
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - description: Kubernetes version associated with this control plane
+      jsonPath: .spec.version
+      name: Version
+      type: string
+    name: v1beta2
+    schema:
+      openAPIV3Schema:
+        description: K0sControlPlane describes a k0s control plane for a Cluster API
+          managed cluster.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: K0sControlPlaneSpec defines the desired state of K0sControlPlane
+            properties:
+              k0sConfigSpec:
+                description: K0sConfigSpec defines the k0s configuration specification.
+                properties:
+                  args:
+                    description: |-
+                      Args specifies extra arguments to be passed to k0s controller.
+                      See: https://docs.k0sproject.io/stable/cli/k0s_controller/
+                    items:
+                      type: string
+                    type: array
+                  downloadURL:
+                    description: |-
+                      DownloadURL specifies the URL from which to download the k0s binary.
+                      If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
+                      Supported protocols are: http, https, oci. Using 'oci' scheme requires 'oras' to be installed on the target system.
+
+                      If 'oci' schema is used and the OCI registry requires authentication, make sure to set up the authentication beforehand
+                      by adding a file to the Files section that contains the necessary config for ORAS. See: https://oras.land/docs/how_to_guides/authentication/
+                      The file must be placed at `/root` directory (HOME for cloud-init execution time) and named `config.json`.
+                      NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.
+                    type: string
+                  files:
+                    description: Files specifies extra files to be passed to user_data
+                      upon creation.
+                    items:
+                      description: File defines a file to be passed to user_data upon
+                        creation.
+                      properties:
+                        content:
+                          type: string
+                        contentFrom:
+                          description: ContentFrom specifies the source of the content.
+                          properties:
+                            configMapRef:
+                              description: ConfigMapRef is a reference to a configmap
+                                that contains the content.
+                              properties:
+                                key:
+                                  description: Key is the key in the source that contains
+                                    the content
+                                  type: string
+                                name:
+                                  description: Name is the name of the source
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              type: object
+                            secretRef:
+                              description: SecretRef is a reference to a secret that
+                                contains the content.
+                              properties:
+                                key:
+                                  description: Key is the key in the source that contains
+                                    the content
+                                  type: string
+                                name:
+                                  description: Name is the name of the source
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              type: object
+                          type: object
+                        path:
+                          type: string
+                        permissions:
+                          type: string
+                      type: object
+                    type: array
+                  k0s:
+                    description: |-
+                      K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
+                      If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  k0sInstallDir:
+                    default: /usr/local/bin
+                    description: |-
+                      K0sInstallDir specifies the directory where k0s binary will be installed.
+                      If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.
+                    type: string
+                  postK0sCommands:
+                    description: PostK0sCommands specifies commands to be run after
+                      starting k0s worker.
+                    items:
+                      type: string
+                    type: array
+                  preInstalledK0s:
+                    description: PreInstallK0s specifies whether k0s binary is pre-installed
+                      on the node.
+                    type: boolean
+                  preK0sCommands:
+                    description: PreK0sCommands specifies commands to be run before
+                      starting k0s worker.
+                    items:
+                      type: string
+                    type: array
+                  provisioner:
+                    description: Provisioner defines the provisioner configuration.
+                      Defaults to cloud-init.
+                    properties:
+                      customUserDataRef:
+                        description: |-
+                          CustomUserDataRef is a reference to a secret or a configmap that contains the custom user data.
+                          Provided user-data will be merged with the one generated by k0smotron. Note that you may want to specify the merge type.
+                          See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html
+                        properties:
+                          configMapRef:
+                            description: ConfigMapRef is a reference to a configmap
+                              that contains the content.
+                            properties:
+                              key:
+                                description: Key is the key in the source that contains
+                                  the content
+                                type: string
+                              name:
+                                description: Name is the name of the source
+                                type: string
+                            required:
+                            - key
+                            - name
+                            type: object
+                          secretRef:
+                            description: SecretRef is a reference to a secret that
+                              contains the content.
+                            properties:
+                              key:
+                                description: Key is the key in the source that contains
+                                  the content
+                                type: string
+                              name:
+                                description: Name is the name of the source
+                                type: string
+                            required:
+                            - key
+                            - name
+                            type: object
+                        type: object
+                      ignition:
+                        description: Ignition defines the ignition configuration.
+                          If empty, k0smotron will use cloud-init.
+                        properties:
+                          additionalConfig:
+                            description: |-
+                              AdditionalConfig is an unstructured object that contains additional config to be merged
+                              with the generated one. The format follows Butane spec: https://coreos.github.io/butane/
+                            type: string
+                          variant:
+                            description: |-
+                              Variant declares which distribution variant the generated config is for.
+                              Check the supported variants and versions here:
+                              https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications
+                            enum:
+                            - fcos
+                            - flatcar
+                            - openshift
+                            - r4e
+                            - fiot
+                            type: string
+                          version:
+                            description: |-
+                              Version is the schema version of the Butane config to use
+                              Check the supported variants and versions here:
+                              https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specifications
+                            type: string
+                        required:
+                        - variant
+                        - version
+                        type: object
+                      type:
+                        default: cloud-config
+                        description: Type is the provisioner format type.
+                        enum:
+                        - cloud-config
+                        - ignition
+                        - powershell
+                        - powershell-xml
+                        type: string
+                    type: object
+                  secretMetadata:
+                    description: SecretMetadata specifies metadata (labels and annotations)
+                      to be propagated to the bootstrap Secret.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: Annotations to be added to the bootstrap Secret
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: Labels to be added to the bootstrap Secret
+                        type: object
+                    type: object
+                  tunneling:
+                    description: Tunneling defines the tunneling configuration for
+                      the cluster.
+                    properties:
+                      enabled:
+                        default: false
+                        description: Enabled specifies whether tunneling is enabled.
+                        type: boolean
+                      mode:
+                        default: tunnel
+                        description: |-
+                          Mode describes tunneling mode.
+                          If empty, k0smotron will use the default one.
+                        enum:
+                        - tunnel
+                        - proxy
+                        type: string
+                      serverAddress:
+                        description: |-
+                          Server address of the tunneling server.
+                          If empty, k0smotron will try to detect worker node address for.
+                        type: string
+                      serverNodePort:
+                        default: 31700
+                        description: |-
+                          NodePort to publish for server port of the tunneling server.
+                          If empty, k0smotron will use the default one.
+                        format: int32
+                        type: integer
+                      tunnelingNodePort:
+                        default: 31443
+                        description: |-
+                          NodePort to publish for tunneling port.
+                          If empty, k0smotron will use the default one.
+                        format: int32
+                        type: integer
+                    type: object
+                  useSystemHostname:
+                    default: false
+                    description: |-
+                      UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
+                      By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.
+                    type: boolean
+                  workingDir:
+                    description: WorkingDir specifies the working directory where
+                      k0smotron will place its files.
+                    type: string
+                type: object
+              kubeconfigSecretMetadata:
+                description: |-
+                  KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
+                  created for the workload cluster.
+                  Note: This metadata will have precedence over default labels/annotations on the Secret.
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations to be added to the bootstrap Secret
+                    type: object
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels to be added to the bootstrap Secret
+                    type: object
+                type: object
+              machineTemplate:
+                description: K0sControlPlaneMachineTemplate describes the data needed
+                  to create a Machine from a template.
+                properties:
+                  infrastructureRef:
+                    description: |-
+                      InfrastructureRef is a required reference to a custom resource
+                      offered by an infrastructure provider.
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      fieldPath:
+                        description: |-
+                          If referring to a piece of an object instead of an entire object, this string
+                          should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within a pod, this would take on a value like:
+                          "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]" (container with
+                          index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                          referencing a part of an object.
+                        type: string
+                      kind:
+                        description: |-
+                          Kind of the referent.
+                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                        type: string
+                      name:
+                        description: |-
+                          Name of the referent.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                      namespace:
+                        description: |-
+                          Namespace of the referent.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                        type: string
+                      resourceVersion:
+                        description: |-
+                          Specific resourceVersion to which this reference is made, if any.
+                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                        type: string
+                      uid:
+                        description: |-
+                          UID of the referent.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  metadata:
+                    description: |-
+                      Standard object's metadata.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+                    minProperties: 1
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          annotations is an unstructured key value map stored with a resource that may be
+                          set by external tools to store and retrieve arbitrary metadata. They are not
+                          queryable and should be preserved when modifying objects.
+                          More info: http://kubernetes.io/docs/user-guide/annotations
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          labels is a map of string keys and values that can be used to organize and categorize
+                          (scope and select) objects. May match selectors of replication controllers
+                          and services.
+                          More info: http://kubernetes.io/docs/user-guide/labels
+                        type: object
+                    type: object
+                required:
+                - infrastructureRef
+                type: object
+              replicas:
+                default: 1
+                format: int32
+                type: integer
+              updateStrategy:
+                default: InPlace
+                description: UpdateStrategy defines the strategy to use when updating
+                  the control plane.
+                enum:
+                - InPlace
+                - Recreate
+                - RecreateDeleteFirst
+                type: string
+              version:
+                description: |-
+                  Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
+                  just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.
+                type: string
+            required:
+            - k0sConfigSpec
+            - machineTemplate
+            type: object
+          status:
+            default:
+              initialization:
+                controlPlaneInitialized: false
+              version: ""
+            description: K0sControlPlaneStatus defines the observed state of K0sControlPlane
+            properties:
+              availableReplicas:
+                description: availableReplicas is the number of available replicas
+                  for this ControlPlane. A machine is considered available when Machine's
+                  Available condition is true.
+                format: int32
+                type: integer
+              conditions:
+                description: Conditions defines current service state of the K0sControlPlane.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              externalManagedControlPlane:
+                description: externalManagedControlPlane is a bool that should be
+                  set to true if the Node objects do not exist in the cluster.
+                type: boolean
+              initialization:
+                description: |-
+                  initialization represents the initialization status of the control plane
+                  NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+                minProperties: 1
+                properties:
+                  controlPlaneInitialized:
+                    description: controlPlaneInitialized indicates whether the control
+                      plane is initialized
+                    type: boolean
+                type: object
+              readyReplicas:
+                description: readyReplicas is the total number of fully running and
+                  ready control plane machines.
+                format: int32
+                type: integer
+              replicas:
+                description: |-
+                  replicas is the total number of non-terminated machines targeted by this control plane
+                  (their labels match the selector).
+                format: int32
+                type: integer
+              selector:
+                description: |-
+                  selector is the label selector in string format to avoid introspection
+                  by clients, and is used to provide the CRD-based integration for the
+                  scale subresource and additional integrations for things like kubectl
+                  describe.. The string will be in the same format as the query-param syntax.
+                  More info about label selectors: http://kubernetes.io/docs/user-guide/labels#label-selectors
+                type: string
+              upToDateReplicas:
+                description: upToDateReplicas is the number of up-to-date replicas
+                  targeted by this ControlPlane. A machine is considered available
+                  when Machine's UpToDate condition is true.
                 format: int32
                 type: integer
               version:

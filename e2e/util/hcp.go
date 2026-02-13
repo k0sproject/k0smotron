@@ -23,10 +23,11 @@ import (
 	"fmt"
 	"time"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -41,7 +42,7 @@ type GetK0smotronControlPlaneByClusterInput struct {
 type WaitForOneK0smotronControlPlaneMachineToExistInput struct {
 	Lister       capiframework.Lister
 	Cluster      *clusterv1.Cluster
-	ControlPlane *cpv1beta1.K0smotronControlPlane
+	ControlPlane *cpv1beta2.K0smotronControlPlane
 }
 
 type DiscoveryAndWaitForHCPReadyInput struct {
@@ -50,8 +51,8 @@ type DiscoveryAndWaitForHCPReadyInput struct {
 	Getter  capiframework.Getter
 }
 
-func DiscoveryAndWaitForHCPToBeReady(ctx context.Context, input DiscoveryAndWaitForHCPReadyInput, interval Interval) (*cpv1beta1.K0smotronControlPlane, error) {
-	var controlPlane *cpv1beta1.K0smotronControlPlane
+func DiscoveryAndWaitForHCPToBeReady(ctx context.Context, input DiscoveryAndWaitForHCPReadyInput, interval Interval) (*cpv1beta2.K0smotronControlPlane, error) {
+	var controlPlane *cpv1beta2.K0smotronControlPlane
 	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		controlPlane, err = getK0smotronControlPlaneByCluster(ctx, GetK0smotronControlPlaneByClusterInput{
 			Lister:      input.Lister,
@@ -77,27 +78,27 @@ func DiscoveryAndWaitForHCPToBeReady(ctx context.Context, input DiscoveryAndWait
 	return controlPlane, nil
 }
 
-func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *cpv1beta1.K0smotronControlPlane, interval Interval) error {
+func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *cpv1beta2.K0smotronControlPlane, interval Interval) error {
 	controlplaneObjectKey := crclient.ObjectKey{
 		Name:      cp.Name,
 		Namespace: cp.Namespace,
 	}
-	controlplane := &cpv1beta1.K0smotronControlPlane{}
+	controlplane := &cpv1beta2.K0smotronControlPlane{}
 	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
 		if err := getter.Get(ctx, controlplaneObjectKey, controlplane); err != nil {
 			return false, errors.Wrapf(err, "failed to get controlplane")
 		}
 
 		desiredReplicas := controlplane.Spec.Replicas
-		statusReplicas := controlplane.Status.Replicas
-		updatedReplicas := controlplane.Status.UpdatedReplicas
-		readyReplicas := controlplane.Status.ReadyReplicas
-		unavailableReplicas := controlplane.Status.UnavailableReplicas
+		statusReplicas := ptr.Deref(controlplane.Status.Replicas, 0)
+		updatedReplicas := ptr.Deref(controlplane.Status.UpToDateReplicas, 0)
+		readyReplicas := ptr.Deref(controlplane.Status.ReadyReplicas, 0)
+		availableReplicas := ptr.Deref(controlplane.Status.AvailableReplicas, 0)
 
 		if statusReplicas != desiredReplicas ||
 			updatedReplicas != desiredReplicas ||
 			readyReplicas != desiredReplicas ||
-			unavailableReplicas > 0 ||
+			availableReplicas != desiredReplicas ||
 			controlplane.Spec.Version != controlplane.Status.Version {
 			return false, nil
 		}
@@ -111,8 +112,8 @@ func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *c
 	return nil
 }
 
-func getK0smotronControlPlaneByCluster(ctx context.Context, input GetK0smotronControlPlaneByClusterInput) (*cpv1beta1.K0smotronControlPlane, error) {
-	controlPlaneList := &cpv1beta1.K0smotronControlPlaneList{}
+func getK0smotronControlPlaneByCluster(ctx context.Context, input GetK0smotronControlPlaneByClusterInput) (*cpv1beta2.K0smotronControlPlane, error) {
+	controlPlaneList := &cpv1beta2.K0smotronControlPlaneList{}
 	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		return input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...) == nil, nil
 	})

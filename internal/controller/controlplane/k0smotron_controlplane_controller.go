@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/utils/ptr"
 	"reflect"
 	"strings"
 	"time"
@@ -53,7 +54,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/exec"
@@ -77,7 +78,7 @@ type K0smotronController struct {
 }
 
 type Scope struct {
-	Config *cpv1beta1.K0smotronControlPlane
+	Config *cpv1beta2.K0smotronControlPlane
 	// ConfigOwner *bsutil.ConfigOwner
 	Cluster *clusterv1.Cluster
 }
@@ -105,7 +106,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
 	log.Info("Reconciling K0smotronControlPlane")
 
-	kcp := &cpv1beta1.K0smotronControlPlane{}
+	kcp := &cpv1beta2.K0smotronControlPlane{}
 	if err := c.Get(ctx, req.NamespacedName, kcp); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -114,7 +115,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	if finalizerAdded, err := util.EnsureFinalizer(ctx, c.Client, kcp, cpv1beta1.K0smotronControlPlaneFinalizer); err != nil || finalizerAdded {
+	if finalizerAdded, err := util.EnsureFinalizer(ctx, c.Client, kcp, cpv1beta2.K0smotronControlPlaneFinalizer); err != nil || finalizerAdded {
 		return ctrl.Result{}, err
 	}
 
@@ -200,7 +201,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			return
 		}
 
-		derr = c.patchInfrastructureStatus(ctx, cluster, kcp.Status.Ready)
+		derr = c.patchInfrastructureStatus(ctx, cluster, kcp.Status.Initialization.ControlPlaneInitialized)
 		if derr != nil {
 			log.Error(derr, "Failed to patch Infrastructure object status")
 			err = kerrors.NewAggregate([]error{err, derr})
@@ -234,7 +235,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 // ensureExternalAddress watches the external address of the control plane and updates the status accordingly
-func (c *K0smotronController) ensureExternalAddress(ctx context.Context, kcp *cpv1beta1.K0smotronControlPlane, cluster *clusterv1.Cluster) error {
+func (c *K0smotronController) ensureExternalAddress(ctx context.Context, kcp *cpv1beta2.K0smotronControlPlane, cluster *clusterv1.Cluster) error {
 	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 	log.Info("Starting to wait for external address")
 	startTime := time.Now()
@@ -303,7 +304,7 @@ func (c *K0smotronController) ensureExternalAddress(ctx context.Context, kcp *cp
 	return nil
 }
 
-func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane, scope *kmcScope) (ctrl.Result, error) {
+func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane, scope *kmcScope) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	if kcp.Spec.CertificateRefs == nil {
 		kcp.Spec.CertificateRefs = []kapi.CertificateRef{
@@ -349,7 +350,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion: cpv1beta1.GroupVersion.String(),
+					APIVersion: cpv1beta2.GroupVersion.String(),
 					Kind:       "K0smotronControlPlane",
 					Name:       kcp.Name,
 					UID:        kcp.UID,
@@ -422,10 +423,10 @@ func isClusterSpecSynced(kmcSpec, kcpSpec kapi.ClusterSpec) (bool, error) {
 	return reflect.DeepEqual(kmcSpec, *overridenKmcSpec), nil
 }
 
-func ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane, scope *kmcScope) error {
+func ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane, scope *kmcScope) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
 
-	owner := *metav1.NewControllerRef(kcp, cpv1beta1.GroupVersion.WithKind("K0smotronControlPlane"))
+	owner := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0smotronControlPlane"))
 	if scope.externalOwner != nil {
 		owner = *util.GetExternalControllerRef(scope.externalOwner)
 	}
@@ -433,7 +434,7 @@ func ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cp
 	return certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, capiutil.ObjectKey(cluster), owner)
 }
 
-func (c *K0smotronController) computeStatus(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane, scope *kmcScope) error {
+func (c *K0smotronController) computeStatus(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane, scope *kmcScope) error {
 	var kmc kapi.Cluster
 	err := c.Client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &kmc)
 	if err != nil {
@@ -457,9 +458,9 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		return err
 	}
 
-	kcp.Status.Replicas = int32(len(contolPlanePods.Items))
+	kcp.Status.Replicas = ptr.To(int32(len(contolPlanePods.Items)))
 
-	var updatedReplicas, readyReplicas, unavailableReplicas int
+	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
 
 	desiredVersionStr := kcp.Spec.Version
 	if !strings.Contains(desiredVersionStr, "-k0s.") && !strings.Contains(desiredVersionStr, "+k0s.") {
@@ -483,6 +484,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		}
 		if isPodReady {
 			readyReplicas++
+			availableReplicas++
 		} else {
 			unavailableReplicas++
 			// if pod is unavailable subsequent checks do not apply
@@ -500,7 +502,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		}
 
 		if desiredVersion.Equal(currentVersion) {
-			updatedReplicas++
+			upToDateReplicas++
 		}
 
 		if currentVersion.LessThan(&minimumVersion) {
@@ -508,11 +510,11 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		}
 	}
 
-	kcp.Status.UpdatedReplicas = int32(updatedReplicas)
-	kcp.Status.ReadyReplicas = int32(readyReplicas)
-	kcp.Status.UnavailableReplicas = int32(unavailableReplicas)
+	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
+	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
+	kcp.Status.AvailableReplicas = ptr.To(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
 
-	if kcp.Status.ReadyReplicas > 0 {
+	if ptr.Deref(kcp.Status.ReadyReplicas, 0) > 0 {
 		kcp.Status.Version = minimumVersion.String()
 	}
 
@@ -522,9 +524,9 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
 	// Additionally, if the ControlPlaneReadyCondition is false (e.g., due to DNS resolution failures),
 	// we should also requeue to retry the connection.
-	if kcp.Status.UnavailableReplicas > 0 ||
+	if unavailableReplicas > 0 ||
 		desiredVersion.String() != kcp.Status.Version ||
-		!conditions.IsTrue(kcp, string(cpv1beta1.ControlPlaneAvailableCondition)) {
+		!conditions.IsTrue(kcp, string(cpv1beta2.ControlPlaneAvailableCondition)) {
 		return ErrNotReady
 	}
 
@@ -560,7 +562,7 @@ func alignToSpecVersionFormat(specVersion, currentVersion *version.Version) (*ve
 
 // computeAvailability checks if the control plane is ready by connecting to the API server
 // and checking if the control plane is initialized
-func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane) {
+func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane) {
 	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 	// Check if the control plane is ready by connecting to the API server
 	// and checking if the control plane is initialized
@@ -571,7 +573,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	if err != nil {
 		logger.Info("Failed to create cluster client", "error", err)
 		conditions.Set(kcp, metav1.Condition{
-			Type:    string(cpv1beta1.ControlPlaneAvailableCondition),
+			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
 			Status:  metav1.ConditionFalse,
 			Reason:  "ClusterClientCreationFailed",
 			Message: err.Error(),
@@ -592,7 +594,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	if err != nil {
 		logger.Info("Failed to get workload cluster namespace", "error", err)
 		conditions.Set(kcp, metav1.Condition{
-			Type:    string(cpv1beta1.ControlPlaneAvailableCondition),
+			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
 			Status:  metav1.ConditionFalse,
 			Reason:  "KubeSystemNamespaceNotAccessible",
 			Message: err.Error(),
@@ -604,18 +606,16 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 
 	// Set condition for successful API access
 	conditions.Set(kcp, metav1.Condition{
-		Type:   string(cpv1beta1.ControlPlaneAvailableCondition),
+		Type:   string(cpv1beta2.ControlPlaneAvailableCondition),
 		Status: metav1.ConditionTrue,
-		Reason: cpv1beta1.ControlPlaneAvailableReason,
+		Reason: cpv1beta2.ControlPlaneAvailableReason,
 	})
 
-	kcp.Status.Ready = true
-	kcp.Status.Initialized = true
-	kcp.Status.Initialization.ControlPlaneInitialized = true
+	kcp.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
 
 	// Set the k0s cluster ID annotation
 	annotations.AddAnnotations(cluster, map[string]string{
-		cpv1beta1.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
+		cpv1beta2.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
 	})
 }
 
@@ -629,7 +629,7 @@ func (scope *kmcScope) getK0sVersionRunningInPod(ctx context.Context, pod *corev
 }
 
 // patchInfrastructureStatus updates the ready status of the infrastructure object referenced by the cluster
-func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, cluster *clusterv1.Cluster, ready bool) error {
+func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, cluster *clusterv1.Cluster, ready *bool) error {
 	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 
 	infraObj, err := external.GetObjectFromContractVersionedRef(ctx, c, cluster.Spec.InfrastructureRef, cluster.Namespace)
@@ -650,7 +650,7 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 	}
 
 	// Only patch if status is not set or different from desired value
-	if !found || currentReady != ready {
+	if !found || currentReady != ptr.Deref(ready, false) {
 		log.Info("Patching Infrastructure object status", "ready", ready)
 
 		// Apply the patch
@@ -659,7 +659,7 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 			infraObj,
 			client.RawPatch(
 				types.MergePatchType,
-				fmt.Appendf(nil, `{"status": {"ready": %t}}`, ready),
+				fmt.Appendf(nil, `{"status": {"ready": %t}}`, ptr.Deref(ready, false)),
 			),
 		)
 		if err != nil {
@@ -673,12 +673,12 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 }
 
 // reconcileDelete handles the deletion of the K0smotronControlPlane object when the controlplane replicas runs in a different cluster.
-func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.NamespacedName, kcp *cpv1beta1.K0smotronControlPlane) (res ctrl.Result, err error) {
+func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.NamespacedName, kcp *cpv1beta2.K0smotronControlPlane) (res ctrl.Result, err error) {
 
 	defer func() {
 		if err != nil && apierrors.IsNotFound(err) {
 			// The cluster is already deleted. Remove the finalizer from the K0smotronControlPlane object for complete cleanup.
-			controllerutil.RemoveFinalizer(kcp, cpv1beta1.K0smotronControlPlaneFinalizer)
+			controllerutil.RemoveFinalizer(kcp, cpv1beta2.K0smotronControlPlaneFinalizer)
 			err = nil
 		}
 	}()
@@ -701,7 +701,7 @@ func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.Nam
 	return ctrl.Result{}, nil
 }
 
-func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta1.K0smotronControlPlane) (*kmcScope, error) {
+func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0smotronControlPlane) (*kmcScope, error) {
 	logger := log.FromContext(ctx)
 
 	// By default, the controlplane replicas run in the mothership cluster so we set the
@@ -730,7 +730,7 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta1.K0
 func (c *K0smotronController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
-		For(&cpv1beta1.K0smotronControlPlane{}).
+		For(&cpv1beta2.K0smotronControlPlane{}).
 		Owns(&kapi.Cluster{}, builder.MatchEveryOwner).
 		Complete(c)
 }

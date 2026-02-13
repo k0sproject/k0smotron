@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controlplane
+package v1beta2
 
 import (
 	"context"
@@ -25,11 +25,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	"github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 )
 
-// +kubebuilder:webhook:path=/validate-controlplane-cluster-x-k8s-io-v1beta1-k0smotroncontrolplane,mutating=false,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0smotroncontrolplanes,verbs=create;update,versions=v1beta1,name=validate-k0smotroncontrolplane-v1beta1.k0smotron.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-controlplane-cluster-x-k8s-io-v1beta2-k0smotroncontrolplane,mutating=false,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0smotroncontrolplanes,verbs=create;update,versions=v1beta2,name=validate-k0smotroncontrolplane-v1beta2.k0smotron.io,admissionReviewVersions=v1
 
 // K0smotronControlPlaneValidator struct is responsible for validating the K0smotronControlPlane resource when it is created, updated, or deleted.
 //
@@ -43,7 +41,7 @@ var _ webhook.CustomValidator = &K0smotronControlPlaneValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type K0smotronControlPlane.
 func (v *K0smotronControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	kcp, ok := obj.(*v1beta1.K0smotronControlPlane)
+	kcp, ok := obj.(*K0smotronControlPlane)
 	if !ok {
 		return nil, fmt.Errorf("expected a K0smotronControlPlane object but got %T", obj)
 	}
@@ -58,11 +56,11 @@ func (v *K0smotronControlPlaneValidator) ValidateCreate(_ context.Context, obj r
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0smotronControlPlane.
 func (v *K0smotronControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	newKCP, ok := newObj.(*v1beta1.K0smotronControlPlane)
+	newKCP, ok := newObj.(*K0smotronControlPlane)
 	if !ok {
 		return nil, fmt.Errorf("expected a new K0smotronControlPlane object but got %T", newObj)
 	}
-	oldKCP, ok := oldObj.(*v1beta1.K0smotronControlPlane)
+	oldKCP, ok := oldObj.(*K0smotronControlPlane)
 	if !ok {
 		return nil, fmt.Errorf("expected a old K0smotronControlPlane object but got %T", oldObj)
 	}
@@ -98,7 +96,7 @@ func (v *K0smotronControlPlaneValidator) ValidateUpdate(_ context.Context, oldOb
 	return warnings, nil
 }
 
-func (v *K0smotronControlPlaneValidator) validate(kcp *v1beta1.K0smotronControlPlane) (admission.Warnings, error) {
+func (v *K0smotronControlPlaneValidator) validate(kcp *K0smotronControlPlane) (admission.Warnings, error) {
 	return v.cv.ValidateClusterSpec(&kcp.Spec)
 }
 
@@ -110,7 +108,7 @@ func (v *K0smotronControlPlaneValidator) ValidateDelete(_ context.Context, _ run
 // SetupK0smotronControlPlaneWebhookWithManager registers the webhook for K0smotronControlPlane in the manager.
 func (v *K0smotronControlPlaneValidator) SetupK0smotronControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&v1beta1.K0smotronControlPlane{}).
+		For(&K0smotronControlPlane{}).
 		WithValidator(v).
 		Complete()
 }

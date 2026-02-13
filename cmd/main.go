@@ -48,7 +48,9 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv1beta2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	infrastructurev1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/bootstrap"
@@ -86,11 +88,13 @@ func init() {
 
 	utilruntime.Must(k0smotronv1beta1.AddToScheme(scheme))
 	utilruntime.Must(bootstrapv1beta1.AddToScheme(scheme))
+	utilruntime.Must(bootstrapv1beta2.AddToScheme(scheme))
 
 	// Register cluster-api types
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(cpv1beta1.AddToScheme(scheme))
+	utilruntime.Must(cpv1beta2.AddToScheme(scheme))
 	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
@@ -276,7 +280,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if err = (&bootstrap.K0sWorkerConfigValidator{}).SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
+		if err = (&bootstrapv1beta2.K0sWorkerConfigValidator{}).SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sWorkerConfigValidator")
 			os.Exit(1)
 		}
@@ -308,12 +312,12 @@ func main() {
 				os.Exit(1)
 			}
 
-			if err = (&controlplane.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+			if err = (&cpv1beta2.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
 				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
 				os.Exit(1)
 			}
 
-			if err = (&controlplane.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
+			if err = (&cpv1beta2.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
 				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0smotronControlPlaneValidator")
 				os.Exit(1)
 			}
