@@ -66,7 +66,7 @@ help: ## Display this help.
 .PHONY: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-standalone
 manifests-bootstrap: $(CONTROLLER_GEN) ## Generate CRDs for bootstrap.cluster.x-k8s.io
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./api/bootstrap/v1beta1/..." \
+	  paths="./api/bootstrap/..." \
 	  paths=./internal/controller/bootstrap/... \
 	  output:crd:artifacts:config=config/clusterapi/bootstrap/crd/bases \
 	  output:rbac:dir=config/clusterapi/bootstrap/rbac \
@@ -74,12 +74,12 @@ manifests-bootstrap: $(CONTROLLER_GEN) ## Generate CRDs for bootstrap.cluster.x-
 
 manifests-controlplane: $(CONTROLLER_GEN) ## Generate CRDs for controlplane.cluster.x-k8s.io.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./api/controlplane/v1beta1/..." \
+	  paths="./api/controlplane/..." \
 	  paths=./internal/controller/controlplane/... \
 	  output:crd:artifacts:config=config/clusterapi/controlplane/crd/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./api/controlplane/v1beta1/..." \
-	  paths="./api/k0smotron.io/v1beta1/..." \
+	  paths="./api/controlplane/..." \
+	  paths="./api/k0smotron.io/..." \
 	  paths=./internal/controller/controlplane/... \
 	  paths=./internal/controller/k0smotron.io/... \
 	  output:rbac:dir=config/clusterapi/controlplane/rbac \
@@ -87,14 +87,14 @@ manifests-controlplane: $(CONTROLLER_GEN) ## Generate CRDs for controlplane.clus
 
 manifests-infrastructure: $(CONTROLLER_GEN) ## Generate CRDs for infrastructure.cluster.x-k8s.io
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true \
-	  paths="./api/infrastructure/v1beta1/..." \
+	  paths="./api/infrastructure/..." \
 	  paths=./internal/controller/infrastructure/... \
 	  output:crd:artifacts:config=config/clusterapi/infrastructure/crd/bases \
 	  output:rbac:dir=config/clusterapi/infrastructure/rbac
 
 manifests-standalone: $(CONTROLLER_GEN) ## Generate CRDs for k0smotron.io standalone
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
-	  paths="./api/k0smotron.io/v1beta1/..." \
+	  paths="./api/k0smotron.io/..." \
 	  paths=./internal/controller/k0smotron.io/... \
 	  output:crd:artifacts:config=config/standalone/crd/bases \
 	  output:rbac:dir=config/standalone/rbac \
@@ -106,13 +106,13 @@ manifests-capi-integration: manifests manifests-capi-integration-without-crd
 .PHONY: manifests-capi-integration-without-crd
 manifests-capi-integration-without-crd: $(CONTROLLER_GEN) # Generate RBAC and webhook manifests for all controllers except CRDs in order to reuse them from each config/clusterapi/{provider}
 	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook \
-	  paths="./api/bootstrap/v1beta1/..." \
+	  paths="./api/bootstrap/..." \
 	  paths=./internal/controller/bootstrap/... \
-	  paths="./api/controlplane/v1beta1/..." \
-	  paths="./api/k0smotron.io/v1beta1/..." \
+	  paths="./api/controlplane/..." \
+	  paths="./api/k0smotron.io/..." \
 	  paths=./internal/controller/controlplane/... \
 	  paths=./internal/controller/k0smotron.io/... \
-	  paths="./api/infrastructure/v1beta1/..." \
+	  paths="./api/infrastructure/..." \
 	  paths=./internal/controller/infrastructure/... \
 	  output:rbac:dir=config/clusterapi/all/rbac \
 	  output:webhook:dir=config/clusterapi/all/webhook
@@ -123,7 +123,9 @@ manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure m
 ### generate
 generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
 generate_targets += api/bootstrap/v1beta1/zz_generated.deepcopy.go
+generate_targets += api/bootstrap/v1beta2/zz_generated.deepcopy.go
 generate_targets += api/controlplane/v1beta1/zz_generated.deepcopy.go
+generate_targets += api/controlplane/v1beta2/zz_generated.deepcopy.go
 generate_targets += api/infrastructure/v1beta1/zz_generated.deepcopy.go
 .PHONY: $(generate_targets)
 $(generate_targets): $(CONTROLLER_GEN)
