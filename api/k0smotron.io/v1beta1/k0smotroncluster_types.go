@@ -501,6 +501,11 @@ func (kmc *Cluster) GetIngressManifestsConfigMapName() string {
 	return kmc.getObjectName("kmc-%s-ingress")
 }
 
+// GetEndpointConfigMapName returns the name of the configmap containing the API server endpoint manifest
+func (kmc *Cluster) GetEndpointConfigMapName() string {
+	return kmc.getObjectName("kmc-%s-endpoint")
+}
+
 const kubeNameLengthLimit = 63
 
 func (kmc *Cluster) getObjectName(pattern string) string {

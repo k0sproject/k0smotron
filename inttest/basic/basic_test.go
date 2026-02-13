@@ -129,6 +129,12 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().NoError(err, "k0s-telemetry CM not found. Manifest not appllied?")
 	s.Require().Equal("k0smotron", cm.Data["provider"])
 
+	s.T().Log("Verifying endpoint configmap is applied in child cluster")
+	childEndpointCM, err := kmcKC.CoreV1().ConfigMaps("kube-system").Get(s.Context(), "control-plane-endpoint", metav1.GetOptions{})
+	s.Require().NoError(err, "control-plane-endpoint configmap not found in child cluster")
+	s.Require().NotEmpty(childEndpointCM.Data["apiServerHost"], "apiServerHost should not be empty")
+	s.Require().NotEmpty(childEndpointCM.Data["apiServerPort"], "apiServerPort should not be empty")
+
 	s.T().Log("Verifying files are mounted")
 	output, err := exec.PodExecCmdOutput(context.TODO(), kc, rc, "kmc-kmc-test-0", "kmc-test", "ls /tmp/test")
 	s.Require().NoError(err, "/tmp/test dir not found. Mount not mounted?")
