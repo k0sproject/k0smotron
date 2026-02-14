@@ -20,10 +20,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// Nodes returns a Watcher for Nodes.
 func Nodes(client Provider[*corev1.NodeList]) *Watcher[corev1.Node] {
 	return FromClient[*corev1.NodeList, corev1.Node](client)
 }
 
+// Pods returns a Watcher for Pods.
 func Pods(client Provider[*corev1.PodList]) *Watcher[corev1.Pod] {
 	return FromClient[*corev1.PodList, corev1.Pod](client)
 }

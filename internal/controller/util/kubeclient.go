@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// GetKubeClient returns a Kubernetes clientset for the given cluster.
 func GetKubeClient(ctx context.Context, client client.Client, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
 	data, err := kubeconfig.FromSecret(ctx, client, capiutil.ObjectKey(cluster))
 	if err != nil {

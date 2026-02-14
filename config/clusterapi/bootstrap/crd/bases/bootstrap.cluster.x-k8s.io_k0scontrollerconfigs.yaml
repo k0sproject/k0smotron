@@ -20,6 +20,8 @@ spec:
   - name: v1beta1
     schema:
       openAPIV3Schema:
+        description: K0sControllerConfig is the Schema for the k0scontrollerconfigs
+          API
         properties:
           apiVersion:
             description: |-
@@ -39,6 +41,7 @@ spec:
           metadata:
             type: object
           spec:
+            description: K0sControllerConfigSpec defines the desired state of K0sControllerConfig
             properties:
               args:
                 description: |-
@@ -259,6 +262,7 @@ spec:
                 type: string
             type: object
           status:
+            description: K0sControllerConfigStatus defines the observed state of K0sControllerConfig
             properties:
               conditions:
                 description: Conditions defines current service state of the K0sControllerConfig.

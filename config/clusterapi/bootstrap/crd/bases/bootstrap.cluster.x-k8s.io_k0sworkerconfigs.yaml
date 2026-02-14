@@ -20,6 +20,7 @@ spec:
   - name: v1beta1
     schema:
       openAPIV3Schema:
+        description: K0sWorkerConfig is the Schema for the k0sworkerconfigs API
         properties:
           apiVersion:
             description: |-
@@ -39,6 +40,7 @@ spec:
           metadata:
             type: object
           spec:
+            description: K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig
             properties:
               args:
                 description: |-
@@ -226,6 +228,7 @@ spec:
                 type: string
             type: object
           status:
+            description: K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig
             properties:
               conditions:
                 description: Conditions defines current service state of the K0sWorkerConfig.

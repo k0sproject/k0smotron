@@ -88,7 +88,7 @@ func (s *ConfigUpdateSuite) TestK0sGetsUp() {
 	s.updateK0smotronCluster(s.Context(), rc)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.Context(), 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.Context(), 1*time.Second, func(_ context.Context) (bool, error) {
 		cm, err := kmcKC.CoreV1().ConfigMaps("kube-system").Get(s.Context(), "kube-router-cfg", metav1.GetOptions{})
 		if err != nil {
 			return false, nil

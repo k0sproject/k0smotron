@@ -60,6 +60,8 @@ const (
 	machineNameNodeLabel = "k0smotron.io/machine-name"
 )
 
+// Controller is responsible for reconciling the K0sWorkerConfig resource, which is responsible
+// for generating the bootstrap data for worker machines.
 type Controller struct {
 	client.Client
 	SecretCachingClient client.Client
@@ -70,6 +72,7 @@ type Controller struct {
 	workloadClusterClient client.Client
 }
 
+// Scope contains the information required to generate the bootstrap data for a worker machine.
 type Scope struct {
 	Config              *bootstrapv1.K0sWorkerConfig
 	ConfigOwner         *bsutil.ConfigOwner
@@ -91,6 +94,7 @@ type Scope struct {
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=get;list;watch;create;update;patch;delete
 
+// Reconcile reconciles the k0sconfig resource.
 func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("k0sconfig", req.NamespacedName)
 	log.Info("Reconciling K0sConfig")

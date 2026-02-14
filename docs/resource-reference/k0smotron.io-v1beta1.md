@@ -277,7 +277,7 @@ will pick it automatically.<br/>
 
 
 
-
+CertificateRef defines a reference to a certificate that should be included in the cluster configuration.
 
 <table>
     <thead>
@@ -4686,7 +4686,8 @@ them as usual kubernetes pod metrics.<br/>
 
 
 
-
+Mount defines a volume to be mounted in the control plane pod,
+along with the mount path and read-only flag.
 
 <table>
     <thead>

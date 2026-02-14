@@ -43,6 +43,7 @@ spec:
           metadata:
             type: object
           spec:
+            description: RemoteClusterTemplateSpec defines the desired state of RemoteClusterTemplate.
             properties:
               template:
                 description: RemoteClusterTemplateResource describes the data needed

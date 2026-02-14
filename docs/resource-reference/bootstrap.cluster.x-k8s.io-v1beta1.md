@@ -25,7 +25,7 @@ Resource Types:
 
 
 
-
+K0sControllerConfig is the Schema for the k0scontrollerconfigs API
 
 <table>
     <thead>
@@ -57,14 +57,14 @@ Resource Types:
         <td><b><a href="#k0scontrollerconfigspec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControllerConfigSpec defines the desired state of K0sControllerConfig<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrollerconfigstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControllerConfigStatus defines the observed state of K0sControllerConfig<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -76,7 +76,7 @@ Resource Types:
 
 
 
-
+K0sControllerConfigSpec defines the desired state of K0sControllerConfig
 
 <table>
     <thead>
@@ -586,7 +586,7 @@ If empty, k0smotron will use the default one.<br/>
 
 
 
-
+K0sControllerConfigStatus defines the observed state of K0sControllerConfig
 
 <table>
     <thead>
@@ -706,7 +706,7 @@ with respect to the current state of the instance.<br/>
 
 
 
-
+K0sWorkerConfig is the Schema for the k0sworkerconfigs API
 
 <table>
     <thead>
@@ -738,14 +738,14 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0sworkerconfigspec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0sworkerconfigstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -757,7 +757,7 @@ with respect to the current state of the instance.<br/>
 
 
 
-
+K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig
 
 <table>
     <thead>
@@ -1218,7 +1218,7 @@ SecretMetadata specifies metadata (labels and annotations) to be propagated to t
 
 
 
-
+K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig
 
 <table>
     <thead>
@@ -1338,7 +1338,7 @@ with respect to the current state of the instance.<br/>
 
 
 
-
+K0sWorkerConfigTemplate is the Schema for the k0sworkerconfigtemplates API
 
 <table>
     <thead>
@@ -1370,7 +1370,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0sworkerconfigtemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigTemplateSpec defines the desired state of K0sWorkerConfigTemplate<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1382,7 +1382,7 @@ with respect to the current state of the instance.<br/>
 
 
 
-
+K0sWorkerConfigTemplateSpec defines the desired state of K0sWorkerConfigTemplate
 
 <table>
     <thead>
@@ -1397,7 +1397,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0sworkerconfigtemplatespectemplate">template</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigTemplateResource defines the template for the worker config resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1409,7 +1409,7 @@ with respect to the current state of the instance.<br/>
 
 
 
-
+K0sWorkerConfigTemplateResource defines the template for the worker config resource
 
 <table>
     <thead>
@@ -1431,7 +1431,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0sworkerconfigtemplatespectemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1498,7 +1498,7 @@ with respect to the current state of the instance.<br/>
 
 
 
-
+K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig
 
 <table>
     <thead>

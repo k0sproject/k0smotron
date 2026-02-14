@@ -29,7 +29,7 @@ Resource Types:
 
 
 
-
+PooledRemoteMachine represents a RemoteMachine that is part of a pool and can be reserved for use.
 
 <table>
     <thead>
@@ -61,14 +61,14 @@ Resource Types:
         <td><b><a href="#pooledremotemachinespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          PooledRemoteMachineSpec defines the desired state of PooledRemoteMachine<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#pooledremotemachinestatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          PooledRemoteMachineStatus defines the observed state of PooledRemoteMachine<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -80,7 +80,7 @@ Resource Types:
 
 
 
-
+PooledRemoteMachineSpec defines the desired state of PooledRemoteMachine
 
 <table>
     <thead>
@@ -95,7 +95,7 @@ Resource Types:
         <td><b><a href="#pooledremotemachinespecmachine">machine</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          PooledMachineSpec defines the connection details and provisioning information for a machine in a pool.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -114,7 +114,7 @@ Resource Types:
 
 
 
-
+PooledMachineSpec defines the connection details and provisioning information for a machine in a pool.
 
 <table>
     <thead>
@@ -229,7 +229,7 @@ The key must be placed on the secret using the key "value".
 
 
 
-
+PooledRemoteMachineStatus defines the observed state of PooledRemoteMachine
 
 <table>
     <thead>
@@ -244,7 +244,7 @@ The key must be placed on the secret using the key "value".
         <td><b><a href="#pooledremotemachinestatusmachineref">machineRef</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteMachineRef is a reference to a RemoteMachine that has been reserved for use.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -263,7 +263,7 @@ The key must be placed on the secret using the key "value".
 
 
 
-
+RemoteMachineRef is a reference to a RemoteMachine that has been reserved for use.
 
 <table>
     <thead>
@@ -299,7 +299,7 @@ The key must be placed on the secret using the key "value".
 
 
 
-
+RemoteCluster is the Schema for the remoteclusters API
 
 <table>
     <thead>
@@ -478,7 +478,7 @@ RemoteClusterTemplate is the Schema for the remoteclustertemplates API.
         <td><b><a href="#remoteclustertemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteClusterTemplateSpec defines the desired state of RemoteClusterTemplate.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -490,7 +490,7 @@ RemoteClusterTemplate is the Schema for the remoteclustertemplates API.
 
 
 
-
+RemoteClusterTemplateSpec defines the desired state of RemoteClusterTemplate.
 
 <table>
     <thead>
@@ -698,7 +698,7 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
 
 
 
-
+RemoteMachine is the Schema for the remotemachines API
 
 <table>
     <thead>
@@ -18170,7 +18170,7 @@ MachineAddress contains information for the node's address.
 
 
 
-
+RemoteMachineTemplate is the Schema for the remotemachinetemplates API
 
 <table>
     <thead>
@@ -18202,7 +18202,7 @@ MachineAddress contains information for the node's address.
         <td><b><a href="#remotemachinetemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteMachineTemplateSpec defines the desired state of RemoteMachineTemplate<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18214,7 +18214,7 @@ MachineAddress contains information for the node's address.
 
 
 
-
+RemoteMachineTemplateSpec defines the desired state of RemoteMachineTemplate
 
 <table>
     <thead>
@@ -18229,7 +18229,7 @@ MachineAddress contains information for the node's address.
         <td><b><a href="#remotemachinetemplatespectemplate">template</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteMachineTemplateResource describes the data needed to create a RemoteMachine from a template<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -18241,7 +18241,7 @@ MachineAddress contains information for the node's address.
 
 
 
-
+RemoteMachineTemplateResource describes the data needed to create a RemoteMachine from a template
 
 <table>
     <thead>
@@ -18263,7 +18263,7 @@ MachineAddress contains information for the node's address.
         <td><b><a href="#remotemachinetemplatespectemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteMachineTemplateResourceSpec defines the desired state of RemoteMachineTemplateResource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18330,7 +18330,7 @@ MachineAddress contains information for the node's address.
 
 
 
-
+RemoteMachineTemplateResourceSpec defines the desired state of RemoteMachineTemplateResource
 
 <table>
     <thead>

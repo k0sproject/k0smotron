@@ -44,13 +44,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// ErrPooledMachineNotFound is returned when a RemoteMachine references a pool
+// but no free machine is found in the pool.
 var ErrPooledMachineNotFound = fmt.Errorf("free pooled machine not found")
 
+// Provisioner defines the interface for provisioning a remote machine.
 type Provisioner interface {
 	Provision(ctx context.Context) error
 	Cleanup(ctx context.Context, mode RemoteMachineMode) error
 }
 
+// RemoteMachineController is responsible for reconciling the RemoteMachine resource.
 type RemoteMachineController struct {
 	client.Client
 	SecretCachingClient client.Client
@@ -59,13 +63,18 @@ type RemoteMachineController struct {
 	RESTConfig          *rest.Config
 }
 
+// RemoteMachineMode defines the mode of the RemoteMachine, which can be
+// either a control plane node, a worker node, or a non-k0s machine.
 type RemoteMachineMode int
 
 const (
+	// RemoteMachineFinalizer is the finalizer used for RemoteMachine resources to ensure proper cleanup.
 	RemoteMachineFinalizer = "remotemachine.k0smotron.io/finalizer"
-
+	// ModeController indicates that the RemoteMachine is a control plane node.
 	ModeController RemoteMachineMode = iota
+	// ModeWorker indicates that the RemoteMachine is a worker node.
 	ModeWorker
+	// ModeNonK0s indicates that the RemoteMachine is not a k0s node, and should be treated as a generic machine.
 	ModeNonK0s
 )
 
@@ -79,6 +88,7 @@ const (
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="batch",resources=jobs,verbs=get;list;watch;create;update;patch;delete
 
+// Reconcile reconciles the RemoteMachine resource and ensures the remote machine is provisioned and in a ready state.
 func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("remotemachine", req.NamespacedName)
 	log.Info("Reconciling RemoteMachine")

@@ -53,6 +53,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
+// InstallK0smotronOperator installs the k0smotron operator to the cluster using the provided YAML manifest.
 func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
 	err := InstallLocalPathStorage(ctx, kc, rc)
 	if err != nil {
@@ -87,6 +88,7 @@ func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc 
 	return nil
 }
 
+// InstallStableK0smotronOperator installs the stable version of the k0smotron operator to the cluster.
 func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
 	err := InstallLocalPathStorage(ctx, kc, rc)
 	if err != nil {
@@ -125,14 +127,18 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 	return nil
 }
 
+// InstallCertManager installs cert-manager to the cluster using the provided YAML manifest.
 func InstallCertManager(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
 	return CreateFromYAML(ctx, kc, rc, os.Getenv("CERT_MANAGER_INSTALL_YAML"))
 }
 
+// InstallLocalPathStorage installs the local path storage provisioner to the cluster using
+// the provided YAML manifest.
 func InstallLocalPathStorage(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
 	return CreateFromYAML(ctx, kc, rc, os.Getenv("LOCAL_STORAGE_INSTALL_YAML"))
 }
 
+// CreateFromYAML reads the YAML manifest from the given file and creates the resources in the cluster.
 func CreateFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, filename string) error {
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -152,6 +158,7 @@ func CreateFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Conf
 	return CreateResources(ctx, resources, kc, dc)
 }
 
+// ApplyFromYAML reads the YAML manifest from the given file and applies the resources in the cluster.
 func ApplyFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, filename string) error {
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -171,6 +178,7 @@ func ApplyFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Confi
 	return applyResources(ctx, resources, kc, dc)
 }
 
+// ParseManifests parses the given YAML manifest and returns a list of unstructured Kubernetes resources.
 func ParseManifests(data []byte) ([]*unstructured.Unstructured, error) {
 	var resources []*unstructured.Unstructured
 
@@ -194,6 +202,7 @@ func ParseManifests(data []byte) ([]*unstructured.Unstructured, error) {
 	}
 }
 
+// GetDynamicClient returns a dynamic Kubernetes client for the given REST config.
 func GetDynamicClient(rc *rest.Config) (*dynamic.DynamicClient, error) {
 	client, err := dynamic.NewForConfig(rc)
 	if err != nil {
@@ -207,6 +216,7 @@ func getMapper(kc *kubernetes.Clientset) *restmapper.DeferredDiscoveryRESTMapper
 	return restmapper.NewDeferredDiscoveryRESTMapper(disc)
 }
 
+// CreateResources creates the given list of unstructured Kubernetes resources in the cluster.
 func CreateResources(ctx context.Context, resources []*unstructured.Unstructured, kc *kubernetes.Clientset, client *dynamic.DynamicClient) error {
 	mapper := getMapper(kc)
 	for _, res := range resources {
@@ -215,7 +225,7 @@ func CreateResources(ctx context.Context, resources []*unstructured.Unstructured
 			Duration: 1 * time.Second,
 			Factor:   1.0,
 			Jitter:   0.1,
-		}, func(err error) bool {
+		}, func(_ error) bool {
 			return true
 		}, func() error {
 			mapping, err := mapper.RESTMapping(
@@ -253,7 +263,7 @@ func applyResources(ctx context.Context, resources []*unstructured.Unstructured,
 			Duration: 1 * time.Second,
 			Factor:   1.0,
 			Jitter:   0.1,
-		}, func(err error) bool {
+		}, func(_ error) bool {
 			return true
 		}, func() error {
 			mapping, err := mapper.RESTMapping(
@@ -283,6 +293,8 @@ func applyResources(ctx context.Context, resources []*unstructured.Unstructured,
 	return nil
 }
 
+// GetJoinToken retrieves the join token for the given cluster by executing the `k0s token create`
+// command on the controller pod.
 func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namespace string) (string, error) {
 	output, err := kexec.PodExecCmdOutput(context.TODO(), kc, rc, name, namespace, "k0s token create --role=worker")
 	if err != nil {
@@ -316,6 +328,7 @@ func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string,
 	return kubernetes.NewForConfig(kmcCfg)
 }
 
+// GetNodeAddress retrieves the internal IP address of the given node.
 func GetNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) (string, error) {
 	n, err := kc.CoreV1().Nodes().Get(ctx, node, metav1.GetOptions{})
 	if err != nil {
@@ -331,6 +344,8 @@ func GetNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) 
 	return "", fmt.Errorf("Node doesn't have an Address of type InternalIP")
 }
 
+// WaitForSecret waits until the secret with the given name and namespace exists and
+// has a non-empty "value" field.
 func WaitForSecret(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) error {
 	// Use apimachinery wait directly as the k0s common polls bit too much and sometimes it results into client side throttling
 	// Since it's marked deprecated in a wrong way, there's no replacement for it yet, we'll disable the linter for now
@@ -347,7 +362,7 @@ func WaitForSecret(ctx context.Context, kc *kubernetes.Clientset, name string, n
 		if err != nil {
 			return false, err
 		}
-		if secret.Data["value"] != nil && len(secret.Data["value"]) > 0 {
+		if len(secret.Data["value"]) != 0 {
 			return true, nil
 		}
 		return false, nil
@@ -387,6 +402,7 @@ func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *clust
 
 }
 
+// GetK0sControlPlane retrieves a K0sControlPlane object from the cluster API server
 func GetK0sControlPlane(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*cpv1beta1.K0sControlPlane, error) {
 
 	url := fmt.Sprintf("apis/controlplane.cluster.x-k8s.io/v1beta1/namespaces/%s/k0scontrolplanes/%s", namespace, name)
@@ -402,6 +418,8 @@ func GetK0sControlPlane(ctx context.Context, kc *kubernetes.Clientset, name stri
 	return cp, err
 }
 
+// WaitForRolloutCompleted waits until the deployment with the given name and namespace
+// has completed its rollout.
 func WaitForRolloutCompleted(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) error {
 	newReplicaSetCreated := false
 	return watch.Deployments(kc.AppsV1().Deployments(namespace)).
@@ -424,6 +442,8 @@ func WaitForRolloutCompleted(ctx context.Context, kc *kubernetes.Clientset, name
 		})
 }
 
+// DeleteCluster deletes the cluster with the given name and namespace by executing the
+// `kubectl delete cluster` command.
 func DeleteCluster(clusterName string) error {
 	out, err := exec.Command("kubectl", "delete", "cluster", clusterName).CombinedOutput()
 	if err != nil {
@@ -433,6 +453,8 @@ func DeleteCluster(clusterName string) error {
 	return nil
 }
 
+// GetControlPlaneMachinesByKcpName retrieves the list of control plane machines for the
+// given K0sControlPlane name and namespace.
 func GetControlPlaneMachinesByKcpName(ctx context.Context, kcpName string, namespace string, c *kubernetes.Clientset) ([]clusterv1.Machine, error) {
 	apiPath := fmt.Sprintf("/apis/cluster.x-k8s.io/v1beta1/namespaces/%s/machines", namespace)
 	res, err := c.RESTClient().Get().AbsPath(apiPath).DoRaw(ctx)

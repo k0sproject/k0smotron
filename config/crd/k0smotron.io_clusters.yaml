@@ -47,6 +47,8 @@ spec:
               certificateRefs:
                 description: CertificateRefs defines the certificate references.
                 items:
+                  description: CertificateRef defines a reference to a certificate
+                    that should be included in the cluster configuration.
                   properties:
                     name:
                       type: string
@@ -2236,6 +2238,9 @@ spec:
                   For more information check:
                   https://kubernetes.io/docs/concepts/storage/volumes
                 items:
+                  description: |-
+                    Mount defines a volume to be mounted in the control plane pod,
+                    along with the mount path and read-only flag.
                   properties:
                     awsElasticBlockStore:
                       description: |-

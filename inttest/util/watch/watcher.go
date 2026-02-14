@@ -63,6 +63,7 @@ type Provider[L any] interface {
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 }
 
+// VersionedResource is a Kubernetes resource that has a resource version.
 type VersionedResource interface {
 	GetResourceVersion() string
 }

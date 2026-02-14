@@ -61,6 +61,7 @@ spec:
     name: v1beta1
     schema:
       openAPIV3Schema:
+        description: K0sControlPlane is the Schema for the K0sControlPlanes API.
         properties:
           apiVersion:
             description: |-
@@ -80,8 +81,11 @@ spec:
           metadata:
             type: object
           spec:
+            description: K0sControlPlaneSpec defines the desired state of K0sControlPlane.
             properties:
               k0sConfigSpec:
+                description: K0sConfigSpec defines the common configuration for both
+                  K0sControllerConfig and K0sWorkerConfig.
                 properties:
                   args:
                     description: |-
@@ -312,6 +316,8 @@ spec:
                     type: object
                 type: object
               machineTemplate:
+                description: K0sControlPlaneMachineTemplate defines the template for
+                  Machines in a K0sControlPlane object.
                 properties:
                   infrastructureRef:
                     description: |-
@@ -415,6 +421,7 @@ spec:
               initialized: false
               ready: false
               version: ""
+            description: K0sControlPlaneStatus defines the observed state of K0sControlPlane.
             properties:
               conditions:
                 description: Conditions defines current service state of the K0sControlPlane.

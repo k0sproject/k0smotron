@@ -68,15 +68,22 @@ const (
 )
 
 var (
-	ErrNotReady               = fmt.Errorf("waiting for the state")
-	ErrNewMachinesNotReady    = fmt.Errorf("waiting for new machines: %w", ErrNotReady)
-	FRPTokenNameTemplate      = "%s-frp-token"
-	FRPConfigMapNameTemplate  = "%s-frps-config"
+	// ErrNotReady is used to indicate that the control plane is not ready yet.
+	ErrNotReady = fmt.Errorf("waiting for the state")
+	// ErrNewMachinesNotReady is used to indicate that the new machines are not ready yet.
+	ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines: %w", ErrNotReady)
+	// FRPTokenNameTemplate is the template for the name of the secret that contains the FRP token.
+	FRPTokenNameTemplate = "%s-frp-token"
+	// FRPConfigMapNameTemplate is the template for the name of the ConfigMap that contains the FRP configuration.
+	FRPConfigMapNameTemplate = "%s-frps-config"
+	// FRPDeploymentNameTemplate is the template for the name of the Deployment that runs the FRP server.
 	FRPDeploymentNameTemplate = "%s-frps"
-	FRPServiceNameTemplate    = "%s-frps"
-	minVersionForETCDName     = version.MustParse("v1.31.1")
+	// FRPServiceNameTemplate is the template for the name of the Service that exposes the FRP server.
+	FRPServiceNameTemplate = "%s-frps"
+	minVersionForETCDName  = version.MustParse("v1.31.1")
 )
 
+// K0sController is responsible for reconciling K0sControlPlane objects.
 type K0sController struct {
 	client.Client
 	SecretCachingClient client.Client
@@ -96,6 +103,7 @@ type K0sController struct {
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
+// Reconcile reconciles a K0sControlPlane object.
 func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
 	kcp := &cpv1beta1.K0sControlPlane{}
@@ -430,7 +438,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			configurationHasChanged = true
 			machineNamesToDelete[m.Name] = true
 		} else {
-			err := c.inplaceSyncMachineValues(ctx, kcp, m)
+			err := c.inplaceSyncMachineValues(ctx, m)
 			if err != nil {
 				return fmt.Errorf("error syncing in-place updates to machine %s: %w", m.Name, err)
 			}
@@ -503,7 +511,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 			return fmt.Errorf("waiting for previous machine to be deleted")
 		}
 
-		err = c.runMachineDeletionSequence(ctx, cluster, kcp, machineToDelete)
+		err = c.runMachineDeletionSequence(ctx, kcp, machineToDelete)
 		if err != nil {
 			return err
 		}
@@ -569,7 +577,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	return nil
 }
 
-func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, machine *clusterv1.Machine) error {
 	patchHelper, err := patch.NewHelper(machine, c.Client)
 	if err != nil {
 		return err
@@ -578,7 +586,7 @@ func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, kcp *cpv1b
 	return patchHelper.Patch(ctx, machine)
 }
 
-func (c *K0sController) runMachineDeletionSequence(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
+func (c *K0sController) runMachineDeletionSequence(ctx context.Context, kcp *cpv1beta1.K0sControlPlane, machine *clusterv1.Machine) error {
 	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
 		return fmt.Errorf("error deleting machine from template: %w", err)
 	}

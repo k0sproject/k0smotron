@@ -23,12 +23,15 @@ import (
 	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
+// ProviderIDController is responsible for reconciling the ProviderID field of the Machine resource.
 type ProviderIDController struct {
 	client.Client
 	Scheme    *runtime.Scheme
 	ClientSet *kubernetes.Clientset
 }
 
+// Reconcile reconciles the ProviderID field of the Machine resource and
+// ensures it is set on the corresponding Node in the workload cluster.
 func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("providerID", req.NamespacedName)
 	log.Info("Reconciling machine's ProviderID")
@@ -112,7 +115,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	if node.Spec.ProviderID == "" {
 		node.Spec.ProviderID = machine.Spec.ProviderID
 		node.Labels[machineNameNodeLabel] = machine.GetName()
-		err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		err = retry.OnError(retry.DefaultBackoff, func(_ error) bool {
 			return true
 		}, func() error {
 			_, upErr := childClient.CoreV1().Nodes().Update(context.Background(), node, metav1.UpdateOptions{})

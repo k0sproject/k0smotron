@@ -32,6 +32,7 @@ func init() {
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
 
+// RemoteMachineTemplate is the Schema for the remotemachinetemplates API
 type RemoteMachineTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -39,16 +40,19 @@ type RemoteMachineTemplate struct {
 	Spec RemoteMachineTemplateSpec `json:"spec,omitempty"`
 }
 
+// RemoteMachineTemplateSpec defines the desired state of RemoteMachineTemplate
 type RemoteMachineTemplateSpec struct {
 	Template RemoteMachineTemplateResource `json:"template"`
 }
 
+// RemoteMachineTemplateResource describes the data needed to create a RemoteMachine from a template
 type RemoteMachineTemplateResource struct {
 	// +kubebuilder:validation:Optional
 	ObjectMeta metav1.ObjectMeta                 `json:"metadata,omitempty"`
 	Spec       RemoteMachineTemplateResourceSpec `json:"spec,omitempty"`
 }
 
+// RemoteMachineTemplateResourceSpec defines the desired state of RemoteMachineTemplateResource
 type RemoteMachineTemplateResourceSpec struct {
 	Pool string `json:"pool"`
 	// ProvisionJob describes the kubernetes Job to use to provision the machine.
@@ -57,6 +61,7 @@ type RemoteMachineTemplateResourceSpec struct {
 
 // +kubebuilder:object:root=true
 
+// RemoteMachineTemplateList contains a list of RemoteMachineTemplate
 type RemoteMachineTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

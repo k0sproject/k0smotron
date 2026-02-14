@@ -34,6 +34,7 @@ func init() {
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
 
+// RemoteMachine is the Schema for the remotemachines API
 type RemoteMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -97,6 +98,7 @@ type RemoteMachineSpec struct {
 	ProvisionJob *ProvisionJob `json:"provisionJob,omitempty"`
 }
 
+// ProvisionJob describes the kubernetes Job to use to provision the machine.
 type ProvisionJob struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="ssh"
@@ -122,6 +124,7 @@ type RemoteMachineStatus struct {
 	FailureMessage string `json:"failureMessage,omitempty"`
 }
 
+// SecretRef is a reference to a secret that contains a value.
 type SecretRef struct {
 	// Name is the name of the secret.
 	// +kubebuilder:validation:Required
@@ -130,6 +133,7 @@ type SecretRef struct {
 
 // +kubebuilder:object:root=true
 
+// RemoteMachineList contains a list of RemoteMachine
 type RemoteMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -144,6 +148,7 @@ type RemoteMachineList struct {
 // +kubebuilder:printcolumn:name="Reserved",type=string,JSONPath=".status.reserved",description="Indicates if the machine is reserved"
 // +kubebuilder:printcolumn:name="Remote Machine",type=string,JSONPath=".status.machineRef.name",description="Reference to the RemoteMachine"
 
+// PooledRemoteMachine represents a RemoteMachine that is part of a pool and can be reserved for use.
 type PooledRemoteMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -152,11 +157,13 @@ type PooledRemoteMachine struct {
 	Status PooledRemoteMachineStatus `json:"status,omitempty"`
 }
 
+// PooledRemoteMachineSpec defines the desired state of PooledRemoteMachine
 type PooledRemoteMachineSpec struct {
 	Pool    string            `json:"pool"`
 	Machine PooledMachineSpec `json:"machine"`
 }
 
+// PooledMachineSpec defines the connection details and provisioning information for a machine in a pool.
 type PooledMachineSpec struct {
 	// Address is the IP address or DNS name of the remote machine.
 	// +kubebuilder:validation:Required
@@ -194,11 +201,13 @@ type PooledMachineSpec struct {
 	SSHKeyRef SecretRef `json:"sshKeyRef"`
 }
 
+// PooledRemoteMachineStatus defines the observed state of PooledRemoteMachine
 type PooledRemoteMachineStatus struct {
 	Reserved   bool             `json:"reserved"`
 	MachineRef RemoteMachineRef `json:"machineRef"`
 }
 
+// RemoteMachineRef is a reference to a RemoteMachine that has been reserved for use.
 type RemoteMachineRef struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
@@ -206,6 +215,7 @@ type RemoteMachineRef struct {
 
 // +kubebuilder:object:root=true
 
+// PooledRemoteMachineList contains a list of PooledRemoteMachine
 type PooledRemoteMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
