@@ -38,6 +38,7 @@ import (
 
 var regex = regexp.MustCompile(`--kubelet-root-dir[ =](/[/a-zA-Z0-9_-]+)+`)
 
+// SSHProvisioner is responsible for provisioning a remote machine using SSH.
 type SSHProvisioner struct {
 	cloudInit *provisioner.InputProvisionData
 	machine   *api.RemoteMachine

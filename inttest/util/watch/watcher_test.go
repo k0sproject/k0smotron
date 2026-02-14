@@ -121,7 +121,7 @@ func TestWatcher(t *testing.T) {
 
 		err := underTest.
 			WithErrorCallback(forbiddenErrorCallback(t)).
-			Until(ctx, func(watched *corev1.ConfigMap) (bool, error) {
+			Until(ctx, func(_ *corev1.ConfigMap) (bool, error) {
 				assert.Zero(t, callsToCondition, "Condition called more than once")
 				callsToCondition++
 
@@ -194,7 +194,7 @@ func TestWatcher(t *testing.T) {
 				t.Parallel()
 				provider, underTest := newTestWatcher()
 				provider.nextList.ListMeta.ResourceVersion = t.Name()
-				provider.watch = func(opts metav1.ListOptions) error {
+				provider.watch = func(_ metav1.ListOptions) error {
 					provider.ch = openEventChanWith(apiwatch.Event{
 						Type:   test.eventType,
 						Object: &injectedErr.ErrStatus,
@@ -275,7 +275,7 @@ func TestWatcher(t *testing.T) {
 				Object: &apierrors.NewResourceExpired("injected resource version too old").ErrStatus,
 			})
 
-			provider.watch = func(opts metav1.ListOptions) error {
+			provider.watch = func(_ metav1.ListOptions) error {
 				provider.ch = openEventChanWith(apiwatch.Event{
 					Type:   apiwatch.Added,
 					Object: &someConfigMap,
@@ -311,7 +311,7 @@ func TestWatcher(t *testing.T) {
 		t.Parallel()
 		provider, underTest := newTestWatcher()
 		provider.nextList.ListMeta.ResourceVersion = t.Name()
-		provider.watch = func(opts metav1.ListOptions) error {
+		provider.watch = func(_ metav1.ListOptions) error {
 			provider.ch = openEventChanWith(apiwatch.Event{
 				Type:   apiwatch.Added,
 				Object: &someConfigMap,
@@ -351,7 +351,7 @@ func TestWatcher(t *testing.T) {
 
 		provider, underTest := newTestWatcher()
 		provider.nextList.ListMeta.ResourceVersion = t.Name()
-		provider.watch = func(opts metav1.ListOptions) error {
+		provider.watch = func(_ metav1.ListOptions) error {
 			provider.ch = openEventChanWith(apiwatch.Event{
 				Type:   apiwatch.Added,
 				Object: &bogusSecret,
@@ -429,7 +429,7 @@ func TestWatcher(t *testing.T) {
 
 			provider, underTest := newTestWatcher()
 			provider.nextList.ListMeta.ResourceVersion = t.Name()
-			provider.watch = func(opts metav1.ListOptions) error {
+			provider.watch = func(_ metav1.ListOptions) error {
 				provider.ch = openEventChanWith(apiwatch.Event{
 					Type:   apiwatch.Added,
 					Object: &invalidConfigMap,
@@ -479,7 +479,7 @@ func TestWatcher(t *testing.T) {
 		provider, underTest := newTestWatcher()
 		provider.nextList.ListMeta.ResourceVersion = t.Name()
 		var second, third func(opts metav1.ListOptions) error
-		provider.watch = func(opts metav1.ListOptions) error {
+		provider.watch = func(_ metav1.ListOptions) error {
 			bookmark := unstructured.Unstructured{
 				Object: map[string]any{
 					"metadata": map[string]any{

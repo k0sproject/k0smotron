@@ -141,7 +141,7 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 	var localPort int
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		localPort, _ = getLBPort("TestRemoteMachineSuite-k0smotron0")
 		return localPort > 0, nil
 	})

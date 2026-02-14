@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint:revive
 package util
 
 import (
@@ -27,6 +28,7 @@ import (
 	"time"
 )
 
+// NewSuiteContext creates a context for the test suite that is aware of OS signals and test deadlines.
 func NewSuiteContext(t *testing.T) (context.Context, context.CancelCauseFunc) {
 	signalCtx, cancel := signalAwareCtx(context.Background())
 

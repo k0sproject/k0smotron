@@ -72,6 +72,8 @@ func LabelsForEtcdK0smotronCluster(kmc *km.Cluster) map[string]string {
 	return labels
 }
 
+// AnnotationsForK0smotronCluster returns annotations for K0smotron cluster resources,
+// including user-defined annotations from the cluster spec.
 func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 	if kmc.Annotations == nil {
 		kmc.Annotations = make(map[string]string)
@@ -83,12 +85,12 @@ func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 }
 
 // AddToExistingSans merges original sans list with a new sans slice avoiding duplicated values.
-func AddToExistingSans(existing []string, new []string) []string {
+func AddToExistingSans(existing []string, newSan []string) []string {
 	uniques := make(map[string]struct{})
 	for _, val := range existing {
 		uniques[val] = struct{}{}
 	}
-	for _, val := range new {
+	for _, val := range newSan {
 		uniques[val] = struct{}{}
 	}
 	finalSans := make([]string, 0, len(uniques))

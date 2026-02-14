@@ -182,6 +182,8 @@ func (i *IngressSpec) Validate(clusterVersion string) (admission.Warnings, error
 	return warnings, nil
 }
 
+// Mount defines a volume to be mounted in the control plane pod,
+// along with the mount path and read-only flag.
 type Mount struct {
 	Path string `json:"path"`
 	// ReadOnly specifies whether the volume should be mounted as read-only. (default: false, except for ConfigMaps and Secrets)
@@ -191,12 +193,18 @@ type Mount struct {
 }
 
 const (
-	defaultK0SImage   = "quay.io/k0sproject/k0s"
+	defaultK0SImage = "quay.io/k0sproject/k0s"
+	// DefaultK0SVersion is the default k0s version used by k0smotron if no version is specified in the ClusterSpec.
 	DefaultK0SVersion = "v1.27.9-k0s.0"
-	DefaultK0SSuffix  = "k0s.0"
-	DefaultEtcdImage  = "quay.io/k0sproject/etcd:v3.5.13"
+	// DefaultK0SSuffix is the default suffix added to the k0s version if no suffix is specified.
+	// This is needed because k0s images are tagged with -k0s.X suffix.
+	DefaultK0SSuffix = "k0s.0"
+	// DefaultEtcdImage is the default etcd image used by k0smotron if no image is specified in the ClusterSpec.
+	DefaultEtcdImage = "quay.io/k0sproject/etcd:v3.5.13"
 )
 
+// GetImage returns the full image name with tag for the k0s image to be deployed,
+// based on the ClusterSpec.
 func (c *ClusterSpec) GetImage() string {
 	k0sVersion := c.Version
 	if k0sVersion == "" {
@@ -242,6 +250,7 @@ type Cluster struct {
 	Status ClusterStatus `json:"status,omitempty"`
 }
 
+// ServiceSpec defines the service configuration for the k0s control plane.
 type ServiceSpec struct {
 	//+kubebuilder:validation:Enum=ClusterIP;NodePort;LoadBalancer
 	//+kubebuilder:default=ClusterIP
@@ -281,6 +290,7 @@ type ClusterList struct {
 	Items           []Cluster `json:"items"`
 }
 
+// PersistenceSpec defines the persistence configuration for the k0s control plane.
 type PersistenceSpec struct {
 	//+kubebuilder:validation:Enum:emptyDir;hostPath;pvc
 	//+kubebuilder:default=emptyDir
@@ -317,6 +327,8 @@ type PersistentVolumeClaim struct {
 	Status v1.PersistentVolumeClaimStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
+// ObjectMeta defines metadata for Kubernetes objects. This is a simplified version of metav1.ObjectMeta
+// used in the ClusterSpec to avoid importing the entire metav1 package in the API definition.
 type ObjectMeta struct {
 	// +optional
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
@@ -335,6 +347,7 @@ type ObjectMeta struct {
 	Finalizers []string `json:"finalizers,omitempty" patchStrategy:"merge" protobuf:"bytes,14,rep,name=finalizers"`
 }
 
+// MonitoringSpec defines the monitoring configuration for the k0s control plane.
 type MonitoringSpec struct {
 	// Enabled enables prometheus sidecar that scrapes metrics from the child cluster system components and expose
 	// them as usual kubernetes pod metrics.
@@ -347,6 +360,7 @@ type MonitoringSpec struct {
 	ProxyImage string `json:"proxyImage"`
 }
 
+// EtcdSpec defines the etcd configuration for the k0s control plane.
 type EtcdSpec struct {
 	// Image defines the etcd image to be deployed.
 	//+kubebuilder:default="quay.io/k0sproject/etcd:v3.5.13"
@@ -369,6 +383,7 @@ type EtcdSpec struct {
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
 }
 
+// DefragJob defines the configuration for the etcd defragmentation job.
 type DefragJob struct {
 	// Enabled enables the etcd defragmentation job.
 	//+kubebuilder:default=false
@@ -385,6 +400,7 @@ type DefragJob struct {
 	Image string `json:"image"`
 }
 
+// EtcdPersistenceSpec defines the persistence configuration for the etcd cluster.
 type EtcdPersistenceSpec struct {
 	// StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.
 	//+kubebuilder:validation:Optional
@@ -395,6 +411,7 @@ type EtcdPersistenceSpec struct {
 	Size resource.Quantity `json:"size"`
 }
 
+// CertificateRef defines a reference to a certificate that should be included in the cluster configuration.
 type CertificateRef struct {
 	//+kubebuilder:validation:Enum=ca;sa;proxy;etcd;apiserver-etcd-client;etcd-peer;etcd-server
 	Type string `json:"type"`
@@ -420,43 +437,59 @@ func init() {
 	SchemeBuilder.Register(&Cluster{}, &ClusterList{})
 }
 
+// GetStatefulSetName returns the name of the statefulset for the k0s control plane.
+// The name is generated based on the cluster name and is shortened if it exceeds the
+// Kubernetes name length limit.
 func GetStatefulSetName(clusterName string) string {
 	return shortName(fmt.Sprintf("kmc-%s", clusterName))
 }
 
+// GetStatefulSetName returns the name of the statefulset for the k0s control plane.
 func (kmc *Cluster) GetStatefulSetName() string {
 	return GetStatefulSetName(kmc.Name)
 }
 
+// GetEtcdStatefulSetName returns the name of the statefulset for the etcd cluster.
 func (kmc *Cluster) GetEtcdStatefulSetName() string {
 	return kmc.getObjectName("kmc-%s-etcd")
 }
 
+// GetEtcdDefragJobName returns the name of the etcd defragmentation job.
 func (kmc *Cluster) GetEtcdDefragJobName() string {
 	return kmc.getObjectName("kmc-%s-defrag")
 }
 
+// GetAdminConfigSecretName returns the name of the secret containing the admin kubeconfig
+// for the workload cluster.
 func (kmc *Cluster) GetAdminConfigSecretName() string {
 	// This is the form CAPI expects the secret to be named, don't try to shorten it
 	return fmt.Sprintf("%s-kubeconfig", kmc.Name)
 }
 
+// GetEntrypointConfigMapName returns the name of the configmap containing the k0s entrypoint script.
 func (kmc *Cluster) GetEntrypointConfigMapName() string {
 	return kmc.getObjectName("kmc-entrypoint-%s-config")
 }
 
+// GetMonitoringConfigMapName returns the name of the configmap containing the prometheus
+// configuration for monitoring the cluster.
 func (kmc *Cluster) GetMonitoringConfigMapName() string {
 	return kmc.getObjectName("kmc-prometheus-%s-config")
 }
 
+// GetMonitoringNginxConfigMapName returns the name of the configmap containing the nginx
+// configuration for the prometheus sidecar.
 func (kmc *Cluster) GetMonitoringNginxConfigMapName() string {
 	return kmc.getObjectName("kmc-prometheus-%s-config-nginx")
 }
 
+// GetConfigMapName returns the name of the configmap containing the k0s configuration for the cluster.
 func (kmc *Cluster) GetConfigMapName() string {
 	return kmc.getObjectName("kmc-%s-config")
 }
 
+// GetServiceName returns the name of the service for the k0s control plane based on the
+// service type specified in the ClusterSpec.
 func (kmc *Cluster) GetServiceName() string {
 	switch kmc.Spec.Service.Type {
 	case v1.ServiceTypeNodePort:
@@ -471,22 +504,30 @@ func (kmc *Cluster) GetServiceName() string {
 	}
 }
 
+// GetClusterIPServiceName returns the name of the service for the k0s control plane
+// when service type is ClusterIP.
 func (kmc *Cluster) GetClusterIPServiceName() string {
 	return kmc.getObjectName("kmc-%s")
 }
 
+// GetEtcdServiceName returns the name of the service for the etcd cluster.
 func (kmc *Cluster) GetEtcdServiceName() string {
 	return kmc.getObjectName("kmc-%s-etcd")
 }
 
+// GetLoadBalancerServiceName returns the name of the service for the k0s control plane
+// when service type is LoadBalancer.
 func (kmc *Cluster) GetLoadBalancerServiceName() string {
 	return kmc.getObjectName("kmc-%s-lb")
 }
 
+// GetNodePortServiceName returns the name of the service for the k0s control plane
+// when service type is NodePort.
 func (kmc *Cluster) GetNodePortServiceName() string {
 	return kmc.getObjectName("kmc-%s-nodeport")
 }
 
+// GetVolumeName returns the name of the volume for the k0s control plane.
 func (kmc *Cluster) GetVolumeName() string {
 	return kmc.getObjectName("kmc-%s")
 }

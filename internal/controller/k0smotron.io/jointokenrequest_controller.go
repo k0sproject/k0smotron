@@ -57,6 +57,8 @@ type JoinTokenRequestReconciler struct {
 //+kubebuilder:rbac:groups=k0smotron.io,resources=jointokenrequests/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
+// Reconcile reconciles a JoinTokenRequest object by creating a join token for the referenced
+// cluster and storing it in a secret.
 func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 

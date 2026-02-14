@@ -84,6 +84,7 @@ func (c ClusterValidator) validateVersionSuffix(version string) admission.Warnin
 	return warnings
 }
 
+// Default sets default values for the Cluster resource.
 func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error {
 	kmc, ok := obj.(*km.Cluster)
 	if !ok {

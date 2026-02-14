@@ -38,6 +38,7 @@ type JoinTokenRequestSpec struct {
 	Role string `json:"role,omitempty"`
 }
 
+// ClusterRef is a reference to a cluster for which a join token is requested.
 type ClusterRef struct {
 	// Name of the cluster.
 	Name string `json:"name"`

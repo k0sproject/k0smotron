@@ -68,6 +68,7 @@ const (
 	AnnotationValueManagedByK0smotron = "k0smotron"
 )
 
+// K0smotronController is the controller for K0smotronControlPlane objects.
 type K0smotronController struct {
 	client.Client
 	SecretCachingClient client.Client
@@ -76,6 +77,7 @@ type K0smotronController struct {
 	RESTConfig          *rest.Config
 }
 
+// Scope defines the basic context for the reconciliation of a K0smotronControlPlane object.
 type Scope struct {
 	Config *cpv1beta1.K0smotronControlPlane
 	// ConfigOwner *bsutil.ConfigOwner
@@ -101,6 +103,7 @@ type kmcScope struct {
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
+// Reconcile reconciles the K0smotronControlPlane to the desired state.
 func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
 	log.Info("Reconciling K0smotronControlPlane")
