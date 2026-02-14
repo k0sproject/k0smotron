@@ -26,6 +26,9 @@ var patchOpts []client.PatchOption = []client.PatchOption{
 	client.ForceOwnership,
 }
 
+// JobProvisioner is responsible for provisioning a remote machine using a Kubernetes Job.
+// It creates a Job that runs a container with the necessary tools to SSH into the
+// remote machine and execute the bootstrap commands.
 type JobProvisioner struct {
 	client    client.Client
 	clientSet *kubernetes.Clientset
@@ -38,6 +41,8 @@ type JobProvisioner struct {
 	log           logr.Logger
 }
 
+// Provision provisions the remote machine by creating a Kubernetes Job that executes the
+// bootstrap commands on the remote machine.
 func (p *JobProvisioner) Provision(ctx context.Context) error {
 	// Parse the bootstrap data
 
@@ -190,6 +195,7 @@ func (p *JobProvisioner) machineDSN() (dsn string) {
 	return dsn
 }
 
+// Cleanup cleans up the resources created for provisioning the remote machine.
 func (p *JobProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) error {
 	if mode == ModeNonK0s {
 		return nil

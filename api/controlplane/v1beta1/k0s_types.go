@@ -29,6 +29,7 @@ func init() {
 	SchemeBuilder.Register(&K0sControlPlane{}, &K0sControlPlaneList{})
 }
 
+// UpdateStrategy defines the strategy to use when updating the control plane.
 type UpdateStrategy string
 
 const (
@@ -80,6 +81,7 @@ const (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of K0sControlPlane"
 // +kubebuilder:printcolumn:name="Version",type=string,JSONPath=".spec.version",description="Kubernetes version associated with this control plane"
 
+// K0sControlPlane is the Schema for the K0sControlPlanes API.
 type K0sControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -90,6 +92,7 @@ type K0sControlPlane struct {
 	Status K0sControlPlaneStatus `json:"status,omitempty"`
 }
 
+// K0sControlPlaneSpec defines the desired state of K0sControlPlane.
 type K0sControlPlaneSpec struct {
 	K0sConfigSpec   bootstrapv1.K0sConfigSpec       `json:"k0sConfigSpec"`
 	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate"`
@@ -112,6 +115,7 @@ type K0sControlPlaneSpec struct {
 	KubeconfigSecretMetadata bootstrapv1.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
 }
 
+// K0sControlPlaneMachineTemplate defines the template for Machines in a K0sControlPlane object.
 type K0sControlPlaneMachineTemplate struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
@@ -125,12 +129,14 @@ type K0sControlPlaneMachineTemplate struct {
 
 // +kubebuilder:object:root=true
 
+// K0sControlPlaneList contains a list of K0sControlPlane.
 type K0sControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []K0sControlPlane `json:"items"`
 }
 
+// K0sControlPlaneStatus defines the observed state of K0sControlPlane.
 type K0sControlPlaneStatus struct {
 	// Ready denotes that the control plane is ready
 	// +optional
@@ -202,6 +208,8 @@ func (k *K0sControlPlane) SetConditions(conditions []metav1.Condition) {
 	k.Status.Conditions = conditions
 }
 
+// WorkerEnabled returns true if the control plane is configured to run worker nodes as well
+// (i.e. if the --enable-worker argument is set in the K0sConfigSpec).
 func (k *K0sControlPlane) WorkerEnabled() bool {
 	return slices.Contains(k.Spec.K0sConfigSpec.Args, "--enable-worker")
 }

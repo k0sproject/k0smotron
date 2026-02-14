@@ -94,6 +94,8 @@ func (c *CloudInitProvisioner) GetFormat() string {
 	return cloudInitProvisioningFormat
 }
 
+// PermissionsAsInt converts the Permissions string to an int64.
+// If Permissions is empty, it defaults to "0644".
 func (f File) PermissionsAsInt() (int64, error) {
 	if f.Permissions == "" {
 		f.Permissions = "0644"

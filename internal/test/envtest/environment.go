@@ -175,6 +175,7 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 	}
 }
 
+// Build builds and starts the test environment, returning an instance of it.
 func Build(ctx context.Context, setupSecretCachingClient setupSecretCachingClientFn) *Environment {
 	testEnv := newEnvironment(setupSecretCachingClient)
 	go func() {
@@ -187,6 +188,7 @@ func Build(ctx context.Context, setupSecretCachingClient setupSecretCachingClien
 	return testEnv
 }
 
+// Teardown stops the test environment and performs necessary cleanup.
 func (e *Environment) Teardown() {
 	e.cancel()
 	if err := e.Stop(); err != nil {

@@ -1,3 +1,4 @@
+//nolint:revive
 package util
 
 import (
@@ -30,6 +31,8 @@ func joinEncode(in io.Reader) (string, error) {
 	return base64.StdEncoding.EncodeToString(outBuf.Bytes()), nil
 }
 
+// CreateK0sJoinToken creates a join token for k0s using the provided CA certificate,
+// token, join URL, and username.
 func CreateK0sJoinToken(caCert []byte, token string, joinURL string, userName string) (string, error) {
 	const k0sContextName = "k0s"
 	kubeconfig, err := clientcmd.Write(clientcmdapi.Config{

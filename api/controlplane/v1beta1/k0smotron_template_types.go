@@ -13,6 +13,7 @@ func init() {
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
 
+// K0smotronControlPlaneTemplate is the Schema for the k0smotroncontrolplanetemplates API
 type K0smotronControlPlaneTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -20,10 +21,12 @@ type K0smotronControlPlaneTemplate struct {
 	Spec K0smotronControlPlaneTemplateSpec `json:"spec,omitempty"`
 }
 
+// K0smotronControlPlaneTemplateSpec defines the desired state of K0smotronControlPlaneTemplate
 type K0smotronControlPlaneTemplateSpec struct {
 	Template K0smotronControlPlaneTemplateResource `json:"template,omitempty"`
 }
 
+// K0smotronControlPlaneTemplateResource defines the template for the control plane resource
 type K0smotronControlPlaneTemplateResource struct {
 	// +kubebuilder:validation:Optional
 	ObjectMeta metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -32,6 +35,7 @@ type K0smotronControlPlaneTemplateResource struct {
 
 // +kubebuilder:object:root=true
 
+// K0smotronControlPlaneTemplateList contains a list of K0smotronControlPlaneTemplate
 type K0smotronControlPlaneTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

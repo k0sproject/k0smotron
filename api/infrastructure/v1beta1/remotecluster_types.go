@@ -14,6 +14,7 @@ func init() {
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
 
+// RemoteCluster is the Schema for the remoteclusters API
 type RemoteCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -39,6 +40,7 @@ type RemoteClusterStatus struct {
 
 // +kubebuilder:object:root=true
 
+// RemoteClusterList contains a list of RemoteCluster
 type RemoteClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
