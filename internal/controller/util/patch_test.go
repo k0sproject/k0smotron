@@ -44,7 +44,7 @@ func TestApplyComponentPatches_EmptyPatches_NoChange(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "test",
-			Labels: map[string]string{"app.kubernetes.io/component": "control-plane"},
+			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 	}
 	err := ApplyComponentPatches(scheme, svc, nil)
@@ -59,7 +59,7 @@ func TestApplyComponentPatches_NoMatchingPatch_NoChange(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "test",
-			Labels: map[string]string{"app.kubernetes.io/component": "control-plane"},
+			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 		Spec: v1.ServiceSpec{Type: v1.ServiceTypeClusterIP},
 	}
@@ -88,7 +88,7 @@ func TestApplyComponentPatches_JSONPatch_Applied(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "test",
-			Labels: map[string]string{"app.kubernetes.io/component": "control-plane"},
+			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 		Spec: v1.ServiceSpec{
 			Type: v1.ServiceTypeClusterIP,
@@ -116,7 +116,7 @@ func TestApplyComponentPatches_MergePatch_Applied(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "test",
-			Labels: map[string]string{"app.kubernetes.io/component": "cluster-config"},
+			Labels: map[string]string{ComponentLabel: "cluster-config"},
 		},
 		Data: map[string]string{"key": "original"},
 	}
@@ -140,7 +140,7 @@ func TestApplyComponentPatches_StrategicMergePatch_Applied(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "test",
-			Labels: map[string]string{"app.kubernetes.io/component": "control-plane"},
+			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 		Spec: apps.StatefulSetSpec{
 			Replicas:    ptr(int32(1)),
@@ -169,7 +169,7 @@ func TestApplyComponentPatches_InvalidJSONPatch_ReturnsError(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "test",
-			Labels: map[string]string{"app.kubernetes.io/component": "control-plane"},
+			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 	}
 	patches := []km.ComponentPatch{
@@ -191,7 +191,7 @@ func TestApplyComponentPatches_MergePatch_YAML_Applied(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "test",
-			Labels: map[string]string{"app.kubernetes.io/component": "control-plane"},
+			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 	}
 	patches := []km.ComponentPatch{
@@ -216,7 +216,7 @@ func TestApplyComponentPatches_StrategicMergePatch_YAML_Applied(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "test",
-			Labels: map[string]string{"app.kubernetes.io/component": "control-plane"},
+			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 		Spec: apps.StatefulSetSpec{
 			Replicas:    ptr(int32(1)),
@@ -247,7 +247,7 @@ func TestApplyComponentPatches_UnknownPatchType_ReturnsError(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "test",
-			Labels: map[string]string{"app.kubernetes.io/component": "control-plane"},
+			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 	}
 	patches := []km.ComponentPatch{

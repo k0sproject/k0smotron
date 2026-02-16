@@ -60,7 +60,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	selectorLabels := util.LabelsForK0smotronControlPlane(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
 	maps.Copy(labels, selectorLabels)
-	labels["app.kubernetes.io/component"] = util.ComponentControlPlane
+	labels[util.ComponentLabel] = util.ComponentControlPlane
 	annotations := util.AnnotationsForK0smotronCluster(kmc)
 
 	statefulSet := apps.StatefulSet{
