@@ -472,8 +472,8 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 func createBootstrapSecret(scope *Scope, bootstrapData []byte, format string) *corev1.Secret {
 	// Initialize labels with cluster-name label
 	labels := map[string]string{
-		clusterv1.ClusterNameLabel:    scope.Cluster.Name,
-		"app.kubernetes.io/component": util.ComponentBootstrap,
+		clusterv1.ClusterNameLabel: scope.Cluster.Name,
+		util.ComponentLabel:        util.ComponentBootstrap,
 	}
 
 	// Copy labels from secretMetadata if specified

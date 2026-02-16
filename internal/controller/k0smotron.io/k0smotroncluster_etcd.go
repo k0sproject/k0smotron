@@ -70,10 +70,8 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 	// Service selector is immutable after creation. Add app.kubernetes.io/component only to metadata labels.
 	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 	metadataLabels := make(map[string]string, len(selectorLabels)+1)
-	for k, v := range selectorLabels {
-		metadataLabels[k] = v
-	}
-	metadataLabels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
+	maps.Copy(metadataLabels, selectorLabels)
+	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	svc := v1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -119,10 +117,8 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 	// Add app.kubernetes.io/component to metadata labels; keep legacy component=etcd from LabelsForEtcdK0smotronCluster.
 	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 	metadataLabels := make(map[string]string, len(selectorLabels)+1)
-	for k, v := range selectorLabels {
-		metadataLabels[k] = v
-	}
-	metadataLabels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
+	maps.Copy(metadataLabels, selectorLabels)
+	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	cronJob := batchv1.CronJob{
 		TypeMeta: metav1.TypeMeta{
@@ -247,7 +243,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
 	maps.Copy(labels, selectorLabels)
-	labels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
+	labels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	size := kmc.Spec.Etcd.Persistence.Size
 
