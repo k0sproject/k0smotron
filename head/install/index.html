@@ -2069,14 +2069,14 @@ If you use <code>clusterctl</code>, cert-manager is installed automatically as p
 </div>
 <div class="admonition note">
 <p class="admonition-title">TL;DR</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.2/install.yaml
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.3/install.yaml
 </code></pre></div>
 </div>
 <h2 id="installation-modes">Installation modes<a class="headerlink" href="#installation-modes" title="Permanent link">#</a></h2>
 <p>k0smotron can be deployed in two modes: k0smotron standalone or as a Cluster API integration</p>
 <h3 id="k0smotron-standalone">k0smotron standalone<a class="headerlink" href="#k0smotron-standalone" title="Permanent link">#</a></h3>
 <p>This mode installs only the k0smotron operator: </p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.2/install-standalone.yaml
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.3/install-standalone.yaml
 </code></pre></div>
 <p>For more details, see the <a href="../usage-overview/#standalone">Standalone</a> usage section.</p>
 <h3 id="cluster-api-integration">Cluster API integration<a class="headerlink" href="#cluster-api-integration" title="Permanent link">#</a></h3>
@@ -2084,7 +2084,7 @@ If you use <code>clusterctl</code>, cert-manager is installed automatically as p
 This installation embeds the standalone components, so there is no need to install standalone separately. For more details, see the <a href="../usage-overview/#cluster-api-integration">Cluster API integration</a> usage section.</p>
 <p>There are two options for installing in CAPI mode:</p>
 <h4 id="declarative-deployment-with-kubectl-apply">Declarative deployment with <code>kubectl apply</code>:<a class="headerlink" href="#declarative-deployment-with-kubectl-apply" title="Permanent link">#</a></h4>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.2/install.yaml
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v1.10.3/install.yaml
 </code></pre></div>
 <p>This installs <strong>all components</strong>: k0smotron operator, bootstrap provider, control plane provider, and infrastructure provider.
 It requires cert-manager to be preinstalled.</p>
