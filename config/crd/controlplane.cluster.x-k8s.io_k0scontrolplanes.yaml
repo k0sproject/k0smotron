@@ -401,8 +401,8 @@ spec:
                 type: string
               version:
                 description: |-
-                  Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
-                  just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.
+                  Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.34.3+k0s.0) or
+                  just the Kubernetes version (e.g. v1.34.3). If left empty, k0smotron will select one automatically.
                 type: string
             required:
             - k0sConfigSpec

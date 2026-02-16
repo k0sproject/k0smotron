@@ -54,7 +54,7 @@ metadata:
   name: docker-test-cp
   namespace: default
 spec:
-  version: v1.27.2-k0s.0
+  version: v1.34.3-k0s.0
   persistence:
     type: emptyDir
   service:
@@ -89,7 +89,7 @@ spec:
         pool: worker-pool-1
     spec:
       clusterName: docker-test
-      version: v1.27.2 # Docker Provider requires a version to be set (see https://hub.docker.com/r/kindest/node/tags)
+      version: v1.34.3 # Docker Provider requires a version to be set (see https://hub.docker.com/r/kindest/node/tags)
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -117,7 +117,7 @@ metadata:
 spec:
   template:
     spec:
-      version: v1.27.2+k0s.0
+      version: v1.34.3+k0s.0
       # More details of the worker configuration can be set here
 ```
 

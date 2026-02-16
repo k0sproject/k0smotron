@@ -113,7 +113,7 @@ func (s *CAPIDockerClusterClassK0smotronSuite) TestCAPIDocker() {
 			kcp.Status.UnavailableReplicas == 0 &&
 			kcp.Status.Ready &&
 			kcp.Status.UpdatedReplicas == 2 &&
-			kcp.Status.Version == "v1.27.2+k0s.0"
+			kcp.Status.Version == "v1.34.3+k0s.0"
 
 		return ready, nil
 	})
@@ -146,7 +146,7 @@ metadata:
 spec:
   topology:
     class: k0smotron-cluster-class
-    version: v1.27.2
+    version: v1.34.3
     controlPlane:
       replicas: 2
     workers:
@@ -183,7 +183,7 @@ metadata:
 spec:
   template:
     spec:
-      version: v1.27.2
+      version: v1.34.3
       persistence:
         type: emptyDir
       service:
@@ -197,7 +197,7 @@ metadata:
 spec:
   template:
     spec:
-      version: v1.27.2
+      version: v1.34.3
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass

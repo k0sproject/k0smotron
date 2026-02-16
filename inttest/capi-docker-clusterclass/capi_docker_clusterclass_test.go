@@ -293,7 +293,7 @@ spec:
     port: 6443
   topology:
     class: k0smotron-clusterclass
-    version: v1.27.2+k0s.0
+    version: v1.34.3+k0s.0
     workers:
       machineDeployments:
       - class: remotemachine-test-default-worker
@@ -343,7 +343,7 @@ metadata:
 spec:
   template:
     spec:
-      version: v1.27.2+k0s.0
+      version: v1.34.3+k0s.0
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
