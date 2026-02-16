@@ -98,7 +98,7 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 		return err
 	}
 
-	installFileName, err := dowloadStableK0smotronOperator()
+	installFileName, err := downloadStableStandaloneInstall()
 	if err != nil {
 		return err
 	}
@@ -443,8 +443,8 @@ func GetControlPlaneMachinesByKcpName(ctx context.Context, kcpName string, names
 	return result, nil
 }
 
-func dowloadStableK0smotronOperator() (string, error) {
-	url := "https://docs.k0smotron.io/stable/install.yaml"
+func downloadStableStandaloneInstall() (string, error) {
+	url := "https://docs.k0smotron.io/stable/install-standalone.yaml"
 
 	response, err := http.Get(url)
 	if err != nil {
