@@ -296,8 +296,8 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Name:      config.Name,
 			Namespace: config.Namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:    scope.Cluster.Name,
-				"app.kubernetes.io/component": util.ComponentBootstrap,
+				clusterv1.ClusterNameLabel: scope.Cluster.Name,
+				util.ComponentLabel:        util.ComponentBootstrap,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{

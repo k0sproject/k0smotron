@@ -29,8 +29,6 @@ import (
 	sigsyaml "sigs.k8s.io/yaml"
 )
 
-const componentLabel = "app.kubernetes.io/component"
-
 // ApplyComponentPatches applies user-defined patches to a resource based on matching
 // resourceType (Kind) and component label. Patches are applied in the order they appear.
 // The scheme is required for strategic merge patches to resolve the patch metadata.
@@ -45,7 +43,7 @@ func ApplyComponentPatches(scheme *runtime.Scheme, obj client.Object, patches []
 	}
 	kind := gvks[0].Kind
 	labels := obj.GetLabels()
-	component := labels[componentLabel]
+	component := labels[ComponentLabel]
 
 	currentData, err := json.Marshal(obj)
 	if err != nil {

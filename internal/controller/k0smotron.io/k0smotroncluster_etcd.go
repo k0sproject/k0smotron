@@ -72,7 +72,7 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 	for k, v := range selectorLabels {
 		metadataLabels[k] = v
 	}
-	metadataLabels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
+	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	svc := v1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -121,7 +121,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 	for k, v := range selectorLabels {
 		metadataLabels[k] = v
 	}
-	metadataLabels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
+	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	cronJob := batchv1.CronJob{
 		TypeMeta: metav1.TypeMeta{
@@ -248,7 +248,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 	for k, v := range selectorLabels {
 		labels[k] = v
 	}
-	labels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
+	labels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	size := kmc.Spec.Etcd.Persistence.Size
 
