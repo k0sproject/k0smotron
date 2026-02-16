@@ -224,5 +224,6 @@ k0smotron labels generated resources with `app.kubernetes.io/component` to descr
 
 ## Notes and limitations
 
+- Patches are applied **in list order** after k0smotron generates each resource and before it is applied to the cluster. Multiple patches that match the same resource (same `resourceType` and `component`) are applied in sequence.
 - A patch is applied to all generated resources that match the given `resourceType` and `component` combination.
 - Only resources created and managed by the K0smotron Cluster (documented in [Generated Resources](../generated-resources.md)) are patch targets. Other resources are not; for example, when using Cluster API, certificate Secrets are created by Cluster API controllers and follow Cluster API naming conventions, so they are not patch targets.

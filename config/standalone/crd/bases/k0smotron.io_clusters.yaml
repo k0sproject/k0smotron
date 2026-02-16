@@ -75,6 +75,58 @@ spec:
                 items:
                   type: string
                 type: array
+              customizeComponents:
+                description: |-
+                  CustomizeComponents defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
+                  Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
+                  For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.
+                properties:
+                  patches:
+                    description: Patches is a list of patches to apply to generated
+                      resources. Patches are applied in order.
+                    items:
+                      description: ComponentPatch defines a patch to apply to a generated
+                        resource.
+                      properties:
+                        component:
+                          description: Component is the value of the app.kubernetes.io/component
+                            label on the target resource.
+                          type: string
+                        patch:
+                          description: |-
+                            Patch is the patch content. The format depends on the Type field:
+                              - For "json": a JSON array of operations, e.g. [{"op":"add","path":"/metadata/labels/foo","value":"bar"}].
+                              - For "merge" and "strategic": a partial YAML/JSON object that is merged into the target resource.
+                          type: string
+                        resourceType:
+                          description: ResourceType is the Kubernetes Kind of the
+                            target resource (e.g. "StatefulSet", "Service", "ConfigMap").
+                          type: string
+                        type:
+                          allOf:
+                          - enum:
+                            - json
+                            - strategic
+                            - merge
+                          - enum:
+                            - json
+                            - strategic
+                            - merge
+                          description: |-
+                            Type is the patch type to apply:
+                              - "json": RFC 6902 JSON Patch, an array of add/remove/replace operations (https://datatracker.ietf.org/doc/html/rfc6902).
+                              - "merge": RFC 7386 JSON Merge Patch, a partial JSON object that is merged into the target (https://datatracker.ietf.org/doc/html/rfc7386).
+                              - "strategic": Kubernetes Strategic Merge Patch, like merge but with array merge semantics based on patchStrategy tags
+                                (https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#use-a-strategic-merge-patch-to-update-a-deployment).
+                          type: string
+                      required:
+                      - component
+                      - patch
+                      - resourceType
+                      - type
+                      type: object
+                    type: array
+                type: object
               etcd:
                 default:
                   image: quay.io/k0sproject/etcd:v3.5.13
@@ -4711,7 +4763,7 @@ spec:
               topologySpreadConstraints:
                 description: |-
                   TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
-                  See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.
+                  See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more details.
                 items:
                   description: TopologySpreadConstraint specifies how to spread matching
                     pods among the given topology.
