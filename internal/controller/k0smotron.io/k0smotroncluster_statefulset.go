@@ -554,6 +554,10 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 		return fmt.Errorf("failed to generate statefulset: %w", err)
 	}
 
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &statefulSet, kmc.Spec.CustomizeComponents.Patches); err != nil {
+		return fmt.Errorf("failed to apply component patches to statefulset: %w", err)
+	}
+
 	selector, err := metav1.LabelSelectorAsSelector(statefulSet.Spec.Selector)
 	if err != nil {
 		return fmt.Errorf("error retrieving StatefulSet labels: %w", err)

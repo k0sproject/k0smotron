@@ -105,6 +105,10 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 		},
 	}
 
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &svc, kmc.Spec.CustomizeComponents.Patches); err != nil {
+		return fmt.Errorf("failed to apply component patches to etcd service: %w", err)
+	}
+
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
 	return scope.client.Patch(ctx, &svc, client.Apply, patchOpts...)
@@ -193,6 +197,10 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 		},
 	}
 
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cronJob, kmc.Spec.CustomizeComponents.Patches); err != nil {
+		return fmt.Errorf("failed to apply component patches to etcd defrag cronjob: %w", err)
+	}
+
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &cronJob, scope.client.Scheme(), scope.externalOwner)
 
 	return scope.client.Patch(ctx, &cronJob, client.Apply, patchOpts...)
@@ -223,6 +231,10 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 	}
 
 	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas)
+
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &statefulSet, kmc.Spec.CustomizeComponents.Patches); err != nil {
+		return fmt.Errorf("failed to apply component patches to etcd statefulset: %w", err)
+	}
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
