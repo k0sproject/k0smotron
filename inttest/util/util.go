@@ -98,6 +98,11 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 		return err
 	}
 
+	err = WaitForDeployment(ctx, kc, "cert-manager-webhook", "cert-manager")
+	if err != nil {
+		return err
+	}
+
 	installFileName, err := downloadStableStandaloneInstall()
 	if err != nil {
 		return err
@@ -111,6 +116,11 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 	if err != nil {
 		return fmt.Errorf("failed to wait for k0smotron operator deployment: %w", err)
 	}
+
+	// Give some extra time for network to settle. This prevents issues with the webhook
+	// not being reachable right after the deployment is ready. Even though we wait for the
+	// webhook to be ready, it seems sometimes the network is not yet fully functional.
+	time.Sleep(5 * time.Second)
 
 	return nil
 }
