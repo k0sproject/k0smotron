@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 	"text/template"
 
@@ -221,9 +222,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 	// StatefulSet selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
 	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
-	for k, v := range selectorLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, selectorLabels)
 	labels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
 
 	size := kmc.Spec.Etcd.Persistence.Size
@@ -405,7 +404,7 @@ func initialCluster(kmc *km.Cluster, replicas int32) string {
 	var members []string
 	stsName := kmc.GetEtcdStatefulSetName()
 	svcName := kmc.GetEtcdServiceName()
-	for i := int32(0); i < replicas; i++ {
+	for i := range replicas {
 		members = append(members, fmt.Sprintf("%s-%d=https://%s-%d.%s:2380", stsName, i, stsName, i, svcName))
 	}
 	return strings.Join(members, ",")

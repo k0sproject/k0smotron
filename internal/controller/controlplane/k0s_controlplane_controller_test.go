@@ -54,11 +54,11 @@ func TestK0sConfigEnrichment(t *testing.T) {
 				},
 			},
 			kcp: &cpv1beta1.K0sControlPlane{},
-			want: &unstructured.Unstructured{Object: map[string]interface{}{
+			want: &unstructured.Unstructured{Object: map[string]any{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
-				"spec": map[string]interface{}{
-					"network": map[string]interface{}{"serviceCIDR": "10.96.0.0/12", "podCIDR": "10.244.0.0/16"},
+				"spec": map[string]any{
+					"network": map[string]any{"serviceCIDR": "10.96.0.0/12", "podCIDR": "10.244.0.0/16"},
 				},
 			}},
 		},
@@ -78,19 +78,19 @@ func TestK0sConfigEnrichment(t *testing.T) {
 			kcp: &cpv1beta1.K0sControlPlane{
 				Spec: cpv1beta1.K0sControlPlaneSpec{
 					K0sConfigSpec: bootstrapv1.K0sConfigSpec{
-						K0s: &unstructured.Unstructured{Object: map[string]interface{}{
-							"spec": map[string]interface{}{
-								"network": map[string]interface{}{"serviceCIDR": "10.98.0.0/12"},
+						K0s: &unstructured.Unstructured{Object: map[string]any{
+							"spec": map[string]any{
+								"network": map[string]any{"serviceCIDR": "10.98.0.0/12"},
 							},
 						}},
 					},
 				},
 			},
-			want: &unstructured.Unstructured{Object: map[string]interface{}{
+			want: &unstructured.Unstructured{Object: map[string]any{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
-				"spec": map[string]interface{}{
-					"network": map[string]interface{}{"serviceCIDR": "10.98.0.0/12", "podCIDR": "10.244.0.0/16"},
+				"spec": map[string]any{
+					"network": map[string]any{"serviceCIDR": "10.98.0.0/12", "podCIDR": "10.244.0.0/16"},
 				},
 			}},
 		},
@@ -103,11 +103,11 @@ func TestK0sConfigEnrichment(t *testing.T) {
 				},
 			},
 			kcp: &cpv1beta1.K0sControlPlane{},
-			want: &unstructured.Unstructured{Object: map[string]interface{}{
+			want: &unstructured.Unstructured{Object: map[string]any{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
-				"spec": map[string]interface{}{
-					"network": map[string]interface{}{"clusterDomain": "cluster.local"},
+				"spec": map[string]any{
+					"network": map[string]any{"clusterDomain": "cluster.local"},
 				},
 			}},
 		},

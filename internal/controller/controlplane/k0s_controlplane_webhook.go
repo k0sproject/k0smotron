@@ -19,6 +19,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/k0sproject/version"
@@ -131,10 +132,8 @@ func denyRecreateOnSingleClusters(kcp *v1beta1.K0sControlPlane) error {
 
 		// If the cluster is running in single mode, we can't use the Recreate strategy
 		if kcp.Spec.K0sConfigSpec.Args != nil {
-			for _, arg := range kcp.Spec.K0sConfigSpec.Args {
-				if arg == "--single" {
-					return fmt.Errorf("UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode")
-				}
+			if slices.Contains(kcp.Spec.K0sConfigSpec.Args, "--single") {
+				return fmt.Errorf("UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode")
 			}
 		}
 	}

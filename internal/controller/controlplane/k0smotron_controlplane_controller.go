@@ -278,7 +278,7 @@ func (c *K0smotronController) ensureExternalAddress(ctx context.Context, kcp *cp
 				return false, err
 			}
 			log.Info("Found infrastructure cluster")
-			newEndpoint := map[string]interface{}{
+			newEndpoint := map[string]any{
 				"host": host,
 				"port": int64(port),
 			}

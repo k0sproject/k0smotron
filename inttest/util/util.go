@@ -183,7 +183,7 @@ func ParseManifests(data []byte) ([]*unstructured.Unstructured, error) {
 	var resources []*unstructured.Unstructured
 
 	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 4096)
-	var resource map[string]interface{}
+	var resource map[string]any
 	for {
 		err := decoder.Decode(&resource)
 		if err == io.EOF {

@@ -38,7 +38,7 @@ func init() {
 
 func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 	var entrypointBuf bytes.Buffer
-	err := entrypointTmpl.Execute(&entrypointBuf, map[string]interface{}{
+	err := entrypointTmpl.Execute(&entrypointBuf, map[string]any{
 		"KineDataSourceURLPlaceholder": kineDataSourceURLPlaceholder,
 		"K0sControllerArgs":            getControllerFlags(kmc),
 		"PrivilegedPortIsUsed":         kmc.Spec.Service.APIPort <= 1024,

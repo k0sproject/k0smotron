@@ -19,6 +19,7 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	"maps"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -387,12 +388,8 @@ func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *
 		}
 	}
 
-	for k, v := range foundPooledMachine.Labels {
-		rm.Labels[k] = v
-	}
-	for k, v := range foundPooledMachine.Annotations {
-		rm.Annotations[k] = v
-	}
+	maps.Copy(rm.Labels, foundPooledMachine.Labels)
+	maps.Copy(rm.Annotations, foundPooledMachine.Annotations)
 	rm.Spec.Address = foundPooledMachine.Spec.Machine.Address
 	rm.Spec.Port = foundPooledMachine.Spec.Machine.Port
 	rm.Spec.User = foundPooledMachine.Spec.Machine.User

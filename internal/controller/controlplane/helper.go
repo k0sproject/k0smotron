@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"sort"
 	"strings"
@@ -112,9 +113,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 	// Add the annotations from the MachineTemplate.
 	// Note: we intentionally don't use the map directly to ensure we don't modify the map in KCP.
-	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Annotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, kcp.Spec.MachineTemplate.ObjectMeta.Annotations)
 
 	k0sConfigAnnotationValue, err := generateK0sConfigAnnotationValueForMachine(kcp, name)
 	if err != nil {
@@ -163,7 +162,7 @@ func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta1.K0sControlPlane, 
 	if currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
 		if kcpCopy.Spec.K0sConfigSpec.K0s == nil {
 			kcpCopy.Spec.K0sConfigSpec.K0s = &unstructured.Unstructured{
-				Object: make(map[string]interface{}),
+				Object: make(map[string]any),
 			}
 		}
 		// If it is not explicitly indicated to use Kine storage, we use the machine name to name the ETCD member.
@@ -172,7 +171,7 @@ func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta1.K0sControlPlane, 
 			return "", fmt.Errorf("error retrieving storage.kine.datasource: %w", err)
 		}
 		if !found || kineStorage == "" {
-			err = unstructured.SetNestedMap(kcpCopy.Spec.K0sConfigSpec.K0s.Object, map[string]interface{}{}, "spec", "storage", "etcd", "extraArgs")
+			err = unstructured.SetNestedMap(kcpCopy.Spec.K0sConfigSpec.K0s.Object, map[string]any{}, "spec", "storage", "etcd", "extraArgs")
 			if err != nil {
 				return "", fmt.Errorf("error ensuring intermediate maps spec.storage.etcd.extraArgs: %w", err)
 			}
@@ -250,7 +249,7 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 	}
 
 	spec, _, _ := unstructured.NestedMap(existingInfraMachine.Object, "spec")
-	patch := unstructured.Unstructured{Object: map[string]interface{}{
+	patch := unstructured.Unstructured{Object: map[string]any{
 		"spec": spec,
 	}}
 	data, err := patch.MarshalJSON()
@@ -300,13 +299,9 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	infraMachine.SetNamespace(kcp.Namespace)
 
 	annotations := map[string]string{}
-	for key, value := range kcp.Annotations {
-		annotations[key] = value
-	}
+	maps.Copy(annotations, kcp.Annotations)
 
-	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Annotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, kcp.Spec.MachineTemplate.ObjectMeta.Annotations)
 
 	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.Name
 	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
@@ -386,16 +381,16 @@ func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv1.K0sControllerConf
 
 	// Handle nil cases consistently - convert nil to empty map for comparison
 	if bootstrapStorageConfig == nil {
-		bootstrapStorageConfig = make(map[string]interface{})
+		bootstrapStorageConfig = make(map[string]any)
 	}
 	if kcpStorageConfig == nil {
-		kcpStorageConfig = make(map[string]interface{})
+		kcpStorageConfig = make(map[string]any)
 	}
 
 	// Bootstrap controller did set etcd name to the K0sControllerConfig, so we need to compare it with the name set in the K0sControlPlane
 	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
 	if kcpStorageConfigEtcdWithName == nil {
-		kcpStorageConfigEtcdWithName = make(map[string]interface{})
+		kcpStorageConfigEtcdWithName = make(map[string]any)
 	}
 	_ = unstructured.SetNestedField(kcpStorageConfigEtcdWithName, machine.Name, "etcd", "extraArgs", "name")
 
@@ -460,7 +455,7 @@ func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clien
 	}
 
 	for _, condition := range conditions {
-		conditionMap := condition.(map[string]interface{})
+		conditionMap := condition.(map[string]any)
 		if conditionMap["type"] == etcdMemberConditionTypeJoined && conditionMap["status"] == "False" {
 			err = clientset.RESTClient().
 				Delete().
@@ -583,7 +578,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta1.
 			return fmt.Errorf("error getting current autopilot plan's commands: %w", err)
 		}
 
-		version, found, err := unstructured.NestedString(commands[0].(map[string]interface{}), "k0supdate", "version")
+		version, found, err := unstructured.NestedString(commands[0].(map[string]any), "k0supdate", "version")
 		if err != nil || !found {
 			return fmt.Errorf("error getting current autopilot plan's version: %w", err)
 		}

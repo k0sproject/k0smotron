@@ -10,6 +10,7 @@ linters:
   enable:
     - goheader
     - revive
+    - modernize
   settings:
     depguard:
       rules:

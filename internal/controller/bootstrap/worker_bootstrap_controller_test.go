@@ -37,8 +37,8 @@ func Test_createInstallCmd(t *testing.T) {
 			name: "with default config",
 			scope: &Scope{
 				Config: &bootstrapv1.K0sWorkerConfig{},
-				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{"name": "test"},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
+					"metadata": map[string]any{"name": "test"},
 				}}},
 			},
 			want: base + ` --kubelet-extra-args="--hostname-override=test"`,
@@ -51,8 +51,8 @@ func Test_createInstallCmd(t *testing.T) {
 						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
 					},
 				},
-				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{"name": "test"},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
+					"metadata": map[string]any{"name": "test"},
 				}}},
 			},
 			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --hostname-override=test-from-arg"`,
@@ -66,8 +66,8 @@ func Test_createInstallCmd(t *testing.T) {
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
 					},
 				},
-				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{"name": "test"},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
+					"metadata": map[string]any{"name": "test"},
 				}}},
 			},
 			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test-from-arg"`,
@@ -81,8 +81,8 @@ func Test_createInstallCmd(t *testing.T) {
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
 					},
 				},
-				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{"name": "test"},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
+					"metadata": map[string]any{"name": "test"},
 				}}},
 			},
 			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--hostname-override=test --my-arg=value"`,
@@ -96,8 +96,8 @@ func Test_createInstallCmd(t *testing.T) {
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
 					},
 				},
-				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{"name": "test"},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
+					"metadata": map[string]any{"name": "test"},
 				}}},
 			},
 			want: base + ` --debug --labels=k0sproject.io/foo=bar --kubelet-extra-args="--my-arg=value"`,

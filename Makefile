@@ -231,7 +231,7 @@ ifndef ignore-not-found
 endif
 
 .PHONY: tilt-standalone-env
-tilt-standalone-env: 
+tilt-standalone-env:
 	$(MAKE) release-standalone IMG=k0smotron-controller-manager
 	tilt up $(if $(DEBUG),-- --debug)
 
@@ -349,7 +349,7 @@ hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile Makefile.variables
 	touch -- '$@'
 
 .PHONY: lint
-lint: GOLANGCI_LINT_FLAGS ?= --verbose
+lint: GOLANGCI_LINT_FLAGS ?= --verbose --max-issues-per-linter=0 --max-same-issues=0
 lint: hack/lint/.golangci-lint.stamp
 	docker run \
 	  --rm \

@@ -747,7 +747,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 
 		if found {
 			for _, addr := range addresses {
-				addrMap, _ := addr.(map[string]interface{})
+				addrMap, _ := addr.(map[string]any)
 				if addrMap["type"] == string(corev1.NodeExternalIP) {
 					extAddr = addrMap["address"].(string)
 					break

@@ -154,7 +154,7 @@ func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cl
 }
 
 func enrichK0sConfigWithClusterData(cluster *clusterv1.Cluster, k0sConfig *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	clusterNetworkValues := make(map[string]interface{})
+	clusterNetworkValues := make(map[string]any)
 	podCIDRBlocks := cluster.Spec.ClusterNetwork.Pods.String()
 	if podCIDRBlocks != "" {
 		clusterNetworkValues["podCIDR"] = podCIDRBlocks
@@ -176,10 +176,10 @@ func enrichK0sConfigWithClusterData(cluster *clusterv1.Cluster, k0sConfig *unstr
 		k0sConfig = &unstructured.Unstructured{}
 	}
 
-	clusterValues := map[string]interface{}{
+	clusterValues := map[string]any{
 		"apiVersion": "k0s.k0sproject.io/v1beta1",
 		"kind":       "ClusterConfig",
-		"spec": map[string]interface{}{
+		"spec": map[string]any{
 			"network": clusterNetworkValues,
 		},
 	}
@@ -193,9 +193,7 @@ func controlPlaneCommonLabelsForCluster(kcp *cpv1beta1.K0sControlPlane, clusterN
 
 	// Add the labels from the MachineTemplate.
 	// Note: we intentionally don't use the map directly to ensure we don't modify the map in KCP.
-	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Labels {
-		labels[k] = v
-	}
+	maps.Copy(labels, kcp.Spec.MachineTemplate.ObjectMeta.Labels)
 
 	// Always force these labels over the ones coming from the spec.
 	labels[clusterv1.ClusterNameLabel] = clusterName

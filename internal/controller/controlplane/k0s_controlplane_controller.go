@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -468,10 +469,8 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateRecreate {
 			// If the cluster is running in single mode, we can't use the Recreate strategy
 			if kcp.Spec.K0sConfigSpec.Args != nil {
-				for _, arg := range kcp.Spec.K0sConfigSpec.Args {
-					if arg == "--single" {
-						return fmt.Errorf("UpdateRecreate strategy is not allowed when the cluster is running in single mode")
-					}
+				if slices.Contains(kcp.Spec.K0sConfigSpec.Args, "--single") {
+					return fmt.Errorf("UpdateRecreate strategy is not allowed when the cluster is running in single mode")
 				}
 			}
 		} else {

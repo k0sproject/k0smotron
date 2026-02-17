@@ -3,6 +3,7 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
@@ -317,9 +318,7 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
-	for k, v := range kmc.Spec.Ingress.Annotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, kmc.Spec.Ingress.Annotations)
 	ingress := v1.Ingress{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Ingress",
