@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -12,6 +13,12 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+var (
+	// ErrWorkloadClusterKubeconfigSecret is returned when the kubeconfig secret for the workload cluster is not available yet.
+	// This is expected to happen during the early stages of the cluster creation, before the kubeconfig secret is created.
+	ErrWorkloadClusterKubeconfigSecret = fmt.Errorf("workload cluster kubeconfig secret is not available yet")
 )
 
 func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli client.Client, u unstructured.Unstructured) error {
@@ -31,6 +38,10 @@ func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli clie
 
 	chCS, err := remote.NewClusterClient(ctx, "k0smotron", cli, util.ObjectKey(cluster))
 	if err != nil {
+		// It is assumed that the workload cluster client instantiation is done by retrieving the kubeconfig secret.
+		if apierrors.IsNotFound(err) {
+			err = fmt.Errorf("workload cluster kubeconfig secret is not available yet: %w", ErrWorkloadClusterKubeconfigSecret)
+		}
 		return fmt.Errorf("failed to create workload cluster client: %w", err)
 	}
 

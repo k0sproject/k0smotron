@@ -19,6 +19,7 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,23 +38,29 @@ import (
 	"github.com/k0sproject/k0smotron/internal/exec"
 )
 
-func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, managementClusterClient client.Client, kmc *km.Cluster) error {
+func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, managementClusterClient client.Client, kmc *km.Cluster) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	pod, err := findStatefulSetPod(ctx, kmc.GetStatefulSetName(), kmc.Namespace, scope.clienSet)
-
 	if err != nil {
-		return err
+		return ctrl.Result{}, err
+	}
+	// If there is no running pod yet, it is likely that the statefulset is not ready yet, so we requeue and
+	// wait for the next reconciliation loop before trying to execute the command in the controlplane pod to
+	// generate the kubeconfig.
+	if pod == nil {
+		logger.Info("No running pod found for statefulset yet", "statefulset", kmc.GetStatefulSetName())
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
 	}
 
 	output, err := exec.PodExecCmdOutput(ctx, scope.clienSet, scope.restConfig, pod.Name, kmc.Namespace, "k0s kubeconfig create admin --groups system:masters")
 	if err != nil {
-		return err
+		return ctrl.Result{}, err
 	}
 
 	// Post-process: build a kubeconfig with desired names based on current-context
 	processedOutput, err := rewriteKubeconfigValues(output, kmc)
 	if err != nil {
-		return err
+		return ctrl.Result{}, err
 	}
 
 	logger.Info("Kubeconfig generated, creating the secret")
@@ -77,7 +84,7 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 	// workload cluster kubeconfig is always created in the management cluster so we set k0smotron cluster as owner
 	_ = ctrl.SetControllerReference(kmc, &secret, scope.client.Scheme())
 
-	return managementClusterClient.Patch(ctx, &secret, client.Apply, patchOpts...)
+	return ctrl.Result{}, managementClusterClient.Patch(ctx, &secret, client.Apply, patchOpts...)
 }
 
 func rewriteKubeconfigValues(kubeconfigYAML string, kmc *km.Cluster) (string, error) {

@@ -219,9 +219,8 @@ func (c *ClusterSpec) GetImage() string {
 
 // ClusterStatus defines the observed state of K0smotronCluster
 type ClusterStatus struct {
-	ReconciliationStatus string `json:"reconciliationStatus"`
-	Ready                bool   `json:"ready,omitempty"`
-	Replicas             int32  `json:"replicas,omitempty"`
+	Ready    bool  `json:"ready,omitempty"`
+	Replicas int32 `json:"replicas,omitempty"`
 	// selector is the label selector for pods that should match the replicas count.
 	Selector string `json:"selector,omitempty"`
 }

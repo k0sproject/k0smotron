@@ -2,7 +2,7 @@ package util
 
 import (
 	"context"
-	"fmt"
+
 	"k8s.io/client-go/kubernetes"
 
 	v1 "k8s.io/api/core/v1"
@@ -22,9 +22,7 @@ func FindStatefulSetPod(ctx context.Context, clientSet *kubernetes.Clientset, st
 	if err != nil {
 		return nil, err
 	}
-	if len(pods.Items) < 1 {
-		return nil, fmt.Errorf("did not find matching pods for statefulSet %s", statefulSet)
-	}
+
 	// Find a running pod
 	var runningPod *v1.Pod
 	for _, p := range pods.Items {
@@ -33,8 +31,6 @@ func FindStatefulSetPod(ctx context.Context, clientSet *kubernetes.Clientset, st
 			break
 		}
 	}
-	if runningPod == nil {
-		return nil, fmt.Errorf("did not find running pods for statefulSet %s", statefulSet)
-	}
+
 	return runningPod, nil
 }

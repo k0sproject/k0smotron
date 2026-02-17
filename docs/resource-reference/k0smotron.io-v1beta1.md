@@ -9855,13 +9855,6 @@ ClusterStatus defines the observed state of K0smotronCluster
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>reconciliationStatus</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>

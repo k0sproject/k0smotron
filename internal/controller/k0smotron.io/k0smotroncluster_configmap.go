@@ -18,6 +18,7 @@ package k0smotronio
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"sort"
@@ -143,11 +144,14 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 	}
 
 	// managementClusterClient is used because in order to instantiate a workload cluster client is need to check the workload kubeconfig secret,
-	// which is stored in mothership cluster. This becomes importante when hosted control planes run on an external cluster.
+	// which is stored in mothership cluster. This becomes important when hosted control planes run on an external cluster.
 	err = reconcileDynamicConfig(ctx, kmc, unstructuredConfig, managementClusterClient)
 	if err != nil {
-		// Don't return error from dynamic config reconciliation, as it may not be created yet
-		logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
+		if !errors.Is(err, util.ErrWorkloadClusterKubeconfigSecret) {
+			logger.Error(err, "failed to reconcile dynamic config")
+		} else {
+			logger.Info("workload cluster kubeconfig secret is not available yet, skipping dynamic config reconciliation")
+		}
 	}
 
 	return scope.client.Patch(ctx, &cm, client.Apply, patchOpts...)

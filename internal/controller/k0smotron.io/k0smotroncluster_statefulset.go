@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
@@ -35,7 +36,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/controller"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var entrypointDefaultMode = int32(0744)
@@ -547,27 +550,29 @@ func addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
 	})
 }
 
-func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster) error {
+func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
 	statefulSet, err := scope.generateStatefulSet(kmc)
 	if err != nil {
-		return fmt.Errorf("failed to generate statefulset: %w", err)
+		return ctrl.Result{}, fmt.Errorf("failed to generate statefulset: %w", err)
 	}
 
 	selector, err := metav1.LabelSelectorAsSelector(statefulSet.Spec.Selector)
 	if err != nil {
-		return fmt.Errorf("error retrieving StatefulSet labels: %w", err)
+		return ctrl.Result{}, fmt.Errorf("error retrieving StatefulSet labels: %w", err)
 	}
 	kmc.Status.Selector = selector.String()
 
 	foundStatefulSet, err := scope.clienSet.AppsV1().StatefulSets(statefulSet.Namespace).Get(ctx, statefulSet.Name, metav1.GetOptions{})
 	if err != nil && apierrors.IsNotFound(err) {
 		kmc.Status.Replicas = 0
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		return ctrl.Result{}, scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 	} else if err == nil {
 		detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
 
 		if !isStatefulSetsEqual(&statefulSet, foundStatefulSet) {
-			return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+			return ctrl.Result{}, scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 		}
 
 		kmc.Status.Replicas = foundStatefulSet.Status.Replicas
@@ -577,15 +582,16 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 	}
 
 	if !isStatefulSetsEqual(&statefulSet, foundStatefulSet) {
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		return ctrl.Result{}, scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 	}
 
 	if foundStatefulSet.Status.ReadyReplicas == 0 {
-		return fmt.Errorf("%w: no replicas ready yet for statefulset '%s' (%d/%d)", ErrNotReady, foundStatefulSet.GetName(), foundStatefulSet.Status.ReadyReplicas, kmc.Spec.Replicas)
+		logger.Info("No replicas ready yet", "statefulset", foundStatefulSet.GetName(), "readyReplicas", foundStatefulSet.Status.ReadyReplicas, "desiredReplicas", kmc.Spec.Replicas)
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
 	}
 
 	kmc.Status.Ready = true
-	return nil
+	return ctrl.Result{}, nil
 }
 
 // If the version is empty from the spec, we try to detect it from the statefulset image.

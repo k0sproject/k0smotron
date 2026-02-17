@@ -18,7 +18,6 @@ package k0smotronio
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"time"
@@ -223,33 +222,33 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	logger.Info("Reconciling services")
 	if err := kmcScope.reconcileServices(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling services"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	logger.Info("Reconciling ingress")
 	if err := kmcScope.reconcileIngress(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling ingress"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	logger.Info("Reconciling k0s configuration")
 	if err := kmcScope.reconcileK0sConfig(ctx, kmc, r.Client); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	logger.Info("Reconciling entrypoint configmap")
 	if err := kmcScope.reconcileEntrypointCM(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling entrypoint configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if kmc.Spec.Monitoring.Enabled {
+		logger.Info("Reconciling monitoring configmap")
 		if err := kmcScope.reconcileMonitoringCM(ctx, kmc); err != nil {
-			kmc.Status.ReconciliationStatus = "Failed reconciling prometheus configmap"
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
 	}
 
 	if kmc.Spec.CertificateRefs == nil {
+		logger.Info("Reconciling certificates")
 		if err := kmcScope.ensureCertificates(ctx, kmc); err != nil {
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
@@ -302,33 +301,22 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if err := kmcScope.reconcilePVC(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling PVCs"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling etcd")
 	if err := kmcScope.reconcileEtcd(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = fmt.Sprintf("Failed reconciling etcd, %+v", err)
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling statefulset")
-	if err := kmcScope.reconcileStatefulSet(ctx, kmc); err != nil {
-		if errors.Is(err, ErrNotReady) {
-			kmc.Status.ReconciliationStatus = err.Error()
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
-		}
-
-		kmc.Status.ReconciliationStatus = fmt.Sprintf("Failed reconciling statefulset, %+v", err)
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	if result, err := kmcScope.reconcileStatefulSet(ctx, kmc); err != nil || !result.IsZero() {
+		return result, err
 	}
 
-	if err := kmcScope.reconcileKubeConfigSecret(ctx, r.Client, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling secret"
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	if result, err := kmcScope.reconcileKubeConfigSecret(ctx, r.Client, kmc); err != nil || !result.IsZero() {
+		return result, err
 	}
-
-	kmc.Status.ReconciliationStatus = "Reconciliation successful"
 
 	return ctrl.Result{}, nil
 }
