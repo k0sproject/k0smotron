@@ -19,6 +19,7 @@ package k0smotronio
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"text/template"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -76,6 +77,10 @@ func (scope *kmcScope) reconcileMonitoringCM(ctx context.Context, kmc *km.Cluste
 	cm, err := scope.generateMonitoringCM(kmc)
 	if err != nil {
 		return err
+	}
+
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cm, kmc.Spec.CustomizeComponents.Patches); err != nil {
+		return fmt.Errorf("failed to apply component patches to monitoring configmap: %w", err)
 	}
 
 	return scope.client.Patch(ctx, &cm, client.Apply, patchOpts...)

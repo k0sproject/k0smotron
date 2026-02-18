@@ -112,7 +112,7 @@ type ClusterSpec struct {
 	Etcd EtcdSpec `json:"etcd,omitempty"`
 
 	// TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
-	// See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.
+	// See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more details.
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
@@ -121,7 +121,58 @@ type ClusterSpec struct {
 	// Note: This metadata will have precedence over default labels/annotations on the Secret.
 	// +kubebuilder:validation:Optional
 	KubeconfigSecretMetadata SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
+	// CustomizeComponents defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
+	// Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
+	// For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.
+	// +kubebuilder:validation:Optional
+	CustomizeComponents CustomizeComponents `json:"customizeComponents,omitempty"`
 }
+
+// CustomizeComponents defines the customization of generated resources.
+type CustomizeComponents struct {
+	// Patches is a list of patches to apply to generated resources. Patches are applied in order.
+	// +kubebuilder:validation:Optional
+	Patches []ComponentPatch `json:"patches,omitempty"`
+}
+
+// ComponentPatch defines a patch to apply to a generated resource.
+type ComponentPatch struct {
+	// ResourceType is the Kubernetes Kind of the target resource (e.g. "StatefulSet", "Service", "ConfigMap").
+	// +kubebuilder:validation:Required
+	ResourceType string `json:"resourceType"`
+	// Component is the value of the app.kubernetes.io/component label on the target resource.
+	// +kubebuilder:validation:Required
+	Component string `json:"component"`
+	// Type is the patch type to apply:
+	//   - "json": RFC 6902 JSON Patch, an array of add/remove/replace operations (https://datatracker.ietf.org/doc/html/rfc6902).
+	//   - "merge": RFC 7386 JSON Merge Patch, a partial JSON object that is merged into the target (https://datatracker.ietf.org/doc/html/rfc7386).
+	//   - "strategic": Kubernetes Strategic Merge Patch, like merge but with array merge semantics based on patchStrategy tags
+	//     (https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#use-a-strategic-merge-patch-to-update-a-deployment).
+	// +kubebuilder:validation:Enum=json;strategic;merge
+	// +kubebuilder:validation:Required
+	Type PatchType `json:"type"`
+	// Patch is the patch content. The format depends on the Type field:
+	//   - For "json": a JSON array of operations, e.g. [{"op":"add","path":"/metadata/labels/foo","value":"bar"}].
+	//   - For "merge" and "strategic": a partial YAML/JSON object that is merged into the target resource.
+	// +kubebuilder:validation:Required
+	Patch string `json:"patch"`
+}
+
+// PatchType defines the type of patch to apply.
+// +kubebuilder:validation:Enum=json;strategic;merge
+type PatchType string
+
+const (
+	// JSONPatchType is RFC 6902 JSON Patch (array of operations).
+	// See https://datatracker.ietf.org/doc/html/rfc6902 for more details.
+	JSONPatchType PatchType = "json"
+	// StrategicMergePatchType is Kubernetes strategic merge patch.
+	// See https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#use-a-strategic-merge-patch-to-update-a-deployment for more details.
+	StrategicMergePatchType PatchType = "strategic"
+	// MergePatchType is RFC 7386 JSON Merge Patch.
+	// See https://datatracker.ietf.org/doc/html/rfc7386 for more details.
+	MergePatchType PatchType = "merge"
+)
 
 // SecretMetadata defines metadata to be propagated to the bootstrap Secret
 type SecretMetadata struct {
