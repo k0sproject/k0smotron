@@ -48,8 +48,8 @@ func Test_createCPInstallCmd(t *testing.T) {
 						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{},
 					},
 				},
-				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{"name": "test-machine"},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
+					"metadata": map[string]any{"name": "test-machine"},
 				}}},
 			},
 			want: base + "--env AUTOPILOT_HOSTNAME=test",
@@ -68,8 +68,8 @@ func Test_createCPInstallCmd(t *testing.T) {
 					},
 				},
 				installArgs: []string{"--enable-worker", "--labels=k0sproject.io/foo=bar"},
-				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{
-					"metadata": map[string]interface{}{"name": "test-machine"},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
+					"metadata": map[string]any{"name": "test-machine"},
 				}}},
 				WorkerEnabled: true,
 			},

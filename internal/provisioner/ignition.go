@@ -52,20 +52,20 @@ type IgnitionProvisioner struct {
 
 // ToProvisionData converts the input data to Ignition user data.
 func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte, error) {
-	files := []map[string]interface{}{}
+	files := []map[string]any{}
 	for _, f := range input.Files {
 		mi, err := strconv.ParseInt(f.Permissions, 8, 32)
 		if err != nil {
 			return nil, err
 		}
-		files = append(files, map[string]interface{}{
+		files = append(files, map[string]any{
 			"path":     f.Path,
 			"contents": map[string]string{"inline": f.Content},
 			"mode":     int(mi),
 		})
 	}
 
-	units := []map[string]interface{}{}
+	units := []map[string]any{}
 	if len(input.Commands) > 0 {
 		var buf bytes.Buffer
 		tmpl, err := template.New("systemd").Parse(ignitionSystemdTemplate)
@@ -77,7 +77,7 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 			return nil, fmt.Errorf("error executing systemd template: %w", err)
 		}
 
-		units = append(units, map[string]interface{}{
+		units = append(units, map[string]any{
 			"name":     "k0s-bootstrap.service",
 			"enabled":  true,
 			"contents": buf.String(),
@@ -85,11 +85,11 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 	}
 
 	// translate initial Butane config (without additionalConfig) to Ignition JSON
-	initialButaneCfg := map[string]interface{}{
+	initialButaneCfg := map[string]any{
 		"variant": i.Variant,
 		"version": i.Version,
-		"storage": map[string]interface{}{"files": files},
-		"systemd": map[string]interface{}{"units": units},
+		"storage": map[string]any{"files": files},
+		"systemd": map[string]any{"units": units},
 	}
 	butaneYaml, err := yaml.Marshal(initialButaneCfg)
 	if err != nil {
@@ -159,10 +159,10 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 	}
 
 	// build final Ignition config with merge sources (initial + additional)
-	finalIgnitionCfg := map[string]interface{}{
-		"ignition": map[string]interface{}{
+	finalIgnitionCfg := map[string]any{
+		"ignition": map[string]any{
 			"version": initIgnVersion.Ignition.Version,
-			"config": map[string]interface{}{
+			"config": map[string]any{
 				"merge": ignMerge,
 			},
 		},

@@ -33,7 +33,7 @@ type PortForwarder struct {
 	ReadyChan chan struct{}
 	fw        *portforward.PortForwarder
 }
-type ErrorHandler func(err error, msgAndArgs ...interface{})
+type ErrorHandler func(err error, msgAndArgs ...any)
 
 func GetPortForwarder(cfg *rest.Config, name string, namespace string, port int) (*PortForwarder, error) {
 	transport, upgrader, err := spdy.RoundTripperFor(cfg)

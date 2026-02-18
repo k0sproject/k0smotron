@@ -44,8 +44,8 @@ const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDE
 //   - some of the fields in the k0s config struct are not pointers, e.g. spec.api.address in string, so it will be
 //     marshalled as "address": "", which is not correct value for the k0s config
 //   - we can't use the k0s config default values, because some of them are calculated based on the cluster state (e.g. spec.api.address)
-func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.ConfigMap, map[string]interface{}, error) {
-	k0smotronValues := map[string]interface{}{"spec": nil}
+func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.ConfigMap, map[string]any, error) {
+	k0smotronValues := map[string]any{"spec": nil}
 	unstructuredConfig := k0smotronValues
 
 	nllbEnabled := false
@@ -153,7 +153,7 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 	return scope.client.Patch(ctx, &cm, client.Apply, patchOpts...)
 }
 
-func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[string]interface{}, c client.Client) error {
+func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[string]any, c client.Client) error {
 	u := unstructured.Unstructured{Object: k0sConfig}
 
 	if kmc.Spec.KineDataSourceSecretName != "" {
@@ -238,33 +238,33 @@ func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {
 	return sans, nil
 }
 
-func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
-	iSliceSans := make([]interface{}, len(sans))
+func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
+	iSliceSans := make([]any, len(sans))
 	for i, s := range sans {
 		iSliceSans[i] = s
 	}
-	v1beta1Spec := map[string]interface{}{
-		"api": map[string]interface{}{
+	v1beta1Spec := map[string]any{
+		"api": map[string]any{
 			"port": int64(kmc.Spec.Service.APIPort),
 			"sans": iSliceSans,
 		},
-		"konnectivity": map[string]interface{}{
+		"konnectivity": map[string]any{
 			"agentPort": int64(kmc.Spec.Service.KonnectivityPort),
 		},
 	}
 	if kmc.Spec.KineDataSourceURL != "" {
-		v1beta1Spec["storage"] = map[string]interface{}{
+		v1beta1Spec["storage"] = map[string]any{
 			"type": "kine",
-			"kine": map[string]interface{}{
+			"kine": map[string]any{
 				"dataSource": kmc.Spec.KineDataSourceURL,
 			},
 		}
 	} else {
-		v1beta1Spec["storage"] = map[string]interface{}{
+		v1beta1Spec["storage"] = map[string]any{
 			"type": "etcd",
-			"etcd": map[string]interface{}{
-				"externalCluster": map[string]interface{}{
-					"endpoints":      []interface{}{fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
+			"etcd": map[string]any{
+				"externalCluster": map[string]any{
+					"endpoints":      []any{fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
 					"etcdPrefix":     kmc.GetName(),
 					"caFile":         "/var/lib/k0s/pki/etcd-ca.crt",
 					"clientCertFile": "/var/lib/k0s/pki/apiserver-etcd-client.crt",
@@ -276,7 +276,7 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]interface{} {
 
 	if kmc.Spec.Ingress != nil {
 		v1beta1Spec["api"].(map[string]any)["externalAddress"] = net.JoinHostPort(kmc.Spec.Ingress.APIHost, strconv.FormatInt(kmc.Spec.Ingress.Port, 10))
-		v1beta1Spec["api"].(map[string]any)["extraArgs"] = map[string]interface{}{
+		v1beta1Spec["api"].(map[string]any)["extraArgs"] = map[string]any{
 			"endpoint-reconciler-type": "none",
 		}
 		v1beta1Spec["konnectivity"] = map[string]any{

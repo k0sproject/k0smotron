@@ -23,6 +23,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"maps"
 	"strings"
 	"time"
 
@@ -179,9 +180,7 @@ func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, to
 		"k0smotron.io/token-request":  jtr.Name,
 		"app.kubernetes.io/component": util.ComponentJointoken,
 	}
-	for k, v := range jtr.Labels {
-		labels[k] = v
-	}
+	maps.Copy(labels, jtr.Labels)
 	secret := v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",

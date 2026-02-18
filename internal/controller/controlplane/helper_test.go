@@ -51,30 +51,30 @@ func TestHasControllerConfigChanged(t *testing.T) {
 				Spec: cpv1beta1.K0sControlPlaneSpec{
 					K0sConfigSpec: bootstrapv1.K0sConfigSpec{
 						K0s: &unstructured.Unstructured{
-							Object: map[string]interface{}{
+							Object: map[string]any{
 								"apiVersion": "k0s.k0sproject.io/v1beta1",
 								"kind":       "ClusterConfig",
-								"metadata": map[string]interface{}{
+								"metadata": map[string]any{
 									"name": "k0s",
 								},
-								"spec": map[string]interface{}{
-									"api": map[string]interface{}{
+								"spec": map[string]any{
+									"api": map[string]any{
 										"externalAddress": "172.18.0.3",
-										"extraArgs": map[string]interface{}{
+										"extraArgs": map[string]any{
 											"anonymous-auth": "true",
 										},
 									},
-									"network": map[string]interface{}{
+									"network": map[string]any{
 										"clusterDomain": "cluster.local",
 										"podCIDR":       "192.168.0.0/16",
 										"serviceCIDR":   "10.128.0.0/12",
 									},
-									"telemetry": map[string]interface{}{
+									"telemetry": map[string]any{
 										"enabled": "false",
 									},
-									"storage": map[string]interface{}{
-										"etcd": map[string]interface{}{
-											"extraArgs": map[string]interface{}{
+									"storage": map[string]any{
+										"etcd": map[string]any{
+											"extraArgs": map[string]any{
 												"name": "test",
 											},
 										},
@@ -93,30 +93,30 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					Spec: bootstrapv1.K0sControllerConfigSpec{
 						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{
 							K0s: &unstructured.Unstructured{
-								Object: map[string]interface{}{
+								Object: map[string]any{
 									"apiVersion": "k0s.k0sproject.io/v1beta1",
 									"kind":       "ClusterConfig",
-									"metadata": map[string]interface{}{
+									"metadata": map[string]any{
 										"name": "k0s",
 									},
-									"spec": map[string]interface{}{
-										"api": map[string]interface{}{
+									"spec": map[string]any{
+										"api": map[string]any{
 											"externalAddress": "172.18.0.3",
-											"extraArgs": map[string]interface{}{
+											"extraArgs": map[string]any{
 												"anonymous-auth": "true",
 											},
 										},
-										"network": map[string]interface{}{
+										"network": map[string]any{
 											"clusterDomain": "cluster.local",
 											"podCIDR":       "192.168.0.0/16",
 											"serviceCIDR":   "10.128.0.0/12",
 										},
-										"telemetry": map[string]interface{}{
+										"telemetry": map[string]any{
 											"enabled": "false",
 										},
-										"storage": map[string]interface{}{
-											"etcd": map[string]interface{}{
-												"extraArgs": map[string]interface{}{
+										"storage": map[string]any{
+											"etcd": map[string]any{
+												"extraArgs": map[string]any{
 													"name": "test",
 												},
 											},
@@ -145,30 +145,30 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					K0sConfigSpec: bootstrapv1.K0sConfigSpec{
 						K0sInstallDir: "/opt",
 						K0s: &unstructured.Unstructured{
-							Object: map[string]interface{}{
+							Object: map[string]any{
 								"apiVersion": "k0s.k0sproject.io/v1beta1",
 								"kind":       "ClusterConfig",
-								"metadata": map[string]interface{}{
+								"metadata": map[string]any{
 									"name": "k0s",
 								},
-								"spec": map[string]interface{}{
-									"api": map[string]interface{}{
+								"spec": map[string]any{
+									"api": map[string]any{
 										"externalAddress": "172.18.0.3",
-										"extraArgs": map[string]interface{}{
+										"extraArgs": map[string]any{
 											"anonymous-auth": "true",
 										},
 									},
-									"network": map[string]interface{}{
+									"network": map[string]any{
 										"clusterDomain": "cluster.local",
 										"podCIDR":       "192.168.0.0/16",
 										"serviceCIDR":   "10.128.0.0/12",
 									},
-									"telemetry": map[string]interface{}{
+									"telemetry": map[string]any{
 										"enabled": "false",
 									},
-									"storage": map[string]interface{}{
-										"etcd": map[string]interface{}{
-											"extraArgs": map[string]interface{}{
+									"storage": map[string]any{
+										"etcd": map[string]any{
+											"extraArgs": map[string]any{
 												"name": "test",
 											},
 										},
@@ -188,30 +188,30 @@ func TestHasControllerConfigChanged(t *testing.T) {
 						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{
 							K0sInstallDir: "/usr/local/bin",
 							K0s: &unstructured.Unstructured{
-								Object: map[string]interface{}{
+								Object: map[string]any{
 									"apiVersion": "k0s.k0sproject.io/v1beta1",
 									"kind":       "ClusterConfig",
-									"metadata": map[string]interface{}{
+									"metadata": map[string]any{
 										"name": "k0s",
 									},
-									"spec": map[string]interface{}{
-										"api": map[string]interface{}{
+									"spec": map[string]any{
+										"api": map[string]any{
 											"externalAddress": "172.18.0.3",
-											"extraArgs": map[string]interface{}{
+											"extraArgs": map[string]any{
 												"anonymous-auth": "true",
 											},
 										},
-										"network": map[string]interface{}{
+										"network": map[string]any{
 											"clusterDomain": "cluster.local",
 											"podCIDR":       "192.168.0.0/16",
 											"serviceCIDR":   "10.128.0.0/12",
 										},
-										"telemetry": map[string]interface{}{
+										"telemetry": map[string]any{
 											"enabled": "false",
 										},
-										"storage": map[string]interface{}{
-											"etcd": map[string]interface{}{
-												"extraArgs": map[string]interface{}{
+										"storage": map[string]any{
+											"etcd": map[string]any{
+												"extraArgs": map[string]any{
 													"name": "test",
 												},
 											},
@@ -242,30 +242,30 @@ func TestHasControllerConfigChanged(t *testing.T) {
 							"--enable-worker",
 						},
 						K0s: &unstructured.Unstructured{
-							Object: map[string]interface{}{
+							Object: map[string]any{
 								"apiVersion": "k0s.k0sproject.io/v1beta1",
 								"kind":       "ClusterConfig",
-								"metadata": map[string]interface{}{
+								"metadata": map[string]any{
 									"name": "k0s",
 								},
-								"spec": map[string]interface{}{
-									"api": map[string]interface{}{
+								"spec": map[string]any{
+									"api": map[string]any{
 										"externalAddress": "172.18.0.3",
-										"extraArgs": map[string]interface{}{
+										"extraArgs": map[string]any{
 											"anonymous-auth": "true",
 										},
 									},
-									"network": map[string]interface{}{
+									"network": map[string]any{
 										"clusterDomain": "cluster.local",
 										"podCIDR":       "192.168.0.0/16",
 										"serviceCIDR":   "10.128.0.0/12",
 									},
-									"telemetry": map[string]interface{}{
+									"telemetry": map[string]any{
 										"enabled": "false",
 									},
-									"storage": map[string]interface{}{
-										"etcd": map[string]interface{}{
-											"extraArgs": map[string]interface{}{
+									"storage": map[string]any{
+										"etcd": map[string]any{
+											"extraArgs": map[string]any{
 												"name": "test",
 											},
 										},
@@ -284,30 +284,30 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					Spec: bootstrapv1.K0sControllerConfigSpec{
 						K0sConfigSpec: &bootstrapv1.K0sConfigSpec{
 							K0s: &unstructured.Unstructured{
-								Object: map[string]interface{}{
+								Object: map[string]any{
 									"apiVersion": "k0s.k0sproject.io/v1beta1",
 									"kind":       "ClusterConfig",
-									"metadata": map[string]interface{}{
+									"metadata": map[string]any{
 										"name": "k0s",
 									},
-									"spec": map[string]interface{}{
-										"api": map[string]interface{}{
+									"spec": map[string]any{
+										"api": map[string]any{
 											"externalAddress": "172.18.0.3",
-											"extraArgs": map[string]interface{}{
+											"extraArgs": map[string]any{
 												"anonymous-auth": "true",
 											},
 										},
-										"network": map[string]interface{}{
+										"network": map[string]any{
 											"clusterDomain": "cluster.local",
 											"podCIDR":       "192.168.0.0/16",
 											"serviceCIDR":   "10.128.0.0/12",
 										},
-										"telemetry": map[string]interface{}{
+										"telemetry": map[string]any{
 											"enabled": "false",
 										},
-										"storage": map[string]interface{}{
-											"etcd": map[string]interface{}{
-												"extraArgs": map[string]interface{}{
+										"storage": map[string]any{
+											"etcd": map[string]any{
+												"extraArgs": map[string]any{
 													"name": "test",
 												},
 											},

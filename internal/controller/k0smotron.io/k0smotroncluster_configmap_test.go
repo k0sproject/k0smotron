@@ -41,11 +41,11 @@ func TestGenerateCM(t *testing.T) {
 		kmc := km.Cluster{
 			Spec: km.ClusterSpec{
 				ExternalAddress: "my.external.address",
-				K0sConfig: &unstructured.Unstructured{Object: map[string]interface{}{
+				K0sConfig: &unstructured.Unstructured{Object: map[string]any{
 					"apiVersion": "k0s.k0sproject.io/v1beta1",
 					"kind":       "ClusterConfig",
-					"spec": map[string]interface{}{
-						"network": map[string]interface{}{
+					"spec": map[string]any{
+						"network": map[string]any{
 							"provider": "calico",
 						},
 					},
@@ -67,12 +67,12 @@ func TestGenerateCM(t *testing.T) {
 		kmc := km.Cluster{
 			Spec: km.ClusterSpec{
 				ExternalAddress: "my.external.address",
-				K0sConfig: &unstructured.Unstructured{Object: map[string]interface{}{
+				K0sConfig: &unstructured.Unstructured{Object: map[string]any{
 					"apiVersion": "k0s.k0sproject.io/v1beta1",
 					"kind":       "ClusterConfig",
-					"spec": map[string]interface{}{
-						"api": map[string]interface{}{
-							"sans": []interface{}{"my.san.address"},
+					"spec": map[string]any{
+						"api": map[string]any{
+							"sans": []any{"my.san.address"},
 						},
 					},
 				}},
@@ -99,11 +99,11 @@ func TestGenerateCM(t *testing.T) {
 					KonnectivityHost: "my.konnectivity.external.address",
 					Port:             443,
 				},
-				K0sConfig: &unstructured.Unstructured{Object: map[string]interface{}{
+				K0sConfig: &unstructured.Unstructured{Object: map[string]any{
 					"apiVersion": "k0s.k0sproject.io/v1beta1",
 					"kind":       "ClusterConfig",
-					"spec": map[string]interface{}{
-						"network": map[string]interface{}{
+					"spec": map[string]any{
+						"network": map[string]any{
 							"provider": "calico",
 						},
 					},

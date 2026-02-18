@@ -19,6 +19,7 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/k0sproject/k0smotron/internal/controller/util"
@@ -88,28 +89,16 @@ func generateService(kmc *km.Cluster) v1.Service {
 
 	// Selector must match pods (same as main); ObjectMeta gets app.kubernetes.io/component.
 	selectorLabels := map[string]string{}
-	for k, v := range util.LabelsForK0smotronCluster(kmc) {
-		selectorLabels[k] = v
-	}
-	for k, v := range kmc.Spec.Service.Labels {
-		selectorLabels[k] = v
-	}
+	maps.Copy(selectorLabels, util.LabelsForK0smotronCluster(kmc))
+	maps.Copy(selectorLabels, kmc.Spec.Service.Labels)
 	metadataLabels := map[string]string{}
-	for k, v := range util.LabelsForK0smotronComponent(kmc, util.ComponentControlPlane) {
-		metadataLabels[k] = v
-	}
-	for k, v := range kmc.Spec.Service.Labels {
-		metadataLabels[k] = v
-	}
+	maps.Copy(metadataLabels, util.LabelsForK0smotronComponent(kmc, util.ComponentControlPlane))
+	maps.Copy(metadataLabels, kmc.Spec.Service.Labels)
 
 	// Copy both Cluster level annotations and Service annotations
 	annotations := map[string]string{}
-	for k, v := range util.AnnotationsForK0smotronCluster(kmc) {
-		annotations[k] = v
-	}
-	for k, v := range kmc.Spec.Service.Annotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, util.AnnotationsForK0smotronCluster(kmc))
+	maps.Copy(annotations, kmc.Spec.Service.Annotations)
 
 	svc := v1.Service{
 		TypeMeta: metav1.TypeMeta{
