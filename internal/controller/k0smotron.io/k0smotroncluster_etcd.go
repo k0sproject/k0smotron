@@ -23,6 +23,7 @@ import (
 	"maps"
 	"strings"
 	"text/template"
+	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 
@@ -37,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util/secret"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -46,24 +48,28 @@ func init() {
 	etcdEntrypointScriptTmpl = template.Must(template.New("entrypoint.sh").Parse(etcdEntrypointScriptTemplate))
 }
 
-func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster) error {
+func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster) (ctrl.Result, error) {
 	if kmc.Spec.KineDataSourceURL != "" || kmc.Spec.KineDataSourceSecretName != "" {
-		return nil
+		return ctrl.Result{}, nil
 	}
 
 	if err := scope.reconcileEtcdSvc(ctx, kmc); err != nil {
-		return fmt.Errorf("error reconciling etcd service: %w", err)
+		return ctrl.Result{}, fmt.Errorf("error reconciling etcd service: %w", err)
 	}
-	if err := scope.reconcileEtcdStatefulSet(ctx, kmc); err != nil {
-		return fmt.Errorf("error reconciling etcd statefulset: %w", err)
+
+	// We can continue reconciling etcd if we need to requeue for statefulset, but if there is an error we should return immediately
+	result, err := scope.reconcileEtcdStatefulSet(ctx, kmc)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error reconciling etcd statefulset: %w", err)
 	}
+
 	if kmc.Spec.Etcd.DefragJob.Enabled {
 		if err := scope.reconcileEtcdDefragJob(ctx, kmc); err != nil {
-			return fmt.Errorf("error reconciling etcd defrag job: %w", err)
+			return ctrl.Result{}, fmt.Errorf("error reconciling etcd defrag job: %w", err)
 		}
 	}
 
-	return nil
+	return result, nil
 }
 
 func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) error {
@@ -187,27 +193,26 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 	return scope.client.Patch(ctx, &cronJob, client.Apply, patchOpts...)
 }
 
-func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster) error {
+func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster) (ctrl.Result, error) {
 	foundStatefulSet, err := scope.clienSet.AppsV1().StatefulSets(kmc.Namespace).Get(ctx, kmc.GetEtcdStatefulSetName(), metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
-			return err
+			return ctrl.Result{}, err
 		}
 	}
 	desiredReplicas := calculateDesiredReplicas(kmc, foundStatefulSet)
 	// We can't check for nil due to the client_go implementation
-	if foundStatefulSet.GetName() != "" {
+	if foundStatefulSet.GetName() != "" && desiredReplicas > *foundStatefulSet.Spec.Replicas {
 
 		// If we want to scale up existing etcd statefulset, we always scale up by 1 replica at a time and wait for the previous member to be ready
 		// This is to avoid the situation where the new member is not able to join the cluster because the previous member is not ready
-		if desiredReplicas > *foundStatefulSet.Spec.Replicas {
-			// Scale up by 1 replica
-			desiredReplicas = int32(*foundStatefulSet.Spec.Replicas) + 1
-		}
+
+		// Scale up by 1 replica
+		desiredReplicas = int32(*foundStatefulSet.Spec.Replicas) + 1
 
 		if desiredReplicas > foundStatefulSet.Status.ReadyReplicas+1 {
 			// Wait for the previous member to be ready. For example, if the desired replicas is 3, we need to wait for the 2nd member to be ready before adding the 3rd member
-			return fmt.Errorf("waiting for previous etcd member to be ready")
+			return ctrl.Result{RequeueAfter: time.Second * 10}, nil
 		}
 	}
 
@@ -215,7 +220,7 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
-	return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+	return ctrl.Result{}, scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
 }
 
 func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32) apps.StatefulSet {

@@ -137,9 +137,11 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 	if err := scope.client.Patch(ctx, &svc, client.Apply, patchOpts...); err != nil {
 		return err
 	}
-	// Wait for LB address to be available
-	logger.Info("Waiting for loadbalancer address")
+	scope.currentReconcileState.controlplane.svc = svc.DeepCopy()
+
 	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer && kmc.Spec.ExternalAddress == "" {
+		// Wait for LB address to be available
+		logger.Info("Waiting for loadbalancer address")
 		err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 			err := scope.client.Get(ctx, client.ObjectKey{Name: svc.Name, Namespace: svc.Namespace}, &svc)
 			if err != nil {

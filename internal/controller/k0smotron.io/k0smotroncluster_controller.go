@@ -18,12 +18,12 @@ package k0smotronio
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"time"
 
 	apps "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -51,8 +51,6 @@ var (
 		client.FieldOwner("k0smotron-operator"),
 		client.ForceOwnership,
 	}
-	// ErrNotReady is returned when the statefulset does not have a ready replica.
-	ErrNotReady = fmt.Errorf("waiting for the state")
 )
 
 // ClusterReconciler reconciles a Cluster object
@@ -83,6 +81,25 @@ type kmcScope struct {
 	secretCachingClient client.Client
 	// clusterSettings holds the cluster settings retrieved from the k0sConfig
 	clusterSettings clusterSettings
+	// currentReconcileState holds the state of the current reconcile loop that can be used generate the status conditions at the end of the loop.
+	currentReconcileState currentReconcileState
+}
+
+type currentReconcileState struct {
+	message      string
+	reason       string
+	controlplane controlplaneState
+}
+
+type controlplaneState struct {
+	sts        *apps.StatefulSet
+	svc        *corev1.Service
+	kubeconfig kubeconfigState
+}
+
+type kubeconfigState struct {
+	message string
+	data    *corev1.Secret
 }
 
 type clusterSettings struct {
@@ -177,6 +194,8 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	defer func() {
+		r.updateStatus(ctx, kmc, kmcScope.currentReconcileState)
+
 		err = patchHelper.Patch(ctx, kmc)
 		if err != nil {
 			logger.Error(err, "Unable to update k0smotron Cluster")
@@ -184,67 +203,27 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}()
 
 	if !kmc.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info("Cluster is being deleted")
-		// If controlplanes run in a different cluster, we need to delete the resources associated with
-		// the k0smotron.Cluster by deleting the external owner which owns all the resources associated
-		// with the k0smotron.Cluster.
-		if kmcScope.externalOwner != nil {
-			err := kmcScope.client.Delete(ctx, kmcScope.externalOwner)
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("error deleting root configmap: %v", err)
-			}
-		}
-
-		// Note: owner references cannot be used in this case because JoinTokenRequest can be in a
-		// different namespace so we need to list and delete them manually.
-		jtrl := &km.JoinTokenRequestList{}
-		err := r.List(ctx, jtrl,
-			client.MatchingLabels{
-				clusterUIDLabel: string(kmc.GetUID()),
-			})
-		if err != nil {
-			logger.Error(err, "Error retrieving JoinTokenRequests resources related to cluster")
-			return ctrl.Result{}, nil
-		}
-		for i := range jtrl.Items {
-			err := r.Delete(ctx, &jtrl.Items[i])
-			if err != nil {
-				logger.Error(err, "Error removing JoinTokenRequests")
-				return ctrl.Result{}, nil
-			}
-		}
-
-		if updated := controllerutil.RemoveFinalizer(kmc, clusterFinalizer); updated {
-			logger.Info("Removed finalizer from k0smotron Cluster")
-		}
-
-		return ctrl.Result{}, nil
+		return r.reconcileDelete(ctx, kmcScope, kmc)
 	}
 
-	logger.Info("Reconciling services")
 	if err := kmcScope.reconcileServices(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling services"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileIngress(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling ingress"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileK0sConfig(ctx, kmc, r.Client); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileEntrypointCM(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling entrypoint configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if kmc.Spec.Monitoring.Enabled {
 		if err := kmcScope.reconcileMonitoringCM(ctx, kmc); err != nil {
-			kmc.Status.ReconciliationStatus = "Failed reconciling prometheus configmap"
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
 	}
@@ -252,24 +231,6 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if kmc.Spec.CertificateRefs == nil {
 		if err := kmcScope.ensureCertificates(ctx, kmc); err != nil {
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
-		}
-		kmc.Spec.CertificateRefs = []km.CertificateRef{
-			{
-				Type: string(secret.ClusterCA),
-				Name: secret.Name(kmc.Name, secret.ClusterCA),
-			},
-			{
-				Type: string(secret.FrontProxyCA),
-				Name: secret.Name(kmc.Name, secret.FrontProxyCA),
-			},
-			{
-				Type: string(secret.ServiceAccount),
-				Name: secret.Name(kmc.Name, secret.ServiceAccount),
-			},
-			{
-				Type: string(secret.EtcdCA),
-				Name: secret.Name(kmc.Name, secret.EtcdCA),
-			},
 		}
 	}
 	if kmc.Spec.KineDataSourceURL == "" {
@@ -302,33 +263,79 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if err := kmcScope.reconcilePVC(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling PVCs"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling etcd")
-	if err := kmcScope.reconcileEtcd(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = fmt.Sprintf("Failed reconciling etcd, %+v", err)
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	result, err := kmcScope.reconcileEtcd(ctx, kmc)
+	if err != nil {
+		return result, err
 	}
 
 	logger.Info("Reconciling statefulset")
-	if err := kmcScope.reconcileStatefulSet(ctx, kmc); err != nil {
-		if errors.Is(err, ErrNotReady) {
-			kmc.Status.ReconciliationStatus = err.Error()
+	if result, err := kmcScope.reconcileStatefulSet(ctx, kmc); err != nil || !result.IsZero() {
+		return result, err
+	}
+
+	// We obtain the kubeconfig secret by running "k0s kubeconfig create admin" meaning that we need at least one ready replica ready.
+	if kmc.Status.ReadyReplicas > 0 {
+		if err := kmcScope.reconcileKubeConfigSecret(ctx, r.Client, kmc); err != nil {
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
-
-		kmc.Status.ReconciliationStatus = fmt.Sprintf("Failed reconciling statefulset, %+v", err)
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	} else {
+		// There is still pending work to do, but we need to wait for the statefulset to have a ready replica before trying to
+		// generate the kubeconfig secret.
+		logger.Info("Kubeconfig secret cannot be generated until there is at least one ready replica, requeuing...")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
 	}
 
-	if err := kmcScope.reconcileKubeConfigSecret(ctx, r.Client, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling secret"
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	return result, nil
+}
+
+func (r *ClusterReconciler) reconcileDelete(ctx context.Context, scope *kmcScope, kmc *km.Cluster) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	logger.Info("Reconcile cluster delete")
+	// If controlplanes run in a different cluster, we need to delete the resources associated with
+	// the k0smotron.Cluster by deleting the external owner which owns all the resources associated
+	// with the k0smotron.Cluster.
+	if scope.externalOwner != nil {
+		err := scope.client.Delete(ctx, scope.externalOwner)
+		if err != nil {
+			scope.currentReconcileState.reason = km.InternalErrorReason
+			scope.currentReconcileState.message = fmt.Sprintf("Error deleting external owner: %v", err)
+			return ctrl.Result{}, fmt.Errorf("error deleting root configmap: %v", err)
+		}
 	}
 
-	kmc.Status.ReconciliationStatus = "Reconciliation successful"
+	// Note: owner references cannot be used in this case because JoinTokenRequest can be in a
+	// different namespace so we need to list and delete them manually.
+	jtrl := &km.JoinTokenRequestList{}
+	err := r.List(ctx, jtrl,
+		client.MatchingLabels{
+			clusterUIDLabel: string(kmc.GetUID()),
+		})
+	if err != nil {
+		scope.currentReconcileState.reason = km.InternalErrorReason
+		scope.currentReconcileState.message = fmt.Sprintf("Error retrieving JoinTokenRequests resources related to cluster: %v", err)
+		logger.Error(err, "Error retrieving JoinTokenRequests resources related to cluster")
+		return ctrl.Result{}, nil
+	}
+	for i := range jtrl.Items {
+		err := r.Delete(ctx, &jtrl.Items[i])
+		if err != nil {
+			scope.currentReconcileState.reason = km.InternalErrorReason
+			scope.currentReconcileState.message = fmt.Sprintf("Error removing JoinTokenRequests: %v", err)
+			logger.Error(err, "Error removing JoinTokenRequests")
+			return ctrl.Result{}, nil
+		}
+	}
+
+	scope.currentReconcileState.reason = km.ClusterDeletingDeletionCompletedReason
+
+	if updated := controllerutil.RemoveFinalizer(kmc, clusterFinalizer); updated {
+		logger.Info("Removed finalizer from k0smotron Cluster")
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -358,6 +365,25 @@ func (scope *kmcScope) ensureCertificates(ctx context.Context, kmc *km.Cluster) 
 	err := certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc), owner)
 	if err != nil {
 		return fmt.Errorf("error generating cluster certificates: %w", err)
+	}
+
+	kmc.Spec.CertificateRefs = []km.CertificateRef{
+		{
+			Type: string(secret.ClusterCA),
+			Name: secret.Name(kmc.Name, secret.ClusterCA),
+		},
+		{
+			Type: string(secret.FrontProxyCA),
+			Name: secret.Name(kmc.Name, secret.FrontProxyCA),
+		},
+		{
+			Type: string(secret.ServiceAccount),
+			Name: secret.Name(kmc.Name, secret.ServiceAccount),
+		},
+		{
+			Type: string(secret.EtcdCA),
+			Name: secret.Name(kmc.Name, secret.EtcdCA),
+		},
 	}
 
 	return nil

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/k0sproject/k0s/inttest/common"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -132,7 +133,7 @@ func (s *ConfigUpdateSuite) checkClusterStatus(ctx context.Context, rc *rest.Con
 			Do(ctx).
 			Into(&kmc)
 
-		return kmc.Status.Ready, nil
+		return conditions.IsTrue(&kmc, km.ClusterAvailableCondition), nil
 	})
 
 	s.Require().NoError(err)
