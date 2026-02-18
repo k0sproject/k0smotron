@@ -18,7 +18,6 @@ package k0smotronio
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"time"
@@ -83,6 +82,8 @@ type kmcScope struct {
 	secretCachingClient client.Client
 	// clusterSettings holds the cluster settings retrieved from the k0sConfig
 	clusterSettings clusterSettings
+	// kmcStatefulSet is the statefulset of the control plane.
+	kmcStatefulSet *apps.StatefulSet
 }
 
 type clusterSettings struct {
@@ -176,7 +177,10 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	statusScope := statusScope{}
 	defer func() {
+		r.updateStatus(ctx, kmc, statusScope)
+
 		err = patchHelper.Patch(ctx, kmc)
 		if err != nil {
 			logger.Error(err, "Unable to update k0smotron Cluster")
@@ -191,6 +195,8 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if kmcScope.externalOwner != nil {
 			err := kmcScope.client.Delete(ctx, kmcScope.externalOwner)
 			if err != nil {
+				statusScope.reason = km.ClusterDeletingInternalErrorReason
+				statusScope.message = fmt.Sprintf("Error deleting external owner: %v", err)
 				return ctrl.Result{}, fmt.Errorf("error deleting root configmap: %v", err)
 			}
 		}
@@ -203,16 +209,23 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				clusterUIDLabel: string(kmc.GetUID()),
 			})
 		if err != nil {
+			statusScope.reason = km.ClusterDeletingInternalErrorReason
+			statusScope.message = fmt.Sprintf("Error retrieving JoinTokenRequests resources related to cluster: %v", err)
 			logger.Error(err, "Error retrieving JoinTokenRequests resources related to cluster")
 			return ctrl.Result{}, nil
 		}
 		for i := range jtrl.Items {
 			err := r.Delete(ctx, &jtrl.Items[i])
 			if err != nil {
+				statusScope.reason = km.ClusterDeletingInternalErrorReason
+				statusScope.message = fmt.Sprintf("Error removing JoinTokenRequests: %v", err)
 				logger.Error(err, "Error removing JoinTokenRequests")
 				return ctrl.Result{}, nil
 			}
 		}
+
+		statusScope.reason = km.ClusterDeletingDeletionCompletedReason
+		statusScope.message = "Deletion completed"
 
 		if updated := controllerutil.RemoveFinalizer(kmc, clusterFinalizer); updated {
 			logger.Info("Removed finalizer from k0smotron Cluster")
@@ -223,28 +236,23 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	logger.Info("Reconciling services")
 	if err := kmcScope.reconcileServices(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling services"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileIngress(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling ingress"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileK0sConfig(ctx, kmc, r.Client); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileEntrypointCM(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling entrypoint configmap"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if kmc.Spec.Monitoring.Enabled {
 		if err := kmcScope.reconcileMonitoringCM(ctx, kmc); err != nil {
-			kmc.Status.ReconciliationStatus = "Failed reconciling prometheus configmap"
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
 	}
@@ -302,33 +310,22 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if err := kmcScope.reconcilePVC(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling PVCs"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling etcd")
 	if err := kmcScope.reconcileEtcd(ctx, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = fmt.Sprintf("Failed reconciling etcd, %+v", err)
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling statefulset")
-	if err := kmcScope.reconcileStatefulSet(ctx, kmc); err != nil {
-		if errors.Is(err, ErrNotReady) {
-			kmc.Status.ReconciliationStatus = err.Error()
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
-		}
-
-		kmc.Status.ReconciliationStatus = fmt.Sprintf("Failed reconciling statefulset, %+v", err)
+	if result, err := kmcScope.reconcileStatefulSet(ctx, kmc); err != nil || !result.IsZero() {
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileKubeConfigSecret(ctx, r.Client, kmc); err != nil {
-		kmc.Status.ReconciliationStatus = "Failed reconciling secret"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
-
-	kmc.Status.ReconciliationStatus = "Reconciliation successful"
 
 	return ctrl.Result{}, nil
 }
