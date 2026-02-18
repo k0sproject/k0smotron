@@ -30,6 +30,77 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+const (
+	// ClusterControlPlaneFunctionalCondition surfaces details about the functionality of the control plane.
+	ClusterControlPlaneFunctionalCondition = "ControlPlaneFunctional"
+
+	// ClusterControlPlaneFunctionalReason surfaces when the control plane is functional because the
+	// kube-system namespace has been found in the workload cluster.
+	ClusterControlPlaneFunctionalReason = "KubeSystemNamespaceFound"
+
+	// ClusterDeletingCondition surfaces details about ongoing deletion of the Cluster.
+	ClusterDeletingCondition = "Deleting"
+
+	// ClusterNotDeletingReason surfaces when the Cluster is not deleting because the
+	// DeletionTimestamp is not set.
+	ClusterNotDeletingReason = "NotDeleting"
+
+	// InternalErrorReason surfaces unexpected failures.
+	InternalErrorReason = "InternalError"
+
+	// ClusterDeletingDeletionCompletedReason surfaces when the Cluster deletion has been completed.
+	// This reason is set prior the `k0smotron.io/finalizer` finalizer is removed.
+	// This means that the object will go away (i.e. be removed from etcd), except if there are other
+	// finalizers on the Cluster object.
+	ClusterDeletingDeletionCompletedReason = "Completed"
+
+	// ClusterControlPlaneUpToDateCondition surfaces details about whether the control plane is up to date with the Cluster spec.
+	ClusterControlPlaneUpToDateCondition = "ControlPlaneUpToDate"
+
+	// ClusterControlPlaneReplicasUpToDateReason surfaces when the control plane is up to date with the Cluster spec.
+	ClusterControlPlaneReplicasUpToDateReason = "AllReplicasUpToDate"
+
+	// ClusterControlPlaneNotAllReplicasUpToDateReason surfaces when the control plane is not up to date with the Cluster spec yet.
+	ClusterControlPlaneNotAllReplicasUpToDateReason = "NotAllReplicasUpToDate"
+
+	// ClusterControlPlaneNoReadyReplicasReason surfaces when the control plane does not have any ready replicas.
+	ClusterControlPlaneNoReadyReplicasReason = "NoReadyReplicas"
+
+	// ClusterControlPlaneScalingCondition surfaces details about whether the control plane is scaling.
+	ClusterControlPlaneScalingCondition = "ControlPlaneScaling"
+
+	// ClusterControlPlaneScaledUpReason surfaces when the control plane is scaling up.
+	ClusterControlPlaneScaledUpReason = "ScalingUp"
+
+	// ClusterControlPlaneScaledDownReason surfaces when the control plane is scaling down.
+	ClusterControlPlaneScaledDownReason = "ScalingDown"
+
+	// ClusterControlPlaneNotScalingReason surfaces when the control plane is not scaling because is not needed.
+	ClusterControlPlaneNotScalingReason = "ControlPlaneWithDesiredReplicas"
+
+	// ClusterControlPlaneExposedCondition surfaces details about whether the control plane service is exposed.
+	ClusterControlPlaneExposedCondition = "ControlPlaneExposed"
+
+	// ClusterControlPlaneExposedReason surfaces details about whether the control plane service is exposed.
+	ClusterControlPlaneExposedReason = "ClusterWithExternalAddress"
+
+	// ClusterKubeconfigSecretAvailableCondition surfaces details about the availability of the kubeconfig secret for the workload cluster.
+	ClusterKubeconfigSecretAvailableCondition = "KubeconfigSecretAvailable"
+
+	// ClusterCertificatesAvailableCondition surfaces details about the availability of the certificates for the workload cluster.
+	ClusterCertificatesAvailableCondition = "CertificatesAvailable"
+
+	// ClusterAvailableCondition surfaces details about the overall availability of the cluster meaning ControlPlaneFunctionalCondition is true,
+	// ClusterKubeconfigSecretAvailableCondition is true and ClusterControlPlaneUpToDateCondition is true.
+	ClusterAvailableCondition = "Available"
+
+	// CreatedReason surfaces when a resource has been created.
+	CreatedReason = "Created"
+
+	// NotFoundReason surfaces when a resource is not found.
+	NotFoundReason = "NotFound"
+)
+
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
 	// KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
@@ -267,13 +338,83 @@ func (c *ClusterSpec) GetImage() string {
 	return fmt.Sprintf("%s:%s", c.Image, k0sVersion)
 }
 
+// GetConditions returns the conditions of the Cluster status.
+func (kmc *Cluster) GetConditions() []metav1.Condition {
+	return kmc.Status.Conditions
+}
+
+// SetConditions sets the conditions on the Cluster status.
+func (kmc *Cluster) SetConditions(conditions []metav1.Condition) {
+	kmc.Status.Conditions = conditions
+}
+
 // ClusterStatus defines the observed state of K0smotronCluster
 type ClusterStatus struct {
-	ReconciliationStatus string `json:"reconciliationStatus"`
-	Ready                bool   `json:"ready,omitempty"`
-	Replicas             int32  `json:"replicas,omitempty"`
+	// Replicas is the total number of pods targeted by this cluster
+	Replicas int32 `json:"replicas,omitempty"`
+	// ReadyReplicas is the number of controlplane pods targeted by this Cluster with a Ready Condition.
+	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
+	// UpdatedReplicas is the number of pods targeted by this Cluster that have been updated to match the Cluster spec.
+	UpdatedReplicas int32 `json:"updatedReplicas,omitempty"`
 	// selector is the label selector for pods that should match the replicas count.
 	Selector string `json:"selector,omitempty"`
+	// Conditions represents the observations of the k0smotron cluster's state.
+	// Known condition types are Available, Deleting.
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
+	// +optional
+	Deprecated *ClusterStatusDeprecated `json:"deprecated,omitempty"`
+}
+
+// ClusterStatusDeprecated defines the observed state of K0smotronCluster for deprecated fields, which will be removed in future versions.
+type ClusterStatusDeprecated struct {
+	// v1beta1 groups all the status fields that are deprecated and will be removed when support for v1beta1 will be dropped.
+	// +optional
+	V1Beta1 *ClusterStatusV1beta1Deprecated `json:"v1beta1,omitempty"`
+}
+
+// ClusterStatusV1beta1Deprecated defines the observed state of K0smotronCluster for v1beta1, which is deprecated and will be removed in future versions.
+type ClusterStatusV1beta1Deprecated struct {
+	ReconciliationStatus string `json:"reconciliationStatus,omitempty"`
+	Ready                bool   `json:"ready,omitempty"`
+}
+
+// GetReconciliationStatus returns the reconciliation status of the Cluster.
+func (kmc *Cluster) GetReconciliationStatus() string {
+	if kmc.Status.Deprecated != nil && kmc.Status.Deprecated.V1Beta1 != nil {
+		return kmc.Status.Deprecated.V1Beta1.ReconciliationStatus
+	}
+	return ""
+}
+
+// GetReadyStatus returns the ready status of the Cluster.
+func (kmc *Cluster) GetReadyStatus() bool {
+	if kmc.Status.Deprecated != nil && kmc.Status.Deprecated.V1Beta1 != nil {
+		return kmc.Status.Deprecated.V1Beta1.Ready
+	}
+	return false
+}
+
+// SetReconciliationStatus sets the reconciliation status of the Cluster.
+func (kmc *Cluster) SetReconciliationStatus(status string) {
+	if kmc.Status.Deprecated == nil {
+		kmc.Status.Deprecated = &ClusterStatusDeprecated{}
+	}
+	if kmc.Status.Deprecated.V1Beta1 == nil {
+		kmc.Status.Deprecated.V1Beta1 = &ClusterStatusV1beta1Deprecated{}
+	}
+	kmc.Status.Deprecated.V1Beta1.ReconciliationStatus = status
+}
+
+// SetReadyStatus sets the ready status of the Cluster.
+func (kmc *Cluster) SetReadyStatus(ready bool) {
+	if kmc.Status.Deprecated == nil {
+		kmc.Status.Deprecated = &ClusterStatusDeprecated{}
+	}
+	if kmc.Status.Deprecated.V1Beta1 == nil {
+		kmc.Status.Deprecated.V1Beta1 = &ClusterStatusV1beta1Deprecated{}
+	}
+	kmc.Status.Deprecated.V1Beta1.Ready = ready
 }
 
 // +kubebuilder:object:root=true
@@ -541,9 +682,6 @@ func GetStatefulSetName(clusterName string) string {
 func (kmc *Cluster) GetStatefulSetName() string {
 	return GetStatefulSetName(kmc.Name)
 }
-
-// Hub marks Cluster as a conversion hub.
-func (*Cluster) Hub() {}
 
 // GetNatsServiceName returns the name of the headless service used for NATS cluster routing.
 func (kmc *Cluster) GetNatsServiceName() string {

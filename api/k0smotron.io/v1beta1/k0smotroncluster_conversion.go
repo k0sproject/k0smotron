@@ -33,8 +33,11 @@ func (kmc *Cluster) ConvertTo(dstRaw conversion.Hub) error {
 	}
 
 	dst.ObjectMeta = kmc.ObjectMeta
-	dst.Status = kmc.Status
 	dst.Spec = ClusterSpecToV2(kmc.Spec)
+
+	dst.SetReconciliationStatus(kmc.Status.ReconciliationStatus)
+	dst.SetReadyStatus(kmc.Status.Ready)
+
 	return nil
 }
 
@@ -47,12 +50,16 @@ func (kmc *Cluster) ConvertFrom(srcRaw conversion.Hub) error {
 	}
 
 	kmc.ObjectMeta = src.ObjectMeta
-	kmc.Status = src.Status
+
 	spec, err := ClusterSpecFromV2(src.Spec)
 	if err != nil {
 		return fmt.Errorf("error converting ClusterSpec from v1beta2 to v1beta1: %w", err)
 	}
 	kmc.Spec = spec
+
+	kmc.Status.ReconciliationStatus = src.GetReconciliationStatus()
+	kmc.Status.Ready = src.GetReadyStatus()
+
 	return nil
 }
 
