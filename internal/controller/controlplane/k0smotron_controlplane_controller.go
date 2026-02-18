@@ -438,12 +438,19 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	err := c.Client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &kmc)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// The cluster is not yet created.
+			conditions.Set(kcp, metav1.Condition{
+				Type:    cpv1beta1.K0smotronClusterReconciledCondition,
+				Status:  metav1.ConditionFalse,
+				Reason:  cpv1beta1.ReconciliationInProgressReason,
+				Message: "k0smotron Cluster has not been created yet",
+			})
 			return nil
 		}
 
 		return err
 	}
+
+	computeK0smotronClusterReconciliationStatus(kcp, kmc.Status.ReconciliationStatus)
 
 	contolPlanePods := &corev1.PodList{}
 	opts := &client.ListOptions{
@@ -556,6 +563,33 @@ func alignToSpecVersionFormat(specVersion, currentVersion *version.Version) (*ve
 	// Convert currentVersion to match it.
 	currentVersionAlignedStr := strings.Replace(currentVersionStr, "-k0s.", "+k0s.", 1)
 	return version.NewVersion(currentVersionAlignedStr)
+}
+
+// computeK0smotronClusterReconciliationStatus sets the K0smotronClusterReconciled condition
+// on the K0smotronControlPlane based on the k0smotron Cluster's ReconciliationStatus.
+func computeK0smotronClusterReconciliationStatus(kcp *cpv1beta1.K0smotronControlPlane, status string) {
+	switch {
+	case status == kapi.ReconciliationStatusSuccessful:
+		conditions.Set(kcp, metav1.Condition{
+			Type:   cpv1beta1.K0smotronClusterReconciledCondition,
+			Status: metav1.ConditionTrue,
+			Reason: cpv1beta1.ReconciliationSucceededReason,
+		})
+	case strings.HasPrefix(status, kapi.ReconciliationStatusFailedPrefix):
+		conditions.Set(kcp, metav1.Condition{
+			Type:    cpv1beta1.K0smotronClusterReconciledCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  cpv1beta1.ReconciliationFailedReason,
+			Message: status,
+		})
+	default:
+		conditions.Set(kcp, metav1.Condition{
+			Type:    cpv1beta1.K0smotronClusterReconciledCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  cpv1beta1.ReconciliationInProgressReason,
+			Message: "k0smotron Cluster is not yet fully reconciled",
+		})
+	}
 }
 
 // computeAvailability checks if the control plane is ready by connecting to the API server
