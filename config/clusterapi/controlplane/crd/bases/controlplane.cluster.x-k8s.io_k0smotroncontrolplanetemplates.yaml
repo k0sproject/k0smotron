@@ -284,6 +284,14 @@ spec:
                           If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
+                      kineDataSourceSecretName:
+                        description: KineDataSourceSecretName defines the name of
+                          kine datasource URL secret.
+                        type: string
+                      kineDataSourceURL:
+                        description: KineDataSourceURL defines the kine datasource
+                          URL.
+                        type: string
                       kubeconfigRef:
                         description: |-
                           KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
@@ -4793,190 +4801,6 @@ spec:
                         description: ServiceAccount defines the service account to
                           be used by both k0s and etcd StatefulSets.
                         type: string
-                      storage:
-                        description: Storage defines the storage backend configuration.
-                        properties:
-                          etcd:
-                            default:
-                              image: quay.io/k0sproject/etcd:v3.5.13
-                              persistence: {}
-                            description: Etcd defines the etcd storage configuration.
-                            properties:
-                              args:
-                                description: Args defines the etcd arguments.
-                                items:
-                                  type: string
-                                type: array
-                              autoDeletePVCs:
-                                default: false
-                                description: AutoDeletePVCs defines whether the PVC
-                                  should be deleted when the etcd cluster is deleted.
-                                type: boolean
-                              defragJob:
-                                description: DefragJob defines the etcd defragmentation
-                                  job configuration.
-                                properties:
-                                  enabled:
-                                    default: false
-                                    description: Enabled enables the etcd defragmentation
-                                      job.
-                                    type: boolean
-                                  image:
-                                    default: ghcr.io/ahrtr/etcd-defrag:v0.16.0
-                                    description: Image defines the etcd defragmentation
-                                      job image.
-                                    type: string
-                                  rule:
-                                    default: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse
-                                      > 200*1024*1024
-                                    description: |-
-                                      Rule defines the etcd defragmentation job defrag-rule.
-                                      For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule
-                                    type: string
-                                  schedule:
-                                    default: 0 12 * * *
-                                    description: Schedule defines the etcd defragmentation
-                                      job schedule.
-                                    type: string
-                                required:
-                                - enabled
-                                - image
-                                - rule
-                                - schedule
-                                type: object
-                              image:
-                                default: quay.io/k0sproject/etcd:v3.5.13
-                                description: Image defines the etcd image to be deployed.
-                                type: string
-                              persistence:
-                                description: Persistence defines the persistence configuration.
-                                properties:
-                                  size:
-                                    anyOf:
-                                    - type: integer
-                                    - type: string
-                                    default: 1Gi
-                                    description: 'Size defines the size of the volume.
-                                      Default: 1Gi'
-                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                                    x-kubernetes-int-or-string: true
-                                  storageClass:
-                                    description: StorageClass defines the storage
-                                      class to be used. If empty, the default storage
-                                      class is used.
-                                    type: string
-                                type: object
-                              resources:
-                                description: Resources defines the compute resource
-                                  requirements for the etcd container.
-                                properties:
-                                  claims:
-                                    description: |-
-                                      Claims lists the names of resources, defined in spec.resourceClaims,
-                                      that are used by this container.
-
-                                      This field depends on the
-                                      DynamicResourceAllocation feature gate.
-
-                                      This field is immutable. It can only be set for containers.
-                                    items:
-                                      description: ResourceClaim references one entry
-                                        in PodSpec.ResourceClaims.
-                                      properties:
-                                        name:
-                                          description: |-
-                                            Name must match the name of one entry in pod.spec.resourceClaims of
-                                            the Pod where this field is used. It makes that resource available
-                                            inside a container.
-                                          type: string
-                                        request:
-                                          description: |-
-                                            Request is the name chosen for a request in the referenced claim.
-                                            If empty, everything from the claim is made available, otherwise
-                                            only the result of this request.
-                                          type: string
-                                      required:
-                                      - name
-                                      type: object
-                                    type: array
-                                    x-kubernetes-list-map-keys:
-                                    - name
-                                    x-kubernetes-list-type: map
-                                  limits:
-                                    additionalProperties:
-                                      anyOf:
-                                      - type: integer
-                                      - type: string
-                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                                      x-kubernetes-int-or-string: true
-                                    description: |-
-                                      Limits describes the maximum amount of compute resources allowed.
-                                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                                    type: object
-                                  requests:
-                                    additionalProperties:
-                                      anyOf:
-                                      - type: integer
-                                      - type: string
-                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                                      x-kubernetes-int-or-string: true
-                                    description: |-
-                                      Requests describes the minimum amount of compute resources required.
-                                      If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-                                      otherwise to an implementation-defined value. Requests cannot exceed Limits.
-                                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                                    type: object
-                                type: object
-                            required:
-                            - image
-                            type: object
-                          kine:
-                            description: Kine defines the kine storage configuration.
-                            properties:
-                              dataSourceSecretName:
-                                description: DataSourceSecretName defines the name
-                                  of the secret containing the kine datasource URL.
-                                type: string
-                              dataSourceURL:
-                                description: DataSourceURL defines the kine datasource
-                                  URL.
-                                type: string
-                            type: object
-                          nats:
-                            description: |-
-                              NATS defines the embedded NATS JetStream storage configuration.
-                              Used when Type is set to nats.
-                            properties:
-                              persistence:
-                                description: Persistence defines the persistence configuration
-                                  for the embedded NATS JetStream store.
-                                properties:
-                                  size:
-                                    anyOf:
-                                    - type: integer
-                                    - type: string
-                                    default: 1Gi
-                                    description: 'Size defines the size of the volume.
-                                      Default: 1Gi'
-                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                                    x-kubernetes-int-or-string: true
-                                  storageClass:
-                                    description: StorageClass defines the storage
-                                      class to be used. If empty, the default storage
-                                      class is used.
-                                    type: string
-                                type: object
-                            type: object
-                          type:
-                            default: etcd
-                            description: Type defines the storage backend type. Can
-                              be etcd, kine, or nats.
-                            enum:
-                            - etcd
-                            - kine
-                            - nats
-                            type: string
-                        type: object
                       topologySpreadConstraints:
                         description: |-
                           TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
