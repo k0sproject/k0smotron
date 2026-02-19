@@ -286,7 +286,7 @@ func (s *RemoteMachineTemplateSuite) getWorkerIP() string {
 }
 
 var clusterYaml = `
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: remote-test
@@ -322,7 +322,7 @@ metadata:
   namespace: default
 spec:
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: remote-test-cluster
@@ -340,11 +340,11 @@ spec:
     host: {{ .Address }}
     port: 6443
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: remote-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteCluster
     name: remote-test
 ---
