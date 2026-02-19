@@ -88,11 +88,12 @@ spec:
     - ./wait-signal.sh "${TOKEN}" "${SERVER}" "${NAMESPACE}"
 
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: DockerMachineTemplate
-      name: docker-test-cp-template
-      namespace: ${NAMESPACE}
+    spec:
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: DockerMachineTemplate
+        name: docker-test-cp-template
+        namespace: ${NAMESPACE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerCluster
