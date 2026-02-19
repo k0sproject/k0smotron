@@ -6,7 +6,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
-// ConvertTo converts this version (v1beta2) to the hub version (v1beta2 - self).
+var _ conversion.Convertible = &K0smotronControlPlane{}
+var _ conversion.Convertible = &K0smotronControlPlaneTemplate{}
+
+// ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0smotronControlPlane)
 	dst.ObjectMeta = *k.ObjectMeta.DeepCopy()
@@ -47,6 +50,34 @@ func (k *K0smotronControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 		UnavailableReplicas:         ptr.Deref(src.Status.Replicas, 0) - ptr.Deref(src.Status.AvailableReplicas, 0),
 		Selector:                    src.Status.Selector,
 		Conditions:                  src.Status.Conditions,
+	}
+	return nil
+}
+
+// ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
+func (k *K0smotronControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
+	dst := dstRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	dst.ObjectMeta = *k.ObjectMeta.DeepCopy()
+
+	dst.Spec = v1beta2.K0smotronControlPlaneTemplateSpec{
+		Template: v1beta2.K0smotronControlPlaneTemplateResource{
+			ObjectMeta: k.Spec.Template.ObjectMeta,
+			Spec:       k.Spec.Template.Spec,
+		},
+	}
+	return nil
+}
+
+// ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
+func (k *K0smotronControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error {
+	src := srcRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
+
+	k.Spec = K0smotronControlPlaneTemplateSpec{
+		Template: K0smotronControlPlaneTemplateResource{
+			ObjectMeta: src.Spec.Template.ObjectMeta,
+			Spec:       src.Spec.Template.Spec,
+		},
 	}
 	return nil
 }
