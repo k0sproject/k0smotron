@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
@@ -27,20 +28,8 @@ import (
 )
 
 func (c *K0sController) getMachineTemplate(ctx context.Context, kcp *cpv1beta2.K0sControlPlane) (*unstructured.Unstructured, error) {
-	infRef := kcp.Spec.MachineTemplate.InfrastructureRef
-
-	infraMachineTemplate := new(unstructured.Unstructured)
-	infraMachineTemplate.SetAPIVersion(infRef.APIVersion)
-	infraMachineTemplate.SetKind(infRef.Kind)
-	infraMachineTemplate.SetName(infRef.Name)
-
-	key := client.ObjectKey{Name: infRef.Name, Namespace: kcp.Namespace}
-
-	err := c.Get(ctx, key, infraMachineTemplate)
-	if err != nil {
-		return nil, err
-	}
-	return infraMachineTemplate, nil
+	infRef := kcp.Spec.MachineTemplate.Spec.InfrastructureRef
+	return external.GetObjectFromContractVersionedRef(ctx, c.Client, infRef, kcp.Namespace)
 }
 
 func (c *K0sController) generateKubeconfig(ctx context.Context, clusterKey client.ObjectKey, endpoint string) (*api.Config, error) {
