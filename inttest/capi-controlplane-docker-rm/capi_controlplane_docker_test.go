@@ -260,10 +260,9 @@ spec:
   machineTemplate:
     spec:
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: RemoteMachineTemplate
         name: docker-test-cp-template
-        namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerCluster

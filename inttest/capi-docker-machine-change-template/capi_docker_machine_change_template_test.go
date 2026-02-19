@@ -310,10 +310,9 @@ spec:
   machineTemplate:
     spec:
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: DockerMachineTemplate
         name: docker-test-cp-template
-        namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerCluster
@@ -393,10 +392,9 @@ spec:
   machineTemplate:
     spec:
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: DockerMachineTemplate
         name: docker-test-cp-template-new
-        namespace: default
 `
 
 var controlPlaneSecondUpdate = `
@@ -434,8 +432,7 @@ spec:
   machineTemplate:
     spec:
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: DockerMachineTemplate
         name: docker-test-cp-template-new-2
-        namespace: default
 `
