@@ -111,7 +111,7 @@ spec:
       - --enable-worker
       - --no-taints # disable default taints
     # WA for NLLB (temporary, until k0s team fix it)
-    preStartCommands:
+    preK0sCommands:
       - sed -i 's/"externalAddress":"${CONTROL_PLANE_ENDPOINT_IP}",//' /etc/k0s.yaml
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1

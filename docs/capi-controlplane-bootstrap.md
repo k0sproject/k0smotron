@@ -73,9 +73,9 @@ k0smotron supports executing custom commands before and after starting k0s on co
 - Running health checks
 - Performing cleanup operations
 
-### PreStartCommands
+### PreK0sCommands
 
-Commands specified in `preStartCommands` are executed before k0s binary is downloaded and installed.
+Commands specified in `preK0sCommands` are executed before k0s binary is downloaded and installed.
 
 ```yaml
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
@@ -85,15 +85,15 @@ metadata:
 spec:
   replicas: 3
   k0sConfigSpec:
-    preStartCommands:
+    preK0sCommands:
       - "apt-get update && apt-get install -y curl jq"
       - "mkdir -p /etc/k0s/monitoring"
       - "echo 'export MONITORING_ENABLED=true' >> /etc/environment"
 ```
 
-### PostStartCommands
+### PostK0sCommands
 
-Commands specified in `postStartCommands` are executed after k0s has started successfully. These commands run after the k0s service is running and the control plane is ready.
+Commands specified in `postK0sCommands` are executed after k0s has started successfully. These commands run after the k0s service is running and the control plane is ready.
 
 ```yaml
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
@@ -103,7 +103,7 @@ metadata:
 spec:
   replicas: 3
   k0sConfigSpec:
-    postStartCommands:
+    postK0sCommands:
       - "systemctl enable monitoring-agent"
       - "systemctl start monitoring-agent"
       - "kubectl get nodes --kubeconfig=/var/lib/k0s/pki/admin.conf"
@@ -113,10 +113,10 @@ spec:
 
 The commands are executed in the following order:
 
-1. **PreStartCommands** - Custom commands before k0s starts
+1. **PreK0sCommands** - Custom commands before k0s starts
 2. **Download and Install** - k0s binary download and installation
 3. **k0s start** - k0s service startup
-4. **PostStartCommands** - Custom commands after k0s starts
+4. **PostK0sCommands** - Custom commands after k0s starts
 
 ### Use Cases
 
@@ -130,11 +130,11 @@ metadata:
 spec:
   replicas: 3
   k0sConfigSpec:
-    preStartCommands:
+    preK0sCommands:
       - "curl -fsSL https://get.docker.com | sh"
       - "systemctl enable docker"
       - "systemctl start docker"
-    postStartCommands:
+    postK0sCommands:
       - "docker run -d --name node-exporter -p 9100:9100 prom/node-exporter"
       - "echo 'Node exporter started on port 9100'"
 ```
@@ -149,12 +149,12 @@ metadata:
 spec:
   replicas: 3
   k0sConfigSpec:
-    preStartCommands:
+    preK0sCommands:
       - "echo 'vm.max_map_count=262144' >> /etc/sysctl.conf"
       - "sysctl -p"
       - "echo 'net.core.somaxconn=65535' >> /etc/sysctl.conf"
       - "sysctl -p"
-    postStartCommands:
+    postK0sCommands:
       - "echo 'System configuration applied successfully'"
       - "sysctl vm.max_map_count net.core.somaxconn"
 ```
@@ -169,7 +169,7 @@ metadata:
 spec:
   replicas: 3
   k0sConfigSpec:
-    postStartCommands:
+    postK0sCommands:
       - "kubectl get nodes --kubeconfig=/var/lib/k0s/pki/admin.conf"
       - "kubectl describe node $(hostname) --kubeconfig=/var/lib/k0s/pki/admin.conf"
       - "echo 'Control plane health check completed successfully'"

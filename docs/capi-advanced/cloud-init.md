@@ -101,7 +101,7 @@ k0smotron supports Jinja templating in your customUserData. You can use Jinja sy
 
 !!! warning "Important"
     Use `CloudInitVars` feature gate in case you really need to and if you absolutely understand the implications. It is not recommended for general use.
-    Most likely, you don't need it and should stick to the regular customUserData with pre/postStartCommands approach.
+    Most likely, you don't need it and should stick to the regular customUserData with pre/postK0sCommands approach.
 
 When the `CloudInitVars` feature gate is enabled, k0smotron exposes generated commands and files as Jinja variables instead of putting them into `runcmd` and `files` sections. You can embed into your customUserData. 
 The variables include:

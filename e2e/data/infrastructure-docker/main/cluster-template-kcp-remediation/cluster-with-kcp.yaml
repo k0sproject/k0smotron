@@ -84,7 +84,7 @@ spec:
           fi
         done
       permissions: "0777"
-    preStartCommands:
+    preK0sCommands:
     - ./wait-signal.sh "${TOKEN}" "${SERVER}" "${NAMESPACE}"
 
   machineTemplate:

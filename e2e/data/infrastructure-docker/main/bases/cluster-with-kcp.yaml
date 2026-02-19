@@ -57,7 +57,7 @@ spec:
         network:
           controlPlaneLoadBalancing:
             enabled: false
-    preStartCommands:
+    preK0sCommands:
     - echo "Pre start command executed"
     files:
     - path: /tmp/test-file-secret

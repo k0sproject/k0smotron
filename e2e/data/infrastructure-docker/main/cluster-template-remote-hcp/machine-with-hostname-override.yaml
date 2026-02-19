@@ -30,9 +30,9 @@ spec:
     # To override container name we need to send extra args to install command.
     # This is needed in order to let docker provider set ProviderId in the machine.
     - --kubelet-extra-args="--hostname-override=${CLUSTER_NAME}-docker-test-worker-0"
-  preStartCommands:
+  preK0sCommands:
     - echo -n "pre-start" > /tmp/pre-start
-  postStartCommands:
+  postK0sCommands:
     - echo -n "post-start" > /tmp/post-start
   files:
     - path: /tmp/test-file

@@ -294,9 +294,9 @@ spec:
   version: v1.27.1+k0s.0
   args:
     - --labels=k0sproject.io/foo=bar
-  preStartCommands:
+  preK0sCommands:
     - echo -n "pre-start" > /tmp/pre-start
-  postStartCommands:
+  postK0sCommands:
     - echo -n "post-start" > /tmp/post-start
   files:
     - path: /tmp/test-file
