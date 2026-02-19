@@ -18,7 +18,6 @@ import (
 	"slices"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
@@ -133,11 +132,15 @@ type K0sControlPlaneMachineTemplate struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
-	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
+	ObjectMeta clusterv1.ObjectMeta               `json:"metadata,omitempty,omitzero"`
+	Spec       K0sControlPlaneMachineTemplateSpec `json:"spec,omitempty,omitzero"`
+}
 
+// K0sControlPlaneMachineTemplateSpec defines the spec of a K0sControlPlaneMachineTemplate.
+type K0sControlPlaneMachineTemplateSpec struct {
 	// InfrastructureRef is a required reference to a custom resource
 	// offered by an infrastructure provider.
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
+	InfrastructureRef clusterv1.ContractVersionedObjectReference `json:"infrastructureRef,omitempty,omitzero"`
 }
 
 // +kubebuilder:object:root=true
