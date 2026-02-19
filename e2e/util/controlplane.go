@@ -318,7 +318,7 @@ type K0smotronControlPlaneExistsInput struct {
 
 func k0smotronControlPlaneExists(ctx context.Context, input K0smotronControlPlaneExistsInput) (bool, error) {
 	kcpList := &unstructured.UnstructuredList{}
-	kcpList.SetAPIVersion("controlplane.cluster.x-k8s.io/v1beta1")
+	kcpList.SetAPIVersion("controlplane.cluster.x-k8s.io/v1beta2")
 	kcpList.SetKind("K0smotronControlPlaneList")
 
 	err := input.Lister.List(ctx, kcpList, byClusterOptions(input.ClusterName, input.Namespace)...)
