@@ -5,7 +5,7 @@ k0smotron can act as a control plane bootstrap provider via usage of `K0sControl
 When creating a Cluster with Cluster API you typically need to create a `Cluster` object. With k0smotron there needs to be a link to the control plane provider `K0sControlPlane`:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: cp-test
@@ -18,7 +18,7 @@ spec:
       cidrBlocks:
         - 10.96.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: cp-test
 ```
@@ -27,7 +27,7 @@ Next we need to provide the configuration for the actual `K0sControlPlane` and `
 
 ```yaml
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: cp-test
@@ -45,12 +45,11 @@ spec:
             anonymous-auth: "true" # anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerMachineTemplate
       name: cp-test-machine-template
-      namespace: default
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: cp-test-machine-template
@@ -79,7 +78,7 @@ k0smotron supports executing custom commands before and after starting k0s on co
 Commands specified in `preStartCommands` are executed before k0s binary is downloaded and installed.
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: cp-test
@@ -97,7 +96,7 @@ spec:
 Commands specified in `postStartCommands` are executed after k0s has started successfully. These commands run after the k0s service is running and the control plane is ready.
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: cp-test
@@ -124,7 +123,7 @@ The commands are executed in the following order:
 #### Installing Monitoring Agents on Control Plane
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: cp-with-monitoring
@@ -143,7 +142,7 @@ spec:
 #### Configuring System Settings for Control Plane
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: cp-with-config
@@ -163,7 +162,7 @@ spec:
 #### Health Checks and Validation for Control Plane
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: cp-with-health-checks
@@ -212,7 +211,7 @@ After that you need to trigger the reconciliation of the control plane object by
 By default, k0s and k0smotron don't run kubelet and any workloads on control plane nodes. But you can enable it by adding `--enable-worker` flag to the `spec.k0sConfigSpec.args` in the `K0sControlPlane` object. This will enable the kubelet on control plane nodes and allow you to run workloads on them.
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: docker-test
@@ -224,12 +223,11 @@ spec:
       - --no-taints # disable default taints
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerMachineTemplate
       name: docker-test-cp-template
-      namespace: default
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: docker-test-cp-template
@@ -247,7 +245,7 @@ k0smotron supports client connection tunneling to the child cluster's control pl
 To enable tunneling, you need to set `spec.k0sConfigSpec.tunneling.enabled` to `true` in the `K0sControlPlane` object.
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: docker-test

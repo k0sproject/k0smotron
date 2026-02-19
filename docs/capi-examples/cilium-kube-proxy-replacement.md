@@ -93,53 +93,49 @@ spec:
 ## ClusterClass definition
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: cilium-hcp
   namespace: default
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: K0smotronControlPlaneTemplate
       name: cilium-hcp-template
-      namespace: default
   infrastructure:
-    ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: docker-cluster-template
-      namespace: default
   workers:
     machineDeployments:
     - class: default-worker
-      template:
-        bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-            kind: K0sWorkerConfigTemplate
-            name: k0s-worker-config-template
-            namespace: default
-        infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: DockerMachineTemplate
-            name: worker-docker-machine-template
-            namespace: default
+      bootstrap:
+        templateRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: k0s-worker-config-template
+      infrastructure:
+        templateRef:
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+          kind: DockerMachineTemplate
+          name: worker-docker-machine-template
 ```
 
 ## Creating a Cluster from the ClusterClass
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: cilium-cluster
   namespace: default
 spec:
   topology:
-    class: cilium-hcp
+    classRef:
+      name: cilium-hcp
     version: v1.31.5
     workers:
       machineDeployments:

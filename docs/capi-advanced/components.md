@@ -51,7 +51,7 @@ spec:
 The following example builds on the [Docker (HCP)](../capi-docker.md) example and adds `customizeComponents` patches. It demonstrates all three patch types (`strategic`, `json`, `merge`) targeting different components. Before starting, ensure that you have met the [general prerequisites](../capi-examples.md#prerequisites) and initialized the Docker infrastructure provider as described in the [Docker (HCP)](../capi-docker.md) guide.
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: docker-test
@@ -66,17 +66,15 @@ spec:
       cidrBlocks:
       - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: docker-test-cp
-    namespace: default
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: DockerCluster
     name: docker-test
-    namespace: default
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: docker-test-cp
@@ -124,7 +122,7 @@ spec:
           annotations:
             example.com/managed-by: "k0smotron-customized"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerCluster
 metadata:
   name: docker-test
@@ -133,7 +131,7 @@ metadata:
     cluster.x-k8s.io/managed-by: k0smotron
 spec: {}
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: docker-test-md
@@ -155,15 +153,15 @@ spec:
       version: v1.34.3
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: docker-test-machine-config
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: DockerMachineTemplate
         name: docker-test-mt
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: docker-test-mt
@@ -172,7 +170,7 @@ spec:
   template:
     spec: {}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: docker-test-machine-config

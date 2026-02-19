@@ -139,14 +139,15 @@ func (s *CAPIDockerClusterClassK0smotronSuite) deleteCluster() {
 
 var clusterYaml = `
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: docker-test-cluster
   namespace: default
 spec:
   topology:
-    class: k0smotron-cluster-class
+    classRef:
+      name: k0smotron-cluster-class
     version: v1.27.2
     controlPlane:
       replicas: 2
@@ -159,7 +160,7 @@ spec:
 
 var clusterClassYaml = `
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerClusterTemplate
 metadata:
   name: k0smotron-docker-cluster-tmpl
@@ -167,7 +168,7 @@ spec:
   template:
     spec: {}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: docker-test-machine-template
@@ -176,7 +177,7 @@ spec:
   template:
     spec: {}
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlaneTemplate
 metadata:
   name: docker-test
@@ -190,7 +191,7 @@ spec:
       service:
         type: NodePort
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: docker-test-worker-template
@@ -200,37 +201,32 @@ spec:
     spec:
       version: v1.27.2
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: k0smotron-cluster-class
 spec:
   controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: K0smotronControlPlaneTemplate
       name: docker-test
-      namespace: default
   infrastructure:
-    ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: k0smotron-docker-cluster-tmpl
-      namespace: default
   workers:
     machineDeployments:
     - class: docker-test-default-worker
-      template:
-        bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-            kind: K0sWorkerConfigTemplate
-            name: docker-test-worker-template
-            namespace: default
-        infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: DockerMachineTemplate
-            name: docker-test-machine-template
-            namespace: default
+      bootstrap:
+        templateRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: docker-test-worker-template
+      infrastructure:
+        templateRef:
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+          kind: DockerMachineTemplate
+          name: docker-test-machine-template
 `

@@ -282,7 +282,7 @@ func getLBPort(name string) (int, error) {
 
 var clusterYaml = `
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: docker-test-cluster
@@ -292,7 +292,8 @@ spec:
     host: {{ .AddressControlplaneNode }}
     port: 6443
   topology:
-    class: k0smotron-clusterclass
+    classRef:
+      name: k0smotron-clusterclass
     version: v1.27.2+k0s.0
     workers:
       machineDeployments:
@@ -303,7 +304,7 @@ spec:
 
 var clusterClassYaml = `
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: RemoteClusterTemplate
 metadata:
   name: k0smotron-remote-cluster-tmpl
@@ -311,7 +312,7 @@ spec:
   template:
     spec: {}
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlaneTemplate
 metadata:
   name: docker-test
@@ -335,7 +336,7 @@ spec:
         - --enable-worker
         - --no-taints
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: docker-test-worker-template
@@ -345,47 +346,41 @@ spec:
     spec:
       version: v1.27.2+k0s.0
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: k0smotron-clusterclass
 spec:
   controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: K0sControlPlaneTemplate
       name: docker-test
-      namespace: default
     machineInfrastructure:
-      ref:
+      templateRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: RemoteMachineTemplate
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         name: remote-test-machine-template
-        namespace: default
   infrastructure:
-    ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: RemoteClusterTemplate
       name: k0smotron-remote-cluster-tmpl
-      namespace: default
   workers:
     machineDeployments:
     - class: remotemachine-test-default-worker
-      template:
-        bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-            kind: K0sWorkerConfigTemplate
-            name: docker-test-worker-template
-            namespace: default
-        infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: RemoteMachineTemplate
-            name: remote-test-machine-template
-            namespace: default
+      bootstrap:
+        templateRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: docker-test-worker-template
+      infrastructure:
+        templateRef:
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+          kind: RemoteMachineTemplate
+          name: remote-test-machine-template
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: RemoteMachineTemplate
 metadata:
   name: remote-test-machine-template
@@ -395,7 +390,7 @@ spec:
     spec:
       pool: default
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: PooledRemoteMachine
 metadata:
   name: remote-test-0
@@ -409,7 +404,7 @@ spec:
     sshKeyRef:
       name: footloose-key
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: PooledRemoteMachine
 metadata:
   name: remote-test-1
