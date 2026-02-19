@@ -37,7 +37,7 @@ Once all the controllers are up and running, you can apply the cluster manifests
 Here is an example:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: kubevirt-test
@@ -51,15 +51,15 @@ spec:
       cidrBlocks:
       - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: k0s-test-cp
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: KubevirtCluster
     name: kubevirt-test
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane # This is the config for the controlplane
 metadata:
   name: k0s-test-cp
@@ -81,7 +81,7 @@ spec:
     spec:
       type: ClusterIP
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: kubevirt-md
@@ -99,11 +99,11 @@ spec:
       clusterName: kubevirt-test
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: kubevirt-test-machine-config
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: KubevirtMachineTemplate
         name: kubevirt-test-mt
       version: v1.27.4
@@ -139,7 +139,7 @@ spec:
                   image: quay.io/capk/ubuntu-2204-container-disk:v1.27.14
                 name: containervolume
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: kubevirt-test-machine-config

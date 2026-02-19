@@ -9,7 +9,7 @@ Just like with any other Cluster API provider, you have the flexibility to creat
 To configure the machine, you first need to create a `Machine` object with a reference to a bootstrap provider and configuration for the bootstrapping `K0sWorkerConfig`:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
 metadata:
   name: machine-test-0
@@ -18,15 +18,15 @@ spec:
   clusterName: cp-test
   bootstrap:
     configRef: # This triggers our controller to create cloud-init secret
-      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      apiGroup: bootstrap.cluster.x-k8s.io
       kind: K0sWorkerConfig
       name: machine-test-config
   infrastructureRef: # This references the infrastructure provider machine object
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: AWSMachine
     name: machine-test-0
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: machine-test-config
@@ -55,7 +55,7 @@ k0smotron supports executing custom commands before and after starting k0s on wo
 Commands specified in `preStartCommands` are executed before k0s binary is downloaded and installed.
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-config
@@ -72,7 +72,7 @@ spec:
 Commands specified in `postStartCommands` are executed after k0s has started successfully. These commands run after the k0s service is running and the node is ready.
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-config
@@ -98,7 +98,7 @@ The commands are executed in the following order:
 #### Installing Monitoring Agents
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-with-monitoring
@@ -116,7 +116,7 @@ spec:
 #### Configuring System Settings
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-with-config
@@ -135,7 +135,7 @@ spec:
 #### Health Checks and Validation
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-with-health-checks
@@ -173,7 +173,7 @@ spec:
 To leverage k0smotron as a Bootstrap provider for `MachineDeployment` utilize the `K0sWorkerConfigTemplate` type:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: md-test
@@ -194,15 +194,15 @@ spec:
       clusterName: cp-test
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: md-test-config
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: AWSMachineTemplate
         name: mt-test
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: md-test-config
