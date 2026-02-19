@@ -154,7 +154,7 @@ func (s *CAPIDockerMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
-			AbsPath("/apis/bootstrap.cluster.x-k8s.io/v1beta1/namespaces/default/k0scontrollerconfigs").
+			AbsPath("/apis/bootstrap.cluster.x-k8s.io/v1beta2/namespaces/default/k0scontrollerconfigs").
 			Do(s.ctx).
 			Into(&obj)
 		if err != nil {
@@ -214,7 +214,7 @@ func getLBPort(name string) (int, error) {
 }
 
 var dockerClusterYaml = `
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: docker-test
@@ -229,15 +229,15 @@ spec:
       cidrBlocks:
       - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: docker-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: DockerCluster
     name: docker-test
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: docker-test-cp-template
@@ -247,7 +247,7 @@ spec:
     spec:
       customImage: kindest/node:v1.31.0
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: docker-test
@@ -272,19 +272,19 @@ spec:
           enabled: false
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerMachineTemplate
       name: docker-test-cp-template
       namespace: default
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerCluster
 metadata:
   name: docker-test
   namespace: default
 spec:
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
 metadata:
   name:  docker-test-worker-0
@@ -294,15 +294,15 @@ spec:
   clusterName: docker-test
   bootstrap:
     configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      apiGroup: bootstrap.cluster.x-k8s.io
       kind: K0sWorkerConfig
       name: docker-test-worker-0
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: DockerMachine
     name: docker-test-worker-0
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: docker-test-worker-0
@@ -311,7 +311,7 @@ spec:
   # version is deliberately different to be able to verify we actually pick it up :)
   version: v1.31.2+k0s.0
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachine
 metadata:
   name: docker-test-worker-0
@@ -322,7 +322,7 @@ spec:
 
 var controlPlaneUpdate = `
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: docker-test
@@ -346,7 +346,7 @@ spec:
           enabled: false
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerMachineTemplate
       name: docker-test-cp-template
       namespace: default

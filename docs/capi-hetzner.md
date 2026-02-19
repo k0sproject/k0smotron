@@ -25,7 +25,7 @@ Once all the controllers are up and running, you can apply the cluster manifests
 Here is an example:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: hetzner-test
@@ -38,15 +38,15 @@ spec:
       cidrBlocks:
         - 10.96.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane # This tells that k0smotron should create the controlplane
     name: hetzner-test-cp
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: HetznerCluster
     name: hetzner-test
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane # This is the config for the controlplane
 metadata:
   name: hetzner-test-cp
@@ -81,7 +81,7 @@ spec:
     key:
       hcloudToken: hcloud
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: hetzner-test-md
@@ -103,11 +103,11 @@ spec:
       failureDomain: fsn1
       bootstrap:
         configRef: # This triggers our controller to create cloud-init secret
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: hetzner-test-machine-config
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: HCloudMachineTemplate
         name: hetzner-test-mt
 ---
@@ -122,7 +122,7 @@ spec:
   sshKeys:
     - name: ssh-key
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: hetzner-test-machine-config

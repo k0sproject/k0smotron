@@ -24,7 +24,7 @@ Once all the controllers are up and running, you can apply the cluster manifests
 Here is an example:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: aws-test-cluster
@@ -39,11 +39,11 @@ spec:
       cidrBlocks:
         - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: aws-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: AWSCluster
     name: k0s-aws-test
 ---
@@ -67,7 +67,7 @@ spec:
         insecureSkipSecretsManager: true
       sshKeyName: <your-ssh-key-name>
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: aws-test
@@ -94,7 +94,6 @@ spec:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AWSMachineTemplate
       name: k0s-aws-test-mt
-      namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSCluster
@@ -113,7 +112,7 @@ spec:
         fromPort: 9443
         toPort: 9443
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: k0s-aws-test-md
@@ -135,15 +134,15 @@ spec:
       failureDomain: eu-west-1
       bootstrap:
         configRef: # This triggers our controller to create cloud-init secret
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: k0s-aws-test-machine-config
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: AWSMachineTemplate
         name: k0s-aws-test-mt
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: k0s-aws-test-machine-config

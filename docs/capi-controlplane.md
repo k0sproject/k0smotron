@@ -4,7 +4,7 @@ k0smotron can act as a control plane provider via usage of `K0smotronControlPlan
 
 As per usual, you need to define a `Cluster` object given with a reference to control plane provider:
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: cp-test
@@ -17,7 +17,7 @@ spec:
       cidrBlocks:
         - 10.96.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: cp-test
 ```
@@ -25,7 +25,7 @@ spec:
 Next we need to provide the configuration for the actual `K0smotronControlPlane`:
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: cp-test

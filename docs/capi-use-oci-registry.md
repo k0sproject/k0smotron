@@ -70,7 +70,7 @@ Configuring the `K0sControlPlane` to pull k0s from an OCI registry is straightfo
 - By using a machine image with the Oras CLI pre-installed.
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: aws-test
@@ -85,11 +85,11 @@ spec:
       cidrBlocks:
         - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: aws-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: AWSCluster
     name: aws-test
 ---
@@ -114,7 +114,7 @@ spec:
       uncompressedUserData: false
       sshKeyName: <your-ssh-key-name>
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: aws-test
@@ -151,7 +151,6 @@ spec:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AWSMachineTemplate
       name: aws-test
-      namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSCluster
@@ -178,7 +177,7 @@ As shown above, we use the `downloadURL` field to reference a k0s binary blob vi
 If your OCI registry requires authentication, you need to provide credentials in a `config.json` file, following the [Oras CLI authentication mechanism](https://oras.land/docs/how_to_guides/authentication/). You can make this file available to the node by adding it as a *file* entry containing the authentication credentials under the `files` field in the `K0sControlPlane` spec. For example:
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: aws-test
@@ -222,7 +221,6 @@ spec:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AWSMachineTemplate
       name: aws-test
-      namespace: default
 ```
 
 In this example, a new file entry is configured that references a secret containing the authentication credentials.

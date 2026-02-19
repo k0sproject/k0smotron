@@ -208,7 +208,7 @@ func (s *CAPIDockerSuite) checkClusterIDAnnotation(ctx context.Context) {
 		var cluster v1beta1.Cluster
 		_ = s.client.RESTClient().
 			Get().
-			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/clusters/docker-test").
+			AbsPath("/apis/cluster.x-k8s.io/v1beta2/namespaces/default/clusters/docker-test").
 			Do(ctx).
 			Into(&cluster)
 
@@ -230,7 +230,7 @@ func getDockerNodeFile(nodeName string, path string) (string, error) {
 }
 
 var dockerClusterYaml = `
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: docker-test
@@ -245,15 +245,15 @@ spec:
       cidrBlocks:
       - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: docker-test-cp
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: DockerCluster
     name: docker-test
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: docker-test-cp
@@ -286,14 +286,14 @@ spec:
       telemetry:
         enabled: false
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerCluster
 metadata:
   name: docker-test
   namespace: default
 spec:
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
 metadata:
   name:  docker-test-0
@@ -303,15 +303,15 @@ spec:
   clusterName: docker-test
   bootstrap:
     configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      apiGroup: bootstrap.cluster.x-k8s.io
       kind: K0sWorkerConfig
       name: docker-test-0
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: DockerMachine
     name: docker-test-0
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: docker-test-0
@@ -329,7 +329,7 @@ spec:
     - path: /tmp/test-file
       content: test-file
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachine
 metadata:
   name: docker-test-0
