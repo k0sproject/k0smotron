@@ -358,12 +358,12 @@ spec:
       name: docker-test
     machineInfrastructure:
       templateRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: RemoteMachineTemplate
         name: remote-test-machine-template
   infrastructure:
     templateRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: RemoteClusterTemplate
       name: k0smotron-remote-cluster-tmpl
   workers:
@@ -376,7 +376,7 @@ spec:
           name: docker-test-worker-template
       infrastructure:
         templateRef:
-          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
           kind: RemoteMachineTemplate
           name: remote-test-machine-template
 ---
