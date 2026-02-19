@@ -64,7 +64,7 @@ kind: K0smotronControlPlane # This is the config for the controlplane
 metadata:
   name: k0s-test-cp
 spec:
-  version: v1.27.4-k0s.0
+  version: v1.34.3-k0s.0
   persistence:
     type: emptyDir
   service:
@@ -106,7 +106,7 @@ spec:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: KubevirtMachineTemplate
         name: kubevirt-test-mt
-      version: v1.27.4
+      version: v1.34.3
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtMachineTemplate
@@ -136,7 +136,7 @@ spec:
               evictionStrategy: External
               volumes:
               - containerDisk:
-                  image: quay.io/capk/ubuntu-2204-container-disk:v1.27.14
+                  image: quay.io/capk/ubuntu-2204-container-disk:v1.34.3
                 name: containervolume
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -146,7 +146,7 @@ metadata:
 spec:
   template:
     spec:
-      version: v1.27.4+k0s.0
+      version: v1.34.3+k0s.0
       # More details of the worker configuration can be set here
 ```
 
@@ -158,7 +158,7 @@ NAME                                   PHASE         AGE     VERSION
 cluster.cluster.x-k8s.io/kubevirt-test Provisioned   22h
 
 NAME                                               CLUSTER         NODENAME                  PROVIDERID                           PHASE     AGE     VERSION
-machine.cluster.x-k8s.io/kubevirt-md-mdvns-l2rxb   kubevirt-test   kubevirt-md-mdvns-l2rxb   kubevirt://kubevirt-md-mdvns-l2rxb   Running   22h     v1.27.4
+machine.cluster.x-k8s.io/kubevirt-md-mdvns-l2rxb   kubevirt-test   kubevirt-md-mdvns-l2rxb   kubevirt://kubevirt-md-mdvns-l2rxb   Running   22h     v1.34.3
 ```
 
 You can also check the status of the cluster deployment with `clusterctl describe cluster`.

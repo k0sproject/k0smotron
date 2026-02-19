@@ -24,7 +24,7 @@ kind: K0smotronControlPlane # This would somehow map to k0smotron
 metadata:
   name: cp-test
 spec:
-  version: v1.27.2-k0s.0
+  version: v1.34.3-k0s.0
   persistence:
     type: emptyDir
   service:

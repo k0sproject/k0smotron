@@ -37,7 +37,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 			name: "valid config passes validation",
 			in: &bootstrapv1.K0sWorkerConfig{
 				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Version: "v1.27.4+k0s.0",
+					Version: "v1.34.3+k0s.0",
 					Files: []bootstrapv1.File{
 						{
 							ContentFrom: &bootstrapv1.ContentSource{
@@ -69,7 +69,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 			name: "err for unsupported k0s version",
 			in: &bootstrapv1.K0sWorkerConfig{
 				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Version: "v1.27.4-k0s.0",
+					Version: "v1.34.3-k0s.0",
 				},
 			},
 			expectedWarnings: nil,
@@ -79,7 +79,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 			name: "err for invalid files declared in config: content and contentFrom conflict",
 			in: &bootstrapv1.K0sWorkerConfig{
 				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Version: "v1.27.4+k0s.0",
+					Version: "v1.34.3+k0s.0",
 					Files: []bootstrapv1.File{
 						{
 							File: provisioner.File{
@@ -102,7 +102,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 			name: "err for invalid files declared in config: not content",
 			in: &bootstrapv1.K0sWorkerConfig{
 				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Version: "v1.27.4+k0s.0",
+					Version: "v1.34.3+k0s.0",
 					Files: []bootstrapv1.File{
 						{
 							File: provisioner.File{
@@ -119,7 +119,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 			name: "err for invalid files declared in config: contentFrom configmap and secret conflict",
 			in: &bootstrapv1.K0sWorkerConfig{
 				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Version: "v1.27.4+k0s.0",
+					Version: "v1.34.3+k0s.0",
 					Files: []bootstrapv1.File{
 						{
 							ContentFrom: &bootstrapv1.ContentSource{
@@ -143,7 +143,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 			name: "err for invalid files declared in config: contentFrom configmap name missing",
 			in: &bootstrapv1.K0sWorkerConfig{
 				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Version: "v1.27.4+k0s.0",
+					Version: "v1.34.3+k0s.0",
 					Files: []bootstrapv1.File{
 						{
 							ContentFrom: &bootstrapv1.ContentSource{
@@ -163,7 +163,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 			name: "err for invalid files declared in config: contentFrom secret name missing",
 			in: &bootstrapv1.K0sWorkerConfig{
 				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Version: "v1.27.4+k0s.0",
+					Version: "v1.34.3+k0s.0",
 					Files: []bootstrapv1.File{
 						{
 							ContentFrom: &bootstrapv1.ContentSource{
@@ -183,7 +183,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 			name: "err for invalid files declared in config: contentFrom secret name missing",
 			in: &bootstrapv1.K0sWorkerConfig{
 				Spec: bootstrapv1.K0sWorkerConfigSpec{
-					Version: "v1.27.4+k0s.0",
+					Version: "v1.34.3+k0s.0",
 					Files: []bootstrapv1.File{
 						{
 							File: provisioner.File{

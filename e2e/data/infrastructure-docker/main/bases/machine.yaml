@@ -45,7 +45,7 @@ metadata:
   name: ${CLUSTER_NAME}-docker-test-worker-0
   namespace: ${NAMESPACE}
 spec:
-  customImage: kindest/node:v1.31.0
+  customImage: kindest/node:v1.34.0
 ---
 apiVersion: v1
 kind: Secret
