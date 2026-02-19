@@ -67,6 +67,17 @@ const (
 	defaultK0sVersion = "v1.27.9+k0s.0"
 )
 
+// ensureK0sSuffix returns the version string with "+k0s.0" suffix appended if
+// it does not already contain one. This is used to derive the actual k0s
+// binary version without mutating the spec.version field, which must stay in
+// the format that CAPI topology controller expects.
+func ensureK0sSuffix(v string) string {
+	if !strings.Contains(v, "+k0s.") {
+		return fmt.Sprintf("%s+%s", v, defaultK0sSuffix)
+	}
+	return v
+}
+
 var (
 	ErrNotReady               = fmt.Errorf("waiting for the state")
 	ErrNewMachinesNotReady    = fmt.Errorf("waiting for new machines: %w", ErrNotReady)
@@ -128,10 +139,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 	if kcp.Spec.Version == "" {
 		kcp.Spec.Version = defaultK0sVersion
-	}
-
-	if !strings.Contains(kcp.Spec.Version, "+k0s.") {
-		kcp.Spec.Version = fmt.Sprintf("%s+%s", kcp.Spec.Version, defaultK0sSuffix)
 	}
 
 	cluster, err := capiutil.GetOwnerCluster(ctx, c.Client, kcp.ObjectMeta)
@@ -642,7 +649,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 			}},
 		},
 		Spec: bootstrapv2.K0sControllerConfigSpec{
-			Version:       kcp.Spec.Version,
+			Version:       ensureK0sSuffix(kcp.Spec.Version),
 			K0sConfigSpec: k0sConfigSpec,
 		},
 	}

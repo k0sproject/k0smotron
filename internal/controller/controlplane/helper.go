@@ -96,7 +96,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 }
 
 func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
-	v := kcp.Spec.Version
+	v := ensureK0sSuffix(kcp.Spec.Version)
 
 	labels := controlPlaneCommonLabelsForCluster(kcp, cluster.Name)
 
@@ -569,6 +569,8 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.
 		return nil
 	}
 
+	k0sVer := ensureK0sSuffix(kcp.Spec.Version)
+
 	var existingPlan unstructured.Unstructured
 	err := clientset.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/plans/autopilot").Do(ctx).Into(&existingPlan)
 	if err != nil && !apierrors.IsNotFound(err) {
@@ -592,7 +594,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.
 		if state == "Schedulable" || state == "SchedulableWait" {
 			// it is necessary to check if the current autopilot process corresponds to a previous update by comparing the current
 			// version of the resource with the desired one. If that is the case, the state is not yet ready to proceed with a new plan.
-			if version != kcp.Spec.Version {
+			if version != k0sVer {
 				return fmt.Errorf("previous autopilot is not finished: %w", ErrNotReady)
 			}
 
@@ -602,7 +604,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.
 		if state == "Completed" {
 			// If the state is completed, it is necessary to check if the current version of the resource corresponds to the desired one.
 			// If that is the case, it is not necessary to proceed with a new plan.
-			if version == kcp.Spec.Version {
+			if version == k0sVer {
 				return nil
 			}
 		}
@@ -618,9 +620,9 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.
 		return fmt.Errorf("error getting control plane machines: %w", err)
 	}
 
-	amd64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-amd64`
-	arm64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm64`
-	armDownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm`
+	amd64DownloadURL := `https://get.k0sproject.io/` + k0sVer + `/k0s-` + k0sVer + `-amd64`
+	arm64DownloadURL := `https://get.k0sproject.io/` + k0sVer + `/k0s-` + k0sVer + `-arm64`
+	armDownloadURL := `https://get.k0sproject.io/` + k0sVer + `/k0s-` + k0sVer + `-arm`
 	if kcp.Spec.K0sConfigSpec.DownloadURL != "" {
 		amd64DownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
 		arm64DownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
@@ -640,7 +642,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.
 			"timestamp": "` + timestamp + `",
 			"commands": [{
 				"k0supdate": {
-					"version": "` + kcp.Spec.Version + `",
+					"version": "` + k0sVer + `",
 					"platforms": {
 						"linux-amd64": {
 							"url": "` + amd64DownloadURL + `"
