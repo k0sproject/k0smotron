@@ -304,7 +304,7 @@ spec:
 
 var clusterClassYaml = `
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteClusterTemplate
 metadata:
   name: k0smotron-remote-cluster-tmpl
@@ -380,7 +380,7 @@ spec:
           kind: RemoteMachineTemplate
           name: remote-test-machine-template
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteMachineTemplate
 metadata:
   name: remote-test-machine-template
@@ -390,7 +390,7 @@ spec:
     spec:
       pool: default
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: PooledRemoteMachine
 metadata:
   name: remote-test-0
@@ -404,7 +404,7 @@ spec:
     sshKeyRef:
       name: footloose-key
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: PooledRemoteMachine
 metadata:
   name: remote-test-1
