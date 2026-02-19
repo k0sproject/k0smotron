@@ -336,16 +336,18 @@ spec:
         secretRef:
           name: test-file-secret
           key: value
-    customUserDataRef:
-      configMapRef:
-        name: custom-user-data
-        key: customUserData
+    provisioner:
+      customUserDataRef:
+        configMapRef:
+          name: custom-user-data
+          key: customUserData
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: DockerMachineTemplate
-      name: docker-test-cp-template
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: DockerMachineTemplate
+        name: docker-test-cp-template
+        namespace: default
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -404,10 +406,11 @@ spec:
         secretRef:
           name: test-file-secret
           key: value
-  customUserDataRef:
-    configMapRef:
-      name: custom-user-data
-      key: customUserData
+  provisioner:
+    customUserDataRef:
+      configMapRef:
+        name: custom-user-data
+        key: customUserData
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachine
