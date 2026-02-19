@@ -835,7 +835,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -865,7 +865,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1003,7 +1003,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1049,7 +1049,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1095,7 +1095,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1244,7 +1244,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.29.0",
+			Version:     "v1.29.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1289,7 +1289,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1333,7 +1333,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.29.0",
+			Version:     "v1.29.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachine",
 				Name:     gmt.GetName(),
