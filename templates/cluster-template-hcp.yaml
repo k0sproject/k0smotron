@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -10,11 +10,11 @@ spec:
     services:
       cidrBlocks: ${SERVICE_CIDR:=["10.128.0.0/12"]}
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: ${CLUSTER_NAME}-control-plane
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteCluster
     name: ${CLUSTER_NAME}
 ---
@@ -38,7 +38,7 @@ spec:
 ---
 # It is necessary to have previously created a worker node since k0smotron does not take care of its creation.
 # More about Remote Machine provider: https://docs.k0smotron.io/stable/capi-remote/#cluster-api-remote-machine-provider
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
 metadata:
   name:  ${CLUSTER_NAME}
@@ -46,11 +46,11 @@ spec:
   clusterName: ${CLUSTER_NAME}
   bootstrap:
     configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      apiGroup: bootstrap.cluster.x-k8s.io
       kind: K0sWorkerConfig
       name: ${CLUSTER_NAME}
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteMachine
     name: ${CLUSTER_NAME}
 ---
