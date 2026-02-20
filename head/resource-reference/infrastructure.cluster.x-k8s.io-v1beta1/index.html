@@ -1926,6 +1926,7 @@ You are not currently viewing the documentation for the current stable release o
 </ul>
 <h2 id="pooledremotemachine">PooledRemoteMachine<a class="headerlink" href="#pooledremotemachine" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#infrastructureclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>PooledRemoteMachine represents a RemoteMachine that is part of a pool and can be reserved for use.</p>
 <table>
     <thead>
         <tr>
@@ -1956,14 +1957,14 @@ You are not currently viewing the documentation for the current stable release o
         <td><b><a href="#pooledremotemachinespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          PooledRemoteMachineSpec defines the desired state of PooledRemoteMachine<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#pooledremotemachinestatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          PooledRemoteMachineStatus defines the observed state of PooledRemoteMachine<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1971,6 +1972,7 @@ You are not currently viewing the documentation for the current stable release o
 
 <h3 id="pooledremotemachinespec">PooledRemoteMachine.spec<a class="headerlink" href="#pooledremotemachinespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#pooledremotemachine">↩ Parent</a></sup></sup></p>
+<p>PooledRemoteMachineSpec defines the desired state of PooledRemoteMachine</p>
 <table>
     <thead>
         <tr>
@@ -1984,7 +1986,7 @@ You are not currently viewing the documentation for the current stable release o
         <td><b><a href="#pooledremotemachinespecmachine">machine</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          PooledMachineSpec defines the connection details and provisioning information for a machine in a pool.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1999,6 +2001,7 @@ You are not currently viewing the documentation for the current stable release o
 
 <h3 id="pooledremotemachinespecmachine">PooledRemoteMachine.spec.machine<a class="headerlink" href="#pooledremotemachinespecmachine" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#pooledremotemachinespec">↩ Parent</a></sup></sup></p>
+<p>PooledMachineSpec defines the connection details and provisioning information for a machine in a pool.</p>
 <table>
     <thead>
         <tr>
@@ -2103,6 +2106,7 @@ The key must be placed on the secret using the key "value".</p>
 
 <h3 id="pooledremotemachinestatus">PooledRemoteMachine.status<a class="headerlink" href="#pooledremotemachinestatus" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#pooledremotemachine">↩ Parent</a></sup></sup></p>
+<p>PooledRemoteMachineStatus defines the observed state of PooledRemoteMachine</p>
 <table>
     <thead>
         <tr>
@@ -2116,7 +2120,7 @@ The key must be placed on the secret using the key "value".</p>
         <td><b><a href="#pooledremotemachinestatusmachineref">machineRef</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteMachineRef is a reference to a RemoteMachine that has been reserved for use.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -2131,6 +2135,7 @@ The key must be placed on the secret using the key "value".</p>
 
 <h3 id="pooledremotemachinestatusmachineref">PooledRemoteMachine.status.machineRef<a class="headerlink" href="#pooledremotemachinestatusmachineref" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#pooledremotemachinestatus">↩ Parent</a></sup></sup></p>
+<p>RemoteMachineRef is a reference to a RemoteMachine that has been reserved for use.</p>
 <table>
     <thead>
         <tr>
@@ -2159,6 +2164,7 @@ The key must be placed on the secret using the key "value".</p>
 
 <h2 id="remotecluster">RemoteCluster<a class="headerlink" href="#remotecluster" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#infrastructureclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>RemoteCluster is the Schema for the remoteclusters API</p>
 <table>
     <thead>
         <tr>
@@ -2314,7 +2320,7 @@ The key must be placed on the secret using the key "value".</p>
         <td><b><a href="#remoteclustertemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteClusterTemplateSpec defines the desired state of RemoteClusterTemplate.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2322,6 +2328,7 @@ The key must be placed on the secret using the key "value".</p>
 
 <h3 id="remoteclustertemplatespec">RemoteClusterTemplate.spec<a class="headerlink" href="#remoteclustertemplatespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#remoteclustertemplate">↩ Parent</a></sup></sup></p>
+<p>RemoteClusterTemplateSpec defines the desired state of RemoteClusterTemplate.</p>
 <table>
     <thead>
         <tr>
@@ -2498,6 +2505,7 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
 
 <h2 id="remotemachine">RemoteMachine<a class="headerlink" href="#remotemachine" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#infrastructureclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>RemoteMachine is the Schema for the remotemachines API</p>
 <table>
     <thead>
         <tr>
@@ -18405,6 +18413,7 @@ The key must be placed on the secret using the key "value".</p>
 
 <h2 id="remotemachinetemplate">RemoteMachineTemplate<a class="headerlink" href="#remotemachinetemplate" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#infrastructureclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>RemoteMachineTemplate is the Schema for the remotemachinetemplates API</p>
 <table>
     <thead>
         <tr>
@@ -18435,7 +18444,7 @@ The key must be placed on the secret using the key "value".</p>
         <td><b><a href="#remotemachinetemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteMachineTemplateSpec defines the desired state of RemoteMachineTemplate<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18443,6 +18452,7 @@ The key must be placed on the secret using the key "value".</p>
 
 <h3 id="remotemachinetemplatespec">RemoteMachineTemplate.spec<a class="headerlink" href="#remotemachinetemplatespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#remotemachinetemplate">↩ Parent</a></sup></sup></p>
+<p>RemoteMachineTemplateSpec defines the desired state of RemoteMachineTemplate</p>
 <table>
     <thead>
         <tr>
@@ -18456,7 +18466,7 @@ The key must be placed on the secret using the key "value".</p>
         <td><b><a href="#remotemachinetemplatespectemplate">template</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteMachineTemplateResource describes the data needed to create a RemoteMachine from a template<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -18464,6 +18474,7 @@ The key must be placed on the secret using the key "value".</p>
 
 <h3 id="remotemachinetemplatespectemplate">RemoteMachineTemplate.spec.template<a class="headerlink" href="#remotemachinetemplatespectemplate" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#remotemachinetemplatespec">↩ Parent</a></sup></sup></p>
+<p>RemoteMachineTemplateResource describes the data needed to create a RemoteMachine from a template</p>
 <table>
     <thead>
         <tr>
@@ -18484,7 +18495,7 @@ The key must be placed on the secret using the key "value".</p>
         <td><b><a href="#remotemachinetemplatespectemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          RemoteMachineTemplateResourceSpec defines the desired state of RemoteMachineTemplateResource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18541,6 +18552,7 @@ The key must be placed on the secret using the key "value".</p>
 
 <h3 id="remotemachinetemplatespectemplatespec">RemoteMachineTemplate.spec.template.spec<a class="headerlink" href="#remotemachinetemplatespectemplatespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#remotemachinetemplatespectemplate">↩ Parent</a></sup></sup></p>
+<p>RemoteMachineTemplateResourceSpec defines the desired state of RemoteMachineTemplateResource</p>
 <table>
     <thead>
         <tr>

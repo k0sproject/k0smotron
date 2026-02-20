@@ -1920,6 +1920,7 @@ You are not currently viewing the documentation for the current stable release o
 </ul>
 <h2 id="k0scontrollerconfig">K0sControllerConfig<a class="headerlink" href="#k0scontrollerconfig" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#bootstrapclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>K0sControllerConfig is the Schema for the k0scontrollerconfigs API</p>
 <table>
     <thead>
         <tr>
@@ -1950,14 +1951,14 @@ You are not currently viewing the documentation for the current stable release o
         <td><b><a href="#k0scontrollerconfigspec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControllerConfigSpec defines the desired state of K0sControllerConfig<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrollerconfigstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControllerConfigStatus defines the observed state of K0sControllerConfig<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1965,6 +1966,7 @@ You are not currently viewing the documentation for the current stable release o
 
 <h3 id="k0scontrollerconfigspec">K0sControllerConfig.spec<a class="headerlink" href="#k0scontrollerconfigspec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrollerconfig">↩ Parent</a></sup></sup></p>
+<p>K0sControllerConfigSpec defines the desired state of K0sControllerConfig</p>
 <table>
     <thead>
         <tr>
@@ -2424,6 +2426,7 @@ If empty, k0smotron will use the default one.<br/>
 
 <h3 id="k0scontrollerconfigstatus">K0sControllerConfig.status<a class="headerlink" href="#k0scontrollerconfigstatus" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrollerconfig">↩ Parent</a></sup></sup></p>
+<p>K0sControllerConfigStatus defines the observed state of K0sControllerConfig</p>
 <table>
     <thead>
         <tr>
@@ -2531,6 +2534,7 @@ with respect to the current state of the instance.<br/>
 
 <h2 id="k0sworkerconfig">K0sWorkerConfig<a class="headerlink" href="#k0sworkerconfig" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#bootstrapclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>K0sWorkerConfig is the Schema for the k0sworkerconfigs API</p>
 <table>
     <thead>
         <tr>
@@ -2561,14 +2565,14 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0sworkerconfigspec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0sworkerconfigstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2576,6 +2580,7 @@ with respect to the current state of the instance.<br/>
 
 <h3 id="k0sworkerconfigspec">K0sWorkerConfig.spec<a class="headerlink" href="#k0sworkerconfigspec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0sworkerconfig">↩ Parent</a></sup></sup></p>
+<p>K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig</p>
 <table>
     <thead>
         <tr>
@@ -2986,6 +2991,7 @@ with the generated one. The format follows Butane spec: https://coreos.github.io
 
 <h3 id="k0sworkerconfigstatus">K0sWorkerConfig.status<a class="headerlink" href="#k0sworkerconfigstatus" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0sworkerconfig">↩ Parent</a></sup></sup></p>
+<p>K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig</p>
 <table>
     <thead>
         <tr>
@@ -3093,6 +3099,7 @@ with respect to the current state of the instance.<br/>
 
 <h2 id="k0sworkerconfigtemplate">K0sWorkerConfigTemplate<a class="headerlink" href="#k0sworkerconfigtemplate" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#bootstrapclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>K0sWorkerConfigTemplate is the Schema for the k0sworkerconfigtemplates API</p>
 <table>
     <thead>
         <tr>
@@ -3123,7 +3130,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0sworkerconfigtemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigTemplateSpec defines the desired state of K0sWorkerConfigTemplate<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3131,6 +3138,7 @@ with respect to the current state of the instance.<br/>
 
 <h3 id="k0sworkerconfigtemplatespec">K0sWorkerConfigTemplate.spec<a class="headerlink" href="#k0sworkerconfigtemplatespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0sworkerconfigtemplate">↩ Parent</a></sup></sup></p>
+<p>K0sWorkerConfigTemplateSpec defines the desired state of K0sWorkerConfigTemplate</p>
 <table>
     <thead>
         <tr>
@@ -3144,7 +3152,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0sworkerconfigtemplatespectemplate">template</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigTemplateResource defines the template for the worker config resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3152,6 +3160,7 @@ with respect to the current state of the instance.<br/>
 
 <h3 id="k0sworkerconfigtemplatespectemplate">K0sWorkerConfigTemplate.spec.template<a class="headerlink" href="#k0sworkerconfigtemplatespectemplate" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0sworkerconfigtemplatespec">↩ Parent</a></sup></sup></p>
+<p>K0sWorkerConfigTemplateResource defines the template for the worker config resource</p>
 <table>
     <thead>
         <tr>
@@ -3172,7 +3181,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0sworkerconfigtemplatespectemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3229,6 +3238,7 @@ with respect to the current state of the instance.<br/>
 
 <h3 id="k0sworkerconfigtemplatespectemplatespec">K0sWorkerConfigTemplate.spec.template.spec<a class="headerlink" href="#k0sworkerconfigtemplatespectemplatespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0sworkerconfigtemplatespectemplate">↩ Parent</a></sup></sup></p>
+<p>K0sWorkerConfigSpec defines the desired state of K0sWorkerConfig</p>
 <table>
     <thead>
         <tr>

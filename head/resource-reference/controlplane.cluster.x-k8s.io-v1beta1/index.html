@@ -1923,6 +1923,7 @@ You are not currently viewing the documentation for the current stable release o
 </ul>
 <h2 id="k0scontrolplane">K0sControlPlane<a class="headerlink" href="#k0scontrolplane" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#controlplaneclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>K0sControlPlane is the Schema for the K0sControlPlanes API.</p>
 <table>
     <thead>
         <tr>
@@ -1953,14 +1954,14 @@ You are not currently viewing the documentation for the current stable release o
         <td><b><a href="#k0scontrolplanespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneSpec defines the desired state of K0sControlPlane.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanestatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneStatus defines the observed state of K0sControlPlane.<br/>
           <br/>
             <i>Default</i>: map[initialization:map[controlPlaneInitialized:false] initialized:false ready:false version:]<br/>
         </td>
@@ -1970,6 +1971,7 @@ You are not currently viewing the documentation for the current stable release o
 
 <h3 id="k0scontrolplanespec">K0sControlPlane.spec<a class="headerlink" href="#k0scontrolplanespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrolplane">↩ Parent</a></sup></sup></p>
+<p>K0sControlPlaneSpec defines the desired state of K0sControlPlane.</p>
 <table>
     <thead>
         <tr>
@@ -1983,14 +1985,14 @@ You are not currently viewing the documentation for the current stable release o
         <td><b><a href="#k0scontrolplanespeck0sconfigspec">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sConfigSpec defines the common configuration for both K0sControllerConfig and K0sWorkerConfig.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanespecmachinetemplate">machineTemplate</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneMachineTemplate defines the template for Machines in a K0sControlPlane object.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -2035,6 +2037,7 @@ just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select
 
 <h3 id="k0scontrolplanespeck0sconfigspec">K0sControlPlane.spec.k0sConfigSpec<a class="headerlink" href="#k0scontrolplanespeck0sconfigspec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrolplanespec">↩ Parent</a></sup></sup></p>
+<p>K0sConfigSpec defines the common configuration for both K0sControllerConfig and K0sWorkerConfig.</p>
 <table>
     <thead>
         <tr>
@@ -2484,6 +2487,7 @@ If empty, k0smotron will use the default one.<br/>
 
 <h3 id="k0scontrolplanespecmachinetemplate">K0sControlPlane.spec.machineTemplate<a class="headerlink" href="#k0scontrolplanespecmachinetemplate" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrolplanespec">↩ Parent</a></sup></sup></p>
+<p>K0sControlPlaneMachineTemplate defines the template for Machines in a K0sControlPlane object.</p>
 <table>
     <thead>
         <tr>
@@ -2657,6 +2661,7 @@ Note: This metadata will have precedence over default labels/annotations on the 
 
 <h3 id="k0scontrolplanestatus">K0sControlPlane.status<a class="headerlink" href="#k0scontrolplanestatus" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrolplane">↩ Parent</a></sup></sup></p>
+<p>K0sControlPlaneStatus defines the observed state of K0sControlPlane.</p>
 <table>
     <thead>
         <tr>
@@ -2865,6 +2870,7 @@ with respect to the current state of the instance.<br/>
 
 <h2 id="k0scontrolplanetemplate">K0sControlPlaneTemplate<a class="headerlink" href="#k0scontrolplanetemplate" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#controlplaneclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>K0sControlPlaneTemplate is the template for creating K0s control planes.</p>
 <table>
     <thead>
         <tr>
@@ -2895,7 +2901,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0scontrolplanetemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneTemplateSpec defines the desired state of K0sControlPlaneTemplate.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2903,6 +2909,7 @@ with respect to the current state of the instance.<br/>
 
 <h3 id="k0scontrolplanetemplatespec">K0sControlPlaneTemplate.spec<a class="headerlink" href="#k0scontrolplanetemplatespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrolplanetemplate">↩ Parent</a></sup></sup></p>
+<p>K0sControlPlaneTemplateSpec defines the desired state of K0sControlPlaneTemplate.</p>
 <table>
     <thead>
         <tr>
@@ -2916,7 +2923,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0scontrolplanetemplatespectemplate">template</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneTemplateResource describes the data needed to create a K0sControlPlane from a template.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2924,6 +2931,7 @@ with respect to the current state of the instance.<br/>
 
 <h3 id="k0scontrolplanetemplatespectemplate">K0sControlPlaneTemplate.spec.template<a class="headerlink" href="#k0scontrolplanetemplatespectemplate" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrolplanetemplatespec">↩ Parent</a></sup></sup></p>
+<p>K0sControlPlaneTemplateResource describes the data needed to create a K0sControlPlane from a template.</p>
 <table>
     <thead>
         <tr>
@@ -2944,7 +2952,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0scontrolplanetemplatespectemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlaneTemplateResource.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3001,6 +3009,7 @@ with respect to the current state of the instance.<br/>
 
 <h3 id="k0scontrolplanetemplatespectemplatespec">K0sControlPlaneTemplate.spec.template.spec<a class="headerlink" href="#k0scontrolplanetemplatespectemplatespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrolplanetemplatespectemplate">↩ Parent</a></sup></sup></p>
+<p>K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlaneTemplateResource.</p>
 <table>
     <thead>
         <tr>
@@ -3014,7 +3023,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspec">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sConfigSpec defines the common configuration for both K0sControllerConfig and K0sWorkerConfig.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -3051,6 +3060,7 @@ be configured on the K0sControlPlaneTemplate.<br/>
 
 <h3 id="k0scontrolplanetemplatespectemplatespeck0sconfigspec">K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec<a class="headerlink" href="#k0scontrolplanetemplatespectemplatespeck0sconfigspec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0scontrolplanetemplatespectemplatespec">↩ Parent</a></sup></sup></p>
+<p>K0sConfigSpec defines the common configuration for both K0sControllerConfig and K0sWorkerConfig.</p>
 <table>
     <thead>
         <tr>
@@ -3590,6 +3600,7 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
 
 <h2 id="k0smotroncontrolplane">K0smotronControlPlane<a class="headerlink" href="#k0smotroncontrolplane" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#controlplaneclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>K0smotronControlPlane is the Schema for the k0smotroncontrolplanes API</p>
 <table>
     <thead>
         <tr>
@@ -3627,7 +3638,7 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
         <td><b><a href="#k0smotroncontrolplanestatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane<br/>
           <br/>
             <i>Default</i>: map[conditions:[map[lastTransitionTime:1970-01-01T00:00:00Z message:Waiting for cluster topology to be reconciled reason:ControlPlaneDoesNotExist status:Unknown type:ControlPlaneReady]] initialization:map[controlPlaneInitialized:false] initialized:false ready:false version:]<br/>
         </td>
@@ -3833,6 +3844,7 @@ will pick it automatically.<br/>
 
 <h3 id="k0smotroncontrolplanespeccertificaterefsindex">K0smotronControlPlane.spec.certificateRefs[index]<a class="headerlink" href="#k0smotroncontrolplanespeccertificaterefsindex" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespec">↩ Parent</a></sup></sup></p>
+<p>CertificateRef defines a reference to a certificate that should be included in the cluster configuration.</p>
 <table>
     <thead>
         <tr>
@@ -7845,6 +7857,8 @@ them as usual kubernetes pod metrics.<br/>
 
 <h3 id="k0smotroncontrolplanespecmountsindex">K0smotronControlPlane.spec.mounts[index]<a class="headerlink" href="#k0smotroncontrolplanespecmountsindex" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanespec">↩ Parent</a></sup></sup></p>
+<p>Mount defines a volume to be mounted in the control plane pod,
+along with the mount path and read-only flag.</p>
 <table>
     <thead>
         <tr>
@@ -12565,6 +12579,7 @@ merge patch.<br/>
 
 <h3 id="k0smotroncontrolplanestatus">K0smotronControlPlane.status<a class="headerlink" href="#k0smotroncontrolplanestatus" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplane">↩ Parent</a></sup></sup></p>
+<p>K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane</p>
 <table>
     <thead>
         <tr>
@@ -12766,6 +12781,7 @@ with respect to the current state of the instance.<br/>
 
 <h2 id="k0smotroncontrolplanetemplate">K0smotronControlPlaneTemplate<a class="headerlink" href="#k0smotroncontrolplanetemplate" title="Permanent link">#</a></h2>
 <p><sup><sup><a href="#controlplaneclusterx-k8siov1beta1">↩ Parent</a></sup></sup></p>
+<p>K0smotronControlPlaneTemplate is the Schema for the k0smotroncontrolplanetemplates API</p>
 <table>
     <thead>
         <tr>
@@ -12796,7 +12812,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0smotronControlPlaneTemplateSpec defines the desired state of K0smotronControlPlaneTemplate<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12804,6 +12820,7 @@ with respect to the current state of the instance.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespec">K0smotronControlPlaneTemplate.spec<a class="headerlink" href="#k0smotroncontrolplanetemplatespec" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplate">↩ Parent</a></sup></sup></p>
+<p>K0smotronControlPlaneTemplateSpec defines the desired state of K0smotronControlPlaneTemplate</p>
 <table>
     <thead>
         <tr>
@@ -12817,7 +12834,7 @@ with respect to the current state of the instance.<br/>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplate">template</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0smotronControlPlaneTemplateResource defines the template for the control plane resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12825,6 +12842,7 @@ with respect to the current state of the instance.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplate">K0smotronControlPlaneTemplate.spec.template<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplate" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespec">↩ Parent</a></sup></sup></p>
+<p>K0smotronControlPlaneTemplateResource defines the template for the control plane resource</p>
 <table>
     <thead>
         <tr>
@@ -13098,6 +13116,7 @@ will pick it automatically.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespeccertificaterefsindex">K0smotronControlPlaneTemplate.spec.template.spec.certificateRefs[index]<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespeccertificaterefsindex" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespec">↩ Parent</a></sup></sup></p>
+<p>CertificateRef defines a reference to a certificate that should be included in the cluster configuration.</p>
 <table>
     <thead>
         <tr>
@@ -17110,6 +17129,8 @@ them as usual kubernetes pod metrics.<br/>
 
 <h3 id="k0smotroncontrolplanetemplatespectemplatespecmountsindex">K0smotronControlPlaneTemplate.spec.template.spec.mounts[index]<a class="headerlink" href="#k0smotroncontrolplanetemplatespectemplatespecmountsindex" title="Permanent link">#</a></h3>
 <p><sup><sup><a href="#k0smotroncontrolplanetemplatespectemplatespec">↩ Parent</a></sup></sup></p>
+<p>Mount defines a volume to be mounted in the control plane pod,
+along with the mount path and read-only flag.</p>
 <table>
     <thead>
         <tr>
