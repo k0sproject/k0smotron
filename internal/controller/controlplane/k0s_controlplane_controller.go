@@ -59,7 +59,6 @@ import (
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	kutil "github.com/k0sproject/k0smotron/internal/util"
 )
 
 const (
@@ -448,7 +447,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	go func() {
 		// The k8s API of the workload cluster must be available to make requests.
 		if kcp.Status.Ready {
-			err = c.deleteOldControlNodes(ctx, cluster)
+			err = c.deleteOldControlNodes(ctx, cluster, kcp)
 			if err != nil {
 				logger.Error(err, "Error deleting old control nodes")
 			}
@@ -467,7 +466,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				}
 			}
 		} else {
-			kubeClient, err := c.getKubeClient(ctx, cluster)
+			kubeClient, err := c.getKubeClient(ctx, cluster, kcp.Spec.K0sConfigSpec.Tunneling)
 			if err != nil {
 				return fmt.Errorf("error getting cluster client set for machine update: %w", err)
 			}
@@ -485,7 +484,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		tooManyMachines ||
 		isRecreateDeleteFirstPossible(kcp, clusterHasChanged, machineNamesToDelete, desiredMachines) {
 		m := activeMachines.Newest().Name
-		err := c.checkMachineIsReady(ctx, m, cluster)
+		err := c.checkMachineIsReady(ctx, m, cluster, kcp)
 		if err != nil {
 			logger.Error(err, "Error checking machine left", "machine", m)
 			return err
@@ -527,7 +526,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		// machine to be ready It's not slowing down the process overall, as we wait to the first machine anyway to
 		// create join tokens.
 		if activeMachines.Len() >= 1 {
-			err := c.checkMachineIsReady(ctx, activeMachines.Newest().Name, cluster)
+			err := c.checkMachineIsReady(ctx, activeMachines.Newest().Name, cluster, kcp)
 			if err != nil {
 				return err
 			}
@@ -590,7 +589,7 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 	logger := log.FromContext(ctx)
 
 	if kcp.Status.Ready {
-		kubeClient, err := c.getKubeClient(ctx, cluster)
+		kubeClient, err := c.getKubeClient(ctx, cluster, kcp.Spec.K0sConfigSpec.Tunneling)
 		if err != nil {
 			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
 		}
@@ -656,8 +655,8 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 	return nil
 }
 
-func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName string, cluster *clusterv1.Cluster) error {
-	kubeClient, err := c.getKubeClient(ctx, cluster)
+func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName string, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) error {
+	kubeClient, err := c.getKubeClient(ctx, cluster, kcp.Spec.K0sConfigSpec.Tunneling)
 	if err != nil {
 		return fmt.Errorf("error getting cluster client set for machine update: %w", err)
 	}
@@ -727,7 +726,7 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 		}
 
 		// Reconcile the dynamic config
-		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, *kcp.Spec.K0sConfigSpec.K0s.DeepCopy())
+		dErr := util.ReconcileDynamicConfig(ctx, cluster, c.Client, *kcp.Spec.K0sConfigSpec.K0s.DeepCopy(), &kcp.Spec.K0sConfigSpec.Tunneling)
 		if dErr != nil {
 			// Don't return error from dynamic config reconciliation, as it may not be created yet
 			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")

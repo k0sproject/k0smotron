@@ -29,8 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	"sigs.k8s.io/cluster-api/controllers/remote"
-	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -41,6 +39,7 @@ import (
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/version"
 )
 
@@ -83,7 +82,7 @@ func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *
 
 	switch kcp.Spec.UpdateStrategy {
 	case cpv1beta1.UpdateInPlace:
-		kc, err := c.getKubeClient(ctx, cluster)
+		kc, err := c.getKubeClient(ctx, cluster, kcp.Spec.K0sConfigSpec.Tunneling)
 		if err != nil {
 			return nil, err
 		}
@@ -304,7 +303,7 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
 	// Get the CAPI cluster accessor
-	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, util.ObjectKey(cluster))
+	client, err := util.GetControllerRuntimeClient(ctx, c.Client, cluster, &kcp.Spec.K0sConfigSpec.Tunneling)
 	if err != nil {
 		logger.Info("Failed to create cluster client", "error", err)
 		return
