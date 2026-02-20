@@ -36,6 +36,17 @@ type RemoteClusterStatus struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default=false
 	Ready bool `json:"ready"`
+
+	// Initialization represents the initialization status of the infrastructure.
+	// +optional
+	Initialization *InfrastructureStatusInitialization `json:"initialization,omitempty"`
+}
+
+// InfrastructureStatusInitialization represents the initialization status of the infrastructure.
+type InfrastructureStatusInitialization struct {
+	// Provisioned indicates that the infrastructure has been provisioned.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
 }
 
 // +kubebuilder:object:root=true

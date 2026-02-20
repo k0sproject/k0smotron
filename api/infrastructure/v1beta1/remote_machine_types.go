@@ -115,6 +115,10 @@ type RemoteMachineStatus struct {
 	// +kubebuilder:validation:Optional
 	Ready bool `json:"ready,omitempty"`
 
+	// Initialization represents the initialization status of the infrastructure.
+	// +optional
+	Initialization *InfrastructureStatusInitialization `json:"initialization,omitempty"`
+
 	// addresses contains the associated addresses for the machine.
 	// +optional
 	Addresses []clusterv1.MachineAddress `json:"addresses,omitempty"`

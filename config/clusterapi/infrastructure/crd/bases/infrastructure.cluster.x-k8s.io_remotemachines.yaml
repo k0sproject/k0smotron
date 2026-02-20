@@ -9231,6 +9231,15 @@ spec:
                 type: string
               failureReason:
                 type: string
+              initialization:
+                description: Initialization represents the initialization status of
+                  the infrastructure.
+                properties:
+                  provisioned:
+                    description: Provisioned indicates that the infrastructure has
+                      been provisioned.
+                    type: boolean
+                type: object
               ready:
                 description: Ready denotes that the remote machine is ready to be
                   used.
