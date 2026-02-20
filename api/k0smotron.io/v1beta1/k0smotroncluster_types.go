@@ -30,6 +30,39 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+const (
+	// ClusterAvailableCondition surfaces details about the availability of the Cluster.
+	ClusterAvailableCondition = "Available"
+
+	// ClusterAvailableKubeSystemNamespaceNotFoundReason surfaces when the Cluster is not available because
+	// the check for cluster availability failed to find the kube-system namespace in the workload cluster.
+	// This likely means that the cluster is not fully up and running yet.
+	ClusterAvailableKubeSystemNamespaceNotFoundReason = "KubeSystemNamespaceNotFound"
+
+	// ClusterAvailableInternalErrorReason surfaces unexpected failures when checking cluster availability.
+	ClusterAvailableInternalErrorReason = "InternalError"
+
+	// ClusterAvailableReason surfaces when the Cluster is available because the
+	// kube-system namespace has been found in the workload cluster.
+	ClusterAvailableReason = "KubeSystemNamespaceFound"
+
+	// ClusterDeletingCondition surfaces details about ongoing deletion of the Cluster.
+	ClusterDeletingCondition = "Deleting"
+
+	// ClusterNotDeletingReason surfaces when the Cluster is not deleting because the
+	// DeletionTimestamp is not set.
+	ClusterNotDeletingReason = "NotDeleting"
+
+	// ClusterDeletingInternalErrorReason surfaces unexpected failures when deleting a cluster.
+	ClusterDeletingInternalErrorReason = "InternalError"
+
+	// ClusterDeletingDeletionCompletedReason surfaces when the Cluster deletion has been completed.
+	// This reason is set prior the `k0smotron.io/finalizer` finalizer is removed.
+	// This means that the object will go away (i.e. be removed from etcd), except if there are other
+	// finalizers on the Cluster object.
+	ClusterDeletingDeletionCompletedReason = "DeletionCompleted"
+)
+
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
 	// KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
@@ -225,13 +258,27 @@ func (c *ClusterSpec) GetImage() string {
 	return fmt.Sprintf("%s:%s", c.Image, k0sVersion)
 }
 
+// GetConditions returns the conditions of the Cluster status.
+func (kmc *Cluster) GetConditions() []metav1.Condition {
+	return kmc.Status.Conditions
+}
+
+// SetConditions sets the conditions on the Cluster status.
+func (kmc *Cluster) SetConditions(conditions []metav1.Condition) {
+	kmc.Status.Conditions = conditions
+}
+
 // ClusterStatus defines the observed state of K0smotronCluster
 type ClusterStatus struct {
-	ReconciliationStatus string `json:"reconciliationStatus"`
-	Ready                bool   `json:"ready,omitempty"`
-	Replicas             int32  `json:"replicas,omitempty"`
+	// Replicas is the total number of pods targeted by this cluster
+	Replicas int32 `json:"replicas,omitempty"`
+	// ReadyReplicas is the number of controlplane pods targeted by this Cluster with a Ready Condition.
+	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
 	// selector is the label selector for pods that should match the replicas count.
 	Selector string `json:"selector,omitempty"`
+	// Conditions represents the observations of the k0smotron cluster's state.
+	// Known condition types are Available, Deleting.
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
