@@ -32,6 +32,7 @@ func init() {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta1"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
 
 type RemoteMachine struct {
@@ -139,6 +140,7 @@ type RemoteMachineList struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta1"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
 // +kubebuilder:printcolumn:name="Address",type=string,JSONPath=".spec.machine.address",description="IP address or DNS name of the remote machine"
 // +kubebuilder:printcolumn:name="Reserved",type=string,JSONPath=".status.reserved",description="Indicates if the machine is reserved"
