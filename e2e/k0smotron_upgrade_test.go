@@ -114,8 +114,9 @@ func k0smotronUpgradeSpec(t *testing.T) {
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
 		ClusterctlConfigPath: clusterctlConfigPath,
 		KubeconfigPath:       managementClusterProxy.GetKubeconfigPath(),
-		// no flavor specified, so it will use the default one "cluster-template"
-		Flavor: "",
+		// Use v1beta1-compatible "upgrade" flavor because the initial management cluster
+		// has older k0smotron providers that only serve v1beta1 CRDs.
+		Flavor: "upgrade",
 
 		Namespace:         workloadClusterNamespace,
 		ClusterName:       workloadClusterName,
