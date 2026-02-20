@@ -20,14 +20,17 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
+// DaemonSets returns a Watcher for DaemonSets.
 func DaemonSets(client Provider[*appsv1.DaemonSetList]) *Watcher[appsv1.DaemonSet] {
 	return FromClient[*appsv1.DaemonSetList, appsv1.DaemonSet](client)
 }
 
+// Deployments returns a Watcher for Deployments.
 func Deployments(client Provider[*appsv1.DeploymentList]) *Watcher[appsv1.Deployment] {
 	return FromClient[*appsv1.DeploymentList, appsv1.Deployment](client)
 }
 
+// StatefulSets returns a Watcher for StatefulSets.
 func StatefulSets(client Provider[*appsv1.StatefulSetList]) *Watcher[appsv1.StatefulSet] {
 	return FromClient[*appsv1.StatefulSetList, appsv1.StatefulSet](client)
 }

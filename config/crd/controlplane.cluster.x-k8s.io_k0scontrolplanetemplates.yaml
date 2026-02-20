@@ -19,6 +19,8 @@ spec:
   - name: v1beta1
     schema:
       openAPIV3Schema:
+        description: K0sControlPlaneTemplate is the template for creating K0s control
+          planes.
         properties:
           apiVersion:
             description: |-
@@ -38,8 +40,12 @@ spec:
           metadata:
             type: object
           spec:
+            description: K0sControlPlaneTemplateSpec defines the desired state of
+              K0sControlPlaneTemplate.
             properties:
               template:
+                description: K0sControlPlaneTemplateResource describes the data needed
+                  to create a K0sControlPlane from a template.
                 properties:
                   metadata:
                     properties:
@@ -61,8 +67,12 @@ spec:
                         type: string
                     type: object
                   spec:
+                    description: K0sControlPlaneTemplateResourceSpec defines the desired
+                      state of K0sControlPlaneTemplateResource.
                     properties:
                       k0sConfigSpec:
+                        description: K0sConfigSpec defines the common configuration
+                          for both K0sControllerConfig and K0sWorkerConfig.
                         properties:
                           args:
                             description: |-

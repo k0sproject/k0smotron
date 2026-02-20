@@ -154,7 +154,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	var localPort int
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		localPort, _ = getLBPort("TestCAPIDockerClusterClassSuite-k0smotron0")
 		return localPort > 0, nil
 	})
@@ -166,7 +166,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	s.T().Log("waiting for control-plane")
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
@@ -178,7 +178,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	s.T().Log("waiting for worker nodes")
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
 		nodes, _ := kmcKC.CoreV1().Nodes().List(s.ctx, metav1.ListOptions{})
 		return len(nodes.Items) == 2, nil
 	})

@@ -55,6 +55,7 @@ func logfFrom(ctx context.Context) LogfFn {
 	return logrus.Infof
 }
 
+// LineWriter is an io.Writer that buffers data until it encounters a newline character,
 type LineWriter struct {
 	WriteLine func([]byte)
 	buf       []byte
@@ -87,6 +88,7 @@ func (s *LineWriter) logLines() {
 	}
 }
 
+// Flush should be called before stopping the writer to ensure all data is logged.
 // Logs any remaining data in the buffer that doesn't end with a newline.
 func (s *LineWriter) Flush() {
 	if len(s.buf) > 0 {
@@ -96,6 +98,7 @@ func (s *LineWriter) Flush() {
 	}
 }
 
+// WaitForNodeReadyStatus waits until the node with the given name has the specified Ready condition status.
 func WaitForNodeReadyStatus(ctx context.Context, clients kubernetes.Interface, nodeName string, status corev1.ConditionStatus) error {
 	return watch.Nodes(clients.CoreV1().Nodes()).
 		WithObjectName(nodeName).
@@ -115,6 +118,8 @@ func WaitForNodeReadyStatus(ctx context.Context, clients kubernetes.Interface, n
 		})
 }
 
+// RetryWatchErrors returns a watch.ErrorCallback that retries on transient errors and logs them
+// using the provided LogfFn.
 func RetryWatchErrors(logf LogfFn) watch.ErrorCallback {
 	return func(err error) (time.Duration, error) {
 		if retryDelay, e := watch.IsRetryable(err); e == nil {
@@ -142,6 +147,7 @@ func RetryWatchErrors(logf LogfFn) watch.ErrorCallback {
 	}
 }
 
+// WaitForPod waits until the pod with the given name and namespace has the Ready condition set to True.
 func WaitForPod(ctx context.Context, kc *kubernetes.Clientset, name, namespace string) error {
 	return watch.Pods(kc.CoreV1().Pods(namespace)).
 		WithObjectName(name).

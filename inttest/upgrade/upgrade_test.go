@@ -109,7 +109,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", localPort)
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {
+	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(_ context.Context) (done bool, err error) {
 		_, err = kmcKC.CoreV1().Namespaces().Get(s.Context(), "test-ns-cm", metav1.GetOptions{})
 		if err != nil {
 			return false, nil

@@ -35,4 +35,5 @@ var (
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 
+// K0sClusterIDAnnotation is the k0s cluster ID annotation
 const K0sClusterIDAnnotation = "k0sproject.io/cluster-id"

@@ -33,6 +33,8 @@ spec:
     name: v1beta1
     schema:
       openAPIV3Schema:
+        description: PooledRemoteMachine represents a RemoteMachine that is part of
+          a pool and can be reserved for use.
         properties:
           apiVersion:
             description: |-
@@ -52,8 +54,11 @@ spec:
           metadata:
             type: object
           spec:
+            description: PooledRemoteMachineSpec defines the desired state of PooledRemoteMachine
             properties:
               machine:
+                description: PooledMachineSpec defines the connection details and
+                  provisioning information for a machine in a pool.
                 properties:
                   address:
                     description: Address is the IP address or DNS name of the remote
@@ -110,8 +115,11 @@ spec:
             - pool
             type: object
           status:
+            description: PooledRemoteMachineStatus defines the observed state of PooledRemoteMachine
             properties:
               machineRef:
+                description: RemoteMachineRef is a reference to a RemoteMachine that
+                  has been reserved for use.
                 properties:
                   name:
                     type: string

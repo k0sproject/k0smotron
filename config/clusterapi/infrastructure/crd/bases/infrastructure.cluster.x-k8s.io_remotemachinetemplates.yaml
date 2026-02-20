@@ -20,6 +20,8 @@ spec:
   - name: v1beta1
     schema:
       openAPIV3Schema:
+        description: RemoteMachineTemplate is the Schema for the remotemachinetemplates
+          API
         properties:
           apiVersion:
             description: |-
@@ -39,8 +41,11 @@ spec:
           metadata:
             type: object
           spec:
+            description: RemoteMachineTemplateSpec defines the desired state of RemoteMachineTemplate
             properties:
               template:
+                description: RemoteMachineTemplateResource describes the data needed
+                  to create a RemoteMachine from a template
                 properties:
                   metadata:
                     properties:
@@ -62,6 +67,8 @@ spec:
                         type: string
                     type: object
                   spec:
+                    description: RemoteMachineTemplateResourceSpec defines the desired
+                      state of RemoteMachineTemplateResource
                     properties:
                       pool:
                         type: string

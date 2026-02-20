@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint:revive
 package util
 
 import (
@@ -28,13 +29,18 @@ import (
 	"k8s.io/client-go/transport/spdy"
 )
 
+// PortForwarder is a utility for managing port forwarding to a Kubernetes pod.
 type PortForwarder struct {
 	stopChan  chan struct{}
 	ReadyChan chan struct{}
 	fw        *portforward.PortForwarder
 }
-type ErrorHandler func(err error, msgAndArgs ...interface{})
 
+// ErrorHandler is a function type for handling errors,
+// typically used in the Start method of PortForwarder.
+type ErrorHandler func(err error, msgAndArgs ...any)
+
+// GetPortForwarder creates a new PortForwarder for the specified pod and port.
 func GetPortForwarder(cfg *rest.Config, name string, namespace string, port int) (*PortForwarder, error) {
 	transport, upgrader, err := spdy.RoundTripperFor(cfg)
 	if err != nil {
@@ -77,7 +83,7 @@ func (pf *PortForwarder) Close() {
 	pf.fw.Close()
 }
 
-// Get the local port that is forwarded to the remote port
+// LocalPort returns the local port that is being forwarded to the pod.
 func (pf *PortForwarder) LocalPort() (int, error) {
 	ports, err := pf.fw.GetPorts()
 	if err != nil {

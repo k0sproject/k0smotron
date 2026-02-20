@@ -29,6 +29,8 @@ import (
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 )
 
+// ClusterController is responsible for reconciling the RemoteCluster resource,
+// which represents a remote cluster that is being managed by k0smotron.
 type ClusterController struct {
 	client.Client
 	Scheme *runtime.Scheme
@@ -37,6 +39,7 @@ type ClusterController struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=remoteclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=remoteclusters/status,verbs=get;list;watch;create;update;patch;delete
 
+// Reconcile reconciles the RemoteCluster resource and ensures it is in a ready state.
 func (r *ClusterController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("remotecluster", req.NamespacedName)
 	log.Info("Reconciling RemoteCluster")

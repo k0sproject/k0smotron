@@ -20,6 +20,8 @@ spec:
   - name: v1beta1
     schema:
       openAPIV3Schema:
+        description: K0sWorkerConfigTemplate is the Schema for the k0sworkerconfigtemplates
+          API
         properties:
           apiVersion:
             description: |-
@@ -39,8 +41,12 @@ spec:
           metadata:
             type: object
           spec:
+            description: K0sWorkerConfigTemplateSpec defines the desired state of
+              K0sWorkerConfigTemplate
             properties:
               template:
+                description: K0sWorkerConfigTemplateResource defines the template
+                  for the worker config resource
                 properties:
                   metadata:
                     properties:
@@ -62,6 +68,8 @@ spec:
                         type: string
                     type: object
                   spec:
+                    description: K0sWorkerConfigSpec defines the desired state of
+                      K0sWorkerConfig
                     properties:
                       args:
                         description: |-

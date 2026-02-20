@@ -100,7 +100,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 		localPort, _ = getLBPort("docker-test-lb")
 		return localPort > 0, nil
 	})
@@ -110,7 +110,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
@@ -121,7 +121,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	s.Require().NoError(err)
 
 	var nodeIDs []string
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 		var err error
 		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
 
@@ -137,7 +137,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	s.Require().NoError(err)
 
 	for _, node := range nodes {
-		err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 			output, err := exec.Command("docker", "exec", node, "k0s", "status").Output()
 			if err != nil {
 				return false, nil
@@ -154,7 +154,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
 
-	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
@@ -181,7 +181,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	s.T().Log("updating cluster objects again")
 	s.updateClusterObjectsAgain()
 
-	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
@@ -206,7 +206,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 	})
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").

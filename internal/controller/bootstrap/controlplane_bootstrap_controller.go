@@ -62,6 +62,7 @@ import (
 	"github.com/k0sproject/version"
 )
 
+// ControlPlaneController is responsible for reconciling the K0sControllerConfig resource.
 type ControlPlaneController struct {
 	client.Client
 	SecretCachingClient client.Client
@@ -70,10 +71,11 @@ type ControlPlaneController struct {
 	RESTConfig          *rest.Config
 }
 
-var minVersionForETCDName = version.MustParse("v1.31.1")
 var minVersionForETCDMemberCRD = version.MustParse("v1.31.6")
 var errInitialControllerMachineNotInitialize = errors.New("initial controller machine has not completed its initialization")
 
+// ControllerScope contains the information required to generate the bootstrap data
+// for a control plane machine.
 type ControllerScope struct {
 	Config            *bootstrapv1.K0sControllerConfig
 	ConfigOwner       *bsutil.ConfigOwner
@@ -95,6 +97,8 @@ type ControllerScope struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
+// Reconcile reconciles the K0sControllerConfig resource, which is responsible for generating the
+// bootstrap data for control plane machines.
 func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig", req.NamespacedName)
 	log.Info("Reconciling K0sControllerConfig")

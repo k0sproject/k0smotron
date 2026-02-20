@@ -67,7 +67,3 @@ formatters:
     generated: strict
     paths:
       - zz_generated.*\.go$
-# Warn only about new issues, not existing ones.
-# TODO: Remove this filter at some point and ensure all old issues are fixed.
-issues:
-  new-from-merge-base: HEAD~

@@ -61,6 +61,8 @@ spec:
     name: v1beta1
     schema:
       openAPIV3Schema:
+        description: K0smotronControlPlane is the Schema for the k0smotroncontrolplanes
+          API
         properties:
           apiVersion:
             description: |-
@@ -85,6 +87,8 @@ spec:
               certificateRefs:
                 description: CertificateRefs defines the certificate references.
                 items:
+                  description: CertificateRef defines a reference to a certificate
+                    that should be included in the cluster configuration.
                   properties:
                     name:
                       type: string
@@ -2274,6 +2278,9 @@ spec:
                   For more information check:
                   https://kubernetes.io/docs/concepts/storage/volumes
                 items:
+                  description: |-
+                    Mount defines a volume to be mounted in the control plane pod,
+                    along with the mount path and read-only flag.
                   properties:
                     awsElasticBlockStore:
                       description: |-
@@ -4936,6 +4943,8 @@ spec:
               initialized: false
               ready: false
               version: ""
+            description: K0smotronControlPlaneStatus defines the observed state of
+              K0smotronControlPlane
             properties:
               conditions:
                 description: Conditions defines current service state of the K0smotronControlPlane.

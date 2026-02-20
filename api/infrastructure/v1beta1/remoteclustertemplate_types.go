@@ -23,7 +23,6 @@ type RemoteClusterTemplate struct {
 }
 
 // RemoteClusterTemplateSpec defines the desired state of RemoteClusterTemplate.
-
 type RemoteClusterTemplateSpec struct {
 	Template RemoteClusterTemplateResource `json:"template"`
 }
