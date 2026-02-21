@@ -398,7 +398,7 @@ metadata:
 spec:
   pool: default
   machine:
-    address: {{ .AddressWorkerNode }}
+    address: {{ .AddressControlplaneNode }}
     port: 22
     user: root
     sshKeyRef:
@@ -412,7 +412,7 @@ metadata:
 spec:
   pool: default
   machine:
-    address: {{ .AddressControlplaneNode }}
+    address: {{ .AddressWorkerNode }}
     port: 22
     user: root
     sshKeyRef:
