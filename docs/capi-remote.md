@@ -171,10 +171,11 @@ spec:
           extraArgs:
             anonymous-auth: "true"
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: RemoteMachineTemplate
-      name: remote-test-template
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: RemoteMachineTemplate
+        name: remote-test-template
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster

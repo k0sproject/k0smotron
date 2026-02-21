@@ -77,10 +77,11 @@ where deploying the new control plane is followed by decommissioning of the old 
             telemetry:
               enabled: true
       machineTemplate:
-        infrastructureRef:
-          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-          kind: DockerMachineTemplate
-          name: docker-test-cp-template
+        spec:
+          infrastructureRef:
+            apiGroup: infrastructure.cluster.x-k8s.io
+            kind: DockerMachineTemplate
+            name: docker-test-cp-template
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: DockerMachineTemplate
@@ -119,11 +120,11 @@ where deploying the new control plane is followed by decommissioning of the old 
           telemetry:
             enabled: true
      machineTemplate:
-       infrastructureRef:
-         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-         kind: DockerMachineTemplate
-         name: docker-test-cp-template
-         namespace: default
+       spec:
+         infrastructureRef:
+           apiGroup: infrastructure.cluster.x-k8s.io
+           kind: DockerMachineTemplate
+           name: docker-test-cp-template
    ```
 
 3. Update the resources:
@@ -201,10 +202,11 @@ For the example below, k0smotron will create 3 new machines for the control plan
             telemetry:
               enabled: true
       machineTemplate:
-        infrastructureRef:
-          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-          kind: DockerMachineTemplate
-          name: docker-test-cp-template
+        spec:
+          infrastructureRef:
+            apiGroup: infrastructure.cluster.x-k8s.io
+            kind: DockerMachineTemplate
+            name: docker-test-cp-template
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: DockerMachineTemplate
@@ -243,11 +245,11 @@ For the example below, k0smotron will create 3 new machines for the control plan
           telemetry:
             enabled: true
      machineTemplate:
-       infrastructureRef:
-         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-         kind: DockerMachineTemplate
-         name: docker-test-cp-template
-         namespace: default
+       spec:
+         infrastructureRef:
+           apiGroup: infrastructure.cluster.x-k8s.io
+           kind: DockerMachineTemplate
+           name: docker-test-cp-template
    ```
 
 3. Update the resources:

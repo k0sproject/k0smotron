@@ -15,7 +15,9 @@ limitations under the License.
 package v1beta2
 
 import (
+	"fmt"
 	"slices"
+	"strings"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -97,6 +99,17 @@ func (k *K0sControlPlane) GetConditions() []metav1.Condition {
 // SetConditions sets the conditions on the K0sControlPlane status.
 func (k *K0sControlPlane) SetConditions(conditions []metav1.Condition) {
 	k.Status.Conditions = conditions
+}
+
+// K0sVersion returns the version string with "+k0s.0" suffix appended if
+// it does not already contain one. This is used to derive the actual k0s
+// binary version without mutating the spec.version field, which must stay in
+// the format that CAPI topology controller expects.
+func (k *K0sControlPlane) K0sVersion() string {
+	if !strings.Contains(k.Spec.Version, "+k0s.") {
+		return fmt.Sprintf("%s+k0s.0", k.Spec.Version)
+	}
+	return k.Spec.Version
 }
 
 // WorkerEnabled returns true if the control plane is configured to also run worker nodes.

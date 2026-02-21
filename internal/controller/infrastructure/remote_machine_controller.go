@@ -288,16 +288,13 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 			rm.Status.FailureReason = "ProvisionFailed"
 			rm.Status.FailureMessage = err.Error()
 			rm.Status.Ready = false
-			rm.Status.Initialization = &infrastructure.InfrastructureStatusInitialization{
-				Provisioned: ptr.To(false),
-			}
 		} else {
 			rm.Status.FailureReason = ""
 			rm.Status.FailureMessage = ""
 			rm.Status.Ready = true
-			rm.Status.Initialization = &infrastructure.InfrastructureStatusInitialization{
-				Provisioned: ptr.To(true),
-			}
+		}
+		rm.Status.Initialization = &infrastructure.InfrastructureStatusInitialization{
+			Provisioned: ptr.To(rm.Status.Ready),
 		}
 		log.Info(fmt.Sprintf("Updating RemoteMachine status: %+v", rm.Status))
 		if err := rmPatchHelper.Patch(ctx, rm); err != nil {

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -63,20 +62,8 @@ import (
 )
 
 const (
-	defaultK0sSuffix  = "k0s.0"
 	defaultK0sVersion = "v1.27.9+k0s.0"
 )
-
-// ensureK0sSuffix returns the version string with "+k0s.0" suffix appended if
-// it does not already contain one. This is used to derive the actual k0s
-// binary version without mutating the spec.version field, which must stay in
-// the format that CAPI topology controller expects.
-func ensureK0sSuffix(v string) string {
-	if !strings.Contains(v, "+k0s.") {
-		return fmt.Sprintf("%s+%s", v, defaultK0sSuffix)
-	}
-	return v
-}
 
 var (
 	ErrNotReady               = fmt.Errorf("waiting for the state")
@@ -649,7 +636,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 			}},
 		},
 		Spec: bootstrapv2.K0sControllerConfigSpec{
-			Version:       ensureK0sSuffix(kcp.Spec.Version),
+			Version:       kcp.K0sVersion(),
 			K0sConfigSpec: k0sConfigSpec,
 		},
 	}

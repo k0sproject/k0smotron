@@ -37,14 +37,15 @@ spec:
   selector:
     matchLabels:
       cluster.x-k8s.io/control-plane: "true"
-  unhealthyConditions:
-  - type: Ready
-    status: Unknown
-    timeout: 300s
-  - type: Ready
-    status: "False"
-    timeout: 300s
-  nodeStartupTimeout: 10m
+  checks:
+    unhealthyNodeConditions:
+    - type: Ready
+      status: Unknown
+      timeoutSeconds: 300
+    - type: Ready
+      status: "False"
+      timeoutSeconds: 300
+    nodeStartupTimeoutSeconds: 600
 ```
 
 ## Safety Features

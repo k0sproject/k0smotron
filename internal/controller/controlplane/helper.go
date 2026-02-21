@@ -96,7 +96,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 }
 
 func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
-	v := ensureK0sSuffix(kcp.Spec.Version)
+	v := kcp.K0sVersion()
 
 	labels := controlPlaneCommonLabelsForCluster(kcp, cluster.Name)
 
@@ -155,7 +155,7 @@ func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta2.K0sControlPlane, 
 	// We make a copy of the K0sControlPlane to avoid modifying the original object with a value that is specific to a machine.
 	kcpCopy := kcp.DeepCopy()
 
-	currentKCPVersion, err := version.NewVersion(kcpCopy.Spec.Version)
+	currentKCPVersion, err := version.NewVersion(kcpCopy.K0sVersion())
 	if err != nil {
 		return "", fmt.Errorf("error parsing k0s version: %w", err)
 	}
@@ -569,7 +569,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.
 		return nil
 	}
 
-	k0sVer := ensureK0sSuffix(kcp.Spec.Version)
+	k0sVer := kcp.K0sVersion()
 
 	var existingPlan unstructured.Unstructured
 	err := clientset.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/plans/autopilot").Do(ctx).Into(&existingPlan)

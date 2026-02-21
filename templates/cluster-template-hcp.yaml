@@ -18,7 +18,7 @@ spec:
     kind: RemoteCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -54,7 +54,7 @@ spec:
     kind: RemoteMachine
     name: ${CLUSTER_NAME}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: ${CLUSTER_NAME}

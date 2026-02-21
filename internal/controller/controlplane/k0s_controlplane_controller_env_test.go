@@ -947,7 +947,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		}
 		require.Equal(t, expectedLabels, m.Labels)
 		require.True(t, metav1.IsControlledBy(m, kcp))
-		require.Equal(t, ensureK0sSuffix(kcp.Spec.Version), m.Spec.Version)
+		require.Equal(t, kcp.K0sVersion(), m.Spec.Version)
 	}
 }
 
@@ -1187,7 +1187,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 			}
 			assert.Equal(c, expectedLabels, m.Labels)
 			assert.True(c, metav1.IsControlledBy(m, kcp))
-			assert.Equal(c, ensureK0sSuffix(kcp.Spec.Version), m.Spec.Version)
+			assert.Equal(c, kcp.K0sVersion(), m.Spec.Version)
 		}
 	}, 10*time.Second, 100*time.Millisecond)
 }
@@ -1382,7 +1382,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 			}
 			assert.Equal(c, expectedLabels, m.Labels)
 			assert.True(c, metav1.IsControlledBy(m, kcp))
-			assert.Equal(c, ensureK0sSuffix(kcp.Spec.Version), m.Spec.Version)
+			assert.Equal(c, kcp.K0sVersion(), m.Spec.Version)
 		}
 	}, 5*time.Second, 100*time.Millisecond)
 }

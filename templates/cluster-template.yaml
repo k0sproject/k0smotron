@@ -27,7 +27,7 @@ metadata:
   name: ${CLUSTER_NAME}
 spec:
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: ${CLUSTER_NAME}
