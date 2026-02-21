@@ -19,6 +19,7 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -352,6 +353,11 @@ func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *
 		return fmt.Errorf("failed to list pooled machines: %w", err)
 	}
 
+	// Sort by name so the reservation order is deterministic regardless of cache iteration order
+	sort.Slice(pooledMachineList.Items, func(i, j int) bool {
+		return pooledMachineList.Items[i].Name < pooledMachineList.Items[j].Name
+	})
+
 	var (
 		firstFreePooledMachine *infrastructure.PooledRemoteMachine
 		foundPooledMachine     *infrastructure.PooledRemoteMachine
@@ -363,7 +369,7 @@ func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *
 				break
 			}
 
-			if !pm.Status.Reserved {
+			if !pm.Status.Reserved && firstFreePooledMachine == nil {
 				firstFreePooledMachine = &pm
 			}
 		}
