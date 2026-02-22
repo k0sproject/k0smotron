@@ -66,11 +66,11 @@ Use the digest of this k0s binary blob later in your `downloadURL` field for the
 
 Configuring the `K0sControlPlane` to pull k0s from an OCI registry is straightforward. **The only requirement is that the machine being bootstrapped needs Oras CLI installed**. You can achieve this in two ways:
 
-- By using `.preStartCommands` to install the Oras CLI on the machine before pulling the binary.
+- By using `.preK0sCommands` to install the Oras CLI on the machine before pulling the binary.
 - By using a machine image with the Oras CLI pre-installed.
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: aws-test
@@ -85,11 +85,11 @@ spec:
       cidrBlocks:
         - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: aws-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: AWSCluster
     name: aws-test
 ---
@@ -114,7 +114,7 @@ spec:
       uncompressedUserData: false
       sshKeyName: <your-ssh-key-name>
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: aws-test
@@ -126,7 +126,7 @@ spec:
     # OCI URL (digest reference) for the k0s binary blob
     downloadURL: oci://example.com/my-repo/k0s@sha256:abcdefg123456789
     # Install Oras CLI
-    preStartCommands:
+    preK0sCommands:
       - VERSION="1.3.0"
       - curl -LO "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz"
       - mkdir -p oras-install/
@@ -147,11 +147,11 @@ spec:
         telemetry:
           enabled: false
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: AWSMachineTemplate
-      name: aws-test
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: AWSMachineTemplate
+        name: aws-test
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSCluster
@@ -178,7 +178,7 @@ As shown above, we use the `downloadURL` field to reference a k0s binary blob vi
 If your OCI registry requires authentication, you need to provide credentials in a `config.json` file, following the [Oras CLI authentication mechanism](https://oras.land/docs/how_to_guides/authentication/). You can make this file available to the node by adding it as a *file* entry containing the authentication credentials under the `files` field in the `K0sControlPlane` spec. For example:
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: aws-test
@@ -196,7 +196,7 @@ spec:
         name: my-oras-config
         key: .dockerconfigjson
       path: /root/.docker/config.json
-    preStartCommands:
+    preK0sCommands:
       - VERSION="1.3.0"
       - curl -LO "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz"
       - mkdir -p oras-install/
@@ -218,14 +218,14 @@ spec:
         telemetry:
           enabled: false
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: AWSMachineTemplate
-      name: aws-test
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: AWSMachineTemplate
+        name: aws-test
 ```
 
 In this example, a new file entry is configured that references a secret containing the authentication credentials.
 
 !!! note "Do not forget to set `DOCKER_CONFIG`"
-    To let the Oras CLI use the authentication credentials, export the `DOCKER_CONFIG` environment variable in your `.preStartCommands`, so that it points to the directory containing `config.json` when the machine boots.
+    To let the Oras CLI use the authentication credentials, export the `DOCKER_CONFIG` environment variable in your `.preK0sCommands`, so that it points to the directory containing `config.json` when the machine boots.

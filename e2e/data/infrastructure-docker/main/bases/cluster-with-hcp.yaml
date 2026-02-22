@@ -1,5 +1,5 @@
 # This cluster template is used when a cluster needs to be deployed along a MHC.
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -14,15 +14,15 @@ spec:
       cidrBlocks:
       - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: ${CLUSTER_NAME}-docker-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: DockerCluster
     name: docker-test
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: ${CLUSTER_NAME}-docker-test
@@ -40,7 +40,7 @@ spec:
       telemetry:
         enabled: false
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerCluster
 metadata:
   name: docker-test

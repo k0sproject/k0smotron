@@ -133,7 +133,7 @@ func TestMachineDeployment(t *testing.T) {
 
 func verifyK0smotronControlPlaneVersionFormat(ctx context.Context, t *testing.T, clusterProxy capiframework.ClusterProxy, clusterName, namespace string) {
 	kcp := &unstructured.Unstructured{}
-	kcp.SetAPIVersion("controlplane.cluster.x-k8s.io/v1beta1")
+	kcp.SetAPIVersion("controlplane.cluster.x-k8s.io/v1beta2")
 	kcp.SetKind("K0smotronControlPlane")
 
 	require.Eventually(t, func() bool {

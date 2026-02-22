@@ -44,7 +44,7 @@ After deploying the bootstrap, control plane, and infrastructure provider contro
 Configure access to the machines by using your *SSH Key Name* and *SSH Public Key* in the following following manifest and apply it:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: ignition-test-cluster
@@ -59,11 +59,11 @@ spec:
       cidrBlocks:
         - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: ignition-test-cluster-aws-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: AWSCluster
     name: ignition-test-cluster
 ---
@@ -86,7 +86,7 @@ spec:
       uncompressedUserData: false
       sshKeyName: <your-ssh-key-name> # Your SSH key here
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: ignition-test-cluster-aws-test
@@ -124,11 +124,11 @@ spec:
         telemetry:
           enabled: false
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: AWSMachineTemplate
-      name: ignition-test-cluster-aws-test-mt
-      namespace: ignition-test
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: AWSMachineTemplate
+        name: ignition-test-cluster-aws-test-mt
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSCluster
@@ -157,7 +157,7 @@ spec:
         fromPort: 9443
         toPort: 9443
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: ignition-test-cluster-aws-test-md
@@ -170,17 +170,15 @@ spec:
       clusterName: ignition-test-cluster
       bootstrap:
         configRef: # This triggers our controller to create cloud-init secret
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: ignition-test-cluster-machine-config
-          namespace: ignition-test
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: AWSMachineTemplate
         name: ignition-test-cluster}-aws-test-mt
-        namespace: ignition-test
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: ignition-test-cluster-machine-config

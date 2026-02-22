@@ -1,4 +1,4 @@
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: ${CLUSTER_NAME}-docker-test
@@ -31,8 +31,8 @@ spec:
           name: test-file-secret
           key: value
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
-      name: docker-test-cp-template
-      namespace: ${NAMESPACE}
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: DockerMachineTemplate
+        name: docker-test-cp-template

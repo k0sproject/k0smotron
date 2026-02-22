@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   labels:
@@ -11,11 +11,11 @@ spec:
       cidrBlocks:
       - 192.168.0.0/16
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: '${CLUSTER_NAME}'
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: VSphereCluster
     name: '${CLUSTER_NAME}'
 ---
@@ -98,7 +98,7 @@ spec:
       template: '${VSPHERE_TEMPLATE}'
       thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane # This is the config for the controlplane
 metadata:
   name: '${CLUSTER_NAME}'
@@ -111,7 +111,7 @@ spec:
     apiPort: 6443
     konnectivityPort: 8132
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: '${CLUSTER_NAME}'
@@ -124,7 +124,7 @@ spec:
         - --kubelet-extra-args="--cloud-provider=external"
       # More details of the worker configuration can be set here
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   labels:
@@ -143,12 +143,12 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: '${CLUSTER_NAME}'
       clusterName: '${CLUSTER_NAME}'
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: VSphereMachineTemplate
         name: ${CLUSTER_NAME}-worker
       version: '${K0S_VERSION}'

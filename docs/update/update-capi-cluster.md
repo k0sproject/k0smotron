@@ -24,7 +24,7 @@ where deploying the new control plane is followed by decommissioning of the old 
 1. Check the configuration of deployed k0smotron cluster in your repository. For example:
 
     ```yaml
-    apiVersion: cluster.x-k8s.io/v1beta1
+    apiVersion: cluster.x-k8s.io/v1beta2
     kind: Cluster
     metadata:
       name: docker-test
@@ -39,22 +39,22 @@ where deploying the new control plane is followed by decommissioning of the old 
           cidrBlocks:
           - 10.128.0.0/12
       controlPlaneRef:
-        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        apiGroup: controlplane.cluster.x-k8s.io
         kind: K0sControlPlane
         name: docker-test-cp
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: DockerCluster
         name: docker-test
     ---
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: DockerCluster
     metadata:
       name: docker-test
       namespace: default
     spec:
     ---
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: K0sControlPlane
     metadata:
       name: docker-test-cp
@@ -77,13 +77,13 @@ where deploying the new control plane is followed by decommissioning of the old 
             telemetry:
               enabled: true
       machineTemplate:
-        infrastructureRef:
-          apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-          kind: DockerMachineTemplate
-          name: docker-test-cp-template
-          namespace: default
+        spec:
+          infrastructureRef:
+            apiGroup: infrastructure.cluster.x-k8s.io
+            kind: DockerMachineTemplate
+            name: docker-test-cp-template
     ---
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: DockerMachineTemplate
     metadata:
       name: docker-test-cp-template
@@ -97,7 +97,7 @@ where deploying the new control plane is followed by decommissioning of the old 
 2. Change the k0s version to [the target one](https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model). For example:
 
    ```yaml
-   apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+   apiVersion: controlplane.cluster.x-k8s.io/v1beta2
    kind: K0sControlPlane
    metadata:
      name: docker-test-cp
@@ -120,11 +120,11 @@ where deploying the new control plane is followed by decommissioning of the old 
           telemetry:
             enabled: true
      machineTemplate:
-       infrastructureRef:
-         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-         kind: DockerMachineTemplate
-         name: docker-test-cp-template
-         namespace: default
+       spec:
+         infrastructureRef:
+           apiGroup: infrastructure.cluster.x-k8s.io
+           kind: DockerMachineTemplate
+           name: docker-test-cp-template
    ```
 
 3. Update the resources:
@@ -149,7 +149,7 @@ For the example below, k0smotron will create 3 new machines for the control plan
 1. Check the configuration of deployed k0smotron cluster in your repository. For example:
 
     ```yaml
-    apiVersion: cluster.x-k8s.io/v1beta1
+    apiVersion: cluster.x-k8s.io/v1beta2
     kind: Cluster
     metadata:
       name: docker-test
@@ -164,22 +164,22 @@ For the example below, k0smotron will create 3 new machines for the control plan
           cidrBlocks:
           - 10.128.0.0/12
       controlPlaneRef:
-        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        apiGroup: controlplane.cluster.x-k8s.io
         kind: K0sControlPlane
         name: docker-test-cp
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: DockerCluster
         name: docker-test
     ---
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: DockerCluster
     metadata:
       name: docker-test
       namespace: default
     spec:
     ---
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: K0sControlPlane
     metadata:
       name: docker-test-cp
@@ -202,13 +202,13 @@ For the example below, k0smotron will create 3 new machines for the control plan
             telemetry:
               enabled: true
       machineTemplate:
-        infrastructureRef:
-          apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-          kind: DockerMachineTemplate
-          name: docker-test-cp-template
-          namespace: default
+        spec:
+          infrastructureRef:
+            apiGroup: infrastructure.cluster.x-k8s.io
+            kind: DockerMachineTemplate
+            name: docker-test-cp-template
     ---
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: DockerMachineTemplate
     metadata:
       name: docker-test-cp-template
@@ -222,7 +222,7 @@ For the example below, k0smotron will create 3 new machines for the control plan
 2. Change the k0s version to [the target one](https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model). For example:
 
    ```yaml
-   apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+   apiVersion: controlplane.cluster.x-k8s.io/v1beta2
    kind: K0sControlPlane
    metadata:
      name: docker-test-cp
@@ -245,11 +245,11 @@ For the example below, k0smotron will create 3 new machines for the control plan
           telemetry:
             enabled: true
      machineTemplate:
-       infrastructureRef:
-         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-         kind: DockerMachineTemplate
-         name: docker-test-cp-template
-         namespace: default
+       spec:
+         infrastructureRef:
+           apiGroup: infrastructure.cluster.x-k8s.io
+           kind: DockerMachineTemplate
+           name: docker-test-cp-template
    ```
 
 3. Update the resources:

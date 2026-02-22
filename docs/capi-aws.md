@@ -25,7 +25,7 @@ Once all the controllers are up and running, you can apply the cluster manifests
 Here is an example:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: k0s-aws-test
@@ -37,15 +37,15 @@ spec:
     services:
       cidrBlocks: [10.96.0.0/12]
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane # This tells that k0smotron should create the controlplane
     name: k0s-aws-test-cp
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: AWSCluster
     name: k0s-aws-test
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane # This is the config for the controlplane
 metadata:
   name: k0s-aws-test-cp
@@ -75,7 +75,7 @@ spec:
       - id: subnet-099730c9ea2e42134 # Machines will be created in this Subnet
         availabilityZone: eu-central-1a
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: k0s-aws-test-md
@@ -97,11 +97,11 @@ spec:
       failureDomain: eu-central-1a
       bootstrap:
         configRef: # This triggers our controller to create cloud-init secret
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: k0s-aws-test-machine-config
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: AWSMachineTemplate
         name: k0s-aws-test-mt
 ---
@@ -129,7 +129,7 @@ spec:
         - id: sg-01ce46c31291e3447 # Needs to be belong to the subnet
       sshKeyName: jhennig-key
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: k0s-aws-test-machine-config

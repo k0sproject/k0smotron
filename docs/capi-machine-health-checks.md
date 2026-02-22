@@ -27,7 +27,7 @@ When a MachineHealthCheck detects an unhealthy control plane machine:
 Here's a simple example of how to set up MachineHealthChecks for a k0smotron control plane:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineHealthCheck
 metadata:
   name: k0smotron-controlplane-mhc
@@ -37,14 +37,15 @@ spec:
   selector:
     matchLabels:
       cluster.x-k8s.io/control-plane: "true"
-  unhealthyConditions:
-  - type: Ready
-    status: Unknown
-    timeout: 300s
-  - type: Ready
-    status: "False"
-    timeout: 300s
-  nodeStartupTimeout: 10m
+  checks:
+    unhealthyNodeConditions:
+    - type: Ready
+      status: Unknown
+      timeoutSeconds: 300
+    - type: Ready
+      status: "False"
+      timeoutSeconds: 300
+    nodeStartupTimeoutSeconds: 600
 ```
 
 ## Safety Features

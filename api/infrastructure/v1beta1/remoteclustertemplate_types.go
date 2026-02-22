@@ -12,6 +12,7 @@ func init() {
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=remoteclustertemplates,scope=Namespaced,categories=cluster-api
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta1"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
 
 // RemoteClusterTemplate is the Schema for the remoteclustertemplates API.

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -63,7 +62,6 @@ import (
 )
 
 const (
-	defaultK0sSuffix  = "k0s.0"
 	defaultK0sVersion = "v1.27.9+k0s.0"
 )
 
@@ -130,10 +128,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		kcp.Spec.Version = defaultK0sVersion
 	}
 
-	if !strings.Contains(kcp.Spec.Version, "+k0s.") {
-		kcp.Spec.Version = fmt.Sprintf("%s+%s", kcp.Spec.Version, defaultK0sSuffix)
-	}
-
 	cluster, err := capiutil.GetOwnerCluster(ctx, c.Client, kcp.ObjectMeta)
 	if err != nil {
 		log.Error(err, "Failed to get owner cluster")
@@ -170,6 +164,10 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			if derr != nil {
 				if !errors.Is(derr, errUpgradeNotCompleted) {
 					log.Error(derr, "Failed to update status")
+					// Schedule a requeue so the controller retries status update
+					if res.IsZero() {
+						res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
+					}
 					return
 				}
 
@@ -642,7 +640,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 			}},
 		},
 		Spec: bootstrapv2.K0sControllerConfigSpec{
-			Version:       kcp.Spec.Version,
+			Version:       kcp.K0sVersion(),
 			K0sConfigSpec: k0sConfigSpec,
 		},
 	}

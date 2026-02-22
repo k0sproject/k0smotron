@@ -163,7 +163,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 		}
 
 		if len(rm) == 0 {
-			return true, nil
+			return false, nil
 		}
 
 		rmName = rm[0].GetName()
@@ -305,7 +305,7 @@ func (s *RemoteMachineTemplateUpdateSuite) getWorkerIP() string {
 }
 
 var clusterYaml = `
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: remote-test
@@ -328,11 +328,11 @@ spec:
       - --enable-worker
       - --no-taints
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: RemoteMachineTemplate
-      name: remote-test-cp-template
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: RemoteMachineTemplate
+        name: remote-test-cp-template
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteCluster
@@ -341,7 +341,7 @@ metadata:
   namespace: default
 spec:
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: remote-test-cluster
@@ -359,11 +359,11 @@ spec:
     host: {{ .Address }}
     port: 6443
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: remote-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteCluster
     name: remote-test
 ---
@@ -402,7 +402,7 @@ type: Opaque
 `
 
 var updatedClusterYaml = `
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: remote-test
@@ -425,9 +425,9 @@ spec:
       - --enable-worker
       - --no-taints
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: RemoteMachineTemplate
-      name: remote-test-cp-template
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: RemoteMachineTemplate
+        name: remote-test-cp-template
 `

@@ -136,7 +136,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 		md := &clusterv1.MachineDeployment{}
 		err = s.client.RESTClient().
 			Get().
-			AbsPath("/apis/cluster.x-k8s.io/v1beta1").
+			AbsPath("/apis/cluster.x-k8s.io/v1beta2").
 			Resource("machinedeployments").
 			Namespace("default").
 			Name("docker-md-test").

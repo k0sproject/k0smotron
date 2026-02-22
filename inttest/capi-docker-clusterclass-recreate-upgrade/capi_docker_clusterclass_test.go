@@ -314,14 +314,15 @@ func getLBPort(name string) (int, error) {
 
 var clusterYaml = `
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: docker-test-cluster
   namespace: default
 spec:
   topology:
-    class: k0smotron-clusterclass
+    classRef:
+      name: k0smotron-clusterclass
     version: v1.30.0+k0s.0
     workers:
       machineDeployments:
@@ -390,7 +391,7 @@ metadata:
 
 var clusterClassYaml = `
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerClusterTemplate
 metadata:
   name: k0smotron-docker-cluster-tmpl
@@ -401,7 +402,7 @@ spec:
         customHAProxyConfigTemplateRef:
           name: ha-proxy-config
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: docker-test-machine-template
@@ -411,7 +412,7 @@ spec:
     spec:
       customImage: kindest/node:v1.31.0
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlaneTemplate
 metadata:
   name: docker-test
@@ -436,7 +437,7 @@ spec:
         - --enable-worker
         - --no-taints
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: docker-test-worker-template
@@ -446,43 +447,37 @@ spec:
     spec:
       version: v1.30.0+k0s.0
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: k0smotron-clusterclass
 spec:
   controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: K0sControlPlaneTemplate
       name: docker-test
-      namespace: default
     machineInfrastructure:
-      ref:
-        kind: DockerMachineTemplate
+      templateRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: DockerMachineTemplate
         name: docker-test-machine-template
-        namespace: default
   infrastructure:
-    ref:
+    templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: k0smotron-docker-cluster-tmpl
-      namespace: default
   workers:
     machineDeployments:
     - class: docker-test-default-worker
-      template:
-        bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-            kind: K0sWorkerConfigTemplate
-            name: docker-test-worker-template
-            namespace: default
-        infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
-            name: docker-test-machine-template
-            namespace: default
+      bootstrap:
+        templateRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: docker-test-worker-template
+      infrastructure:
+        templateRef:
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+          kind: DockerMachineTemplate
+          name: docker-test-machine-template
 `

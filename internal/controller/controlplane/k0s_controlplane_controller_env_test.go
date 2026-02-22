@@ -835,7 +835,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -865,7 +865,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -947,7 +947,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 		}
 		require.Equal(t, expectedLabels, m.Labels)
 		require.True(t, metav1.IsControlledBy(m, kcp))
-		require.Equal(t, kcp.Spec.Version, m.Spec.Version)
+		require.Equal(t, kcp.K0sVersion(), m.Spec.Version)
 	}
 }
 
@@ -1003,7 +1003,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1049,7 +1049,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1095,7 +1095,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1187,7 +1187,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 			}
 			assert.Equal(c, expectedLabels, m.Labels)
 			assert.True(c, metav1.IsControlledBy(m, kcp))
-			assert.Equal(c, kcp.Spec.Version, m.Spec.Version)
+			assert.Equal(c, kcp.K0sVersion(), m.Spec.Version)
 		}
 	}, 10*time.Second, 100*time.Millisecond)
 }
@@ -1244,7 +1244,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.29.0",
+			Version:     "v1.29.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1289,7 +1289,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
+			Version:     "v1.30.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachineTemplate",
 				Name:     gmt.GetName(),
@@ -1333,7 +1333,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: cluster.Name,
-			Version:     "v1.29.0",
+			Version:     "v1.29.0+k0s.0",
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 				Kind:     "GenericInfrastructureMachine",
 				Name:     gmt.GetName(),
@@ -1382,7 +1382,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 			}
 			assert.Equal(c, expectedLabels, m.Labels)
 			assert.True(c, metav1.IsControlledBy(m, kcp))
-			assert.Equal(c, kcp.Spec.Version, m.Spec.Version)
+			assert.Equal(c, kcp.K0sVersion(), m.Spec.Version)
 		}
 	}, 5*time.Second, 100*time.Millisecond)
 }
@@ -1775,11 +1775,12 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		},
 		Spec: cpv1beta2.K0sControlPlaneSpec{
 			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
-				InfrastructureRef: corev1.ObjectReference{
-					Kind:       "GenericInfrastructureMachineTemplate",
-					Namespace:  namespace,
-					Name:       "infra-foo",
-					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+				Spec: cpv1beta2.K0sControlPlaneMachineTemplateSpec{
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						Kind:     "GenericInfrastructureMachineTemplate",
+						Name:     "infra-foo",
+						APIGroup: "infrastructure.cluster.x-k8s.io",
+					},
 				},
 			},
 			UpdateStrategy: cpv1beta2.UpdateRecreate,
@@ -1796,8 +1797,8 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 				"name":      "infra-foo",
 				"namespace": namespace,
 				"annotations": map[string]interface{}{
-					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.InfrastructureRef.Name,
-					clusterv1.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String(),
+					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
+					clusterv1.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.GroupKind().String(),
 				},
 			},
 			"spec": map[string]interface{}{

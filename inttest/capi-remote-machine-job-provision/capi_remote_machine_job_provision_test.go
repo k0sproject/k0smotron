@@ -187,7 +187,7 @@ func (s *RemoteMachineSuite) deleteRemoteMachine(name string, namespace string) 
 }
 
 func (s *RemoteMachineSuite) deleteCluster() {
-	response := s.client.RESTClient().Delete().AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/clusters/remote-test").Do(s.Context())
+	response := s.client.RESTClient().Delete().AbsPath("/apis/cluster.x-k8s.io/v1beta2/namespaces/default/clusters/remote-test").Do(s.Context())
 	s.Require().NoError(response.Error())
 	if err := s.client.CoreV1().Secrets("default").Delete(s.Context(), "footloose-key", metav1.DeleteOptions{}); err != nil {
 		s.T().Logf("failed to delete footloose SSH key secret: %s", err.Error())
@@ -245,7 +245,7 @@ func (s *RemoteMachineSuite) getWorkerIP() string {
 	return ipAddress
 }
 
-var clusterYaml = `apiVersion: cluster.x-k8s.io/v1beta1
+var clusterYaml = `apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: remote-test
@@ -260,15 +260,15 @@ spec:
       cidrBlocks:
       - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: remote-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteCluster
     name: remote-test
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: remote-test
@@ -287,7 +287,7 @@ metadata:
   namespace: default
 spec:
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
 metadata:
   name:  remote-test-0
@@ -296,15 +296,15 @@ spec:
   clusterName: remote-test
   bootstrap:
     configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      apiGroup: bootstrap.cluster.x-k8s.io
       kind: K0sWorkerConfig
       name: remote-test-0
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteMachine
     name: remote-test-0
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: remote-test-0
