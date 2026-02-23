@@ -311,12 +311,12 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	commandsMap := make(map[provisioner.VarName]string)
 	var commands []string
 
-	switch scope.Config.Spec.Platform {
-	case bootstrapv1.PlatformWindows:
+	switch scope.Config.Spec.Provisioner.Platform {
+	case bootstrapv2.PlatformWindows:
 		var winFiles []provisioner.File
 		commands, winFiles = getWindowsCommands(scope)
 		files = append(files, winFiles...)
-	case bootstrapv1.PlatformLinux:
+	case bootstrapv2.PlatformLinux:
 		// Linux is the default platform
 		fallthrough
 	default:
@@ -330,8 +330,8 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 		customUserData string
 		vars           map[provisioner.VarName]string
 	)
-	if scope.Config.Spec.CustomUserDataRef != nil {
-		customUserData, err = resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.CustomUserDataRef)
+	if scope.Config.Spec.Provisioner.CustomUserDataRef != nil {
+		customUserData, err = resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.Provisioner.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom worker user data: %w", err)
 		}
@@ -418,7 +418,7 @@ Write-Host "=== Executing k0s to check version ==="
 & $dest --version
 `, scope.Config.Spec.Version, scope.Config.Spec.Version, k0sPath, scope.Config.Spec.K0sInstallDir)
 
-	inlineCommands := scope.Config.Spec.PreStartCommands
+	inlineCommands := scope.Config.Spec.PreK0sCommands
 	// Download and enable containers and k0s bootstrap script
 	commands := []string{`powershell.exe -NoProfile -NonInteractive -File "C:\bootstrap\k0s_install.ps1"`}
 	// TODO: implement ingress support for Windows
@@ -431,7 +431,7 @@ Write-Host "=== Executing k0s to check version ==="
 
 	inlineCommands = append(inlineCommands, strings.Join(installCmdParts, " "))
 	inlineCommands = append(inlineCommands, fmt.Sprintf(`& %s start`, k0sPath))
-	inlineCommands = append(inlineCommands, scope.Config.Spec.PostStartCommands...)
+	inlineCommands = append(inlineCommands, scope.Config.Spec.PostK0sCommands...)
 
 	for _, cmd := range inlineCommands {
 		installScript += "\n" + cmd + "\n"
@@ -480,24 +480,7 @@ func getLinuxCommands(scope *Scope) ([]string, map[provisioner.VarName]string, e
 	// https://cluster-api.sigs.k8s.io/developer/providers/contracts/bootstrap-config#sentinel-file
 	commands = append(commands, "mkdir -p /run/cluster-api && touch /run/cluster-api/bootstrap-success.complete")
 
-	var (
-		customUserData string
-		vars           map[provisioner.VarName]string
-	)
-	if scope.Config.Spec.Provisioner.CustomUserDataRef != nil {
-		customUserData, err = resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.Provisioner.CustomUserDataRef)
-		if err != nil {
-			return nil, fmt.Errorf("error extracting the contents of the provided custom worker user data: %w", err)
-		}
-		vars = commandsMap
-	}
-
-	return scope.provisioner.ToProvisionData(&provisioner.InputProvisionData{
-		Files:          files,
-		Commands:       commands,
-		CustomUserData: customUserData,
-		Vars:           vars,
-	})
+	return commands, commandsMap, nil
 }
 
 func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {

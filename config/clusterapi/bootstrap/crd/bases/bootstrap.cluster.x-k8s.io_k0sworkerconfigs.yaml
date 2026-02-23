@@ -180,14 +180,6 @@ spec:
                   K0sInstallDir specifies the directory where k0s binary will be installed.
                   If empty, k0smotron will use /usr/local/bin, which is the default install path used by k0s get script.
                 type: string
-              platform:
-                default: linux
-                description: Platform specifies the target platform for the worker
-                  node.
-                enum:
-                - linux
-                - windows
-                type: string
               postStartCommands:
                 description: PostStartCommands specifies commands to be run after
                   starting k0s worker.
@@ -493,6 +485,14 @@ spec:
                     - variant
                     - version
                     type: object
+                  platform:
+                    default: linux
+                    description: Platform specifies the target platform for the worker
+                      node.
+                    enum:
+                    - linux
+                    - windows
+                    type: string
                   type:
                     default: cloud-config
                     description: Type is the provisioner format type.

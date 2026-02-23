@@ -147,6 +147,6 @@ spec:
   template:
     spec:
       version: v1.34.2+k0s.0
-      platform: windows
       provisioner:
+        platform: windows
         type: powershell-xml

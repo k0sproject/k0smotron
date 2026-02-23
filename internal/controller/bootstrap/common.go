@@ -103,11 +103,7 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 	return args
 }
 
-func getProvisioner(provisionerSpec *bootstrapv2.ProvisionerSpec, isWindows bool) provisioner.Provisioner {
-	if isWindows {
-		return &provisioner.PowerShellAWSProvisioner{}
-	}
-
+func getProvisioner(provisionerSpec *bootstrapv2.ProvisionerSpec) provisioner.Provisioner {
 	switch provisionerSpec.Type {
 	case provisioner.PowershellXMLProvisioningFormat:
 		return &provisioner.PowerShellXMLProvisioner{}

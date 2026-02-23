@@ -57,14 +57,14 @@ metadata:
   name: windows-worker
 spec:
   version: v1.34.2+k0s.0
-  platform: windows # Specify Windows platform (default is linux)
   provisioner:
+    platform: windows # Specify Windows platform (default is linux)
     type: powershell # Specify provisioning format 
 ```
 
 ### Provisioning
 
-Default cloud-init is supported for Windows, as well as two Windows-specific formats available:
+Default cloud-init provisioning type is supported for Windows, as well as two Windows-specific formats available:
 - `cloud-init` - e.g. for RemoteMachine provider
 - `powershell` - Standard PowerShell script
 - `powershell-xml` - PowerShell wrapped in XML (AWS user data compatible)
@@ -236,7 +236,7 @@ spec:
   template:
     spec:
       version: v1.34.2+k0s.0
-      platform: windows
       provisioner:
+        platform: windows
         type: powershell-xml
 ```

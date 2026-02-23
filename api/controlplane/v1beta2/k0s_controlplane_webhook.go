@@ -19,8 +19,6 @@ package v1beta2
 import (
 	"context"
 	"fmt"
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	"github.com/k0sproject/k0smotron/internal/provisioner"
 	"strings"
 
 	"github.com/k0sproject/version"
@@ -28,6 +26,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
 // +kubebuilder:webhook:path=/validate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane,mutating=false,failurePolicy=fail,sideEffects=None,groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes,verbs=create;update,versions=v1beta2,name=validate-k0scontrolplane-v1beta2.k0smotron.io,admissionReviewVersions=v1
@@ -47,16 +47,9 @@ var _ webhook.CustomDefaulter = &K0sControlPlaneDefaulter{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type K0sControlPlane.
 func (d *K0sControlPlaneDefaulter) Default(_ context.Context, obj runtime.Object) error {
-	kcp, ok := obj.(*v1beta1.K0sControlPlane)
+	_, ok := obj.(*K0sControlPlane)
 	if !ok {
 		return fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
-	}
-
-	if kcp.Spec.K0sConfigSpec.Ignition != nil {
-		kcp.Spec.K0sConfigSpec.Provisioner = bootstrapv1.ProvisionerSpec{
-			Type:     provisioner.IgnitionProvisioningFormat,
-			Ignition: kcp.Spec.K0sConfigSpec.Ignition,
-		}
 	}
 
 	return nil
@@ -156,7 +149,6 @@ func denyIncompatibleK0sVersions(kcp *K0sControlPlane) error {
 	if vv, ok := incompatibleVersions[v.Core().String()]; ok {
 		return fmt.Errorf("version %s is not compatible with K0sControlPlane, use %s", kcp.Spec.Version, vv)
 	}
-
 
 	return nil
 }

@@ -121,9 +121,11 @@ func Test_getWindowsCommands(t *testing.T) {
 		{
 			name: "with default config",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{
-					Spec: bootstrapv1.K0sWorkerConfigSpec{
-						Platform: bootstrapv1.PlatformWindows,
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
+						Provisioner: bootstrapv2.ProvisionerSpec{
+							Platform: bootstrapv2.PlatformWindows,
+						},
 					},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{}}},

@@ -19,8 +19,6 @@ package v1beta2
 import (
 	"context"
 	"fmt"
-	"github.com/k0sproject/k0smotron/internal/provisioner"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -43,17 +41,9 @@ var _ webhook.CustomValidator = &K0sWorkerConfigValidator{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the K0sWorkerConfig.
 func (d *K0sWorkerConfigDefaulter) Default(_ context.Context, obj runtime.Object) error {
-	c, ok := obj.(*bootstrapv1.K0sWorkerConfig)
+	_, ok := obj.(*K0sWorkerConfig)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a K0sWorkerConfig but got a %T", obj))
-	}
-
-	if c.Spec.Ignition != nil {
-		c.Spec.Provisioner = v1beta1.ProvisionerSpec{
-			Type:     provisioner.IgnitionProvisioningFormat,
-			Ignition: c.Spec.Ignition,
-		}
-		c.Spec.Ignition = nil
 	}
 
 	return nil
