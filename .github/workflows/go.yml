@@ -5,6 +5,7 @@ on:
     branches: &protected_branches
       - main
       - release-*
+      - v1beta2-*
     paths-ignore: &common_ignores
       - 'config/**'
       - 'docs/**'

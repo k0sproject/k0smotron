@@ -2340,6 +2340,16 @@ See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>platform</b></td>
+        <td>enum</td>
+        <td>
+          Platform specifies the target platform for the worker node.<br/>
+          <br/>
+            <i>Enum</i>: linux, windows<br/>
+            <i>Default</i>: linux<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>type</b></td>
         <td>enum</td>
         <td>
@@ -3103,6 +3113,16 @@ See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html<br/>
         <td>object</td>
         <td>
           Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>platform</b></td>
+        <td>enum</td>
+        <td>
+          Platform specifies the target platform for the worker node.<br/>
+          <br/>
+            <i>Enum</i>: linux, windows<br/>
+            <i>Default</i>: linux<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3908,6 +3928,16 @@ See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html<br/>
         <td>object</td>
         <td>
           Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>platform</b></td>
+        <td>enum</td>
+        <td>
+          Platform specifies the target platform for the worker node.<br/>
+          <br/>
+            <i>Enum</i>: linux, windows<br/>
+            <i>Default</i>: linux<br/>
         </td>
         <td>false</td>
       </tr><tr>

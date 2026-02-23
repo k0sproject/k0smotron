@@ -180,7 +180,7 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 			panic(errors.Wrapf(err, "failed to write the test env kubeconfig"))
 		}
 	}
-	if err = (&cpv1beta2.K0sControlPlaneValidator{}).SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+	if err = cpv1beta2.SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
 		panic(errors.Wrapf(err, "unable to create validation webhook"))
 	}
 
@@ -188,7 +188,7 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 		panic(errors.Wrapf(err, "unable to create validation webhook"))
 	}
 
-	if err = (&bootstrapv1beta2.K0sWorkerConfigValidator{}).SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
+	if err = bootstrapv1beta2.SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
 		panic(errors.Wrapf(err, "unable to create validation webhook"))
 	}
 

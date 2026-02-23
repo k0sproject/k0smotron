@@ -111,3 +111,36 @@ func Test_createInstallCmd(t *testing.T) {
 		})
 	}
 }
+
+func Test_getWindowsCommands(t *testing.T) {
+	tests := []struct {
+		name  string
+		scope *Scope
+		want  []string
+	}{
+		{
+			name: "with default config",
+			scope: &Scope{
+				Config: &bootstrapv2.K0sWorkerConfig{
+					Spec: bootstrapv2.K0sWorkerConfigSpec{
+						Provisioner: bootstrapv2.ProvisionerSpec{
+							Platform: bootstrapv2.PlatformWindows,
+						},
+					},
+				},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]interface{}{}}},
+			},
+			want: []string{
+				"powershell.exe -NoProfile -NonInteractive -File \"C:\\bootstrap\\k0s_install.ps1\"",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := getWindowsCommands(tt.scope)
+			require.Equal(t, tt.want, got)
+		})
+	}
+
+}

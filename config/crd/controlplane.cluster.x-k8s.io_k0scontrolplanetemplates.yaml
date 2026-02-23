@@ -584,6 +584,14 @@ spec:
                                 - variant
                                 - version
                                 type: object
+                              platform:
+                                default: linux
+                                description: Platform specifies the target platform
+                                  for the worker node.
+                                enum:
+                                - linux
+                                - windows
+                                type: string
                               type:
                                 default: cloud-config
                                 description: Type is the provisioner format type.

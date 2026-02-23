@@ -248,8 +248,8 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 
 func (p *SSHProvisioner) uploadFile(client *rig.Client, file provisioner.File) error {
 	fsys := client.FS()
-	// Ensure base dir exists for target
-	dir := filepath.Dir(file.Path)
+	// Ensure base dir exists for target. Change Windows-style slashes to Unix-style. Windows is ok with forward slashes, but filepath.Dir is not.
+	dir := filepath.Dir(strings.Replace(file.Path, `\`, `/`, -1))
 	perms, err := file.PermissionsAsInt()
 	if err != nil {
 		return fmt.Errorf("failed to parse permissions: %w", err)

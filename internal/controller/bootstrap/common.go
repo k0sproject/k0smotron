@@ -105,7 +105,14 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 
 func getProvisioner(provisionerSpec *bootstrapv2.ProvisionerSpec) provisioner.Provisioner {
 	switch provisionerSpec.Type {
+	case provisioner.PowershellXMLProvisioningFormat:
+		return &provisioner.PowerShellXMLProvisioner{}
+	case provisioner.PowershellProvisioningFormat:
+		return &provisioner.PowerShellProvisioner{}
 	case provisioner.IgnitionProvisioningFormat:
+		if provisionerSpec.Ignition == nil {
+			return &provisioner.IgnitionProvisioner{}
+		}
 		return &provisioner.IgnitionProvisioner{
 			Variant:          provisionerSpec.Ignition.Variant,
 			Version:          provisionerSpec.Ignition.Version,

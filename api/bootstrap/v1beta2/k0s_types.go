@@ -20,12 +20,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/k0sproject/k0smotron/internal/provisioner"
+	"github.com/k0sproject/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -49,6 +50,15 @@ const (
 
 	// ConfigReadyUnknownReason surfaces when Config resource readiness is unknown.
 	ConfigReadyUnknownReason = clusterv1.ReadyUnknownReason
+)
+
+type Platform string
+
+const (
+	// PlatformLinux represents Linux platform
+	PlatformLinux Platform = "linux"
+	// PlatformWindows represents Windows platform
+	PlatformWindows Platform = "windows"
 )
 
 // +kubebuilder:object:root=true
@@ -92,6 +102,11 @@ type ProvisionerSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=cloud-config
 	Type provisioner.ProvisioningFormat `json:"type,omitempty"`
+	// Platform specifies the target platform for the worker node.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="linux"
+	// +kubebuilder:validation:Enum=linux;windows
+	Platform Platform `json:"platform,omitempty"`
 	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 	// +kubebuilder:validation:Optional
 	Ignition *IgnitionSpec `json:"ignition,omitempty"`
@@ -439,6 +454,7 @@ func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList 
 	// TODO: validate Ignition
 	allErrs = append(allErrs, cs.validateVersion(pathPrefix)...)
 	allErrs = append(allErrs, cs.validateFiles(pathPrefix)...)
+	allErrs = append(allErrs, cs.validateWindows(pathPrefix)...)
 
 	return allErrs
 }
@@ -537,3 +553,39 @@ func (cs *K0sWorkerConfigSpec) validateVersion(pathPrefix *field.Path) field.Err
 
 	return allErrs
 }
+
+func (cs *K0sWorkerConfigSpec) validateWindows(pathPrefix *field.Path) field.ErrorList {
+	if cs.Provisioner.Platform != PlatformWindows {
+		return field.ErrorList{}
+	}
+
+	var allErrs field.ErrorList
+
+	ver, err := version.NewVersion(cs.Version)
+	if err != nil {
+		allErrs = append(
+			allErrs,
+			field.Invalid(
+				pathPrefix.Child("version"),
+				cs.Version,
+				"invalid version format",
+			),
+		)
+		return allErrs
+	}
+
+	if ver.LessThan(minWindowsVersion) {
+		allErrs = append(
+			allErrs,
+			field.Invalid(
+				pathPrefix.Child("version"),
+				cs.Version,
+				"windows worker nodes require k0s version v1.34.2+k0s.0 or higher",
+			),
+		)
+	}
+
+	return allErrs
+}
+
+var minWindowsVersion = version.MustParse("v1.34.2+k0s.0")
