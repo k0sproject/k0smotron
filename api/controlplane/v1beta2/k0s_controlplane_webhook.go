@@ -22,7 +22,6 @@ import (
 	"slices"
 	"strings"
 
-	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	"github.com/k0sproject/version"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,16 +47,9 @@ var _ webhook.CustomDefaulter = &K0sControlPlaneDefaulter{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type K0sControlPlane.
 func (d *K0sControlPlaneDefaulter) Default(_ context.Context, obj runtime.Object) error {
-	kcp, ok := obj.(*K0sControlPlane)
+	_, ok := obj.(*K0sControlPlane)
 	if !ok {
 		return fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
-	}
-
-	if kcp.Spec.K0sConfigSpec.Ignition != nil {
-		kcp.Spec.K0sConfigSpec.Provisioner = bootstrapv2.ProvisionerSpec{
-			Type:     provisioner.IgnitionProvisioningFormat,
-			Ignition: kcp.Spec.K0sConfigSpec.Ignition,
-		}
 	}
 
 	return nil

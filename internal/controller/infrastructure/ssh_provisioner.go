@@ -256,8 +256,6 @@ func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) erro
 }
 
 func (p *SSHProvisioner) uploadFile(fsys rigfs.Fsys, file provisioner.File) error {
-	// Ensure base dir exists for target
-	fsys := client.FS()
 	// Ensure base dir exists for target. Change Windows-style slashes to Unix-style. Windows is ok with forward slashes, but filepath.Dir is not.
 	dir := filepath.Dir(strings.Replace(file.Path, `\`, `/`, -1))
 	perms, err := file.PermissionsAsInt()

@@ -10,54 +10,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta2-k0sworkerconfig
+      path: /mutate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane
   failurePolicy: Fail
-  name: mutate-k0sworkerconfig-v1beta2.k0smotron.io
-  rules:
-  - apiGroups:
-    - bootstrap.cluster.x-k8s.io
-    apiVersions:
-    - v1beta1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - k0sworkerconfigs
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /mutate-k0smotron-io-v1beta2-cluster
-  failurePolicy: Fail
-  name: mutate-k0smotron-cluster-v1beta2.k0smotron.io
-  rules:
-  - apiGroups:
-    - k0smotron.io
-    apiVersions:
-    - v1beta2
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - clusters
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /mutate-controlplane-cluster-x-k8s-io-v1beta1-k0scontrolplane
-  failurePolicy: Fail
-  name: mutate-k0scontrolplane-v1beta1.k0smotron.io
+  name: mutate-k0scontrolplane-v1beta2.k0smotron.io
   rules:
   - apiGroups:
     - controlplane.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE

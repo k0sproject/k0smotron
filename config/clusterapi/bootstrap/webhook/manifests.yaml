@@ -10,14 +10,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta1-k0sworkerconfig
+      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta2-k0sworkerconfig
   failurePolicy: Fail
-  name: mutate-k0sworkerconfig-v1beta1.k0smotron.io
+  name: mutate-k0sworkerconfig-v1beta2.k0smotron.io
   rules:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
