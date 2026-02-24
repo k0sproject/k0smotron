@@ -19,6 +19,7 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
 	"strings"
@@ -57,9 +58,7 @@ func (scope *kmcScope) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, e
 	// StatefulSet selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
 	selectorLabels := util.LabelsForK0smotronControlPlane(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
-	for k, v := range selectorLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, selectorLabels)
 	labels["app.kubernetes.io/component"] = util.ComponentControlPlane
 	annotations := util.AnnotationsForK0smotronCluster(kmc)
 
@@ -332,9 +331,7 @@ data:
 	statefulSet.Annotations = map[string]string{
 		statefulSetAnnotation: annotationHash,
 	}
-	for k, v := range annotations {
-		statefulSet.Annotations[k] = v
-	}
+	maps.Copy(statefulSet.Annotations, annotations)
 
 	return statefulSet, nil
 }
@@ -512,9 +509,7 @@ func addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
 	if statefulSet.Spec.Template.Annotations == nil {
 		statefulSet.Spec.Template.Annotations = make(map[string]string)
 	}
-	for k, v := range monitoringAnnotations {
-		statefulSet.Spec.Template.Annotations[k] = v
-	}
+	maps.Copy(statefulSet.Spec.Template.Annotations, monitoringAnnotations)
 
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
 		Name: kmc.GetMonitoringConfigMapName(),

@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"maps"
 	"sort"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -39,12 +40,8 @@ func DefaultK0smotronClusterLabels(kmc *km.Cluster) map[string]string {
 // For component-specific metadata (ConfigMap, Secret, etc.), use LabelsForK0smotronComponent.
 func LabelsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 	labels := DefaultK0smotronClusterLabels(kmc)
-	for k, v := range kmc.Labels {
-		labels[k] = v
-	}
-	for k, v := range kmc.Spec.KubeconfigSecretMetadata.Labels {
-		labels[k] = v
-	}
+	maps.Copy(labels, kmc.Labels)
+	maps.Copy(labels, kmc.Spec.KubeconfigSecretMetadata.Labels)
 	labels["component"] = "cluster"
 	return labels
 }
@@ -78,9 +75,7 @@ func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 	if kmc.Annotations == nil {
 		kmc.Annotations = make(map[string]string)
 	}
-	for k, v := range kmc.Spec.KubeconfigSecretMetadata.Annotations {
-		kmc.Annotations[k] = v
-	}
+	maps.Copy(kmc.Annotations, kmc.Spec.KubeconfigSecretMetadata.Annotations)
 	return kmc.Annotations
 }
 

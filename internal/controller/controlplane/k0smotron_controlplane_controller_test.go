@@ -36,18 +36,18 @@ func TestIsClusterSpecSynced(t *testing.T) {
 					},
 				},
 				K0sConfig: &unstructured.Unstructured{
-					Object: map[string]interface{}{
+					Object: map[string]any{
 						"apiVersion": "k0s.k0sproject.io/v1beta1",
 						"kind":       "ClusterConfig",
-						"metadata": map[string]interface{}{
+						"metadata": map[string]any{
 							"name":      "k0s",
 							"namespace": "kube-system",
 						},
 						"spec": map[string]any{
-							"api": map[string]interface{}{
+							"api": map[string]any{
 								"externalAddress": "172.18.0.2",
 								"port":            int64(30443),
-								"sans": []interface{}{
+								"sans": []any{
 									"custom.sans.domain",
 									"10.96.138.152",
 									"172.18.0.2",
@@ -57,10 +57,10 @@ func TestIsClusterSpecSynced(t *testing.T) {
 									"kmc-docker-test-nodeport.default.svc.cluster.local",
 								},
 							},
-							"konnectivity": map[string]interface{}{
+							"konnectivity": map[string]any{
 								"agentPort": int64(30132),
 							},
-							"network": map[string]interface{}{
+							"network": map[string]any{
 								"clusterDomain": "cluster.local",
 								"podCIDR":       "192.168.0.0/16",
 								"serviceCIDR":   "10.128.0.0/12",
@@ -81,22 +81,22 @@ func TestIsClusterSpecSynced(t *testing.T) {
 					},
 				},
 				K0sConfig: &unstructured.Unstructured{
-					Object: map[string]interface{}{
+					Object: map[string]any{
 						"apiVersion": "k0s.k0sproject.io/v1beta1",
 						"kind":       "ClusterConfig",
-						"metadata": map[string]interface{}{
+						"metadata": map[string]any{
 							"name":      "k0s",
 							"namespace": "kube-system",
 						},
-						"spec": map[string]interface{}{
-							"api": map[string]interface{}{
+						"spec": map[string]any{
+							"api": map[string]any{
 								"externalAddress": "172.18.0.2",
 								"port":            int64(30443),
-								"sans": []interface{}{
+								"sans": []any{
 									"custom.sans.domain",
 								},
 							},
-							"network": map[string]interface{}{
+							"network": map[string]any{
 								"clusterDomain": "cluster.local",
 								"podCIDR":       "192.168.0.0/16",
 								"serviceCIDR":   "10.128.0.0/12",
@@ -125,18 +125,18 @@ func TestIsClusterSpecSynced(t *testing.T) {
 					},
 				},
 				K0sConfig: &unstructured.Unstructured{
-					Object: map[string]interface{}{
+					Object: map[string]any{
 						"apiVersion": "k0s.k0sproject.io/v1beta1",
 						"kind":       "ClusterConfig",
-						"metadata": map[string]interface{}{
+						"metadata": map[string]any{
 							"name":      "k0s",
 							"namespace": "kube-system",
 						},
 						"spec": map[string]any{
-							"api": map[string]interface{}{
+							"api": map[string]any{
 								"externalAddress": "172.18.0.2",
 								"port":            int64(30443),
-								"sans": []interface{}{
+								"sans": []any{
 									"10.96.138.152",
 									"172.18.0.2",
 									"kmc-docker-test-nodeport",
@@ -145,10 +145,10 @@ func TestIsClusterSpecSynced(t *testing.T) {
 									"kmc-docker-test-nodeport.default.svc.cluster.local",
 								},
 							},
-							"konnectivity": map[string]interface{}{
+							"konnectivity": map[string]any{
 								"agentPort": int64(30132),
 							},
-							"network": map[string]interface{}{
+							"network": map[string]any{
 								"clusterDomain": "cluster.local",
 								"podCIDR":       "192.168.0.0/16",
 								"serviceCIDR":   "10.128.0.0/12",
@@ -169,21 +169,21 @@ func TestIsClusterSpecSynced(t *testing.T) {
 					},
 				},
 				K0sConfig: &unstructured.Unstructured{
-					Object: map[string]interface{}{
+					Object: map[string]any{
 						"apiVersion": "k0s.k0sproject.io/v1beta1",
 						"kind":       "ClusterConfig",
-						"metadata": map[string]interface{}{
+						"metadata": map[string]any{
 							"name":      "k0s",
 							"namespace": "kube-system",
 						},
-						"spec": map[string]interface{}{
-							"network": map[string]interface{}{
+						"spec": map[string]any{
+							"network": map[string]any{
 								"clusterDomain": "cluster.local",
 								"podCIDR":       "192.168.0.0/16",
 								"serviceCIDR":   "10.128.0.0/12",
 							},
 							// kmcspec does not have same value for api.externalAddress
-							"api": map[string]interface{}{
+							"api": map[string]any{
 								"externalAddress": "172.18.0.3",
 							},
 						},

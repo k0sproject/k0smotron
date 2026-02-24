@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 	"time"
@@ -477,17 +478,13 @@ func createBootstrapSecret(scope *Scope, bootstrapData []byte, format string) *c
 
 	// Copy labels from secretMetadata if specified
 	if scope.Config.Spec.SecretMetadata != nil && scope.Config.Spec.SecretMetadata.Labels != nil {
-		for k, v := range scope.Config.Spec.SecretMetadata.Labels {
-			labels[k] = v
-		}
+		maps.Copy(labels, scope.Config.Spec.SecretMetadata.Labels)
 	}
 
 	// Copy annotations from secretMetadata if specified
 	annotations := map[string]string{}
 	if scope.Config.Spec.SecretMetadata != nil && scope.Config.Spec.SecretMetadata.Annotations != nil {
-		for k, v := range scope.Config.Spec.SecretMetadata.Annotations {
-			annotations[k] = v
-		}
+		maps.Copy(annotations, scope.Config.Spec.SecretMetadata.Annotations)
 	}
 
 	return &corev1.Secret{
