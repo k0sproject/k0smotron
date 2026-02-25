@@ -65,16 +65,24 @@ func TestApplyComponentPatches_NoMatchingPatch_NoChange(t *testing.T) {
 	}
 	patches := []km.ComponentPatch{
 		{
-			ResourceType: "StatefulSet",
-			Component:    "control-plane",
-			Type:         km.JSONPatchType,
-			Patch:        `[{"op":"replace","path":"/spec/replicas","value":2}]`,
+			Target: km.PatchTarget{
+				Kind:      "StatefulSet",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.JSONPatchType,
+				Content: `[{"op":"replace","path":"/spec/replicas","value":2}]`,
+			},
 		},
 		{
-			ResourceType: "Service",
-			Component:    "etcd",
-			Type:         km.JSONPatchType,
-			Patch:        `[{"op":"replace","path":"/spec/type","value":"NodePort"}]`,
+			Target: km.PatchTarget{
+				Kind:      "Service",
+				Component: "etcd",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.JSONPatchType,
+				Content: `[{"op":"replace","path":"/spec/type","value":"NodePort"}]`,
+			},
 		},
 	}
 	err := ApplyComponentPatches(scheme, svc, patches)
@@ -99,10 +107,14 @@ func TestApplyComponentPatches_JSONPatch_Applied(t *testing.T) {
 	}
 	patches := []km.ComponentPatch{
 		{
-			ResourceType: "Service",
-			Component:    "control-plane",
-			Type:         km.JSONPatchType,
-			Patch:        `[{"op":"add","path":"/metadata/annotations","value":{"custom":"true"}}]`,
+			Target: km.PatchTarget{
+				Kind:      "Service",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.JSONPatchType,
+				Content: `[{"op":"add","path":"/metadata/annotations","value":{"custom":"true"}}]`,
+			},
 		},
 	}
 	err := ApplyComponentPatches(scheme, svc, patches)
@@ -122,10 +134,14 @@ func TestApplyComponentPatches_MergePatch_Applied(t *testing.T) {
 	}
 	patches := []km.ComponentPatch{
 		{
-			ResourceType: "ConfigMap",
-			Component:    "cluster-config",
-			Type:         km.MergePatchType,
-			Patch:        `{"data":{"key":"patched","extra":"value"}}`,
+			Target: km.PatchTarget{
+				Kind:      "ConfigMap",
+				Component: "cluster-config",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.MergePatchType,
+				Content: `{"data":{"key":"patched","extra":"value"}}`,
+			},
 		},
 	}
 	err := ApplyComponentPatches(scheme, cm, patches)
@@ -151,10 +167,14 @@ func TestApplyComponentPatches_StrategicMergePatch_Applied(t *testing.T) {
 	}
 	patches := []km.ComponentPatch{
 		{
-			ResourceType: "StatefulSet",
-			Component:    "control-plane",
-			Type:         km.StrategicMergePatchType,
-			Patch:        `{"spec":{"replicas":3}}`,
+			Target: km.PatchTarget{
+				Kind:      "StatefulSet",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.StrategicMergePatchType,
+				Content: `{"spec":{"replicas":3}}`,
+			},
 		},
 	}
 	err := ApplyComponentPatches(scheme, sts, patches)
@@ -174,10 +194,14 @@ func TestApplyComponentPatches_InvalidJSONPatch_ReturnsError(t *testing.T) {
 	}
 	patches := []km.ComponentPatch{
 		{
-			ResourceType: "Service",
-			Component:    "control-plane",
-			Type:         km.JSONPatchType,
-			Patch:        `[{"op":"replace","path":"/nonexistent","value":1}]`,
+			Target: km.PatchTarget{
+				Kind:      "Service",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.JSONPatchType,
+				Content: `[{"op":"replace","path":"/nonexistent","value":1}]`,
+			},
 		},
 	}
 	err := ApplyComponentPatches(scheme, svc, patches)
@@ -196,13 +220,17 @@ func TestApplyComponentPatches_MergePatch_YAML_Applied(t *testing.T) {
 	}
 	patches := []km.ComponentPatch{
 		{
-			ResourceType: "Service",
-			Component:    "control-plane",
-			Type:         km.MergePatchType,
-			Patch: `metadata:
+			Target: km.PatchTarget{
+				Kind:      "Service",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type: km.MergePatchType,
+				Content: `metadata:
   annotations:
     example.com/managed-by: "k0smotron-customized"
 `,
+			},
 		},
 	}
 	err := ApplyComponentPatches(scheme, svc, patches)
@@ -227,12 +255,16 @@ func TestApplyComponentPatches_StrategicMergePatch_YAML_Applied(t *testing.T) {
 	}
 	patches := []km.ComponentPatch{
 		{
-			ResourceType: "StatefulSet",
-			Component:    "control-plane",
-			Type:         km.StrategicMergePatchType,
-			Patch: `spec:
+			Target: km.PatchTarget{
+				Kind:      "StatefulSet",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type: km.StrategicMergePatchType,
+				Content: `spec:
   replicas: 3
 `,
+			},
 		},
 	}
 	err := ApplyComponentPatches(scheme, sts, patches)
@@ -252,10 +284,14 @@ func TestApplyComponentPatches_UnknownPatchType_ReturnsError(t *testing.T) {
 	}
 	patches := []km.ComponentPatch{
 		{
-			ResourceType: "Service",
-			Component:    "control-plane",
-			Type:         km.PatchType("invalid"),
-			Patch:        `{}`,
+			Target: km.PatchTarget{
+				Kind:      "Service",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.PatchType("invalid"),
+				Content: `{}`,
+			},
 		},
 	}
 	err := ApplyComponentPatches(scheme, svc, patches)

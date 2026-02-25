@@ -70,21 +70,21 @@ func (c ClusterValidator) ValidateClusterSpec(kcs *km.ClusterSpec) (warnings adm
 		}
 	}
 
-	if err := c.validateCustomizeComponents(kcs.CustomizeComponents); err != nil {
+	if err := c.validatePatches(kcs.Patches); err != nil {
 		return warnings, err
 	}
 
 	return warnings, nil
 }
 
-// validateCustomizeComponents validates the CustomizeComponents spec.
-func (c ClusterValidator) validateCustomizeComponents(cc km.CustomizeComponents) error {
-	for i, p := range cc.Patches {
-		switch p.Type {
+// validatePatches validates the Patches spec.
+func (c ClusterValidator) validatePatches(patches []km.ComponentPatch) error {
+	for i, p := range patches {
+		switch p.Patch.Type {
 		case km.JSONPatchType, km.StrategicMergePatchType, km.MergePatchType:
 			// valid
 		default:
-			return fmt.Errorf("invalid patch type %q at index %d: must be one of json, strategic, merge", p.Type, i)
+			return fmt.Errorf("invalid patch type %q at index %d: must be one of json, strategic, merge", p.Patch.Type, i)
 		}
 	}
 	return nil

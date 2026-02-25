@@ -78,7 +78,7 @@ func (scope *kmcScope) reconcileEntrypointCM(ctx context.Context, kmc *km.Cluste
 		return err
 	}
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cm, kmc.Spec.CustomizeComponents.Patches); err != nil {
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cm, kmc.Spec.Patches); err != nil {
 		return fmt.Errorf("failed to apply component patches to entrypoint configmap: %w", err)
 	}
 

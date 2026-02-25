@@ -132,7 +132,7 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 	logger.Info("Reconciling services")
 	svc := generateService(kmc)
 
-	if err := util.ApplyComponentPatches(scope.client.Scheme(), &svc, kmc.Spec.CustomizeComponents.Patches); err != nil {
+	if err := util.ApplyComponentPatches(scope.client.Scheme(), &svc, kmc.Spec.Patches); err != nil {
 		return fmt.Errorf("failed to apply component patches to service: %w", err)
 	}
 

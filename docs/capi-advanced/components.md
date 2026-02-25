@@ -9,16 +9,16 @@ k0smotron creates the Kubernetes resources (for example `StatefulSet`, `Service`
 - **Standalone**: You create the `k0smotron.io/v1beta1` Cluster directly. See [Create a cluster](../cluster.md).
 - **Cluster API integration**: When k0smotron acts as a control plane provider (in-cluster), `K0smotronControlPlane` creates a `k0smotron.io/v1beta1` Cluster, which then produces the same set of generated resources. See [k0smotron as Cluster API provider](../cluster-api.md).
 
-In both modes, the resources that can be customized are the same, and you define patches in the same field (`.spec.customizeComponents.patches`); only the resource that has that spec differs (Cluster in standalone, K0smotronControlPlane in Cluster API).
+In both modes, the resources that can be customized are the same, and you define patches in the same field (`.spec.patches`); only the resource that has that spec differs (Cluster in standalone, K0smotronControlPlane in Cluster API).
 
 ## Where to define patches
 
-Define patches in `spec.customizeComponents.patches` on the resource that owns the generated resources:
+Define patches in `spec.patches` on the resource that owns the generated resources:
 
 | Mode | Resource | Field |
 | ------ | ---------- | -------- |
-| **Standalone** | [`k0smotron.io/v1beta1` Cluster](../resource-reference/k0smotron.io-v1beta1.md) | `Cluster.spec.customizeComponents.patches` |
-| **Cluster API (control plane provider - in-cluster)** | [`K0smotronControlPlane`](../resource-reference/controlplane.cluster.x-k8s.io-v1beta1.md) | `K0smotronControlPlane.spec.customizeComponents.patches` |
+| **Standalone** | [`k0smotron.io/v1beta1` Cluster](../resource-reference/k0smotron.io-v1beta1.md) | `Cluster.spec.patches` |
+| **Cluster API (control plane provider - in-cluster)** | [`K0smotronControlPlane`](../resource-reference/controlplane.cluster.x-k8s.io-v1beta1.md) | `K0smotronControlPlane.spec.patches` |
 
 The patch format and targeting rules are identical in both modes.
 
@@ -35,12 +35,13 @@ metadata:
   name: docker-test
 spec:
   version: v1.34.3-k0s.0
-  customizeComponents:
-    patches:
-    - resourceType: ConfigMap
+  patches:
+  - target:
+      kind: ConfigMap
       component: cluster-config
+    patch:
       type: merge
-      patch: |
+      content: |
         metadata:
           labels:
             custom-label: "my-value"
@@ -48,7 +49,7 @@ spec:
 
 ### Cluster API
 
-The following example builds on the [Docker (HCP)](../capi-docker.md) example and adds `customizeComponents` patches. It demonstrates all three patch types (`strategic`, `json`, `merge`) targeting different components. Before starting, ensure that you have met the [general prerequisites](../capi-examples.md#prerequisites) and initialized the Docker infrastructure provider as described in the [Docker (HCP)](../capi-docker.md) guide.
+The following example builds on the [Docker (HCP)](../capi-docker.md) example and adds patches. It demonstrates all three patch types (`strategic`, `json`, `merge`) targeting different components. Before starting, ensure that you have met the [general prerequisites](../capi-examples.md#prerequisites) and initialized the Docker infrastructure provider as described in the [Docker (HCP)](../capi-docker.md) guide.
 
 ```yaml
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -87,13 +88,14 @@ spec:
     type: emptyDir
   service:
     type: LoadBalancer
-  customizeComponents:
-    patches:
-    # Set resource requests/limits and probe timing on the control-plane pods
-    - resourceType: StatefulSet
+  patches:
+  # Set resource requests/limits and probe timing on the control-plane pods
+  - target:
+      kind: StatefulSet
       component: control-plane
+    patch:
       type: strategic
-      patch: |
+      content: |
         spec:
           template:
             spec:
@@ -110,16 +112,20 @@ spec:
                     initialDelaySeconds: 10
                   livenessProbe:
                     initialDelaySeconds: 10
-    # Increase the etcd readiness probe initial delay
-    - resourceType: StatefulSet
+  # Increase the etcd readiness probe initial delay
+  - target:
+      kind: StatefulSet
       component: etcd
+    patch:
       type: json
-      patch: '[{"op":"add","path":"/spec/template/spec/containers/0/readinessProbe/initialDelaySeconds","value":15}]'
-    # Add an annotation to the control-plane Service
-    - resourceType: Service
+      content: '[{"op":"add","path":"/spec/template/spec/containers/0/readinessProbe/initialDelaySeconds","value":15}]'
+  # Add an annotation to the control-plane Service
+  - target:
+      kind: Service
       component: control-plane
+    patch:
       type: merge
-      patch: |
+      content: |
         metadata:
           annotations:
             example.com/managed-by: "k0smotron-customized"
@@ -201,16 +207,16 @@ kubectl get service kmc-docker-test-lb -o jsonpath='{.metadata.annotations}'
 
 ## Targeting resources
 
-To keep targeting predictable and maintainable, patches target resources by:
+To keep targeting predictable and maintainable, each patch entry has a `target` block that selects resources by:
 
-- `resourceType`: Kubernetes Kind (for example `StatefulSet`, `Service`, `ConfigMap`)
+- `kind`: Kubernetes Kind (for example `StatefulSet`, `Service`, `ConfigMap`)
 - `component`: value of the `app.kubernetes.io/component` label on the generated resource
 
 This avoids string-based targeting via names and avoids template-based targeting. See the [Examples](#examples) above.
 
 ## Patch types
 
-The patch format depends on `type`:
+Each patch entry has a `patch` block containing `type` and `content`. The format of `content` depends on `type`:
 
 - `json`: a [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902) array, an array of add/remove/replace operations
 - `strategic`: a [Kubernetes strategic merge patch](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#use-a-strategic-merge-patch-to-update-a-deployment) object, like merge but with array merge semantics based on `patchStrategy` tags
@@ -218,12 +224,12 @@ The patch format depends on `type`:
 
 ## Component values
 
-k0smotron labels generated resources with `app.kubernetes.io/component` to describe their purpose. Use these values in the `component` field when targeting patches. For the full list of component values, resource types, and their naming conventions, see [Generated Resources](../generated-resources.md).
+k0smotron labels generated resources with `app.kubernetes.io/component` to describe their purpose. Use these values in the `target.component` field when targeting patches. For the full list of component values, resource types, and their naming conventions, see [Generated Resources](../generated-resources.md).
 
-**Note:** A `(resourceType, component)` combination is not always unique. For example, `component: monitoring` is shared by two ConfigMaps (Prometheus and Nginx). A patch targeting such a combination will be applied to **all** matching resources.
+**Note:** A `(kind, component)` combination is not always unique. For example, `component: monitoring` is shared by two ConfigMaps (Prometheus and Nginx). A patch targeting such a combination will be applied to **all** matching resources.
 
 ## Notes and limitations
 
-- Patches are applied **in list order** after k0smotron generates each resource and before it is applied to the cluster. Multiple patches that match the same resource (same `resourceType` and `component`) are applied in sequence.
-- A patch is applied to all generated resources that match the given `resourceType` and `component` combination.
+- Patches are applied **in list order** after k0smotron generates each resource and before it is applied to the cluster. Multiple patches that match the same resource (same `kind` and `component`) are applied in sequence.
+- A patch is applied to all generated resources that match the given `kind` and `component` combination.
 - Only resources created and managed by the K0smotron Cluster (documented in [Generated Resources](../generated-resources.md)) are patch targets. Other resources are not; for example, when using Cluster API, certificate Secrets are created by Cluster API controllers and follow Cluster API naming conventions, so they are not patch targets.
