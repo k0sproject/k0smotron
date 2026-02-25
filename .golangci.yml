@@ -57,7 +57,7 @@ linters:
     rules:
       - linters: [revive]
         text: "var-naming: avoid meaningless package names"
-        path: "internal/controller/util/"
+        path: "(internal/controller|inttest)/util/"
     paths:
       # Ignore issues in generated files.
       - zz_generated.*\.go$
