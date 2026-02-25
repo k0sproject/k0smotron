@@ -1972,12 +1972,6 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespeccustomizecomponents">customizeComponents</a></b></td>
-        <td>object</td>
-        <td>
-          CustomizeComponents defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
-Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
-For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2060,6 +2054,15 @@ mounted in the controlplane pod. K0smotron allows any kind of volume, but the
 recommendation is to use secrets and configmaps.
 For more information check:
 https://kubernetes.io/docs/concepts/storage/volumes<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpatchesindex">patches</a></b></td>
+        <td>[]object</td>
+        <td>
+          Patches defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
+Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
+For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2168,14 +2171,11 @@ CertificateRef defines a reference to a certificate that should be included in t
 </table>
 
 
-### K0smotronControlPlane.spec.customizeComponents
 <sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
 
 
 
-CustomizeComponents defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
-Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
-For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.
+Etcd defines the etcd configuration.
 
 <table>
     <thead>
@@ -2187,22 +2187,37 @@ For the full list of generated resources and their component labels, see https:/
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanespeccustomizecomponentspatchesindex">patches</a></b></td>
-        <td>[]object</td>
+        <td><b>image</b></td>
+        <td>string</td>
         <td>
-          Patches is a list of patches to apply to generated resources. Patches are applied in order.<br/>
+          Image defines the etcd image to be deployed.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         </td>
         <td>false</td>
       </tr></tbody>
 </table>
 
 
-### K0smotronControlPlane.spec.customizeComponents.patches[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespeccustomizecomponents)</sup></sup>
-
-
-
-ComponentPatch defines a patch to apply to a generated resource.
 
 <table>
     <thead>
@@ -2214,37 +2229,40 @@ ComponentPatch defines a patch to apply to a generated resource.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>component</b></td>
-        <td>string</td>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
         <td>
-          Component is the value of the app.kubernetes.io/component label on the target resource.<br/>
+          Enabled enables the etcd defragmentation job.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>patch</b></td>
+        <td><b>image</b></td>
         <td>string</td>
         <td>
-          Patch is the patch content. The format depends on the Type field:
-  - For "json": a JSON array of operations, e.g. [{"op":"add","path":"/metadata/labels/foo","value":"bar"}].
-  - For "merge" and "strategic": a partial YAML/JSON object that is merged into the target resource.<br/>
+          Image defines the etcd defragmentation job image.<br/>
+          <br/>
+            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>resourceType</b></td>
+        <td><b>rule</b></td>
         <td>string</td>
         <td>
-          ResourceType is the Kubernetes Kind of the target resource (e.g. "StatefulSet", "Service", "ConfigMap").<br/>
+          Rule defines the etcd defragmentation job defrag-rule.
+For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
+          <br/>
+            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>type</b></td>
+        <td><b>schedule</b></td>
         <td>string</td>
         <td>
-          Type is the patch type to apply:
-  - "json": RFC 6902 JSON Patch, an array of add/remove/replace operations (https://datatracker.ietf.org/doc/html/rfc6902).
-  - "merge": RFC 7386 JSON Merge Patch, a partial JSON object that is merged into the target (https://datatracker.ietf.org/doc/html/rfc7386).
-  - "strategic": Kubernetes Strategic Merge Patch, like merge but with array merge semantics based on patchStrategy tags
-    (https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#use-a-strategic-merge-patch-to-update-a-deployment).<br/>
+          Schedule defines the etcd defragmentation job schedule.<br/>
+          <br/>
+            <i>Default</i>: 0 12 * * *<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -10315,6 +10333,108 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 </table>
 
 
+### K0smotronControlPlane.spec.patches[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+ComponentPatch defines a patch to apply to a generated resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpatchesindexpatch">patch</a></b></td>
+        <td>object</td>
+        <td>
+          Patch defines the patch type and content to apply.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpatchesindextarget">target</a></b></td>
+        <td>object</td>
+        <td>
+          Target selects which generated resource to patch.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.patches[index].patch
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpatchesindex)</sup></sup>
+
+
+
+Patch defines the patch type and content to apply.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          Content is the patch content (JSON/YAML). The format depends on Type.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type is the patch type to apply: "json", "merge", or "strategic".<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.patches[index].target
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpatchesindex)</sup></sup>
+
+
+
+Target selects which generated resource to patch.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>component</b></td>
+        <td>string</td>
+        <td>
+          Component is the value of the app.kubernetes.io/component label on the target resource.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the Kubernetes Kind of the target resource (e.g. "StatefulSet", "Service", "ConfigMap").<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlane.spec.persistence
 <sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
 
@@ -12347,12 +12467,6 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespeccustomizecomponents">customizeComponents</a></b></td>
-        <td>object</td>
-        <td>
-          CustomizeComponents defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
-Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
-For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12435,6 +12549,15 @@ mounted in the controlplane pod. K0smotron allows any kind of volume, but the
 recommendation is to use secrets and configmaps.
 For more information check:
 https://kubernetes.io/docs/concepts/storage/volumes<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpatchesindex">patches</a></b></td>
+        <td>[]object</td>
+        <td>
+          Patches defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
+Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
+For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12543,14 +12666,11 @@ CertificateRef defines a reference to a certificate that should be included in t
 </table>
 
 
-### K0smotronControlPlaneTemplate.spec.template.spec.customizeComponents
 <sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
 
 
 
-CustomizeComponents defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
-Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
-For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.
+Etcd defines the etcd configuration.
 
 <table>
     <thead>
@@ -12562,22 +12682,37 @@ For the full list of generated resources and their component labels, see https:/
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespeccustomizecomponentspatchesindex">patches</a></b></td>
-        <td>[]object</td>
+        <td><b>image</b></td>
+        <td>string</td>
         <td>
-          Patches is a list of patches to apply to generated resources. Patches are applied in order.<br/>
+          Image defines the etcd image to be deployed.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         </td>
         <td>false</td>
       </tr></tbody>
 </table>
 
 
-### K0smotronControlPlaneTemplate.spec.template.spec.customizeComponents.patches[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespeccustomizecomponents)</sup></sup>
-
-
-
-ComponentPatch defines a patch to apply to a generated resource.
 
 <table>
     <thead>
@@ -12589,37 +12724,40 @@ ComponentPatch defines a patch to apply to a generated resource.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>component</b></td>
-        <td>string</td>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
         <td>
-          Component is the value of the app.kubernetes.io/component label on the target resource.<br/>
+          Enabled enables the etcd defragmentation job.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>patch</b></td>
+        <td><b>image</b></td>
         <td>string</td>
         <td>
-          Patch is the patch content. The format depends on the Type field:
-  - For "json": a JSON array of operations, e.g. [{"op":"add","path":"/metadata/labels/foo","value":"bar"}].
-  - For "merge" and "strategic": a partial YAML/JSON object that is merged into the target resource.<br/>
+          Image defines the etcd defragmentation job image.<br/>
+          <br/>
+            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>resourceType</b></td>
+        <td><b>rule</b></td>
         <td>string</td>
         <td>
-          ResourceType is the Kubernetes Kind of the target resource (e.g. "StatefulSet", "Service", "ConfigMap").<br/>
+          Rule defines the etcd defragmentation job defrag-rule.
+For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
+          <br/>
+            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>type</b></td>
+        <td><b>schedule</b></td>
         <td>string</td>
         <td>
-          Type is the patch type to apply:
-  - "json": RFC 6902 JSON Patch, an array of add/remove/replace operations (https://datatracker.ietf.org/doc/html/rfc6902).
-  - "merge": RFC 7386 JSON Merge Patch, a partial JSON object that is merged into the target (https://datatracker.ietf.org/doc/html/rfc7386).
-  - "strategic": Kubernetes Strategic Merge Patch, like merge but with array merge semantics based on patchStrategy tags
-    (https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#use-a-strategic-merge-patch-to-update-a-deployment).<br/>
+          Schedule defines the etcd defragmentation job schedule.<br/>
+          <br/>
+            <i>Default</i>: 0 12 * * *<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -20686,6 +20824,108 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
           storagePolicyName is the storage Policy Based Management (SPBM) profile name.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.patches[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+ComponentPatch defines a patch to apply to a generated resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpatchesindexpatch">patch</a></b></td>
+        <td>object</td>
+        <td>
+          Patch defines the patch type and content to apply.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpatchesindextarget">target</a></b></td>
+        <td>object</td>
+        <td>
+          Target selects which generated resource to patch.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.patches[index].patch
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpatchesindex)</sup></sup>
+
+
+
+Patch defines the patch type and content to apply.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          Content is the patch content (JSON/YAML). The format depends on Type.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type is the patch type to apply: "json", "merge", or "strategic".<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.patches[index].target
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpatchesindex)</sup></sup>
+
+
+
+Target selects which generated resource to patch.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>component</b></td>
+        <td>string</td>
+        <td>
+          Component is the value of the app.kubernetes.io/component label on the target resource.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the Kubernetes Kind of the target resource (e.g. "StatefulSet", "Service", "ConfigMap").<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

@@ -79,7 +79,7 @@ func (scope *kmcScope) reconcileMonitoringCM(ctx context.Context, kmc *km.Cluste
 		return err
 	}
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cm, kmc.Spec.CustomizeComponents.Patches); err != nil {
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cm, kmc.Spec.Patches); err != nil {
 		return fmt.Errorf("failed to apply component patches to monitoring configmap: %w", err)
 	}
 

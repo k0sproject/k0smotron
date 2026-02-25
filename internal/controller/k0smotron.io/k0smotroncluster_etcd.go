@@ -104,7 +104,7 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 		},
 	}
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &svc, kmc.Spec.CustomizeComponents.Patches); err != nil {
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &svc, kmc.Spec.Patches); err != nil {
 		return fmt.Errorf("failed to apply component patches to etcd service: %w", err)
 	}
 
@@ -194,7 +194,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 		},
 	}
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cronJob, kmc.Spec.CustomizeComponents.Patches); err != nil {
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cronJob, kmc.Spec.Patches); err != nil {
 		return fmt.Errorf("failed to apply component patches to etcd defrag cronjob: %w", err)
 	}
 
@@ -229,7 +229,7 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 
 	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas)
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &statefulSet, kmc.Spec.CustomizeComponents.Patches); err != nil {
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &statefulSet, kmc.Spec.Patches); err != nil {
 		return fmt.Errorf("failed to apply component patches to etcd statefulset: %w", err)
 	}
 

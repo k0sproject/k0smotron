@@ -52,16 +52,16 @@ func ApplyComponentPatches(scheme *runtime.Scheme, obj client.Object, patches []
 
 	applied := false
 	for i, p := range patches {
-		if p.ResourceType != kind || p.Component != component {
+		if p.Target.Kind != kind || p.Target.Component != component {
 			continue
 		}
 
-		patchJSON, convErr := sigsyaml.YAMLToJSON([]byte(p.Patch))
+		patchJSON, convErr := sigsyaml.YAMLToJSON([]byte(p.Patch.Content))
 		if convErr != nil {
 			return fmt.Errorf("convert patch at index %d to JSON: %w", i, convErr)
 		}
 
-		switch p.Type {
+		switch p.Patch.Type {
 		case km.JSONPatchType:
 			currentData, err = applyJSONPatch(currentData, patchJSON)
 		case km.StrategicMergePatchType:
@@ -69,11 +69,11 @@ func ApplyComponentPatches(scheme *runtime.Scheme, obj client.Object, patches []
 		case km.MergePatchType:
 			currentData, err = applyMergePatch(currentData, patchJSON)
 		default:
-			return fmt.Errorf("unknown patch type %q for patch at index %d", p.Type, i)
+			return fmt.Errorf("unknown patch type %q for patch at index %d", p.Patch.Type, i)
 		}
 		if err != nil {
 			return fmt.Errorf("apply patch at index %d (type=%s, resourceType=%s, component=%s): %w",
-				i, p.Type, p.ResourceType, p.Component, err)
+				i, p.Patch.Type, p.Target.Kind, p.Target.Component, err)
 		}
 		applied = true
 	}
