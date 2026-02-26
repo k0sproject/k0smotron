@@ -189,7 +189,7 @@ func (s *CAPIDockerMachineTemplateUpdateRecreateKine) TestCAPIControlPlaneDocker
 			if err != nil {
 				return false, nil
 			}
-			if v != "v1.28.7+k0s.0" {
+			if v != "v1.34.3+k0s.0" {
 				return false, nil
 			}
 		}
@@ -276,7 +276,7 @@ metadata:
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.31.0
+      customImage: kindest/node:v1.34.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
@@ -284,7 +284,7 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  version: v1.27.1+k0s.0
+  version: v1.34.2+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
     k0s:
@@ -322,7 +322,7 @@ metadata:
   name:  docker-test-worker-0
   namespace: default
 spec:
-  version: v1.27.1
+  version: v1.34.2
   clusterName: docker-test-cluster
   bootstrap:
     configRef:
@@ -341,7 +341,7 @@ metadata:
   namespace: default
 spec:
   # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.27.1+k0s.0
+  version: v1.34.2+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerMachine
@@ -349,7 +349,7 @@ metadata:
   name: docker-test-worker-0
   namespace: default
 spec:
-  customImage: kindest/node:v1.31.0
+  customImage: kindest/node:v1.34.0
 `
 
 var controlPlaneUpdate = `
@@ -359,7 +359,7 @@ metadata:
   name: docker-test
 spec:
   replicas: 3
-  version: v1.28.7+k0s.0
+  version: v1.34.3+k0s.0
   updateStrategy: Recreate
   k0sConfigSpec:
     k0s:

@@ -304,7 +304,7 @@ metadata:
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.31.0
+      customImage: kindest/node:v1.34.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
@@ -415,7 +415,7 @@ metadata:
   name: docker-test-worker-0
   namespace: default
 spec:
-  customImage: kindest/node:v1.31.0
+  customImage: kindest/node:v1.34.0
 ---
 apiVersion: v1
 kind: Secret

@@ -32,7 +32,7 @@ metadata:
   name: machine-test-config
   namespace: default
 spec:
-  version: v1.27.2+k0s.0
+  version: v1.34.3+k0s.0
   # Details of the worker configuration can be set here
 ```
 
@@ -60,7 +60,7 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-config
 spec:
-  version: v1.27.2+k0s.0
+  version: v1.34.3+k0s.0
   preStartCommands:
     - "apt-get update && apt-get install -y curl jq"
     - "mkdir -p /etc/k0s/monitoring"
@@ -77,7 +77,7 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-config
 spec:
-  version: v1.27.2+k0s.0
+  version: v1.34.3+k0s.0
   postStartCommands:
     - "systemctl enable monitoring-agent"
     - "systemctl start monitoring-agent"
@@ -103,7 +103,7 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-with-monitoring
 spec:
-  version: v1.27.2+k0s.0
+  version: v1.34.3+k0s.0
   preStartCommands:
     - "curl -fsSL https://get.docker.com | sh"
     - "systemctl enable docker"
@@ -121,7 +121,7 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-with-config
 spec:
-  version: v1.27.2+k0s.0
+  version: v1.34.3+k0s.0
   preStartCommands:
     - "echo 'vm.max_map_count=262144' >> /etc/sysctl.conf"
     - "sysctl -p"
@@ -140,7 +140,7 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-with-health-checks
 spec:
-  version: v1.27.2+k0s.0
+  version: v1.34.3+k0s.0
   postStartCommands:
     - "kubectl get nodes --kubeconfig=/var/lib/k0s/pki/admin.conf"
     - "kubectl describe node $(hostname) --kubeconfig=/var/lib/k0s/pki/admin.conf"
@@ -210,7 +210,7 @@ metadata:
 spec:
   template:
     spec:
-      version: v1.27.2+k0s.0
+      version: v1.34.3+k0s.0
       # More details of the worker configuration can be set here
 ```
 
