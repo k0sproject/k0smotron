@@ -179,6 +179,10 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			if derr != nil {
 				if !errors.Is(derr, errUpgradeNotCompleted) {
 					log.Error(derr, "Failed to update status")
+					// Schedule a requeue so the controller retries status update
+					if res.IsZero() {
+						res = ctrl.Result{RequeueAfter: 10 * time.Second}
+					}
 					return
 				}
 
