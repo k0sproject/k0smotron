@@ -163,7 +163,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 		}
 
 		if len(rm) == 0 {
-			return true, nil
+			return false, nil
 		}
 
 		rmName = rm[0].GetName()
