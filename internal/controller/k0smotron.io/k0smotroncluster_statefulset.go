@@ -23,6 +23,9 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
@@ -35,7 +38,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/controller"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -53,7 +58,7 @@ func findStatefulSetPod(ctx context.Context, statefulSet string, namespace strin
 	return util.FindStatefulSetPod(ctx, clientSet, statefulSet, namespace)
 }
 
-func (scope *kmcScope) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, error) {
+func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster) (apps.StatefulSet, apps.StatefulSet, error) {
 
 	// StatefulSet selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
 	selectorLabels := util.LabelsForK0smotronControlPlane(kmc)
@@ -200,7 +205,7 @@ func (scope *kmcScope) generateStatefulSet(kmc *km.Cluster) (apps.StatefulSet, e
 		})
 	case "pvc":
 		if kmc.Spec.Persistence.PersistentVolumeClaim == nil {
-			return apps.StatefulSet{}, fmt.Errorf("persistence type is pvc but no pvc is defined")
+			return apps.StatefulSet{}, apps.StatefulSet{}, fmt.Errorf("persistence type is pvc but no pvc is defined")
 		}
 		if kmc.Spec.Persistence.PersistentVolumeClaim.Name == "" {
 			kmc.Spec.Persistence.PersistentVolumeClaim.Name = kmc.GetVolumeName()
@@ -292,7 +297,7 @@ data:
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, cm, scope.client.Scheme(), scope.externalOwner)
 
 	if err := scope.client.Patch(context.Background(), cm, client.Apply, patchOpts...); err != nil {
-		return apps.StatefulSet{}, err
+		return apps.StatefulSet{}, apps.StatefulSet{}, err
 	}
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
 		Name: cm.Name,
@@ -311,10 +316,6 @@ data:
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
-	// We calculate the hash of the statefulset template and store it in the annotations
-	// This is used to detect changes in the statefulset template and trigger a rollout
-	// We exclude some fields below from the hash calculation to avoid unnecessary rollouts
-	annotationHash := controller.ComputeHash(&statefulSet.Spec.Template, statefulSet.Status.CollisionCount)
 	statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 		InitialDelaySeconds: 60,
 		PeriodSeconds:       10,
@@ -328,12 +329,27 @@ data:
 		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
 	}
 
+	// Use the statefulset generated with dry-run gives us a preview of the statefulset with all the default values set by the API server.
+	// With this preview we can compare the desired statefulset with the actual statefulset and decide if there are any change and not
+	// create unnecessary new revisions of the statefulset which can make difficult get the status of the cluster from the statefulset.
+	previewSts := statefulSet.DeepCopy()
+	_ = scope.client.Patch(ctx, previewSts, client.Apply, append(patchOpts, client.DryRunAll)...)
+	delete(previewSts.Spec.Template.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
+
+	// We calculate the hash of the statefulset template and store it in the annotations
+	// This is used to detect changes in the statefulset template and trigger a rollout
+	annotationHash := controller.ComputeHash(&previewSts.Spec.Template, previewSts.Status.CollisionCount)
+
 	statefulSet.Annotations = map[string]string{
 		statefulSetAnnotation: annotationHash,
 	}
+	previewSts.Annotations = map[string]string{
+		statefulSetAnnotation: annotationHash,
+	}
 	maps.Copy(statefulSet.Annotations, annotations)
+	maps.Copy(previewSts.Annotations, annotations)
 
-	return statefulSet, nil
+	return statefulSet, *previewSts, nil
 }
 
 // mountSecrets mounts the certificates as secrets to the controller and creates
@@ -542,45 +558,53 @@ func addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
 	})
 }
 
-func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster) error {
-	statefulSet, err := scope.generateStatefulSet(kmc)
+func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	statefulSet, statefulSetPreview, err := scope.generateStatefulSet(ctx, kmc)
 	if err != nil {
-		return fmt.Errorf("failed to generate statefulset: %w", err)
+		return ctrl.Result{}, fmt.Errorf("failed to generate statefulset: %w", err)
 	}
 
 	selector, err := metav1.LabelSelectorAsSelector(statefulSet.Spec.Selector)
 	if err != nil {
-		return fmt.Errorf("error retrieving StatefulSet labels: %w", err)
+		return ctrl.Result{}, fmt.Errorf("error retrieving StatefulSet labels: %w", err)
 	}
 	kmc.Status.Selector = selector.String()
 
-	foundStatefulSet, err := scope.clienSet.AppsV1().StatefulSets(statefulSet.Namespace).Get(ctx, statefulSet.Name, metav1.GetOptions{})
+	foundStatefulSet := &apps.StatefulSet{}
+	err = scope.client.Get(ctx, types.NamespacedName{
+		Namespace: statefulSet.Namespace,
+		Name:      statefulSet.Name,
+	}, foundStatefulSet)
 	if err != nil && apierrors.IsNotFound(err) {
-		kmc.Status.Replicas = 0
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		err := scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to create statefulset: %w", err)
+		}
+		scope.currentReconcileState.controlplane.sts = statefulSet.DeepCopy()
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
 	} else if err == nil {
+		scope.currentReconcileState.controlplane.sts = foundStatefulSet.DeepCopy()
 		detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
-
-		if !isStatefulSetsEqual(&statefulSet, foundStatefulSet) {
-			return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
-		}
-
-		kmc.Status.Replicas = foundStatefulSet.Status.Replicas
-		if foundStatefulSet.Status.ReadyReplicas == kmc.Spec.Replicas {
-			kmc.Status.Ready = true
-		}
 	}
 
-	if !isStatefulSetsEqual(&statefulSet, foundStatefulSet) {
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+	if !isStatefulSetsEqual(&statefulSetPreview, foundStatefulSet) {
+		return ctrl.Result{}, scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+	}
+	needsScale := *foundStatefulSet.Spec.Replicas != *statefulSet.Spec.Replicas
+	if needsScale {
+		patchedFoundStatefulSet := foundStatefulSet.DeepCopy()
+		*patchedFoundStatefulSet.Spec.Replicas = *statefulSet.Spec.Replicas
+		return ctrl.Result{}, scope.client.Patch(ctx, patchedFoundStatefulSet, client.MergeFrom(foundStatefulSet))
 	}
 
 	if foundStatefulSet.Status.ReadyReplicas == 0 {
-		return fmt.Errorf("%w: no replicas ready yet for statefulset '%s' (%d/%d)", ErrNotReady, foundStatefulSet.GetName(), foundStatefulSet.Status.ReadyReplicas, kmc.Spec.Replicas)
+		logger.Info(fmt.Sprintf("StatefulSet '%s' has no ready replicas yet (%d/%d)", foundStatefulSet.GetName(), foundStatefulSet.Status.ReadyReplicas, kmc.Spec.Replicas))
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
 	}
 
-	kmc.Status.Ready = true
-	return nil
+	return ctrl.Result{}, nil
 }
 
 // If the version is empty from the spec, we try to detect it from the statefulset image.
@@ -594,8 +618,17 @@ func detectAndSetCurrentClusterVersion(foundStatefulSet *apps.StatefulSet, kmc *
 }
 
 func isStatefulSetsEqual(newSts, oldSts *apps.StatefulSet) bool {
-	return *newSts.Spec.Replicas == *oldSts.Spec.Replicas &&
-		newSts.Annotations[statefulSetAnnotation] == oldSts.Annotations[statefulSetAnnotation] &&
-		reflect.DeepEqual(newSts.Spec.Selector, oldSts.Spec.Selector) &&
-		equality.Semantic.DeepDerivative(newSts.Spec.VolumeClaimTemplates, oldSts.Spec.VolumeClaimTemplates)
+	if newSts.Annotations[statefulSetAnnotation] != oldSts.Annotations[statefulSetAnnotation] {
+		return false
+	}
+
+	if !reflect.DeepEqual(newSts.Spec.Selector, oldSts.Spec.Selector) {
+		return false
+	}
+
+	if !equality.Semantic.DeepDerivative(newSts.Spec.VolumeClaimTemplates, oldSts.Spec.VolumeClaimTemplates) {
+		return false
+	}
+
+	return true
 }

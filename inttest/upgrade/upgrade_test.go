@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/yaml"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -130,7 +131,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	var kmc km.Cluster
 	err = yaml.Unmarshal(result, &kmc)
 	s.Require().NoError(err)
-	s.Require().True(kmc.Status.Ready)
+	s.Require().True(conditions.IsTrue(&kmc, km.ClusterAvailableCondition))
 }
 
 func (s *UpgradeSuite) checkStatePersists(ctx context.Context, mountedPath string, kc *kubernetes.Clientset, rc *rest.Config) {
