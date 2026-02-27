@@ -35,6 +35,7 @@ nav:
       - Health Checks: capi-machine-health-checks.md
       - Examples:
         - Software prerequisites: capi-examples.md
+        - Adopting an existing k0s cluster into CAPI management: capi-adoption.md
         - AWS (HCP): capi-aws.md
         - AWS (VMs): capi-aws-vm.md
         - Hetzner Cloud (HCP): capi-hetzner.md
