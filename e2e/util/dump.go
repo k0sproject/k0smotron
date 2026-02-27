@@ -20,7 +20,6 @@ package util
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	corev1 "k8s.io/api/core/v1"
@@ -36,19 +35,19 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 	dumpAllResourcesAndLogs(ctx, clusterProxy, artifactFolder, namespace, cluster, clusterctlConfigPath)
 
 	if !skipCleanup {
-		err := deleteClusterAndWait(ctx, capiframework.DeleteClusterAndWaitInput{
-			ClusterProxy:   clusterProxy,
-			Cluster:        cluster,
-			ArtifactFolder: artifactFolder,
-		}, interval)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
+		// err := deleteClusterAndWait(ctx, capiframework.DeleteClusterAndWaitInput{
+		// 	ClusterProxy:   clusterProxy,
+		// 	Cluster:        cluster,
+		// 	ArtifactFolder: artifactFolder,
+		// }, interval)
+		// if err != nil {
+		// 	fmt.Println(err.Error())
+		// }
 
-		capiframework.DeleteNamespace(ctx, capiframework.DeleteNamespaceInput{
-			Deleter: clusterProxy.GetClient(),
-			Name:    namespace.Name,
-		})
+		// capiframework.DeleteNamespace(ctx, capiframework.DeleteNamespaceInput{
+		// 	Deleter: clusterProxy.GetClient(),
+		// 	Name:    namespace.Name,
+		// })
 	}
 	cancelWatches()
 }

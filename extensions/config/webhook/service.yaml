@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: extension-webhook-service
+spec:
+  ports:
+    - port: 443
+      targetPort: webhook-server
+  selector:
+    app: extension-webhook

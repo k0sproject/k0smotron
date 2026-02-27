@@ -104,7 +104,6 @@ type K0sWorkerConfigSpec struct {
 	// UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
 	// By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=false
 	UseSystemHostname bool `json:"useSystemHostname,omitempty"`
 
 	// Files specifies extra files to be passed to user_data upon creation.

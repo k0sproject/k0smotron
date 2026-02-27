@@ -210,7 +210,6 @@ spec:
                     type: object
                 type: object
               useSystemHostname:
-                default: false
                 description: |-
                   UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
                   By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.

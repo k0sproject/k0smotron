@@ -117,6 +117,14 @@ providers:
           - old: "image: k0s/k0smotron:latest"
             new: "image: quay.io/k0sproject/k0smotron:latest"
 
+  - name: k0sproject-k0smotron
+    type: RuntimeExtensionProvider
+    versions:
+      - name: v1.10.99 # next; use manifest from source files
+        value: ../../extension/config/default
+        files:
+        - sourcePath: "../data/shared/main/metadata.yaml"
+
 variables:
   KUBERNETES_VERSION_MANAGEMENT: "v1.30.0"
   KUBERNETES_VERSION: "v1.31.0"
