@@ -15,7 +15,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

@@ -122,6 +122,7 @@ manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure m
 
 ### generate
 generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
+generate_targets += api/k0smotron.io/v1beta2/zz_generated.deepcopy.go
 generate_targets += api/bootstrap/v1beta1/zz_generated.deepcopy.go
 generate_targets += api/bootstrap/v1beta2/zz_generated.deepcopy.go
 generate_targets += api/controlplane/v1beta1/zz_generated.deepcopy.go

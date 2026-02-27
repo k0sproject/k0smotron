@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
@@ -165,7 +165,7 @@ func (s *ScalingSuite) checkClusterStatus(ctx context.Context, rc *rest.Config) 
 }
 
 func (s *ScalingSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/default/clusters").Body([]byte(clusterResource)).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/default/clusters").Body([]byte(clusterResource)).Do(ctx)
 	s.Require().NoError(res.Error())
 }
 
@@ -192,7 +192,7 @@ func (s *ScalingSuite) scaleK0smotronCluster(ctx context.Context, rc *rest.Confi
 
 var clusterResource = `
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "Cluster",
 		"metadata": {
 		  "name": "scaling",

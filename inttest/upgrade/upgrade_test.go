@@ -35,7 +35,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 )
 
 type UpgradeSuite struct {
@@ -122,7 +122,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	_, err = kmcKC.CoreV1().ConfigMaps("default").Get(s.Context(), "test-old-cm", metav1.GetOptions{})
 	s.Require().NoError(err)
 
-	result, err := kc.RESTClient().Get().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters/kmc-test").DoRaw(s.Context())
+	result, err := kc.RESTClient().Get().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters/kmc-test").DoRaw(s.Context())
 	s.Require().NoError(err)
 
 	// If the status of the Owner is correct, the status of all resources
@@ -204,7 +204,7 @@ metadata:
 
 	kmc := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "Cluster",
 		"metadata": {
 		  "name": "kmc-test",
@@ -271,6 +271,6 @@ metadata:
 	  }
 `)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
 }
