@@ -2076,6 +2076,15 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpatchesindex">patches</a></b></td>
+        <td>[]object</td>
+        <td>
+          Patches defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
+Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
+For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecpersistence">persistence</a></b></td>
         <td>object</td>
         <td>
@@ -2123,7 +2132,7 @@ Recommended value is 3.<br/>
         <td>[]object</td>
         <td>
           TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
-See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.<br/>
+See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10486,6 +10495,108 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 </table>
 
 
+### K0smotronControlPlane.spec.patches[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+ComponentPatch defines a patch to apply to a generated resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpatchesindexpatch">patch</a></b></td>
+        <td>object</td>
+        <td>
+          Patch defines the patch type and content to apply.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpatchesindextarget">target</a></b></td>
+        <td>object</td>
+        <td>
+          Target selects which generated resource to patch.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.patches[index].patch
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpatchesindex)</sup></sup>
+
+
+
+Patch defines the patch type and content to apply.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          Content is the patch content (JSON/YAML). The format depends on Type.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type is the patch type to apply: "json", "merge", or "strategic".<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.patches[index].target
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpatchesindex)</sup></sup>
+
+
+
+Target selects which generated resource to patch.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>component</b></td>
+        <td>string</td>
+        <td>
+          Component is the value of the app.kubernetes.io/component label on the target resource.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the Kubernetes Kind of the target resource (e.g. "StatefulSet", "Service", "ConfigMap").<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlane.spec.persistence
 <sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
 
@@ -12223,6 +12334,15 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpatchesindex">patches</a></b></td>
+        <td>[]object</td>
+        <td>
+          Patches defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
+Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
+For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpersistence">persistence</a></b></td>
         <td>object</td>
         <td>
@@ -12270,7 +12390,7 @@ Recommended value is 3.<br/>
         <td>[]object</td>
         <td>
           TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
-See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.<br/>
+See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -20629,6 +20749,108 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
           storagePolicyName is the storage Policy Based Management (SPBM) profile name.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.patches[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+ComponentPatch defines a patch to apply to a generated resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpatchesindexpatch">patch</a></b></td>
+        <td>object</td>
+        <td>
+          Patch defines the patch type and content to apply.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpatchesindextarget">target</a></b></td>
+        <td>object</td>
+        <td>
+          Target selects which generated resource to patch.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.patches[index].patch
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpatchesindex)</sup></sup>
+
+
+
+Patch defines the patch type and content to apply.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          Content is the patch content (JSON/YAML). The format depends on Type.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type is the patch type to apply: "json", "merge", or "strategic".<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.patches[index].target
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpatchesindex)</sup></sup>
+
+
+
+Target selects which generated resource to patch.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>component</b></td>
+        <td>string</td>
+        <td>
+          Component is the value of the app.kubernetes.io/component label on the target resource.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the Kubernetes Kind of the target resource (e.g. "StatefulSet", "Service", "ConfigMap").<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

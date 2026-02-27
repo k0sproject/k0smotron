@@ -19,6 +19,7 @@ package k0smotronio
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -75,6 +76,10 @@ func (scope *kmcScope) reconcileEntrypointCM(ctx context.Context, kmc *km.Cluste
 	cm, err := scope.generateEntrypointCM(kmc)
 	if err != nil {
 		return err
+	}
+
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cm, kmc.Spec.Patches); err != nil {
+		return fmt.Errorf("failed to apply component patches to entrypoint configmap: %w", err)
 	}
 
 	return scope.client.Patch(ctx, &cm, client.Apply, patchOpts...)

@@ -4205,6 +4205,62 @@ spec:
                           - path
                           type: object
                         type: array
+                      patches:
+                        description: |-
+                          Patches defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
+                          Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
+                          For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.
+                        items:
+                          description: ComponentPatch defines a patch to apply to
+                            a generated resource.
+                          properties:
+                            patch:
+                              description: Patch defines the patch type and content
+                                to apply.
+                              properties:
+                                content:
+                                  description: Content is the patch content (JSON/YAML).
+                                    The format depends on Type.
+                                  type: string
+                                type:
+                                  allOf:
+                                  - enum:
+                                    - json
+                                    - strategic
+                                    - merge
+                                  - enum:
+                                    - json
+                                    - strategic
+                                    - merge
+                                  description: 'Type is the patch type to apply: "json",
+                                    "merge", or "strategic".'
+                                  type: string
+                              required:
+                              - content
+                              - type
+                              type: object
+                            target:
+                              description: Target selects which generated resource
+                                to patch.
+                              properties:
+                                component:
+                                  description: Component is the value of the app.kubernetes.io/component
+                                    label on the target resource.
+                                  type: string
+                                kind:
+                                  description: Kind is the Kubernetes Kind of the
+                                    target resource (e.g. "StatefulSet", "Service",
+                                    "ConfigMap").
+                                  type: string
+                              required:
+                              - component
+                              - kind
+                              type: object
+                          required:
+                          - patch
+                          - target
+                          type: object
+                        type: array
                       persistence:
                         description: |-
                           Persistence defines the persistence configuration. If empty k0smotron
@@ -4802,7 +4858,7 @@ spec:
                       topologySpreadConstraints:
                         description: |-
                           TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
-                          See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.
+                          See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more details.
                         items:
                           description: TopologySpreadConstraint specifies how to spread
                             matching pods among the given topology.

@@ -801,7 +801,7 @@ token = ` + frpToken + `
 			Name:      frpsCMName,
 			Namespace: kcp.GetNamespace(),
 			Labels: map[string]string{
-				"app.kubernetes.io/component": util.ComponentTunneling,
+				util.ComponentLabel: util.ComponentTunneling,
 			},
 		},
 		Data: map[string]string{
@@ -829,9 +829,9 @@ token = ` + frpToken + `
 			Name:      fmt.Sprintf(FRPDeploymentNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
 			Labels: map[string]string{
-				"k0smotron_cluster":           kcp.GetName(),
-				"app":                         "frps",
-				"app.kubernetes.io/component": util.ComponentTunneling,
+				"k0smotron_cluster": kcp.GetName(),
+				"app":               "frps",
+				util.ComponentLabel: util.ComponentTunneling,
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -841,9 +841,9 @@ token = ` + frpToken + `
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"k0smotron_cluster":           kcp.GetName(),
-						"app":                         "frps",
-						"app.kubernetes.io/component": util.ComponentTunneling,
+						"k0smotron_cluster": kcp.GetName(),
+						"app":               "frps",
+						util.ComponentLabel: util.ComponentTunneling,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -901,9 +901,9 @@ token = ` + frpToken + `
 			Name:      fmt.Sprintf(FRPServiceNameTemplate, kcp.GetName()),
 			Namespace: kcp.GetNamespace(),
 			Labels: map[string]string{
-				"k0smotron_cluster":           kcp.GetName(),
-				"app":                         "frps",
-				"app.kubernetes.io/component": util.ComponentTunneling,
+				"k0smotron_cluster": kcp.GetName(),
+				"app":               "frps",
+				util.ComponentLabel: util.ComponentTunneling,
 			},
 		},
 		Spec: corev1.ServiceSpec{

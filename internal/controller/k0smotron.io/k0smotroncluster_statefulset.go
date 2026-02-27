@@ -60,7 +60,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	selectorLabels := util.LabelsForK0smotronControlPlane(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
 	maps.Copy(labels, selectorLabels)
-	labels["app.kubernetes.io/component"] = util.ComponentControlPlane
+	labels[util.ComponentLabel] = util.ComponentControlPlane
 	annotations := util.AnnotationsForK0smotronCluster(kmc)
 
 	statefulSet := apps.StatefulSet{
@@ -277,6 +277,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("kmc-%s-telemetry-config", kmc.Name),
 			Namespace: kmc.Namespace,
+			Labels:    kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentTelemetry),
 		},
 		Data: map[string]string{
 			"configmap.yaml": `
@@ -558,6 +559,10 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 	statefulSet, statefulSetPreview, err := scope.generateStatefulSet(ctx, kmc)
 	if err != nil {
 		return fmt.Errorf("failed to generate statefulset: %w", err)
+	}
+
+	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &statefulSet, kmc.Spec.Patches); err != nil {
+		return fmt.Errorf("failed to apply component patches to statefulset: %w", err)
 	}
 
 	selector, err := metav1.LabelSelectorAsSelector(statefulSet.Spec.Selector)
