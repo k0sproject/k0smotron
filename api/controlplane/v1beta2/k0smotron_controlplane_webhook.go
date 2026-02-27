@@ -19,7 +19,8 @@ package v1beta2
 import (
 	"context"
 	"fmt"
-	k0smotronio "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
+
+	k0smotroniov1beta2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/version"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,7 +35,7 @@ import (
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 type K0smotronControlPlaneValidator struct {
-	cv k0smotronio.ClusterValidator
+	cv k0smotroniov1beta2.ClusterValidator
 }
 
 var _ webhook.CustomValidator = &K0smotronControlPlaneValidator{}

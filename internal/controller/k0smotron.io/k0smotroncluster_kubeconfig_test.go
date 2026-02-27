@@ -5,10 +5,9 @@ package k0smotronio
 import (
 	"testing"
 
+	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
-
-	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
 
 const sampleKubeconfig = `apiVersion: v1
@@ -54,7 +53,7 @@ users:
 `
 
 func TestRewriteKubeconfigNames(t *testing.T) {
-	out, err := rewriteKubeconfigValues(sampleKubeconfig, &v1beta1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "wl1", Namespace: "default"}})
+	out, err := rewriteKubeconfigValues(sampleKubeconfig, &v1beta2.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "wl1", Namespace: "default"}})
 	if err != nil {
 		t.Fatalf("rewriteKubeconfigValues returned error: %v", err)
 	}

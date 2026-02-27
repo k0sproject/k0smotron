@@ -21,7 +21,7 @@ package k0smotronio
 import (
 	"testing"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"

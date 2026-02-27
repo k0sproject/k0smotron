@@ -69,7 +69,7 @@ func (s *JoinTokenSuite) TestK0sGetsUp() {
 
 	s.T().Log("checking if JoinTokenRequest is deleted")
 	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
-		res := kc.RESTClient().Get().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/jtr-test/jointokenrequests/jtr-test").Do(s.Context())
+		res := kc.RESTClient().Get().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/jtr-test/jointokenrequests/jtr-test").Do(s.Context())
 
 		var statusCode int
 		res.StatusCode(&statusCode)
@@ -101,7 +101,7 @@ func (s *JoinTokenSuite) createK0smotronCluster(ctx context.Context, kc *kuberne
 	s.Require().NoError(err)
 	kmc := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "Cluster",
 		"metadata": {
 		  "name": "kmc-test",
@@ -120,7 +120,7 @@ func (s *JoinTokenSuite) createK0smotronCluster(ctx context.Context, kc *kuberne
 	  }
 `)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
 }
 
@@ -134,7 +134,7 @@ func (s *JoinTokenSuite) createJoinTokenRequest(ctx context.Context, kc *kuberne
 
 	jtr := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "JoinTokenRequest",
 		"metadata": {
 		  "name": "jtr-test",
@@ -148,12 +148,12 @@ func (s *JoinTokenSuite) createJoinTokenRequest(ctx context.Context, kc *kuberne
 		}
 	}`)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/jtr-test/jointokenrequests").Body(jtr).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/jtr-test/jointokenrequests").Body(jtr).Do(ctx)
 	s.Require().NoError(res.Error())
 }
 
 func (s *JoinTokenSuite) deleteK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
-	res := kc.RESTClient().Delete().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters/kmc-test").Do(ctx)
+	res := kc.RESTClient().Delete().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters/kmc-test").Do(ctx)
 	s.Require().NoError(res.Error())
 }
 
