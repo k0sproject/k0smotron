@@ -20,10 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/utils/ptr"
 	"reflect"
 	"strings"
 	"time"
+
+	"k8s.io/utils/ptr"
 
 	"github.com/imdario/mergo"
 	corev1 "k8s.io/api/core/v1"
@@ -55,7 +56,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/exec"
 	"github.com/k0sproject/version"

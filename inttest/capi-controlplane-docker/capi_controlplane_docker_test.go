@@ -37,7 +37,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
@@ -116,7 +116,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(err)
 
 	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		var cluster v1beta1.Cluster
+		var cluster v1beta2.Cluster
 		err = s.client.RESTClient().
 			Get().
 			AbsPath("/apis/cluster.x-k8s.io/v1beta2/namespaces/default/clusters/docker-test-cluster").
