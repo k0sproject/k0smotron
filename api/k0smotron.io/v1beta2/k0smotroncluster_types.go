@@ -411,6 +411,8 @@ const (
 	StorageTypeEtcd StorageType = "etcd"
 	// StorageTypeKine defines the kine storage backend type for the k0s control plane.
 	StorageTypeKine StorageType = "kine"
+	// StorageTypeNats defines the embedded NATS storage backend type for the k0s control plane.
+	StorageTypeNats StorageType = "nats"
 )
 
 // NATSSpec defines the configuration for the embedded NATS JetStream storage backend.
@@ -539,6 +541,16 @@ func (kmc *Cluster) GetStatefulSetName() string {
 
 // Hub marks Cluster as a conversion hub.
 func (*Cluster) Hub() {}
+
+// GetNatsServiceName returns the name of the headless service used for NATS cluster routing.
+func (kmc *Cluster) GetNatsServiceName() string {
+	return kmc.getObjectName("kmc-%s-nats")
+}
+
+// GetNatsTokenSecretName returns the name of the Secret holding the NATS auth token.
+func (kmc *Cluster) GetNatsTokenSecretName() string {
+	return kmc.getObjectName("kmc-%s-nats-token")
+}
 
 // GetEtcdStatefulSetName returns the name of the statefulset for the etcd cluster.
 func (kmc *Cluster) GetEtcdStatefulSetName() string {

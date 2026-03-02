@@ -32,6 +32,10 @@ func (scope *kmcScope) reconcilePVC(ctx context.Context, kmc *km.Cluster) error 
 	if err != nil {
 		return fmt.Errorf("failed to reconcile etcd PVC: %w", err)
 	}
+	err = reconcileNatsPVC(ctx, kmc, scope)
+	if err != nil {
+		return fmt.Errorf("failed to reconcile nats PVC: %w", err)
+	}
 
 	return nil
 }
@@ -47,6 +51,13 @@ func reconcileControlPlanePVC(ctx context.Context, kmc *km.Cluster, c client.Cli
 	}
 
 	return resizeStatefulSetAndPVC(ctx, kmc, *kmc.Spec.Persistence.PersistentVolumeClaim.Spec.Resources.Requests.Storage(), kmc.Spec.Replicas, kmc.GetStatefulSetName(), kmc.Spec.Persistence.PersistentVolumeClaim.Name, c)
+}
+
+func reconcileNatsPVC(ctx context.Context, kmc *km.Cluster, scope *kmcScope) error {
+	if kmc.Spec.Storage.Type != km.StorageTypeNats {
+		return nil
+	}
+	return resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Storage.NATS.Persistence.Size, kmc.Spec.Replicas, kmc.GetStatefulSetName(), "nats-data", scope.client)
 }
 
 func reconcileEtcdPVC(ctx context.Context, kmc *km.Cluster, scope *kmcScope) error {
