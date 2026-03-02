@@ -10,14 +10,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-k0smotron-io-v1beta1-cluster
+      path: /mutate-k0smotron-io-v1beta2-cluster
   failurePolicy: Fail
-  name: mutate-k0smotron-cluster-v1beta1.k0smotron.io
+  name: mutate-k0smotron-cluster-v1beta2.k0smotron.io
   rules:
   - apiGroups:
     - k0smotron.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -76,14 +76,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-k0smotron-io-v1beta1-cluster
+      path: /validate-k0smotron-io-v1beta2-cluster
   failurePolicy: Fail
-  name: validate-k0smotron-cluster-v1beta1.k0smotron.io
+  name: validate-k0smotron-cluster-v1beta2.k0smotron.io
   rules:
   - apiGroups:
     - k0smotron.io
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE

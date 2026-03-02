@@ -1,5 +1,5 @@
 /*
-Copyright 2023.
+Copyright 2026.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1beta2
 
 import (
 	"crypto/md5"
@@ -67,7 +67,6 @@ type ClusterSpec struct {
 	// Persistence defines the persistence configuration. If empty k0smotron
 	// will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
 	//+kubebuilder:validation:Optional
-	//+kubebuilder:default={"type":"emptyDir"}
 	Persistence PersistenceSpec `json:"persistence,omitempty"`
 	// KineDataSourceURL defines the kine datasource URL.
 	//+kubebuilder:validation:Optional
@@ -235,11 +234,11 @@ type ClusterStatus struct {
 	Selector string `json:"selector,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
-//+kubebuilder:resource:shortName=kmc
-// +kubebuilder:deprecatedversion
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
+// +kubebuilder:resource:shortName=kmc
+// +kubebuilder:storageversion
 
 // Cluster is the Schema for the k0smotronclusters API
 type Cluster struct {
@@ -294,9 +293,7 @@ type ClusterList struct {
 
 // PersistenceSpec defines the persistence configuration for the k0s control plane.
 type PersistenceSpec struct {
-	// Type defines the type of persistence to be used for the k0s control plane.
-	//+kubebuilder:validation:Enum=emptyDir;hostPath;pvc
-	//+kubebuilder:validation:Optional
+	//+kubebuilder:validation:Enum:emptyDir;hostPath;pvc
 	//+kubebuilder:default=emptyDir
 	Type string `json:"type"`
 	// PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.

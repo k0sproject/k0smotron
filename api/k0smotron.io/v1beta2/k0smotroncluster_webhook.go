@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package k0smotronio
+package v1beta2
 
 import (
 	"context"
@@ -26,12 +26,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
 
-// +kubebuilder:webhook:path=/mutate-k0smotron-io-v1beta1-cluster,mutating=true,failurePolicy=fail,sideEffects=None,groups=k0smotron.io,resources=clusters,verbs=create;update,versions=v1beta1,name=mutate-k0smotron-cluster-v1beta1.k0smotron.io,admissionReviewVersions=v1
-// +kubebuilder:webhook:path=/validate-k0smotron-io-v1beta1-cluster,mutating=false,failurePolicy=fail,sideEffects=None,groups=k0smotron.io,resources=clusters,verbs=create;update,versions=v1beta1,name=validate-k0smotron-cluster-v1beta1.k0smotron.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/mutate-k0smotron-io-v1beta2-cluster,mutating=true,failurePolicy=fail,sideEffects=None,groups=k0smotron.io,resources=clusters,verbs=create;update,versions=v1beta2,name=mutate-k0smotron-cluster-v1beta2.k0smotron.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-k0smotron-io-v1beta2-cluster,mutating=false,failurePolicy=fail,sideEffects=None,groups=k0smotron.io,resources=clusters,verbs=create;update,versions=v1beta2,name=validate-k0smotron-cluster-v1beta2.k0smotron.io,admissionReviewVersions=v1
 
 // ClusterDefaulter is a webhook that sets default values for the Cluster resource.
 type ClusterDefaulter struct{}
@@ -41,7 +39,7 @@ type ClusterValidator struct{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
 func (c ClusterValidator) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	kmc, ok := obj.(*km.Cluster)
+	kmc, ok := obj.(*Cluster)
 	if !ok {
 		return nil, fmt.Errorf("expected a Cluster object but got %T", obj)
 	}
@@ -51,12 +49,12 @@ func (c ClusterValidator) ValidateCreate(_ context.Context, obj runtime.Object) 
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
 func (c ClusterValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	_, ok := oldObj.(*km.Cluster)
+	_, ok := oldObj.(*Cluster)
 	if !ok {
 		return nil, fmt.Errorf("expected a Cluster object but got %T", oldObj)
 	}
 
-	kmc, ok := newObj.(*km.Cluster)
+	kmc, ok := newObj.(*Cluster)
 	if !ok {
 		return nil, fmt.Errorf("expected a Cluster object but got %T", newObj)
 	}
@@ -70,7 +68,7 @@ func (c ClusterValidator) ValidateDelete(_ context.Context, _ runtime.Object) (w
 }
 
 // ValidateClusterSpec validates the ClusterSpec and returns any warnings or errors.
-func (c ClusterValidator) ValidateClusterSpec(kcs *km.ClusterSpec) (warnings admission.Warnings, err error) {
+func (c ClusterValidator) ValidateClusterSpec(kcs *ClusterSpec) (warnings admission.Warnings, err error) {
 	warnings = c.validateVersionSuffix(kcs.Version)
 
 	if kcs.Ingress != nil {
@@ -101,7 +99,7 @@ func (c ClusterValidator) validateVersionSuffix(version string) admission.Warnin
 
 // Default sets default values for the Cluster resource.
 func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error {
-	kmc, ok := obj.(*km.Cluster)
+	kmc, ok := obj.(*Cluster)
 	if !ok {
 		return fmt.Errorf("expected a Cluster object but got %T", obj)
 	}
@@ -111,7 +109,7 @@ func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error 
 	}
 
 	if kmc.Spec.Version == "" {
-		kmc.Spec.Version = km.DefaultK0SVersion
+		kmc.Spec.Version = DefaultK0SVersion
 	}
 
 	if kmc.Spec.Service.Type == "" {
@@ -121,7 +119,7 @@ func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error 
 	}
 
 	if kmc.Spec.Etcd.Image == "" {
-		kmc.Spec.Etcd.Image = km.DefaultEtcdImage
+		kmc.Spec.Etcd.Image = DefaultEtcdImage
 	}
 
 	if kmc.Spec.Ingress != nil {
@@ -136,10 +134,10 @@ func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error 
 var _ webhook.CustomDefaulter = &ClusterDefaulter{}
 var _ webhook.CustomValidator = &ClusterValidator{}
 
-// SetupK0sControlPlaneWebhookWithManager sets up the webhook with the manager.
-func SetupK0sControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
+// SetupK0smotronClusterWebhookWithManager sets up the webhook with the manager.
+func SetupK0smotronClusterWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&km.Cluster{}).
+		For(&Cluster{}).
 		WithDefaulter(&ClusterDefaulter{}).
 		WithValidator(&ClusterValidator{}).
 		Complete()

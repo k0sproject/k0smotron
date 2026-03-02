@@ -53,6 +53,7 @@ import (
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	infrastructurev1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	k0smotronv1beta2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/bootstrap"
 	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
 	"github.com/k0sproject/k0smotron/internal/controller/infrastructure"
@@ -87,6 +88,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(k0smotronv1beta1.AddToScheme(scheme))
+	utilruntime.Must(k0smotronv1beta2.AddToScheme(scheme))
 	utilruntime.Must(bootstrapv1beta1.AddToScheme(scheme))
 	utilruntime.Must(bootstrapv1beta2.AddToScheme(scheme))
 
@@ -394,7 +396,7 @@ func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clients
 		os.Exit(1)
 	}
 
-	if err := controller.SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+	if err := k0smotronv1beta2.SetupK0smotronClusterWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "k0smotron.Cluster")
 		os.Exit(1)
 	}

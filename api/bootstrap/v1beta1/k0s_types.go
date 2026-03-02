@@ -67,13 +67,13 @@ type K0sWorkerConfig struct {
 }
 
 // GetConditions returns the set of conditions for this object.
-func (k *K0sWorkerConfig) GetConditions() []metav1.Condition {
-	return k.Status.Conditions
+func (c *K0sWorkerConfig) GetConditions() []metav1.Condition {
+	return c.Status.Conditions
 }
 
 // SetConditions sets the conditions on the K0sWorkerConfig status.
-func (k *K0sWorkerConfig) SetConditions(conditions []metav1.Condition) {
-	k.Status.Conditions = conditions
+func (c *K0sWorkerConfig) SetConditions(conditions []metav1.Condition) {
+	c.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true
@@ -232,6 +232,7 @@ type K0sControllerConfigSpec struct {
 	*K0sConfigSpec `json:",inline"`
 }
 
+// K0sConfigSpec defines the desired state of K0sConfig
 type K0sConfigSpec struct {
 	// Ignition defines the ignition configuration. If empty, k0smotron will use cloud-init.
 	// +kubebuilder:validation:Optional
@@ -298,19 +299,19 @@ type K0sConfigSpec struct {
 }
 
 // GetK0sConfigPath returns the full path to the k0s.yaml file in the working directory.
-func (kcs *K0sConfigSpec) GetK0sConfigPath() string {
-	if kcs.WorkingDir == "" {
+func (c *K0sConfigSpec) GetK0sConfigPath() string {
+	if c.WorkingDir == "" {
 		return "/etc/k0s.yaml"
 	}
-	return filepath.Join(kcs.WorkingDir, "k0s.yaml")
+	return filepath.Join(c.WorkingDir, "k0s.yaml")
 }
 
 // GetJoinTokenPath returns the full path to the k0s token file in the working directory.
-func (kcs *K0sConfigSpec) GetJoinTokenPath() string {
-	if kcs.WorkingDir == "" {
+func (c *K0sConfigSpec) GetJoinTokenPath() string {
+	if c.WorkingDir == "" {
 		return "/etc/k0s.token"
 	}
-	return filepath.Join(kcs.WorkingDir, "k0s.token")
+	return filepath.Join(c.WorkingDir, "k0s.token")
 }
 
 // GetK0sConfigPath returns the full path to the k0s.yaml file in the working directory.

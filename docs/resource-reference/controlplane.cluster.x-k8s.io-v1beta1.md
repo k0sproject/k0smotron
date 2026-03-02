@@ -96,7 +96,7 @@ K0sControlPlaneSpec defines the desired state of K0sControlPlane.
         <td><b><a href="#k0scontrolplanespeck0sconfigspec">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sConfigSpec defines the desired state of K0sConfig<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -152,7 +152,7 @@ just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select
 
 
 
-
+K0sConfigSpec defines the desired state of K0sConfig
 
 <table>
     <thead>
@@ -1247,7 +1247,7 @@ K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlane
         <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspec">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          K0sConfigSpec defines the desired state of K0sConfig<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1288,7 +1288,7 @@ be configured on the K0sControlPlaneTemplate.<br/>
 
 
 
-
+K0sConfigSpec defines the desired state of K0sConfig
 
 <table>
     <thead>

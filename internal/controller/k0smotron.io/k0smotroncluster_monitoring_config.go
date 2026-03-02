@@ -21,7 +21,7 @@ import (
 	"context"
 	"text/template"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

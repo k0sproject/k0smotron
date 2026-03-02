@@ -23,8 +23,9 @@ import (
 	"path"
 	"path/filepath"
 	goruntime "runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/pkg/errors"
 	"golang.org/x/tools/go/packages"
@@ -46,6 +47,7 @@ import (
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	infrastructurev1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	k0smotronv1beta2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -89,6 +91,7 @@ func init() {
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(k0smotronv1beta1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(k0smotronv1beta2.AddToScheme(scheme.Scheme))
 	utilruntime.Must(bootstrapv1beta1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(bootstrapv1beta2.AddToScheme(scheme.Scheme))
 	utilruntime.Must(cpv1beta1.AddToScheme(scheme.Scheme))

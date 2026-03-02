@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
