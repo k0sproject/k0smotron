@@ -122,6 +122,7 @@ manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure m
 
 ### generate
 generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
+generate_targets += api/k0smotron.io/v1beta2/zz_generated.deepcopy.go
 generate_targets += api/bootstrap/v1beta1/zz_generated.deepcopy.go
 generate_targets += api/bootstrap/v1beta2/zz_generated.deepcopy.go
 generate_targets += api/controlplane/v1beta1/zz_generated.deepcopy.go
@@ -305,7 +306,7 @@ crdoc: $(CRDOC) ## Download crdoc locally if necessary. If wrong version is inst
 $(CRDOC): Makefile.variables | $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install fybrik.io/crdoc@$(CRDOC_VERSION)
 
-.PHONY: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron docs-generate-reference
+.PHONY: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron-v1beta1 docs-generate-k0smotron-v1beta2 docs-generate-reference
 docs-generate-bootstrap: $(CRDOC) ## Generate docs for bootstrap CRDs
 	$(CRDOC) --resources config/clusterapi/bootstrap/crd/bases --output docs/resource-reference/bootstrap.cluster.x-k8s.io-v1beta1.md
 
@@ -315,11 +316,14 @@ docs-generate-controlplane: $(CRDOC) ## Generate docs for controlplane CRDs
 docs-generate-infrastructure: $(CRDOC) ## Generate docs for infrastructure CRDs
 	$(CRDOC) --resources config/clusterapi/infrastructure/crd/bases --output docs/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1.md
 
-docs-generate-k0smotron: $(CRDOC) ## Generate docs for k0smotron CRDs
+docs-generate-k0smotron-v1beta1: $(CRDOC) ## Generate docs for k0smotron CRDs
 	$(CRDOC) --resources config/standalone/crd/bases --output docs/resource-reference/k0smotron.io-v1beta1.md
 
+docs-generate-k0smotron-v1beta2: $(CRDOC) ## Generate docs for k0smotron CRDs
+	$(CRDOC) --resources config/standalone/crd/bases --output docs/resource-reference/k0smotron.io-v1beta2.md
+
 # Generate docs for all CRDs apis
-docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron
+docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron-v1beta1 docs-generate-k0smotron-v1beta2 ## Generate docs for all CRDs apis
 
 ## Generate all code, manifests, documentation, and release artifacts
 .PHONY: generate-all

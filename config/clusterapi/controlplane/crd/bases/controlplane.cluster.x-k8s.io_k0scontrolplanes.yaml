@@ -85,6 +85,7 @@ spec:
             description: K0sControlPlaneSpec defines the desired state of K0sControlPlane.
             properties:
               k0sConfigSpec:
+                description: K0sConfigSpec defines the desired state of K0sConfig
                 properties:
                   args:
                     description: |-
