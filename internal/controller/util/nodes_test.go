@@ -1,10 +1,13 @@
 package util
 
 import (
+	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestFindNodeAddress(t *testing.T) {
@@ -51,7 +54,7 @@ func TestFindNodeAddress(t *testing.T) {
 			want: "1.2.3.4",
 		},
 		{
-			name: "when both are set",
+			name: "when both (internalIP and externalIP) are set, return externalIP",
 			nodes: &v1.NodeList{
 				Items: []v1.Node{
 					{
@@ -71,6 +74,28 @@ func TestFindNodeAddress(t *testing.T) {
 				},
 			},
 			want: "1.1.1.1",
+		},
+		{
+			name: "when both (internalIP and externalDNS) are set, return externalDNS",
+			nodes: &v1.NodeList{
+				Items: []v1.Node{
+					{
+						Status: v1.NodeStatus{
+							Addresses: []v1.NodeAddress{
+								{
+									Type:    v1.NodeExternalDNS,
+									Address: "external.example.com",
+								},
+								{
+									Type:    v1.NodeInternalIP,
+									Address: "2.2.2.2",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "external.example.com",
 		},
 		{
 			name: "when multiple addresses are set",
@@ -105,8 +130,17 @@ func TestFindNodeAddress(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := FindNodeAddress(tt.nodes)
-			assert.Equal(t, tt.want, got)
+			scheme := runtime.NewScheme()
+			_ = v1.AddToScheme(scheme)
+
+			client := fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(&tt.nodes.Items[0]).
+				Build()
+
+			got, err := FindNodeAddress(context.Background(), client)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

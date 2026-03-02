@@ -761,7 +761,7 @@ func (c *K0sController) reconcileTunneling(ctx context.Context, cluster *cluster
 	}
 
 	if kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress == "" {
-		ip, err := c.detectNodeIP(ctx, kcp)
+		ip, err := util.FindNodeAddress(ctx, c.Client)
 		if err != nil {
 			return fmt.Errorf("error detecting node IP: %w", err)
 		}
@@ -993,15 +993,6 @@ func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.
 	}
 
 	return nil
-}
-
-func (c *K0sController) detectNodeIP(ctx context.Context, _ *cpv1beta1.K0sControlPlane) (string, error) {
-	nodes, err := c.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	return util.FindNodeAddress(nodes), nil
 }
 
 func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (string, error) {
