@@ -26,7 +26,7 @@ import (
 	"time"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -205,7 +205,7 @@ func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.
 
 func (s *CAPIDockerSuite) checkClusterIDAnnotation(ctx context.Context) {
 	err := wait.PollUntilContextCancel(ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		var cluster v1beta1.Cluster
+		var cluster v1beta2.Cluster
 		_ = s.client.RESTClient().
 			Get().
 			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/clusters/docker-test").

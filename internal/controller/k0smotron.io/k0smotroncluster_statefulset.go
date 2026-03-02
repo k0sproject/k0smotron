@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"k8s.io/client-go/kubernetes"

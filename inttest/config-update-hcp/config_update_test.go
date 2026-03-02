@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
@@ -198,7 +198,7 @@ metadata:
 
 	kmc := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "Cluster",
 		"metadata": {
 		  "name": "kmc-test",
@@ -242,6 +242,6 @@ metadata:
 	  }
 `)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
 }

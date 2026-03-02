@@ -72,6 +72,7 @@ spec:
                       state of K0sControlPlaneTemplateResource.
                     properties:
                       k0sConfigSpec:
+                        description: K0sConfigSpec defines the desired state of K0sConfig
                         properties:
                           args:
                             description: |-

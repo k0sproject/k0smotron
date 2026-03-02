@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/exec"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
@@ -76,7 +76,6 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().True(strings.Contains(configMap.Data["K0SMOTRON_K0S_YAML"], "externalAddress:"))
 
 	time.Sleep(time.Second * 30)
-
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
 

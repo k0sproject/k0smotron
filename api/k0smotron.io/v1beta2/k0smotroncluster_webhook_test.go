@@ -1,6 +1,6 @@
 //go:build !envtest
 
-package k0smotronio
+package v1beta2
 
 import (
 	"testing"
