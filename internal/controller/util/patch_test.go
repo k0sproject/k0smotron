@@ -337,4 +337,36 @@ func TestApplyComponentPatches_MultipleMatchingPatches_AllApplied(t *testing.T) 
 	assert.Equal(t, "value2", svc.Annotations["test2"])
 }
 
+func TestApplyComponentPatches_MergePatch_NullDeletesField(t *testing.T) {
+	scheme := mustScheme(t)
+	svc := &v1.Service{
+		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "test",
+			Labels: map[string]string{ComponentLabel: "control-plane"},
+			Annotations: map[string]string{
+				"to-keep":   "value",
+				"to-delete": "value",
+			},
+		},
+	}
+	patches := []km.ComponentPatch{
+		{
+			Target: km.PatchTarget{
+				Kind:      "Service",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.MergePatchType,
+				Content: `{"metadata":{"annotations":{"to-delete":null}}}`,
+			},
+		},
+	}
+	err := ApplyComponentPatches(scheme, svc, patches)
+	require.NoError(t, err)
+	assert.Equal(t, "value", svc.Annotations["to-keep"])
+	_, exists := svc.Annotations["to-delete"]
+	assert.False(t, exists, "annotation 'to-delete' should have been removed by null merge patch")
+}
+
 func ptr(i int32) *int32 { return &i }

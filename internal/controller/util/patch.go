@@ -19,6 +19,7 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -79,9 +80,16 @@ func ApplyComponentPatches(scheme *runtime.Scheme, obj client.Object, patches []
 	}
 
 	if applied {
-		if err := json.Unmarshal(currentData, obj); err != nil {
+		// Unmarshal into a fresh object so that fields removed by merge patches
+		// (null values per RFC 7386) are not retained from the existing map entries.
+		newObj, err := scheme.New(gvks[0])
+		if err != nil {
+			return fmt.Errorf("create new object for unmarshal: %w", err)
+		}
+		if err := json.Unmarshal(currentData, newObj); err != nil {
 			return fmt.Errorf("unmarshal patched object: %w", err)
 		}
+		reflect.ValueOf(obj).Elem().Set(reflect.ValueOf(newObj).Elem())
 	}
 	return nil
 }
@@ -103,5 +111,5 @@ func applyStrategicMergePatch(scheme *runtime.Scheme, gvk *schema.GroupVersionKi
 }
 
 func applyMergePatch(original, patchData []byte) ([]byte, error) {
-	return jsonpatch.MergeMergePatches(original, patchData)
+	return jsonpatch.MergePatch(original, patchData)
 }
