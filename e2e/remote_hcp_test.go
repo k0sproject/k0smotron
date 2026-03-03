@@ -127,7 +127,7 @@ func remoteHCPSpec(t *testing.T) {
 		Getter:  bootstrapClusterProxy.GetClient(),
 	}, util.GetInterval(e2eConfig, testName, "wait-controllers"))
 	require.NoError(t, err)
-	fmt.Println("Control Planes are reeady!")
+	fmt.Println("Control Planes are ready!")
 
 	waitMachineInterval := util.GetInterval(e2eConfig, testName, "wait-machines")
 	err = util.WaitForWorkerMachine(ctx, util.WaitForWorkersMachineInput{
@@ -139,7 +139,7 @@ func remoteHCPSpec(t *testing.T) {
 		WaitForMachinesIntervals: waitMachineInterval,
 	})
 	require.NoError(t, err)
-	fmt.Println("Worker nodes are reeady!")
+	fmt.Println("Worker nodes are ready!")
 
 	// Verify that the patches field was applied to generated resources
 	{
