@@ -222,7 +222,7 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
 		},
 	}
 	switch kmc.Spec.Storage.Type {
-	case km.StorageTypeNats:
+	case km.StorageTypeNATS:
 		v1beta1Spec["storage"] = map[string]any{
 			"type": "kine",
 			"kine": map[string]any{

@@ -54,7 +54,7 @@ func reconcileControlPlanePVC(ctx context.Context, kmc *km.Cluster, c client.Cli
 }
 
 func reconcileNatsPVC(ctx context.Context, kmc *km.Cluster, scope *kmcScope) error {
-	if kmc.Spec.Storage.Type != km.StorageTypeNats {
+	if kmc.Spec.Storage.Type != km.StorageTypeNATS {
 		return nil
 	}
 	return resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Storage.NATS.Persistence.Size, kmc.Spec.Replicas, kmc.GetStatefulSetName(), "nats-data", scope.client)

@@ -44,7 +44,7 @@ const natsServerConfigPath = "/etc/nats/nats.conf"
 const natsTokenPlaceholder = "__K0SMOTRON_NATS_TOKEN__"
 
 func (scope *kmcScope) reconcileNats(ctx context.Context, kmc *km.Cluster) error {
-	if kmc.Spec.Storage.Type != km.StorageTypeNats {
+	if kmc.Spec.Storage.Type != km.StorageTypeNATS {
 		return nil
 	}
 	if err := scope.reconcileNatsSvc(ctx, kmc); err != nil {
@@ -85,7 +85,7 @@ func (scope *kmcScope) reconcileNatsSvc(ctx context.Context, kmc *km.Cluster) er
 	}
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
-	return scope.client.Patch(ctx, &svc, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &svc)
 }
 
 // reconcileNatsTokenSecret ensures the NATS auth token Secret exists.
@@ -125,7 +125,7 @@ func (scope *kmcScope) reconcileNatsTokenSecret(ctx context.Context, kmc *km.Clu
 		},
 	}
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, secret, scope.client.Scheme(), scope.externalOwner)
-	if err := scope.client.Create(ctx, secret); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, secret); err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			return nil
 		}

@@ -411,8 +411,8 @@ const (
 	StorageTypeEtcd StorageType = "etcd"
 	// StorageTypeKine defines the kine storage backend type for the k0s control plane.
 	StorageTypeKine StorageType = "kine"
-	// StorageTypeNats defines the embedded NATS storage backend type for the k0s control plane.
-	StorageTypeNats StorageType = "nats"
+	// StorageTypeNATS defines the embedded NATS storage backend type for the k0s control plane.
+	StorageTypeNATS StorageType = "nats"
 )
 
 // NATSSpec defines the configuration for the embedded NATS JetStream storage backend.

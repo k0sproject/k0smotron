@@ -168,7 +168,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		addMonitoringStack(kmc, &statefulSet)
 	}
 
-	if kmc.Spec.Storage.Type == km.StorageTypeNats {
+	if kmc.Spec.Storage.Type == km.StorageTypeNATS {
 		// Use the headless NATS service for pod-specific DNS.
 		statefulSet.Spec.ServiceName = kmc.GetNatsServiceName()
 		// Start all pods simultaneously so early pods can reach later pods by DNS name.
@@ -408,6 +408,12 @@ data:
 		FailureThreshold:    10,
 		PeriodSeconds:       10,
 		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+	}
+	if kmc.Spec.Storage.Type == km.StorageTypeNATS {
+		statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds = 0
+		statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe.PeriodSeconds = 5
+		statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe.InitialDelaySeconds = 0
+		statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe.PeriodSeconds = 5
 	}
 
 	// Use the statefulset generated with dry-run gives us a preview of the statefulset with all the default values set by the API server.
