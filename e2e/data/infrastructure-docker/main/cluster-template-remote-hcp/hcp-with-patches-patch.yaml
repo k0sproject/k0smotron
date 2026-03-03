@@ -1,0 +1,16 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-docker-test
+  namespace: ${NAMESPACE}
+spec:
+  patches:
+  - target:
+      kind: Service
+      component: control-plane
+    patch:
+      type: merge
+      content: |
+        metadata:
+          annotations:
+            example.com/patched: "true"

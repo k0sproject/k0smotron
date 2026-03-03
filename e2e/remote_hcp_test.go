@@ -141,6 +141,14 @@ func remoteHCPSpec(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println("Worker nodes are reeady!")
 
+	// Verify that the patches field was applied to generated resources
+	{
+		cpSvcName := fmt.Sprintf("kmc-%s-nodeport", clusterName)
+		cpSvc := &corev1.Service{}
+		require.NoError(t, hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: cpSvcName}, cpSvc))
+		require.Equal(t, "true", cpSvc.Annotations["example.com/patched"], "control-plane Service should have the patched annotation")
+	}
+
 	// Verify resources in the hosting cluster and their owner references, then validate GC on deletion
 	ownerName := fmt.Sprintf("%s-root-owner", clusterName)
 
