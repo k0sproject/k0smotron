@@ -167,13 +167,11 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 		}
 	} else if kmc.Spec.Service.Type == v1.ServiceTypeNodePort && kmc.Spec.ExternalAddress == "" {
 		logger.Info("finding nodeport address")
-		// Get a random node address as external address
-		nodes := &v1.NodeList{}
-		err := scope.client.List(ctx, nodes)
+		nodeAddress, err := util.FindNodeAddress(ctx, scope.client)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to find node address: %w", err)
 		}
-		kmc.Spec.ExternalAddress = util.FindNodeAddress(nodes)
+		kmc.Spec.ExternalAddress = nodeAddress
 	}
 
 	if err := scope.reconcileEndpointConfigMap(ctx, kmc); err != nil {

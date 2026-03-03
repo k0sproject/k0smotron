@@ -120,14 +120,6 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		return nil
 	}
 
-	if kmc.Spec.Service.Type == v1.ServiceTypeNodePort && kmc.Spec.ExternalAddress == "" {
-		externalAddress, err := detectExternalAddress(ctx, scope.client)
-		if err != nil {
-			return err
-		}
-		kmc.Spec.ExternalAddress = externalAddress
-	}
-
 	if kmc.Spec.KineDataSourceSecretName != "" {
 		kmc.Spec.KineDataSourceURL = kineDataSourceURLPlaceholder
 	}
@@ -174,29 +166,6 @@ func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[
 	}
 
 	return util.ReconcileDynamicConfig(ctx, kmc, c, u)
-}
-
-func detectExternalAddress(ctx context.Context, c client.Client) (string, error) {
-	var internalAddress string
-	nodes := &v1.NodeList{}
-	err := c.List(ctx, nodes)
-	if err != nil {
-		return "", err
-	}
-	for _, node := range nodes.Items {
-		for _, addr := range node.Status.Addresses {
-			if internalAddress == "" && addr.Type == v1.NodeInternalIP {
-				internalAddress = addr.Address
-			}
-
-			if addr.Type == v1.NodeExternalDNS || addr.Type == v1.NodeExternalIP {
-				return addr.Address, nil
-			}
-		}
-	}
-
-	// Return internal address if no external address was found
-	return internalAddress, nil
 }
 
 func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {
