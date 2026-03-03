@@ -299,4 +299,42 @@ func TestApplyComponentPatches_UnknownPatchType_ReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown patch type")
 }
 
+func TestApplyComponentPatches_MultipleMatchingPatches_AllApplied(t *testing.T) {
+	scheme := mustScheme(t)
+	svc := &v1.Service{
+		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "test",
+			Labels: map[string]string{ComponentLabel: "control-plane"},
+		},
+		Spec: v1.ServiceSpec{Type: v1.ServiceTypeClusterIP},
+	}
+	patches := []km.ComponentPatch{
+		{
+			Target: km.PatchTarget{
+				Kind:      "Service",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.MergePatchType,
+				Content: `{"metadata":{"annotations":{"test1":"value1"}}}`,
+			},
+		},
+		{
+			Target: km.PatchTarget{
+				Kind:      "Service",
+				Component: "control-plane",
+			},
+			Patch: km.PatchSpec{
+				Type:    km.MergePatchType,
+				Content: `{"metadata":{"annotations":{"test2":"value2"}}}`,
+			},
+		},
+	}
+	err := ApplyComponentPatches(scheme, svc, patches)
+	require.NoError(t, err)
+	assert.Equal(t, "value1", svc.Annotations["test1"])
+	assert.Equal(t, "value2", svc.Annotations["test2"])
+}
+
 func ptr(i int32) *int32 { return &i }
