@@ -134,10 +134,6 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		return err
 	}
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cm, kmc.Spec.Patches); err != nil {
-		return fmt.Errorf("failed to apply component patches to configmap: %w", err)
-	}
-
 	// managementClusterClient is used because in order to instantiate a workload cluster client is need to check the workload kubeconfig secret,
 	// which is stored in mothership cluster. This becomes importante when hosted control planes run on an external cluster.
 	err = reconcileDynamicConfig(ctx, kmc, unstructuredConfig, managementClusterClient)
@@ -146,7 +142,7 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
 	}
 
-	return scope.client.Patch(ctx, &cm, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &cm)
 }
 
 func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[string]any, c client.Client) error {

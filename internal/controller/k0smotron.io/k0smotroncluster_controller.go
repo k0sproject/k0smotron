@@ -91,6 +91,16 @@ type clusterSettings struct {
 	kubernetesServiceIP string
 }
 
+// reconcileResource applies user-defined component patches to the given resource
+// and then performs a server-side apply. This ensures patches are never accidentally
+// skipped when reconciling generated resources.
+func (scope *kmcScope) reconcileResource(ctx context.Context, kmc *km.Cluster, obj client.Object) error {
+	if err := kutil.ApplyComponentPatches(scope.client.Scheme(), obj, kmc.Spec.Patches); err != nil {
+		return fmt.Errorf("failed to apply component patches: %w", err)
+	}
+	return scope.client.Patch(ctx, obj, client.Apply, patchOpts...)
+}
+
 // +kubebuilder:rbac:groups=k0smotron.io,resources=clusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=k0smotron.io,resources=clusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=k0smotron.io,resources=clusters/scale,verbs=get;update;patch

@@ -293,7 +293,7 @@ data:
 	}
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, cm, scope.client.Scheme(), scope.externalOwner)
 
-	if err := scope.client.Patch(context.Background(), cm, client.Apply, patchOpts...); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, cm); err != nil {
 		return apps.StatefulSet{}, apps.StatefulSet{}, err
 	}
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
@@ -561,10 +561,6 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 		return fmt.Errorf("failed to generate statefulset: %w", err)
 	}
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &statefulSet, kmc.Spec.Patches); err != nil {
-		return fmt.Errorf("failed to apply component patches to statefulset: %w", err)
-	}
-
 	selector, err := metav1.LabelSelectorAsSelector(statefulSet.Spec.Selector)
 	if err != nil {
 		return fmt.Errorf("error retrieving StatefulSet labels: %w", err)
@@ -578,12 +574,12 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 	}, foundStatefulSet)
 	if err != nil && apierrors.IsNotFound(err) {
 		kmc.Status.Replicas = 0
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		return scope.reconcileResource(ctx, kmc, &statefulSet)
 	} else if err == nil {
 		detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
 
 		if !isStatefulSetsEqual(&statefulSetPreview, foundStatefulSet) {
-			return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+			return scope.reconcileResource(ctx, kmc, &statefulSet)
 		}
 
 		kmc.Status.Replicas = foundStatefulSet.Status.Replicas
@@ -593,7 +589,7 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 	}
 
 	if !isStatefulSetsEqual(&statefulSetPreview, foundStatefulSet) {
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		return scope.reconcileResource(ctx, kmc, &statefulSet)
 	}
 	needsScale := *foundStatefulSet.Spec.Replicas != *statefulSet.Spec.Replicas
 	if needsScale {

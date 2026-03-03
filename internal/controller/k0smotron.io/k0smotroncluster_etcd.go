@@ -37,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util/secret"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var etcdEntrypointScriptTmpl *template.Template
@@ -104,13 +103,9 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 		},
 	}
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &svc, kmc.Spec.Patches); err != nil {
-		return fmt.Errorf("failed to apply component patches to etcd service: %w", err)
-	}
-
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
-	return scope.client.Patch(ctx, &svc, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &svc)
 }
 
 func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Cluster) error {
@@ -194,13 +189,9 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 		},
 	}
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &cronJob, kmc.Spec.Patches); err != nil {
-		return fmt.Errorf("failed to apply component patches to etcd defrag cronjob: %w", err)
-	}
-
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &cronJob, scope.client.Scheme(), scope.externalOwner)
 
-	return scope.client.Patch(ctx, &cronJob, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &cronJob)
 }
 
 func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster) error {
@@ -229,13 +220,9 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 
 	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas)
 
-	if err := kcontrollerutil.ApplyComponentPatches(scope.client.Scheme(), &statefulSet, kmc.Spec.Patches); err != nil {
-		return fmt.Errorf("failed to apply component patches to etcd statefulset: %w", err)
-	}
-
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
-	return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &statefulSet)
 }
 
 func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32) apps.StatefulSet {

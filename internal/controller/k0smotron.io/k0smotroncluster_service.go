@@ -132,13 +132,9 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 	logger.Info("Reconciling services")
 	svc := generateService(kmc)
 
-	if err := util.ApplyComponentPatches(scope.client.Scheme(), &svc, kmc.Spec.Patches); err != nil {
-		return fmt.Errorf("failed to apply component patches to service: %w", err)
-	}
-
 	_ = util.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
-	if err := scope.client.Patch(ctx, &svc, client.Apply, patchOpts...); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, &svc); err != nil {
 		return err
 	}
 	// Wait for LB address to be available
@@ -195,7 +191,7 @@ func (scope *kmcScope) reconcileEndpointConfigMap(ctx context.Context, kmc *km.C
 	configMap := generateEndpointConfigMap(kmc)
 
 	_ = util.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
-	if err := scope.client.Patch(ctx, &configMap, client.Apply, patchOpts...); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, &configMap); err != nil {
 		return err
 	}
 
