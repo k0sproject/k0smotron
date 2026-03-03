@@ -47,7 +47,7 @@ func init() {
 }
 
 func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster) error {
-	if kmc.Spec.KineDataSourceURL != "" || kmc.Spec.KineDataSourceSecretName != "" {
+	if kmc.Spec.Storage.Type != km.StorageTypeEtcd {
 		return nil
 	}
 
@@ -57,7 +57,7 @@ func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster) error
 	if err := scope.reconcileEtcdStatefulSet(ctx, kmc); err != nil {
 		return fmt.Errorf("error reconciling etcd statefulset: %w", err)
 	}
-	if kmc.Spec.Etcd.DefragJob.Enabled {
+	if kmc.Spec.Storage.Etcd.DefragJob.Enabled {
 		if err := scope.reconcileEtcdDefragJob(ctx, kmc); err != nil {
 			return fmt.Errorf("error reconciling etcd defrag job: %w", err)
 		}
@@ -120,7 +120,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Spec: batchv1.CronJobSpec{
-			Schedule:          kmc.Spec.Etcd.DefragJob.Schedule,
+			Schedule:          kmc.Spec.Storage.Etcd.DefragJob.Schedule,
 			ConcurrencyPolicy: batchv1.ForbidConcurrent,
 			JobTemplate: batchv1.JobTemplateSpec{
 				Spec: batchv1.JobSpec{
@@ -133,7 +133,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 							Containers: []v1.Container{
 								{
 									Name:            "etcd-defrag",
-									Image:           kmc.Spec.Etcd.DefragJob.Image,
+									Image:           kmc.Spec.Storage.Etcd.DefragJob.Image,
 									ImagePullPolicy: v1.PullIfNotPresent,
 									Args: []string{
 										fmt.Sprintf("--endpoints=https://%s:2379", kmc.GetEtcdServiceName()),
@@ -142,7 +142,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 										"--key=/var/lib/k0s/pki/etcd/client.key",
 										"--cluster",
 										"--defrag-rule",
-										kmc.Spec.Etcd.DefragJob.Rule,
+										kmc.Spec.Storage.Etcd.DefragJob.Rule,
 									},
 									VolumeMounts: []v1.VolumeMount{
 										{Name: "certs", MountPath: "/var/lib/k0s/pki/etcd/"},
@@ -225,7 +225,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 	maps.Copy(labels, selectorLabels)
 	labels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
 
-	size := kmc.Spec.Etcd.Persistence.Size
+	size := kmc.Spec.Storage.Etcd.Persistence.Size
 
 	if size.IsZero() {
 		size = resource.MustParse("1Gi")
@@ -243,15 +243,15 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 			},
 		},
 	}
-	if kmc.Spec.Etcd.Persistence.StorageClass != "" {
-		pvc.Spec.StorageClassName = &kmc.Spec.Etcd.Persistence.StorageClass
+	if kmc.Spec.Storage.Etcd.Persistence.StorageClass != "" {
+		pvc.Spec.StorageClassName = &kmc.Spec.Storage.Etcd.Persistence.StorageClass
 	}
 
 	var etcdEntrypointScriptBuf bytes.Buffer
 	_ = etcdEntrypointScriptTmpl.Execute(&etcdEntrypointScriptBuf, struct {
 		Args []string
 	}{
-		Args: kmc.Spec.Etcd.Args,
+		Args: kmc.Spec.Storage.Etcd.Args,
 	})
 
 	statefulSet := apps.StatefulSet{
@@ -340,7 +340,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 					InitContainers: generateEtcdInitContainers(kmc, existingSts),
 					Containers: []v1.Container{{
 						Name:            "etcd",
-						Image:           kmc.Spec.Etcd.Image,
+						Image:           kmc.Spec.Storage.Etcd.Image,
 						ImagePullPolicy: v1.PullIfNotPresent,
 						Command:         []string{"/bin/bash"},
 						Args:            []string{"-c", etcdEntrypointScriptBuf.String()},
@@ -352,7 +352,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 							{Name: "ETCDCTL_KEY", Value: "/var/lib/k0s/pki/etcd/server.key"},
 							{Name: "ETCD_INITIAL_CLUSTER", Value: initialCluster(kmc, replicas)},
 						},
-						Resources: kmc.Spec.Etcd.Resources,
+						Resources: kmc.Spec.Storage.Etcd.Resources,
 						ReadinessProbe: &v1.Probe{
 							ProbeHandler: v1.ProbeHandler{
 								Exec: &v1.ExecAction{
@@ -391,7 +391,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 		statefulSet.Spec.Template.Spec.TopologySpreadConstraints = kmc.Spec.TopologySpreadConstraints
 	}
 
-	if kmc.Spec.Etcd.AutoDeletePVCs {
+	if kmc.Spec.Storage.Etcd.AutoDeletePVCs {
 		statefulSet.Spec.PersistentVolumeClaimRetentionPolicy = &apps.StatefulSetPersistentVolumeClaimRetentionPolicy{
 			WhenDeleted: apps.DeletePersistentVolumeClaimRetentionPolicyType,
 		}
@@ -435,7 +435,7 @@ func generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet) 
 		},
 		{
 			Name:            "init",
-			Image:           kmc.Spec.Etcd.Image,
+			Image:           kmc.Spec.Storage.Etcd.Image,
 			ImagePullPolicy: v1.PullIfNotPresent,
 			Command:         []string{"/bin/bash"},
 			Args:            []string{"-c", initEntryScript},

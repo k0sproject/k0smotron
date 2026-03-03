@@ -118,7 +118,12 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 			"service":{
 				"type": "NodePort"
 			},
-			"kineDataSourceURL": "postgres://postgres:postgres@postgres.default:5432/kine?sslmode=disable",
+			"storage": {
+			  "type": "kine",
+			  "kine": {
+				"dataSourceURL": "postgres://postgres:postgres@postgres.default:5432/kine?sslmode=disable"
+			  }
+			},
 			"k0sConfig": {
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind": "ClusterConfig",
