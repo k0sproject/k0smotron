@@ -995,7 +995,7 @@ func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.
 	return nil
 }
 
-func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0sControlPlane) (string, error) {
+func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (string, error) {
 	secretName := fmt.Sprintf(FRPTokenNameTemplate, cluster.Name)
 
 	var existingSecret corev1.Secret

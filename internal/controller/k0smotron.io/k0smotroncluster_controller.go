@@ -272,7 +272,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			},
 		}
 	}
-	if kmc.Spec.KineDataSourceURL == "" {
+	if kmc.Spec.Storage.Type == km.StorageTypeEtcd {
 		isAPIServerEtcdClientCertRef := false
 		for _, cr := range kmc.Spec.CertificateRefs {
 			if cr.Type == string(secret.APIServerEtcdClient) {
