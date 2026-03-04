@@ -34,27 +34,7 @@ func (kmc *Cluster) ConvertTo(dstRaw conversion.Hub) error {
 
 	dst.ObjectMeta = kmc.ObjectMeta
 	dst.Status = kmc.Status
-	dst.Spec = v2.ClusterSpec{
-		KubeconfigRef:             kmc.Spec.KubeconfigRef,
-		Replicas:                  kmc.Spec.Replicas,
-		Image:                     kmc.Spec.Image,
-		ServiceAccount:            kmc.Spec.ServiceAccount,
-		Version:                   kmc.Spec.Version,
-		ExternalAddress:           kmc.Spec.ExternalAddress,
-		Ingress:                   kmc.Spec.Ingress,
-		Service:                   kmc.Spec.Service,
-		Persistence:               kmc.Spec.Persistence,
-		Storage:                   convertStorageV1toV2(kmc.Spec),
-		K0sConfig:                 kmc.Spec.K0sConfig,
-		CertificateRefs:           kmc.Spec.CertificateRefs,
-		Manifests:                 kmc.Spec.Manifests,
-		Mounts:                    kmc.Spec.Mounts,
-		ControlPlaneFlags:         kmc.Spec.ControlPlaneFlags,
-		Monitoring:                kmc.Spec.Monitoring,
-		TopologySpreadConstraints: kmc.Spec.TopologySpreadConstraints,
-		Resources:                 kmc.Spec.Resources,
-		KubeconfigSecretMetadata:  kmc.Spec.KubeconfigSecretMetadata,
-	}
+	dst.Spec = ClusterSpecToV2(kmc.Spec)
 	return nil
 }
 
@@ -68,32 +48,64 @@ func (kmc *Cluster) ConvertFrom(srcRaw conversion.Hub) error {
 
 	kmc.ObjectMeta = src.ObjectMeta
 	kmc.Status = src.Status
-	kmc.Spec = ClusterSpec{
-		KubeconfigRef:             src.Spec.KubeconfigRef,
-		Replicas:                  src.Spec.Replicas,
-		Image:                     src.Spec.Image,
-		ServiceAccount:            src.Spec.ServiceAccount,
-		Version:                   src.Spec.Version,
-		ExternalAddress:           src.Spec.ExternalAddress,
-		Ingress:                   src.Spec.Ingress,
-		Service:                   src.Spec.Service,
-		Persistence:               src.Spec.Persistence,
-		Etcd:                      src.Spec.Storage.Etcd,
-		K0sConfig:                 src.Spec.K0sConfig,
-		CertificateRefs:           src.Spec.CertificateRefs,
-		Manifests:                 src.Spec.Manifests,
-		Mounts:                    src.Spec.Mounts,
-		ControlPlaneFlags:         src.Spec.ControlPlaneFlags,
-		Monitoring:                src.Spec.Monitoring,
-		TopologySpreadConstraints: src.Spec.TopologySpreadConstraints,
-		Resources:                 src.Spec.Resources,
-		KubeconfigSecretMetadata:  src.Spec.KubeconfigSecretMetadata,
-	}
-	if src.Spec.Storage.Type == v2.StorageTypeKine {
-		kmc.Spec.KineDataSourceURL = src.Spec.Storage.Kine.DataSourceURL
-		kmc.Spec.KineDataSourceSecretName = src.Spec.Storage.Kine.DataSourceSecretName
-	}
+	kmc.Spec = ClusterSpecFromV2(src.Spec)
 	return nil
+}
+
+// ClusterSpecToV2 converts a v1beta1 ClusterSpec to a v1beta2 ClusterSpec.
+func ClusterSpecToV2(spec ClusterSpec) v2.ClusterSpec {
+	return v2.ClusterSpec{
+		KubeconfigRef:             spec.KubeconfigRef,
+		Replicas:                  spec.Replicas,
+		Image:                     spec.Image,
+		ServiceAccount:            spec.ServiceAccount,
+		Version:                   spec.Version,
+		ExternalAddress:           spec.ExternalAddress,
+		Ingress:                   spec.Ingress,
+		Service:                   spec.Service,
+		Persistence:               spec.Persistence,
+		Storage:                   convertStorageV1toV2(spec),
+		K0sConfig:                 spec.K0sConfig,
+		CertificateRefs:           spec.CertificateRefs,
+		Manifests:                 spec.Manifests,
+		Mounts:                    spec.Mounts,
+		ControlPlaneFlags:         spec.ControlPlaneFlags,
+		Monitoring:                spec.Monitoring,
+		TopologySpreadConstraints: spec.TopologySpreadConstraints,
+		Resources:                 spec.Resources,
+		KubeconfigSecretMetadata:  spec.KubeconfigSecretMetadata,
+	}
+}
+
+// ClusterSpecFromV2 converts a v1beta2 ClusterSpec to a v1beta1 ClusterSpec.
+// NATS storage type has no equivalent in v1beta1 and is silently dropped.
+func ClusterSpecFromV2(src v2.ClusterSpec) ClusterSpec {
+	spec := ClusterSpec{
+		KubeconfigRef:             src.KubeconfigRef,
+		Replicas:                  src.Replicas,
+		Image:                     src.Image,
+		ServiceAccount:            src.ServiceAccount,
+		Version:                   src.Version,
+		ExternalAddress:           src.ExternalAddress,
+		Ingress:                   src.Ingress,
+		Service:                   src.Service,
+		Persistence:               src.Persistence,
+		Etcd:                      src.Storage.Etcd,
+		K0sConfig:                 src.K0sConfig,
+		CertificateRefs:           src.CertificateRefs,
+		Manifests:                 src.Manifests,
+		Mounts:                    src.Mounts,
+		ControlPlaneFlags:         src.ControlPlaneFlags,
+		Monitoring:                src.Monitoring,
+		TopologySpreadConstraints: src.TopologySpreadConstraints,
+		Resources:                 src.Resources,
+		KubeconfigSecretMetadata:  src.KubeconfigSecretMetadata,
+	}
+	if src.Storage.Type == v2.StorageTypeKine {
+		spec.KineDataSourceURL = src.Storage.Kine.DataSourceURL
+		spec.KineDataSourceSecretName = src.Storage.Kine.DataSourceSecretName
+	}
+	return spec
 }
 
 func convertStorageV1toV2(spec ClusterSpec) v2.StorageSpec {

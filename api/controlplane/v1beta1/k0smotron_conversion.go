@@ -1,9 +1,11 @@
 package v1beta1
 
 import (
-	"github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
+
+	"github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	kmcv1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
 
 // ConvertTo converts this version (v1beta2) to the hub version (v1beta2 - self).
@@ -24,6 +26,32 @@ func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 		AvailableReplicas:           ptr.To(k.Status.Replicas - k.Status.UnavailableReplicas),
 		Selector:                    k.Status.Selector,
 		Conditions:                  k.Status.Conditions,
+	}
+	return nil
+}
+
+// ConvertTo converts this K0smotronControlPlaneTemplate (v1beta1) to the hub version (v1beta2).
+func (k *K0smotronControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
+	dst := dstRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	dst.ObjectMeta = *k.ObjectMeta.DeepCopy()
+	dst.Spec = v1beta2.K0smotronControlPlaneTemplateSpec{
+		Template: v1beta2.K0smotronControlPlaneTemplateResource{
+			ObjectMeta: k.Spec.Template.ObjectMeta,
+			Spec:       kmcv1.ClusterSpecToV2(k.Spec.Template.Spec),
+		},
+	}
+	return nil
+}
+
+// ConvertFrom converts from the hub version (v1beta2) to this K0smotronControlPlaneTemplate (v1beta1).
+func (k *K0smotronControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error {
+	src := srcRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
+	k.Spec = K0smotronControlPlaneTemplateSpec{
+		Template: K0smotronControlPlaneTemplateResource{
+			ObjectMeta: src.Spec.Template.ObjectMeta,
+			Spec:       kmcv1.ClusterSpecFromV2(src.Spec.Template.Spec),
+		},
 	}
 	return nil
 }
