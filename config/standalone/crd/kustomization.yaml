@@ -1,3 +1,6 @@
 resources:
 - ./bases/k0smotron.io_clusters.yaml
 - ./bases/k0smotron.io_jointokenrequests.yaml
+
+patches:
+- path: patches/webhook_in_clusters.yaml

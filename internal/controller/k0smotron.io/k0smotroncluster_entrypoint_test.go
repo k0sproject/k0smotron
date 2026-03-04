@@ -113,7 +113,7 @@ func TestKineDataSourceURLSubstitution(t *testing.T) {
 					Service: km.ServiceSpec{
 						APIPort: 6443,
 					},
-					KineDataSourceURL: tc.kineDataSourceURL,
+					Storage: km.StorageSpec{Kine: km.KineSpec{DataSourceURL: tc.kineDataSourceURL}},
 				},
 			}
 

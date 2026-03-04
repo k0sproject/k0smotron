@@ -68,14 +68,14 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 			name: "Resources specified - Requests only",
 			cluster: &km.Cluster{
 				Spec: km.ClusterSpec{
-					Etcd: km.EtcdSpec{
+					Storage: km.StorageSpec{Etcd: km.EtcdSpec{
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("100m"),
 								corev1.ResourceMemory: resource.MustParse("128Mi"),
 							},
 						},
-					},
+					}},
 				},
 			},
 			want: func(t *testing.T, resources corev1.ResourceRequirements) {
@@ -88,7 +88,7 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 			name: "Resources specified - Requests and limits",
 			cluster: &km.Cluster{
 				Spec: km.ClusterSpec{
-					Etcd: km.EtcdSpec{
+					Storage: km.StorageSpec{Etcd: km.EtcdSpec{
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("100m"),
@@ -99,7 +99,7 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 								corev1.ResourceMemory: resource.MustParse("256Mi"),
 							},
 						},
-					},
+					}},
 				},
 			},
 			want: func(t *testing.T, resources corev1.ResourceRequirements) {
@@ -133,20 +133,20 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 				"--snapshot-count=10000",
 			}},
 		{
-			cluster: &km.Cluster{Spec: km.ClusterSpec{Etcd: km.EtcdSpec{Args: []string{
+			cluster: &km.Cluster{Spec: km.ClusterSpec{Storage: km.StorageSpec{Etcd: km.EtcdSpec{Args: []string{
 				"--auto-compaction-mode=periodic",
-			}}}},
+			}}}}},
 			want: []string{
 				"--auto-compaction-mode=periodic",
 				"--auto-compaction-retention=5m",
 				"--snapshot-count=10000",
 			}},
 		{
-			cluster: &km.Cluster{Spec: km.ClusterSpec{Etcd: km.EtcdSpec{Args: []string{
+			cluster: &km.Cluster{Spec: km.ClusterSpec{Storage: km.StorageSpec{Etcd: km.EtcdSpec{Args: []string{
 				"--auto-compaction-mode=periodic",
 				"--auto-compaction-retention=2h",
 				"--snapshot-count=50000",
-			}}}},
+			}}}}},
 			want: []string{
 				"--auto-compaction-mode=periodic",
 				"--auto-compaction-retention=2h",

@@ -164,8 +164,11 @@ func (s *PVCSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Cl
 		},
 		"spec": {
    			"version": "v1.31.5-k0s.0",
-			"etcd":{
+			"storage": {
+			  "type": "etcd",
+			  "etcd":{
 				"persistence": {"size": "50Mi", "storageClass": "seaweedfs-storage"}
+			  }
 			},
 			"service":{
 				"type": "NodePort"
@@ -221,7 +224,7 @@ func (s *PVCSuite) updateK0smotronCluster(ctx context.Context, rc *rest.Config) 
 		Do(ctx)
 	s.Require().NoError(res.Error())
 
-	patch = `[{"op": "replace", "path": "/spec/etcd/persistence/size", "value": "70Mi"}]`
+	patch = `[{"op": "replace", "path": "/spec/storage/etcd/persistence/size", "value": "70Mi"}]`
 	res = crdRestClient.
 		Patch(types.JSONPatchType).
 		Resource("clusters").

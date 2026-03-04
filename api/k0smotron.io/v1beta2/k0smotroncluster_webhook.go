@@ -118,8 +118,8 @@ func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error 
 		kmc.Spec.Service.KonnectivityPort = 30132
 	}
 
-	if kmc.Spec.Etcd.Image == "" {
-		kmc.Spec.Etcd.Image = DefaultEtcdImage
+	if kmc.Spec.Storage.Etcd.Image == "" {
+		kmc.Spec.Storage.Etcd.Image = DefaultEtcdImage
 	}
 
 	if kmc.Spec.Ingress != nil {
