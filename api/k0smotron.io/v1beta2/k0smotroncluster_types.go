@@ -37,7 +37,7 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
 	// Replicas is the desired number of replicas of the k0s control planes.
-	// If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
+	// If unspecified, defaults to 1. If the value is above 1, k0smotron requires spec.storage.kine.dataSourceURL to be set.
 	// Recommended value is 3.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
@@ -68,12 +68,9 @@ type ClusterSpec struct {
 	// will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
 	//+kubebuilder:validation:Optional
 	Persistence PersistenceSpec `json:"persistence,omitempty"`
-	// KineDataSourceURL defines the kine datasource URL.
+	// Storage defines the storage backend configuration.
 	//+kubebuilder:validation:Optional
-	KineDataSourceURL string `json:"kineDataSourceURL,omitempty"`
-	// KineDataSourceSecretName defines the name of kine datasource URL secret.
-	//+kubebuilder:validation:Optional
-	KineDataSourceSecretName string `json:"kineDataSourceSecretName,omitempty"`
+	Storage StorageSpec `json:"storage,omitempty"`
 	// k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 	// If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
 	//+kubebuilder:validation:Optional
@@ -107,9 +104,6 @@ type ClusterSpec struct {
 	// Monitoring defines the monitoring configuration.
 	//+kubebuilder:validation:Optional
 	Monitoring MonitoringSpec `json:"monitoring,omitempty"`
-	// Etcd defines the etcd configuration.
-	//+kubebuilder:default={"image":"quay.io/k0sproject/etcd:v3.5.13","persistence":{}}
-	Etcd EtcdSpec `json:"etcd,omitempty"`
 
 	// TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
 	// See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.
@@ -361,6 +355,51 @@ type MonitoringSpec struct {
 	ProxyImage string `json:"proxyImage"`
 }
 
+// StorageType defines the storage backend type for the k0s control plane.
+type StorageType string
+
+const (
+	// StorageTypeEtcd defines the etcd storage backend type for the k0s control plane.
+	StorageTypeEtcd StorageType = "etcd"
+	// StorageTypeKine defines the kine storage backend type for the k0s control plane.
+	StorageTypeKine StorageType = "kine"
+)
+
+// NATSSpec defines the configuration for the embedded NATS JetStream storage backend.
+type NATSSpec struct {
+	// Persistence defines the persistence configuration for the embedded NATS JetStream store.
+	//+kubebuilder:validation:Optional
+	Persistence StoragePersistenceSpec `json:"persistence,omitempty"`
+}
+
+// KineSpec defines kine datasource configuration.
+type KineSpec struct {
+	// DataSourceURL defines the kine datasource URL.
+	//+kubebuilder:validation:Optional
+	DataSourceURL string `json:"dataSourceURL,omitempty"`
+	// DataSourceSecretName defines the name of the secret containing the kine datasource URL.
+	//+kubebuilder:validation:Optional
+	DataSourceSecretName string `json:"dataSourceSecretName,omitempty"`
+}
+
+// StorageSpec defines the storage backend configuration for the k0s control plane.
+type StorageSpec struct {
+	// Type defines the storage backend type. Can be etcd, kine, or nats.
+	//+kubebuilder:validation:Enum=etcd;kine;nats
+	//+kubebuilder:default=etcd
+	Type StorageType `json:"type,omitempty"`
+	// Kine defines the kine storage configuration.
+	//+kubebuilder:validation:Optional
+	Kine KineSpec `json:"kine,omitempty"`
+	// Etcd defines the etcd storage configuration.
+	//+kubebuilder:default={"image":"quay.io/k0sproject/etcd:v3.5.13","persistence":{}}
+	Etcd EtcdSpec `json:"etcd,omitempty"`
+	// NATS defines the embedded NATS JetStream storage configuration.
+	// Used when Type is set to nats.
+	//+kubebuilder:validation:Optional
+	NATS NATSSpec `json:"nats,omitempty"`
+}
+
 // EtcdSpec defines the etcd configuration for the k0s control plane.
 type EtcdSpec struct {
 	// Image defines the etcd image to be deployed.
@@ -371,7 +410,7 @@ type EtcdSpec struct {
 	Args []string `json:"args,omitempty"`
 	// Persistence defines the persistence configuration.
 	//+kubebuilder:validation:Optional
-	Persistence EtcdPersistenceSpec `json:"persistence"`
+	Persistence StoragePersistenceSpec `json:"persistence"`
 	// AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.
 	//+kubebuilder:default=false
 	//+kubebuilder:validation:Optional
@@ -401,12 +440,12 @@ type DefragJob struct {
 	Image string `json:"image"`
 }
 
-// EtcdPersistenceSpec defines the persistence configuration for the etcd cluster.
-type EtcdPersistenceSpec struct {
-	// StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.
+// StoragePersistenceSpec defines the persistence configuration for storage backends like etcd or NATS.
+type StoragePersistenceSpec struct {
+	// StorageClass defines the storage class to be used. If empty, the default storage class is used.
 	//+kubebuilder:validation:Optional
 	StorageClass string `json:"storageClass"`
-	// Size defines the size of the etcd volume. Default: 1Gi
+	// Size defines the size of the volume. Default: 1Gi
 	//+kubebuilder:default="1Gi"
 	//+kubebuilder:validation:Optional
 	Size resource.Quantity `json:"size"`
@@ -449,6 +488,9 @@ func GetStatefulSetName(clusterName string) string {
 func (kmc *Cluster) GetStatefulSetName() string {
 	return GetStatefulSetName(kmc.Name)
 }
+
+// Hub marks Cluster as a conversion hub.
+func (*Cluster) Hub() {}
 
 // GetEtcdStatefulSetName returns the name of the statefulset for the etcd cluster.
 func (kmc *Cluster) GetEtcdStatefulSetName() string {

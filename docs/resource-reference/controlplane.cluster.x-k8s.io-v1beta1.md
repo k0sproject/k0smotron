@@ -1972,15 +1972,6 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcd">etcd</a></b></td>
-        <td>object</td>
-        <td>
-          Etcd defines the etcd configuration.<br/>
-          <br/>
-            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>externalAddress</b></td>
         <td>string</td>
         <td>
@@ -2011,20 +2002,6 @@ will pick it automatically. Must not include the image tag.<br/>
         <td>
           k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>kineDataSourceSecretName</b></td>
-        <td>string</td>
-        <td>
-          KineDataSourceSecretName defines the name of kine datasource URL secret.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>kineDataSourceURL</b></td>
-        <td>string</td>
-        <td>
-          KineDataSourceURL defines the kine datasource URL.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2089,7 +2066,7 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>integer</td>
         <td>
           Replicas is the desired number of replicas of the k0s control planes.
-If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
+If unspecified, defaults to 1. If the value is above 1, k0smotron requires spec.storage.kine.dataSourceURL to be set.
 Recommended value is 3.<br/>
           <br/>
             <i>Format</i>: int32<br/>
@@ -2117,6 +2094,13 @@ Recommended value is 3.<br/>
         <td>string</td>
         <td>
           ServiceAccount defines the service account to be used by both k0s and etcd StatefulSets.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorage">storage</a></b></td>
+        <td>object</td>
+        <td>
+          Storage defines the storage backend configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2169,254 +2153,6 @@ CertificateRef defines a reference to a certificate that should be included in t
         <td>string</td>
         <td>
           <br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
-
-
-
-Etcd defines the etcd configuration.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>
-          Image defines the etcd image to be deployed.<br/>
-          <br/>
-            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>args</b></td>
-        <td>[]string</td>
-        <td>
-          Args defines the etcd arguments.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>autoDeletePVCs</b></td>
-        <td>boolean</td>
-        <td>
-          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
-          <br/>
-            <i>Default</i>: false<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcddefragjob">defragJob</a></b></td>
-        <td>object</td>
-        <td>
-          DefragJob defines the etcd defragmentation job configuration.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcdpersistence">persistence</a></b></td>
-        <td>object</td>
-        <td>
-          Persistence defines the persistence configuration.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcdresources">resources</a></b></td>
-        <td>object</td>
-        <td>
-          Resources defines the compute resource requirements for the etcd container.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd.defragJob
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd)</sup></sup>
-
-
-
-DefragJob defines the etcd defragmentation job configuration.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>enabled</b></td>
-        <td>boolean</td>
-        <td>
-          Enabled enables the etcd defragmentation job.<br/>
-          <br/>
-            <i>Default</i>: false<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>
-          Image defines the etcd defragmentation job image.<br/>
-          <br/>
-            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>rule</b></td>
-        <td>string</td>
-        <td>
-          Rule defines the etcd defragmentation job defrag-rule.
-For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
-          <br/>
-            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>schedule</b></td>
-        <td>string</td>
-        <td>
-          Schedule defines the etcd defragmentation job schedule.<br/>
-          <br/>
-            <i>Default</i>: 0 12 * * *<br/>
-        </td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd.persistence
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd)</sup></sup>
-
-
-
-Persistence defines the persistence configuration.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>size</b></td>
-        <td>int or string</td>
-        <td>
-          Size defines the size of the etcd volume. Default: 1Gi<br/>
-          <br/>
-            <i>Default</i>: 1Gi<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>storageClass</b></td>
-        <td>string</td>
-        <td>
-          StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd.resources
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd)</sup></sup>
-
-
-
-Resources defines the compute resource requirements for the etcd container.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcdresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-This field depends on the
-DynamicResourceAllocation feature gate.
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>limits</b></td>
-        <td>map[string]int or string</td>
-        <td>
-          Limits describes the maximum amount of compute resources allowed.
-More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>requests</b></td>
-        <td>map[string]int or string</td>
-        <td>
-          Requests describes the minimum amount of compute resources required.
-If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-otherwise to an implementation-defined value. Requests cannot exceed Limits.
-More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcdresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>request</b></td>
-        <td>string</td>
-        <td>
-          Request is the name chosen for a request in the referenced claim.
-If empty, everything from the claim is made available, otherwise
-only the result of this request.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11460,6 +11196,406 @@ will pick it automatically.<br/>
 </table>
 
 
+### K0smotronControlPlane.spec.storage
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+Storage defines the storage backend configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcd">etcd</a></b></td>
+        <td>object</td>
+        <td>
+          Etcd defines the etcd storage configuration.<br/>
+          <br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstoragekine">kine</a></b></td>
+        <td>object</td>
+        <td>
+          Kine defines the kine storage configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstoragenats">nats</a></b></td>
+        <td>object</td>
+        <td>
+          NATS defines the embedded NATS JetStream storage configuration.
+Used when Type is set to nats.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type defines the storage backend type. Can be etcd, kine, or nats.<br/>
+          <br/>
+            <i>Enum</i>: etcd, kine, nats<br/>
+            <i>Default</i>: etcd<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorage)</sup></sup>
+
+
+
+Etcd defines the etcd storage configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd image to be deployed.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcddefragjob">defragJob</a></b></td>
+        <td>object</td>
+        <td>
+          DefragJob defines the etcd defragmentation job configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcdpersistence">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcdresources">resources</a></b></td>
+        <td>object</td>
+        <td>
+          Resources defines the compute resource requirements for the etcd container.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd.defragJob
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorageetcd)</sup></sup>
+
+
+
+DefragJob defines the etcd defragmentation job configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables the etcd defragmentation job.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd defragmentation job image.<br/>
+          <br/>
+            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>rule</b></td>
+        <td>string</td>
+        <td>
+          Rule defines the etcd defragmentation job defrag-rule.
+For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
+          <br/>
+            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>schedule</b></td>
+        <td>string</td>
+        <td>
+          Schedule defines the etcd defragmentation job schedule.<br/>
+          <br/>
+            <i>Default</i>: 0 12 * * *<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorageetcd)</sup></sup>
+
+
+
+Persistence defines the persistence configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used. If empty, the default storage class is used.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd.resources
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorageetcd)</sup></sup>
+
+
+
+Resources defines the compute resource requirements for the etcd container.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcdresourcesclaimsindex">claims</a></b></td>
+        <td>[]object</td>
+        <td>
+          Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This field depends on the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd.resources.claims[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorageetcdresources)</sup></sup>
+
+
+
+ResourceClaim references one entry in PodSpec.ResourceClaims.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.kine
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorage)</sup></sup>
+
+
+
+Kine defines the kine storage configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>dataSourceSecretName</b></td>
+        <td>string</td>
+        <td>
+          DataSourceSecretName defines the name of the secret containing the kine datasource URL.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>dataSourceURL</b></td>
+        <td>string</td>
+        <td>
+          DataSourceURL defines the kine datasource URL.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.nats
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorage)</sup></sup>
+
+
+
+NATS defines the embedded NATS JetStream storage configuration.
+Used when Type is set to nats.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstoragenatspersistence">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration for the embedded NATS JetStream store.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.nats.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstoragenats)</sup></sup>
+
+
+
+Persistence defines the persistence configuration for the embedded NATS JetStream store.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used. If empty, the default storage class is used.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlane.spec.topologySpreadConstraints[index]
 <sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
 
@@ -12119,15 +12255,6 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcd">etcd</a></b></td>
-        <td>object</td>
-        <td>
-          Etcd defines the etcd configuration.<br/>
-          <br/>
-            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>externalAddress</b></td>
         <td>string</td>
         <td>
@@ -12158,20 +12285,6 @@ will pick it automatically. Must not include the image tag.<br/>
         <td>
           k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>kineDataSourceSecretName</b></td>
-        <td>string</td>
-        <td>
-          KineDataSourceSecretName defines the name of kine datasource URL secret.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>kineDataSourceURL</b></td>
-        <td>string</td>
-        <td>
-          KineDataSourceURL defines the kine datasource URL.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12236,7 +12349,7 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>integer</td>
         <td>
           Replicas is the desired number of replicas of the k0s control planes.
-If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
+If unspecified, defaults to 1. If the value is above 1, k0smotron requires spec.storage.kine.dataSourceURL to be set.
 Recommended value is 3.<br/>
           <br/>
             <i>Format</i>: int32<br/>
@@ -12264,6 +12377,13 @@ Recommended value is 3.<br/>
         <td>string</td>
         <td>
           ServiceAccount defines the service account to be used by both k0s and etcd StatefulSets.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecstorage">storage</a></b></td>
+        <td>object</td>
+        <td>
+          Storage defines the storage backend configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12316,254 +12436,6 @@ CertificateRef defines a reference to a certificate that should be included in t
         <td>string</td>
         <td>
           <br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.etcd
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
-
-
-
-Etcd defines the etcd configuration.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>
-          Image defines the etcd image to be deployed.<br/>
-          <br/>
-            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>args</b></td>
-        <td>[]string</td>
-        <td>
-          Args defines the etcd arguments.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>autoDeletePVCs</b></td>
-        <td>boolean</td>
-        <td>
-          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
-          <br/>
-            <i>Default</i>: false<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcddefragjob">defragJob</a></b></td>
-        <td>object</td>
-        <td>
-          DefragJob defines the etcd defragmentation job configuration.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcdpersistence">persistence</a></b></td>
-        <td>object</td>
-        <td>
-          Persistence defines the persistence configuration.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcdresources">resources</a></b></td>
-        <td>object</td>
-        <td>
-          Resources defines the compute resource requirements for the etcd container.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.etcd.defragJob
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecetcd)</sup></sup>
-
-
-
-DefragJob defines the etcd defragmentation job configuration.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>enabled</b></td>
-        <td>boolean</td>
-        <td>
-          Enabled enables the etcd defragmentation job.<br/>
-          <br/>
-            <i>Default</i>: false<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>
-          Image defines the etcd defragmentation job image.<br/>
-          <br/>
-            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>rule</b></td>
-        <td>string</td>
-        <td>
-          Rule defines the etcd defragmentation job defrag-rule.
-For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
-          <br/>
-            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>schedule</b></td>
-        <td>string</td>
-        <td>
-          Schedule defines the etcd defragmentation job schedule.<br/>
-          <br/>
-            <i>Default</i>: 0 12 * * *<br/>
-        </td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.etcd.persistence
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecetcd)</sup></sup>
-
-
-
-Persistence defines the persistence configuration.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>size</b></td>
-        <td>int or string</td>
-        <td>
-          Size defines the size of the etcd volume. Default: 1Gi<br/>
-          <br/>
-            <i>Default</i>: 1Gi<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>storageClass</b></td>
-        <td>string</td>
-        <td>
-          StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.etcd.resources
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecetcd)</sup></sup>
-
-
-
-Resources defines the compute resource requirements for the etcd container.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecetcdresourcesclaimsindex">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-This field depends on the
-DynamicResourceAllocation feature gate.
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>limits</b></td>
-        <td>map[string]int or string</td>
-        <td>
-          Limits describes the maximum amount of compute resources allowed.
-More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>requests</b></td>
-        <td>map[string]int or string</td>
-        <td>
-          Requests describes the minimum amount of compute resources required.
-If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-otherwise to an implementation-defined value. Requests cannot exceed Limits.
-More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.etcd.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecetcdresources)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>request</b></td>
-        <td>string</td>
-        <td>
-          Request is the name chosen for a request in the referenced claim.
-If empty, everything from the claim is made available, otherwise
-only the result of this request.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -21607,6 +21479,406 @@ will pick it automatically.<br/>
 </table>
 
 
+### K0smotronControlPlaneTemplate.spec.template.spec.storage
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+Storage defines the storage backend configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecstorageetcd">etcd</a></b></td>
+        <td>object</td>
+        <td>
+          Etcd defines the etcd storage configuration.<br/>
+          <br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecstoragekine">kine</a></b></td>
+        <td>object</td>
+        <td>
+          Kine defines the kine storage configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecstoragenats">nats</a></b></td>
+        <td>object</td>
+        <td>
+          NATS defines the embedded NATS JetStream storage configuration.
+Used when Type is set to nats.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type defines the storage backend type. Can be etcd, kine, or nats.<br/>
+          <br/>
+            <i>Enum</i>: etcd, kine, nats<br/>
+            <i>Default</i>: etcd<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.storage.etcd
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecstorage)</sup></sup>
+
+
+
+Etcd defines the etcd storage configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd image to be deployed.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecstorageetcddefragjob">defragJob</a></b></td>
+        <td>object</td>
+        <td>
+          DefragJob defines the etcd defragmentation job configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecstorageetcdpersistence">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecstorageetcdresources">resources</a></b></td>
+        <td>object</td>
+        <td>
+          Resources defines the compute resource requirements for the etcd container.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.storage.etcd.defragJob
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecstorageetcd)</sup></sup>
+
+
+
+DefragJob defines the etcd defragmentation job configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables the etcd defragmentation job.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd defragmentation job image.<br/>
+          <br/>
+            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>rule</b></td>
+        <td>string</td>
+        <td>
+          Rule defines the etcd defragmentation job defrag-rule.
+For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
+          <br/>
+            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>schedule</b></td>
+        <td>string</td>
+        <td>
+          Schedule defines the etcd defragmentation job schedule.<br/>
+          <br/>
+            <i>Default</i>: 0 12 * * *<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.storage.etcd.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecstorageetcd)</sup></sup>
+
+
+
+Persistence defines the persistence configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used. If empty, the default storage class is used.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.storage.etcd.resources
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecstorageetcd)</sup></sup>
+
+
+
+Resources defines the compute resource requirements for the etcd container.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecstorageetcdresourcesclaimsindex">claims</a></b></td>
+        <td>[]object</td>
+        <td>
+          Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This field depends on the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.storage.etcd.resources.claims[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecstorageetcdresources)</sup></sup>
+
+
+
+ResourceClaim references one entry in PodSpec.ResourceClaims.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.storage.kine
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecstorage)</sup></sup>
+
+
+
+Kine defines the kine storage configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>dataSourceSecretName</b></td>
+        <td>string</td>
+        <td>
+          DataSourceSecretName defines the name of the secret containing the kine datasource URL.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>dataSourceURL</b></td>
+        <td>string</td>
+        <td>
+          DataSourceURL defines the kine datasource URL.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.storage.nats
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecstorage)</sup></sup>
+
+
+
+NATS defines the embedded NATS JetStream storage configuration.
+Used when Type is set to nats.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecstoragenatspersistence">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration for the embedded NATS JetStream store.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.storage.nats.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecstoragenats)</sup></sup>
+
+
+
+Persistence defines the persistence configuration for the embedded NATS JetStream store.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used. If empty, the default storage class is used.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlaneTemplate.spec.template.spec.topologySpreadConstraints[index]
 <sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
 
@@ -23952,15 +24224,6 @@ be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcd-1">etcd</a></b></td>
-        <td>object</td>
-        <td>
-          Etcd defines the etcd configuration.<br/>
-          <br/>
-            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>externalAddress</b></td>
         <td>string</td>
         <td>
@@ -23991,20 +24254,6 @@ will pick it automatically. Must not include the image tag.<br/>
         <td>
           k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>kineDataSourceSecretName</b></td>
-        <td>string</td>
-        <td>
-          KineDataSourceSecretName defines the name of kine datasource URL secret.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>kineDataSourceURL</b></td>
-        <td>string</td>
-        <td>
-          KineDataSourceURL defines the kine datasource URL.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -24069,7 +24318,7 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>integer</td>
         <td>
           Replicas is the desired number of replicas of the k0s control planes.
-If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
+If unspecified, defaults to 1. If the value is above 1, k0smotron requires spec.storage.kine.dataSourceURL to be set.
 Recommended value is 3.<br/>
           <br/>
             <i>Format</i>: int32<br/>
@@ -24097,6 +24346,13 @@ Recommended value is 3.<br/>
         <td>string</td>
         <td>
           ServiceAccount defines the service account to be used by both k0s and etcd StatefulSets.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorage-1">storage</a></b></td>
+        <td>object</td>
+        <td>
+          Storage defines the storage backend configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -24149,254 +24405,6 @@ CertificateRef defines a reference to a certificate that should be included in t
         <td>string</td>
         <td>
           <br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
-
-
-
-Etcd defines the etcd configuration.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>
-          Image defines the etcd image to be deployed.<br/>
-          <br/>
-            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>args</b></td>
-        <td>[]string</td>
-        <td>
-          Args defines the etcd arguments.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>autoDeletePVCs</b></td>
-        <td>boolean</td>
-        <td>
-          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
-          <br/>
-            <i>Default</i>: false<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcddefragjob-1">defragJob</a></b></td>
-        <td>object</td>
-        <td>
-          DefragJob defines the etcd defragmentation job configuration.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcdpersistence-1">persistence</a></b></td>
-        <td>object</td>
-        <td>
-          Persistence defines the persistence configuration.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcdresources-1">resources</a></b></td>
-        <td>object</td>
-        <td>
-          Resources defines the compute resource requirements for the etcd container.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd.defragJob
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd-1)</sup></sup>
-
-
-
-DefragJob defines the etcd defragmentation job configuration.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>enabled</b></td>
-        <td>boolean</td>
-        <td>
-          Enabled enables the etcd defragmentation job.<br/>
-          <br/>
-            <i>Default</i>: false<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>
-          Image defines the etcd defragmentation job image.<br/>
-          <br/>
-            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>rule</b></td>
-        <td>string</td>
-        <td>
-          Rule defines the etcd defragmentation job defrag-rule.
-For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
-          <br/>
-            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>schedule</b></td>
-        <td>string</td>
-        <td>
-          Schedule defines the etcd defragmentation job schedule.<br/>
-          <br/>
-            <i>Default</i>: 0 12 * * *<br/>
-        </td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd.persistence
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd-1)</sup></sup>
-
-
-
-Persistence defines the persistence configuration.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>size</b></td>
-        <td>int or string</td>
-        <td>
-          Size defines the size of the etcd volume. Default: 1Gi<br/>
-          <br/>
-            <i>Default</i>: 1Gi<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>storageClass</b></td>
-        <td>string</td>
-        <td>
-          StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd.resources
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcd-1)</sup></sup>
-
-
-
-Resources defines the compute resource requirements for the etcd container.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b><a href="#k0smotroncontrolplanespecetcdresourcesclaimsindex-1">claims</a></b></td>
-        <td>[]object</td>
-        <td>
-          Claims lists the names of resources, defined in spec.resourceClaims,
-that are used by this container.
-
-This field depends on the
-DynamicResourceAllocation feature gate.
-
-This field is immutable. It can only be set for containers.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>limits</b></td>
-        <td>map[string]int or string</td>
-        <td>
-          Limits describes the maximum amount of compute resources allowed.
-More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>requests</b></td>
-        <td>map[string]int or string</td>
-        <td>
-          Requests describes the minimum amount of compute resources required.
-If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-otherwise to an implementation-defined value. Requests cannot exceed Limits.
-More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.etcd.resources.claims[index]
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespecetcdresources-1)</sup></sup>
-
-
-
-ResourceClaim references one entry in PodSpec.ResourceClaims.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name must match the name of one entry in pod.spec.resourceClaims of
-the Pod where this field is used. It makes that resource available
-inside a container.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>request</b></td>
-        <td>string</td>
-        <td>
-          Request is the name chosen for a request in the referenced claim.
-If empty, everything from the claim is made available, otherwise
-only the result of this request.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -33434,6 +33442,406 @@ will pick it automatically.<br/>
         <td>string</td>
         <td>
           LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec-1)</sup></sup>
+
+
+
+Storage defines the storage backend configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcd-1">etcd</a></b></td>
+        <td>object</td>
+        <td>
+          Etcd defines the etcd storage configuration.<br/>
+          <br/>
+            <i>Default</i>: map[image:quay.io/k0sproject/etcd:v3.5.13 persistence:map[]]<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstoragekine-1">kine</a></b></td>
+        <td>object</td>
+        <td>
+          Kine defines the kine storage configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstoragenats-1">nats</a></b></td>
+        <td>object</td>
+        <td>
+          NATS defines the embedded NATS JetStream storage configuration.
+Used when Type is set to nats.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type defines the storage backend type. Can be etcd, kine, or nats.<br/>
+          <br/>
+            <i>Enum</i>: etcd, kine, nats<br/>
+            <i>Default</i>: etcd<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorage-1)</sup></sup>
+
+
+
+Etcd defines the etcd storage configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd image to be deployed.<br/>
+          <br/>
+            <i>Default</i>: quay.io/k0sproject/etcd:v3.5.13<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>args</b></td>
+        <td>[]string</td>
+        <td>
+          Args defines the etcd arguments.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>autoDeletePVCs</b></td>
+        <td>boolean</td>
+        <td>
+          AutoDeletePVCs defines whether the PVC should be deleted when the etcd cluster is deleted.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcddefragjob-1">defragJob</a></b></td>
+        <td>object</td>
+        <td>
+          DefragJob defines the etcd defragmentation job configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcdpersistence-1">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcdresources-1">resources</a></b></td>
+        <td>object</td>
+        <td>
+          Resources defines the compute resource requirements for the etcd container.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd.defragJob
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorageetcd-1)</sup></sup>
+
+
+
+DefragJob defines the etcd defragmentation job configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled enables the etcd defragmentation job.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>
+          Image defines the etcd defragmentation job image.<br/>
+          <br/>
+            <i>Default</i>: ghcr.io/ahrtr/etcd-defrag:v0.16.0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>rule</b></td>
+        <td>string</td>
+        <td>
+          Rule defines the etcd defragmentation job defrag-rule.
+For more information check: https://github.com/ahrtr/etcd-defrag/tree/main?tab=readme-ov-file#defragmentation-rule<br/>
+          <br/>
+            <i>Default</i>: dbQuotaUsage > 0.8 || dbSize - dbSizeInUse > 200*1024*1024<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>schedule</b></td>
+        <td>string</td>
+        <td>
+          Schedule defines the etcd defragmentation job schedule.<br/>
+          <br/>
+            <i>Default</i>: 0 12 * * *<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorageetcd-1)</sup></sup>
+
+
+
+Persistence defines the persistence configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used. If empty, the default storage class is used.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd.resources
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorageetcd-1)</sup></sup>
+
+
+
+Resources defines the compute resource requirements for the etcd container.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstorageetcdresourcesclaimsindex-1">claims</a></b></td>
+        <td>[]object</td>
+        <td>
+          Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This field depends on the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.etcd.resources.claims[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorageetcdresources-1)</sup></sup>
+
+
+
+ResourceClaim references one entry in PodSpec.ResourceClaims.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.kine
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorage-1)</sup></sup>
+
+
+
+Kine defines the kine storage configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>dataSourceSecretName</b></td>
+        <td>string</td>
+        <td>
+          DataSourceSecretName defines the name of the secret containing the kine datasource URL.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>dataSourceURL</b></td>
+        <td>string</td>
+        <td>
+          DataSourceURL defines the kine datasource URL.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.nats
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstorage-1)</sup></sup>
+
+
+
+NATS defines the embedded NATS JetStream storage configuration.
+Used when Type is set to nats.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecstoragenatspersistence-1">persistence</a></b></td>
+        <td>object</td>
+        <td>
+          Persistence defines the persistence configuration for the embedded NATS JetStream store.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.storage.nats.persistence
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecstoragenats-1)</sup></sup>
+
+
+
+Persistence defines the persistence configuration for the embedded NATS JetStream store.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>size</b></td>
+        <td>int or string</td>
+        <td>
+          Size defines the size of the volume. Default: 1Gi<br/>
+          <br/>
+            <i>Default</i>: 1Gi<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClass</b></td>
+        <td>string</td>
+        <td>
+          StorageClass defines the storage class to be used. If empty, the default storage class is used.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

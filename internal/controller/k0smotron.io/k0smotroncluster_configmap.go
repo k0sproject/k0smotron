@@ -128,8 +128,8 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		kmc.Spec.ExternalAddress = externalAddress
 	}
 
-	if kmc.Spec.KineDataSourceSecretName != "" {
-		kmc.Spec.KineDataSourceURL = kineDataSourceURLPlaceholder
+	if kmc.Spec.Storage.Kine.DataSourceSecretName != "" {
+		kmc.Spec.Storage.Kine.DataSourceURL = kineDataSourceURLPlaceholder
 	}
 
 	sans, err := genSANs(kmc, scope.client)
@@ -156,9 +156,9 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[string]any, c client.Client) error {
 	u := unstructured.Unstructured{Object: k0sConfig}
 
-	if kmc.Spec.KineDataSourceSecretName != "" {
+	if kmc.Spec.Storage.Kine.DataSourceSecretName != "" {
 		kineDSNSecret := &v1.Secret{}
-		err := c.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: kmc.Spec.KineDataSourceSecretName}, kineDSNSecret)
+		err := c.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: kmc.Spec.Storage.Kine.DataSourceSecretName}, kineDSNSecret)
 		if err != nil {
 			return fmt.Errorf("failed to get kine data source secret: %w", err)
 		}
@@ -252,14 +252,15 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
 			"agentPort": int64(kmc.Spec.Service.KonnectivityPort),
 		},
 	}
-	if kmc.Spec.KineDataSourceURL != "" {
+	switch kmc.Spec.Storage.Type {
+	case km.StorageTypeKine:
 		v1beta1Spec["storage"] = map[string]any{
 			"type": "kine",
 			"kine": map[string]any{
-				"dataSource": kmc.Spec.KineDataSourceURL,
+				"dataSource": kmc.Spec.Storage.Kine.DataSourceURL,
 			},
 		}
-	} else {
+	default: // StorageTypeEtcd
 		v1beta1Spec["storage"] = map[string]any{
 			"type": "etcd",
 			"etcd": map[string]any{

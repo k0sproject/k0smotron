@@ -167,11 +167,11 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		addMonitoringStack(kmc, &statefulSet)
 	}
 
-	if kmc.Spec.KineDataSourceSecretName != "" {
+	if kmc.Spec.Storage.Kine.DataSourceSecretName != "" {
 		statefulSet.Spec.Template.Spec.Containers[0].EnvFrom = append(statefulSet.Spec.Template.Spec.Containers[0].EnvFrom, v1.EnvFromSource{
 			SecretRef: &v1.SecretEnvSource{
 				LocalObjectReference: v1.LocalObjectReference{
-					Name: kmc.Spec.KineDataSourceSecretName,
+					Name: kmc.Spec.Storage.Kine.DataSourceSecretName,
 				},
 			},
 		})

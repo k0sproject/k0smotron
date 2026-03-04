@@ -17,6 +17,9 @@ resources:
 - ./webhook
 - ../certmanager
 
+configurations:
+- kustomizeconfig.yaml
+
 patches:
 - path: manager_webhook_patch.yaml
 - path: manager_config_patch.yaml
