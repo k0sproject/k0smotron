@@ -9,7 +9,7 @@ Just like with any other Cluster API provider, you have the flexibility to creat
 To configure the machine, you first need to create a `Machine` object with a reference to a bootstrap provider and configuration for the bootstrapping `K0sWorkerConfig`:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
 metadata:
   name: machine-test-0
@@ -18,15 +18,15 @@ spec:
   clusterName: cp-test
   bootstrap:
     configRef: # This triggers our controller to create cloud-init secret
-      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
       kind: K0sWorkerConfig
       name: machine-test-config
   infrastructureRef: # This references the infrastructure provider machine object
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: AWSMachine
     name: machine-test-0
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: machine-test-config
@@ -38,7 +38,7 @@ spec:
 
 This configuration sets up a `Machine` object that will trigger the k0smotron controller to create a cloud-init secret and prepare the machine for bootstrapping. Note that the specific parameters in the `K0sWorkerConfig` spec will depend on your worker node configuration requirements.
 
-For reference on what can be configured via `K0sWorkerConfig` see the [reference docs](resource-reference/bootstrap.cluster.x-k8s.io-v1beta1.md).
+For reference on what can be configured via `K0sWorkerConfig` see the [reference docs](resource-reference/bootstrap.cluster.x-k8s.io-v1beta2.md).
 
 ## Pre/Post Start Commands
 
@@ -52,16 +52,16 @@ k0smotron supports executing custom commands before and after starting k0s on wo
 
 ### PreStartCommands
 
-Commands specified in `preStartCommands` are executed before k0s binary is downloaded and installed.
+Commands specified in `preK0sCommands` are executed before k0s binary is downloaded and installed.
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-config
 spec:
   version: v1.27.2+k0s.0
-  preStartCommands:
+  preK0sCommands:
     - "apt-get update && apt-get install -y curl jq"
     - "mkdir -p /etc/k0s/monitoring"
     - "echo 'export MONITORING_ENABLED=true' >> /etc/environment"
@@ -69,16 +69,16 @@ spec:
 
 ### PostStartCommands
 
-Commands specified in `postStartCommands` are executed after k0s has started successfully. These commands run after the k0s service is running and the node is ready.
+Commands specified in `postK0sCommands` are executed after k0s has started successfully. These commands run after the k0s service is running and the node is ready.
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-config
 spec:
   version: v1.27.2+k0s.0
-  postStartCommands:
+  postK0sCommands:
     - "systemctl enable monitoring-agent"
     - "systemctl start monitoring-agent"
     - "kubectl get nodes --kubeconfig=/var/lib/k0s/pki/admin.conf"
@@ -98,17 +98,17 @@ The commands are executed in the following order:
 #### Installing Monitoring Agents
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-with-monitoring
 spec:
   version: v1.27.2+k0s.0
-  preStartCommands:
+  preK0sCommands:
     - "curl -fsSL https://get.docker.com | sh"
     - "systemctl enable docker"
     - "systemctl start docker"
-  postStartCommands:
+  postK0sCommands:
     - "docker run -d --name node-exporter -p 9100:9100 prom/node-exporter"
     - "echo 'Node exporter started on port 9100'"
 ```
@@ -116,18 +116,18 @@ spec:
 #### Configuring System Settings
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-with-config
 spec:
   version: v1.27.2+k0s.0
-  preStartCommands:
+  preK0sCommands:
     - "echo 'vm.max_map_count=262144' >> /etc/sysctl.conf"
     - "sysctl -p"
     - "echo 'net.core.somaxconn=65535' >> /etc/sysctl.conf"
     - "sysctl -p"
-  postStartCommands:
+  postK0sCommands:
     - "echo 'System configuration applied successfully'"
     - "sysctl vm.max_map_count net.core.somaxconn"
 ```
@@ -135,13 +135,13 @@ spec:
 #### Health Checks and Validation
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: worker-with-health-checks
 spec:
   version: v1.27.2+k0s.0
-  postStartCommands:
+  postK0sCommands:
     - "kubectl get nodes --kubeconfig=/var/lib/k0s/pki/admin.conf"
     - "kubectl describe node $(hostname) --kubeconfig=/var/lib/k0s/pki/admin.conf"
     - "echo 'Health check completed successfully'"
@@ -173,7 +173,7 @@ spec:
 To leverage k0smotron as a Bootstrap provider for `MachineDeployment` utilize the `K0sWorkerConfigTemplate` type:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: md-test
@@ -194,15 +194,15 @@ spec:
       clusterName: cp-test
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: md-test-config
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: AWSMachineTemplate
         name: mt-test
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: md-test-config

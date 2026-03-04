@@ -3,7 +3,7 @@
 K0smotron managed control planes are managed using custom resource objects.
 
 ```yaml
-apiVersion: k0smotron.io/v1beta1
+apiVersion: k0smotron.io/v1beta2
 kind: Cluster
 metadata:
   name: k0smotron-test
@@ -19,7 +19,7 @@ spec:
     type: emptyDir
 ```
 
-For full reference of the fields check out the [reference docs](resource-reference/k0smotron.io-v1beta1.md#cluster).
+For full reference of the fields check out the [reference docs](resource-reference/k0smotron.io-v1beta2.md#cluster).
 
 ## Persistence
 
@@ -27,7 +27,7 @@ K0smotron persists data related to each Cluster. Specifically, it persists the `
 
 The `/var/lib/k0s` directory contains essential data for the operation of the k0s controller, but its growth over time is primarily driven by the addition of small [manifest](https://docs.k0sproject.io/stable/manifests/) files. Since these manifests are lightweight and in text format, the directory tends to grow gradually and not excessively. Typically, 250 MB of space is sufficient to handle its growth, as the main additions are these small manifests, keeping the overall size manageable.
 
-The type of persistence used for this can be configurable via `spec.persistence`. For more information, check out the [reference docs](resource-reference/k0smotron.io-v1beta1.md#clusterspecpersistence) on Cluster persistence.
+The type of persistence used for this can be configurable via `spec.persistence`. For more information, check out the [reference docs](resource-reference/k0smotron.io-v1beta2.md#clusterspecpersistence) on Cluster persistence.
 
 ## K0s configuration
 
@@ -67,42 +67,42 @@ K0smotron can automatically generate `spec.k0sConfig` or override some fields (i
   </tr>
   <tr>
     <td><code>storage.kine.dataSource</code></td>
-    <td>Value in <code>spec.kineDataSourceURL</code></td>
-    <td>Only set if <code>spec.kineDataSourceURL</code> is defined.</td>
+    <td>Value in <code>spec.storage.kine.dataSourceURL</code></td>
+    <td>Only set if <code>spec.storage.kine.dataSourceURL</code> is defined.</td>
   </tr>
   <tr>
     <td><code>storage.type</code></td>
     <td><code>kine</code></td>
-    <td>Only set if <code>spec.kineDataSourceURL</code> is defined.</td>
+    <td>Only set if <code>spec.storage.kine.dataSourceURL</code> is defined.</td>
   </tr>
   <tr>
     <td><code>storage.type</code></td>
     <td><code>etcd</code></td>
-    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+    <td>Only set if <code>spec.storage.kine.dataSourceURL</code> is not defined.</td>
   </tr>
   <tr>
     <td><code>storage.etcd.externalCluster.endpoints</code></td>
     <td><code>[https://kmc-&lt;cluster.name&gt;-etcd:2379]</code></td>
-    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+    <td>Only set if <code>spec.storage.kine.dataSourceURL</code> is not defined.</td>
   </tr>
   <tr>
     <td><code>storage.etcd.externalCluster.etcdPrefix</code></td>
     <td>Value in <code>metadata.name</code></td>
-    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+    <td>Only set if <code>spec.storage.kine.dataSourceURL</code> is not defined.</td>
   </tr>
   <tr>
     <td><code>storage.etcd.externalCluster.caFile</code></td>
     <td><code>/var/lib/k0s/pki/etcd-ca.crt</code></td>
-    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+    <td>Only set if <code>spec.storage.kine.dataSourceURL</code> is not defined.</td>
   </tr>
   <tr>
     <td><code>storage.etcd.externalCluster.clientCertFile</code></td>
     <td><code>/var/lib/k0s/pki/apiserver-etcd-client.crt</code></td>
-    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+    <td>Only set if <code>spec.storage.kine.dataSourceURL</code> is not defined.</td>
   </tr>
   <tr>
     <td><code>storage.etcd.externalCluster.clientKeyFile</code></td>
     <td><code>/var/lib/k0s/pki/apiserver-etcd-client.key</code></td>
-    <td>Only set if <code>spec.kineDataSourceURL</code> is not defined.</td>
+    <td>Only set if <code>spec.storage.kine.dataSourceURL</code> is not defined.</td>
   </tr>
 </table>
