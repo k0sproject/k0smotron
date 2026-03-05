@@ -31,7 +31,7 @@ import (
 
 // SetupSpecNamespace creates a namespace for the test spec and setups a watch for the namespace events.
 func SetupSpecNamespace(ctx context.Context, specName string, clusterProxy capiframework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc) {
-	fmt.Printf("Creating a namespace for hosting the %q test spec", specName)
+	fmt.Printf("Creating a namespace for hosting the %q test spec\n", specName)
 	namespace, cancelWatches := framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
 		Creator:   clusterProxy.GetClient(),
 		ClientSet: clusterProxy.GetClientSet(),

@@ -30,6 +30,7 @@ import (
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/internal/featuregate"
 	"github.com/k0sproject/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -42,9 +43,15 @@ import (
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	runtimehooksv1 "sigs.k8s.io/cluster-api/api/runtime/hooks/v1alpha1"
+	runtimev1 "sigs.k8s.io/cluster-api/api/runtime/v1beta2"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
+	clusterctlconfig "sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
+	runtimecatalog "sigs.k8s.io/cluster-api/exp/runtime/catalog"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/certs"
@@ -103,6 +110,8 @@ type K0sController struct {
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=clusterctl.cluster.x-k8s.io,resources=providers,verbs=get;list;watch
+// +kubebuilder:rbac:groups=runtime.cluster.x-k8s.io,resources=extensionconfigs,verbs=get;list;watch
 
 // Reconcile reconciles a K0sControlPlane object.
 func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
@@ -417,7 +426,9 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	log.Log.Info("Got current cluster version", "version", currentVersion)
 
 	machineNamesToDelete := make(map[string]bool)
-	desiredMachines := make(collections.Machines, len(allMachines))
+	desiredMachines := make(collections.Machines, allMachines.Len())
+	// notUpdatedMachines stores the machines that are not yet updated to the desired version
+	notUpdatedMachines := make(collections.Machines, allMachines.Len())
 
 	var (
 		clusterIsUpdating       bool
@@ -425,13 +436,22 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		configurationHasChanged bool
 	)
 	for _, m := range activeMachines.SortedByCreationTimestamp() {
-		if m.Spec.Version == "" || (!versionMatches(m, kcp.Spec.Version)) {
+		if m.Annotations != nil {
+			// Requeue if any machine is already updating in-place because we need to wait for it to complete before proceeding
+			// with other updates.
+			if _, ok := m.Annotations[clusterv1.UpdateInProgressAnnotation]; ok && kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
+				return ErrNotReady
+			}
+		}
+		if m.Spec.Version == "" || !versionMatches(m, kcp.Spec.Version) {
 			clusterIsUpdating = true
 			if kcp.Spec.UpdateStrategy == cpv1beta1.UpdateInPlace {
 				desiredMachines.Insert(m)
+				notUpdatedMachines.Insert(m)
 			} else {
 				machineNamesToDelete[m.Name] = true
 			}
+			notUpdatedMachines.Insert(m)
 		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) || hasControllerConfigChanged(bootstrapConfigs, kcp, m) {
 			if _, found := infraMachines[m.Name]; !found {
 				infraMachineMissing = true
@@ -474,6 +494,42 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				}
 			}
 		} else {
+			isCAPIVersionSuitableForInplaceUpdate, err := isCAPIVersionSuitableForInplaceUpdate(ctx, c.Client)
+			if err != nil {
+				log.Log.Info("error checking CAPI version suitability for in-place updates: %w", err)
+			}
+
+			isK0smotronExtensionForInplaceUpdateDeployed, err := isK0smotronExtensionForInplaceUpdateDeployed(ctx, c.Client)
+			if err != nil {
+				log.Log.Info("error checking if k0smotron extension for in-place updates is deployed: %w", err)
+			}
+
+			if featuregate.IsEnabled(featuregate.InPlaceUpdates) && isCAPIVersionSuitableForInplaceUpdate && isK0smotronExtensionForInplaceUpdateDeployed {
+				// This block aims to in-place update the kubernetes version of the node using an Autopilot plan. At the momment,
+				// we only rely on k0smotron extension for in-place updates of the kubernetes version. We should support other
+				// extensions to in-place update the kubernetes version.
+				// TODO: support other extensions to in-place update the machine for other changes on it like resources changes.
+				machineToUpdate := notUpdatedMachines.Oldest()
+				infraMachineToUpdate, ok := infraMachines[machineToUpdate.Name]
+				if !ok {
+					return fmt.Errorf("infrastructure machine for machine %s not found", machineToUpdate.Name)
+				}
+				bootstrapConfigToUpdate, ok := bootstrapConfigs[machineToUpdate.Name]
+				if !ok {
+					return fmt.Errorf("bootstrap config for machine %s not found", machineToUpdate.Name)
+				}
+				log.Log.Info("Updating machine in-place using CAPI runtime extension", "machine", machineToUpdate.Name)
+				// Avoid call CanUpdate hook if k0smotron extension for in-place updates is deployed because it is expecifically
+				// designed to handle the in-place update for the kubernetes version. Directly trigger the in-place update.
+				err := triggerInplaceVersionUpdate(ctx, c.Client, kcp.Spec.Version, machineToUpdate, infraMachineToUpdate, &bootstrapConfigToUpdate)
+				if err != nil {
+					return fmt.Errorf("error triggering in-place version update for machine %s: %w", machineToUpdate.Name, err)
+				}
+
+				// Requeue to wait for the in-place update to complete before proceeding with other updates.
+				return ErrNotReady
+			}
+			// If we can't do CAPI in-place update for the kubernetes version, fall back to our own inplace update mechanism.
 			kubeClient, err := c.getKubeClient(ctx, cluster)
 			if err != nil {
 				return fmt.Errorf("error getting cluster client set for machine update: %w", err)
@@ -571,6 +627,84 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 
 	if len(desiredMachines) < int(kcp.Spec.Replicas) {
 		return ErrNewMachinesNotReady
+	}
+
+	return nil
+}
+
+func isCAPIVersionSuitableForInplaceUpdate(ctx context.Context, c client.Client) (bool, error) {
+	var capiProvider clusterctlv1.Provider
+	err := c.Get(ctx, client.ObjectKey{Name: clusterctlconfig.ClusterAPIProviderName, Namespace: "capi-system"}, &capiProvider)
+	if err != nil {
+		return false, fmt.Errorf("error getting CAPI provider: %w", err)
+	}
+
+	capiVersionInstalled, err := version.NewVersion(capiProvider.Version)
+	if err != nil {
+		return false, fmt.Errorf("error parsing CAPI version: %w", err)
+	}
+
+	const capiVersionWithInplaceUpdatesSupportStr = "v1.12.0"
+	capiVersionWithInplaceUpdatesSupport, err := version.NewVersion(capiVersionWithInplaceUpdatesSupportStr)
+	if err != nil {
+		return false, fmt.Errorf("error parsing CAPI version with inplace updates support: %w", err)
+	}
+
+	return capiVersionInstalled.GreaterThanOrEqual(capiVersionWithInplaceUpdatesSupport), nil
+}
+
+func isK0smotronExtensionForInplaceUpdateDeployed(ctx context.Context, c client.Client) (bool, error) {
+	var k0smotronInplaceVersionUpdateExtension runtimev1.ExtensionConfig
+	err := c.Get(ctx, client.ObjectKey{Name: "inplace-version-update-extensionconfig"}, &k0smotronInplaceVersionUpdateExtension)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("error getting k0smotron inplace version update extension: %w", err)
+	}
+
+	return true, nil
+}
+
+func triggerInplaceVersionUpdate(ctx context.Context, c client.Client, desiredVersion string, desiredMachine *clusterv1.Machine, desiredInfraMachine *unstructured.Unstructured, desiredBootstrapConfig *bootstrapv1.K0sControllerConfig) error {
+	if _, ok := desiredMachine.Annotations[clusterv1.UpdateInProgressAnnotation]; !ok {
+		orig := desiredMachine.DeepCopy()
+		desiredMachine.Spec.Version = desiredVersion
+		if desiredMachine.Annotations == nil {
+			desiredMachine.Annotations = map[string]string{}
+		}
+		desiredMachine.Annotations[clusterv1.UpdateInProgressAnnotation] = ""
+		desiredMachine.Annotations[runtimev1.PendingHooksAnnotation] = runtimecatalog.HookName(runtimehooksv1.UpdateMachine)
+		if err := c.Patch(ctx, desiredMachine, client.MergeFrom(orig)); err != nil {
+			return fmt.Errorf("failed to trigger in-place update for Machine %s by setting the %s annotation: %w",
+				klog.KObj(desiredMachine), clusterv1.UpdateInProgressAnnotation, err)
+		}
+	}
+
+	if _, ok := desiredInfraMachine.GetAnnotations()[clusterv1.UpdateInProgressAnnotation]; !ok {
+		origInfra := desiredInfraMachine.DeepCopy()
+		infraMachineAnnotations := desiredInfraMachine.GetAnnotations()
+		if infraMachineAnnotations == nil {
+			infraMachineAnnotations = map[string]string{}
+		}
+		infraMachineAnnotations[clusterv1.UpdateInProgressAnnotation] = ""
+		desiredInfraMachine.SetAnnotations(infraMachineAnnotations)
+		if err := c.Patch(ctx, desiredInfraMachine, client.MergeFrom(origInfra)); err != nil {
+			return fmt.Errorf("failed to trigger in-place update for InfrastructureMachine %s by setting the %s annotation: %w",
+				klog.KObj(desiredInfraMachine), clusterv1.UpdateInProgressAnnotation, err)
+		}
+	}
+
+	if _, ok := desiredBootstrapConfig.Annotations[clusterv1.UpdateInProgressAnnotation]; !ok {
+		origBootstrap := desiredBootstrapConfig.DeepCopy()
+		if desiredBootstrapConfig.Annotations == nil {
+			desiredBootstrapConfig.Annotations = map[string]string{}
+		}
+		desiredBootstrapConfig.Annotations[clusterv1.UpdateInProgressAnnotation] = ""
+		if err := c.Patch(ctx, desiredBootstrapConfig, client.MergeFrom(origBootstrap)); err != nil {
+			return fmt.Errorf("failed to trigger in-place update for BootstrapConfig %s by setting the %s annotation: %w",
+				klog.KObj(desiredBootstrapConfig), clusterv1.UpdateInProgressAnnotation, err)
+		}
 	}
 
 	return nil

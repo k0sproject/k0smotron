@@ -96,11 +96,14 @@ jobs:
           STABLE=${{ steps.set_versions.outputs.STABLE }}
           make release IMG=quay.io/k0sproject/k0smotron:${STABLE}
           make release-standalone IMG=quay.io/k0sproject/k0smotron:${STABLE}
+          make release-extension-webhook IMG=quay.io/k0sproject/k0smotron:${STABLE}
           cp install.yaml /tmp/install.yaml
           cp install-standalone.yaml /tmp/install-standalone.yaml
+          cp extension-webhook-install.yaml /tmp/extension-webhook-install.yaml
           git checkout gh-pages
           cp /tmp/install.yaml ${STABLE}/install.yaml
           cp /tmp/install-standalone.yaml ${STABLE}/install-standalone.yaml
-          git add ${STABLE}/install.yaml ${STABLE}/install-standalone.yaml && git update-index --refresh
-          git diff-index --quiet HEAD -- || git commit -m "Update install.yaml and install-standalone.yaml to ${STABLE}"
+          cp /tmp/extension-webhook-install.yaml ${STABLE}/extension-webhook-install.yaml
+          git add ${STABLE}/install.yaml ${STABLE}/install-standalone.yaml ${STABLE}/extension-webhook-install.yaml && git update-index --refresh
+          git diff-index --quiet HEAD -- || git commit -m "Update install.yaml, install-standalone.yaml, and extension-webhook-install.yaml to ${STABLE}"
           git push origin gh-pages
