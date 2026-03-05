@@ -29,8 +29,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/ptr"
 
-	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -156,7 +157,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 			if rm.Spec.Address == "" || rm.Spec.SSHKeyRef.Name == "" {
 				rm.Status.FailureReason = "MissingFields"
 				rm.Status.FailureMessage = "If pool is empty, following fields are required: address, sshKeyRef"
-				rm.Status.Ready = false
+				rm.Status.Initialization.Provisioned = ptr.To(false)
 				if err := rmPatchHelper.Patch(ctx, rm); err != nil {
 					log.Error(err, "Failed to update RemoteMachine status")
 				}
@@ -259,7 +260,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	if rm.Status.Ready {
+	if rm.Status.Initialization.Provisioned != nil && *rm.Status.Initialization.Provisioned {
 		return ctrl.Result{}, nil
 	}
 
@@ -295,11 +296,11 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		if err != nil {
 			rm.Status.FailureReason = "ProvisionFailed"
 			rm.Status.FailureMessage = err.Error()
-			rm.Status.Ready = false
+			rm.Status.Initialization.Provisioned = ptr.To(false)
 		} else {
 			rm.Status.FailureReason = ""
 			rm.Status.FailureMessage = ""
-			rm.Status.Ready = true
+			rm.Status.Initialization.Provisioned = ptr.To(true)
 		}
 		log.Info(fmt.Sprintf("Updating RemoteMachine status: %+v", rm.Status))
 		if err := rmPatchHelper.Patch(ctx, rm); err != nil {
@@ -403,7 +404,7 @@ func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *
 	rm.Spec.UseSudo = foundPooledMachine.Spec.Machine.UseSudo
 	rm.Spec.CommandsAsScript = foundPooledMachine.Spec.Machine.CommandsAsScript
 	rm.Spec.WorkingDir = foundPooledMachine.Spec.Machine.WorkingDir
-	rm.Spec.CustomCleanUpCommands = foundPooledMachine.Spec.Machine.CustomCleanUpCommands
+	rm.Spec.CleanUpCommands = foundPooledMachine.Spec.Machine.CleanUpCommands
 
 	return nil
 }
