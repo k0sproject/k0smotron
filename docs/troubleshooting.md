@@ -1,6 +1,17 @@
 
 # Troubleshooting
 
+## New hosted control plane pods are in CrashLoopBackOff 
+
+k0s uses inotify to watch for changes in manifest files. If the inotify limits are too low on the nodes of a management cluster, 
+the control plane pods may crash since they cannot set up the cluster configuration. 
+To increase the limit run the following command on your control plane node:
+
+```bash
+$ sysctl -w fs.inotify.max_user_watches=524288
+$ sysctl -w fs.inotify.max_user_instances=512
+```
+
 ## Worker nodes cannot be joined
 
 If you are using k0smotron in standalone mode, check whether the join
