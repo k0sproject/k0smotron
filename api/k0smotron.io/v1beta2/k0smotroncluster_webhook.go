@@ -76,10 +76,10 @@ func (c ClusterValidator) ValidateClusterSpec(kcs *ClusterSpec) (warnings admiss
 }
 
 // validatePatches validates the Patches spec.
-func (c ClusterValidator) validatePatches(patches []km.ComponentPatch) error {
+func (c ClusterValidator) validatePatches(patches []ComponentPatch) error {
 	for i, p := range patches {
 		switch p.Patch.Type {
-		case km.JSONPatchType, km.StrategicMergePatchType, km.MergePatchType:
+		case JSONPatchType, StrategicMergePatchType, MergePatchType:
 			// valid
 		default:
 			return fmt.Errorf("invalid patch type %q at index %d: must be one of json, strategic, merge", p.Patch.Type, i)

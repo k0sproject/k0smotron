@@ -10360,6 +10360,15 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#clusterspecpatchesindex-1">patches</a></b></td>
+        <td>[]object</td>
+        <td>
+          Patches defines patches to apply to generated resources (StatefulSet, Service, ConfigMap, etc.).
+Patches are applied after generation and before apply. Target resources are matched by Kind and app.kubernetes.io/component label.
+For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterspecpersistence-1">persistence</a></b></td>
         <td>object</td>
         <td>
@@ -18525,6 +18534,108 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
           storagePolicyName is the storage Policy Based Management (SPBM) profile name.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.patches[index]
+<sup><sup>[↩ Parent](#clusterspec-1)</sup></sup>
+
+
+
+ComponentPatch defines a patch to apply to a generated resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#clusterspecpatchesindexpatch-1">patch</a></b></td>
+        <td>object</td>
+        <td>
+          Patch defines the patch type and content to apply.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecpatchesindextarget-1">target</a></b></td>
+        <td>object</td>
+        <td>
+          Target selects which generated resource to patch.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.patches[index].patch
+<sup><sup>[↩ Parent](#clusterspecpatchesindex-1)</sup></sup>
+
+
+
+Patch defines the patch type and content to apply.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>content</b></td>
+        <td>string</td>
+        <td>
+          Content is the patch content (JSON/YAML). The format depends on Type.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type is the patch type to apply: "json", "merge", or "strategic".<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.patches[index].target
+<sup><sup>[↩ Parent](#clusterspecpatchesindex-1)</sup></sup>
+
+
+
+Target selects which generated resource to patch.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>component</b></td>
+        <td>string</td>
+        <td>
+          Component is the value of the app.kubernetes.io/component label on the target resource.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind is the Kubernetes Kind of the target resource (e.g. "StatefulSet", "Service", "ConfigMap").<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

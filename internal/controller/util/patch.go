@@ -22,7 +22,7 @@ import (
 	"reflect"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
