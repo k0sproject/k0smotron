@@ -8,3 +8,6 @@ func (*K0sControlPlaneTemplate) Hub() {}
 
 // Hub marks K0smotronControlPlane as a conversion hub.
 func (*K0smotronControlPlane) Hub() {}
+
+// Hub marks K0smotronControlPlaneTemplate as a conversion hub.
+func (*K0smotronControlPlaneTemplate) Hub() {}
