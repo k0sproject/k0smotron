@@ -1502,6 +1502,15 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#new-hosted-control-plane-pods-are-in-crashloopbackoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      New hosted control plane pods are in CrashLoopBackOff
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#worker-nodes-cannot-be-joined" class="md-nav__link">
     <span class="md-ellipsis">
       Worker nodes cannot be joined
@@ -1964,6 +1973,15 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#new-hosted-control-plane-pods-are-in-crashloopbackoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      New hosted control plane pods are in CrashLoopBackOff
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#worker-nodes-cannot-be-joined" class="md-nav__link">
     <span class="md-ellipsis">
       Worker nodes cannot be joined
@@ -1998,6 +2016,13 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h1>
+<h2 id="new-hosted-control-plane-pods-are-in-crashloopbackoff">New hosted control plane pods are in CrashLoopBackOff<a class="headerlink" href="#new-hosted-control-plane-pods-are-in-crashloopbackoff" title="Permanent link">#</a></h2>
+<p>k0s uses inotify to watch for changes in manifest files. If the inotify limits are too low on the nodes of a management cluster, 
+the control plane pods may crash since they cannot set up the cluster configuration. 
+To increase the limit run the following command on your control plane node:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>sysctl<span class="w"> </span>-w<span class="w"> </span>fs.inotify.max_user_watches<span class="o">=</span><span class="m">524288</span>
+$<span class="w"> </span>sysctl<span class="w"> </span>-w<span class="w"> </span>fs.inotify.max_user_instances<span class="o">=</span><span class="m">512</span>
+</code></pre></div>
 <h2 id="worker-nodes-cannot-be-joined">Worker nodes cannot be joined<a class="headerlink" href="#worker-nodes-cannot-be-joined" title="Permanent link">#</a></h2>
 <p>If you are using k0smotron in standalone mode, check whether the join
 token has expired. If this is the case, attempt to create a new one using
