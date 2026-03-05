@@ -191,7 +191,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 
 	err = s.client.RESTClient().
 		Delete().
-		AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines/docker-test-2").
+		AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/default/dockermachines/docker-test-2").
 		Do(s.ctx).
 		Error()
 

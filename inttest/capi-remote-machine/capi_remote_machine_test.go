@@ -31,7 +31,7 @@ import (
 	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/require"
@@ -157,7 +157,8 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	// Verify the RemoteMachine is at expected state
 	rm, err := s.getRemoteMachine("remote-test-0", "default")
 	s.Require().NoError(err)
-	s.Require().True(rm.Status.Ready)
+	s.Require().NotNil(rm.Status.Initialization.Provisioned)
+	s.Require().True(*rm.Status.Initialization.Provisioned)
 	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 	s.Require().Equal(expectedProviderID, rm.Spec.ProviderID)
 
@@ -181,7 +182,7 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 }
 
 func (s *RemoteMachineSuite) getRemoteMachine(name string, namespace string) (*infra.RemoteMachine, error) {
-	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/%s/remotemachines/%s", namespace, name)
+	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/%s/remotemachines/%s", namespace, name)
 	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(s.Context())
 	if err != nil {
 		return nil, err
@@ -194,7 +195,7 @@ func (s *RemoteMachineSuite) getRemoteMachine(name string, namespace string) (*i
 }
 
 func (s *RemoteMachineSuite) deleteRemoteMachine(name string, namespace string) error {
-	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/%s/remotemachines/%s", namespace, name)
+	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/%s/remotemachines/%s", namespace, name)
 	_, err := s.client.RESTClient().Delete().AbsPath(apiPath).DoRaw(s.Context())
 	return err
 }

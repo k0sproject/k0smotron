@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-	http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package v1beta1
+
+package v1beta2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,9 +27,9 @@ func init() {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
+// +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=infrastructure-k0smotron"
-// +kubebuilder:deprecatedversion
+// +kubebuilder:storageversion
 
 // RemoteCluster is the Schema for the remoteclusters API
 type RemoteCluster struct {
@@ -48,10 +49,19 @@ type RemoteClusterSpec struct {
 
 // RemoteClusterStatus defines the observed state of RemoteCluster
 type RemoteClusterStatus struct {
-	// Ready denotes that the remote cluster is ready to be used.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:default=false
-	Ready bool `json:"ready"`
+	// initialization provides observations of the RemoteCluster initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
+	// +optional
+	Initialization RemoteClusterInitializationStatus `json:"initialization,omitempty,omitzero"`
+}
+
+// RemoteClusterInitializationStatus provides observations of the RemoteCluster initialization process.
+// +kubebuilder:validation:MinProperties=1
+type RemoteClusterInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the Cluster's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
 }
 
 // +kubebuilder:object:root=true

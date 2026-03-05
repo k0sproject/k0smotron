@@ -86,11 +86,12 @@ manifests-controlplane: $(CONTROLLER_GEN) ## Generate CRDs for controlplane.clus
 	  output:webhook:dir=config/clusterapi/controlplane/webhook
 
 manifests-infrastructure: $(CONTROLLER_GEN) ## Generate CRDs for infrastructure.cluster.x-k8s.io
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true \
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook\
 	  paths="./api/infrastructure/..." \
 	  paths=./internal/controller/infrastructure/... \
 	  output:crd:artifacts:config=config/clusterapi/infrastructure/crd/bases \
-	  output:rbac:dir=config/clusterapi/infrastructure/rbac
+	  output:rbac:dir=config/clusterapi/infrastructure/rbac \
+	  output:webhook:dir=config/clusterapi/infrastructure/webhook
 
 manifests-standalone: $(CONTROLLER_GEN) ## Generate CRDs for k0smotron.io standalone
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
@@ -128,6 +129,7 @@ generate_targets += api/bootstrap/v1beta2/zz_generated.deepcopy.go
 generate_targets += api/controlplane/v1beta1/zz_generated.deepcopy.go
 generate_targets += api/controlplane/v1beta2/zz_generated.deepcopy.go
 generate_targets += api/infrastructure/v1beta1/zz_generated.deepcopy.go
+generate_targets += api/infrastructure/v1beta2/zz_generated.deepcopy.go
 .PHONY: $(generate_targets)
 $(generate_targets): $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
