@@ -6,7 +6,7 @@ the k0s version and machine names in the YAML configuration file:
 1. Localize the configuration of deployed k0smotron cluster in your repository. For example:
 
     ```yaml
-    apiVersion: cluster.x-k8s.io/v1beta1
+    apiVersion: cluster.x-k8s.io/v1beta2
     kind: Cluster
     metadata:
       name: docker-test
@@ -21,15 +21,15 @@ the k0s version and machine names in the YAML configuration file:
           cidrBlocks:
           - 10.128.0.0/12
       controlPlaneRef:
-        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        apiGroup: controlplane.cluster.x-k8s.io
         kind: K0smotronControlPlane
         name: docker-test-cp
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: DockerCluster
         name: docker-test
     ---
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: K0smotronControlPlane
     metadata:
       name: docker-test-cp
@@ -41,7 +41,7 @@ to prevent data loss. For example:
 
    ```yaml
     ---
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: K0smotronControlPlane
     metadata:
       name: docker-test-cp
@@ -59,7 +59,7 @@ to prevent data loss. For example:
 3. Change all the k0s versions to the target one. For example:
 
    ```yaml
-   apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+   apiVersion: controlplane.cluster.x-k8s.io/v1beta2
    kind: K0smotronControlPlane
    metadata:
      name: cp-test
@@ -72,7 +72,7 @@ with the new names to create machines for the target k0smotron version. For exam
 
    ```yaml
    ---
-   apiVersion: cluster.x-k8s.io/v1beta1
+   apiVersion: cluster.x-k8s.io/v1beta2
    kind: Machine
    metadata:
      name:  docker-test-1 # new machine
@@ -82,15 +82,15 @@ with the new names to create machines for the target k0smotron version. For exam
      clusterName: docker-test
      bootstrap:
        configRef:
-         apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+         apiGroup: bootstrap.cluster.x-k8s.io
          kind: K0sWorkerConfig
          name: docker-test-1 # new machine
      infrastructureRef:
-       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+       apiGroup: infrastructure.cluster.x-k8s.io
        kind: DockerMachine
        name: docker-test-1 # new machine
    ---
-   apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+   apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
    kind: K0sWorkerConfig
    metadata:
      name: docker-test-1 # new machine

@@ -32,7 +32,7 @@ stringData:
     runcmd:
       - echo "hello from custom controller cloud-init"
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: my-cp
@@ -44,12 +44,13 @@ spec:
         name: cp-custom-userdata
         key: customUserData
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
-      name: my-cp-tpl
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: DockerMachineTemplate
+        name: my-cp-tpl
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: my-cp-tpl
@@ -75,7 +76,7 @@ data:
         content: |
           Welcome from custom worker cloud-init
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: my-worker-template
@@ -101,7 +102,7 @@ k0smotron supports Jinja templating in your customUserData. You can use Jinja sy
 
 !!! warning "Important"
     Use `CloudInitVars` feature gate in case you really need to and if you absolutely understand the implications. It is not recommended for general use.
-    Most likely, you don't need it and should stick to the regular customUserData with pre/postStartCommands approach.
+    Most likely, you don't need it and should stick to the regular customUserData with pre/postK0sCommands approach.
 
 When the `CloudInitVars` feature gate is enabled, k0smotron exposes generated commands and files as Jinja variables instead of putting them into `runcmd` and `files` sections. You can embed into your customUserData. 
 The variables include:

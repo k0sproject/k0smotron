@@ -12,7 +12,7 @@ Just like any other Cluster API provider, k0smotron remote machine provider full
 To use `RemoteMachine`s in your cluster, you naturally need the top-level `Cluster` definition and control plane:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: remote-test
@@ -27,15 +27,15 @@ spec:
       cidrBlocks:
       - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: remote-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteCluster
     name: remote-test
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: remote-test
@@ -62,7 +62,7 @@ spec:
 The bootstrap a `Machine`, we need to specify the usual Cluster API objects:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
 metadata:
   name:  remote-test-0
@@ -71,15 +71,15 @@ spec:
   clusterName: remote-test
   bootstrap:
     configRef:
-      apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+      apiGroup: bootstrap.cluster.x-k8s.io
       kind: K0sWorkerConfig
       name: remote-test-0
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteMachine
     name: remote-test-0
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: remote-test-0
@@ -153,7 +153,7 @@ Then you can use the `RemoteMachineTemplate` in the `machineTemplate` of `K0sCon
     When using `RemoteMachine`s for control planes, `Cluster.spec.controlPlaneEndpoint` **must** be set.
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: remote-test
@@ -171,13 +171,13 @@ spec:
           extraArgs:
             anonymous-auth: "true"
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: RemoteMachineTemplate
-      name: remote-test-template
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: RemoteMachineTemplate
+        name: remote-test-template
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: remote-test
@@ -195,11 +195,11 @@ spec:
       cidrBlocks:
         - 10.128.0.0/12
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: remote-test
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteCluster
     name: remote-test
 
@@ -286,7 +286,7 @@ spec:
 Another way to provide custom cleanup logic is to create a script on the machine using `files` and then reference that script in `customCleanUpCommands`. For example:
 
 ```yaml
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfig
 metadata:
   name: machine-test-config

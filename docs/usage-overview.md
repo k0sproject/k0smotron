@@ -25,7 +25,7 @@ Users can use k0smotron in two distinct ways:
       It orchestrates the creation, scaling, and management of the Kubernetes control plane
       components, ensuring their proper functioning and high availability.
 
-      [comment]: # (controlplane.cluster.x-k8s.io/v1beta1.K0smotronControlPlane)
+      [comment]: # (controlplane.cluster.x-k8s.io/v1beta2.K0smotronControlPlane)
 
     * Control plane bootstrap provider: k0smotron acts as a bootstrap provider for `Machine`
       resources that run the control plane components. It handles the initialization and

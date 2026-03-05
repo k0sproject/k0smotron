@@ -6,61 +6,94 @@ For instance, we will create a ClusterClass that will create a cluster running c
 
 ```yaml
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: k0smotron-clusterclass
+  namespace: cluster-classes
 spec:
   controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: K0sControlPlaneTemplate
       name: k0s-controlplane-template
-      namespace: default
     machineInfrastructure:
-      ref:
+      templateRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: DockerMachineTemplate
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         name: cp-docker-machine-template
-        namespace: default
   infrastructure:
-    ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: docker-cluster-template
-      namespace: default
   workers:
     machineDeployments:
     - class: default-worker
-      template:
-        bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-            kind: K0sWorkerConfigTemplate
-            name: k0s-worker-config-template
-            namespace: default
-        infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      bootstrap:
+        templateRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: k0s-worker-config-template
+      infrastructure:
+        templateRef:
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+          kind: DockerMachineTemplate
+          name: worker-docker-machine-template
+  patches:
+    # control plane: set DockerMachineTemplate.spec.template.spec.customImage
+    # k0s appends "+k0s.N" to the version (e.g. v1.27.2 -> v1.27.2+k0s.0),
+    # which is not a valid Docker image tag. Use a patch to derive a valid
+    # kindest/node image tag from the Kubernetes minor version.
+    - name: controlPlaneCustomImageFromVersion
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
-            name: worker-docker-machine-template
-            namespace: default
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/customImage
+              valueFrom:
+                template: |
+                  kindest/node:{{ regexFind "^v[0-9]+\\.[0-9]+" .builtin.controlPlane.version }}.0
+    # workers: set DockerMachineTemplate.spec.template.spec.customImage
+    - name: workerCustomImageFromVersion
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: DockerMachineTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/customImage
+              valueFrom:
+                template: |
+                  kindest/node:{{ regexFind "^v[0-9]+\\.[0-9]+" .builtin.machineDeployment.version }}.0
 ---
 … # other objects omitted for brevity, see full example below
 ```
 
-Then we can easily create a Cluster using the ClusterClass:
+Then we can easily create a Cluster using the ClusterClass. With `classRef.namespace`, you can reference a ClusterClass from a different namespace:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
-  name: k0smotron-test-cluster
-  namespace: default
+  name: my-cluster
+  namespace: team-a
 spec:
   topology:
-    class: k0smotron-clusterclass
+    classRef:
+      name: k0smotron-clusterclass
+      namespace: cluster-classes
     version: v1.27.2
+    controlPlane:
+      replicas: 1
     workers:
       machineDeployments:
       - class: default-worker
@@ -70,60 +103,15 @@ spec:
 
 You can read more about ClusterClass in the [Cluster API documentation](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/).
 
-## K0smotronControlPlaneTemplate for ClusterClass
-
-`K0smotronControlPlane` is a custom resource that is used to create a control planes as pods in the managing cluster. It does not create any machines, but instead creates a pod that runs the k0s control plane.
-Here is the example of `ClusterClass` that uses `K0smotronControlPlaneTemplate`:
+## K0sControlPlane full example
 
 ```yaml
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: ClusterClass
-metadata:
-  name: k0smotron-clusterclass
-spec:
-  controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-      kind: K0smotronControlPlaneTemplate
-      name: k0s-controlplane-template
-      namespace: default
-  infrastructure:
-    ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerClusterTemplate
-      name: docker-cluster-template
-      namespace: default
-  workers:
-    machineDeployments:
-    - class: default-worker
-      template:
-        bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-            kind: K0sWorkerConfigTemplate
-            name: k0s-worker-config-template
-            namespace: default
-        infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: DockerMachineTemplate
-            name: worker-docker-machine-template
-            namespace: default
----
-… # other objects omitted for brevity, see full example below
-```
-
-```yaml
-
-## Full example
-
-```yaml
----
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlaneTemplate
 metadata:
   name: k0s-controlplane-template
+  namespace: cluster-classes
 spec:
   template:
     spec:
@@ -136,81 +124,257 @@ spec:
           spec:
             api:
               extraArgs:
-                anonymous-auth: "true" # anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz
+                anonymous-auth: "true"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
-metadata:
-  name: cp-docker-machine-template
-  namespace: default
-spec:
-  template:
-    spec: {}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerClusterTemplate
 metadata:
   name: docker-cluster-template
+  namespace: cluster-classes
 spec:
   template:
     spec: {}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: DockerMachineTemplate
+metadata:
+  name: cp-docker-machine-template
+  namespace: cluster-classes
+spec:
+  template:
+    spec: {}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: k0s-worker-config-template
-  namespace: default
-spec:
-  template:
-    spec:
-      version: v1.27.2+k0s.0
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
-metadata:
-  name: worker-docker-machine-template
-  namespace: default
+  namespace: cluster-classes
 spec:
   template:
     spec: {}
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: DockerMachineTemplate
+metadata:
+  name: worker-docker-machine-template
+  namespace: cluster-classes
+spec:
+  template:
+    spec: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: k0smotron-clusterclass
+  namespace: cluster-classes
 spec:
   controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: K0sControlPlaneTemplate
       name: k0s-controlplane-template
-      namespace: default
     machineInfrastructure:
-      ref:
+      templateRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: DockerMachineTemplate
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         name: cp-docker-machine-template
-        namespace: default
   infrastructure:
-    ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: docker-cluster-template
-      namespace: default
   workers:
     machineDeployments:
     - class: default-worker
-      template:
-        bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-            kind: K0sWorkerConfigTemplate
-            name: k0s-worker-config-template
-            namespace: default
-        infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      bootstrap:
+        templateRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: k0s-worker-config-template
+      infrastructure:
+        templateRef:
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+          kind: DockerMachineTemplate
+          name: worker-docker-machine-template
+  patches:
+    # control plane: set DockerMachineTemplate.spec.template.spec.customImage
+    # k0s appends "+k0s.N" to the version (e.g. v1.27.2 -> v1.27.2+k0s.0),
+    # which is not a valid Docker image tag. Use a patch to derive a valid
+    # kindest/node image tag from the Kubernetes minor version.
+    - name: controlPlaneCustomImageFromVersion
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
-            name: worker-docker-machine-template
-            namespace: default
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/customImage
+              valueFrom:
+                template: |
+                  kindest/node:{{ regexFind "^v[0-9]+\\.[0-9]+" .builtin.controlPlane.version }}.0
+    # workers: set DockerMachineTemplate.spec.template.spec.customImage
+    - name: workerCustomImageFromVersion
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: DockerMachineTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/customImage
+              valueFrom:
+                template: |
+                  kindest/node:{{ regexFind "^v[0-9]+\\.[0-9]+" .builtin.machineDeployment.version }}.0
+```
+
+## K0smotronControlPlaneTemplate for ClusterClass
+
+`K0smotronControlPlane` is a custom resource that is used to create a control planes as pods in the managing cluster. It does not create any machines, but instead creates a pod that runs the k0s control plane.
+Here is the example of `ClusterClass` that uses `K0smotronControlPlaneTemplate`:
+
+```yaml
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: ClusterClass
+metadata:
+  name: k0smotron-clusterclass
+  namespace: cluster-classes
+spec:
+  controlPlane:
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+      kind: K0smotronControlPlaneTemplate
+      name: k0s-controlplane-template
+  infrastructure:
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: DockerClusterTemplate
+      name: docker-cluster-template
+  workers:
+    machineDeployments:
+    - class: default-worker
+      bootstrap:
+        templateRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: k0s-worker-config-template
+      infrastructure:
+        templateRef:
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+          kind: DockerMachineTemplate
+          name: worker-docker-machine-template
+  patches:
+    # workers: set DockerMachineTemplate.spec.template.spec.customImage
+    - name: workerCustomImageFromVersion
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: DockerMachineTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/customImage
+              valueFrom:
+                template: |
+                  kindest/node:{{ regexFind "^v[0-9]+\\.[0-9]+" .builtin.machineDeployment.version }}.0
+---
+… # other objects omitted for brevity, see full example below
+```
+
+## K0smotronControlPlane full example
+
+```yaml
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+kind: K0smotronControlPlaneTemplate
+metadata:
+  name: k0s-controlplane-template
+  namespace: cluster-classes
+spec:
+  template:
+    spec:
+      service:
+        type: LoadBalancer
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: DockerClusterTemplate
+metadata:
+  name: docker-cluster-template
+  namespace: cluster-classes
+spec:
+  template:
+    spec: {}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: k0s-worker-config-template
+  namespace: cluster-classes
+spec:
+  template:
+    spec: {}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: DockerMachineTemplate
+metadata:
+  name: worker-docker-machine-template
+  namespace: cluster-classes
+spec:
+  template:
+    spec: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: ClusterClass
+metadata:
+  name: k0smotron-clusterclass
+  namespace: cluster-classes
+spec:
+  controlPlane:
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+      kind: K0smotronControlPlaneTemplate
+      name: k0s-controlplane-template
+  infrastructure:
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: DockerClusterTemplate
+      name: docker-cluster-template
+  workers:
+    machineDeployments:
+    - class: default-worker
+      bootstrap:
+        templateRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: k0s-worker-config-template
+      infrastructure:
+        templateRef:
+          apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+          kind: DockerMachineTemplate
+          name: worker-docker-machine-template
+  patches:
+    # workers: set DockerMachineTemplate.spec.template.spec.customImage
+    - name: workerCustomImageFromVersion
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: DockerMachineTemplate
+            matchResources:
+              machineDeploymentClass:
+                names:
+                  - default-worker
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/customImage
+              valueFrom:
+                template: |
+                  kindest/node:{{ regexFind "^v[0-9]+\\.[0-9]+" .builtin.machineDeployment.version }}.0
 ```

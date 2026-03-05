@@ -53,7 +53,7 @@ graph TB
 ### Cluster API Integration
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: my-cluster-cp
