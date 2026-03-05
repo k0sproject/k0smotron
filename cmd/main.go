@@ -52,6 +52,7 @@ import (
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	infrastructurev1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	infrastructurev1beta2 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	k0smotronv1beta2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/bootstrap"
@@ -98,6 +99,7 @@ func init() {
 	utilruntime.Must(cpv1beta1.AddToScheme(scheme))
 	utilruntime.Must(cpv1beta2.AddToScheme(scheme))
 	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme))
+	utilruntime.Must(infrastructurev1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

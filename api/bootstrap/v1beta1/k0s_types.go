@@ -67,13 +67,13 @@ type K0sWorkerConfig struct {
 }
 
 // GetConditions returns the set of conditions for this object.
-func (k *K0sWorkerConfig) GetConditions() []metav1.Condition {
-	return k.Status.Conditions
+func (c *K0sWorkerConfig) GetConditions() []metav1.Condition {
+	return c.Status.Conditions
 }
 
 // SetConditions sets the conditions on the K0sWorkerConfig status.
-func (k *K0sWorkerConfig) SetConditions(conditions []metav1.Condition) {
-	k.Status.Conditions = conditions
+func (c *K0sWorkerConfig) SetConditions(conditions []metav1.Condition) {
+	c.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true
