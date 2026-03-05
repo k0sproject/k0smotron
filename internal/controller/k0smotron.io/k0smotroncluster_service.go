@@ -154,7 +154,7 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 				}
 				logger.Info("Loadbalancer address available, updating Cluster object", "address", kmc.Spec.ExternalAddress)
 
-				err := scope.client.Update(ctx, kmc)
+				err := scope.client.Update(ctx, kmc) //nolint:forbidigo // updating the Cluster object itself, not a generated resource
 				if err != nil {
 					return false, err
 				}

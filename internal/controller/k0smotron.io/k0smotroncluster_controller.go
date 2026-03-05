@@ -98,7 +98,7 @@ func (scope *kmcScope) reconcileResource(ctx context.Context, kmc *km.Cluster, o
 	if err := kutil.ApplyComponentPatches(scope.client.Scheme(), obj, kmc.Spec.Patches); err != nil {
 		return fmt.Errorf("failed to apply component patches: %w", err)
 	}
-	return scope.client.Patch(ctx, obj, client.Apply, patchOpts...)
+	return scope.client.Patch(ctx, obj, client.Apply, patchOpts...) //nolint:forbidigo // reconcileResource implementation itself
 }
 
 // +kubebuilder:rbac:groups=k0smotron.io,resources=clusters,verbs=get;list;watch;create;update;patch;delete
