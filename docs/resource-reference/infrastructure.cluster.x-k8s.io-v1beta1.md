@@ -435,6 +435,40 @@ RemoteClusterStatus defines the observed state of RemoteCluster
             <i>Default</i>: false<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b><a href="#remoteclusterstatusinitialization">initialization</a></b></td>
+        <td>object</td>
+        <td>
+          Initialization represents the initialization status of the infrastructure.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteCluster.status.initialization
+<sup><sup>[↩ Parent](#remoteclusterstatus)</sup></sup>
+
+
+
+Initialization represents the initialization status of the infrastructure.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>provisioned</b></td>
+        <td>boolean</td>
+        <td>
+          Provisioned indicates that the infrastructure has been provisioned.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -18117,6 +18151,13 @@ RemoteMachineStatus defines the observed state of RemoteMachine
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#remotemachinestatusinitialization">initialization</a></b></td>
+        <td>object</td>
+        <td>
+          Initialization represents the initialization status of the infrastructure.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>ready</b></td>
         <td>boolean</td>
         <td>
@@ -18159,6 +18200,33 @@ MachineAddress contains information for the node's address.
             <i>Enum</i>: Hostname, ExternalIP, InternalIP, ExternalDNS, InternalDNS<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.status.initialization
+<sup><sup>[↩ Parent](#remotemachinestatus)</sup></sup>
+
+
+
+Initialization represents the initialization status of the infrastructure.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>provisioned</b></td>
+        <td>boolean</td>
+        <td>
+          Provisioned indicates that the infrastructure has been provisioned.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

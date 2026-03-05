@@ -125,7 +125,7 @@ metadata:
   name: openstack-cloud-config
   namespace: default
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: openstack-hcp-cluster
@@ -138,15 +138,13 @@ spec:
     services:
       cidrBlocks: [10.96.0.0/12] # Adjust accordingly
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0smotronControlPlane
     name: openstack-hcp-cluster-cp
-    namespace: default
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: OpenStackCluster
     name: openstack-hcp-cluster
-    namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: OpenStackCluster
@@ -171,7 +169,7 @@ spec:
   - filter:
       name: k8s-clusterapi-cluster-default-capo-test
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: openstack-hcp-cluster-md
@@ -189,16 +187,14 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: K0sWorkerConfigTemplate
           name: openstack-hcp-cluster-machine-config
-          namespace: default
       clusterName: openstack-hcp-cluster
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: OpenStackMachineTemplate
         name: openstack-hcp-cluster-mt
-        namespace: default
       version: v1.32.6
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -225,7 +221,7 @@ spec:
       - filter:
           name: default
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: openstack-hcp-cluster-cp
@@ -323,7 +319,7 @@ spec:
     konnectivityPort: 8132
     type: LoadBalancer
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: openstack-hcp-cluster-machine-config
