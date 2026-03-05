@@ -5,10 +5,13 @@ package controlplane
 import (
 	"testing"
 
+	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/cluster-api/util/conditions"
 )
 
 func TestIsClusterSpecSynced(t *testing.T) {
@@ -198,6 +201,63 @@ func TestIsClusterSpecSynced(t *testing.T) {
 			result, err := isClusterSpecSynced(tc.kmcSpec, tc.kcpSpec)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expected, result)
+		})
+	}
+}
+
+func TestComputeK0smotronClusterReconciliationStatus(t *testing.T) {
+	tests := []struct {
+		name           string
+		status         string
+		expectedStatus metav1.ConditionStatus
+		expectedReason string
+		expectMessage  bool
+	}{
+		{
+			name:           "reconciliation successful",
+			status:         kapi.ReconciliationStatusSuccessful,
+			expectedStatus: metav1.ConditionTrue,
+			expectedReason: cpv1beta1.ReconciliationSucceededReason,
+		},
+		{
+			name:           "failed reconciling services",
+			status:         kapi.ReconciliationStatusFailedPrefix + " reconciling services",
+			expectedStatus: metav1.ConditionFalse,
+			expectedReason: cpv1beta1.ReconciliationFailedReason,
+			expectMessage:  true,
+		},
+		{
+			name:           "failed reconciling etcd with details",
+			status:         kapi.ReconciliationStatusFailedPrefix + " reconciling etcd, some error details",
+			expectedStatus: metav1.ConditionFalse,
+			expectedReason: cpv1beta1.ReconciliationFailedReason,
+			expectMessage:  true,
+		},
+		{
+			name:           "empty status (initial state)",
+			status:         "",
+			expectedStatus: metav1.ConditionFalse,
+			expectedReason: cpv1beta1.ReconciliationInProgressReason,
+		},
+		{
+			name:           "ErrNotReady string",
+			status:         "not ready yet",
+			expectedStatus: metav1.ConditionFalse,
+			expectedReason: cpv1beta1.ReconciliationInProgressReason,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kcp := &cpv1beta1.K0smotronControlPlane{}
+			computeK0smotronClusterReconciliationStatus(kcp, tt.status)
+
+			cond := conditions.Get(kcp, cpv1beta1.K0smotronClusterReconciledCondition)
+			require.NotNil(t, cond)
+			require.Equal(t, tt.expectedStatus, cond.Status)
+			require.Equal(t, tt.expectedReason, cond.Reason)
+			if tt.expectMessage {
+				require.Equal(t, tt.status, cond.Message)
+			}
 		})
 	}
 }
