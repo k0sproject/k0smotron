@@ -31,7 +31,7 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/late
 Ensure your k0smotron.io/Cluster has CPU and/or memory requests and limits defined. HPA uses these values to make scaling decisions.  Example k0smotron.io/Cluster definition:
 
 ```yaml
-apiVersion: k0smotron.io/v1beta1
+apiVersion: k0smotron.io/v1beta2
 kind: Cluster
 metadata:
   name: example-cluster
@@ -59,7 +59,7 @@ metadata:
   namespace: default
 spec:
   scaleTargetRef:
-    apiVersion: k0smotron.io/v1beta1
+    apiVersion: k0smotron.io/v1beta2
     kind: Cluster
     name: example-cluster
   minReplicas: 1

@@ -6,45 +6,40 @@ For instance, we will create a ClusterClass that will create a cluster running c
 
 ```yaml
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: k0smotron-clusterclass
 spec:
   controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: K0sControlPlaneTemplate
       name: k0s-controlplane-template
-      namespace: default
     machineInfrastructure:
-      ref:
+      templateRef:
         kind: DockerMachineTemplate
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: cp-docker-machine-template
-        namespace: default
   infrastructure:
-    ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: docker-cluster-template
-      namespace: default
   workers:
     machineDeployments:
     - class: default-worker
       template:
         bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: K0sWorkerConfigTemplate
             name: k0s-worker-config-template
-            namespace: default
         infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
             name: worker-docker-machine-template
-            namespace: default
 ---
 … # other objects omitted for brevity, see full example below
 ```
@@ -52,7 +47,7 @@ spec:
 Then we can easily create a Cluster using the ClusterClass:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: k0smotron-test-cluster
@@ -77,39 +72,35 @@ Here is the example of `ClusterClass` that uses `K0smotronControlPlaneTemplate`:
 
 ```yaml
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: k0smotron-clusterclass
 spec:
   controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: K0smotronControlPlaneTemplate
       name: k0s-controlplane-template
-      namespace: default
   infrastructure:
-    ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: docker-cluster-template
-      namespace: default
   workers:
     machineDeployments:
     - class: default-worker
       template:
         bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: K0sWorkerConfigTemplate
             name: k0s-worker-config-template
-            namespace: default
         infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
             name: worker-docker-machine-template
-            namespace: default
 ---
 … # other objects omitted for brevity, see full example below
 ```
@@ -120,7 +111,7 @@ spec:
 
 ```yaml
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlaneTemplate
 metadata:
   name: k0s-controlplane-template
@@ -138,7 +129,7 @@ spec:
               extraArgs:
                 anonymous-auth: "true" # anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: cp-docker-machine-template
@@ -147,7 +138,7 @@ spec:
   template:
     spec: {}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerClusterTemplate
 metadata:
   name: docker-cluster-template
@@ -155,7 +146,7 @@ spec:
   template:
     spec: {}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: k0s-worker-config-template
@@ -165,7 +156,7 @@ spec:
     spec:
       version: v1.27.2+k0s.0
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
 metadata:
   name: worker-docker-machine-template
@@ -174,43 +165,38 @@ spec:
   template:
     spec: {}
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
   name: k0smotron-clusterclass
 spec:
   controlPlane:
-    ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta2
       kind: K0sControlPlaneTemplate
       name: k0s-controlplane-template
-      namespace: default
     machineInfrastructure:
-      ref:
+      templateRef:
         kind: DockerMachineTemplate
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: cp-docker-machine-template
-        namespace: default
   infrastructure:
-    ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: DockerClusterTemplate
       name: docker-cluster-template
-      namespace: default
   workers:
     machineDeployments:
     - class: default-worker
       template:
         bootstrap:
-          ref:
-            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
             kind: K0sWorkerConfigTemplate
             name: k0s-worker-config-template
-            namespace: default
         infrastructure:
-          ref:
-            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
             kind: DockerMachineTemplate
             name: worker-docker-machine-template
-            namespace: default
 ```

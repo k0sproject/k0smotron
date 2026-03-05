@@ -11,7 +11,7 @@ To enable monitoring for a k0smotron cluster, set `spec.monitoring.enabled=true`
 in the `Cluster` resource:
 
 ```yaml
-apiVersion: k0smotron.io/v1beta1
+apiVersion: k0smotron.io/v1beta2
 kind: Cluster
 metadata:
   name: k0smotron-test

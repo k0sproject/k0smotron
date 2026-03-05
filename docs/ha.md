@@ -46,7 +46,7 @@ the required data store resource.
 
    ```shell
    cat <<EOF | kubectl apply -f -
-   apiVersion: k0smotron.io/v1beta1
+   apiVersion: k0smotron.io/v1beta2
    kind: Cluster
    metadata:
      name: k0smotron-test
@@ -54,7 +54,10 @@ the required data store resource.
      replicas: 3
      service:
        type: LoadBalancer
-     kineDataSourceURL: postgres://k0smotron:<passwd>@acid-minimal-cluster.default:5432/kine?sslmode=disable
+     storage:
+       type: kine
+       kine:
+         dataSourceURL: postgres://k0smotron:<passwd>@acid-minimal-cluster.default:5432/kine?sslmode=disable
    EOF
    ```
 
@@ -72,7 +75,7 @@ the required data store resource.
    data:
      K0SMOTRON_KINE_DATASOURCE_URL: <base64-encoded-datasource>
    ---
-   apiVersion: k0smotron.io/v1beta1
+   apiVersion: k0smotron.io/v1beta2
    kind: Cluster
    metadata:
      name: k0smotron-test
@@ -80,7 +83,10 @@ the required data store resource.
      replicas: 3
      service:
        type: LoadBalancer
-     kineDataSourceSecretName: database-credentials
+     storage:
+       type: kine
+       kine:
+         dataSourceSecretName: database-credentials
    EOF
    ```
 

@@ -6,7 +6,7 @@ in the YAML configuration file:
 1. Localize the configuration of deployed k0smotron cluster in your repository. For example:
 
     ```yaml
-    apiVersion: k0smotron.io/v1beta1
+    apiVersion: k0smotron.io/v1beta2
     kind: Cluster
     metadata:
       name: k0smotron-test
@@ -19,7 +19,7 @@ in the YAML configuration file:
 2. Change all the k0s versions to the target one. For example:
 
     ```yaml
-    apiVersion: k0smotron.io/v1beta1
+    apiVersion: k0smotron.io/v1beta2
     kind: Cluster
     metadata:
       name: k0smotron-test
