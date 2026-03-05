@@ -27,7 +27,7 @@ When a MachineHealthCheck detects an unhealthy control plane machine:
 Here's a simple example of how to set up MachineHealthChecks for a k0smotron control plane:
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineHealthCheck
 metadata:
   name: k0smotron-controlplane-mhc
