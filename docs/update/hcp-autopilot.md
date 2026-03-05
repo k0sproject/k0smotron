@@ -13,7 +13,7 @@ This guide demonstrates how to use the autopilot feature to update self-managed 
 First, update the control plane to the desired k0s version by modifying the `Cluster` resource:
 
 ```yaml
-apiVersion: k0smotron.io/v1beta1
+apiVersion: k0smotron.io/v1beta2
 kind: Cluster
 metadata:
   name: k0smotron-test

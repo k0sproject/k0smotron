@@ -139,7 +139,7 @@ Create the `Cluster`, `K0sControlPlane`, `RemoteCluster`, and `RemoteMachineTemp
 The `RemoteMachineTemplate` is referenced by `K0sControlPlane.spec.machineTemplate` and defines the pool from which k0smotron draws machines when scaling or replacing control plane nodes. The existing nodes are represented by direct `Machine` and `RemoteMachine` objects (Steps 6–7), not by this pool.
 
 ```yaml
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: my-cluster
@@ -159,15 +159,15 @@ spec:
     host: 1.2.3.4             # replace with your control plane endpoint
     port: 6443
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: K0sControlPlane
     name: my-cluster
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteCluster
     name: my-cluster
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0sControlPlane
 metadata:
   name: my-cluster
@@ -181,10 +181,9 @@ spec:
   k0sConfigSpec: {}
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiGroup: infrastructure.cluster.x-k8s.io
       kind: RemoteMachineTemplate
       name: my-cluster-cp-template
-      namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteCluster
@@ -257,7 +256,7 @@ Setting `spec.bootstrap.dataSecretName` to the kubeconfig Secret tells CAPI that
 
 ```yaml
 # Repeat this block for each control plane node, changing the name and providerID
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
 metadata:
   name: my-cluster-cp-0
@@ -270,7 +269,7 @@ metadata:
     cluster.x-k8s.io/control-plane-name: my-cluster
     k0smotron.io/control-plane-worker-enabled: "true"  # omit if CP nodes do not run workloads
   ownerReferences:
-  - apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+  - apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: K0sControlPlane
     name: my-cluster
     uid: ${KCP_UID}            # substitute with the value from above
@@ -283,7 +282,7 @@ spec:
   bootstrap:
     dataSecretName: my-cluster-kubeconfig  # marks machine as already bootstrapped
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteMachine
     name: my-cluster-cp-0
 ```
@@ -436,7 +435,7 @@ Create a paused `Machine` and `RemoteMachine` for each worker node:
 
 ```yaml
 # Repeat for each worker node, changing name, providerID and address
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
 metadata:
   name: my-cluster-worker-0
@@ -452,7 +451,7 @@ spec:
   bootstrap:
     dataSecretName: my-cluster-kubeconfig  # marks machine as already bootstrapped
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: RemoteMachine
     name: my-cluster-worker-0
 ---
