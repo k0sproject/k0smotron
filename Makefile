@@ -336,8 +336,11 @@ clean:
 	rm -f hack/lint/.golangci-lint.stamp
 	chmod -R +w ${LOCALBIN} || true # envtest may have created read-only dirs and files
 	rm -rf \
-	  k0smotron-image-bundle.tar \
-	  $(LOCALBIN)
+	  k0smotron-image-bundle.tar
+
+.PHONY: clean-bin
+clean-bin:
+	rm -rf $(LOCALBIN)
 
 hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile Makefile.variables
 	docker build \
