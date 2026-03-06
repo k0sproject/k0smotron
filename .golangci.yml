@@ -8,10 +8,19 @@ run:
 linters:
   default: none
   enable:
+    - forbidigo
     - goheader
     - revive
     - modernize
   settings:
+    forbidigo:
+      analyze-types: false
+      forbid:
+        - pattern: "^scope\\.client\\.(Create|Patch|Update)$"
+          msg: >-
+            Direct scope.client mutation call detected.
+            Use scope.reconcileResource() to ensure user-defined component patches are applied.
+            If this call is intentionally exempt, add //nolint:forbidigo with a justification comment.
     depguard:
       rules:
         main:
@@ -57,7 +66,7 @@ linters:
     rules:
       - linters: [revive]
         text: "var-naming: avoid meaningless package names"
-        path: "internal/controller/util/"
+        path: "(internal/controller|inttest)/util/"
     paths:
       # Ignore issues in generated files.
       - zz_generated.*\.go$

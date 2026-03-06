@@ -11,6 +11,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+// ComponentLabel is the well-known Kubernetes recommended label key for identifying
+// the component within the architecture (e.g. "etcd", "control-plane").
+const ComponentLabel = "app.kubernetes.io/component"
+
 // Component label values for app.kubernetes.io/component (and legacy "component").
 // Use these constants so component names are defined in one place.
 const (
@@ -24,6 +28,7 @@ const (
 	ComponentJointoken     = "jointoken"
 	ComponentKubeconfig    = "kubeconfig"
 	ComponentMonitoring    = "monitoring"
+	ComponentTelemetry     = "telemetry"
 	ComponentTunneling     = "tunneling"
 )
 
@@ -51,7 +56,7 @@ func LabelsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 // Do not use for immutable selectors (StatefulSet, Deployment); use LabelsForK0smotronControlPlane or LabelsForEtcdK0smotronCluster for those.
 func LabelsForK0smotronComponent(kmc *km.Cluster, component string) map[string]string {
 	labels := LabelsForK0smotronCluster(kmc)
-	labels["app.kubernetes.io/component"] = component
+	labels[ComponentLabel] = component
 	return labels
 }
 

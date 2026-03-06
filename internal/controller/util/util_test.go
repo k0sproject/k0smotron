@@ -45,7 +45,7 @@ func TestLabelsForK0smotronCluster_LegacyComponent(t *testing.T) {
 	assert.Equal(t, "k0smotron", got["app"])
 	assert.Equal(t, "mycluster", got["cluster"])
 	assert.Equal(t, "cluster", got["component"], "LabelsForK0smotronCluster sets legacy component=cluster for selector compatibility")
-	_, hasAppComponent := got["app.kubernetes.io/component"]
+	_, hasAppComponent := got[ComponentLabel]
 	assert.False(t, hasAppComponent, "LabelsForK0smotronCluster must not set app.kubernetes.io/component")
 }
 
@@ -58,7 +58,7 @@ func TestLabelsForK0smotronComponent_AddsAppComponentOnly(t *testing.T) {
 	assert.Equal(t, "k0smotron", got["app"])
 	assert.Equal(t, "mycluster", got["cluster"])
 	assert.Equal(t, "cluster", got["component"], "LabelsForK0smotronComponent preserves legacy component from base")
-	assert.Equal(t, ComponentConfig, got["app.kubernetes.io/component"])
+	assert.Equal(t, ComponentConfig, got[ComponentLabel])
 }
 
 func TestLabelsForK0smotronControlPlane(t *testing.T) {
@@ -70,7 +70,7 @@ func TestLabelsForK0smotronControlPlane(t *testing.T) {
 	assert.Equal(t, "k0smotron", got["app"])
 	assert.Equal(t, "mycluster", got["cluster"])
 	assert.Equal(t, "cluster", got["component"], "selector-safe: legacy component=cluster")
-	_, hasAppComponent := got["app.kubernetes.io/component"]
+	_, hasAppComponent := got[ComponentLabel]
 	assert.False(t, hasAppComponent, "selector does not include app.kubernetes.io/component")
 	assert.Equal(t, "true", got["cluster.x-k8s.io/control-plane"])
 }
@@ -84,6 +84,6 @@ func TestLabelsForEtcdK0smotronCluster(t *testing.T) {
 	assert.Equal(t, "k0smotron", got["app"])
 	assert.Equal(t, "mycluster", got["cluster"])
 	assert.Equal(t, ComponentEtcd, got["component"])
-	_, hasAppComponent := got["app.kubernetes.io/component"]
+	_, hasAppComponent := got[ComponentLabel]
 	assert.False(t, hasAppComponent, "selector does not include app.kubernetes.io/component")
 }
