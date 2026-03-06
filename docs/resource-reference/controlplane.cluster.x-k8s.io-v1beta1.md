@@ -10291,9 +10291,11 @@ Patch defines the patch type and content to apply.
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
           Type is the patch type to apply: "json", "merge", or "strategic".<br/>
+          <br/>
+            <i>Enum</i>: json, strategic, merge<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -20685,9 +20687,11 @@ Patch defines the patch type and content to apply.
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
           Type is the patch type to apply: "json", "merge", or "strategic".<br/>
+          <br/>
+            <i>Enum</i>: json, strategic, merge<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -32765,9 +32769,11 @@ Patch defines the patch type and content to apply.
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
           Type is the patch type to apply: "json", "merge", or "strategic".<br/>
+          <br/>
+            <i>Enum</i>: json, strategic, merge<br/>
         </td>
         <td>true</td>
       </tr></tbody>

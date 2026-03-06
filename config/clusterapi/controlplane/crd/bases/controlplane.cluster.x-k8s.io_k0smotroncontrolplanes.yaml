@@ -4060,17 +4060,12 @@ spec:
                             format depends on Type.
                           type: string
                         type:
-                          allOf:
-                          - enum:
-                            - json
-                            - strategic
-                            - merge
-                          - enum:
-                            - json
-                            - strategic
-                            - merge
                           description: 'Type is the patch type to apply: "json", "merge",
                             or "strategic".'
+                          enum:
+                          - json
+                          - strategic
+                          - merge
                           type: string
                       required:
                       - content
@@ -9203,17 +9198,12 @@ spec:
                             format depends on Type.
                           type: string
                         type:
-                          allOf:
-                          - enum:
-                            - json
-                            - strategic
-                            - merge
-                          - enum:
-                            - json
-                            - strategic
-                            - merge
                           description: 'Type is the patch type to apply: "json", "merge",
                             or "strategic".'
+                          enum:
+                          - json
+                          - strategic
+                          - merge
                           type: string
                       required:
                       - content

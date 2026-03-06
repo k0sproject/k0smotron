@@ -154,7 +154,6 @@ type PatchSpec struct {
 }
 
 // PatchType defines the type of patch to apply.
-// +kubebuilder:validation:Enum=json;strategic;merge
 type PatchType string
 
 const (

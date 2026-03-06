@@ -39,8 +39,11 @@ func ApplyComponentPatches(scheme *runtime.Scheme, obj client.Object, patches []
 	}
 
 	gvks, _, err := scheme.ObjectKinds(obj)
-	if err != nil || len(gvks) == 0 {
+	if err != nil {
 		return fmt.Errorf("could not get GVK for object: %w", err)
+	}
+	if len(gvks) == 0 {
+		return fmt.Errorf("no GVK registered for object type %T", obj)
 	}
 	kind := gvks[0].Kind
 	labels := obj.GetLabels()

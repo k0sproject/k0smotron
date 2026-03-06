@@ -1,8 +1,8 @@
 # Generated Resources
 
-This document describes all Kubernetes resources created and managed by a `k0smotron.io/v1beta1` Cluster (K0smotron Cluster). This information is essential when you need to customize these resources.
+This document describes all Kubernetes resources created and managed by a `k0smotron.io/v1beta2` Cluster (K0smotron Cluster). This information is essential when you need to customize these resources.
 
-When using Cluster API (CAPI), a `K0smotronControlPlane` resource creates a `k0smotron.io/v1beta1` Cluster, which then produces the resources documented here.
+When using Cluster API (CAPI), a `K0smotronControlPlane` resource creates a `k0smotron.io/v1beta2` Cluster, which then produces the resources documented here.
 
 ## Scope and audience
 
@@ -18,7 +18,7 @@ It does **not** describe controller implementation details (for example, interna
 
 ### Prefix Pattern
 
-Most resources created and managed by a `k0smotron.io/v1beta1` Cluster use the `kmc-<cluster-name>` prefix. For most of those resources, a descriptive suffix is added, resulting in the pattern:
+Most resources created and managed by a `k0smotron.io/v1beta2` Cluster use the `kmc-<cluster-name>` prefix. For most of those resources, a descriptive suffix is added, resulting in the pattern:
 
 - `kmc-<cluster-name>-<suffix>`
 
@@ -125,7 +125,7 @@ The Service name depends on the `spec.service.type` configuration:
 - **Name**: `kmc-<cluster-name>-etcd`
 - **Component**: `etcd`
 - **Purpose**: Headless service for etcd StatefulSet
-- **Condition**: Created when `spec.kineDataSourceURL` is not set (etcd mode)
+- **Condition**: Created when `spec.storage.type` is `etcd` (default)
 - **Example**: `kmc-docker-test-etcd`
 
 ### Secrets
@@ -187,7 +187,7 @@ The certificate secrets follow the pattern: `<cluster-name>-<certificate-type>`
 - **Name**: `kmc-<cluster-name>-etcd`
 - **Component**: `etcd`
 - **Purpose**: Manages etcd pods for the control plane storage
-- **Condition**: Created when `spec.kineDataSourceURL` is not set (etcd mode)
+- **Condition**: Created when `spec.storage.type` is `etcd` (default)
 - **Example**: `kmc-docker-test-etcd`
 
 #### etcd CronJob (when defrag is enabled)
@@ -195,7 +195,7 @@ The certificate secrets follow the pattern: `<cluster-name>-<certificate-type>`
 - **Name**: `kmc-<cluster-name>-defrag`
 - **Component**: `etcd`
 - **Purpose**: Periodic etcd defragmentation job
-- **Condition**: Created when `spec.etcd.defragJob.enabled` is `true`
+- **Condition**: Created when `spec.storage.etcd.defragJob.enabled` is `true`
 - **Example**: `kmc-docker-test-defrag`
 
 ### Ingress Resource
@@ -271,7 +271,7 @@ The following resources are created in the **workload cluster** (not the managem
 For a cluster named `docker-test` with (at minimum) the following configuration:
 
 ```yaml
-apiVersion: k0smotron.io/v1beta1
+apiVersion: k0smotron.io/v1beta2
 kind: Cluster
 metadata:
   name: docker-test
@@ -289,7 +289,7 @@ In the management/external cluster namespace (here: `default`), the K0smotron Cl
 
 ### Example: Cluster (K0smotron)
 
-- `Cluster/docker-test` (k0smotron.io/v1beta1)
+- `Cluster/docker-test` (k0smotron.io/v1beta2)
 
 ### Example: ConfigMaps (K0smotron)
 
@@ -328,7 +328,7 @@ kubectl tree clusters.k0smotron.io docker-test
 
 ## Notes
 
-- All resource names are scoped to the namespace where the `k0smotron.io/v1beta1` Cluster resource is created (or the `K0smotronControlPlane` resource when using Cluster API)
+- All resource names are scoped to the namespace where the `k0smotron.io/v1beta2` Cluster resource is created (or the `K0smotronControlPlane` resource when using Cluster API)
 - Resource names are deterministic and predictable based on the cluster name
 - When using external clusters (`spec.kubeconfigRef`), resources are created in the external cluster's namespace
 - The external owner ConfigMap (`<cluster-name>-root-owner`) is used for garbage collection when the cluster is deleted
