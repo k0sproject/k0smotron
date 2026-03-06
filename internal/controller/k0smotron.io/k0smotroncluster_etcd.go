@@ -37,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util/secret"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var etcdEntrypointScriptTmpl *template.Template
@@ -67,7 +66,11 @@ func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster) error
 }
 
 func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) error {
-	labels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
+	// Service selector is immutable after creation. Add app.kubernetes.io/component only to metadata labels.
+	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
+	metadataLabels := make(map[string]string, len(selectorLabels)+1)
+	maps.Copy(metadataLabels, selectorLabels)
+	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	svc := v1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -77,13 +80,13 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetEtcdServiceName(),
 			Namespace:   kmc.Namespace,
-			Labels:      labels,
+			Labels:      metadataLabels,
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Spec: v1.ServiceSpec{
 			Type:                     v1.ServiceTypeClusterIP,
 			ClusterIP:                v1.ClusterIPNone,
-			Selector:                 labels,
+			Selector:                 selectorLabels,
 			PublishNotReadyAddresses: true,
 			Ports: []v1.ServicePort{
 				{
@@ -102,11 +105,15 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
-	return scope.client.Patch(ctx, &svc, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &svc)
 }
 
 func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Cluster) error {
-	labels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
+	// Add app.kubernetes.io/component to metadata labels; keep legacy component=etcd from LabelsForEtcdK0smotronCluster.
+	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
+	metadataLabels := make(map[string]string, len(selectorLabels)+1)
+	maps.Copy(metadataLabels, selectorLabels)
+	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	cronJob := batchv1.CronJob{
 		TypeMeta: metav1.TypeMeta{
@@ -116,7 +123,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kmc.GetEtcdDefragJobName(),
 			Namespace:   kmc.Namespace,
-			Labels:      labels,
+			Labels:      metadataLabels,
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Spec: batchv1.CronJobSpec{
@@ -126,7 +133,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Labels: labels,
+							Labels: metadataLabels,
 						},
 						Spec: v1.PodSpec{
 							RestartPolicy: v1.RestartPolicyOnFailure,
@@ -184,7 +191,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &cronJob, scope.client.Scheme(), scope.externalOwner)
 
-	return scope.client.Patch(ctx, &cronJob, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &cronJob)
 }
 
 func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster) error {
@@ -215,7 +222,7 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
-	return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &statefulSet)
 }
 
 func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32) apps.StatefulSet {
@@ -223,7 +230,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
 	maps.Copy(labels, selectorLabels)
-	labels["app.kubernetes.io/component"] = kcontrollerutil.ComponentEtcd
+	labels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	size := kmc.Spec.Storage.Etcd.Persistence.Size
 

@@ -26,7 +26,6 @@ import (
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -77,7 +76,7 @@ func (scope *kmcScope) reconcileEntrypointCM(ctx context.Context, kmc *km.Cluste
 		return err
 	}
 
-	return scope.client.Patch(ctx, &cm, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &cm)
 }
 
 func getControllerFlags(kmc *km.Cluster) string {

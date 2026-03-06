@@ -112,7 +112,7 @@ type ClusterSpec struct {
 	Etcd v2.EtcdSpec `json:"etcd,omitempty"`
 
 	// TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
-	// See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.
+	// See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more details.
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 	// Resources describes the compute resource requirements for the control plane pods.
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`

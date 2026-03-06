@@ -134,7 +134,7 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 
 	_ = util.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
-	if err := scope.client.Patch(ctx, &svc, client.Apply, patchOpts...); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, &svc); err != nil {
 		return err
 	}
 	// Wait for LB address to be available
@@ -154,7 +154,7 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 				}
 				logger.Info("Loadbalancer address available, updating Cluster object", "address", kmc.Spec.ExternalAddress)
 
-				err := scope.client.Update(ctx, kmc)
+				err := scope.client.Update(ctx, kmc) //nolint:forbidigo // updating the Cluster object itself, not a generated resource
 				if err != nil {
 					return false, err
 				}
@@ -191,7 +191,7 @@ func (scope *kmcScope) reconcileEndpointConfigMap(ctx context.Context, kmc *km.C
 	configMap := generateEndpointConfigMap(kmc)
 
 	_ = util.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
-	if err := scope.client.Patch(ctx, &configMap, client.Apply, patchOpts...); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, &configMap); err != nil {
 		return err
 	}
 

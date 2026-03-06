@@ -63,7 +63,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	selectorLabels := util.LabelsForK0smotronControlPlane(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
 	maps.Copy(labels, selectorLabels)
-	labels["app.kubernetes.io/component"] = util.ComponentControlPlane
+	labels[util.ComponentLabel] = util.ComponentControlPlane
 	annotations := util.AnnotationsForK0smotronCluster(kmc)
 
 	statefulSet := apps.StatefulSet{
@@ -280,6 +280,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("kmc-%s-telemetry-config", kmc.Name),
 			Namespace: kmc.Namespace,
+			Labels:    kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentTelemetry),
 		},
 		Data: map[string]string{
 			"configmap.yaml": `
@@ -295,7 +296,7 @@ data:
 	}
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, cm, scope.client.Scheme(), scope.externalOwner)
 
-	if err := scope.client.Patch(context.Background(), cm, client.Apply, patchOpts...); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, cm); err != nil {
 		return apps.StatefulSet{}, apps.StatefulSet{}, err
 	}
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
@@ -332,7 +333,7 @@ data:
 	// With this preview we can compare the desired statefulset with the actual statefulset and decide if there are any change and not
 	// create unnecessary new revisions of the statefulset which can make difficult get the status of the cluster from the statefulset.
 	previewSts := statefulSet.DeepCopy()
-	_ = scope.client.Patch(ctx, previewSts, client.Apply, append(patchOpts, client.DryRunAll)...)
+	_ = scope.client.Patch(ctx, previewSts, client.Apply, append(patchOpts, client.DryRunAll)...) //nolint:forbidigo // dry-run preview, no actual mutation
 	delete(previewSts.Spec.Template.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
 
 	// We calculate the hash of the statefulset template and store it in the annotations
@@ -607,12 +608,12 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 	}, foundStatefulSet)
 	if err != nil && apierrors.IsNotFound(err) {
 		kmc.Status.Replicas = 0
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		return scope.reconcileResource(ctx, kmc, &statefulSet)
 	} else if err == nil {
 		detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
 
 		if !isStatefulSetsEqual(&statefulSetPreview, foundStatefulSet) {
-			return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+			return scope.reconcileResource(ctx, kmc, &statefulSet)
 		}
 
 		kmc.Status.Replicas = foundStatefulSet.Status.Replicas
@@ -622,13 +623,13 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 	}
 
 	if !isStatefulSetsEqual(&statefulSetPreview, foundStatefulSet) {
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		return scope.reconcileResource(ctx, kmc, &statefulSet)
 	}
 	needsScale := *foundStatefulSet.Spec.Replicas != *statefulSet.Spec.Replicas
 	if needsScale {
 		patchedFoundStatefulSet := foundStatefulSet.DeepCopy()
 		*patchedFoundStatefulSet.Spec.Replicas = *statefulSet.Spec.Replicas
-		return scope.client.Patch(ctx, patchedFoundStatefulSet, client.MergeFrom(foundStatefulSet))
+		return scope.client.Patch(ctx, patchedFoundStatefulSet, client.MergeFrom(foundStatefulSet)) //nolint:forbidigo // replica scaling via MergeFrom, patches not applicable
 	}
 
 	if foundStatefulSet.Status.ReadyReplicas == 0 {

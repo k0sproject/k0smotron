@@ -142,7 +142,7 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
 	}
 
-	return scope.client.Patch(ctx, &cm, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &cm)
 }
 
 func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[string]any, c client.Client) error {

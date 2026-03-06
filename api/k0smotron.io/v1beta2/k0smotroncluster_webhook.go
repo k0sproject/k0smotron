@@ -83,7 +83,24 @@ func (c ClusterValidator) ValidateClusterSpec(kcs *ClusterSpec) (warnings admiss
 		}
 	}
 
+	if err := c.validatePatches(kcs.Patches); err != nil {
+		return warnings, err
+	}
+
 	return warnings, nil
+}
+
+// validatePatches validates the Patches spec.
+func (c ClusterValidator) validatePatches(patches []ComponentPatch) error {
+	for i, p := range patches {
+		switch p.Patch.Type {
+		case JSONPatchType, StrategicMergePatchType, MergePatchType:
+			// valid
+		default:
+			return fmt.Errorf("invalid patch type %q at index %d: must be one of json, strategic, merge", p.Patch.Type, i)
+		}
+	}
+	return nil
 }
 
 // validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't

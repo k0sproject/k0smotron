@@ -5,3 +5,4 @@ resources:
 
 patches:
 - path: hcp-with-external-cluster-patch.yaml
+- path: hcp-with-patches-patch.yaml
