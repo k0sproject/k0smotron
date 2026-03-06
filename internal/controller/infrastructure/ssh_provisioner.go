@@ -32,7 +32,7 @@ import (
 	rigssh "github.com/k0sproject/rig/v2/protocol/ssh"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
@@ -178,9 +178,9 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 		rigClient = rigClient.Sudo()
 	}
 
-	if p.machine.Spec.CustomCleanUpCommands != nil {
+	if p.machine.Spec.CleanUpCommands != nil {
 		p.log.Info("Cleaning up remote machine...")
-		for _, cmd := range p.machine.Spec.CustomCleanUpCommands {
+		for _, cmd := range p.machine.Spec.CleanUpCommands {
 			output, err := rigClient.ExecOutput(cmd)
 			if err != nil {
 				p.log.Error(err, "failed to run command", "command", cmd, "output", output)

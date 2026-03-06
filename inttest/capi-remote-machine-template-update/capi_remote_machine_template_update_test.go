@@ -37,7 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/require"
@@ -180,7 +180,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 
 		expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 		fmt.Println(expectedProviderID, rm.Spec.ProviderID)
-		return rm.Status.Ready && expectedProviderID == rm.Spec.ProviderID, nil
+		return rm.Status.Initialization.Provisioned != nil && *rm.Status.Initialization.Provisioned && expectedProviderID == rm.Spec.ProviderID, nil
 	})
 	s.Require().NoError(err)
 

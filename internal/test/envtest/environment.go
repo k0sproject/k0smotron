@@ -46,6 +46,7 @@ import (
 	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	infrastructurev1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	infrastructurev1beta2 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	k0smotronv1beta2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -97,6 +98,7 @@ func init() {
 	utilruntime.Must(cpv1beta1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(cpv1beta2.AddToScheme(scheme.Scheme))
 	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(infrastructurev1beta2.AddToScheme(scheme.Scheme))
 }
 
 func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Environment {

@@ -29,7 +29,7 @@ import (
 	"text/template"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	infra "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/require"
@@ -154,7 +154,8 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	// Verify the RemoteMachine is at expected state
 	rm, err := s.getRemoteMachine("remote-test-0", "default")
 	s.Require().NoError(err)
-	s.Require().True(rm.Status.Ready)
+	s.Require().NotNil(rm.Status.Initialization.Provisioned)
+	s.Require().True(*rm.Status.Initialization.Provisioned)
 	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 	s.Require().Equal(expectedProviderID, rm.Spec.ProviderID)
 
