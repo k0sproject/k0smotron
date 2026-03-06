@@ -3,6 +3,11 @@ kind: Kustomization
 # Adds namespace to all resources.
 namespace: k0smotron
 
+labels:
+- includeSelectors: true
+  pairs:
+    cluster.x-k8s.io/provider: k0sproject-k0smotron
+
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
 # "wordpress" becomes "alices-wordpress".
