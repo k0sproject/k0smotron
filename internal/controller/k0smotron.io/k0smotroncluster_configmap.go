@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
@@ -134,12 +135,16 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		return err
 	}
 
-	// managementClusterClient is used because in order to instantiate a workload cluster client is need to check the workload kubeconfig secret,
-	// which is stored in mothership cluster. This becomes importante when hosted control planes run on an external cluster.
-	err = reconcileDynamicConfig(ctx, kmc, unstructuredConfig, managementClusterClient)
-	if err != nil {
-		// Don't return error from dynamic config reconciliation, as it may not be created yet
-		logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
+	// We need to wait until workload cluster is functional before reconciling the dynamic config, meaning the kubeconfig secret is
+	// created and we can create a workload cluster client.
+	if conditions.IsTrue(kmc, km.ClusterControlPlaneFunctionalCondition) {
+		// managementClusterClient is used because in order to instantiate a workload cluster client is need to check the workload kubeconfig secret,
+		// which is stored in mothership cluster. This becomes importante when hosted control planes run on an external cluster.
+		err = reconcileDynamicConfig(ctx, kmc, unstructuredConfig, managementClusterClient)
+		if err != nil {
+			// Don't return error from dynamic config reconciliation, as it may not be created yet
+			logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
+		}
 	}
 
 	return scope.reconcileResource(ctx, kmc, &cm)
