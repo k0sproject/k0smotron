@@ -25,11 +25,8 @@ import (
 	goruntime "runtime"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
 	"github.com/pkg/errors"
 	"golang.org/x/tools/go/packages"
-
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +37,7 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	bootstrapv1beta2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"

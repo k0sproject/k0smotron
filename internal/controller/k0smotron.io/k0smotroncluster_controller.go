@@ -316,6 +316,11 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	if err := kmcScope.reconcileNats(ctx, kmc); err != nil {
+		kmc.Status.ReconciliationStatus = "Failed reconciling NATS"
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	}
+
 	logger.Info("Reconciling etcd")
 	if err := kmcScope.reconcileEtcd(ctx, kmc); err != nil {
 		kmc.Status.ReconciliationStatus = fmt.Sprintf("Failed reconciling etcd, %+v", err)

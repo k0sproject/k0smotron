@@ -34,6 +34,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/controller"
@@ -165,6 +166,89 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 			kmc.Spec.Persistence.Type = "emptyDir"
 		}
 		addMonitoringStack(kmc, &statefulSet)
+	}
+
+	if kmc.Spec.Storage.Type == km.StorageTypeNATS {
+		// Use the headless NATS service for pod-specific DNS.
+		statefulSet.Spec.ServiceName = kmc.GetNatsServiceName()
+		// Start all pods simultaneously so early pods can reach later pods by DNS name.
+		statefulSet.Spec.PodManagementPolicy = apps.ParallelPodManagement
+
+		// Persistent volume for the embedded NATS JetStream store.
+		natsSize := kmc.Spec.Storage.NATS.Persistence.Size
+		if natsSize.IsZero() {
+			natsSize = resource.MustParse("1Gi")
+		}
+		natsPVC := v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "nats-data",
+			},
+			Spec: v1.PersistentVolumeClaimSpec{
+				AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+				Resources: v1.VolumeResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourceStorage: natsSize,
+					},
+				},
+			},
+		}
+		if kmc.Spec.Storage.NATS.Persistence.StorageClass != "" {
+			natsPVC.Spec.StorageClassName = &kmc.Spec.Storage.NATS.Persistence.StorageClass
+		}
+		statefulSet.Spec.VolumeClaimTemplates = append(statefulSet.Spec.VolumeClaimTemplates, natsPVC)
+		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+			statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts,
+			v1.VolumeMount{
+				Name:      "nats-data",
+				MountPath: natsStoreDir,
+			},
+		)
+
+		// Open the NATS cluster routing port.
+		statefulSet.Spec.Template.Spec.Containers[0].Ports = append(
+			statefulSet.Spec.Template.Spec.Containers[0].Ports,
+			v1.ContainerPort{
+				Name:          "nats-cluster",
+				ContainerPort: 6222,
+				Protocol:      v1.ProtocolTCP,
+			},
+		)
+
+		// Inject env vars used by the entrypoint to generate the NATS server config.
+		statefulSet.Spec.Template.Spec.Containers[0].Env = append(
+			statefulSet.Spec.Template.Spec.Containers[0].Env,
+			v1.EnvVar{
+				Name: "K0SMOTRON_NATS_TOKEN",
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: kmc.GetNatsTokenSecretName(),
+						},
+						Key: "token",
+					},
+				},
+			},
+			v1.EnvVar{
+				Name:  "K0SMOTRON_NATS_STS_NAME",
+				Value: kmc.GetStatefulSetName(),
+			},
+			v1.EnvVar{
+				Name:  "K0SMOTRON_NATS_SVC_NAME",
+				Value: kmc.GetNatsServiceName(),
+			},
+			v1.EnvVar{
+				Name:  "K0SMOTRON_NATS_REPLICAS",
+				Value: fmt.Sprintf("%d", kmc.Spec.Replicas),
+			},
+			v1.EnvVar{
+				Name: "POD_NAMESPACE",
+				ValueFrom: &v1.EnvVarSource{
+					FieldRef: &v1.ObjectFieldSelector{
+						FieldPath: "metadata.namespace",
+					},
+				},
+			},
+		)
 	}
 
 	if kmc.Spec.Storage.Kine.DataSourceSecretName != "" {
@@ -324,6 +408,12 @@ data:
 		FailureThreshold:    10,
 		PeriodSeconds:       10,
 		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+	}
+	if kmc.Spec.Storage.Type == km.StorageTypeNATS {
+		statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds = 0
+		statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe.PeriodSeconds = 5
+		statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe.InitialDelaySeconds = 0
+		statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe.PeriodSeconds = 5
 	}
 
 	// Use the statefulset generated with dry-run gives us a preview of the statefulset with all the default values set by the API server.
