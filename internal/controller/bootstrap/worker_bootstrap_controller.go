@@ -542,11 +542,23 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 
 		scope.ingressSpec = kcp.Spec.Ingress
 
+		if kcp.Spec.KubeconfigRef != nil && kcp.Spec.ClusterProfileRef != nil {
+			return fmt.Errorf("kubeconfigRef and clusterProfileRef are mutually exclusive")
+		}
+
 		if kcp.Spec.KubeconfigRef != nil {
 			var err error
 			scope.client, _, _, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kcp.Spec.KubeconfigRef)
 			if err != nil {
 				log.Error(err, "Error getting client from cluster kubeconfig reference")
+				return err
+			}
+			scope.secretCachingClient = scope.client
+		} else if kcp.Spec.ClusterProfileRef != nil {
+			var err error
+			scope.client, _, _, err = util.GetKmcClientFromClusterProfile(ctx, r.Client, kcp.Spec.ClusterProfileRef)
+			if err != nil {
+				log.Error(err, "Error getting client from cluster profile reference")
 				return err
 			}
 			scope.secretCachingClient = scope.client
