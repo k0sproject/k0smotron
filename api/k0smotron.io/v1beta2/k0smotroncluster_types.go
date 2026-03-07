@@ -105,8 +105,13 @@ const (
 type ClusterSpec struct {
 	// KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
 	// This kubeconfig will be used to deploy the k0s control plane.
+	// Mutually exclusive with ClusterProfileRef.
 	//+kubebuilder:validation:Optional
 	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
+	// ClusterProfileRef defines the reference to a ClusterProfile for accessing the hosting cluster.
+	// Mutually exclusive with KubeconfigRef.
+	//+kubebuilder:validation:Optional
+	ClusterProfileRef *ClusterProfileRef `json:"clusterProfileRef,omitempty"`
 	// Replicas is the desired number of replicas of the k0s control planes.
 	// If unspecified, defaults to 1. If the value is above 1, k0smotron requires spec.storage.kine.dataSourceURL to be set.
 	// Recommended value is 3.
@@ -665,6 +670,16 @@ type KubeconfigRef struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default="value"
 	Key string `json:"key,omitempty"`
+}
+
+// ClusterProfileRef defines the reference to a ClusterProfile from the Cluster Inventory API.
+type ClusterProfileRef struct {
+	// Name is the name of the ClusterProfile resource.
+	//+kubebuilder:validation:Required
+	Name string `json:"name"`
+	// Namespace is the namespace of the ClusterProfile resource.
+	//+kubebuilder:validation:Required
+	Namespace string `json:"namespace,omitempty"`
 }
 
 func init() {

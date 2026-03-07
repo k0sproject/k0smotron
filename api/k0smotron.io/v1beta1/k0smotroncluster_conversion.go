@@ -42,7 +42,7 @@ func (kmc *Cluster) ConvertTo(dstRaw conversion.Hub) error {
 }
 
 // ConvertFrom converts from the hub version (v1beta2) to this Cluster (v1beta1).
-// NATS storage type and Patches have no equivalent in v1beta1 and are silently dropped.
+// NATS storage type, Patches, and ClusterProfileRef have no equivalent in v1beta1 and are silently dropped.
 func (kmc *Cluster) ConvertFrom(srcRaw conversion.Hub) error {
 	src, ok := srcRaw.(*v2.Cluster)
 	if !ok {
@@ -89,7 +89,7 @@ func ClusterSpecToV2(spec ClusterSpec) v2.ClusterSpec {
 }
 
 // ClusterSpecFromV2 converts a v1beta2 ClusterSpec to a v1beta1 ClusterSpec.
-// NATS storage type and Patches have no equivalent in v1beta1 and are silently dropped.
+// NATS storage type, Patches, and ClusterProfileRef have no equivalent in v1beta1 and are silently dropped.
 func ClusterSpecFromV2(src v2.ClusterSpec) (ClusterSpec, error) {
 	spec := ClusterSpec{
 		KubeconfigRef:             src.KubeconfigRef,

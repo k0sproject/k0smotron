@@ -103,6 +103,7 @@ type kmcScope struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=multicluster.x-k8s.io,resources=clusterprofiles,verbs=get;list;watch
 
 // Reconcile reconciles the K0smotronControlPlane to the desired state.
 func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
@@ -160,7 +161,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	// If the controlplane replicas run in a different cluster, we need to ensure the external owner is created
 	// for garbage collection purposes. Only if the K0smotronControlPlane is not being deleted, otherwise an infinite
 	// loop would be created creating the root owner - deleting it - creating it again.
-	if kcp.Spec.KubeconfigRef != nil && kcp.ObjectMeta.DeletionTimestamp.IsZero() {
+	if (kcp.Spec.KubeconfigRef != nil || kcp.Spec.ClusterProfileRef != nil) && kcp.ObjectMeta.DeletionTimestamp.IsZero() {
 		// Ensure the namespace exists in the remote cluster before creating any resources
 		if err := util.EnsureNamespaceExists(ctx, kmcScope.client, cluster.Namespace); err != nil {
 			log.Error(err, "Error ensuring namespace exists in remote cluster")
@@ -715,11 +716,24 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0
 		restConfig: c.RESTConfig,
 	}
 
+	if kcp.Spec.KubeconfigRef != nil && kcp.Spec.ClusterProfileRef != nil {
+		return nil, fmt.Errorf("kubeconfigRef and clusterProfileRef are mutually exclusive")
+	}
+
 	if kcp.Spec.KubeconfigRef != nil {
 		var err error
 		kmcScope.client, kmcScope.clientSet, kmcScope.restConfig, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, c.Client, kcp.Spec.KubeconfigRef)
 		if err != nil {
 			logger.Error(err, "Error getting client from cluster kubeconfig reference")
+			return nil, err
+		}
+
+		kmcScope.secretCachingClient = kmcScope.client
+	} else if kcp.Spec.ClusterProfileRef != nil {
+		var err error
+		kmcScope.client, kmcScope.clientSet, kmcScope.restConfig, err = util.GetKmcClientFromClusterProfile(ctx, c.Client, kcp.Spec.ClusterProfileRef)
+		if err != nil {
+			logger.Error(err, "Error getting client from cluster profile reference")
 			return nil, err
 		}
 

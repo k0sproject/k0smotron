@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/rest"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/flags"
+	clusterinventoryv1alpha1 "sigs.k8s.io/cluster-inventory-api/apis/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,6 +60,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
 	"github.com/k0sproject/k0smotron/internal/controller/infrastructure"
 	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/featuregate"
 	//+kubebuilder:scaffold:imports
 )
@@ -100,18 +102,22 @@ func init() {
 	utilruntime.Must(cpv1beta2.AddToScheme(scheme))
 	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme))
 	utilruntime.Must(infrastructurev1beta2.AddToScheme(scheme))
+
+	// Register cluster-inventory-api types
+	utilruntime.Must(clusterinventoryv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
 func main() {
 	var (
-		metricsAddr          string // deprecated, use capi's diagnostics-address instead
-		enableLeaderElection bool
-		secureMetrics        bool // deprecated, use capi's insecure-diagnostics instead
-		enableHTTP2          bool // deprecated
-		probeAddr            string
-		enabledController    string
-		concurrency          int
+		metricsAddr               string // deprecated, use capi's diagnostics-address instead
+		enableLeaderElection      bool
+		secureMetrics             bool // deprecated, use capi's insecure-diagnostics instead
+		enableHTTP2               bool // deprecated
+		probeAddr                 string
+		enabledController         string
+		concurrency               int
+		credentialProvidersConfig string
 	)
 
 	pflag.CommandLine.StringVar(&metricsAddr, "metrics-bind-address", ":8443", "[Deprecated, use --diagnostics-address instead] The address the metric endpoint binds to. "+
@@ -128,6 +134,8 @@ func main() {
 	pflag.CommandLine.IntVar(&concurrency, "concurrency", 5, "controller concurrency, default: 5")
 
 	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
+	pflag.CommandLine.StringVar(&credentialProvidersConfig, "credential-providers-config", "",
+		"Path to the JSON access providers config for ClusterProfile exec authentication (see cluster-inventory-api pkg/access)")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -135,6 +143,8 @@ func main() {
 	flags.AddManagerOptions(pflag.CommandLine, &managerOptions)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
+
+	util.CredentialProvidersConfigPath = credentialProvidersConfig
 
 	err := featuregate.Configure(featureGates, os.Getenv(featuregate.EnvVarName))
 	if err != nil {

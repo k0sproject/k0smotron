@@ -45,6 +45,7 @@ spec:
         - "--health-probe-bind-address=:8081"
         - "--metrics-bind-address=127.0.0.1:8080"
         - "--leader-elect"
+        - "--credential-providers-config=/etc/k0smotron/provider-config.json"
         image: controller
         imagePullPolicy: IfNotPresent
         name: manager
@@ -53,6 +54,13 @@ spec:
           capabilities:
             drop:
               - "ALL"
+        volumeMounts:
+        - name: credential-plugin
+          mountPath: /plugins
+          readOnly: true
+        - name: credential-providers-config
+          mountPath: /etc/k0smotron
+          readOnly: true
         livenessProbe:
           httpGet:
             path: /healthz
@@ -72,5 +80,13 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+      volumes:
+      - name: credential-plugin
+        image:
+          reference: ghcr.io/kubernetes-sigs/cluster-inventory-api/kubeconfig-secretreader:0.1.0
+          pullPolicy: IfNotPresent
+      - name: credential-providers-config
+        configMap:
+          name: credential-providers-config
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
