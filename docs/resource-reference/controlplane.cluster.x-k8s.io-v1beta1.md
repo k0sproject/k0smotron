@@ -1961,6 +1961,14 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecclusterprofileref">clusterProfileRef</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterProfileRef defines the reference to a ClusterProfile for accessing the hosting cluster.
+Mutually exclusive with KubeconfigRef.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>controllerPlaneFlags</b></td>
         <td>[]string</td>
         <td>
@@ -2008,7 +2016,8 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         <td>object</td>
         <td>
           KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-This kubeconfig will be used to deploy the k0s control plane.<br/>
+This kubeconfig will be used to deploy the k0s control plane.
+Mutually exclusive with ClusterProfileRef.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2167,6 +2176,41 @@ CertificateRef defines a reference to a certificate that should be included in t
 </table>
 
 
+### K0smotronControlPlane.spec.clusterProfileRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+ClusterProfileRef defines the reference to a ClusterProfile for accessing the hosting cluster.
+Mutually exclusive with KubeconfigRef.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the ClusterProfile resource.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the ClusterProfile resource.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlane.spec.ingress
 <sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
 
@@ -2240,6 +2284,7 @@ Default: true<br/>
 
 KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
 This kubeconfig will be used to deploy the k0s control plane.
+Mutually exclusive with ClusterProfileRef.
 
 <table>
     <thead>

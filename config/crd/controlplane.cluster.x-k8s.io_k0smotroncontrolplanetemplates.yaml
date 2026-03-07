@@ -5065,6 +5065,22 @@ spec:
                           - type
                           type: object
                         type: array
+                      clusterProfileRef:
+                        description: |-
+                          ClusterProfileRef defines the reference to a ClusterProfile for accessing the hosting cluster.
+                          Mutually exclusive with KubeconfigRef.
+                        properties:
+                          name:
+                            description: Name is the name of the ClusterProfile resource.
+                            type: string
+                          namespace:
+                            description: Namespace is the namespace of the ClusterProfile
+                              resource.
+                            type: string
+                        required:
+                        - name
+                        - namespace
+                        type: object
                       controllerPlaneFlags:
                         description: |-
                           ControlPlaneFlags allows to configure additional flags for k0s
@@ -5127,6 +5143,7 @@ spec:
                         description: |-
                           KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
                           This kubeconfig will be used to deploy the k0s control plane.
+                          Mutually exclusive with ClusterProfileRef.
                         properties:
                           key:
                             default: value
