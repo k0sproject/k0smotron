@@ -48,7 +48,11 @@ func (kmc *Cluster) ConvertFrom(srcRaw conversion.Hub) error {
 
 	kmc.ObjectMeta = src.ObjectMeta
 	kmc.Status = src.Status
-	kmc.Spec = ClusterSpecFromV2(src.Spec)
+	spec, err := ClusterSpecFromV2(src.Spec)
+	if err != nil {
+		return fmt.Errorf("error converting ClusterSpec from v1beta2 to v1beta1: %w", err)
+	}
+	kmc.Spec = spec
 	return nil
 }
 
@@ -79,7 +83,10 @@ func ClusterSpecToV2(spec ClusterSpec) v2.ClusterSpec {
 
 // ClusterSpecFromV2 converts a v1beta2 ClusterSpec to a v1beta1 ClusterSpec.
 // NATS storage type has no equivalent in v1beta1 and is silently dropped.
-func ClusterSpecFromV2(src v2.ClusterSpec) ClusterSpec {
+func ClusterSpecFromV2(src v2.ClusterSpec) (ClusterSpec, error) {
+	if src.Storage.Type == v2.StorageTypeNATS {
+		return ClusterSpec{}, fmt.Errorf("cluster.k0smotron.io/v1beta1 doesn't support storage type NATS")
+	}
 	spec := ClusterSpec{
 		KubeconfigRef:             src.KubeconfigRef,
 		Replicas:                  src.Replicas,
@@ -105,7 +112,7 @@ func ClusterSpecFromV2(src v2.ClusterSpec) ClusterSpec {
 		spec.KineDataSourceURL = src.Storage.Kine.DataSourceURL
 		spec.KineDataSourceSecretName = src.Storage.Kine.DataSourceSecretName
 	}
-	return spec
+	return spec, nil
 }
 
 func convertStorageV1toV2(spec ClusterSpec) v2.StorageSpec {

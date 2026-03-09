@@ -172,6 +172,7 @@ jobs:
           - check-pvc
           - check-ha-controller
           - check-ha-controller-etcd
+          - check-ha-controller-nats
           - check-ha-controller-secret
           - check-jointoken
           - check-monitoring
