@@ -47,10 +47,14 @@ func (k *K0smotronControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
 func (k *K0smotronControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta2.K0smotronControlPlaneTemplate)
 	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
+	spec, err := kmcv1.ClusterSpecFromV2(src.Spec.Template.Spec)
+	if err != nil {
+		return err
+	}
 	k.Spec = K0smotronControlPlaneTemplateSpec{
 		Template: K0smotronControlPlaneTemplateResource{
 			ObjectMeta: src.Spec.Template.ObjectMeta,
-			Spec:       kmcv1.ClusterSpecFromV2(src.Spec.Template.Spec),
+			Spec:       spec,
 		},
 	}
 	return nil
