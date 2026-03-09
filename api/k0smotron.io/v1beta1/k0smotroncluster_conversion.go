@@ -87,6 +87,10 @@ func ClusterSpecFromV2(src v2.ClusterSpec) (ClusterSpec, error) {
 	if src.Storage.Type == v2.StorageTypeNATS {
 		return ClusterSpec{}, fmt.Errorf("cluster.k0smotron.io/v1beta1 doesn't support storage type NATS")
 	}
+	if src.Patches != nil {
+		return ClusterSpec{}, fmt.Errorf("cluster.k0smotron.io/v1beta1 doesn't support 'patches' feature")
+	}
+
 	spec := ClusterSpec{
 		KubeconfigRef:             src.KubeconfigRef,
 		Replicas:                  src.Replicas,
