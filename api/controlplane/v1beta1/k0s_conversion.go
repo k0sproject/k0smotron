@@ -14,11 +14,10 @@ var _ conversion.Convertible = &K0sControlPlaneTemplate{}
 func (kcpv1beta1 *K0sControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0sControlPlane)
 	dst.ObjectMeta = *kcpv1beta1.ObjectMeta.DeepCopy()
-
 	dst.Spec = k0sControlPlaneSpecV1beta1ToV1beta2(kcpv1beta1.Spec)
 	dst.Status = v1beta2.K0sControlPlaneStatus{
 		Initialization:              v1beta2.Initialization{ControlPlaneInitialized: &kcpv1beta1.Status.Initialized},
-		ExternalManagedControlPlane: kcpv1beta1.Status.ExternalManagedControlPlane,
+		ExternalManagedControlPlane: ptr.To(kcpv1beta1.Status.ExternalManagedControlPlane),
 		Replicas:                    ptr.To(kcpv1beta1.Status.Replicas),
 		Version:                     kcpv1beta1.Status.Version,
 		Selector:                    kcpv1beta1.Status.Selector,
@@ -62,7 +61,7 @@ func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 		Initialization: Initialization{
 			ControlPlaneInitialized: ptr.Deref(src.Status.Initialization.ControlPlaneInitialized, false),
 		},
-		ExternalManagedControlPlane: src.Status.ExternalManagedControlPlane,
+		ExternalManagedControlPlane: ptr.Deref(src.Status.ExternalManagedControlPlane, false),
 		Replicas:                    ptr.Deref(src.Status.Replicas, 0),
 		Version:                     src.Status.Version,
 		Selector:                    src.Status.Selector,
