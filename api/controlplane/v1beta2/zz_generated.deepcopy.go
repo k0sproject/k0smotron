@@ -147,6 +147,11 @@ func (in *K0sControlPlaneSpec) DeepCopy() *K0sControlPlaneSpec {
 func (in *K0sControlPlaneStatus) DeepCopyInto(out *K0sControlPlaneStatus) {
 	*out = *in
 	in.Initialization.DeepCopyInto(&out.Initialization)
+	if in.ExternalManagedControlPlane != nil {
+		in, out := &in.ExternalManagedControlPlane, &out.ExternalManagedControlPlane
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Replicas != nil {
 		in, out := &in.Replicas, &out.Replicas
 		*out = new(int32)
@@ -407,6 +412,11 @@ func (in *K0smotronControlPlaneList) DeepCopyObject() runtime.Object {
 func (in *K0smotronControlPlaneStatus) DeepCopyInto(out *K0smotronControlPlaneStatus) {
 	*out = *in
 	in.Initialization.DeepCopyInto(&out.Initialization)
+	if in.ExternalManagedControlPlane != nil {
+		in, out := &in.ExternalManagedControlPlane, &out.ExternalManagedControlPlane
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Replicas != nil {
 		in, out := &in.Replicas, &out.Replicas
 		*out = new(int32)

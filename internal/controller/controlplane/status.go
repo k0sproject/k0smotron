@@ -20,9 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/utils/ptr"
 	"strings"
 	"time"
+
+	"k8s.io/utils/ptr"
 
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
@@ -266,7 +267,7 @@ func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 	// TODO Check with upstream CAPI folks whether this is the correct approach in this case when
 	// we still run the controlplane on Machines
 	if !kcp.WorkerEnabled() {
-		kcp.Status.ExternalManagedControlPlane = true
+		kcp.Status.ExternalManagedControlPlane = ptr.To(true)
 	}
 
 	return nil
