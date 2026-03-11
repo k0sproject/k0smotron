@@ -130,8 +130,6 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.T().Log("Pushing public key to worker")
 	s.Require().NoError(workerSSH.Exec(s.Context(), "cat >>/root/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(s.publicKey)}))
 
-	// Apply the child cluster objects
-	s.createCluster()
 	defer func() {
 		keep := os.Getenv("KEEP_AFTER_TEST")
 		if keep == "true" {
@@ -143,6 +141,9 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 		s.T().Log("Deleting cluster objects")
 		s.deleteCluster()
 	}()
+
+	// Apply the child cluster objects
+	s.createCluster()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int

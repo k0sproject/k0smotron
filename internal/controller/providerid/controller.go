@@ -1,4 +1,4 @@
-package bootstrap
+package providerid
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -20,19 +19,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/k0sproject/k0smotron/internal/controller/bootstrap"
 	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
-// ProviderIDController is responsible for reconciling the ProviderID field of the Machine resource.
-type ProviderIDController struct {
+// Reconciler is responsible for reconciling the ProviderID field of the Machine resource.
+type Reconciler struct {
 	client.Client
-	Scheme    *runtime.Scheme
 	ClientSet *kubernetes.Clientset
 }
 
 // Reconcile reconciles the ProviderID field of the Machine resource and
 // ensures it is set on the corresponding Node in the workload cluster.
-func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (p *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("providerID", req.NamespacedName)
 	log.Info("Reconciling machine's ProviderID")
 
@@ -47,13 +46,17 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Skip non-k0smotron managed machines
-	if machine.Spec.Bootstrap.ConfigRef.Kind != "K0sControllerConfig" && machine.Spec.Bootstrap.ConfigRef.Kind != "K0sWorkerConfig" &&
-		machine.Spec.InfrastructureRef.Kind != "RemoteMachine" {
+	if machine.Spec.Bootstrap.ConfigRef.Kind != "K0sConfig" && machine.Spec.InfrastructureRef.Kind != "RemoteMachine" {
 		return ctrl.Result{}, nil
 	}
 
+	isControlPlane := false
+	if _, ok := machine.ObjectMeta.Labels[clusterv1.MachineControlPlaneLabel]; ok {
+		isControlPlane = true
+	}
+
 	// Skip the control plane machines that don't have worker enabled
-	if machine.Spec.Bootstrap.ConfigRef.Kind == "K0sControllerConfig" && machine.ObjectMeta.Labels["k0smotron.io/control-plane-worker-enabled"] != "true" {
+	if isControlPlane && machine.ObjectMeta.Labels["k0smotron.io/control-plane-worker-enabled"] != "true" {
 		return ctrl.Result{}, nil
 	}
 
@@ -91,7 +94,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 
 		// Check k0smotron.io/machine-name node label
-		if val, ok := n.Labels[machineNameNodeLabel]; ok && val == machine.GetName() {
+		if val, ok := n.Labels[bootstrap.MachineNameNodeLabel]; ok && val == machine.GetName() {
 			node = &n
 			break
 		}
@@ -114,7 +117,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if node.Spec.ProviderID == "" {
 		node.Spec.ProviderID = machine.Spec.ProviderID
-		node.Labels[machineNameNodeLabel] = machine.GetName()
+		node.Labels[bootstrap.MachineNameNodeLabel] = machine.GetName()
 		err = retry.OnError(retry.DefaultBackoff, func(_ error) bool {
 			return true
 		}, func() error {
@@ -131,7 +134,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (p *ProviderIDController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
+func (p *Reconciler) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	apiResources, err := p.ClientSet.Discovery().ServerResourcesForGroupVersion(clusterv1.GroupVersion.String())
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err

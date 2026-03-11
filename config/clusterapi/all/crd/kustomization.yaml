@@ -9,9 +9,8 @@ resources:
 
 patches:
 - path: patches/webhook_in_k0scontrolplanes.yaml
+- path: patches/webhook_in_k0scontrolplanetemplates.yaml
 - path: patches/webhook_in_k0smotroncontrolplanes.yaml
-- path: patches/webhook_in_k0sworkerconfig.yaml
-- path: patches/webhook_in_k0scontrollerconfig.yaml
 - path: patches/conversion_in_remotemachines.yaml
 - path: patches/conversion_in_pooledremotemachines.yaml
 - path: patches/cainjection_in_k0scontrolplanes.yaml

@@ -95,7 +95,7 @@ K0sControlPlaneSpec defines the desired state of K0sControlPlane
         <td><b><a href="#k0scontrolplanespeck0sconfigspec">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          K0sConfigSpec defines the k0s configuration specification.<br/>
+          K0sConfigSpec defines the desired state of K0sConfig.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -151,7 +151,7 @@ just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select
 
 
 
-K0sConfigSpec defines the k0s configuration specification.
+K0sConfigSpec defines the desired state of K0sConfig.
 
 <table>
     <thead>
@@ -168,6 +168,14 @@ K0sConfigSpec defines the k0s configuration specification.
         <td>
           Args specifies extra arguments to be passed to k0s controller.
 See: https://docs.k0sproject.io/stable/cli/k0s_controller/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>clusterConfig</b></td>
+        <td>object</td>
+        <td>
+          K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
+If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -189,14 +197,6 @@ NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order
         <td>[]object</td>
         <td>
           Files specifies extra files to be passed to user_data upon creation.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>k0s</b></td>
-        <td>object</td>
-        <td>
-          K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
-If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -259,6 +259,16 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
 By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
           <br/>
             <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, k0smotron will use
+a version field of the Machine object. If it's empty, the latest version is used.
+Make sure the version is compatible with the k0s version running on the control plane.
+For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1303,7 +1313,7 @@ K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlane
         <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspec">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          K0sConfigSpec defines the k0s configuration specification.<br/>
+          K0sConfigSpec defines the desired state of K0sConfig.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1344,7 +1354,7 @@ be configured on the K0sControlPlaneTemplate.<br/>
 
 
 
-K0sConfigSpec defines the k0s configuration specification.
+K0sConfigSpec defines the desired state of K0sConfig.
 
 <table>
     <thead>
@@ -1361,6 +1371,14 @@ K0sConfigSpec defines the k0s configuration specification.
         <td>
           Args specifies extra arguments to be passed to k0s controller.
 See: https://docs.k0sproject.io/stable/cli/k0s_controller/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>clusterConfig</b></td>
+        <td>object</td>
+        <td>
+          K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
+If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1382,14 +1400,6 @@ NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order
         <td>[]object</td>
         <td>
           Files specifies extra files to be passed to user_data upon creation.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>k0s</b></td>
-        <td>object</td>
-        <td>
-          K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
-If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1452,6 +1462,16 @@ If empty, k0smotron will use /usr/local/bin, which is the default install path u
 By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.<br/>
           <br/>
             <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version is the version of k0s to use. In case this is not set, k0smotron will use
+a version field of the Machine object. If it's empty, the latest version is used.
+Make sure the version is compatible with the k0s version running on the control plane.
+For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
         </td>
         <td>false</td>
       </tr><tr>

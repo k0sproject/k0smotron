@@ -13,7 +13,10 @@ import (
 
 // ComponentLabel is the well-known Kubernetes recommended label key for identifying
 // the component within the architecture (e.g. "etcd", "control-plane").
-const ComponentLabel = "app.kubernetes.io/component"
+const (
+	ComponentLabel             = "app.kubernetes.io/component"
+	DeprecatedBootstrapResouce = "k0smotron.io/bootstrap-resource"
+)
 
 // Component label values for app.kubernetes.io/component (and legacy "component").
 // Use these constants so component names are defined in one place.

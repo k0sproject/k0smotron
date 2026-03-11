@@ -25,17 +25,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-func TestK0sWorkerConfigValidate(t *testing.T) {
+func TestK0sConfigValidate(t *testing.T) {
 	testCases := []struct {
 		name             string
-		in               *K0sWorkerConfig
+		in               *K0sConfig
 		expectedWarnings admission.Warnings
 		expectingError   bool
 	}{
 		{
 			name: "valid config passes validation",
-			in: &K0sWorkerConfig{
-				Spec: K0sWorkerConfigSpec{
+			in: &K0sConfig{
+				Spec: K0sConfigSpec{
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
@@ -66,8 +66,8 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 		},
 		{
 			name: "err for unsupported k0s version",
-			in: &K0sWorkerConfig{
-				Spec: K0sWorkerConfigSpec{
+			in: &K0sConfig{
+				Spec: K0sConfigSpec{
 					Version: "v1.27.4-k0s.0",
 				},
 			},
@@ -76,8 +76,8 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 		},
 		{
 			name: "err for invalid files declared in config: content and contentFrom conflict",
-			in: &K0sWorkerConfig{
-				Spec: K0sWorkerConfigSpec{
+			in: &K0sConfig{
+				Spec: K0sConfigSpec{
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
@@ -99,8 +99,8 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 		},
 		{
 			name: "err for invalid files declared in config: not content",
-			in: &K0sWorkerConfig{
-				Spec: K0sWorkerConfigSpec{
+			in: &K0sConfig{
+				Spec: K0sConfigSpec{
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
@@ -116,8 +116,8 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 		},
 		{
 			name: "err for invalid files declared in config: contentFrom configmap and secret conflict",
-			in: &K0sWorkerConfig{
-				Spec: K0sWorkerConfigSpec{
+			in: &K0sConfig{
+				Spec: K0sConfigSpec{
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
@@ -140,8 +140,8 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 		},
 		{
 			name: "err for invalid files declared in config: contentFrom configmap name missing",
-			in: &K0sWorkerConfig{
-				Spec: K0sWorkerConfigSpec{
+			in: &K0sConfig{
+				Spec: K0sConfigSpec{
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
@@ -160,8 +160,8 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 		},
 		{
 			name: "err for invalid files declared in config: contentFrom secret name missing",
-			in: &K0sWorkerConfig{
-				Spec: K0sWorkerConfigSpec{
+			in: &K0sConfig{
+				Spec: K0sConfigSpec{
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
@@ -180,8 +180,8 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 		},
 		{
 			name: "err for invalid files declared in config: contentFrom secret name missing",
-			in: &K0sWorkerConfig{
-				Spec: K0sWorkerConfigSpec{
+			in: &K0sConfig{
+				Spec: K0sConfigSpec{
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
@@ -208,7 +208,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			validator := &K0sWorkerConfigValidator{}
+			validator := &K0sConfigValidator{}
 			warnings, err := validator.ValidateCreate(context.Background(), tc.in)
 			if tc.expectingError {
 				require.Error(t, err)
