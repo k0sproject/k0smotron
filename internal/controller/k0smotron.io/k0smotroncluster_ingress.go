@@ -147,6 +147,9 @@ spec:
         - key: "node.kubernetes.io/unreachable"
           operator: "Exists"
           effect: "NoSchedule"
+        - key: "node.cloudprovider.kubernetes.io/uninitialized"
+          operator: "Exists"
+          effect: "NoSchedule"
       containers:
         - name: haproxy
           image: haproxy:2.8

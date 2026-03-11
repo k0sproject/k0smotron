@@ -52,6 +52,7 @@ func GetKubeClient(ctx context.Context, client client.Client, cluster *clusterv1
 		IdleConnTimeout:       5 * time.Second,
 		TLSHandshakeTimeout:   5 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
+		ResponseHeaderTimeout: 15 * time.Second,
 		TLSClientConfig:       tlsCfg,
 	}
 
