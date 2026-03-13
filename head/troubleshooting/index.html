@@ -1520,6 +1520,39 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
+  <a href="#cloud-controller-manager-fails-to-start-with-cloud-providerexternal-when-using-ingress-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cloud Controller Manager fails to start with --cloud-provider=external when using Ingress support
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cloud Controller Manager fails to start with --cloud-provider=external when using Ingress support">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#root-cause" class="md-nav__link">
+    <span class="md-ellipsis">
+      Root cause
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solution
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#machinedeployment-with-docker-provider-does-not-function" class="md-nav__link">
     <span class="md-ellipsis">
       MachineDeployment with Docker Provider does not function
@@ -1991,6 +2024,39 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
+  <a href="#cloud-controller-manager-fails-to-start-with-cloud-providerexternal-when-using-ingress-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cloud Controller Manager fails to start with --cloud-provider=external when using Ingress support
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cloud Controller Manager fails to start with --cloud-provider=external when using Ingress support">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#root-cause" class="md-nav__link">
+    <span class="md-ellipsis">
+      Root cause
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solution
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#machinedeployment-with-docker-provider-does-not-function" class="md-nav__link">
     <span class="md-ellipsis">
       MachineDeployment with Docker Provider does not function
@@ -2052,6 +2118,40 @@ initial cluster creation for the control plane and the worker nodes, as k0s
 requires that the controllers and workers were created using the same minor
 version. For more information, refer to the Kubernetes <a href="https://kubernetes.io/releases/version-skew-policy/">Version Skew
 Policy</a>.</p>
+<h2 id="cloud-controller-manager-fails-to-start-with-cloud-providerexternal-when-using-ingress-support">Cloud Controller Manager fails to start with <code>--cloud-provider=external</code> when using Ingress support<a class="headerlink" href="#cloud-controller-manager-fails-to-start-with-cloud-providerexternal-when-using-ingress-support" title="Permanent link">#</a></h2>
+<p>When using <a href="../ingress-support/">Ingress support</a> together with an external
+Cloud Controller Manager (CCM), CCM pods may fail to start with an error like:
+<div class="highlight"><pre><span></span><code>unable to load configmap based request-header-client-ca-file: Get
+&quot;https://10.96.0.1:443/...&quot;: dial tcp 10.96.0.1:443: connect: connection refused
+</code></pre></div></p>
+<h3 id="root-cause">Root cause<a class="headerlink" href="#root-cause" title="Permanent link">#</a></h3>
+<p>The ingress support architecture relies on a local HAProxy sidecar running on
+each worker node to proxy pod-to-API traffic to the ingress controller. As part
+of this, k0smotron reconfigures the <code>kubernetes.default</code> Service in the child cluster to
+point to the HAProxy sidecar.</p>
+<p>With <code>--cloud-provider=external</code>, CCM (and not kubelet) is responsible for reporting the worker
+node's external addresses back to the cluster. Until CCM does this, k0smotron
+cannot fully configure the HAProxy sidecar, so the <code>kubernetes</code> Service is not
+yet reachable. Meanwhile, CCM itself may use in-cluster config to reach the API
+server — which reads <code>KUBERNETES_SERVICE_HOST</code> and <code>KUBERNETES_SERVICE_PORT</code>
+env vars injected by kubelet, pointing at the <code>kubernetes</code> Service ClusterIP
+(<code>10.96.0.1</code> by default). The result is a deadlock:</p>
+<ul>
+<li>CCM cannot reach the API server because the HAProxy sidecar is not yet configured</li>
+<li>The HAProxy sidecar is not configured because CCM has not yet reported node addresses</li>
+</ul>
+<h3 id="solution">Solution<a class="headerlink" href="#solution" title="Permanent link">#</a></h3>
+<p>Override the in-cluster config by explicitly setting <code>KUBERNETES_SERVICE_HOST</code>
+and <code>KUBERNETES_SERVICE_PORT</code> in the CCM pod spec, pointing directly to the
+ingress hostname:
+<div class="highlight"><pre><span></span><code><span class="nt">env</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KUBERNETES_SERVICE_HOST</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://my-cluster-api.example.com&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KUBERNETES_SERVICE_PORT</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;443&quot;</span>
+</code></pre></div></p>
+<p>Another option is to set <code>--kubeconfig</code> flag in the CCM deployment to point to a kubeconfig file that uses the API hostname.</p>
+<p>This makes the CCM pod to use the API hostname directly for InCluster config instead of default <code>kubernetes</code> Service address.</p>
 <h2 id="machinedeployment-with-docker-provider-does-not-function">MachineDeployment with Docker Provider does not function<a class="headerlink" href="#machinedeployment-with-docker-provider-does-not-function" title="Permanent link">#</a></h2>
 <p>Docker Provider uses the version field to determine the docker image version
 for the worker nodes. If you are using k0smotron as a Cluster API
