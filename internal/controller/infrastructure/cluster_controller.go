@@ -21,12 +21,13 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
+	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 )
 
 // ClusterController is responsible for reconciling the RemoteCluster resource,
@@ -56,7 +57,7 @@ func (r *ClusterController) Reconcile(ctx context.Context, req ctrl.Request) (re
 
 	// Nothing really to do, except put the cluster in a ready state
 	if c.ObjectMeta.DeletionTimestamp.IsZero() {
-		c.Status.Ready = true
+		c.Status.Initialization.Provisioned = ptr.To(true)
 		if err := r.Status().Update(ctx, c); err != nil {
 			log.Error(err, "Failed to update RemoteCluster status")
 			return ctrl.Result{}, err

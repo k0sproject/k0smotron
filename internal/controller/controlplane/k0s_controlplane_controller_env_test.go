@@ -1698,7 +1698,7 @@ func (f *fakeRoundTripper) run(req *http.Request) (*http.Response, error) {
 			{
 				return &http.Response{StatusCode: http.StatusOK, Header: header, Body: nil}, nil
 			}
-		case strings.HasPrefix(req.URL.Path, "/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/"):
+		case strings.HasPrefix(req.URL.Path, "/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/"):
 			{
 				return &http.Response{StatusCode: http.StatusOK, Header: header, Body: nil}, nil
 			}
