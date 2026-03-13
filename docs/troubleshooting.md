@@ -79,7 +79,7 @@ ingress hostname:
 ```yaml
 env:
   - name: KUBERNETES_SERVICE_HOST
-    value: "https://my-cluster-api.example.com"
+    value: "my-cluster-api.example.com"
   - name: KUBERNETES_SERVICE_PORT
     value: "443"
 ```
