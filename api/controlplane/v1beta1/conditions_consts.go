@@ -19,4 +19,17 @@ package v1beta1
 const (
 	// ControlPlaneAvailableReason documents the fact that the control plane is reachable.
 	ControlPlaneAvailableReason = "Available"
+
+	// K0smotronClusterReconciledCondition documents the reconciliation status of the
+	// k0smotron.io/v1beta1 Cluster that manages the generated resources.
+	K0smotronClusterReconciledCondition = "K0smotronClusterReconciled"
+
+	// ReconciliationSucceededReason documents that the k0smotron Cluster reconciled successfully.
+	ReconciliationSucceededReason = "ReconciliationSucceeded"
+
+	// ReconciliationFailedReason documents that the k0smotron Cluster encountered a reconciliation error.
+	ReconciliationFailedReason = "ReconciliationFailed"
+
+	// ReconciliationInProgressReason documents that the k0smotron Cluster is not yet fully reconciled.
+	ReconciliationInProgressReason = "ReconciliationInProgress"
 )
