@@ -58,6 +58,7 @@ nav:
      - Cluster API (HCP): update/update-cluster-pod.md
      - Cluster API (VMs): update/update-capi-cluster.md
      - Update workers (HCP): update/hcp-autopilot.md
+     - Migrate to v1beta2 API: update/migrate-v1beta2-api.md
   - FAQ: faq.md
   - Troubleshooting: troubleshooting.md
   - Commercial Support: commercial-support.md
