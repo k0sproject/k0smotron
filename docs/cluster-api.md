@@ -14,7 +14,7 @@ k0smotron can function also as a "traditional" contol plane provider where the c
 
 ## Bootstrap provider
 
-k0smotron can also act as a [bootstrap provider](https://cluster-api.sigs.k8s.io/developer/architecture/controllers/bootstrap.html) for worker nodes you want to manage via Cluster API. When k0smotron detects a new node that needs to be added to the cluster it will automatically create a new [join token]() needed for the node and creates the provisioning cloud-init script for the node. Once Cluster API controllers sees the node initialization script in place (in a secret) the [infrastructure provider](https://cluster-api.sigs.k8s.io/developer/providers/machine-infrastructure.html) will create the needed resources (usually VMs in cloud provider infrastructure) with the k0smotron created cloud-init script.
+k0smotron can also act as a [bootstrap provider](https://cluster-api.sigs.k8s.io/user/concepts.html?highlight=bootstrap#bootstrap-provider) for worker nodes you want to manage via Cluster API. When k0smotron detects a new node that needs to be added to the cluster it will automatically create a new *join token* needed for the node and creates the provisioning cloud-init script for the node. Once Cluster API controllers sees the node initialization script in place (in a secret) the [infrastructure provider](https://cluster-api.sigs.k8s.io/developer/providers/machine-infrastructure.html) will create the needed resources (usually VMs in cloud provider infrastructure) with the k0smotron created cloud-init script.
 
 ## Remote Machine provider
 
