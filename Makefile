@@ -131,6 +131,14 @@ $(generate_targets): $(CONTROLLER_GEN)
 
 generate: $(generate_targets) manifests ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 
+.PHONY: headers-go
+headers-go: ## Add boilerplate.go.txt headers to Go files missing them.
+	./hack/go-headers.sh --fix
+
+.PHONY: headers-go-check
+headers-go-check: ## Verify all Go files have Apache headers.
+	./hack/go-headers.sh --check
+
 
 GO_PKGS=$(shell go list ./...)
 .PHONY: fmt
@@ -321,7 +329,7 @@ docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs
 
 ## Generate all code, manifests, documentation, and release artifacts
 .PHONY: generate-all
-generate-all: clean generate docs-generate-reference release
+generate-all: clean headers-go generate docs-generate-reference release
 
 .PHONY: $(smoketests)
 $(smoketests): release k0smotron-image-bundle.tar
