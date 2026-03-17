@@ -2,7 +2,9 @@ package v1beta1
 
 import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
@@ -30,7 +32,7 @@ func (kcpv1beta1 *K0sControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 }
 
 func k0sControlPlaneSpecV1beta1ToV1beta2(spec K0sControlPlaneSpec) v1beta2.K0sControlPlaneSpec {
-	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta1ToV1beta2(&spec.K0sConfigSpec)
+	configSpec := convertK0sConfigSpecV1beta1ToV1beta2(&spec.K0sConfigSpec, spec.Version)
 	return v1beta2.K0sControlPlaneSpec{
 		K0sConfigSpec:            *configSpec.DeepCopy(),
 		MachineTemplate:          spec.MachineTemplate.DeepCopy(),
@@ -46,7 +48,7 @@ func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta2.K0sControlPlane)
 	kcpv1beta1.ObjectMeta = *src.ObjectMeta.DeepCopy()
 
-	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta2ToV1beta1(&src.Spec.K0sConfigSpec)
+	configSpec := convertK0sConfigSpecV1beta2ToV1beta1(&src.Spec.K0sConfigSpec)
 	kcpv1beta1.Spec = K0sControlPlaneSpec{
 		K0sConfigSpec:            *configSpec.DeepCopy(),
 		MachineTemplate:          src.Spec.MachineTemplate.DeepCopy(),
@@ -85,7 +87,7 @@ func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) erro
 	dst := dstRaw.(*v1beta2.K0sControlPlaneTemplate)
 	dst.ObjectMeta = *kcpv1beta1.ObjectMeta.DeepCopy()
 
-	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta1ToV1beta2(&kcpv1beta1.Spec.Template.Spec.K0sConfigSpec)
+	configSpec := convertK0sConfigSpecV1beta1ToV1beta2(&kcpv1beta1.Spec.Template.Spec.K0sConfigSpec, kcpv1beta1.Spec.Template.Spec.Version)
 	dst.Spec = v1beta2.K0sControlPlaneTemplateSpec{
 		Template: v1beta2.K0sControlPlaneTemplateResource{
 			ObjectMeta: kcpv1beta1.Spec.Template.ObjectMeta,
@@ -104,7 +106,7 @@ func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) erro
 func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta2.K0sControlPlaneTemplate)
 	kcpv1beta1.ObjectMeta = *src.ObjectMeta.DeepCopy()
-	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta2ToV1beta1(&src.Spec.Template.Spec.K0sConfigSpec)
+	configSpec := convertK0sConfigSpecV1beta2ToV1beta1(&src.Spec.Template.Spec.K0sConfigSpec)
 	kcpv1beta1.Spec = K0sControlPlaneTemplateSpec{
 		Template: K0sControlPlaneTemplateResource{
 			ObjectMeta: src.Spec.Template.ObjectMeta,
@@ -117,4 +119,65 @@ func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) er
 		},
 	}
 	return nil
+}
+
+func convertK0sConfigSpecV1beta1ToV1beta2(spec *bootstrapv1.K0sConfigSpec, version string) bootstrapv2.K0sConfigSpec {
+	if spec == nil {
+		return bootstrapv2.K0sConfigSpec{}
+	}
+	res := bootstrapv2.K0sConfigSpec{
+		Provisioner: bootstrapv2.ProvisionerSpec{
+			// Default to CloudInit, will be overridden below if Ignition is set
+			Type: provisioner.CloudInitProvisioningFormat,
+		},
+		K0sInstallDir:     spec.K0sInstallDir,
+		ClusterConfig:     spec.K0s,
+		UseSystemHostname: spec.UseSystemHostname,
+		Files:             spec.Files,
+		Args:              spec.Args,
+		PreK0sCommands:    spec.PreStartCommands,
+		PostK0sCommands:   spec.PostStartCommands,
+		PreInstalledK0s:   spec.PreInstalledK0s,
+		DownloadURL:       spec.DownloadURL,
+		Tunneling:         spec.Tunneling,
+		WorkingDir:        spec.WorkingDir,
+		Version:           version,
+	}
+	if spec.Ignition != nil {
+		res.Provisioner = bootstrapv2.ProvisionerSpec{
+			Type:     provisioner.IgnitionProvisioningFormat,
+			Ignition: spec.Ignition,
+		}
+	}
+	if spec.CustomUserDataRef != nil {
+		res.Provisioner.CustomUserDataRef = spec.CustomUserDataRef
+	}
+
+	return res
+}
+
+func convertK0sConfigSpecV1beta2ToV1beta1(spec *bootstrapv2.K0sConfigSpec) *bootstrapv1.K0sConfigSpec {
+	if spec == nil {
+		return nil
+	}
+	res := &bootstrapv1.K0sConfigSpec{
+		K0sInstallDir:     spec.K0sInstallDir,
+		K0s:               spec.ClusterConfig,
+		UseSystemHostname: spec.UseSystemHostname,
+		Files:             spec.Files,
+		Args:              spec.Args,
+		PreStartCommands:  spec.PreK0sCommands,
+		PostStartCommands: spec.PostK0sCommands,
+		PreInstalledK0s:   spec.PreInstalledK0s,
+		DownloadURL:       spec.DownloadURL,
+		Tunneling:         spec.Tunneling,
+		WorkingDir:        spec.WorkingDir,
+	}
+	if spec.Provisioner.Type == provisioner.IgnitionProvisioningFormat {
+		res.Ignition = spec.Provisioner.Ignition
+	}
+	if spec.Provisioner.CustomUserDataRef != nil {
+		res.CustomUserDataRef = spec.Provisioner.CustomUserDataRef
+	}
+	return res
 }

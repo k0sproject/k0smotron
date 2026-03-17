@@ -78,7 +78,7 @@ func TestK0sConfigEnrichment(t *testing.T) {
 			kcp: &cpv1beta2.K0sControlPlane{
 				Spec: cpv1beta2.K0sControlPlaneSpec{
 					K0sConfigSpec: bootstrapv1beta2.K0sConfigSpec{
-						K0s: &unstructured.Unstructured{Object: map[string]any{
+						ClusterConfig: &unstructured.Unstructured{Object: map[string]any{
 							"spec": map[string]any{
 								"network": map[string]any{"serviceCIDR": "10.98.0.0/12"},
 							},
@@ -115,7 +115,7 @@ func TestK0sConfigEnrichment(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run("", func(t *testing.T) {
-			actual, err := enrichK0sConfigWithClusterData(tc.cluster, tc.kcp.Spec.K0sConfigSpec.K0s)
+			actual, err := enrichK0sConfigWithClusterData(tc.cluster, tc.kcp.Spec.K0sConfigSpec.ClusterConfig)
 			require.NoError(t, err)
 			require.Equal(t, tc.want, actual)
 		})

@@ -617,7 +617,7 @@ func TestReconcileK0sConfigNotProvided(t *testing.T) {
 	cluster, kcp, _ := createClusterWithControlPlane(ns.Name)
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
-	kcp.Spec.K0sConfigSpec.K0s = nil
+	kcp.Spec.K0sConfigSpec.ClusterConfig = nil
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
 	defer func(do ...client.Object) {
@@ -629,7 +629,7 @@ func TestReconcileK0sConfigNotProvided(t *testing.T) {
 	}
 	err = r.reconcileConfig(ctx, cluster, kcp)
 	require.NoError(t, err)
-	require.Nil(t, kcp.Spec.K0sConfigSpec.K0s)
+	require.Nil(t, kcp.Spec.K0sConfigSpec.ClusterConfig)
 }
 
 func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
@@ -641,7 +641,7 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 
 	// Enable '.spec.network.nodeLocalLoadBalancing'
 	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
-		K0s: &unstructured.Unstructured{
+		ClusterConfig: &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
@@ -692,7 +692,7 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.K0s))
+	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.ClusterConfig))
 }
 
 func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
@@ -704,7 +704,7 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 
 	// Disable '.spec.network.nodeLocalLoadBalancing'
 	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
-		K0s: &unstructured.Unstructured{
+		ClusterConfig: &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
@@ -745,7 +745,7 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.K0s))
+	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.ClusterConfig))
 }
 
 func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
@@ -757,7 +757,7 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 
 	// With '.spec.k0sConfigSpec.Tunneling.ServerAddress'
 	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
-		K0s: &unstructured.Unstructured{
+		ClusterConfig: &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
@@ -802,7 +802,7 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.K0s))
+	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.ClusterConfig))
 }
 
 func TestReconcileMachinesScaleUp(t *testing.T) {
@@ -1020,7 +1020,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 	}
 	firstMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, firstMachineRelatedToControlPlane))
-	firstControllerConfig := &bootstrapv2.K0sControllerConfig{
+	firstControllerConfig := &bootstrapv2.K0sConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
 			Namespace: ns.Name,
@@ -1066,7 +1066,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 	}
 	secondMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, secondMachineRelatedToControlPlane))
-	secondControllerConfig := &bootstrapv2.K0sControllerConfig{
+	secondControllerConfig := &bootstrapv2.K0sConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
 			Namespace: ns.Name,
@@ -1112,7 +1112,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 	}
 	thirdMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, thirdMachineRelatedToControlPlane))
-	thirdControllerConfig := &bootstrapv2.K0sControllerConfig{
+	thirdControllerConfig := &bootstrapv2.K0sConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 2),
 			Namespace: ns.Name,
@@ -1155,7 +1155,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, machineNotRelatedToControlPlane))
-	notRelatedControllerConfig := &bootstrapv2.K0sControllerConfig{
+	notRelatedControllerConfig := &bootstrapv2.K0sConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "external-machine",
 			Namespace: ns.Name,
@@ -1261,7 +1261,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 	}
 	firstMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, firstMachineRelatedToControlPlane))
-	firstControllerConfig := &bootstrapv2.K0sControllerConfig{
+	firstControllerConfig := &bootstrapv2.K0sConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
 			Namespace: ns.Name,
@@ -1306,7 +1306,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 	}
 	secondMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, secondMachineRelatedToControlPlane))
-	secondControllerConfig := &bootstrapv2.K0sControllerConfig{
+	secondControllerConfig := &bootstrapv2.K0sConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
 			Namespace: ns.Name,
@@ -1350,7 +1350,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 	}
 	thirdMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
 	require.NoError(t, testEnv.Create(ctx, thirdMachineRelatedToControlPlane))
-	thirdControllerConfig := &bootstrapv2.K0sControllerConfig{
+	thirdControllerConfig := &bootstrapv2.K0sConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", kcp.Name, 2),
 			Namespace: ns.Name,
@@ -1584,7 +1584,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	require.Equal(t, gmt.GetName(), infraObj.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation])
 	require.Equal(t, gmt.GroupVersionKind().GroupKind().String(), infraObj.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation])
 
-	k0sBootstrapConfigList := &bootstrapv2.K0sControllerConfigList{}
+	k0sBootstrapConfigList := &bootstrapv2.K0sConfigList{}
 	require.NoError(t, testEnv.GetAPIReader().List(ctx, k0sBootstrapConfigList, client.InNamespace(cluster.Namespace)))
 	require.Len(t, k0sBootstrapConfigList.Items, 1)
 

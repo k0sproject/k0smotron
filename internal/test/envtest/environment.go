@@ -191,16 +191,16 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 		panic(errors.Wrapf(err, "unable to create setup webhook for K0smotronControlPlane"))
 	}
 
-	if err = (&bootstrapv1beta2.K0sWorkerConfigValidator{}).SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
-		panic(errors.Wrapf(err, "unable to create setup webhook for K0sWorkerConfig"))
-	}
-
 	if err = infrastructurev1beta2.SetupRemoteMachineWebhookWithManager(mgr); err != nil {
 		panic(errors.Wrapf(err, "unable to create setup webhook for RemoteMachine"))
 	}
 
 	if err = infrastructurev1beta2.SetupPooledRemoteMachineWebhookWithManager(mgr); err != nil {
 		panic(errors.Wrapf(err, "unable to create setup webhook for PooledRemoteMachine"))
+	}
+
+	if err = (&bootstrapv1beta2.K0sConfigValidator{}).SetupK0sConfigWebhookWithManager(mgr); err != nil {
+		panic(errors.Wrapf(err, "unable to create validation webhook"))
 	}
 
 	return &Environment{

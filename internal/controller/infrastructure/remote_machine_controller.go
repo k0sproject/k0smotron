@@ -121,13 +121,11 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	mode := ModeNonK0s
-	switch machine.Spec.Bootstrap.ConfigRef.Kind {
-	case "K0sWorkerConfig":
+	if machine.Spec.Bootstrap.ConfigRef.Kind == "K0sConfig" {
 		mode = ModeWorker
-	case "K0sControllerConfig":
-		mode = ModeController
-	default:
-		mode = ModeNonK0s
+		if _, ok := machine.ObjectMeta.Labels[clusterv1.MachineControlPlaneLabel]; ok {
+			mode = ModeController
+		}
 	}
 
 	log = log.WithValues("machine", machine.Name)

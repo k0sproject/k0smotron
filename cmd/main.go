@@ -59,6 +59,7 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/controlplane"
 	"github.com/k0sproject/k0smotron/internal/controller/infrastructure"
 	controller "github.com/k0sproject/k0smotron/internal/controller/k0smotron.io"
+	"github.com/k0sproject/k0smotron/internal/controller/providerid"
 	"github.com/k0sproject/k0smotron/internal/featuregate"
 	//+kubebuilder:scaffold:imports
 )
@@ -263,29 +264,16 @@ func main() {
 	}
 
 	if isControllerEnabled(bootstrapController) && runCAPIControllers {
-		if err = (&bootstrap.Controller{
+		if err = (&bootstrap.Reconciler{
 			Client:              mgr.GetClient(),
 			SecretCachingClient: secretCachingClient,
-			Scheme:              mgr.GetScheme(),
-			ClientSet:           clientSet,
-			RESTConfig:          restConfig,
 		}).SetupWithManager(mgr, ctrlOptions); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
-			os.Exit(1)
-		}
-		if err = (&bootstrap.ControlPlaneController{
-			Client:              mgr.GetClient(),
-			SecretCachingClient: secretCachingClient,
-			Scheme:              mgr.GetScheme(),
-			ClientSet:           clientSet,
-			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
+			setupLog.Error(err, "unable to create controller", "controller", "K0sConfig")
 			os.Exit(1)
 		}
 
-		if err = (&bootstrapv1beta2.K0sWorkerConfigValidator{}).SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sWorkerConfigValidator")
+		if err = (&bootstrapv1beta2.K0sConfigValidator{}).SetupK0sConfigWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sConfigValidator")
 			os.Exit(1)
 		}
 	}
@@ -365,9 +353,8 @@ func main() {
 	// ProviderID controller needs to run if either bootstrap or infrastructure controllers are running
 	// as both of them create/update Machines.
 	if runCAPIControllers && (isControllerEnabled(infrastructureController) || isControllerEnabled(bootstrapController)) {
-		if err = (&bootstrap.ProviderIDController{
+		if err = (&providerid.Reconciler{
 			Client:    mgr.GetClient(),
-			Scheme:    mgr.GetScheme(),
 			ClientSet: clientSet,
 		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "ProviderID")

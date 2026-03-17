@@ -88,6 +88,8 @@ rules:
 - apiGroups:
   - bootstrap.cluster.x-k8s.io
   resources:
+  - k0sconfigs
+  - k0sconfigs/status
   - k0scontrollerconfigs
   - k0scontrollerconfigs/status
   verbs:

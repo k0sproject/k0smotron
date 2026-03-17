@@ -30,6 +30,7 @@ import (
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	"github.com/k0sproject/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -58,6 +59,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
@@ -100,6 +102,8 @@ type K0sController struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status;machines;machines/status,verbs=get;list;watch;update;patch;create;delete
+// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0sconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0sconfigs/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
@@ -353,7 +357,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 
 func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
 	var err error
-	kcp.Spec.K0sConfigSpec.K0s, err = enrichK0sConfigWithClusterData(cluster, kcp.Spec.K0sConfigSpec.K0s)
+	kcp.Spec.K0sConfigSpec.ClusterConfig, err = enrichK0sConfigWithClusterData(cluster, kcp.Spec.K0sConfigSpec.ClusterConfig)
 	if err != nil {
 		return err
 	}
@@ -629,10 +633,16 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 
 func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, k0sConfigSpec *bootstrapv2.K0sConfigSpec, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
 
-	controllerConfig := bootstrapv2.K0sControllerConfig{
+	// Do not modify the original spec to avoid unexpected reconciliations in the resources that use the spec as template.
+	// For example, if the spec is modified to set the version, the machine controller will detect the change and try to
+	// update the machine.
+	k0sConfigSpecCopy := k0sConfigSpec.DeepCopy()
+	k0sConfigSpecCopy.Version = kcp.Spec.Version
+
+	controllerConfig := bootstrapv2.K0sConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta2",
-			Kind:       "K0sControllerConfig",
+			Kind:       "K0sConfig",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -648,13 +658,18 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 				Controller:         ptr.To(true),
 			}},
 		},
-		Spec: bootstrapv2.K0sControllerConfigSpec{
-			Version:       kcp.Spec.Version,
-			K0sConfigSpec: k0sConfigSpec,
-		},
+		Spec: *k0sConfigSpecCopy,
 	}
 
+	deprecatedK0sControllerConfig := convertToK0sControllerConfig(&controllerConfig)
+
 	if err := c.Client.Patch(ctx, &controllerConfig, client.Apply, &client.PatchOptions{
+		FieldManager: "k0smotron",
+	}); err != nil {
+		return fmt.Errorf("error patching K0sConfig: %w", err)
+	}
+
+	if err := c.Client.Patch(ctx, &deprecatedK0sControllerConfig, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
 	}); err != nil {
 		return fmt.Errorf("error patching K0sControllerConfig: %w", err)
@@ -697,44 +712,44 @@ func (c *K0sController) ensureCertificates(ctx context.Context, cluster *cluster
 
 func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
 	log := log.FromContext(ctx)
-	if kcp.Spec.K0sConfigSpec.K0s != nil {
-		nllbEnabled, found, err := unstructured.NestedBool(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
+	if kcp.Spec.K0sConfigSpec.ClusterConfig != nil {
+		nllbEnabled, found, err := unstructured.NestedBool(kcp.Spec.K0sConfigSpec.ClusterConfig.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
 			return fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
 		}
 		// Set the external address if NLLB is not enabled
 		// Otherwise, just add the external address to the SANs to allow the clients to connect using LB address
 		if !(found && nllbEnabled) {
-			err = unstructured.SetNestedField(kcp.Spec.K0sConfigSpec.K0s.Object, cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
+			err = unstructured.SetNestedField(kcp.Spec.K0sConfigSpec.ClusterConfig.Object, cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
 			if err != nil {
 				return fmt.Errorf("error setting control plane endpoint: %v", err)
 			}
 		} else {
 			sans := []string{cluster.Spec.ControlPlaneEndpoint.Host}
-			existingSANs, sansFound, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
+			existingSANs, sansFound, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.ClusterConfig.Object, "spec", "api", "sans")
 			if err == nil && sansFound {
 				sans = util.AddToExistingSans(existingSANs, sans)
 			}
-			err = unstructured.SetNestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
+			err = unstructured.SetNestedStringSlice(kcp.Spec.K0sConfigSpec.ClusterConfig.Object, sans, "spec", "api", "sans")
 			if err != nil {
 				return fmt.Errorf("error setting sans: %v", err)
 			}
 		}
 
 		if kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress != "" {
-			sans, _, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
+			sans, _, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.ClusterConfig.Object, "spec", "api", "sans")
 			if err != nil {
 				return fmt.Errorf("error getting sans from config: %v", err)
 			}
 			sans = util.AddToExistingSans(sans, []string{kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress})
-			err = unstructured.SetNestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
+			err = unstructured.SetNestedStringSlice(kcp.Spec.K0sConfigSpec.ClusterConfig.Object, sans, "spec", "api", "sans")
 			if err != nil {
 				return fmt.Errorf("error setting sans to the config: %v", err)
 			}
 		}
 
 		// Reconcile the dynamic config
-		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, *kcp.Spec.K0sConfigSpec.K0s.DeepCopy())
+		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, *kcp.Spec.K0sConfigSpec.ClusterConfig.DeepCopy())
 		if dErr != nil {
 			// Don't return error from dynamic config reconciliation, as it may not be created yet
 			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")
@@ -1030,6 +1045,39 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 	return frpToken, c.Client.Patch(ctx, frpSecret, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
 	})
+}
+
+func convertToK0sControllerConfig(k0sConfig *bootstrapv2.K0sConfig) bootstrapv1.K0sControllerConfig {
+	k0sControllerConfig := bootstrapv1.K0sControllerConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: bootstrapv1.GroupVersion.String(),
+			Kind:       "K0sControllerConfig",
+		},
+		ObjectMeta: k0sConfig.ObjectMeta,
+		Spec: bootstrapv1.K0sControllerConfigSpec{
+			Version: k0sConfig.Spec.Version,
+			K0sConfigSpec: &bootstrapv1.K0sConfigSpec{
+				K0sInstallDir:     k0sConfig.Spec.K0sInstallDir,
+				K0s:               k0sConfig.Spec.ClusterConfig,
+				UseSystemHostname: k0sConfig.Spec.UseSystemHostname,
+				Files:             k0sConfig.Spec.Files,
+				Args:              k0sConfig.Spec.Args,
+				PreStartCommands:  k0sConfig.Spec.PreK0sCommands,
+				PostStartCommands: k0sConfig.Spec.PostK0sCommands,
+				PreInstalledK0s:   k0sConfig.Spec.PreInstalledK0s,
+				DownloadURL:       k0sConfig.Spec.DownloadURL,
+				Tunneling:         k0sConfig.Spec.Tunneling,
+				WorkingDir:        k0sConfig.Spec.WorkingDir,
+			},
+		},
+	}
+	if k0sConfig.Spec.Provisioner.Type == provisioner.IgnitionProvisioningFormat {
+		k0sControllerConfig.Spec.Ignition = k0sConfig.Spec.Provisioner.Ignition
+	}
+	if k0sConfig.Spec.Provisioner.CustomUserDataRef != nil {
+		k0sControllerConfig.Spec.CustomUserDataRef = k0sConfig.Spec.Provisioner.CustomUserDataRef
+	}
+	return k0sControllerConfig
 }
 
 // SetupWithManager sets up the controller with the Manager.
