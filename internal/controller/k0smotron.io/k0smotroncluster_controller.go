@@ -63,6 +63,11 @@ type ClusterReconciler struct {
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
 	Recorder            record.EventRecorder
+	// WebhookNamespace is the namespace where the k0smotron webhook Service lives.
+	// Together with WebhookCABundle it enables the child-cluster pod-ingress mutator.
+	WebhookNamespace   string
+	WebhookServiceName string
+	WebhookCABundle    []byte
 }
 
 const (
@@ -83,6 +88,11 @@ type kmcScope struct {
 	secretCachingClient client.Client
 	// clusterSettings holds the cluster settings retrieved from the k0sConfig
 	clusterSettings clusterSettings
+	// webhookNamespace, webhookServiceName and webhookCABundle are used to inject the pod-ingress
+	// mutator into child clusters with ingress enabled. They are empty when the webhook is not configured.
+	webhookNamespace   string
+	webhookServiceName string
+	webhookCABundle    []byte
 }
 
 type clusterSettings struct {
@@ -378,6 +388,9 @@ func (r *ClusterReconciler) getKmcScope(ctx context.Context, kmc *km.Cluster) (*
 			kubernetesServiceIP: "10.96.0.1",     // Default kubernetes service IP
 			clusterDomain:       "cluster.local", // Default cluster domain
 		},
+		webhookNamespace:   r.WebhookNamespace,
+		webhookServiceName: r.WebhookServiceName,
+		webhookCABundle:    r.WebhookCABundle,
 	}
 
 	if kmc.Spec.KubeconfigRef != nil {

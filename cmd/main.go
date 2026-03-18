@@ -379,12 +379,27 @@ func isControllerEnabled(controllerName string) bool {
 
 func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, opts capictrl.Options) {
 	_ = mgr.AddReadyzCheck("webhook-check", mgr.GetWebhookServer().StartedChecker())
+
+	mgr.GetWebhookServer().Register(controller.PodIngressMutatorPath, &controller.PodIngressMutatorHandler{})
+	// Read the webhook serving CA from the cert directory mounted by controller-runtime.
+	// Child clusters embed this bundle in their MutatingWebhookConfiguration so their API
+	// server can verify our TLS cert when calling back for pod mutation.
+	webhookNamespace := os.Getenv("POD_NAMESPACE")
+	webhookServiceName := os.Getenv("WEBHOOK_SERVICE_NAME")
+	webhookCABundle, err := os.ReadFile("/tmp/k8s-webhook-server/serving-certs/tls.crt")
+	if err != nil {
+		setupLog.Info("webhook serving certs not found, pod-ingress mutator disabled", "err", err)
+	}
+
 	if err := (&controller.ClusterReconciler{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		ClientSet:  clientSet,
-		RESTConfig: restConfig,
-		Recorder:   mgr.GetEventRecorderFor("cluster-reconciler"),
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		ClientSet:          clientSet,
+		RESTConfig:         restConfig,
+		Recorder:           mgr.GetEventRecorderFor("cluster-reconciler"),
+		WebhookNamespace:   webhookNamespace,
+		WebhookServiceName: webhookServiceName,
+		WebhookCABundle:    webhookCABundle,
 	}).SetupWithManager(mgr, opts); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "K0smotronCluster")
 		os.Exit(1)
