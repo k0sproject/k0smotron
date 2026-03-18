@@ -114,3 +114,15 @@ replacements:
       group: cert-manager.io
       kind: Certificate
       version: v1
+- source:
+    fieldPath: .metadata.name
+    kind: Service
+    name: webhook-service
+    version: v1
+  targets:
+  - fieldPaths:
+    - .spec.template.spec.containers.[name=manager].env.[name=WEBHOOK_SERVICE_NAME].value
+    options:
+      create: true
+    select:
+      kind: Deployment
