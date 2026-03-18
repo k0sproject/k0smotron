@@ -137,13 +137,6 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	if rm.ObjectMeta.DeletionTimestamp.IsZero() {
-		defer func() {
-			// Always update the RemoteMachine status with the phase the state machine is in
-			if err := rmPatchHelper.Patch(ctx, rm); err != nil {
-				log.Error(err, "Failed to update RemoteMachine status")
-			}
-		}()
-
 		if rm.Spec.Pool != "" {
 			err := r.reservePooledMachine(ctx, rm)
 			if err != nil {
@@ -178,6 +171,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		// Bail out early if surrounding objects are not ready
 		if annotations.IsPaused(cluster, rm) {
 			log.Info("Cluster is paused, skipping RemoteMachine reconciliation")
+			return ctrl.Result{}, nil
 		}
 
 		if !conditions.IsTrue(cluster, clusterv1.ClusterInfrastructureReadyCondition) {
@@ -186,6 +180,13 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		if rm.Spec.ProviderID != "" {
+			if !rm.Status.Ready {
+				rm.Status.Ready = true
+				if err := rmPatchHelper.Patch(ctx, rm); err != nil {
+					log.Error(err, "Failed to update RemoteMachine status")
+					return ctrl.Result{}, err
+				}
+			}
 			log.Info("RemoteMachine already has ProviderID, skipping reconciliation")
 			return ctrl.Result{}, nil
 		}
@@ -263,7 +264,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
+	provCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// Running a goroutine to monitor if the RemoteMachine gets deleted during provisioning. This way we can delete
@@ -276,11 +277,11 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-provCtx.Done():
 				return
 			case <-ticker.C:
 				updatedRemoteMachine := &infrastructure.RemoteMachine{}
-				if err := r.Get(ctx, client.ObjectKeyFromObject(rm), updatedRemoteMachine); err == nil &&
+				if err := r.Get(provCtx, client.ObjectKeyFromObject(rm), updatedRemoteMachine); err == nil &&
 					!updatedRemoteMachine.DeletionTimestamp.IsZero() {
 					log.Info("Cancelling Bootstrap because the underlying machine has been deleted")
 					cancel()
@@ -291,7 +292,6 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}()
 
 	defer func() {
-		log.Info("Reconcile complete")
 		if err != nil {
 			rm.Status.FailureReason = "ProvisionFailed"
 			rm.Status.FailureMessage = err.Error()
@@ -302,12 +302,12 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 			rm.Status.Ready = true
 		}
 		log.Info(fmt.Sprintf("Updating RemoteMachine status: %+v", rm.Status))
-		if err := rmPatchHelper.Patch(ctx, rm); err != nil {
-			log.Error(err, "Failed to update RemoteMachine status")
+		if patchErr := rmPatchHelper.Patch(ctx, rm); patchErr != nil {
+			log.Error(patchErr, "Failed to update RemoteMachine status")
 		}
 	}()
 
-	err = p.Provision(ctx)
+	err = p.Provision(provCtx)
 	if err != nil {
 		log.Error(err, "Failed to provision RemoteMachine")
 		return ctrl.Result{}, err
