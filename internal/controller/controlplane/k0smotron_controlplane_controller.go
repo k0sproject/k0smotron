@@ -26,6 +26,7 @@ import (
 
 	"github.com/imdario/mergo"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -377,7 +378,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		kcp.Spec.ExternalAddress = foundCluster.Spec.ExternalAddress
 	}
 
-	isClusterSpecSynced, err := isClusterSpecSynced(foundCluster.Spec, kcp.Spec)
+	isClusterSpecSynced, err := isClusterSpecSynced(foundCluster, kcp.Spec)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error comparing cluster spec between k0smotron.Cluster and k0smotronControlPlane: %w", err)
 	}
@@ -398,7 +399,9 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 
 // isClusterSpecSynced compares ClusterSpecs while accounting for expected changes. The K0smotron Cluster controller may add additional data to the spec,
 // so we need to account for that possibility where appropriate.
-func isClusterSpecSynced(kmcSpec, kcpSpec kapi.ClusterSpec) (bool, error) {
+func isClusterSpecSynced(kmc kapi.Cluster, kcpSpec kapi.ClusterSpec) (bool, error) {
+	kmcSpec := kmc.Spec
+
 	overridenKmcSpec := kmcSpec.DeepCopy()
 	// The definition in K0smotronControlPlane takes precedence, as the K0smotron Cluster is created based on it. For this reason, mergo.WithOverride is
 	// used to ensure those values override existing ones.
@@ -410,6 +413,26 @@ func isClusterSpecSynced(kmcSpec, kcpSpec kapi.ClusterSpec) (bool, error) {
 	// certificate references based on the original Cluster definition.
 	overridenKmcSpec.CertificateRefs = kmcSpec.CertificateRefs
 
+	// K0smotron Cluster controller will add additional a manifest for the endpoint configmap. Therefore, we explicitly add the manifest to avoid differences.
+	isEndpointConfigMapInManifests := false
+	for _, manifest := range overridenKmcSpec.Manifests {
+		if manifest.Name == kmc.GetEndpointConfigMapName() {
+			isEndpointConfigMapInManifests = true
+			break
+		}
+	}
+	if !isEndpointConfigMapInManifests {
+		overridenKmcSpec.Manifests = append(overridenKmcSpec.Manifests, v1.Volume{
+			Name: kmc.GetEndpointConfigMapName(),
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: kmc.GetEndpointConfigMapName(),
+					},
+				},
+			},
+		})
+	}
 	// K0smotron Cluster controller will add additional SANs, such as those related to the externaladdress or to the service that exposes the controlplanes.
 	// Therefore, we explicitly reset the SANs references based on the original Cluster definition.
 	if kmcSpec.K0sConfig != nil {

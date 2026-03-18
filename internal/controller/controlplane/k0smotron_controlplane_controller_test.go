@@ -8,10 +8,17 @@ import (
 	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestIsClusterSpecSynced(t *testing.T) {
+	kmc := kapi.Cluster{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "test",
+		},
+	}
 	testCases := []struct {
 		name     string
 		kmcSpec  kapi.ClusterSpec
@@ -21,6 +28,29 @@ func TestIsClusterSpecSynced(t *testing.T) {
 		{
 			name: "cluster spec is synced",
 			kmcSpec: kapi.ClusterSpec{
+				Manifests: []corev1.Volume{
+					{
+						Name: "manifest-1",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: "manifest-configmap-1",
+								},
+							},
+						},
+					},
+					// Simulate the manifest volume created by the controller.
+					{
+						Name: kmc.GetEndpointConfigMapName(),
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: kmc.GetEndpointConfigMapName(),
+								},
+							},
+						},
+					},
+				},
 				CertificateRefs: []kapi.CertificateRef{
 					{
 						Type: "cert-type-1",
@@ -78,6 +108,18 @@ func TestIsClusterSpecSynced(t *testing.T) {
 					{
 						Type: "cert-type-2",
 						Name: "cert-name-2",
+					},
+				},
+				Manifests: []corev1.Volume{
+					{
+						Name: "manifest-1",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: "manifest-configmap-1",
+								},
+							},
+						},
 					},
 				},
 				K0sConfig: &unstructured.Unstructured{
@@ -195,7 +237,8 @@ func TestIsClusterSpecSynced(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := isClusterSpecSynced(tc.kmcSpec, tc.kcpSpec)
+			kmc.Spec = tc.kmcSpec
+			result, err := isClusterSpecSynced(kmc, tc.kcpSpec)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.expected, result)
 		})
