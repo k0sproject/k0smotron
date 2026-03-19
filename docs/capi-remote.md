@@ -41,7 +41,7 @@ metadata:
   name: remote-test
   namespace: default
 spec:
-  version: v1.27.2-k0s.0
+  version: v1.34.3-k0s.0
   persistence:
     type: emptyDir
   service:
@@ -85,7 +85,7 @@ metadata:
   name: remote-test-0
   namespace: default
 spec:
-  version: v1.27.2+k0s.0
+  version: v1.34.3+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteMachine
@@ -159,7 +159,7 @@ metadata:
   name: remote-test
 spec:
   replicas: 1
-  version: v1.27.1+k0s.0
+  version: v1.34.3+k0s.0
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
@@ -210,7 +210,7 @@ When CAPI controller creates a `RemoteMachine` from template object for the `K0s
 
 ### Using Sudo for Commands
 
-When connecting to remote machines, you may need to execute commands with elevated privileges. 
+When connecting to remote machines, you may need to execute commands with elevated privileges.
 The `useSudo` field allows k0smotron to wrap all executed commands with `sudo`. This is particularly useful when the SSH user doesn't have root privileges but has sudo access:
 
 ```yaml
