@@ -160,6 +160,7 @@ generate-e2e-templates-main: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-ingress --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-ingress.yaml
+	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-inplace-extension --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-inplace-extension.yaml
 
 AWS_TEMPLATES := e2e/data/infrastructure-aws
 
@@ -256,6 +257,12 @@ release-standalone: manifests-standalone kustomize ## Generate install yaml for 
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/standalone > install-standalone.yaml
 	git checkout config/manager/kustomization.yaml
+
+.PHONY: release-extension-webhook
+release-extension-webhook: docker-build kustomize
+	cd extensions/config/webhook && $(KUSTOMIZE) edit set image extension-webhook=${IMG}
+	$(KUSTOMIZE) build extensions/config/default > extension-webhook-install.yaml
+	git checkout extensions/config/webhook/kustomization.yaml
 
 bootstrap-components.yaml: $(CONTROLLER_GEN) manifests-bootstrap kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
