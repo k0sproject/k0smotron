@@ -34,7 +34,7 @@ func (c ClusterValidator) ValidateCreate(_ context.Context, obj runtime.Object) 
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
 func (c ClusterValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	_, ok := oldObj.(*Cluster)
+	oldKmc, ok := oldObj.(*Cluster)
 	if !ok {
 		return nil, fmt.Errorf("expected a Cluster object but got %T", oldObj)
 	}
@@ -42,6 +42,14 @@ func (c ClusterValidator) ValidateUpdate(_ context.Context, oldObj, newObj runti
 	kmc, ok := newObj.(*Cluster)
 	if !ok {
 		return nil, fmt.Errorf("expected a Cluster object but got %T", newObj)
+	}
+
+	// This doesn't prevent running kubectl scale command, but better than nothing
+	if kmc.Spec.Storage.Type == StorageTypeNATS && oldKmc.Spec.Replicas != kmc.Spec.Replicas {
+		return warnings, fmt.Errorf("NATS storage does not support scaling, replicas cannot be changed from %d to %d. "+
+			"Please back up your data, update NATS cluster configuration, and recreate your cluster",
+			oldKmc.Spec.Replicas,
+			kmc.Spec.Replicas)
 	}
 
 	return c.ValidateClusterSpec(&kmc.Spec)
