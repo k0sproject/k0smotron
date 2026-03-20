@@ -3,6 +3,7 @@
 package controlplane
 
 import (
+	"fmt"
 	"testing"
 
 	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -14,9 +15,17 @@ import (
 )
 
 func TestIsClusterSpecSynced(t *testing.T) {
+	const (
+		withAnnotation    = "with annotation"
+		withoutAnnotation = "without annotation"
+	)
+
 	kmc := kapi.Cluster{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "test",
+			Annotations: map[string]string{
+				AnnotationKeyClusterSpecHash: "649db68cc5",
+			},
 		},
 	}
 	testCases := []struct {
@@ -235,14 +244,24 @@ func TestIsClusterSpecSynced(t *testing.T) {
 			expected: false,
 		},
 	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			kmc.Spec = tc.kmcSpec
-			result, err := isClusterSpecSynced(kmc, tc.kcpSpec)
-			require.NoError(t, err)
-			require.EqualValues(t, tc.expected, result)
-		})
+	for _, mode := range []string{withAnnotation, withoutAnnotation} {
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				if mode == withoutAnnotation {
+					delete(kmc.GetAnnotations(), AnnotationKeyClusterSpecHash)
+				}
+				tc.name = fmt.Sprintf("%s - %s", tc.name, mode)
+				kmc.Spec = tc.kmcSpec
+				result, kcpSpecHash, err := isClusterSpecSynced(kmc, tc.kcpSpec)
+				require.NoError(t, err)
+				require.EqualValues(t, tc.expected, result)
+				if mode == withAnnotation {
+					require.EqualValues(t, tc.expected, kcpSpecHash == kmc.GetAnnotations()[AnnotationKeyClusterSpecHash])
+				}
+			})
+		}
 	}
+
 }
 
 func Test_alignToSpecVersionFormat(t *testing.T) {

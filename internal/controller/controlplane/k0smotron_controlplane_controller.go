@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"reflect"
 	"strings"
 	"time"
@@ -31,16 +32,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	crcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	hashutil "k8s.io/kubernetes/pkg/util/hash"
 	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -67,7 +70,13 @@ const (
 
 	// AnnotationValueManagedByK0smotron is the value for the managed-by annotation
 	AnnotationValueManagedByK0smotron = "k0smotron"
+
+	// AnnotationKeyClusterSpecHash is the annotation key used to store the hash of the desired cluster specification. This
+	// is used to detect changes in the specification.
+	AnnotationKeyClusterSpecHash = "k0smotron.io/cluster-spec-hash"
 )
+
+var currentSpec kapi.ClusterSpec
 
 // K0smotronController is the controller for K0smotronControlPlane objects.
 type K0smotronController struct {
@@ -351,6 +360,9 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 			Labels: map[string]string{
 				clusterv1.ClusterNameLabel: cluster.Name,
 			},
+			Annotations: map[string]string{
+				AnnotationKeyClusterSpecHash: generateClusterSpecHashWithoutExternalAddress(kcp.Spec),
+			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: cpv1beta1.GroupVersion.String(),
@@ -366,6 +378,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	var foundCluster kapi.Cluster
 	err = c.Client.Get(ctx, types.NamespacedName{Name: desiredK0smotronCluster.Name, Namespace: desiredK0smotronCluster.Namespace}, &foundCluster)
 	if err != nil && apierrors.IsNotFound(err) {
+		currentSpec = *kcp.Spec.DeepCopy()
 		if err := c.Client.Create(ctx, &desiredK0smotronCluster); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -378,7 +391,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		kcp.Spec.ExternalAddress = foundCluster.Spec.ExternalAddress
 	}
 
-	isClusterSpecSynced, err := isClusterSpecSynced(foundCluster, kcp.Spec)
+	isClusterSpecSynced, kcpSpecHash, err := isClusterSpecSynced(foundCluster, kcp.Spec)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error comparing cluster spec between k0smotron.Cluster and k0smotronControlPlane: %w", err)
 	}
@@ -387,6 +400,12 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		if err != nil {
 			return ctrl.Result{}, err
 		}
+
+		// update annotation with the new spec hash
+		if foundCluster.Annotations == nil {
+			foundCluster.Annotations = make(map[string]string)
+		}
+		foundCluster.Annotations[AnnotationKeyClusterSpecHash] = kcpSpecHash
 
 		// Modidy current Cluster specification with the desired one.
 		foundCluster.Spec = kcp.Spec
@@ -397,17 +416,38 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	return ctrl.Result{}, nil
 }
 
-// isClusterSpecSynced compares ClusterSpecs while accounting for expected changes. The K0smotron Cluster controller may add additional data to the spec,
-// so we need to account for that possibility where appropriate.
-func isClusterSpecSynced(kmc kapi.Cluster, kcpSpec kapi.ClusterSpec) (bool, error) {
-	kmcSpec := kmc.Spec
+// isClusterSpecSynced compares the Cluster specification in the K0smotronControlPlane with the one in the K0smotron Cluster and returns true if they are equal, false otherwise.
+// The comparison is done by first checking the hash of the specification stored in the annotation, if present. If the annotation is not present, it falls back to a deprecated
+// logic that compares the specs while ignoring the fields that are expected to be modified by the K0smotron Cluster controller.
+func isClusterSpecSynced(kmc kapi.Cluster, kcpSpec kapi.ClusterSpec) (isSynced bool, kcpSpecHash string, err error) {
+	kcpSpecHash = generateClusterSpecHashWithoutExternalAddress(kcpSpec)
+	// Use the hash annotation if present, as it is the most reliable way to detect spec changes.
+	if clusterSpecHash, ok := kmc.GetAnnotations()[AnnotationKeyClusterSpecHash]; ok {
+		// Compare separately at the ExternalAddress because it is a field that is expected to be updated by the controller after the creation of the Cluster, so it is not
+		// included in the spec hash.
+		if kmc.Spec.ExternalAddress == kcpSpec.ExternalAddress {
+			// Cluster configuration is consider as synced if the hash of the desired specification matches the hash stored in the annotation in the cluster,
+			// which was generated based on the desired specification at the time the last update was made to the cluster.
+			if kcpSpecHash == clusterSpecHash {
+				return true, kcpSpecHash, nil
+			}
+		}
 
+		return false, kcpSpecHash, nil
+	}
+
+	// Deprecated fallback logic: if the annotation is not present, we compare the specs while ignoring the fields that are expected to be modified
+	// by the K0smotron Cluster controller.
+	// TODO: Remove this logic in a future release once we are confident all existing clusters have the annotation available or at least we gave enough
+	// time for the annotation to be added in all clusters.
+
+	kmcSpec := kmc.Spec
 	overridenKmcSpec := kmcSpec.DeepCopy()
 	// The definition in K0smotronControlPlane takes precedence, as the K0smotron Cluster is created based on it. For this reason, mergo.WithOverride is
 	// used to ensure those values override existing ones.
-	err := mergo.Merge(overridenKmcSpec, kcpSpec, mergo.WithOverride)
+	err = mergo.Merge(overridenKmcSpec, kcpSpec, mergo.WithOverride)
 	if err != nil {
-		return false, err
+		return false, kcpSpecHash, err
 	}
 	// K0smotron Cluster controller can add additional certificate references, such as 'apiserver-etcd-client'. Therefore, we explicitly reset the
 	// certificate references based on the original Cluster definition.
@@ -440,12 +480,12 @@ func isClusterSpecSynced(kmc kapi.Cluster, kcpSpec kapi.ClusterSpec) (bool, erro
 		if found && err == nil {
 			err = unstructured.SetNestedField(overridenKmcSpec.K0sConfig.Object, kmcSans, "spec", "api", "sans")
 			if err != nil {
-				return false, fmt.Errorf("failed to set api.sans in K0smotronCluster spec: %w", err)
+				return false, kcpSpecHash, fmt.Errorf("failed to set api.sans in K0smotronCluster spec: %w", err)
 			}
 		}
 	}
 
-	return reflect.DeepEqual(kmcSpec, *overridenKmcSpec), nil
+	return reflect.DeepEqual(kmcSpec, *overridenKmcSpec), kcpSpecHash, nil
 }
 
 func ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta1.K0smotronControlPlane, scope *kmcScope) error {
@@ -752,8 +792,19 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta1.K0
 	return kmcScope, nil
 }
 
+// generateClusterSpecHashWithoutExternalAddress generates a hash of the ClusterSpec. The ExternalAddress field is excluded from the hash generation
+// as the initial configuration'snapshot' may not contain the ExternalAddress, which is expected to be updated by the controller after the Cluster
+// creation and must not be a reason to mark the specs as not synced.
+func generateClusterSpecHashWithoutExternalAddress(spec kapi.ClusterSpec) string {
+	normalizedSpec := spec.DeepCopy()
+	normalizedSpec.ExternalAddress = ""
+	hasher := fnv.New32a()
+	hashutil.DeepHashObject(hasher, normalizedSpec)
+	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))
+}
+
 // SetupWithManager sets up the controller with the Manager.
-func (c *K0smotronController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
+func (c *K0smotronController) SetupWithManager(mgr ctrl.Manager, opts crcontroller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&cpv1beta1.K0smotronControlPlane{}).
