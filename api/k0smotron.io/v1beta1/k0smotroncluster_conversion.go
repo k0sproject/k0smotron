@@ -82,15 +82,8 @@ func ClusterSpecToV2(spec ClusterSpec) v2.ClusterSpec {
 }
 
 // ClusterSpecFromV2 converts a v1beta2 ClusterSpec to a v1beta1 ClusterSpec.
-// NATS storage type has no equivalent in v1beta1 and is silently dropped.
+// NATS storage type and Patches have no equivalent in v1beta1 and are silently dropped.
 func ClusterSpecFromV2(src v2.ClusterSpec) (ClusterSpec, error) {
-	if src.Storage.Type == v2.StorageTypeNATS {
-		return ClusterSpec{}, fmt.Errorf("cluster.k0smotron.io/v1beta1 doesn't support storage type NATS")
-	}
-	if src.Patches != nil {
-		return ClusterSpec{}, fmt.Errorf("cluster.k0smotron.io/v1beta1 doesn't support 'patches' feature")
-	}
-
 	spec := ClusterSpec{
 		KubeconfigRef:             src.KubeconfigRef,
 		Replicas:                  src.Replicas,
