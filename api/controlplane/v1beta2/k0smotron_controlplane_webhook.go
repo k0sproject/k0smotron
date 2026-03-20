@@ -89,10 +89,11 @@ func (v *K0smotronControlPlaneValidator) ValidateUpdate(_ context.Context, oldOb
 		}
 	}
 
-	_, err := v.validate(newKCP)
+	specWarnings, err := v.cv.ValidateClusterSpecUpdate(&oldKCP.Spec, &newKCP.Spec)
 	if err != nil {
 		return warnings, err
 	}
+	warnings = append(warnings, specWarnings...)
 
 	return warnings, nil
 }
