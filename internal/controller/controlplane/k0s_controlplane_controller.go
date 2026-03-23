@@ -44,6 +44,7 @@ import (
 	"k8s.io/utils/ptr"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/certs"
@@ -68,10 +69,8 @@ const (
 )
 
 var (
-	// ErrNotReady is used to indicate that the control plane is not ready yet.
-	ErrNotReady = fmt.Errorf("waiting for the state")
 	// ErrNewMachinesNotReady is used to indicate that the new machines are not ready yet.
-	ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines: %w", ErrNotReady)
+	ErrNewMachinesNotReady = fmt.Errorf("waiting for new machines: %w", util.ErrNotReady)
 	// FRPTokenNameTemplate is the template for the name of the secret that contains the FRP token.
 	FRPTokenNameTemplate = "%s-frp-token"
 	// FRPConfigMapNameTemplate is the template for the name of the ConfigMap that contains the FRP configuration.
@@ -87,6 +86,7 @@ var (
 type K0sController struct {
 	client.Client
 	SecretCachingClient client.Client
+	ClusterCache        clustercache.ClusterCache
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
 	// workloadClusterKubeClient is used during testing to inject a fake client
@@ -218,7 +218,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 	err = c.reconcile(ctx, cluster, kcp)
 	if err != nil {
-		if errors.Is(err, ErrNotReady) {
+		if errors.Is(err, util.ErrNotReady) {
 			return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
 		}
 		return res, err
@@ -232,7 +232,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
 
 	if cluster.Spec.ControlPlaneEndpoint.IsZero() {
-		return fmt.Errorf("control plane endpoint is not set: %w", ErrNotReady)
+		return fmt.Errorf("control plane endpoint is not set: %w", util.ErrNotReady)
 	}
 
 	kubeconfigSecrets := []*corev1.Secret{}
@@ -299,8 +299,9 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 					if err != nil {
 						return err
 					}
+				} else {
+					return err
 				}
-				return err
 			}
 			kubeconfigSecrets = append(kubeconfigSecrets, proxiedKubeconfig)
 
@@ -320,8 +321,9 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 					if err != nil {
 						return err
 					}
+				} else {
+					return err
 				}
-				return err
 			}
 			kubeconfigSecrets = append(kubeconfigSecrets, tunneledKubeconfig)
 		}
@@ -453,7 +455,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 				}
 			}
 		} else {
-			kubeClient, err := c.getKubeClient(ctx, cluster)
+			kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
 			if err != nil {
 				return fmt.Errorf("error getting cluster client set for machine update: %w", err)
 			}
@@ -505,7 +507,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		for _, mn := range deletedMachines.Names() {
 			if name == mn {
 				logger.Info("machine is being deleted, requeue", "machine", mn)
-				return ErrNotReady
+				return util.ErrNotReady
 			}
 		}
 		// If it is not the first machine to create, wait for the previous machine to be created to avoid etcd issues
@@ -576,7 +578,7 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 	logger := log.FromContext(ctx)
 
 	if ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
-		kubeClient, err := c.getKubeClient(ctx, cluster)
+		kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
 		if err != nil {
 			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
 		}
@@ -643,7 +645,7 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 }
 
 func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName string, cluster *clusterv1.Cluster) error {
-	kubeClient, err := c.getKubeClient(ctx, cluster)
+	kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
 	if err != nil {
 		return fmt.Errorf("error getting cluster client set for machine update: %w", err)
 	}
@@ -675,7 +677,8 @@ func (c *K0sController) ensureCertificates(ctx context.Context, cluster *cluster
 }
 
 func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
+
 	if kcp.Spec.K0sConfigSpec.K0s != nil {
 		nllbEnabled, found, err := unstructured.NestedBool(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
@@ -712,11 +715,18 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 			}
 		}
 
-		// Reconcile the dynamic config
-		dErr := kutil.ReconcileDynamicConfig(ctx, client.ObjectKeyFromObject(cluster), c.Client, *kcp.Spec.K0sConfigSpec.K0s.DeepCopy(), kcp)
-		if dErr != nil {
-			// Don't return error from dynamic config reconciliation, as it may not be created yet
-			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")
+		workloadClient, err := util.GetControllerRuntimeClient(ctx, c.Client, c.ClusterCache, kcp, client.ObjectKeyFromObject(cluster))
+		if err != nil {
+			if errors.Is(err, util.ErrNotReady) {
+				return nil
+			}
+
+			return fmt.Errorf("error getting workload cluster client: %w", err)
+		}
+
+		err = kutil.ReconcileDynamicConfig(ctx, workloadClient, *kcp.Spec.K0sConfigSpec.K0s.DeepCopy())
+		if err != nil {
+			logger.Error(err, "Failed to reconcile dynamic config, will retry")
 		}
 	}
 

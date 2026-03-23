@@ -38,8 +38,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	crcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -83,6 +83,7 @@ var currentSpec kapi.ClusterSpec
 type K0smotronController struct {
 	client.Client
 	SecretCachingClient client.Client
+	ClusterCache        clustercache.ClusterCache
 	Scheme              *runtime.Scheme
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
@@ -187,7 +188,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	defer func() {
 		derr := c.computeStatus(ctx, cluster, kcp, kmcScope)
 		if derr != nil {
-			if errors.Is(derr, ErrNotReady) {
+			if errors.Is(derr, util.ErrNotReady) {
 				res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
 			} else {
 				log.Error(derr, "Failed to update K0smotronControlPlane status")
@@ -593,7 +594,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	if unavailableReplicas > 0 ||
 		desiredVersion.String() != kcp.Status.Version ||
 		!conditions.IsTrue(kcp, string(cpv1beta2.ControlPlaneAvailableCondition)) {
-		return ErrNotReady
+		return util.ErrNotReady
 	}
 
 	return nil
@@ -635,9 +636,9 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	logger.Info("Pinging the workload cluster API")
 
 	// Get the CAPI cluster accessor
-	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
+	client, err := c.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(cluster))
 	if err != nil {
-		logger.Info("Failed to create cluster client", "error", err)
+		logger.Info("Failed to get cluster client", "error", err)
 		conditions.Set(kcp, metav1.Condition{
 			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
 			Status:  metav1.ConditionFalse,
