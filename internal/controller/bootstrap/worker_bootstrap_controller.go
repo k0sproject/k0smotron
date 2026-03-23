@@ -34,8 +34,8 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -66,6 +66,7 @@ const (
 type Controller struct {
 	client.Client
 	SecretCachingClient client.Client
+	ClusterCache        clustercache.ClusterCache
 	Scheme              *runtime.Scheme
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
@@ -357,10 +358,10 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 
 func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
 	// Check if the workload cluster client is already set. This client is used for testing purposes to inject a fake client.
-	client := r.workloadClusterClient
-	if client == nil {
+	wcClient := r.workloadClusterClient
+	if wcClient == nil {
 		var err error
-		client, err = remote.NewClusterClient(ctx, "k0smotron", r.Client, capiutil.ObjectKey(scope.Cluster))
+		wcClient, err = r.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(scope.Cluster))
 		if err != nil {
 			return "", fmt.Errorf("failed to create child cluster client: %w", err)
 		}
@@ -370,7 +371,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	tokenID := kutil.RandomString(6)
 	tokenSecret := kutil.RandomString(16)
 	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
-	if err := client.Create(ctx, &corev1.Secret{
+	if err := wcClient.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("bootstrap-token-%s", tokenID),
 			Namespace: "kube-system",

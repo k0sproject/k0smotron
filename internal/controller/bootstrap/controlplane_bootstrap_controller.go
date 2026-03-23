@@ -41,8 +41,8 @@ import (
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
@@ -66,6 +66,7 @@ import (
 type ControlPlaneController struct {
 	client.Client
 	SecretCachingClient client.Client
+	ClusterCache        clustercache.ClusterCache
 	Scheme              *runtime.Scheme
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
@@ -461,7 +462,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
 	tokenKubeSecret := createTokenSecret(tokenID, tokenSecret)
 
-	chCS, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(scope.Cluster))
+	chCS, err := c.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(scope.Cluster))
 	if err != nil {
 		log.Error(err, "Failed to getting child cluster client set")
 		return nil, err

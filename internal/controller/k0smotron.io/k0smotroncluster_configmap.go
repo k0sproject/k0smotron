@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -35,6 +36,7 @@ import (
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/util"
+	capiutil "sigs.k8s.io/cluster-api/util"
 )
 
 const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDER__"
@@ -170,7 +172,12 @@ func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[
 		}
 	}
 
-	return util.ReconcileDynamicConfig(ctx, kmc, c, u)
+	chCS, err := remote.NewClusterClient(ctx, "k0smotron", c, capiutil.ObjectKey(kmc))
+	if err != nil {
+		return fmt.Errorf("failed to create workload cluster client: %w", err)
+	}
+
+	return util.ReconcileDynamicConfig(ctx, chCS, u)
 }
 
 func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {

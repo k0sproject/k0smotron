@@ -31,8 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	"sigs.k8s.io/cluster-api/controllers/remote"
-	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -59,10 +58,16 @@ type replicaStatusComputer interface {
 	compute(*cpv1beta2.K0sControlPlane) error
 }
 
-func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, cluster *clusterv2.Cluster) error {
+func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, cluster *clusterv2.Cluster) (err error) {
 	logger := log.FromContext(ctx)
 
 	defer func() {
+		if err != nil {
+			if errors.Is(err, ErrNotReady) {
+				logger.Info("Skipping availability computation since the control plane is not ready yet")
+				return
+			}
+		}
 		// The availability of a controlplane is computed in the same way regardless of the type of strategy followed for its upgrade.
 		c.computeAvailability(ctx, cluster, kcp, logger)
 	}()
@@ -85,7 +90,7 @@ func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *
 
 	switch kcp.Spec.UpdateStrategy {
 	case cpv1beta2.UpdateInPlace:
-		kc, err := c.getKubeClient(ctx, cluster)
+		kc, err := c.getWorkloadClusterClientset(ctx, cluster)
 		if err != nil {
 			return nil, err
 		}
@@ -312,9 +317,14 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
 	// Get the CAPI cluster accessor
-	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, util.ObjectKey(cluster))
+	client, err := c.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(cluster))
 	if err != nil {
-		logger.Info("Failed to create cluster client", "error", err)
+		if errors.Is(err, clustercache.ErrClusterNotConnected) {
+			logger.Info("Connection to workload cluster is not ready, skipping status availability computation")
+			return
+		}
+
+		logger.Error(err, "Failed to get cluster client")
 		return
 	}
 	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)

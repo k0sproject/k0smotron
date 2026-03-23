@@ -36,6 +36,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -262,10 +263,33 @@ func main() {
 		MaxConcurrentReconciles: concurrency,
 	}
 
+	ctx := ctrl.SetupSignalHandler()
+
+	clusterCache, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
+		SecretClient: secretCachingClient,
+		Cache:        clustercache.CacheOptions{},
+		Client: clustercache.ClientOptions{
+			UserAgent: "k0smotron",
+			Cache: clustercache.ClientCacheOptions{
+				DisableFor: []client.Object{
+					// Don't cache ConfigMaps & Secrets.
+					&corev1.ConfigMap{},
+					&corev1.Secret{},
+				},
+			},
+		},
+	}, ctrlOptions)
+	if err != nil {
+		setupLog.Error(err, "Unable to create ClusterCache")
+		os.Exit(1)
+	}
+
 	if isControllerEnabled(bootstrapController) && runCAPIControllers {
+
 		if err = (&bootstrap.Controller{
 			Client:              mgr.GetClient(),
 			SecretCachingClient: secretCachingClient,
+			ClusterCache:        clusterCache,
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
@@ -276,6 +300,7 @@ func main() {
 		if err = (&bootstrap.ControlPlaneController{
 			Client:              mgr.GetClient(),
 			SecretCachingClient: secretCachingClient,
+			ClusterCache:        clusterCache,
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
@@ -298,6 +323,7 @@ func main() {
 			if err = (&controlplane.K0smotronController{
 				Client:              mgr.GetClient(),
 				SecretCachingClient: secretCachingClient,
+				ClusterCache:        clusterCache,
 				Scheme:              mgr.GetScheme(),
 				ClientSet:           clientSet,
 				RESTConfig:          restConfig,
@@ -309,6 +335,7 @@ func main() {
 			if err = (&controlplane.K0sController{
 				Client:              mgr.GetClient(),
 				SecretCachingClient: secretCachingClient,
+				ClusterCache:        clusterCache,
 				ClientSet:           clientSet,
 				RESTConfig:          restConfig,
 			}).SetupWithManager(mgr, ctrlOptions); err != nil {
@@ -366,9 +393,10 @@ func main() {
 	// as both of them create/update Machines.
 	if runCAPIControllers && (isControllerEnabled(infrastructureController) || isControllerEnabled(bootstrapController)) {
 		if err = (&bootstrap.ProviderIDController{
-			Client:    mgr.GetClient(),
-			Scheme:    mgr.GetScheme(),
-			ClientSet: clientSet,
+			Client:       mgr.GetClient(),
+			Scheme:       mgr.GetScheme(),
+			ClientSet:    clientSet,
+			ClusterCache: clusterCache,
 		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "ProviderID")
 			os.Exit(1)
@@ -385,7 +413,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

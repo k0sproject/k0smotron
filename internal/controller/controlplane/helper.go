@@ -505,10 +505,11 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 }
 
 func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster) error {
-	kubeClient, err := c.getKubeClient(ctx, cluster)
+	kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
 	if err != nil {
-		return fmt.Errorf("error getting kube client: %w", err)
+		return fmt.Errorf("error getting workload cluster client: %w", err)
 	}
+
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
 	if err != nil {
 		return fmt.Errorf("error getting all machines: %w", err)

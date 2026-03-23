@@ -50,6 +50,7 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
@@ -59,6 +60,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
@@ -82,6 +84,7 @@ func TestReconcileReturnErrorWhenOwnerClusterIsMissing(t *testing.T) {
 	r := &K0sController{
 		Client:              testEnv,
 		SecretCachingClient: secretCachingClient,
+		ClusterCache:        clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}),
 	}
 
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
@@ -669,6 +672,10 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 
 	r := &K0sController{
 		Client: testEnv,
+		// We set a ClusterCache with a non-related Cluster accessor to verify to trigger an 'clustercache.ErrClusterNotConnected' error, which should be handled
+		// gracefully by the controller and not cause the reconciliation to fail because it is expected that the workload cluster config reconciliation might not
+		// be complete until the Cluster is fully connected and available.
+		ClusterCache: clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: "another-cluster", Namespace: "another-namespace"}),
 	}
 	err = r.reconcileConfig(ctx, cluster, kcp)
 	require.NoError(t, err)
@@ -727,6 +734,10 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 
 	r := &K0sController{
 		Client: testEnv,
+		// We set a ClusterCache with a non-related Cluster accessor to verify to trigger an 'clustercache.ErrClusterNotConnected' error, which should be handled
+		// gracefully by the controller and not cause the reconciliation to fail because it is expected that the workload cluster config reconciliation might not
+		// be complete until the Cluster is fully connected and available.
+		ClusterCache: clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: "another-cluster", Namespace: "another-namespace"}),
 	}
 	err = r.reconcileConfig(ctx, cluster, kcp)
 	require.NoError(t, err)
@@ -783,6 +794,10 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 
 	r := &K0sController{
 		Client: testEnv,
+		// We set a ClusterCache with a non-related Cluster accessor to verify to trigger an 'clustercache.ErrClusterNotConnected' error, which should be handled
+		// gracefully by the controller and not cause the reconciliation to fail because it is expected that the workload cluster config reconciliation might not
+		// be complete until the Cluster is fully connected and available.
+		ClusterCache: clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: "another-cluster", Namespace: "another-namespace"}),
 	}
 	err = r.reconcileConfig(ctx, cluster, kcp)
 	require.NoError(t, err)
@@ -1519,6 +1534,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 		Client:                    testEnv,
 		workloadClusterKubeClient: kubernetes.New(restClient),
 		SecretCachingClient:       secretCachingClient,
+		ClusterCache:              clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}),
 	}
 
 	_, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
