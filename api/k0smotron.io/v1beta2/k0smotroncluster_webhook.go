@@ -34,7 +34,7 @@ func (c ClusterValidator) ValidateCreate(_ context.Context, obj runtime.Object) 
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
 func (c ClusterValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	_, ok := oldObj.(*Cluster)
+	oldKmc, ok := oldObj.(*Cluster)
 	if !ok {
 		return nil, fmt.Errorf("expected a Cluster object but got %T", oldObj)
 	}
@@ -44,12 +44,25 @@ func (c ClusterValidator) ValidateUpdate(_ context.Context, oldObj, newObj runti
 		return nil, fmt.Errorf("expected a Cluster object but got %T", newObj)
 	}
 
-	return c.ValidateClusterSpec(&kmc.Spec)
+	return c.ValidateClusterSpecUpdate(&oldKmc.Spec, &kmc.Spec)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
 func (c ClusterValidator) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
 	return nil, nil
+}
+
+// ValidateClusterSpecUpdate validates the ClusterSpec during an update and returns any warnings or errors.
+func (c ClusterValidator) ValidateClusterSpecUpdate(oldKCS, kcs *ClusterSpec) (warnings admission.Warnings, err error) {
+	// This doesn't prevent running kubectl scale command, but better than nothing
+	if kcs.Storage.Type == StorageTypeNATS && oldKCS.Replicas != kcs.Replicas {
+		return warnings, fmt.Errorf("NATS storage does not support scaling, replicas cannot be changed from %d to %d. "+
+			"Please back up your data, update NATS cluster configuration, and recreate your cluster",
+			oldKCS.Replicas,
+			kcs.Replicas)
+	}
+
+	return c.ValidateClusterSpec(kcs)
 }
 
 // ValidateClusterSpec validates the ClusterSpec and returns any warnings or errors.

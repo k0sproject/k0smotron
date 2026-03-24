@@ -411,7 +411,10 @@ const (
 	StorageTypeEtcd StorageType = "etcd"
 	// StorageTypeKine defines the kine storage backend type for the k0s control plane.
 	StorageTypeKine StorageType = "kine"
-	// StorageTypeNATS defines the embedded NATS storage backend type for the k0s control plane.
+	// StorageTypeNATS defines the embedded NATS JetStream storage backend.
+	// This is experimental and does not support scaling (replicas must remain fixed after creation).
+	// For production HA use cases, prefer the kine storage type with an external NATS cluster
+	// by setting spec.storage.kine.dataSourceURL to a nats:// URL pointing to your own cluster.
 	StorageTypeNATS StorageType = "nats"
 )
 
