@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"crypto/md5"
 	"fmt"
 	"strings"
 
@@ -154,6 +153,15 @@ func (c *ClusterSpec) GetImage() string {
 	return fmt.Sprintf("%s:%s", c.Image, k0sVersion)
 }
 
+// ClusterStatus defines the observed state of K0smotronCluster
+type ClusterStatus struct {
+	ReconciliationStatus string `json:"reconciliationStatus"`
+	Ready                bool   `json:"ready,omitempty"`
+	Replicas             int32  `json:"replicas,omitempty"`
+	// selector is the label selector for pods that should match the replicas count.
+	Selector string `json:"selector,omitempty"`
+}
+
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
@@ -167,8 +175,8 @@ type Cluster struct {
 
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default={service:{type:NodePort}}
-	Spec   ClusterSpec      `json:"spec,omitempty"`
-	Status v2.ClusterStatus `json:"status,omitempty"`
+	Spec   ClusterSpec   `json:"spec,omitempty"`
+	Status ClusterStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -182,127 +190,4 @@ type ClusterList struct {
 
 func init() {
 	SchemeBuilder.Register(&Cluster{}, &ClusterList{})
-}
-
-// GetStatefulSetName returns the name of the statefulset for the k0s control plane.
-// The name is generated based on the cluster name and is shortened if it exceeds the
-// Kubernetes name length limit.
-func GetStatefulSetName(clusterName string) string {
-	return shortName(fmt.Sprintf("kmc-%s", clusterName))
-}
-
-// GetStatefulSetName returns the name of the statefulset for the k0s control plane.
-func (kmc *Cluster) GetStatefulSetName() string {
-	return GetStatefulSetName(kmc.Name)
-}
-
-// GetEtcdStatefulSetName returns the name of the statefulset for the etcd cluster.
-func (kmc *Cluster) GetEtcdStatefulSetName() string {
-	return kmc.getObjectName("kmc-%s-etcd")
-}
-
-// GetEtcdDefragJobName returns the name of the etcd defragmentation job.
-func (kmc *Cluster) GetEtcdDefragJobName() string {
-	return kmc.getObjectName("kmc-%s-defrag")
-}
-
-// GetAdminConfigSecretName returns the name of the secret containing the admin kubeconfig
-// for the workload cluster.
-func (kmc *Cluster) GetAdminConfigSecretName() string {
-	// This is the form CAPI expects the secret to be named, don't try to shorten it
-	return fmt.Sprintf("%s-kubeconfig", kmc.Name)
-}
-
-// GetEntrypointConfigMapName returns the name of the configmap containing the k0s entrypoint script.
-func (kmc *Cluster) GetEntrypointConfigMapName() string {
-	return kmc.getObjectName("kmc-entrypoint-%s-config")
-}
-
-// GetMonitoringConfigMapName returns the name of the configmap containing the prometheus
-// configuration for monitoring the cluster.
-func (kmc *Cluster) GetMonitoringConfigMapName() string {
-	return kmc.getObjectName("kmc-prometheus-%s-config")
-}
-
-// GetMonitoringNginxConfigMapName returns the name of the configmap containing the nginx
-// configuration for the prometheus sidecar.
-func (kmc *Cluster) GetMonitoringNginxConfigMapName() string {
-	return kmc.getObjectName("kmc-prometheus-%s-config-nginx")
-}
-
-// GetConfigMapName returns the name of the configmap containing the k0s configuration for the cluster.
-func (kmc *Cluster) GetConfigMapName() string {
-	return kmc.getObjectName("kmc-%s-config")
-}
-
-// GetServiceName returns the name of the service for the k0s control plane based on the
-// service type specified in the ClusterSpec.
-func (kmc *Cluster) GetServiceName() string {
-	switch kmc.Spec.Service.Type {
-	case v1.ServiceTypeNodePort:
-		return kmc.GetNodePortServiceName()
-	case v1.ServiceTypeLoadBalancer:
-		return kmc.GetLoadBalancerServiceName()
-	case v1.ServiceTypeClusterIP:
-		return kmc.GetClusterIPServiceName()
-	default:
-		// The list of service types is limited and defined as enum in the CRD, so the default case should never be reached
-		panic("unknown service type")
-	}
-}
-
-// GetClusterIPServiceName returns the name of the service for the k0s control plane
-// when service type is ClusterIP.
-func (kmc *Cluster) GetClusterIPServiceName() string {
-	return kmc.getObjectName("kmc-%s")
-}
-
-// GetEtcdServiceName returns the name of the service for the etcd cluster.
-func (kmc *Cluster) GetEtcdServiceName() string {
-	return kmc.getObjectName("kmc-%s-etcd")
-}
-
-// GetLoadBalancerServiceName returns the name of the service for the k0s control plane
-// when service type is LoadBalancer.
-func (kmc *Cluster) GetLoadBalancerServiceName() string {
-	return kmc.getObjectName("kmc-%s-lb")
-}
-
-// GetNodePortServiceName returns the name of the service for the k0s control plane
-// when service type is NodePort.
-func (kmc *Cluster) GetNodePortServiceName() string {
-	return kmc.getObjectName("kmc-%s-nodeport")
-}
-
-// GetVolumeName returns the name of the volume for the k0s control plane.
-func (kmc *Cluster) GetVolumeName() string {
-	return kmc.getObjectName("kmc-%s")
-}
-
-// GetIngressName returns the name of the ingress resource
-func (kmc *Cluster) GetIngressName() string {
-	return kmc.getObjectName("kmc-%s")
-}
-
-// GetIngressManifestsConfigMapName returns the name of the configmap containing the manifests needed for the ingress
-func (kmc *Cluster) GetIngressManifestsConfigMapName() string {
-	return kmc.getObjectName("kmc-%s-ingress")
-}
-
-// GetEndpointConfigMapName returns the name of the configmap containing the API server endpoint manifest
-func (kmc *Cluster) GetEndpointConfigMapName() string {
-	return kmc.getObjectName("kmc-%s-endpoint")
-}
-
-const kubeNameLengthLimit = 63
-
-func (kmc *Cluster) getObjectName(pattern string) string {
-	return shortName(fmt.Sprintf(pattern, kmc.Name))
-}
-
-func shortName(name string) string {
-	if len(name) > kubeNameLengthLimit {
-		return fmt.Sprintf("%s-%s", name[:kubeNameLengthLimit-6], fmt.Sprintf("%x", md5.Sum([]byte(name)))[:5])
-	}
-	return name
 }
