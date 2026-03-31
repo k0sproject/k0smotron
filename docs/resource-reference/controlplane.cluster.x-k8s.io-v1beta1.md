@@ -2081,6 +2081,8 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         <td>
           Persistence defines the persistence configuration. If empty k0smotron
 will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
+          <br/>
+            <i>Default</i>: map[type:emptyDir]<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10504,15 +10506,6 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>type</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-          <br/>
-            <i>Default</i>: emptyDir<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>autoDeletePVCs</b></td>
         <td>boolean</td>
         <td>
@@ -10533,6 +10526,16 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>object</td>
         <td>
           PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type defines the type of persistence to be used for the k0s control plane.<br/>
+          <br/>
+            <i>Enum</i>: emptyDir, hostPath, pvc<br/>
+            <i>Default</i>: emptyDir<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12228,6 +12231,8 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         <td>
           Persistence defines the persistence configuration. If empty k0smotron
 will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
+          <br/>
+            <i>Default</i>: map[type:emptyDir]<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -20651,15 +20656,6 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>type</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-          <br/>
-            <i>Default</i>: emptyDir<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>autoDeletePVCs</b></td>
         <td>boolean</td>
         <td>
@@ -20680,6 +20676,16 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>object</td>
         <td>
           PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>
+          Type defines the type of persistence to be used for the k0s control plane.<br/>
+          <br/>
+            <i>Enum</i>: emptyDir, hostPath, pvc<br/>
+            <i>Default</i>: emptyDir<br/>
         </td>
         <td>false</td>
       </tr></tbody>
