@@ -67,6 +67,7 @@ type ClusterSpec struct {
 	// Persistence defines the persistence configuration. If empty k0smotron
 	// will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
 	//+kubebuilder:validation:Optional
+	//+kubebuilder:default={"type":"emptyDir"}
 	Persistence PersistenceSpec `json:"persistence,omitempty"`
 	// KineDataSourceURL defines the kine datasource URL.
 	//+kubebuilder:validation:Optional
@@ -292,7 +293,9 @@ type ClusterList struct {
 
 // PersistenceSpec defines the persistence configuration for the k0s control plane.
 type PersistenceSpec struct {
-	//+kubebuilder:validation:Enum:emptyDir;hostPath;pvc
+	// Type defines the type of persistence to be used for the k0s control plane.
+	//+kubebuilder:validation:Enum=emptyDir;hostPath;pvc
+	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=emptyDir
 	Type string `json:"type"`
 	// PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.

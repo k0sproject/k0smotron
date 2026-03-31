@@ -4179,6 +4179,8 @@ spec:
                   type: object
                 type: array
               persistence:
+                default:
+                  type: emptyDir
                 description: |-
                   Persistence defines the persistence configuration. If empty k0smotron
                   will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
@@ -4618,9 +4620,13 @@ spec:
                     type: object
                   type:
                     default: emptyDir
+                    description: Type defines the type of persistence to be used for
+                      the k0s control plane.
+                    enum:
+                    - emptyDir
+                    - hostPath
+                    - pvc
                     type: string
-                required:
-                - type
                 type: object
               replicas:
                 default: 1
