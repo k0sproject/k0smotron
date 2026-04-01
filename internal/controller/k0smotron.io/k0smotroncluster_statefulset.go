@@ -18,6 +18,7 @@ package k0smotronio
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"maps"
 	"reflect"
@@ -36,6 +37,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/kubernetes/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -48,6 +50,7 @@ const (
 )
 
 var versionRegex = regexp.MustCompile(`v\d+.\d+.\d+-k0s.\d+`)
+var invalidVolumeNameCharsRegex = regexp.MustCompile(`[^a-z0-9-]+`)
 
 // findStatefulSetPod returns a first running pod from a StatefulSet
 func findStatefulSetPod(ctx context.Context, statefulSet string, namespace string, clientSet *kubernetes.Clientset) (*v1.Pod, error) {
@@ -253,7 +256,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	}
 
 	for _, file := range kmc.Spec.Mounts {
-		volumeName := strings.Replace(file.Path[1:], "/", "-", -1)
+		volumeName := pathToVolumeName(file.Path)
 		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{Name: volumeName, VolumeSource: file.VolumeSource})
 
 		if file.VolumeSource.ConfigMap != nil || file.VolumeSource.Secret != nil {
@@ -474,6 +477,37 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 			},
 		},
 	})
+}
+
+// pathToVolumeName converts a mount path to a valid Kubernetes volume name (DNS label).
+// For paths that already produce a valid name with the simple transformation (strip leading
+// slash, replace slashes with dashes), that name is returned unchanged for backward
+// compatibility. Otherwise the path is sanitized and a short hash suffix is appended to
+// ensure uniqueness across paths that may collide after sanitization.
+func pathToVolumeName(path string) string {
+	trimmed := strings.TrimPrefix(path, "/")
+	// Try the simple, backward-compatible transformation first.
+	simpleName := strings.ReplaceAll(trimmed, "/", "-")
+	if len(validation.IsDNS1123Label(simpleName)) == 0 {
+		return simpleName
+	}
+
+	// Path needs sanitization (contains dots, underscores, uppercase, etc.).
+	name := strings.ToLower(trimmed)
+	name = invalidVolumeNameCharsRegex.ReplaceAllString(name, "-")
+	name = strings.Trim(name, "-")
+
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(path)))[:5]
+
+	// DNS label max length is 63; reserve 6 chars for "-" + 5-char hash.
+	const maxBase = 57
+	if len(name) > maxBase {
+		name = strings.TrimRight(name[:maxBase], "-")
+	}
+	if name == "" {
+		return hash
+	}
+	return name + "-" + hash
 }
 
 func addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
