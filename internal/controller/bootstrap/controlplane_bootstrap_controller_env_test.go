@@ -379,7 +379,8 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 	}(k0sControllerConfig, cluster, machineForControllerConfig, ns)
 
 	r := &ControlPlaneController{
-		Client: testEnv,
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
 	}
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sControllerConfig)})
