@@ -2081,6 +2081,8 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         <td>
           Persistence defines the persistence configuration. If empty k0smotron
 will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
+          <br/>
+            <i>Default</i>: map[type:emptyDir]<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12229,6 +12231,8 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         <td>
           Persistence defines the persistence configuration. If empty k0smotron
 will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
+          <br/>
+            <i>Default</i>: map[type:emptyDir]<br/>
         </td>
         <td>false</td>
       </tr><tr>

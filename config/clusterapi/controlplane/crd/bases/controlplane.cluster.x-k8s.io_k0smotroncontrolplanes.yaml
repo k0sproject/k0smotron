@@ -4620,13 +4620,9 @@ spec:
                     type: object
                   type:
                     default: emptyDir
-                    description: Type defines the type of persistence to be used for
-                      the k0s control plane.
-                    enum:
-                    - emptyDir
-                    - hostPath
-                    - pvc
                     type: string
+                required:
+                - type
                 type: object
               replicas:
                 default: 1
