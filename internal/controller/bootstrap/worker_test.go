@@ -33,13 +33,13 @@ func Test_createInstallCmd(t *testing.T) {
 	base := "k0s install worker --token-file /etc/k0s.token --labels=k0smotron.io/machine-name=test"
 	tests := []struct {
 		name  string
-		scope *Scope
+		scope *scope
 		want  string
 	}{
 		{
 			name: "with default config",
-			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{},
+			scope: &scope{
+				Config: &bootstrapv1.K0sConfig{},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
 					"metadata": map[string]any{"name": "test"},
 				}}},
@@ -48,9 +48,9 @@ func Test_createInstallCmd(t *testing.T) {
 		},
 		{
 			name: "with args",
-			scope: &Scope{
-				Config: &bootstrapv2.K0sWorkerConfig{
-					Spec: bootstrapv2.K0sWorkerConfigSpec{
+			scope: &scope{
+				Config: &bootstrapv2.K0sConfig{
+					Spec: bootstrapv2.K0sConfigSpec{
 						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
 					},
 				},
@@ -62,9 +62,9 @@ func Test_createInstallCmd(t *testing.T) {
 		},
 		{
 			name: "with useSystemHostname set",
-			scope: &Scope{
-				Config: &bootstrapv2.K0sWorkerConfig{
-					Spec: bootstrapv2.K0sWorkerConfigSpec{
+			scope: &scope{
+				Config: &bootstrapv2.K0sConfig{
+					Spec: bootstrapv2.K0sConfigSpec{
 						UseSystemHostname: true,
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
 					},
@@ -77,9 +77,9 @@ func Test_createInstallCmd(t *testing.T) {
 		},
 		{
 			name: "with extra args and useSystemHostname not set",
-			scope: &Scope{
-				Config: &bootstrapv2.K0sWorkerConfig{
-					Spec: bootstrapv2.K0sWorkerConfigSpec{
+			scope: &scope{
+				Config: &bootstrapv2.K0sConfig{
+					Spec: bootstrapv2.K0sConfigSpec{
 						UseSystemHostname: false,
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
 					},
@@ -92,9 +92,9 @@ func Test_createInstallCmd(t *testing.T) {
 		},
 		{
 			name: "with extra args and useSystemHostname set",
-			scope: &Scope{
-				Config: &bootstrapv2.K0sWorkerConfig{
-					Spec: bootstrapv2.K0sWorkerConfigSpec{
+			scope: &scope{
+				Config: &bootstrapv2.K0sConfig{
+					Spec: bootstrapv2.K0sConfigSpec{
 						UseSystemHostname: true,
 						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
 					},

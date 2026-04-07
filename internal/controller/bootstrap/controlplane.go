@@ -33,329 +33,58 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	"k8s.io/utils/ptr"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/go-logr/logr"
-	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	kutil "github.com/k0sproject/k0smotron/internal/util"
 	"github.com/k0sproject/version"
 )
 
-// ControlPlaneController is responsible for reconciling the K0sControllerConfig resource.
-type ControlPlaneController struct {
-	client.Client
-	SecretCachingClient client.Client
-	Scheme              *runtime.Scheme
-	ClientSet           *kubernetes.Clientset
-	RESTConfig          *rest.Config
-}
-
 var minVersionForETCDMemberCRD = version.MustParse("v1.31.6")
 var errInitialControllerMachineNotInitialize = errors.New("initial controller machine has not completed its initialization")
 
-// ControllerScope contains the information required to generate the bootstrap data
-// for a control plane machine.
-type ControllerScope struct {
-	Config            *bootstrapv2.K0sControllerConfig
-	ConfigOwner       *bsutil.ConfigOwner
-	Cluster           *clusterv1.Cluster
-	WorkerEnabled     bool
-	currentKCPVersion *version.Version
-	machines          collections.Machines
-	provisioner       provisioner.Provisioner
-	installArgs       []string
-}
-
-// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0scontrollerconfigs/status,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status;machines;machines/status,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=exp.cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machinepools;machinepools/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=secrets;events;configmaps,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=*,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
-
-// Reconcile reconciles the K0sControllerConfig resource, which is responsible for generating the
-// bootstrap data for control plane machines.
-func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
-	log := log.FromContext(ctx).WithValues("K0sControllerConfig", req.NamespacedName)
-	log.Info("Reconciling K0sControllerConfig")
-
-	// Lookup the config object
-	config := &bootstrapv2.K0sControllerConfig{}
-	if err := c.Get(ctx, req.NamespacedName, config); err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Info("K0sControllerConfig not found")
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "Failed to get config")
-		return ctrl.Result{}, err
-	}
-
-	// Look up the owner of this config if there is one
-	configOwner, err := bsutil.GetConfigOwner(ctx, c.Client, config)
-	if apierrors.IsNotFound(err) {
-		// Could not find the owner yet, this is not an error and will rereconcile when the owner gets set.
-		log.Info("Owner not found yet, waiting until it is set")
-		return ctrl.Result{}, nil
-	}
-	if err != nil {
-		log.Error(err, "Failed to get owner")
-		return ctrl.Result{}, err
-	}
-	if configOwner == nil {
-		log.Info("Owner is nil, waiting until it is set")
-		return ctrl.Result{}, nil
-	}
-
-	log = log.WithValues("kind", configOwner.GetKind(), "version", configOwner.GetResourceVersion(), "name", configOwner.GetName())
-
-	machine := &clusterv1.Machine{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(configOwner.Object, machine); err != nil {
-		return ctrl.Result{}, fmt.Errorf("error converting %s to Machine: %w", configOwner.GetKind(), err)
-	}
-
-	// If the K0sWorkerConfig does not have a version set, use the machine's version.
-	if config.Spec.Version == "" && machine.Spec.Version != "" {
-		config.Spec.Version = machine.Spec.Version
-	}
-	// If the version does not contain the k0s suffix, append it.
-	if config.Spec.Version != "" && !strings.Contains(config.Spec.Version, "+k0s.") {
-		config.Spec.Version = fmt.Sprintf("%s+%s", config.Spec.Version, defaultK0sSuffix)
-	}
-
-	// Lookup the cluster the config owner is associated with
-	cluster, err := capiutil.GetClusterByName(ctx, c.Client, configOwner.GetNamespace(), configOwner.ClusterName())
-	if err != nil {
-		if errors.Is(err, capiutil.ErrNoCluster) {
-			log.Info(fmt.Sprintf("%s does not belong to a cluster yet, waiting until it's part of a cluster", configOwner.GetKind()))
-			return ctrl.Result{}, nil
-		}
-
-		if apierrors.IsNotFound(err) {
-			log.Info("Cluster does not exist yet, waiting until it is created")
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "Could not get cluster with metadata")
-		return ctrl.Result{}, err
-	}
-
-	if annotations.IsPaused(cluster, config) {
-		log.Info("Reconciliation is paused for this object")
-		return ctrl.Result{}, nil
-	}
-
-	currentKCPVersion, err := version.NewVersion(config.Spec.Version)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("error parsing k0s version: %w", err)
-	}
-
-	scope := &ControllerScope{
-		Config:            config,
-		ConfigOwner:       configOwner,
-		Cluster:           cluster,
-		WorkerEnabled:     false,
-		currentKCPVersion: currentKCPVersion,
-		provisioner:       getProvisioner(&config.Spec.Provisioner),
-		installArgs:       append([]string{}, config.Spec.Args...),
-	}
-
-	for _, arg := range config.Spec.Args {
-		if arg == "--enable-worker" || arg == "--enable-worker=true" || arg == "--single" {
-			scope.WorkerEnabled = true
-			break
-		}
-	}
-
-	if scope.Config.Status.Initialization.DataSecretCreated != nil && *scope.Config.Status.Initialization.DataSecretCreated {
-		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
-		log.Info("Bootstrapdata already created, reconciled succesfully")
-		return ctrl.Result{}, nil
-	}
-
-	patchHelper, err := patch.NewHelper(config, c.Client)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	oldConfig := config.DeepCopy()
-	defer func() {
-		// Always report the status of the bootsrap data secret generation.
-		err := conditions.SetSummaryCondition(config, config, string(bootstrapv2.ConfigReadyCondition),
-			conditions.ForConditionTypes{
-				bootstrapv2.DataSecretAvailableCondition,
-			},
-			// Using a custom merge strategy to override reasons applied during merge and to ignore some
-			// info message so the ready condition aggregation in other resources is less noisy.
-			conditions.CustomMergeStrategy{
-				MergeStrategy: conditions.DefaultMergeStrategy(
-					// Use custom reasons.
-					conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
-						bootstrapv2.ConfigNotReadyReason,
-						bootstrapv2.ConfigReadyUnknownReason,
-						bootstrapv2.ConfigReadyReason,
-					)),
-				),
-			},
-		)
-		if err != nil {
-			log.Error(err, "Failed to set summary condition")
-		}
-
-		config.Spec = oldConfig.Spec
-		err = patchHelper.Patch(ctx, config)
-		if err != nil {
-			log.Error(err, "Failed to patch K0sControllerConfig status")
-		}
-	}()
-
-	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
-		log.Info("control plane endpoint is not set")
-		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv2.DataSecretAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv2.WaitingForControlPlaneInitializationReason,
-			Message: "Control plane endpoint is not set",
-		})
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
-	}
-
-	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
-	if err != nil {
-		err = fmt.Errorf("error collecting machines: %w", err)
-		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv2.DataSecretAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv2.InternalErrorReason,
-			Message: err.Error(),
-		})
-		return ctrl.Result{}, err
-	}
-
-	if machines.Len() == 0 {
-		log.Info("No control plane machines found, waiting for machines to be created")
-		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv2.DataSecretAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv2.WaitingForInfrastructureInitializationReason,
-			Message: "No control plane machines found, waiting for machines to be created",
-		})
-		return ctrl.Result{Requeue: true}, nil
-	}
-	scope.machines = machines
-
-	bootstrapData, err := c.generateBootstrapDataForController(ctx, log, scope)
-	if err != nil {
-		// if the bootstrap data generation corresponds to a controller that is not the initial one, it is common to try to obtain
-		// the IP of the first controller when has not yet been surfaced. This is required to create a join token. It is needed to
-		// wait for the addresses to be set.
-		if errors.Is(err, errInitialControllerMachineNotInitialize) {
-			conditions.Set(config, metav1.Condition{
-				Type:    string(bootstrapv2.DataSecretAvailableCondition),
-				Status:  metav1.ConditionFalse,
-				Reason:  bootstrapv2.WaitingForInfrastructureInitializationReason,
-				Message: err.Error(),
-			})
-			return ctrl.Result{RequeueAfter: time.Second * 30}, nil
-		}
-
-		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv2.DataSecretAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv2.InternalErrorReason,
-			Message: err.Error(),
-		})
-		return ctrl.Result{}, err
-	}
-
-	// Create the secret containing the bootstrap data
-	bootstrapSecret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.Name,
-			Namespace: config.Namespace,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: scope.Cluster.Name,
-				util.ComponentLabel:        util.ComponentBootstrap,
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: bootstrapv2.GroupVersion.String(),
-					Kind:       config.Kind,
-					Name:       config.Name,
-					UID:        config.UID,
-					Controller: ptr.To(true),
-				},
-			},
-		},
-		Data: map[string][]byte{
-			"value":  bootstrapData,
-			"format": []byte(scope.provisioner.GetFormat()),
-		},
-		Type: clusterv1.ClusterSecretType,
-	}
-
-	if err := c.Client.Patch(ctx, bootstrapSecret, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"}); err != nil {
-		log.Error(err, "Failed to patch bootstrap secret")
-		conditions.Set(config, metav1.Condition{
-			Type:    string(bootstrapv2.DataSecretAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  bootstrapv2.InternalErrorReason,
-			Message: err.Error(),
-		})
-		return ctrl.Result{}, err
-	}
-	conditions.Set(config, metav1.Condition{
-		Type:    string(bootstrapv2.DataSecretAvailableCondition),
-		Status:  metav1.ConditionTrue,
-		Reason:  bootstrapv2.ConfigSecretAvailableReason,
-		Message: "Bootstrap secret created",
-	})
-	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
-
-	// Set the status to ready
-	config.Status.Initialization.DataSecretCreated = ptr.To(true)
-	config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
-
-	log.Info("Reconciled succesfully")
-
-	return ctrl.Result{}, nil
-}
-
-func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.Context, log logr.Logger, scope *ControllerScope) ([]byte, error) {
+func (r *Reconciler) generateBootstrapDataForControlPlane(ctx context.Context, scope *scope) ([]byte, error) {
 	var (
 		files      []provisioner.File
 		installCmd string
 		err        error
 	)
 
-	if scope.Config.Spec.K0s != nil {
-		k0sConfigBytes, err := scope.Config.Spec.K0s.MarshalJSON()
+	log := log.FromContext(ctx)
+
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, scope.client, scope.Cluster, collections.ControlPlaneMachines(scope.Cluster.Name), collections.ActiveMachines)
+	if err != nil {
+		err = fmt.Errorf("error collecting machines: %w", err)
+		return nil, err
+	}
+
+	if machines.Len() == 0 {
+		log.Info("No control plane machines found, waiting for machines to be created")
+		return nil, nil
+	}
+	scope.machines = machines
+
+	for _, arg := range scope.Config.Spec.Args {
+		if arg == "--enable-worker" || arg == "--enable-worker=true" || arg == "--single" {
+			scope.WorkerEnabled = true
+			break
+		}
+	}
+
+	scope.installArgs = append([]string{}, scope.Config.Spec.Args...)
+
+	if scope.Config.Spec.ClusterConfig != nil {
+		k0sConfigBytes, err := scope.Config.Spec.ClusterConfig.MarshalJSON()
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling k0s config: %v", err)
 		}
@@ -369,7 +98,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	}
 
 	if scope.machines.Oldest().Name == scope.Config.Name {
-		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
+		files, err = r.genInitialControlPlaneFiles(ctx, scope, files)
 		if err != nil {
 			return nil, fmt.Errorf("error generating initial control plane files: %v", err)
 		}
@@ -380,7 +109,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 			log.Info("wait for initial control plane provisioning")
 			return nil, err
 		}
-		files, err = c.genControlPlaneJoinFiles(ctx, scope, files, oldest)
+		files, err = r.genControlPlaneJoinFiles(ctx, scope, files, oldest)
 		if err != nil {
 			return nil, err
 		}
@@ -388,24 +117,29 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	}
 
 	if scope.Config.Spec.Tunneling.Enabled {
-		tunnelingFiles, err := c.genTunnelingFiles(ctx, scope)
+		tunnelingFiles, err := r.genTunnelingFiles(ctx, scope)
 		if err != nil {
 			return nil, fmt.Errorf("error generating tunneling files: %v", err)
 		}
 		files = append(files, tunnelingFiles...)
 	}
 
-	resolvedFiles, err := resolveFiles(ctx, c.Client, scope.Cluster, scope.Config.Spec.Files)
+	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, scope.Config.Spec.Files)
 	if err != nil {
 		return nil, fmt.Errorf("error extracting the contents of the provided extra files: %w", err)
 	}
 	files = append(files, resolvedFiles...)
 
-	if scope.currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
+	currentKCPVersion, err := version.NewVersion(scope.Config.Spec.Version)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing k0s version: %w", err)
+	}
+
+	if currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
 		files = append(files, genShutdownServiceFiles(getShutdownFilesDir(scope.Config.Spec.WorkingDir), scope.Config.Spec.K0sInstallDir)...)
 	}
 
-	commands, commandsMap, err := c.genK0sCommands(scope, installCmd)
+	commands, commandsMap, err := genK0sCommands(scope, installCmd, currentKCPVersion)
 	if err != nil {
 		return nil, fmt.Errorf("error generating k0s commands: %w", err)
 	}
@@ -418,7 +152,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		vars           map[provisioner.VarName]string
 	)
 	if scope.Config.Spec.Provisioner.CustomUserDataRef != nil {
-		customUserData, err = resolveContentFromFile(ctx, c.Client, scope.Cluster, scope.Config.Spec.Provisioner.CustomUserDataRef)
+		customUserData, err = resolveContentFromFile(ctx, r.Client, scope.Cluster, scope.Config.Spec.Provisioner.CustomUserDataRef)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided custom controller user data: %w", err)
 		}
@@ -433,10 +167,10 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	})
 }
 
-func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File) ([]provisioner.File, error) {
-	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
+func (r *Reconciler) genInitialControlPlaneFiles(ctx context.Context, scope *scope, files []provisioner.File) ([]provisioner.File, error) {
+	log := log.FromContext(ctx).WithValues("K0sConfig cluster", scope.Cluster.Name)
 
-	certs, _, err := c.getCerts(ctx, scope)
+	certs, _, err := r.getCerts(ctx, scope)
 	if err != nil {
 		log.Error(err, "Failed to get certs")
 		return nil, err
@@ -446,10 +180,10 @@ func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context
 	return files, nil
 }
 
-func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File, firstControllerMachine *clusterv1.Machine) ([]provisioner.File, error) {
-	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
+func (r *Reconciler) genControlPlaneJoinFiles(ctx context.Context, scope *scope, files []provisioner.File, firstControllerMachine *clusterv1.Machine) ([]provisioner.File, error) {
+	log := log.FromContext(ctx).WithValues("K0sConfig cluster", scope.Cluster.Name)
 
-	_, ca, err := c.getCerts(ctx, scope)
+	_, ca, err := r.getCerts(ctx, scope)
 	if err != nil {
 		log.Error(err, "Failed to create certs")
 		return nil, err
@@ -461,7 +195,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
 	tokenKubeSecret := createTokenSecret(tokenID, tokenSecret)
 
-	chCS, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(scope.Cluster))
+	chCS, err := remote.NewClusterClient(ctx, "k0smotron", r.Client, capiutil.ObjectKey(scope.Cluster))
 	if err != nil {
 		log.Error(err, "Failed to getting child cluster client set")
 		return nil, err
@@ -473,7 +207,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		return nil, err
 	}
 
-	host, err := c.detectJoinHost(ctx, scope, firstControllerMachine)
+	host, err := r.detectJoinHost(ctx, scope, firstControllerMachine)
 	if err != nil {
 		log.Error(err, "Failed to detect join controller host")
 		return nil, err
@@ -490,10 +224,10 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	return files, err
 }
 
-func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *ControllerScope) ([]provisioner.File, error) {
+func (r *Reconciler) genTunnelingFiles(ctx context.Context, scope *scope) ([]provisioner.File, error) {
 	secretName := scope.Cluster.Name + "-frp-token"
 	frpSecret := corev1.Secret{}
-	err := c.Client.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secretName}, &frpSecret)
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secretName}, &frpSecret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get frp secret: %w", err)
 	}
@@ -579,14 +313,14 @@ spec:
 	}}, nil
 }
 
-func (c *ControlPlaneController) getCerts(ctx context.Context, scope *ControllerScope) ([]provisioner.File, *secret.Certificate, error) {
+func (r *Reconciler) getCerts(ctx context.Context, scope *scope) ([]provisioner.File, *secret.Certificate, error) {
 	var files []provisioner.File
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
 
 	s := &corev1.Secret{}
-	err := c.SecretCachingClient.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secret.Name(scope.Cluster.Name, secret.Kubeconfig)}, s)
+	err := r.SecretCachingClient.Get(ctx, client.ObjectKey{Namespace: scope.Cluster.Namespace, Name: secret.Name(scope.Cluster.Name, secret.Kubeconfig)}, s)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, nil, fmt.Errorf("cluster's kubeconfig secret not found, waiting for secret")
@@ -594,7 +328,7 @@ func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Controller
 		return nil, nil, err
 	}
 
-	err = certificates.LookupCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(scope.Cluster))
+	err = certificates.LookupCached(ctx, r.SecretCachingClient, r.Client, capiutil.ObjectKey(scope.Cluster))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -635,15 +369,7 @@ func createTokenSecret(tokenID, tokenSecret string) *corev1.Secret {
 	}
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (c *ControlPlaneController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		WithOptions(opts).
-		For(&bootstrapv2.K0sControllerConfig{}).
-		Complete(c)
-}
-
-func createCPInstallCmd(scope *ControllerScope) string {
+func createCPInstallCmd(scope *scope) string {
 	k0sPath := filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s")
 	installCmd := []string{
 		fmt.Sprintf("%s install controller", k0sPath),
@@ -657,7 +383,7 @@ func createCPInstallCmd(scope *ControllerScope) string {
 	return strings.Join(installCmd, " ")
 }
 
-func createCPInstallCmdWithJoinToken(scope *ControllerScope, tokenPath string) string {
+func createCPInstallCmdWithJoinToken(scope *scope, tokenPath string) string {
 	k0sPath := filepath.Join(scope.Config.Spec.K0sInstallDir, "k0s")
 	installCmd := []string{
 		fmt.Sprintf("%s install controller", k0sPath),
@@ -672,11 +398,11 @@ func createCPInstallCmdWithJoinToken(scope *ControllerScope, tokenPath string) s
 	return strings.Join(installCmd, " ")
 }
 
-func mergeControllerExtraArgs(scope *ControllerScope) []string {
+func mergeControllerExtraArgs(scope *scope) []string {
 	return mergeExtraArgs(scope.installArgs, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
 }
 
-func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv1.Machine) (string, error) {
+func (r *Reconciler) detectJoinHost(ctx context.Context, scope *scope, firstControllerMachine *clusterv1.Machine) (string, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.TLSClientConfig = &tls.Config{
 		// Since we are using self-signed certificates, we need to skip the verification
@@ -688,7 +414,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 	}
 
 	port := "9443"
-	k0sAPIPort, found, err := unstructured.NestedInt64(scope.Config.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "k0sApiPort")
+	k0sAPIPort, found, err := unstructured.NestedInt64(scope.Config.Spec.ClusterConfig.Object, "spec", "api", "k0sApiPort")
 	if err != nil {
 		return "", fmt.Errorf("error retrieving k0sAPIPort: %w", err)
 	}
@@ -702,7 +428,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		return host, nil
 	}
 
-	firstControllerIP, err := c.findFirstControllerIP(ctx, firstControllerMachine)
+	firstControllerIP, err := r.findFirstControllerIP(ctx, firstControllerMachine)
 	if err != nil {
 		return "", fmt.Errorf("failed to get first controller IP: %w", err)
 	}
@@ -710,7 +436,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 	return fmt.Sprintf("https://%s:%s", firstControllerIP, port), nil
 }
 
-func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv1.Machine) (string, error) {
+func (r *Reconciler) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv1.Machine) (string, error) {
 	extAddr, intIPv4Addr, intAddr := "", "", ""
 	for _, addr := range firstControllerMachine.Status.Addresses {
 		if addr.Type == clusterv1.MachineExternalIP {
@@ -736,7 +462,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 
 	if extAddr == "" && intAddr == "" && intIPv4Addr == "" {
 
-		machineImpl, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, firstControllerMachine.Spec.InfrastructureRef, firstControllerMachine.Namespace)
+		machineImpl, err := external.GetObjectFromContractVersionedRef(ctx, r.Client, firstControllerMachine.Spec.InfrastructureRef, firstControllerMachine.Namespace)
 		if err != nil {
 			return "", fmt.Errorf("error getting machine implementation: %w", err)
 		}
@@ -784,7 +510,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 	return "", fmt.Errorf("no address found for machine %s: %w", name, errInitialControllerMachineNotInitialize)
 }
 
-func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installCmd string) ([]string, map[provisioner.VarName]string, error) {
+func genK0sCommands(scope *scope, installCmd string, currentKCPVersion *version.Version) ([]string, map[provisioner.VarName]string, error) {
 	commandsMap := make(map[provisioner.VarName]string)
 	commands := scope.Config.Spec.PreK0sCommands
 
@@ -795,7 +521,7 @@ func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installC
 	commandsMap[provisioner.VarK0sDownloadCommands] = strings.Join(downloadCommands, " && ")
 	commands = append(commands, downloadCommands...)
 
-	if scope.currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
+	if currentKCPVersion.LessThan(minVersionForETCDMemberCRD) {
 		shutdownFilesDir := getShutdownFilesDir(scope.Config.Spec.WorkingDir)
 		commands = append(commands, fmt.Sprintf("(command -v systemctl > /dev/null 2>&1 && (cp %s/k0sleave.service /etc/systemd/system/k0sleave.service && systemctl daemon-reload && systemctl enable k0sleave.service && systemctl start --no-block k0sleave.service) || true)", shutdownFilesDir))
 		commands = append(commands, fmt.Sprintf("(command -v rc-service > /dev/null 2>&1 && (cp %s/k0sleave-openrc /etc/init.d/k0sleave && rc-update add k0sleave shutdown) || true)", shutdownFilesDir))

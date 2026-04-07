@@ -69,7 +69,7 @@ spec:
         kind: DockerMachineTemplate
         name: docker-md-test
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: K0sWorkerConfigTemplate
 metadata:
   name: docker-md-test

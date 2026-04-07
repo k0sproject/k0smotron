@@ -415,7 +415,7 @@ spec:
                       state of K0sControlPlaneTemplate.
                     properties:
                       k0sConfigSpec:
-                        description: K0sConfigSpec defines the k0s configuration specification.
+                        description: K0sConfigSpec defines the desired state of K0sConfig.
                         properties:
                           args:
                             description: |-
@@ -424,6 +424,12 @@ spec:
                             items:
                               type: string
                             type: array
+                          clusterConfig:
+                            description: |-
+                              K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
+                              If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
                           downloadURL:
                             description: |-
                               DownloadURL specifies the URL from which to download the k0s binary.
@@ -485,12 +491,6 @@ spec:
                                   type: string
                               type: object
                             type: array
-                          k0s:
-                            description: |-
-                              K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
-                              If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
-                            type: object
-                            x-kubernetes-preserve-unknown-fields: true
                           k0sInstallDir:
                             default: /usr/local/bin
                             description: |-
@@ -655,6 +655,13 @@ spec:
                               UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
                               By default, k0smotron will use Machine name as a node name. If true, it will pick it from `hostname` command output.
                             type: boolean
+                          version:
+                            description: |-
+                              Version is the version of k0s to use. In case this is not set, k0smotron will use
+                              a version field of the Machine object. If it's empty, the latest version is used.
+                              Make sure the version is compatible with the k0s version running on the control plane.
+                              For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
+                            type: string
                           workingDir:
                             description: WorkingDir specifies the working directory
                               where k0smotron will place its files.

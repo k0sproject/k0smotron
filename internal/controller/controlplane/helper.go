@@ -138,7 +138,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			FailureDomain: failureDomain,
 			Bootstrap: clusterv1.Bootstrap{
 				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Kind:     "K0sControllerConfig",
+					Kind:     "K0sConfig",
 					Name:     name,
 					APIGroup: bootstrapv2.GroupVersion.Group,
 				},
@@ -160,22 +160,22 @@ func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta2.K0sControlPlane, 
 	}
 
 	if currentKCPVersion.GreaterThanOrEqual(minVersionForETCDName) {
-		if kcpCopy.Spec.K0sConfigSpec.K0s == nil {
-			kcpCopy.Spec.K0sConfigSpec.K0s = &unstructured.Unstructured{
+		if kcpCopy.Spec.K0sConfigSpec.ClusterConfig == nil {
+			kcpCopy.Spec.K0sConfigSpec.ClusterConfig = &unstructured.Unstructured{
 				Object: make(map[string]any),
 			}
 		}
 		// If it is not explicitly indicated to use Kine storage, we use the machine name to name the ETCD member.
-		kineStorage, found, err := unstructured.NestedString(kcpCopy.Spec.K0sConfigSpec.K0s.Object, "spec", "storage", "kine", "dataSource")
+		kineStorage, found, err := unstructured.NestedString(kcpCopy.Spec.K0sConfigSpec.ClusterConfig.Object, "spec", "storage", "kine", "dataSource")
 		if err != nil {
 			return "", fmt.Errorf("error retrieving storage.kine.datasource: %w", err)
 		}
 		if !found || kineStorage == "" {
-			err = unstructured.SetNestedMap(kcpCopy.Spec.K0sConfigSpec.K0s.Object, map[string]any{}, "spec", "storage", "etcd", "extraArgs")
+			err = unstructured.SetNestedMap(kcpCopy.Spec.K0sConfigSpec.ClusterConfig.Object, map[string]any{}, "spec", "storage", "etcd", "extraArgs")
 			if err != nil {
 				return "", fmt.Errorf("error ensuring intermediate maps spec.storage.etcd.extraArgs: %w", err)
 			}
-			err = unstructured.SetNestedField(kcpCopy.Spec.K0sConfigSpec.K0s.Object, machineName, "spec", "storage", "etcd", "extraArgs", "name")
+			err = unstructured.SetNestedField(kcpCopy.Spec.K0sConfigSpec.ClusterConfig.Object, machineName, "spec", "storage", "etcd", "extraArgs", "name")
 			if err != nil {
 				return "", fmt.Errorf("error setting storage.etcd.extraArgs.name: %w", err)
 			}
@@ -204,10 +204,10 @@ func (c *K0sController) getInfraMachines(ctx context.Context, machines collectio
 	return result, nil
 }
 
-func (c *K0sController) getBootstrapConfigs(ctx context.Context, machines collections.Machines) (map[string]bootstrapv2.K0sControllerConfig, error) {
-	result := map[string]bootstrapv2.K0sControllerConfig{}
+func (c *K0sController) getBootstrapConfigs(ctx context.Context, machines collections.Machines) (map[string]bootstrapv2.K0sConfig, error) {
+	result := map[string]bootstrapv2.K0sConfig{}
 	for _, m := range machines {
-		var b bootstrapv2.K0sControllerConfig
+		var b bootstrapv2.K0sConfig
 		err := c.Client.Get(ctx, client.ObjectKey{Namespace: m.Namespace, Name: m.Name}, &b)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -315,7 +315,7 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	return infraMachine, nil
 }
 
-func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
+func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
 	// Skip the check if the K0sControlPlane is not ready
 	if kcp.Status.Initialization.ControlPlaneInitialized == nil ||
 		!*kcp.Status.Initialization.ControlPlaneInitialized ||
@@ -354,8 +354,8 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 	// IMPORTANT: make a copy of the K0sConfigSpec from the K0sControlPlane, as we will modify it.
 	kcpK0sConfig := kcp.Spec.K0sConfigSpec.DeepCopy()
 	// ClusterConfig values are reconciled using dynamic config, so leave it out of the comparison
-	kcpK0sConfig.K0s = nil
-	machineK0sConfig.K0s = nil
+	kcpK0sConfig.ClusterConfig = nil
+	machineK0sConfig.ClusterConfig = nil
 
 	return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
 
@@ -365,21 +365,21 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 // Machine with the k0s config. Due to its complexity, it is also prone to bugs, so it should not be used in new code and remove its support
 // in future releases.
 //
-// deprecatedIsK0sConfigChanged compares the K0sConfigSpec in the K0sControlPlane with the one in the K0sControllerConfig used to bootstrap
+// deprecatedIsK0sConfigChanged compares the K0sConfigSpec in the K0sControlPlane with the one in the K0sConfig used to bootstrap
 // the Machine.
-func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
+func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv2.K0sConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
 	kcpK0sConfigSpecCopy := kcp.Spec.K0sConfigSpec.DeepCopy()
 	bootstrapConfigCopy := bootstrapConfig.DeepCopy()
 	kcpK0sConfigSpecCopy.Args = uniqueArgs(kcpK0sConfigSpecCopy.Args)
 
 	removeArgsGeneratedInControllerConfigReconcile(bootstrapConfigCopy)
-	bootstrapConfigSpecCopy := bootstrapConfigCopy.Spec.K0sConfigSpec.DeepCopy()
+	bootstrapConfigSpecCopy := bootstrapConfigCopy.Spec.DeepCopy()
 
 	// k0s config will be reconciled using dynamic config, so leave it out of the comparison
-	bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "api")
-	kcpAPIConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "api")
-	bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "storage")
-	kcpStorageConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
+	bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.ClusterConfig.Object, "spec", "api")
+	kcpAPIConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.ClusterConfig.Object, "spec", "api")
+	bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.ClusterConfig.Object, "spec", "storage")
+	kcpStorageConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.ClusterConfig.Object, "spec", "storage")
 
 	// Handle nil cases consistently - convert nil to empty map for comparison
 	if bootstrapStorageConfig == nil {
@@ -389,19 +389,19 @@ func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv2.K0sControllerConf
 		kcpStorageConfig = make(map[string]any)
 	}
 
-	// Bootstrap controller did set etcd name to the K0sControllerConfig, so we need to compare it with the name set in the K0sControlPlane
-	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
+	// Bootstrap controller did set etcd name to the K0sConfig, so we need to compare it with the name set in the K0sControlPlane
+	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.ClusterConfig.Object, "spec", "storage")
 	if kcpStorageConfigEtcdWithName == nil {
 		kcpStorageConfigEtcdWithName = make(map[string]any)
 	}
 	_ = unstructured.SetNestedField(kcpStorageConfigEtcdWithName, machine.Name, "etcd", "extraArgs", "name")
 
-	bootstrapConfigCopy.Spec.K0sConfigSpec.K0s = kcpK0sConfigSpecCopy.K0s
+	bootstrapConfigCopy.Spec.ClusterConfig = kcpK0sConfigSpecCopy.ClusterConfig
 
 	// leave out the tunneling spec for the bootstrap config
-	bootstrapConfigCopy.Spec.K0sConfigSpec.Tunneling = kcpK0sConfigSpecCopy.Tunneling
+	bootstrapConfigCopy.Spec.Tunneling = kcpK0sConfigSpecCopy.Tunneling
 
-	return !reflect.DeepEqual(kcpK0sConfigSpecCopy, bootstrapConfigCopy.Spec.K0sConfigSpec) ||
+	return !reflect.DeepEqual(*kcpK0sConfigSpecCopy, bootstrapConfigCopy.Spec) ||
 		!reflect.DeepEqual(kcpAPIConfig, bootstrapAPIConfig) ||
 		(!reflect.DeepEqual(kcpStorageConfig, bootstrapStorageConfig) && !reflect.DeepEqual(kcpStorageConfigEtcdWithName, bootstrapStorageConfig))
 }
@@ -703,14 +703,14 @@ func minVersion(machines collections.Machines) (string, error) {
 // removeArgsGeneratedInControllerConfigReconcile removes '--config /etc/k0s.yaml' arg generated by the bootstrap controller
 // that should not be included when comparing if the k0s configuration has changed because control plane k0s config will not
 // include it.
-func removeArgsGeneratedInControllerConfigReconcile(bootstrapConfig *bootstrapv2.K0sControllerConfig) {
+func removeArgsGeneratedInControllerConfigReconcile(bootstrapConfig *bootstrapv2.K0sConfig) {
 	argsWithoutConfig := []string{}
-	for _, arg := range bootstrapConfig.Spec.K0sConfigSpec.Args {
+	for _, arg := range bootstrapConfig.Spec.Args {
 		if arg != "--config" && arg != bootstrapConfig.Spec.GetK0sConfigPath() {
 			argsWithoutConfig = append(argsWithoutConfig, arg)
 		}
 	}
-	bootstrapConfig.Spec.K0sConfigSpec.Args = argsWithoutConfig
+	bootstrapConfig.Spec.Args = argsWithoutConfig
 }
 
 func uniqueArgs(args []string) []string {

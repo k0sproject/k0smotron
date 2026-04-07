@@ -21,32 +21,30 @@ package bootstrap
 import (
 	"testing"
 
-	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	"github.com/k0sproject/version"
 )
 
 func Test_createCPInstallCmd(t *testing.T) {
 	base := "k0s install controller --force --enable-dynamic-config "
 	tests := []struct {
 		name  string
-		scope *ControllerScope
+		scope *scope
 		want  string
 	}{
 		{
 			name: "with default config",
-			scope: &ControllerScope{
-				Config: &bootstrapv2.K0sControllerConfig{
+			scope: &scope{
+				Config: &bootstrapv2.K0sConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test",
 					},
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
-					},
+					Spec: bootstrapv2.K0sConfigSpec{},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
 					"metadata": map[string]any{"name": "test-machine"},
@@ -56,15 +54,13 @@ func Test_createCPInstallCmd(t *testing.T) {
 		},
 		{
 			name: "with args",
-			scope: &ControllerScope{
-				Config: &bootstrapv2.K0sControllerConfig{
+			scope: &scope{
+				Config: &bootstrapv2.K0sConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test",
 					},
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
-							Args: []string{"--enable-worker", "--labels=k0sproject.io/foo=bar"},
-						},
+					Spec: bootstrapv2.K0sConfigSpec{
+						Args: []string{"--enable-worker", "--labels=k0sproject.io/foo=bar"},
 					},
 				},
 				installArgs: []string{"--enable-worker", "--labels=k0sproject.io/foo=bar"},
@@ -85,18 +81,16 @@ func Test_createCPInstallCmd(t *testing.T) {
 
 func TestController_genK0sCommands(t *testing.T) {
 	tests := []struct {
-		scope      *ControllerScope
+		scope      *scope
 		installCmd string
 		want       []string
 	}{
 		{
-			scope: &ControllerScope{
-				currentKCPVersion: version.MustParse("v1.31.0"),
-				Config: &bootstrapv2.K0sControllerConfig{
+			scope: &scope{
+				Config: &bootstrapv2.K0sConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						Version:       "v1.31.0",
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+					Spec: bootstrapv2.K0sConfigSpec{
+						Version: "v1.31.0",
 					},
 				},
 			},
@@ -111,13 +105,11 @@ func TestController_genK0sCommands(t *testing.T) {
 			},
 		},
 		{
-			scope: &ControllerScope{
-				currentKCPVersion: version.MustParse("v1.31.6"),
-				Config: &bootstrapv2.K0sControllerConfig{
+			scope: &scope{
+				Config: &bootstrapv2.K0sConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						Version:       "v1.31.6",
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+					Spec: bootstrapv2.K0sConfigSpec{
+						Version: "v1.31.6",
 					},
 				},
 			},
@@ -129,13 +121,11 @@ func TestController_genK0sCommands(t *testing.T) {
 			},
 		},
 		{
-			scope: &ControllerScope{
-				currentKCPVersion: version.MustParse("v1.31.6+k0s.0"),
-				Config: &bootstrapv2.K0sControllerConfig{
+			scope: &scope{
+				Config: &bootstrapv2.K0sConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						Version:       "v1.31.6+k0s.0",
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+					Spec: bootstrapv2.K0sConfigSpec{
+						Version: "v1.31.6+k0s.0",
 					},
 				},
 			},
@@ -150,8 +140,9 @@ func TestController_genK0sCommands(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
-			c := &ControlPlaneController{}
-			commands, _, err := c.genK0sCommands(tt.scope, tt.installCmd)
+			v, err := version.NewVersion(tt.scope.Config.Spec.Version)
+			require.NoError(t, err)
+			commands, _, err := genK0sCommands(tt.scope, tt.installCmd, v)
 			require.NoError(t, err)
 			require.Equal(t, tt.want, commands)
 		})

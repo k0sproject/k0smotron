@@ -27,22 +27,10 @@ rules:
   - list
   - watch
 - apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - bootstrap.cluster.x-k8s.io
   resources:
-  - k0scontrollerconfigs
-  - k0scontrollerconfigs/status
+  - k0sconfigs
+  - k0sconfigs/status
   - k0sworkerconfigs
   - k0sworkerconfigs/status
   verbs:

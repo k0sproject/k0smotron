@@ -19,8 +19,9 @@ limitations under the License.
 package controlplane
 
 import (
-	"k8s.io/utils/ptr"
 	"testing"
+
+	"k8s.io/utils/ptr"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
@@ -35,7 +36,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 		name             string
 		machine          *clusterv1.Machine
 		kcp              *cpv1beta2.K0sControlPlane
-		bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig
+		bootstrapConfigs map[string]bootstrapv2.K0sConfig
 		configHasChanged bool
 	}{
 		{
@@ -51,7 +52,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 			kcp: &cpv1beta2.K0sControlPlane{
 				Spec: cpv1beta2.K0sControlPlaneSpec{
 					K0sConfigSpec: bootstrapv2.K0sConfigSpec{
-						K0s: &unstructured.Unstructured{
+						ClusterConfig: &unstructured.Unstructured{
 							Object: map[string]any{
 								"apiVersion": "k0s.k0sproject.io/v1beta1",
 								"kind":       "ClusterConfig",
@@ -91,37 +92,35 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 			},
-			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
+			bootstrapConfigs: map[string]bootstrapv2.K0sConfig{
 				"test": {
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
-							K0s: &unstructured.Unstructured{
-								Object: map[string]any{
-									"apiVersion": "k0s.k0sproject.io/v1beta1",
-									"kind":       "ClusterConfig",
-									"metadata": map[string]any{
-										"name": "k0s",
+					Spec: bootstrapv2.K0sConfigSpec{
+						ClusterConfig: &unstructured.Unstructured{
+							Object: map[string]any{
+								"apiVersion": "k0s.k0sproject.io/v1beta1",
+								"kind":       "ClusterConfig",
+								"metadata": map[string]any{
+									"name": "k0s",
+								},
+								"spec": map[string]any{
+									"api": map[string]any{
+										"externalAddress": "172.18.0.3",
+										"extraArgs": map[string]any{
+											"anonymous-auth": "true",
+										},
 									},
-									"spec": map[string]any{
-										"api": map[string]any{
-											"externalAddress": "172.18.0.3",
+									"network": map[string]any{
+										"clusterDomain": "cluster.local",
+										"podCIDR":       "192.168.0.0/16",
+										"serviceCIDR":   "10.128.0.0/12",
+									},
+									"telemetry": map[string]any{
+										"enabled": "false",
+									},
+									"storage": map[string]any{
+										"etcd": map[string]any{
 											"extraArgs": map[string]any{
-												"anonymous-auth": "true",
-											},
-										},
-										"network": map[string]any{
-											"clusterDomain": "cluster.local",
-											"podCIDR":       "192.168.0.0/16",
-											"serviceCIDR":   "10.128.0.0/12",
-										},
-										"telemetry": map[string]any{
-											"enabled": "false",
-										},
-										"storage": map[string]any{
-											"etcd": map[string]any{
-												"extraArgs": map[string]any{
-													"name": "test",
-												},
+												"name": "test",
 											},
 										},
 									},
@@ -147,7 +146,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 				Spec: cpv1beta2.K0sControlPlaneSpec{
 					K0sConfigSpec: bootstrapv2.K0sConfigSpec{
 						K0sInstallDir: "/opt",
-						K0s: &unstructured.Unstructured{
+						ClusterConfig: &unstructured.Unstructured{
 							Object: map[string]any{
 								"apiVersion": "k0s.k0sproject.io/v1beta1",
 								"kind":       "ClusterConfig",
@@ -187,38 +186,36 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 			},
-			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
+			bootstrapConfigs: map[string]bootstrapv2.K0sConfig{
 				"test": {
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
-							K0sInstallDir: "/usr/local/bin",
-							K0s: &unstructured.Unstructured{
-								Object: map[string]any{
-									"apiVersion": "k0s.k0sproject.io/v1beta1",
-									"kind":       "ClusterConfig",
-									"metadata": map[string]any{
-										"name": "k0s",
+					Spec: bootstrapv2.K0sConfigSpec{
+						K0sInstallDir: "/usr/local/bin",
+						ClusterConfig: &unstructured.Unstructured{
+							Object: map[string]any{
+								"apiVersion": "k0s.k0sproject.io/v1beta1",
+								"kind":       "ClusterConfig",
+								"metadata": map[string]any{
+									"name": "k0s",
+								},
+								"spec": map[string]any{
+									"api": map[string]any{
+										"externalAddress": "172.18.0.3",
+										"extraArgs": map[string]any{
+											"anonymous-auth": "true",
+										},
 									},
-									"spec": map[string]any{
-										"api": map[string]any{
-											"externalAddress": "172.18.0.3",
+									"network": map[string]any{
+										"clusterDomain": "cluster.local",
+										"podCIDR":       "192.168.0.0/16",
+										"serviceCIDR":   "10.128.0.0/12",
+									},
+									"telemetry": map[string]any{
+										"enabled": "false",
+									},
+									"storage": map[string]any{
+										"etcd": map[string]any{
 											"extraArgs": map[string]any{
-												"anonymous-auth": "true",
-											},
-										},
-										"network": map[string]any{
-											"clusterDomain": "cluster.local",
-											"podCIDR":       "192.168.0.0/16",
-											"serviceCIDR":   "10.128.0.0/12",
-										},
-										"telemetry": map[string]any{
-											"enabled": "false",
-										},
-										"storage": map[string]any{
-											"etcd": map[string]any{
-												"extraArgs": map[string]any{
-													"name": "test",
-												},
+												"name": "test",
 											},
 										},
 									},
@@ -246,7 +243,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 						Args: []string{
 							"--enable-worker",
 						},
-						K0s: &unstructured.Unstructured{
+						ClusterConfig: &unstructured.Unstructured{
 							Object: map[string]any{
 								"apiVersion": "k0s.k0sproject.io/v1beta1",
 								"kind":       "ClusterConfig",
@@ -286,37 +283,35 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 			},
-			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
+			bootstrapConfigs: map[string]bootstrapv2.K0sConfig{
 				"test": {
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
-							K0s: &unstructured.Unstructured{
-								Object: map[string]any{
-									"apiVersion": "k0s.k0sproject.io/v1beta1",
-									"kind":       "ClusterConfig",
-									"metadata": map[string]any{
-										"name": "k0s",
+					Spec: bootstrapv2.K0sConfigSpec{
+						ClusterConfig: &unstructured.Unstructured{
+							Object: map[string]any{
+								"apiVersion": "k0s.k0sproject.io/v1beta1",
+								"kind":       "ClusterConfig",
+								"metadata": map[string]any{
+									"name": "k0s",
+								},
+								"spec": map[string]any{
+									"api": map[string]any{
+										"externalAddress": "172.18.0.3",
+										"extraArgs": map[string]any{
+											"anonymous-auth": "true",
+										},
 									},
-									"spec": map[string]any{
-										"api": map[string]any{
-											"externalAddress": "172.18.0.3",
+									"network": map[string]any{
+										"clusterDomain": "cluster.local",
+										"podCIDR":       "192.168.0.0/16",
+										"serviceCIDR":   "10.128.0.0/12",
+									},
+									"telemetry": map[string]any{
+										"enabled": "false",
+									},
+									"storage": map[string]any{
+										"etcd": map[string]any{
 											"extraArgs": map[string]any{
-												"anonymous-auth": "true",
-											},
-										},
-										"network": map[string]any{
-											"clusterDomain": "cluster.local",
-											"podCIDR":       "192.168.0.0/16",
-											"serviceCIDR":   "10.128.0.0/12",
-										},
-										"telemetry": map[string]any{
-											"enabled": "false",
-										},
-										"storage": map[string]any{
-											"etcd": map[string]any{
-												"extraArgs": map[string]any{
-													"name": "test",
-												},
+												"name": "test",
 											},
 										},
 									},
