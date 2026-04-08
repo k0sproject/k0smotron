@@ -2477,6 +2477,15 @@ Default: true<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecingressmutationwebhook">mutationWebhook</a></b></td>
+        <td>object</td>
+        <td>
+          MutationWebhook configures the mutating webhook deployed into the child cluster that injects
+KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT into selected pods.
+When not set, the webhook is not deployed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>port</b></td>
         <td>integer</td>
         <td>
@@ -2486,6 +2495,44 @@ Default: true<br/>
             <i>Default</i>: 443<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.ingress.mutationWebhook
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecingress)</sup></sup>
+
+
+
+MutationWebhook configures the mutating webhook deployed into the child cluster that injects
+KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT into selected pods.
+When not set, the webhook is not deployed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled defines whether the mutating webhook should be deployed. Default: false<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>labelSelector</b></td>
+        <td>map[string]string</td>
+        <td>
+          LabelSelector defines the label selector used to target pods for mutation.
+Only pods whose labels match all entries will be mutated.
+At least one label must be specified.<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -12627,6 +12674,15 @@ Default: true<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecingressmutationwebhook">mutationWebhook</a></b></td>
+        <td>object</td>
+        <td>
+          MutationWebhook configures the mutating webhook deployed into the child cluster that injects
+KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT into selected pods.
+When not set, the webhook is not deployed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>port</b></td>
         <td>integer</td>
         <td>
@@ -12636,6 +12692,44 @@ Default: true<br/>
             <i>Default</i>: 443<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.ingress.mutationWebhook
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecingress)</sup></sup>
+
+
+
+MutationWebhook configures the mutating webhook deployed into the child cluster that injects
+KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT into selected pods.
+When not set, the webhook is not deployed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Enabled defines whether the mutating webhook should be deployed. Default: false<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>labelSelector</b></td>
+        <td>map[string]string</td>
+        <td>
+          LabelSelector defines the label selector used to target pods for mutation.
+Only pods whose labels match all entries will be mutated.
+At least one label must be specified.<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

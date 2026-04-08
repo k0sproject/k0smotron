@@ -17,8 +17,11 @@ package k0smotronio
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"maps"
+	"sort"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
@@ -96,21 +99,10 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 }
 
 func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster) (corev1.ConfigMap, error) {
-	configMap := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetIngressManifestsConfigMapName(),
-			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
-		Data: map[string]string{
-			// Due to k0s behavior, we need to create a dummy Endpoints object to create a worker profile
-			// Once a local haproxy is up, it will update the Endpoints object to point with the actual proxy's IP
-			"0_temp-kubernetes-ep.yaml": `apiVersion: v1
+	data := map[string]string{
+		// Due to k0s behavior, we need to create a dummy Endpoints object to create a worker profile
+		// Once a local haproxy is up, it will update the Endpoints object to point with the actual proxy's IP
+		"0_temp-kubernetes-ep.yaml": `apiVersion: v1
 kind: Endpoints
 metadata:
   name: kubernetes
@@ -122,7 +114,7 @@ subsets:
   - name: https
     port: 7443
     protocol: TCP`,
-			"1_haproxy-configmap.yaml": fmt.Sprintf(`apiVersion: v1
+		"1_haproxy-configmap.yaml": fmt.Sprintf(`apiVersion: v1
 kind: ConfigMap
 metadata:
   name: k0smotron-haproxy-config
@@ -138,7 +130,7 @@ data:
         mode tcp
         server kube_api %s:%d ssl verify required ca-file /etc/haproxy/certs/ca.crt sni str(%s)
 `, kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port, kmc.Spec.Ingress.APIHost),
-			"2_haproxy-ds.yaml": `apiVersion: apps/v1
+		"2_haproxy-ds.yaml": `apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: k0smotron-haproxy
@@ -190,7 +182,7 @@ spec:
             path: /etc/haproxy/certs
             type: DirectoryOrCreate
 `,
-			"3_kube-service.yaml": fmt.Sprintf(`apiVersion: v1
+		"3_kube-service.yaml": fmt.Sprintf(`apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -215,7 +207,49 @@ spec:
     app: k0smotron-haproxy
   sessionAffinity: None
   type: ClusterIP`, scope.clusterSettings.kubernetesServiceIP, scope.clusterSettings.kubernetesServiceIP),
+	}
+
+	// Inject a MutatingWebhookConfiguration when the cluster has MutationWebhook configured.
+	if pm := kmc.Spec.Ingress.MutationWebhook; pm.Enabled && len(scope.webhookCABundle) > 0 {
+		webhookURL := fmt.Sprintf("https://%s.%s.svc%s?apiHost=%s&apiPort=%d",
+			scope.webhookServiceName, scope.webhookNamespace, PodIngressMutatorPath,
+			kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
+		matchLabelsYAML := buildMatchLabelsYAML(pm.LabelSelector)
+		data["4_pod-ingress-mutator.yaml"] = fmt.Sprintf(`apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: k0smotron-pod-ingress-mutator
+webhooks:
+- name: mutate-pods-ingress.k0smotron.io
+  admissionReviewVersions: ["v1"]
+  clientConfig:
+    url: %q
+    caBundle: %s
+  objectSelector:
+    matchLabels:
+%s
+  rules:
+  - apiGroups: [""]
+    apiVersions: ["v1"]
+    operations: ["CREATE"]
+    resources: ["pods"]
+  sideEffects: None
+  failurePolicy: Ignore
+`, webhookURL, base64.StdEncoding.EncodeToString(scope.webhookCABundle), matchLabelsYAML)
+	}
+
+	configMap := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
 		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        kmc.GetIngressManifestsConfigMapName(),
+			Namespace:   kmc.Namespace,
+			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
+		},
+		Data: data,
 	}
 
 	return configMap, nil
@@ -394,4 +428,19 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 	}
 
 	return ingress
+}
+
+// buildMatchLabelsYAML renders a map of labels as indented YAML key-value pairs
+// suitable for embedding inside a matchLabels block (8-space indent).
+func buildMatchLabelsYAML(labels map[string]string) string {
+	keys := make([]string, 0, len(labels))
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var sb strings.Builder
+	for _, k := range keys {
+		fmt.Fprintf(&sb, "      %s: %q\n", k, labels[k])
+	}
+	return strings.TrimRight(sb.String(), "\n")
 }

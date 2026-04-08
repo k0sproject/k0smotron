@@ -154,6 +154,25 @@ type IngressSpec struct {
 	// Annotations defines extra annotations to be added to the ingress controller service.
 	//+kubebuilder:validation:Optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+	// MutationWebhook configures the mutating webhook deployed into the child cluster that injects
+	// KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT into selected pods.
+	// When not set, the webhook is not deployed.
+	//+kubebuilder:validation:Optional
+	MutationWebhook MutationWebhookSpec `json:"mutationWebhook,omitempty"`
+}
+
+// MutationWebhookSpec configures the mutating webhook that injects KUBERNETES_SERVICE_HOST
+// and KUBERNETES_SERVICE_PORT into pods in the child cluster so they can reach the API
+// server through the ingress before the local HAProxy DaemonSet is running.
+type MutationWebhookSpec struct {
+	// Enabled defines whether the mutating webhook should be deployed. Default: false
+	Enabled bool `json:"enabled"`
+	// LabelSelector defines the label selector used to target pods for mutation.
+	// Only pods whose labels match all entries will be mutated.
+	// At least one label must be specified.
+	//+kubebuilder:validation:Required
+	//+kubebuilder:validation:MinProperties=1
+	LabelSelector map[string]string `json:"labelSelector"`
 }
 
 var ingressCompatibleVersions = []*version.Version{

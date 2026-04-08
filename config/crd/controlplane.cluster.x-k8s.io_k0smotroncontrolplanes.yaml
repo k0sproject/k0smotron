@@ -277,6 +277,29 @@ spec:
                     type: boolean
                   konnectivityHost:
                     type: string
+                  mutationWebhook:
+                    description: |-
+                      MutationWebhook configures the mutating webhook deployed into the child cluster that injects
+                      KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT into selected pods.
+                      When not set, the webhook is not deployed.
+                    properties:
+                      enabled:
+                        description: 'Enabled defines whether the mutating webhook
+                          should be deployed. Default: false'
+                        type: boolean
+                      labelSelector:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          LabelSelector defines the label selector used to target pods for mutation.
+                          Only pods whose labels match all entries will be mutated.
+                          At least one label must be specified.
+                        minProperties: 1
+                        type: object
+                    required:
+                    - enabled
+                    - labelSelector
+                    type: object
                   port:
                     default: 443
                     description: Port defines the port used by the ingress controller
