@@ -92,10 +92,12 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		}
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
 			rc, err := controller.newReplicasStatusComputer(ctx, cluster, kcp)
-			assert.NoError(t, err)
+			assert.NoError(c, err)
 			ps, ok := rc.(*planStatus)
-			assert.True(t, ok)
-			assert.Equal(t, expectedPlanStatusComputer.plan.Name, ps.plan.Name)
+			if !assert.True(c, ok) {
+				return
+			}
+			assert.Equal(c, expectedPlanStatusComputer.plan.Name, ps.plan.Name)
 		}, 10*time.Second, 100*time.Millisecond)
 
 	})
@@ -171,11 +173,19 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
 			rc, err := controller.newReplicasStatusComputer(ctx, cluster, kcp)
-			assert.NoError(t, err)
+			assert.NoError(c, err)
 			ms, ok := rc.(*machineStatus)
-			assert.True(t, ok)
-			assert.Len(t, ms.machines, 1)
-			assert.Equal(t, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
+			if !assert.True(c, ok) {
+				return
+			}
+			if !assert.Len(c, ms.machines, 1) {
+				return
+			}
+			machine, found := ms.machines[expectedMachine.Name]
+			if !assert.True(c, found) {
+				return
+			}
+			assert.Equal(c, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, machine.Name)
 		}, 10*time.Second, 100*time.Millisecond)
 
 	})
@@ -235,11 +245,19 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		}
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
 			rc, err := controller.newReplicasStatusComputer(ctx, cluster, kcp)
-			assert.NoError(t, err)
+			assert.NoError(c, err)
 			ms, ok := rc.(*machineStatus)
-			assert.True(t, ok)
-			assert.Len(t, ms.machines, 1)
-			assert.Equal(t, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, ms.machines[expectedMachine.Name].Name)
+			if !assert.True(c, ok) {
+				return
+			}
+			if !assert.Len(c, ms.machines, 1) {
+				return
+			}
+			machine, found := ms.machines[expectedMachine.Name]
+			if !assert.True(c, found) {
+				return
+			}
+			assert.Equal(c, expectedMachineStatusComputer.machines[expectedMachine.Name].Name, machine.Name)
 		}, 10*time.Second, 100*time.Millisecond)
 	})
 }
