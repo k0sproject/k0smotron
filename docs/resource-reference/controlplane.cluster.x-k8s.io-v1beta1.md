@@ -138,8 +138,8 @@ Note: This metadata will have precedence over default labels/annotations on the 
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
-just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.<br/>
+          Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.34.3+k0s.0) or
+just the Kubernetes version (e.g. v1.34.3). If left empty, k0smotron will select one automatically.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

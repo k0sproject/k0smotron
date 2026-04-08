@@ -13,7 +13,7 @@ in the YAML configuration file:
     spec:
       replicas: 1
       k0sImage: quay.io/k0sproject/k0s
-      version: v1.27.1-k0s.0
+      version: v1.34.2-k0s.0
     ```
 
 2. Change all the k0s versions to the target one. For example:
@@ -26,7 +26,7 @@ in the YAML configuration file:
     spec:
       replicas: 1
       k0sImage: quay.io/k0sproject/k0s
-      version: v1.28.7-k0s.0 # new k0s version
+      version: v1.34.3-k0s.0 # new k0s version
     ```
 
 3. Update the resources:
