@@ -34,12 +34,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	k0smotroniov1beta2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/exec"
@@ -72,34 +75,44 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	var cluster km.Cluster
-	err := r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterRef.Name, Namespace: jtr.Spec.ClusterRef.Namespace}, &cluster)
+	patchHelper, err := patch.NewHelper(&jtr, r.Client)
 	if err != nil {
-		r.updateStatus(ctx, jtr, "Failed getting cluster")
+		logger.Error(err, "Failed to configure the patch helper")
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	reconcileFailureReason := ""
+	defer func() {
+		r.updateStatus(&jtr, reconcileFailureReason)
+
+		err = patchHelper.Patch(ctx, &jtr)
+		if err != nil {
+			logger.Error(err, "Unable to update JoinTokenRequest status")
+		}
+	}()
+
+	var cluster km.Cluster
+	err = r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterRef.Name, Namespace: jtr.Spec.ClusterRef.Namespace}, &cluster)
+	if err != nil {
+		reconcileFailureReason = "Failed to get cluster"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 	clusterUID := cluster.GetUID()
 	jtr.Status.ClusterUID = clusterUID
+	jtr.SetLabels(map[string]string{clusterUIDLabel: string(clusterUID)})
 
 	if !controllerutil.ContainsFinalizer(&cluster, clusterFinalizer) {
 		cluster.Finalizers = append(cluster.Finalizers, clusterFinalizer)
 	}
 	err = r.Update(ctx, &cluster)
 	if err != nil {
-		logger.Error(err, "unable to add finalizer to cluster for JoinTokenRequest resource removal")
-	}
-
-	jtr.SetLabels(map[string]string{clusterUIDLabel: string(clusterUID)})
-	err = r.Update(ctx, &jtr)
-	if err != nil {
-		r.updateStatus(ctx, jtr, "Failed update JoinTokenRequest with cluster UID label")
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		reconcileFailureReason = "Failed to add finalizer to cluster for JoinTokenRequest resource removal"
 	}
 
 	logger.Info("Reconciling")
 	pod, err := util.FindStatefulSetPod(ctx, r.ClientSet, km.GetStatefulSetName(jtr.Spec.ClusterRef.Name), jtr.Spec.ClusterRef.Namespace)
 	if err != nil {
-		r.updateStatus(ctx, jtr, "Failed finding pods in statefulset")
+		reconcileFailureReason = "Failed finding pods in statefulset"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
@@ -129,30 +142,31 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	cmd := fmt.Sprintf("k0s token create --role=%s --expiry=%s", jtr.Spec.Role, jtr.Spec.Expiry)
 	token, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, pod.Namespace, cmd)
 	if err != nil {
-		r.updateStatus(ctx, jtr, "Failed getting token")
+		reconcileFailureReason = "Failed getting token"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	if cluster.Spec.Ingress != nil {
 		token, err = updateJoinTokenURL(token, cluster)
 		if err != nil {
-			r.updateStatus(ctx, jtr, "Failed updating token URL")
+			reconcileFailureReason = "Failed updating token URL"
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
 	}
 
 	if err := r.reconcileSecret(ctx, jtr, token); err != nil {
-		r.updateStatus(ctx, jtr, "Failed creating secret")
+		reconcileFailureReason = "Failed creating secret"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	tokenID, err := getTokenID(token, jtr.Spec.Role)
 	if err != nil {
-		r.updateStatus(ctx, jtr, "Failed getting token id")
+		reconcileFailureReason = "Failed getting token id"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
+
 	jtr.Status.TokenID = tokenID
-	r.updateStatus(ctx, jtr, "Reconciliation successful")
+
 	return ctrl.Result{}, nil
 }
 
@@ -203,12 +217,29 @@ func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, to
 	return secret, nil
 }
 
-func (r *JoinTokenRequestReconciler) updateStatus(ctx context.Context, jtr km.JoinTokenRequest, status string) {
-	logger := log.FromContext(ctx)
-	jtr.Status.ReconciliationStatus = status
-	if err := r.Status().Update(ctx, &jtr); err != nil {
-		logger.Error(err, fmt.Sprintf("Unable to update status: %s", status))
+func (r *JoinTokenRequestReconciler) updateStatus(jtr *km.JoinTokenRequest, failureReason string) {
+	if failureReason != "" {
+		// For backward compatibility and webhook conversion, we use the deprecated status field to store the failure reason,
+		// which will be removed in future versions.
+		jtr.SetDeprecatedReconciliationStatus(failureReason)
+
+		conditions.Set(jtr, metav1.Condition{
+			Type:    k0smotroniov1beta2.JoinTokenRequestSecretCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  failureReason,
+			Message: "Check logs for more details",
+		})
+		return
 	}
+
+	// Clean the deprecated status field on successful reconciliation.
+	jtr.SetDeprecatedReconciliationStatus("Reconciliation successful")
+
+	conditions.Set(jtr, metav1.Condition{
+		Type:   k0smotroniov1beta2.JoinTokenRequestSecretCondition,
+		Status: metav1.ConditionTrue,
+		Reason: k0smotroniov1beta2.JoinTokenRequestSecretCreatedReason,
+	})
 }
 
 // SetupWithManager sets up the controller with the Manager.
