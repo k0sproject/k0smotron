@@ -4,3 +4,4 @@ resources:
 
 patches:
 - path: patches/webhook_in_clusters.yaml
+- path: patches/conversion_webhook_in_jointokenrequest.yaml
