@@ -158,7 +158,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
-			AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines").
+			AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/default/dockermachines").
 			Do(s.ctx).
 			Into(&obj)
 		if err != nil {
@@ -185,7 +185,7 @@ func (s *CAPIDockerMachineChangeTemplate) TestCAPIControlPlaneDockerDownScaling(
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
-			AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines").
+			AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/default/dockermachines").
 			Do(s.ctx).
 			Into(&obj)
 		if err != nil {

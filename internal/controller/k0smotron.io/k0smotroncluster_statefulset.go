@@ -24,8 +24,11 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"k8s.io/client-go/kubernetes"
@@ -35,10 +38,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/kubernetes/pkg/controller"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -63,7 +68,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	selectorLabels := util.LabelsForK0smotronControlPlane(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
 	maps.Copy(labels, selectorLabels)
-	labels["app.kubernetes.io/component"] = util.ComponentControlPlane
+	labels[util.ComponentLabel] = util.ComponentControlPlane
 	annotations := util.AnnotationsForK0smotronCluster(kmc)
 
 	statefulSet := apps.StatefulSet{
@@ -170,11 +175,94 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		addMonitoringStack(kmc, &statefulSet)
 	}
 
-	if kmc.Spec.KineDataSourceSecretName != "" {
+	if kmc.Spec.Storage.Type == km.StorageTypeNATS {
+		// Use the headless NATS service for pod-specific DNS.
+		statefulSet.Spec.ServiceName = kmc.GetNatsServiceName()
+		// Start all pods simultaneously so early pods can reach later pods by DNS name.
+		statefulSet.Spec.PodManagementPolicy = apps.ParallelPodManagement
+
+		// Persistent volume for the embedded NATS JetStream store.
+		natsSize := kmc.Spec.Storage.NATS.Persistence.Size
+		if natsSize.IsZero() {
+			natsSize = resource.MustParse("1Gi")
+		}
+		natsPVC := v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "nats-data",
+			},
+			Spec: v1.PersistentVolumeClaimSpec{
+				AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+				Resources: v1.VolumeResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourceStorage: natsSize,
+					},
+				},
+			},
+		}
+		if kmc.Spec.Storage.NATS.Persistence.StorageClass != "" {
+			natsPVC.Spec.StorageClassName = &kmc.Spec.Storage.NATS.Persistence.StorageClass
+		}
+		statefulSet.Spec.VolumeClaimTemplates = append(statefulSet.Spec.VolumeClaimTemplates, natsPVC)
+		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+			statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts,
+			v1.VolumeMount{
+				Name:      "nats-data",
+				MountPath: natsStoreDir,
+			},
+		)
+
+		// Open the NATS cluster routing port.
+		statefulSet.Spec.Template.Spec.Containers[0].Ports = append(
+			statefulSet.Spec.Template.Spec.Containers[0].Ports,
+			v1.ContainerPort{
+				Name:          "nats-cluster",
+				ContainerPort: 6222,
+				Protocol:      v1.ProtocolTCP,
+			},
+		)
+
+		// Inject env vars used by the entrypoint to generate the NATS server config.
+		statefulSet.Spec.Template.Spec.Containers[0].Env = append(
+			statefulSet.Spec.Template.Spec.Containers[0].Env,
+			v1.EnvVar{
+				Name: "K0SMOTRON_NATS_TOKEN",
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: kmc.GetNatsTokenSecretName(),
+						},
+						Key: "token",
+					},
+				},
+			},
+			v1.EnvVar{
+				Name:  "K0SMOTRON_NATS_STS_NAME",
+				Value: kmc.GetStatefulSetName(),
+			},
+			v1.EnvVar{
+				Name:  "K0SMOTRON_NATS_SVC_NAME",
+				Value: kmc.GetNatsServiceName(),
+			},
+			v1.EnvVar{
+				Name:  "K0SMOTRON_NATS_REPLICAS",
+				Value: fmt.Sprintf("%d", kmc.Spec.Replicas),
+			},
+			v1.EnvVar{
+				Name: "POD_NAMESPACE",
+				ValueFrom: &v1.EnvVarSource{
+					FieldRef: &v1.ObjectFieldSelector{
+						FieldPath: "metadata.namespace",
+					},
+				},
+			},
+		)
+	}
+
+	if kmc.Spec.Storage.Kine.DataSourceSecretName != "" {
 		statefulSet.Spec.Template.Spec.Containers[0].EnvFrom = append(statefulSet.Spec.Template.Spec.Containers[0].EnvFrom, v1.EnvFromSource{
 			SecretRef: &v1.SecretEnvSource{
 				LocalObjectReference: v1.LocalObjectReference{
-					Name: kmc.Spec.KineDataSourceSecretName,
+					Name: kmc.Spec.Storage.Kine.DataSourceSecretName,
 				},
 			},
 		})
@@ -280,6 +368,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("kmc-%s-telemetry-config", kmc.Name),
 			Namespace: kmc.Namespace,
+			Labels:    kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentTelemetry),
 		},
 		Data: map[string]string{
 			"configmap.yaml": `
@@ -295,7 +384,7 @@ data:
 	}
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, cm, scope.client.Scheme(), scope.externalOwner)
 
-	if err := scope.client.Patch(context.Background(), cm, client.Apply, patchOpts...); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, cm); err != nil {
 		return apps.StatefulSet{}, apps.StatefulSet{}, err
 	}
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
@@ -327,12 +416,18 @@ data:
 		PeriodSeconds:       10,
 		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
 	}
+	if kmc.Spec.Storage.Type == km.StorageTypeNATS {
+		statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds = 0
+		statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe.PeriodSeconds = 5
+		statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe.InitialDelaySeconds = 0
+		statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe.PeriodSeconds = 5
+	}
 
 	// Use the statefulset generated with dry-run gives us a preview of the statefulset with all the default values set by the API server.
 	// With this preview we can compare the desired statefulset with the actual statefulset and decide if there are any change and not
 	// create unnecessary new revisions of the statefulset which can make difficult get the status of the cluster from the statefulset.
 	previewSts := statefulSet.DeepCopy()
-	_ = scope.client.Patch(ctx, previewSts, client.Apply, append(patchOpts, client.DryRunAll)...)
+	_ = scope.client.Patch(ctx, previewSts, client.Apply, append(patchOpts, client.DryRunAll)...) //nolint:forbidigo // dry-run preview, no actual mutation
 	delete(previewSts.Spec.Template.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
 
 	// We calculate the hash of the statefulset template and store it in the annotations
@@ -588,15 +683,17 @@ func addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
 	})
 }
 
-func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster) error {
+func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
 	statefulSet, statefulSetPreview, err := scope.generateStatefulSet(ctx, kmc)
 	if err != nil {
-		return fmt.Errorf("failed to generate statefulset: %w", err)
+		return ctrl.Result{}, fmt.Errorf("failed to generate statefulset: %w", err)
 	}
 
 	selector, err := metav1.LabelSelectorAsSelector(statefulSet.Spec.Selector)
 	if err != nil {
-		return fmt.Errorf("error retrieving StatefulSet labels: %w", err)
+		return ctrl.Result{}, fmt.Errorf("error retrieving StatefulSet labels: %w", err)
 	}
 	kmc.Status.Selector = selector.String()
 
@@ -607,36 +704,28 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 	}, foundStatefulSet)
 	if err != nil && apierrors.IsNotFound(err) {
 		kmc.Status.Replicas = 0
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		return ctrl.Result{}, scope.reconcileResource(ctx, kmc, &statefulSet)
 	} else if err == nil {
+		scope.currentReconcileState.controlplane.sts = foundStatefulSet.DeepCopy()
 		detectAndSetCurrentClusterVersion(foundStatefulSet, kmc)
-
-		if !isStatefulSetsEqual(&statefulSetPreview, foundStatefulSet) {
-			return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
-		}
-
-		kmc.Status.Replicas = foundStatefulSet.Status.Replicas
-		if foundStatefulSet.Status.ReadyReplicas == kmc.Spec.Replicas {
-			kmc.Status.Ready = true
-		}
 	}
 
 	if !isStatefulSetsEqual(&statefulSetPreview, foundStatefulSet) {
-		return scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...)
+		return ctrl.Result{}, scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...) //nolint:forbidigo
 	}
 	needsScale := *foundStatefulSet.Spec.Replicas != *statefulSet.Spec.Replicas
 	if needsScale {
 		patchedFoundStatefulSet := foundStatefulSet.DeepCopy()
 		*patchedFoundStatefulSet.Spec.Replicas = *statefulSet.Spec.Replicas
-		return scope.client.Patch(ctx, patchedFoundStatefulSet, client.MergeFrom(foundStatefulSet))
+		return ctrl.Result{}, scope.client.Patch(ctx, patchedFoundStatefulSet, client.MergeFrom(foundStatefulSet)) //nolint:forbidigo // replica scaling via MergeFrom, patches not applicable
 	}
 
 	if foundStatefulSet.Status.ReadyReplicas == 0 {
-		return fmt.Errorf("%w: no replicas ready yet for statefulset '%s' (%d/%d)", ErrNotReady, foundStatefulSet.GetName(), foundStatefulSet.Status.ReadyReplicas, kmc.Spec.Replicas)
+		logger.Info(fmt.Sprintf("StatefulSet '%s' has no ready replicas yet (%d/%d)", foundStatefulSet.GetName(), foundStatefulSet.Status.ReadyReplicas, kmc.Spec.Replicas))
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
 	}
 
-	kmc.Status.Ready = true
-	return nil
+	return ctrl.Result{}, nil
 }
 
 // If the version is empty from the spec, we try to detect it from the statefulset image.

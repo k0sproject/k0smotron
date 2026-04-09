@@ -141,7 +141,7 @@ func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx contex
 
 	kmc := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "Cluster",
 		"metadata": {
 		  "name": "kmc-test-secret",
@@ -153,7 +153,12 @@ func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx contex
 			"service":{
 				"type": "NodePort"
 			},
-			"kineDataSourceSecretName": "postgres-dsn",
+			"storage": {
+			  "type": "kine",
+			  "kine": {
+				"dataSourceSecretName": "postgres-dsn"
+			  }
+			},
 			"certificateRefs": [{"name": "kmc-test-ca","type": "ca"}, {"name": "kmc-test-proxy", "type": "proxy"}, {"name": "kmc-test-sa", "type": "sa"}],
 			"k0sConfig": {
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
@@ -166,7 +171,7 @@ func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx contex
 	}
 `)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
 }
 

@@ -27,11 +27,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/util"
 )
@@ -120,8 +121,8 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		return nil
 	}
 
-	if kmc.Spec.KineDataSourceSecretName != "" {
-		kmc.Spec.KineDataSourceURL = kineDataSourceURLPlaceholder
+	if kmc.Spec.Storage.Kine.DataSourceSecretName != "" {
+		kmc.Spec.Storage.Kine.DataSourceURL = kineDataSourceURLPlaceholder
 	}
 
 	sans, err := genSANs(kmc, scope.client)
@@ -134,23 +135,27 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		return err
 	}
 
-	// managementClusterClient is used because in order to instantiate a workload cluster client is need to check the workload kubeconfig secret,
-	// which is stored in mothership cluster. This becomes importante when hosted control planes run on an external cluster.
-	err = reconcileDynamicConfig(ctx, kmc, unstructuredConfig, managementClusterClient)
-	if err != nil {
-		// Don't return error from dynamic config reconciliation, as it may not be created yet
-		logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
+	// We need to wait until workload cluster is functional before reconciling the dynamic config, meaning the kubeconfig secret is
+	// created and we can create a workload cluster client.
+	if conditions.IsTrue(kmc, km.ClusterControlPlaneFunctionalCondition) {
+		// managementClusterClient is used because in order to instantiate a workload cluster client is need to check the workload kubeconfig secret,
+		// which is stored in mothership cluster. This becomes importante when hosted control planes run on an external cluster.
+		err = reconcileDynamicConfig(ctx, kmc, unstructuredConfig, managementClusterClient)
+		if err != nil {
+			// Don't return error from dynamic config reconciliation, as it may not be created yet
+			logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
+		}
 	}
 
-	return scope.client.Patch(ctx, &cm, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &cm)
 }
 
 func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[string]any, c client.Client) error {
 	u := unstructured.Unstructured{Object: k0sConfig}
 
-	if kmc.Spec.KineDataSourceSecretName != "" {
+	if kmc.Spec.Storage.Kine.DataSourceSecretName != "" {
 		kineDSNSecret := &v1.Secret{}
-		err := c.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: kmc.Spec.KineDataSourceSecretName}, kineDSNSecret)
+		err := c.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: kmc.Spec.Storage.Kine.DataSourceSecretName}, kineDSNSecret)
 		if err != nil {
 			return fmt.Errorf("failed to get kine data source secret: %w", err)
 		}
@@ -221,14 +226,22 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
 			"agentPort": int64(kmc.Spec.Service.KonnectivityPort),
 		},
 	}
-	if kmc.Spec.KineDataSourceURL != "" {
+	switch kmc.Spec.Storage.Type {
+	case km.StorageTypeNATS:
 		v1beta1Spec["storage"] = map[string]any{
 			"type": "kine",
 			"kine": map[string]any{
-				"dataSource": kmc.Spec.KineDataSourceURL,
+				"dataSource": natsDataSourceURL(kmc),
 			},
 		}
-	} else {
+	case km.StorageTypeKine:
+		v1beta1Spec["storage"] = map[string]any{
+			"type": "kine",
+			"kine": map[string]any{
+				"dataSource": kmc.Spec.Storage.Kine.DataSourceURL,
+			},
+		}
+	default: // StorageTypeEtcd
 		v1beta1Spec["storage"] = map[string]any{
 			"type": "etcd",
 			"etcd": map[string]any{

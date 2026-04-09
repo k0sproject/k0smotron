@@ -16,8 +16,9 @@ limitations under the License.
 package v1beta1
 
 import (
-	kmapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	kmapiv1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 )
 
 func init() {
@@ -44,8 +45,8 @@ type K0smotronControlPlaneTemplateSpec struct {
 // K0smotronControlPlaneTemplateResource defines the template for the control plane resource
 type K0smotronControlPlaneTemplateResource struct {
 	// +kubebuilder:validation:Optional
-	ObjectMeta metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec       kmapi.ClusterSpec `json:"spec,omitempty"`
+	ObjectMeta metav1.ObjectMeta   `json:"metadata,omitempty"`
+	Spec       kmapiv1.ClusterSpec `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true

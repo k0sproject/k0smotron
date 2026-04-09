@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 )
 
 func (scope *kmcScope) reconcilePVC(ctx context.Context, kmc *km.Cluster) error {
@@ -46,6 +46,10 @@ func (scope *kmcScope) reconcilePVC(ctx context.Context, kmc *km.Cluster) error 
 	err = reconcileEtcdPVC(ctx, kmc, scope)
 	if err != nil {
 		return fmt.Errorf("failed to reconcile etcd PVC: %w", err)
+	}
+	err = reconcileNatsPVC(ctx, kmc, scope)
+	if err != nil {
+		return fmt.Errorf("failed to reconcile nats PVC: %w", err)
 	}
 
 	return nil
@@ -64,12 +68,19 @@ func reconcileControlPlanePVC(ctx context.Context, kmc *km.Cluster, c client.Cli
 	return resizeStatefulSetAndPVC(ctx, kmc, *kmc.Spec.Persistence.PersistentVolumeClaim.Spec.Resources.Requests.Storage(), kmc.Spec.Replicas, kmc.GetStatefulSetName(), kmc.Spec.Persistence.PersistentVolumeClaim.Name, c)
 }
 
+func reconcileNatsPVC(ctx context.Context, kmc *km.Cluster, scope *kmcScope) error {
+	if kmc.Spec.Storage.Type != km.StorageTypeNATS {
+		return nil
+	}
+	return resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Storage.NATS.Persistence.Size, kmc.Spec.Replicas, kmc.GetStatefulSetName(), "nats-data", scope.client)
+}
+
 func reconcileEtcdPVC(ctx context.Context, kmc *km.Cluster, scope *kmcScope) error {
 	foundStatefulSet, err := scope.clienSet.AppsV1().StatefulSets(kmc.Namespace).Get(ctx, kmc.GetEtcdStatefulSetName(), metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to get StatefulSet %s: %w", kmc.GetEtcdStatefulSetName(), err)
 	}
-	return resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Etcd.Persistence.Size, calculateDesiredReplicas(kmc, foundStatefulSet), kmc.GetEtcdStatefulSetName(), "etcd-data", scope.client)
+	return resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Storage.Etcd.Persistence.Size, calculateDesiredReplicas(kmc, foundStatefulSet), kmc.GetEtcdStatefulSetName(), "etcd-data", scope.client)
 }
 
 func resizeStatefulSetAndPVC(ctx context.Context, kmc *km.Cluster, desiredStorageSize resource.Quantity, replicas int32, stsName, vctName string, c client.Client) error {

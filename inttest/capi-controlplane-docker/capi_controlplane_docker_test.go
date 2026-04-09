@@ -36,8 +36,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
@@ -116,14 +116,14 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(err)
 
 	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		var cluster v1beta1.Cluster
+		var cluster v1beta2.Cluster
 		err = s.client.RESTClient().
 			Get().
-			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/clusters/docker-test-cluster").
+			AbsPath("/apis/cluster.x-k8s.io/v1beta2/namespaces/default/clusters/docker-test-cluster").
 			Do(ctx).
 			Into(&cluster)
 
-		clusterIDAnnotation, found := cluster.GetAnnotations()[cpv1beta1.K0sClusterIDAnnotation]
+		clusterIDAnnotation, found := cluster.GetAnnotations()[cpv1beta2.K0sClusterIDAnnotation]
 		return found && strings.Contains(clusterIDAnnotation, "kube-system"), nil
 	})
 	s.Require().NoError(err)
@@ -191,7 +191,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 
 	err = s.client.RESTClient().
 		Delete().
-		AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta1/namespaces/default/dockermachines/docker-test-2").
+		AbsPath("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/default/dockermachines/docker-test-2").
 		Do(s.ctx).
 		Error()
 

@@ -1,0 +1,106 @@
+/*
+Copyright 2026.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1beta1
+
+import (
+	"fmt"
+
+	kmcv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
+
+	"github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"k8s.io/utils/ptr"
+)
+
+// ConvertTo converts this version (v1beta2) to the hub version (v1beta2 - self).
+func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
+	dst := dstRaw.(*v1beta2.K0smotronControlPlane)
+	dst.ObjectMeta = *k.ObjectMeta.DeepCopy()
+
+	dst.Spec = kmcv1beta1.ClusterSpecToV2(k.Spec)
+	dst.Status = v1beta2.K0smotronControlPlaneStatus{
+		Initialization: v1beta2.Initialization{
+			ControlPlaneInitialized: &k.Status.Initialized,
+		},
+		ExternalManagedControlPlane: ptr.To(k.Status.ExternalManagedControlPlane),
+		Version:                     k.Status.Version,
+		Replicas:                    ptr.To(k.Status.Replicas),
+		UpToDateReplicas:            ptr.To(k.Status.UpdatedReplicas),
+		ReadyReplicas:               ptr.To(k.Status.ReadyReplicas),
+		AvailableReplicas:           ptr.To(k.Status.Replicas - k.Status.UnavailableReplicas),
+		Selector:                    k.Status.Selector,
+		Conditions:                  k.Status.Conditions,
+	}
+	return nil
+}
+
+// ConvertTo converts this K0smotronControlPlaneTemplate (v1beta1) to the hub version (v1beta2).
+func (k *K0smotronControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
+	dst := dstRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	dst.ObjectMeta = *k.ObjectMeta.DeepCopy()
+	dst.Spec = v1beta2.K0smotronControlPlaneTemplateSpec{
+		Template: v1beta2.K0smotronControlPlaneTemplateResource{
+			ObjectMeta: k.Spec.Template.ObjectMeta,
+			Spec:       kmcv1beta1.ClusterSpecToV2(k.Spec.Template.Spec),
+		},
+	}
+	return nil
+}
+
+// ConvertFrom converts from the hub version (v1beta2) to this K0smotronControlPlaneTemplate (v1beta1).
+func (k *K0smotronControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error {
+	src := srcRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
+	spec, err := kmcv1beta1.ClusterSpecFromV2(src.Spec.Template.Spec)
+	if err != nil {
+		return err
+	}
+	k.Spec = K0smotronControlPlaneTemplateSpec{
+		Template: K0smotronControlPlaneTemplateResource{
+			ObjectMeta: src.Spec.Template.ObjectMeta,
+			Spec:       spec,
+		},
+	}
+	return nil
+}
+
+// ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
+func (k *K0smotronControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
+	src := srcRaw.(*v1beta2.K0smotronControlPlane)
+	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
+	v1beta1Spec, err := kmcv1beta1.ClusterSpecFromV2(src.Spec)
+	if err != nil {
+		return fmt.Errorf("failed to convert K0smotronControlPlane.Spec: %w", err)
+	}
+	k.Spec = v1beta1Spec
+	k.Status = K0smotronControlPlaneStatus{
+		Ready:       ptr.Deref(src.Status.ReadyReplicas, 0) > 0,
+		Initialized: ptr.Deref(src.Status.Initialization.ControlPlaneInitialized, false),
+		Initialization: Initialization{
+			ControlPlaneInitialized: ptr.Deref(src.Status.Initialization.ControlPlaneInitialized, false),
+		},
+		ExternalManagedControlPlane: ptr.Deref(src.Status.ExternalManagedControlPlane, false),
+		Version:                     src.Status.Version,
+		Replicas:                    ptr.Deref(src.Status.Replicas, 0),
+		UpdatedReplicas:             ptr.Deref(src.Status.UpToDateReplicas, 0),
+		ReadyReplicas:               ptr.Deref(src.Status.ReadyReplicas, 0),
+		UnavailableReplicas:         ptr.Deref(src.Status.Replicas, 0) - ptr.Deref(src.Status.AvailableReplicas, 0),
+		Selector:                    src.Status.Selector,
+		Conditions:                  src.Status.Conditions,
+	}
+	return nil
+}

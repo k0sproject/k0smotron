@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/exec"
 )
@@ -176,11 +176,11 @@ func (r *JoinTokenRequestReconciler) reconcileSecret(ctx context.Context, jtr km
 
 func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, token string) (v1.Secret, error) {
 	labels := map[string]string{
-		clusterLabel:                  jtr.Spec.ClusterRef.Name,
-		"k0smotron.io/cluster-uid":    string(jtr.Status.ClusterUID),
-		"k0smotron.io/role":           jtr.Spec.Role,
-		"k0smotron.io/token-request":  jtr.Name,
-		"app.kubernetes.io/component": util.ComponentJointoken,
+		clusterLabel:                 jtr.Spec.ClusterRef.Name,
+		"k0smotron.io/cluster-uid":   string(jtr.Status.ClusterUID),
+		"k0smotron.io/role":          jtr.Spec.Role,
+		"k0smotron.io/token-request": jtr.Name,
+		util.ComponentLabel:          util.ComponentJointoken,
 	}
 	maps.Copy(labels, jtr.Labels)
 	secret := v1.Secret{

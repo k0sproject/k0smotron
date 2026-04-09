@@ -24,7 +24,7 @@ import (
 
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -134,12 +134,14 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 
 	_ = util.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
-	if err := scope.client.Patch(ctx, &svc, client.Apply, patchOpts...); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, &svc); err != nil {
 		return err
 	}
-	// Wait for LB address to be available
-	logger.Info("Waiting for loadbalancer address")
+	scope.currentReconcileState.controlplane.svc = svc.DeepCopy()
+
 	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer && kmc.Spec.ExternalAddress == "" {
+		// Wait for LB address to be available
+		logger.Info("Waiting for loadbalancer address")
 		err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 			err := scope.client.Get(ctx, client.ObjectKey{Name: svc.Name, Namespace: svc.Namespace}, &svc)
 			if err != nil {
@@ -154,7 +156,7 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 				}
 				logger.Info("Loadbalancer address available, updating Cluster object", "address", kmc.Spec.ExternalAddress)
 
-				err := scope.client.Update(ctx, kmc)
+				err := scope.client.Update(ctx, kmc) //nolint:forbidigo // updating the Cluster object itself, not a generated resource
 				if err != nil {
 					return false, err
 				}
@@ -191,7 +193,7 @@ func (scope *kmcScope) reconcileEndpointConfigMap(ctx context.Context, kmc *km.C
 	configMap := generateEndpointConfigMap(kmc)
 
 	_ = util.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
-	if err := scope.client.Patch(ctx, &configMap, client.Apply, patchOpts...); err != nil {
+	if err := scope.reconcileResource(ctx, kmc, &configMap); err != nil {
 		return err
 	}
 

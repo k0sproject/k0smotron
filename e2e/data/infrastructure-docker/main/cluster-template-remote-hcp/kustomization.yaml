@@ -5,3 +5,24 @@ resources:
 
 patches:
 - path: hcp-with-external-cluster-patch.yaml
+- target:
+    group: controlplane.cluster.x-k8s.io
+    version: v1beta1
+    kind: K0smotronControlPlane
+  patch: |-
+    - op: replace
+      path: /apiVersion
+      value: controlplane.cluster.x-k8s.io/v1beta2
+    - op: add
+      path: /spec/patches
+      value:
+        - target:
+            kind: Service
+            component: control-plane
+          patch:
+            type: merge
+            content: |
+              metadata:
+                annotations:
+                  example.com/patched: "true"
+    

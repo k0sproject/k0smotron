@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/k0smotron/internal/exec"
 )
@@ -40,19 +40,21 @@ import (
 func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, managementClusterClient client.Client, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	pod, err := findStatefulSetPod(ctx, kmc.GetStatefulSetName(), kmc.Namespace, scope.clienSet)
-
 	if err != nil {
+		scope.currentReconcileState.controlplane.kubeconfig.message = err.Error()
 		return err
 	}
 
 	output, err := exec.PodExecCmdOutput(ctx, scope.clienSet, scope.restConfig, pod.Name, kmc.Namespace, "k0s kubeconfig create admin --groups system:masters")
 	if err != nil {
+		scope.currentReconcileState.controlplane.kubeconfig.message = err.Error()
 		return err
 	}
 
 	// Post-process: build a kubeconfig with desired names based on current-context
 	processedOutput, err := rewriteKubeconfigValues(output, kmc)
 	if err != nil {
+		scope.currentReconcileState.controlplane.kubeconfig.message = err.Error()
 		return err
 	}
 
@@ -77,7 +79,14 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 	// workload cluster kubeconfig is always created in the management cluster so we set k0smotron cluster as owner
 	_ = ctrl.SetControllerReference(kmc, &secret, scope.client.Scheme())
 
-	return managementClusterClient.Patch(ctx, &secret, client.Apply, patchOpts...)
+	err = managementClusterClient.Patch(ctx, &secret, client.Apply, patchOpts...)
+	if err != nil {
+		scope.currentReconcileState.controlplane.kubeconfig.message = err.Error()
+		return err
+	}
+
+	scope.currentReconcileState.controlplane.kubeconfig.data = secret.DeepCopy()
+	return nil
 }
 
 func rewriteKubeconfigValues(kubeconfigYAML string, kmc *km.Cluster) (string, error) {

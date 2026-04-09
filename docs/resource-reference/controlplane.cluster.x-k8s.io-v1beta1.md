@@ -95,14 +95,14 @@ K0sControlPlaneSpec defines the desired state of K0sControlPlane.
         <td><b><a href="#k0scontrolplanespeck0sconfigspec">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          K0sConfigSpec defines the common configuration for both K0sControllerConfig and K0sWorkerConfig.<br/>
+          K0sConfigSpec defines the desired state of K0sConfig<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanespecmachinetemplate">machineTemplate</a></b></td>
         <td>object</td>
         <td>
-          K0sControlPlaneMachineTemplate defines the template for Machines in a K0sControlPlane object.<br/>
+          K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -151,7 +151,7 @@ just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select
 
 
 
-K0sConfigSpec defines the common configuration for both K0sControllerConfig and K0sWorkerConfig.
+K0sConfigSpec defines the desired state of K0sConfig
 
 <table>
     <thead>
@@ -651,7 +651,7 @@ If empty, k0smotron will use the default one.<br/>
 
 
 
-K0sControlPlaneMachineTemplate defines the template for Machines in a K0sControlPlane object.
+K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.
 
 <table>
     <thead>
@@ -1246,7 +1246,7 @@ K0sControlPlaneTemplateResourceSpec defines the desired state of K0sControlPlane
         <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspec">k0sConfigSpec</a></b></td>
         <td>object</td>
         <td>
-          K0sConfigSpec defines the common configuration for both K0sControllerConfig and K0sWorkerConfig.<br/>
+          K0sConfigSpec defines the desired state of K0sConfig<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1287,7 +1287,7 @@ be configured on the K0sControlPlaneTemplate.<br/>
 
 
 
-K0sConfigSpec defines the common configuration for both K0sControllerConfig and K0sWorkerConfig.
+K0sConfigSpec defines the desired state of K0sConfig
 
 <table>
     <thead>
@@ -2090,7 +2090,8 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>integer</td>
         <td>
           Replicas is the desired number of replicas of the k0s control planes.
-If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
+If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set
+(spec.kineDataSourceURL or spec.kineDataSourceSecretName).
 Recommended value is 3.<br/>
           <br/>
             <i>Format</i>: int32<br/>
@@ -2125,7 +2126,7 @@ Recommended value is 3.<br/>
         <td>[]object</td>
         <td>
           TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
-See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.<br/>
+See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2319,7 +2320,7 @@ Persistence defines the persistence configuration.
         <td><b>size</b></td>
         <td>int or string</td>
         <td>
-          Size defines the size of the etcd volume. Default: 1Gi<br/>
+          Size defines the size of the volume. Default: 1Gi<br/>
           <br/>
             <i>Default</i>: 1Gi<br/>
         </td>
@@ -2328,7 +2329,7 @@ Persistence defines the persistence configuration.
         <td><b>storageClass</b></td>
         <td>string</td>
         <td>
-          StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.<br/>
+          StorageClass defines the storage class to be used. If empty, the default storage class is used.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10506,6 +10507,15 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Default</i>: emptyDir<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>autoDeletePVCs</b></td>
         <td>boolean</td>
         <td>
@@ -10526,16 +10536,6 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>object</td>
         <td>
           PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>type</b></td>
-        <td>enum</td>
-        <td>
-          Type defines the type of persistence to be used for the k0s control plane.<br/>
-          <br/>
-            <i>Enum</i>: emptyDir, hostPath, pvc<br/>
-            <i>Default</i>: emptyDir<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12240,7 +12240,8 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>integer</td>
         <td>
           Replicas is the desired number of replicas of the k0s control planes.
-If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set.
+If unspecified, defaults to 1. If the value is above 1, k0smotron requires kine datasource URL to be set
+(spec.kineDataSourceURL or spec.kineDataSourceSecretName).
 Recommended value is 3.<br/>
           <br/>
             <i>Format</i>: int32<br/>
@@ -12275,7 +12276,7 @@ Recommended value is 3.<br/>
         <td>[]object</td>
         <td>
           TopologySpreadConstraints will be passed directly to BOTH etcd and k0s pods.
-See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more information.<br/>
+See https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ for more details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12469,7 +12470,7 @@ Persistence defines the persistence configuration.
         <td><b>size</b></td>
         <td>int or string</td>
         <td>
-          Size defines the size of the etcd volume. Default: 1Gi<br/>
+          Size defines the size of the volume. Default: 1Gi<br/>
           <br/>
             <i>Default</i>: 1Gi<br/>
         </td>
@@ -12478,7 +12479,7 @@ Persistence defines the persistence configuration.
         <td><b>storageClass</b></td>
         <td>string</td>
         <td>
-          StorageClass defines the storage class to be used for etcd persistence. If empty, will be used the default storage class.<br/>
+          StorageClass defines the storage class to be used. If empty, the default storage class is used.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -20656,6 +20657,15 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Default</i>: emptyDir<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>autoDeletePVCs</b></td>
         <td>boolean</td>
         <td>
@@ -20676,16 +20686,6 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>object</td>
         <td>
           PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>type</b></td>
-        <td>enum</td>
-        <td>
-          Type defines the type of persistence to be used for the k0s control plane.<br/>
-          <br/>
-            <i>Enum</i>: emptyDir, hostPath, pvc<br/>
-            <i>Default</i>: emptyDir<br/>
         </td>
         <td>false</td>
       </tr></tbody>

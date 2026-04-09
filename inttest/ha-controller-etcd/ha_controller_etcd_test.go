@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -125,7 +125,7 @@ func (s *HAControllerEtcdSuite) createK0smotronCluster(ctx context.Context, kc *
 
 	kmc := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "Cluster",
 		"metadata": {
 		  "name": "kmc-test",
@@ -148,7 +148,7 @@ func (s *HAControllerEtcdSuite) createK0smotronCluster(ctx context.Context, kc *
 	}
 `)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
 }
 

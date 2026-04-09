@@ -23,9 +23,10 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 
 	"github.com/stretchr/testify/suite"
@@ -132,7 +133,7 @@ func (s *ConfigUpdateSuite) checkClusterStatus(ctx context.Context, rc *rest.Con
 			Do(ctx).
 			Into(&kmc)
 
-		return kmc.Status.Ready, nil
+		return conditions.IsTrue(&kmc, km.ClusterAvailableCondition), nil
 	})
 
 	s.Require().NoError(err)
@@ -198,7 +199,7 @@ metadata:
 
 	kmc := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "Cluster",
 		"metadata": {
 		  "name": "kmc-test",
@@ -242,6 +243,6 @@ metadata:
 	  }
 `)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
 }

@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 )
 
 // GetKmcClientFromClusterKubeconfigSecret retrieves a client for the K0smotron cluster using the kubeconfig stored in a secret.

@@ -34,7 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/inttest/util"
 )
 
@@ -156,7 +156,7 @@ func (s *PVCSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Cl
 
 	kmc := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "Cluster",
 		"metadata": {
 		  "name": "kmc-test",
@@ -164,8 +164,11 @@ func (s *PVCSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Cl
 		},
 		"spec": {
    			"version": "v1.31.5-k0s.0",
-			"etcd":{
+			"storage": {
+			  "type": "etcd",
+			  "etcd":{
 				"persistence": {"size": "50Mi", "storageClass": "seaweedfs-storage"}
+			  }
 			},
 			"service":{
 				"type": "NodePort"
@@ -198,7 +201,7 @@ func (s *PVCSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Cl
 	  }
 `)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
 }
 
@@ -221,7 +224,7 @@ func (s *PVCSuite) updateK0smotronCluster(ctx context.Context, rc *rest.Config) 
 		Do(ctx)
 	s.Require().NoError(res.Error())
 
-	patch = `[{"op": "replace", "path": "/spec/etcd/persistence/size", "value": "70Mi"}]`
+	patch = `[{"op": "replace", "path": "/spec/storage/etcd/persistence/size", "value": "70Mi"}]`
 	res = crdRestClient.
 		Patch(types.JSONPatchType).
 		Resource("clusters").

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
+	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	"github.com/k0sproject/k0smotron/internal/util"
 	"github.com/stretchr/testify/require"
@@ -71,18 +71,18 @@ func TestResolveFiles(t *testing.T) {
 		require.NoError(t, testEnv.Cleanup(ctx, do...))
 	}(cluster, ns, secretFileContent, configmapFileContent)
 
-	filesToResolve := []v1beta1.File{
+	filesToResolve := []v1beta2.File{
 		{
-			ContentFrom: &v1beta1.ContentSource{
-				SecretRef: &v1beta1.ContentSourceRef{
+			ContentFrom: &v1beta2.ContentSource{
+				SecretRef: &v1beta2.ContentSourceRef{
 					Name: secretRef,
 					Key:  secretKeyRef,
 				},
 			},
 		},
 		{
-			ContentFrom: &v1beta1.ContentSource{
-				ConfigMapRef: &v1beta1.ContentSourceRef{
+			ContentFrom: &v1beta2.ContentSource{
+				ConfigMapRef: &v1beta2.ContentSourceRef{
 					Name: configmapRef,
 					Key:  configmapKeyRef,
 				},
@@ -115,10 +115,10 @@ func TestResolveFilesErrorExtractingFileContent(t *testing.T) {
 
 	// source references to non existing resources
 
-	filesToResolve := []v1beta1.File{
+	filesToResolve := []v1beta2.File{
 		{
-			ContentFrom: &v1beta1.ContentSource{
-				SecretRef: &v1beta1.ContentSourceRef{
+			ContentFrom: &v1beta2.ContentSource{
+				SecretRef: &v1beta2.ContentSourceRef{
 					Name: "test",
 					Key:  "test",
 				},
@@ -128,10 +128,10 @@ func TestResolveFilesErrorExtractingFileContent(t *testing.T) {
 	_, err = resolveFiles(ctx, testEnv, cluster, filesToResolve)
 	require.ErrorIs(t, err, errExtractingFileContent)
 
-	filesToResolve = []v1beta1.File{
+	filesToResolve = []v1beta2.File{
 		{
-			ContentFrom: &v1beta1.ContentSource{
-				ConfigMapRef: &v1beta1.ContentSourceRef{
+			ContentFrom: &v1beta2.ContentSource{
+				ConfigMapRef: &v1beta2.ContentSourceRef{
 					Name: "test",
 					Key:  "test",
 				},
@@ -155,10 +155,10 @@ func TestResolveFilesErrorExtractingFileContent(t *testing.T) {
 	}
 	err = testEnv.Create(ctx, secretFileContent)
 	require.NoError(t, err)
-	filesToResolve = []v1beta1.File{
+	filesToResolve = []v1beta2.File{
 		{
-			ContentFrom: &v1beta1.ContentSource{
-				SecretRef: &v1beta1.ContentSourceRef{
+			ContentFrom: &v1beta2.ContentSource{
+				SecretRef: &v1beta2.ContentSourceRef{
 					Name: secretRef,
 					Key:  "nonexistingkey",
 				},
@@ -180,10 +180,10 @@ func TestResolveFilesErrorExtractingFileContent(t *testing.T) {
 	}
 	err = testEnv.Create(ctx, configmapFileContent)
 	require.NoError(t, err)
-	filesToResolve = []v1beta1.File{
+	filesToResolve = []v1beta2.File{
 		{
-			ContentFrom: &v1beta1.ContentSource{
-				ConfigMapRef: &v1beta1.ContentSourceRef{
+			ContentFrom: &v1beta2.ContentSource{
+				ConfigMapRef: &v1beta2.ContentSourceRef{
 					Name: configmapRef,
 					Key:  "nonexistingkey",
 				},
@@ -193,9 +193,9 @@ func TestResolveFilesErrorExtractingFileContent(t *testing.T) {
 	_, err = resolveFiles(ctx, testEnv, cluster, filesToResolve)
 	require.ErrorIs(t, err, errExtractingFileContent)
 
-	filesToResolve = []v1beta1.File{
+	filesToResolve = []v1beta2.File{
 		{
-			ContentFrom: &v1beta1.ContentSource{},
+			ContentFrom: &v1beta2.ContentSource{},
 		},
 	}
 	_, err = resolveFiles(ctx, testEnv, cluster, filesToResolve)

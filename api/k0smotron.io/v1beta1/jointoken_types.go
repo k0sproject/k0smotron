@@ -56,6 +56,7 @@ type JoinTokenRequestStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:shortName=jtr
+// +kubebuilder:deprecatedversion
 
 // JoinTokenRequest is the Schema for the join token request API
 type JoinTokenRequest struct {

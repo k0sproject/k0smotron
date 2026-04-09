@@ -90,8 +90,8 @@ func (c *CloudInitProvisioner) ToProvisionData(input *InputProvisionData) ([]byt
 }
 
 // GetFormat returns the format 'cloud-config' of the provisioner.
-func (c *CloudInitProvisioner) GetFormat() string {
-	return cloudInitProvisioningFormat
+func (c *CloudInitProvisioner) GetFormat() ProvisioningFormat {
+	return CloudInitProvisioningFormat
 }
 
 // PermissionsAsInt converts the Permissions string to an int64.

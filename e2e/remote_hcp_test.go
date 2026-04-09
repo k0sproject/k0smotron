@@ -127,7 +127,7 @@ func remoteHCPSpec(t *testing.T) {
 		Getter:  bootstrapClusterProxy.GetClient(),
 	}, util.GetInterval(e2eConfig, testName, "wait-controllers"))
 	require.NoError(t, err)
-	fmt.Println("Control Planes are reeady!")
+	fmt.Println("Control Planes are ready!")
 
 	waitMachineInterval := util.GetInterval(e2eConfig, testName, "wait-machines")
 	err = util.WaitForWorkerMachine(ctx, util.WaitForWorkersMachineInput{
@@ -139,7 +139,15 @@ func remoteHCPSpec(t *testing.T) {
 		WaitForMachinesIntervals: waitMachineInterval,
 	})
 	require.NoError(t, err)
-	fmt.Println("Worker nodes are reeady!")
+	fmt.Println("Worker nodes are ready!")
+
+	// Verify that the patches field was applied to generated resources
+	{
+		cpSvcName := fmt.Sprintf("kmc-%s-nodeport", clusterName)
+		cpSvc := &corev1.Service{}
+		require.NoError(t, hostingClusterProxy.GetClient().Get(ctx, crclient.ObjectKey{Namespace: namespace.Name, Name: cpSvcName}, cpSvc))
+		require.Equal(t, "true", cpSvc.Annotations["example.com/patched"], "control-plane Service should have the patched annotation")
+	}
 
 	// Verify resources in the hosting cluster and their owner references, then validate GC on deletion
 	ownerName := fmt.Sprintf("%s-root-owner", clusterName)

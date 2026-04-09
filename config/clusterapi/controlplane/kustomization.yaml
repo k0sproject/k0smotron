@@ -1,4 +1,3 @@
-# Adds namespace to all resources.
 namespace: k0smotron
 
 labels:
@@ -6,19 +5,9 @@ labels:
   pairs:
     cluster.x-k8s.io/provider: k0sproject-k0smotron
 
-# Value of this field is prepended to the
-# names of all resources, e.g. a deployment named
-# "wordpress" becomes "alices-wordpress".
-# Note that it should also match with the prefix (text before '-') of the namespace
-# field above.
 namePrefix: k0smotron-
 nameSuffix: -control-plane
 
-# Labels to add to all resources and selectors.
-#labels:
-#- includeSelectors: true
-#  pairs:
-#    someName: someValue
 
 resources:
 - ./rbac
@@ -26,20 +15,11 @@ resources:
 - ../../certmanager
 - ./webhook
 - ./crd
-# [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
-# crd/kustomization.yaml
-#- ../webhook
-# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
-#- ../certmanager
-# [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-#- ../prometheus
 
 patches:
-# Protect the /metrics endpoint by putting it behind auth.
-# If you want your controller-manager to expose the /metrics
-# endpoint w/o any authn/z, please comment the following line.
 - path: manager_config_patch.yaml
 - path: patches/webhook_in_k0scontrolplanes.yaml
+- path: patches/webhook_in_k0smotroncontrolplanes.yaml
 - path: patches/cainjection_in_k0scontrolplanes.yaml
 - path: patches/manager_webhook_patch.yaml
 - path: patches/webhook_service_patch.yaml
@@ -48,18 +28,6 @@ patches:
 configurations:
 - kustomizeconfig.yaml
 
-
-# [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
-# crd/kustomization.yaml
-#- manager_webhook_patch.yaml
-
-# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
-# Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
-# 'CERTMANAGER' needs to be enabled to use ca injection
-#- webhookcainjection_patch.yaml
-
-# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
-# Uncomment the following replacements to add the cert-manager CA injection annotations
 replacements:
   - source: # Add cert-manager annotation to ValidatingWebhookConfiguration, MutatingWebhookConfiguration and CRDs
       kind: Certificate

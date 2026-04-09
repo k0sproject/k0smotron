@@ -1,4 +1,4 @@
 ## Append samples of your project ##
 resources:
-- _v1beta1_k0smotroncluster.yaml
+- _v1beta2_k0smotroncluster.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

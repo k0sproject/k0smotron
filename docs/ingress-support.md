@@ -53,7 +53,7 @@ graph TB
 ### Cluster API Integration
 
 ```yaml
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: my-cluster-cp
@@ -74,7 +74,7 @@ spec:
     When using standalone k0smotron clusters with ingress support, you need to manually set up and configure the HAProxy sidecar on each worker node. See the [Manual Worker Setup for Standalone Clusters](#manual-worker-setup-for-standalone-clusters) section below.
 
 ```yaml
-apiVersion: k0smotron.io/v1beta1
+apiVersion: k0smotron.io/v1beta2
 kind: Cluster
 metadata:
   name: my-cluster

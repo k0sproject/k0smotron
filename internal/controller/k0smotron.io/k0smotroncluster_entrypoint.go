@@ -22,11 +22,10 @@ import (
 	"strings"
 	"text/template"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -40,6 +39,7 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 	var entrypointBuf bytes.Buffer
 	err := entrypointTmpl.Execute(&entrypointBuf, map[string]any{
 		"KineDataSourceURLPlaceholder": kineDataSourceURLPlaceholder,
+		"NatsTokenPlaceholder":         natsTokenPlaceholder,
 		"K0sControllerArgs":            getControllerFlags(kmc),
 		"PrivilegedPortIsUsed":         kmc.Spec.Service.APIPort <= 1024,
 		"UniversalSedInplace":          universalSedInplace,
@@ -77,7 +77,7 @@ func (scope *kmcScope) reconcileEntrypointCM(ctx context.Context, kmc *km.Cluste
 		return err
 	}
 
-	return scope.client.Patch(ctx, &cm, client.Apply, patchOpts...)
+	return scope.reconcileResource(ctx, kmc, &cm)
 }
 
 func getControllerFlags(kmc *km.Cluster) string {
@@ -120,6 +120,42 @@ mkdir -p /etc/k0s && echo "$K0SMOTRON_K0S_YAML" > /etc/k0s/k0s.yaml
 # Substitute the kine datasource URL from the env var
 escaped_url=$(printf '%s' "$K0SMOTRON_KINE_DATASOURCE_URL" | sed 's/[&/\]/\\&/g')
 sedi "s|{{ .KineDataSourceURLPlaceholder }}|$escaped_url|g" /etc/k0s/k0s.yaml
+
+# Generate NATS server config and substitute auth token (no-op for non-NATS clusters)
+if [ -n "$K0SMOTRON_NATS_TOKEN" ]; then
+  mkdir -p /etc/nats
+  {
+    echo "server_name: ${HOSTNAME}"
+    echo "listen: 127.0.0.1:4222"
+    echo "jetstream {"
+    echo "  store_dir: /nats-data"
+    echo "}"
+    if [ "${K0SMOTRON_NATS_REPLICAS:-1}" -gt 1 ]; then
+      ORDINAL="${HOSTNAME##*-}"
+      echo "cluster {"
+      echo "  name: ${K0SMOTRON_NATS_STS_NAME}"
+      echo "  listen: 0.0.0.0:6222"
+      echo "  authorization {"
+      echo "    user: nats"
+      printf '    password: "%s"\n' "$K0SMOTRON_NATS_TOKEN"
+      echo "  }"
+      echo "  routes: ["
+      i=0
+      while [ "$i" -lt "$K0SMOTRON_NATS_REPLICAS" ]; do
+        if [ "$i" != "$ORDINAL" ]; then
+          printf "    nats://nats:%s@%s-%d.%s.%s.svc:6222\n" \
+            "$K0SMOTRON_NATS_TOKEN" "$K0SMOTRON_NATS_STS_NAME" "$i" \
+            "$K0SMOTRON_NATS_SVC_NAME" "$POD_NAMESPACE"
+        fi
+        i=$((i + 1))
+      done
+      echo "  ]"
+      echo "}"
+    fi
+  } > /etc/nats/nats.conf
+  escaped_token=$(printf '%s' "$K0SMOTRON_NATS_TOKEN" | sed 's/[&/\]/\\&/g')
+  sedi "s|{{ .NatsTokenPlaceholder }}|$escaped_token|g" /etc/k0s/k0s.yaml
+fi
 
 {{if .PrivilegedPortIsUsed}}
 apk add --no-cache libcap

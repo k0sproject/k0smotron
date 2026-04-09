@@ -23,9 +23,10 @@ import (
 	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/exec"
 	"github.com/k0sproject/k0smotron/inttest/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -76,7 +77,6 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.Require().True(strings.Contains(configMap.Data["K0SMOTRON_K0S_YAML"], "externalAddress:"))
 
 	time.Sleep(time.Second * 30)
-
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
 
@@ -174,7 +174,7 @@ func (s *BasicSuite) checkClusterStatus(ctx context.Context, rc *rest.Config) {
 			Do(ctx).
 			Into(&kmc)
 
-		return kmc.Status.Ready, nil
+		return conditions.IsTrue(&kmc, km.ClusterAvailableCondition), nil
 	})
 
 	s.Require().NoError(err)

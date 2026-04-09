@@ -106,7 +106,7 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 
 	kmc := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta1",
+		"apiVersion": "k0smotron.io/v1beta2",
 		"kind": "Cluster",
 		"metadata": {
 		  "name": "kmc-test",
@@ -118,7 +118,12 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 			"service":{
 				"type": "NodePort"
 			},
-			"kineDataSourceURL": "postgres://postgres:postgres@postgres.default:5432/kine?sslmode=disable",
+			"storage": {
+			  "type": "kine",
+			  "kine": {
+				"dataSourceURL": "postgres://postgres:postgres@postgres.default:5432/kine?sslmode=disable"
+			  }
+			},
 			"k0sConfig": {
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind": "ClusterConfig",
@@ -130,7 +135,7 @@ func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kube
 	}
 `)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters").Body(kmc).Do(ctx)
 	s.Require().NoError(res.Error())
 }
 

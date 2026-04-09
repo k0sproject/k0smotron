@@ -33,9 +33,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/yaml"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 )
 
 type UpgradeSuite struct {
@@ -122,7 +123,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	_, err = kmcKC.CoreV1().ConfigMaps("default").Get(s.Context(), "test-old-cm", metav1.GetOptions{})
 	s.Require().NoError(err)
 
-	result, err := kc.RESTClient().Get().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/kmc-test/clusters/kmc-test").DoRaw(s.Context())
+	result, err := kc.RESTClient().Get().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/kmc-test/clusters/kmc-test").DoRaw(s.Context())
 	s.Require().NoError(err)
 
 	// If the status of the Owner is correct, the status of all resources
@@ -130,7 +131,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	var kmc km.Cluster
 	err = yaml.Unmarshal(result, &kmc)
 	s.Require().NoError(err)
-	s.Require().True(kmc.Status.Ready)
+	s.Require().True(conditions.IsTrue(&kmc, km.ClusterAvailableCondition))
 }
 
 func (s *UpgradeSuite) checkStatePersists(ctx context.Context, mountedPath string, kc *kubernetes.Clientset, rc *rest.Config) {
