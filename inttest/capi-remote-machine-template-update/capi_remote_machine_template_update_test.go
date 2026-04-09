@@ -44,6 +44,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -193,6 +194,8 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, machines[0].GetName(), corev1.ConditionTrue))
 
 	s.T().Log("update cluster")
+	s.rotateSSHKey(ctx)
+	s.rotateSSHHostKeys(ctx)
 	s.updateCluster()
 	// nolint:staticcheck
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
@@ -211,6 +214,62 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().Len(machines, 1, "Expected 1 machine for K0sControlPlane remote-test, got %d", len(machines))
 
 	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, machines[0].GetName(), corev1.ConditionTrue))
+}
+
+// rotateSSHKey generates a new SSH keypair, adds the public key to the machine's
+// authorized_keys, and updates the footloose-key secret with the new private key.
+// This simulates credential rotation on a reprovisioned machine.
+func (s *RemoteMachineTemplateUpdateSuite) rotateSSHKey(ctx context.Context) {
+	s.T().Log("Rotating SSH auth key")
+
+	newPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	s.Require().NoError(err)
+
+	newPrivateKeyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(newPrivateKey),
+	})
+
+	sshPublicKey, err := ssh.NewPublicKey(&newPrivateKey.PublicKey)
+	s.Require().NoError(err)
+
+	workerSSH, err := s.SSH(ctx, s.K0smotronNode(0))
+	s.Require().NoError(err)
+	defer workerSSH.Disconnect()
+	s.Require().NoError(workerSSH.Exec(ctx, "cat >>/root/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(ssh.MarshalAuthorizedKey(sshPublicKey))}))
+
+	secret, err := s.client.CoreV1().Secrets("default").Get(ctx, "footloose-key", metav1.GetOptions{})
+	s.Require().NoError(err)
+	secret.Data["value"] = newPrivateKeyPEM
+	_, err = s.client.CoreV1().Secrets("default").Update(ctx, secret, metav1.UpdateOptions{})
+	s.Require().NoError(err)
+
+	s.T().Log("SSH auth key rotated")
+}
+
+// rotateSSHHostKeys regenerates SSH host keys on the worker and restarts the
+// container to simulate a VM wipe scenario. sshd starts fresh with new host keys.
+// k0smotron is configured to ignore host key verification (SSH_KNOWN_HOSTS="" in
+// its deployment), so any subsequent provisioning must succeed without a
+// "host key mismatch" error.
+func (s *RemoteMachineTemplateUpdateSuite) rotateSSHHostKeys(ctx context.Context) {
+	s.T().Log("Rotating SSH host keys on worker to simulate VM wipe")
+	nodeName := s.K0smotronNode(0)
+
+	workerSSH, err := s.SSH(ctx, nodeName)
+	s.Require().NoError(err)
+	// Regenerate host keys on disk while the connection is still open.
+	execErr := workerSSH.Exec(ctx, "rm -f /etc/ssh/ssh_host_* && ssh-keygen -A", common.SSHStreams{})
+	workerSSH.Disconnect()
+	s.Require().NoError(execErr)
+
+	// Stop and start the container so sshd loads the new keys.
+	s.Require().NoError(s.Stop([]string{nodeName}))
+	s.Require().NoError(s.Start([]string{nodeName}))
+
+	// Wait until SSH is available again before proceeding.
+	s.Require().NoError(s.WaitForSSH(nodeName, 60*time.Second, 1*time.Second))
+	s.T().Log("SSH host keys rotated and container restarted")
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) findRemoteMachines(namespace string) ([]infra.RemoteMachine, error) {
