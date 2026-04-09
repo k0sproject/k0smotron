@@ -20,8 +20,10 @@ import (
 	"context"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -58,6 +60,11 @@ func (r *ClusterController) Reconcile(ctx context.Context, req ctrl.Request) (re
 	// Nothing really to do, except put the cluster in a ready state
 	if c.ObjectMeta.DeletionTimestamp.IsZero() {
 		c.Status.Initialization.Provisioned = ptr.To(true)
+		conditions.Set(c, metav1.Condition{
+			Type:   "Ready",
+			Status: metav1.ConditionTrue,
+			Reason: "Ready",
+		})
 		if err := r.Status().Update(ctx, c); err != nil {
 			log.Error(err, "Failed to update RemoteCluster status")
 			return ctrl.Result{}, err

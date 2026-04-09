@@ -34,6 +34,7 @@ import (
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -120,82 +121,47 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	mode := ModeNonK0s
-	switch machine.Spec.Bootstrap.ConfigRef.Kind {
-	case "K0sWorkerConfig":
-		mode = ModeWorker
-	case "K0sControllerConfig":
-		mode = ModeController
-	default:
-		mode = ModeNonK0s
+	log = log.WithValues("machine", machine.Name)
+
+	// Fetch the Cluster
+	cluster, err := capiutil.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
+	if err != nil {
+		log.Info("RemoteMachine owner Machine is missing cluster label or cluster does not exist")
+		return ctrl.Result{Requeue: true}, err
+	}
+	if cluster == nil {
+		log.Info(fmt.Sprintf("Cluster association broken for RemoteMachine %s/%s", rm.Namespace, rm.Name))
+		return ctrl.Result{Requeue: true}, nil
 	}
 
-	log = log.WithValues("machine", machine.Name)
+	// Bail out early if surrounding objects are not ready
+	if annotations.IsPaused(cluster, rm) {
+		log.Info("Cluster is paused, skipping RemoteMachine reconciliation")
+		return ctrl.Result{}, nil
+	}
+
+	if !conditions.IsTrue(cluster, clusterv1.ClusterInfrastructureReadyCondition) {
+		log.Info("Cluster infrastructure is not ready yet")
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if machine.Spec.Bootstrap.DataSecretName == nil {
+		log.Info("Waiting for Bootstrap Controller to set bootstrap data")
+		return ctrl.Result{Requeue: true}, nil
+	}
 
 	rmPatchHelper, err := patch.NewHelper(rm, r.Client)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if rm.ObjectMeta.DeletionTimestamp.IsZero() {
-		defer func() {
-			// Always update the RemoteMachine status with the phase the state machine is in
-			if err := rmPatchHelper.Patch(ctx, rm); err != nil {
-				log.Error(err, "Failed to update RemoteMachine status")
-			}
-		}()
-
-		if rm.Spec.Pool != "" {
-			err := r.reservePooledMachine(ctx, rm)
-			if err != nil {
-				log.Error(err, "Error reserving PooledMachine")
-				return ctrl.Result{Requeue: true}, err
-			}
+	defer func() {
+		updateStatus(ctx, rm, err)
+		// Always update the RemoteMachine status with the phase the state machine is in
+		if err := rmPatchHelper.Patch(ctx, rm); err != nil {
+			log.Error(err, "Failed to update RemoteMachine status")
 		}
-
-		if rm.Spec.ProvisionJob == nil {
-			if rm.Spec.Address == "" || rm.Spec.SSHKeyRef.Name == "" {
-				rm.Status.FailureReason = "MissingFields"
-				rm.Status.FailureMessage = "If pool is empty, following fields are required: address, sshKeyRef"
-				rm.Status.Initialization.Provisioned = ptr.To(false)
-				if err := rmPatchHelper.Patch(ctx, rm); err != nil {
-					log.Error(err, "Failed to update RemoteMachine status")
-				}
-				return ctrl.Result{Requeue: true}, nil
-			}
-		}
-
-		// Fetch the Cluster
-		cluster, err := capiutil.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
-		if err != nil {
-			log.Info("RemoteMachine owner Machine is missing cluster label or cluster does not exist")
-			return ctrl.Result{Requeue: true}, err
-		}
-		if cluster == nil {
-			log.Info(fmt.Sprintf("Cluster association broken for RemoteMachine %s/%s", rm.Namespace, rm.Name))
-			return ctrl.Result{Requeue: true}, nil
-		}
-
-		// Bail out early if surrounding objects are not ready
-		if annotations.IsPaused(cluster, rm) {
-			log.Info("Cluster is paused, skipping RemoteMachine reconciliation")
-		}
-
-		if !conditions.IsTrue(cluster, clusterv1.ClusterInfrastructureReadyCondition) {
-			log.Info("Cluster infrastructure is not ready yet")
-			return ctrl.Result{Requeue: true}, nil
-		}
-
-		if rm.Spec.ProviderID != "" {
-			log.Info("RemoteMachine already has ProviderID, skipping reconciliation")
-			return ctrl.Result{}, nil
-		}
-
-		if machine.Spec.Bootstrap.DataSecretName == nil {
-			log.Info("Waiting for Bootstrap Controller to set bootstrap data")
-			return ctrl.Result{Requeue: true}, nil
-		}
-	}
+	}()
 
 	// Fetch the bootstrap data
 	bootstrapData, err := r.getBootstrapData(ctx, machine)
@@ -211,6 +177,14 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	err = yaml.Unmarshal(bootstrapData, cloudInit)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to parse bootstrap data: %w", err)
+	}
+
+	if rm.Spec.Pool != "" && rm.ObjectMeta.DeletionTimestamp.IsZero() {
+		err := r.reservePooledMachineAndPopulateRemoteMachine(ctx, rm)
+		if err != nil {
+			log.Error(err, "Error reserving PooledMachine")
+			return ctrl.Result{Requeue: true}, err
+		}
 	}
 
 	var p Provisioner
@@ -243,6 +217,16 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 	if !rm.ObjectMeta.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
+			mode := ModeNonK0s
+			switch machine.Spec.Bootstrap.ConfigRef.Kind {
+			case "K0sWorkerConfig":
+				mode = ModeWorker
+			case "K0sControllerConfig":
+				mode = ModeController
+			default:
+				mode = ModeNonK0s
+			}
+
 			if err := p.Cleanup(ctx, mode); err != nil {
 				log.Error(err, "Failed to cleanup RemoteMachine")
 			}
@@ -253,23 +237,32 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 				}
 			}
 			controllerutil.RemoveFinalizer(rm, RemoteMachineFinalizer)
-			if err := rmPatchHelper.Patch(ctx, rm); err != nil {
-				return ctrl.Result{}, err
-			}
 		}
 		return ctrl.Result{}, nil
 	}
 
+	// If the machine is already provisioned, skip reconciliation.
 	if rm.Status.Initialization.Provisioned != nil && *rm.Status.Initialization.Provisioned {
 		return ctrl.Result{}, nil
 	}
+	if rm.Spec.ProviderID != "" {
+		log.Info("RemoteMachine already has ProviderID, skipping reconciliation")
+		return ctrl.Result{}, nil
+	}
 
-	ctx, cancel := context.WithCancel(ctx)
+	if rm.Spec.ProvisionJob == nil {
+		if rm.Spec.Address == "" || rm.Spec.SSHKeyRef.Name == "" {
+			rm.Status.SetFailures("MissingFields", "If pool is empty, following fields are required: address, sshKeyRef")
+			return ctrl.Result{Requeue: true}, nil
+		}
+	}
+
+	provisionCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Running a goroutine to monitor if the RemoteMachine gets deleted during provisioning. This way we can delete
-	// proceed to cleanup immediately without waiting for the provisioning to timeout. For example in scenarios where
-	// the bootstrap process hangs and the controller needs to be able to delete the RemoteMachine. Controller-runtime
+	// Running a goroutine to monitor if the RemoteMachine gets deleted during provisioning. This way we can proceed
+	// to cleanup immediately without waiting for the provisioning to timeout. For example in scenarios where the
+	// bootstrap process hangs and the controller needs to be able to delete the RemoteMachine. Controller-runtime
 	// only runs one Reconcile at a time per object, so we need to monitor deletion in a separate goroutine.
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
@@ -277,11 +270,11 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-provisionCtx.Done():
 				return
 			case <-ticker.C:
 				updatedRemoteMachine := &infrastructure.RemoteMachine{}
-				if err := r.Get(ctx, client.ObjectKeyFromObject(rm), updatedRemoteMachine); err == nil &&
+				if err := r.Get(provisionCtx, client.ObjectKeyFromObject(rm), updatedRemoteMachine); err == nil &&
 					!updatedRemoteMachine.DeletionTimestamp.IsZero() {
 					log.Info("Cancelling Bootstrap because the underlying machine has been deleted")
 					cancel()
@@ -291,36 +284,23 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}()
 
-	defer func() {
-		log.Info("Reconcile complete")
-		if err != nil {
-			rm.Status.FailureReason = "ProvisionFailed"
-			rm.Status.FailureMessage = err.Error()
-			rm.Status.Initialization.Provisioned = ptr.To(false)
-		} else {
-			rm.Status.FailureReason = ""
-			rm.Status.FailureMessage = ""
-			rm.Status.Initialization.Provisioned = ptr.To(true)
-		}
-		log.Info(fmt.Sprintf("Updating RemoteMachine status: %+v", rm.Status))
-		if err := rmPatchHelper.Patch(ctx, rm); err != nil {
-			log.Error(err, "Failed to update RemoteMachine status")
-		}
-	}()
-
-	err = p.Provision(ctx)
+	err = p.Provision(provisionCtx)
 	if err != nil {
-		log.Error(err, "Failed to provision RemoteMachine")
-		return ctrl.Result{}, err
+		conditions.Set(rm, metav1.Condition{
+			Type:    string(infrastructure.RemoteMachineBootstrapExecSucceededCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrastructure.InternalErrorReason,
+			Message: "Check the bootstrap logs for more details",
+		})
+		return ctrl.Result{}, fmt.Errorf("failed to provision RemoteMachine: %w", err)
 	}
+	conditions.Set(rm, metav1.Condition{
+		Type:   string(infrastructure.RemoteMachineBootstrapExecSucceededCondition),
+		Status: metav1.ConditionTrue,
+		Reason: infrastructure.RemoteMachineBootstrapExecSucceededReason,
+	})
 
 	rm.Spec.ProviderID = fmt.Sprintf("remote-machine://%s:%d", rm.Spec.Address, rm.Spec.Port)
-	rm.Status.Addresses = []clusterv1.MachineAddress{
-		{
-			Type:    clusterv1.MachineExternalIP,
-			Address: rm.Spec.Address,
-		},
-	}
 
 	m := machine.DeepCopy()
 	for l := range rm.Labels {
@@ -349,7 +329,9 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
-func (r *RemoteMachineController) reservePooledMachine(ctx context.Context, rm *infrastructure.RemoteMachine) error {
+// reservePooledMachineAndPopulateRemoteMachine finds a free machine from the pool specified in the RemoteMachine spec, reserves it, and populates
+// the RemoteMachine spec with the details of the reserved machine.
+func (r *RemoteMachineController) reservePooledMachineAndPopulateRemoteMachine(ctx context.Context, rm *infrastructure.RemoteMachine) error {
 	pooledMachineList := &infrastructure.PooledRemoteMachineList{}
 	if err := r.Client.List(ctx, pooledMachineList, client.InNamespace(rm.Namespace)); err != nil {
 		return fmt.Errorf("failed to list pooled machines: %w", err)
@@ -476,6 +458,51 @@ func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine 
 	}
 
 	return secret.Data["value"], nil
+}
+
+func isBeingDeletedWithoutBeingProvisioned(rm *infrastructure.RemoteMachine) bool {
+	return !rm.ObjectMeta.DeletionTimestamp.IsZero() &&
+		(rm.Status.Initialization.Provisioned == nil || !*rm.Status.Initialization.Provisioned)
+}
+
+func updateStatus(ctx context.Context, rm *infrastructure.RemoteMachine, reconcileErr error) {
+	logger := log.FromContext(ctx)
+
+	// Reset status deprecated fields before status calculation to ensure we are not carrying over any stale status from previous reconciliations.
+	// TODO: Remove this in future when we are ready to fully remove v1beta1 conversion support.
+	rm.Status.Deprecated = nil
+
+	if reconcileErr != nil {
+		rm.Status.SetFailures("ProvisionFailed", reconcileErr.Error())
+	}
+
+	if conditions.IsTrue(rm, infrastructure.RemoteMachineBootstrapExecSucceededCondition) {
+		rm.Status.Initialization.Provisioned = ptr.To(true)
+		rm.Status.Addresses = []clusterv1.MachineAddress{
+			{
+				Type:    clusterv1.MachineExternalIP,
+				Address: rm.Spec.Address,
+			},
+		}
+	}
+
+	summaryOpts := []conditions.SummaryOption{
+		conditions.ForConditionTypes{
+			string(infrastructure.RemoteMachineBootstrapExecSucceededCondition),
+		},
+	}
+	availableCondition, err := conditions.NewSummaryCondition(rm, infrastructure.RemoteMachineReadyCondition, summaryOpts...)
+	if err != nil {
+		logger.Error(err, "Failed to set Available condition")
+		availableCondition = &metav1.Condition{
+			Type:    infrastructure.RemoteMachineReadyCondition,
+			Status:  metav1.ConditionUnknown,
+			Reason:  infrastructure.InternalErrorReason,
+			Message: "Check controller logs for errors",
+		}
+	}
+
+	conditions.Set(rm, *availableCondition)
 }
 
 // SetupWithManager sets up the controller with the Manager.
