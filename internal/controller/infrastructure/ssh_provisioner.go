@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/k0sproject/rig/v2/protocol/ssh/hostkey"
 	"io"
 	"io/fs"
 	"os"
@@ -43,9 +42,9 @@ func init() {
 	// RemoteMachine manages infrastructure where VMs may be reprovisioned with
 	// new host keys at the same address. Disable host key verification to avoid
 	// persistent connection failures after a wipe-and-reprovision cycle.
-	hostkey.KnownHostsPathFromEnv = func() (string, bool) {
-		return "/dev/null", true
-	}
+	//hostkey.KnownHostsPathFromEnv = func() (string, bool) {
+	//	return "/dev/null", true
+	//}
 }
 
 // SSHProvisioner is responsible for provisioning a remote machine using SSH.
