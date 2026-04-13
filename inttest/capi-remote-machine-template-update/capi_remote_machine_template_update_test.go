@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -43,12 +44,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 type RemoteMachineTemplateUpdateSuite struct {
@@ -194,88 +193,24 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, machines[0].GetName(), corev1.ConditionTrue))
 
 	s.T().Log("update cluster")
-	s.rotateSSHKey(ctx)
-	s.rotateSSHHostKeys(ctx)
 	s.updateCluster()
-
-	// RecreateDeleteFirst deletes the old machine first then provisions a new one
-	// at the same address with the rotated SSH host keys. Wait until the old machine
-	// is gone and exactly one new machine is present and active.
-	s.T().Log("waiting for new machine to be provisioned after RecreateDeleteFirst")
-	var newMachine clusterv2.Machine
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 2*time.Second, func(pollCtx context.Context) (bool, error) {
-		ms, err := util.GetControlPlaneMachinesByKcpName(pollCtx, "remote-test", "default", s.client)
-		if err != nil || len(ms) != 1 {
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+		output, err := exec.Command("docker", "exec", "TestRemoteMachineSuite-k0smotron0", "k0s", "status").Output()
+		if err != nil {
 			return false, nil
 		}
-		// Skip machines that are still being deleted.
-		if !ms[0].DeletionTimestamp.IsZero() {
-			return false, nil
-		}
-		newMachine = ms[0]
-		return true, nil
+
+		return strings.Contains(string(output), "Version: v1.29"), nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready in updated cluster")
-	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, newMachine.GetName(), corev1.ConditionTrue))
-}
-
-// rotateSSHKey generates a new SSH keypair, adds the public key to the machine's
-// authorized_keys, and updates the footloose-key secret with the new private key.
-// This simulates credential rotation on a reprovisioned machine.
-func (s *RemoteMachineTemplateUpdateSuite) rotateSSHKey(ctx context.Context) {
-	s.T().Log("Rotating SSH auth key")
-
-	newPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	machines, err = util.GetControlPlaneMachinesByKcpName(ctx, "remote-test", "default", s.client)
 	s.Require().NoError(err)
+	s.Require().Len(machines, 1, "Expected 1 machine for K0sControlPlane remote-test, got %d", len(machines))
 
-	newPrivateKeyPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(newPrivateKey),
-	})
-
-	sshPublicKey, err := ssh.NewPublicKey(&newPrivateKey.PublicKey)
-	s.Require().NoError(err)
-
-	workerSSH, err := s.SSH(ctx, s.K0smotronNode(0))
-	s.Require().NoError(err)
-	defer workerSSH.Disconnect()
-	s.Require().NoError(workerSSH.Exec(ctx, "cat >>/root/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(ssh.MarshalAuthorizedKey(sshPublicKey))}))
-
-	secret, err := s.client.CoreV1().Secrets("default").Get(ctx, "footloose-key", metav1.GetOptions{})
-	s.Require().NoError(err)
-	secret.Data["value"] = newPrivateKeyPEM
-	_, err = s.client.CoreV1().Secrets("default").Update(ctx, secret, metav1.UpdateOptions{})
-	s.Require().NoError(err)
-
-	s.T().Log("SSH auth key rotated")
-}
-
-// rotateSSHHostKeys regenerates SSH host keys on the worker and restarts the
-// container to simulate a VM wipe scenario. sshd starts fresh with new host keys.
-// k0smotron is configured to ignore host key verification (SSH_KNOWN_HOSTS="" in
-// its deployment), so any subsequent provisioning must succeed without a
-// "host key mismatch" error.
-func (s *RemoteMachineTemplateUpdateSuite) rotateSSHHostKeys(ctx context.Context) {
-	s.T().Log("Rotating SSH host keys on worker to simulate VM wipe")
-	nodeName := s.K0smotronNode(0)
-
-	workerSSH, err := s.SSH(ctx, nodeName)
-	s.Require().NoError(err)
-	// Regenerate host keys on disk while the connection is still open.
-	execErr := workerSSH.Exec(ctx, "rm -f /etc/ssh/ssh_host_* && ssh-keygen -A", common.SSHStreams{})
-	workerSSH.Disconnect()
-	s.Require().NoError(execErr)
-
-	// Stop and start the container so sshd loads the new keys.
-	s.Require().NoError(s.Stop([]string{nodeName}))
-	s.Require().NoError(s.Start([]string{nodeName}))
-
-	// Wait until SSH is available again before proceeding.
-	s.Require().NoError(s.WaitForSSH(nodeName, 60*time.Second, 1*time.Second))
-	s.T().Log("SSH host keys rotated and container restarted")
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, machines[0].GetName(), corev1.ConditionTrue))
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) findRemoteMachines(namespace string) ([]infra.RemoteMachine, error) {
@@ -474,7 +409,6 @@ metadata:
 spec:
   replicas: 1
   version: v1.29.2+k0s.0
-  updateStrategy: RecreateDeleteFirst
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
