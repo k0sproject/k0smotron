@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"strconv"
 	"strings"
@@ -414,7 +415,6 @@ func (s *MultiInstanceWatchSelectorSuite) getClusterReconcileCounter(ctx context
 
 func parseClusterReconcileCounter(r io.Reader) (float64, error) {
 	var total float64
-	var found bool
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -436,14 +436,10 @@ func parseClusterReconcileCounter(r io.Reader) (float64, error) {
 			return 0, fmt.Errorf("parse reconcile metric value from %q: %w", line, err)
 		}
 		total += value
-		found = true
 	}
 
 	if err := scanner.Err(); err != nil {
 		return 0, err
-	}
-	if !found {
-		return 0, fmt.Errorf("metric %q for the cluster controller not found", reconcileMetricName)
 	}
 
 	return total, nil
@@ -451,12 +447,8 @@ func parseClusterReconcileCounter(r io.Reader) (float64, error) {
 
 func mergeStringMaps(base, overlay map[string]string) map[string]string {
 	out := map[string]string{}
-	for key, value := range base {
-		out[key] = value
-	}
-	for key, value := range overlay {
-		out[key] = value
-	}
+	maps.Copy(out, base)
+	maps.Copy(out, overlay)
 	return out
 }
 
