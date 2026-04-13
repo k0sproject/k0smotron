@@ -29,7 +29,6 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -49,6 +48,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 type RemoteMachineTemplateUpdateSuite struct {
@@ -197,23 +197,29 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.rotateSSHKey(ctx)
 	s.rotateSSHHostKeys(ctx)
 	s.updateCluster()
+
+	// RecreateDeleteFirst deletes the old machine first then provisions a new one
+	// at the same address with the rotated SSH host keys. Wait until the old machine
+	// is gone and exactly one new machine is present and active.
+	s.T().Log("waiting for new machine to be provisioned after RecreateDeleteFirst")
+	var newMachine clusterv2.Machine
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "TestRemoteMachineSuite-k0smotron0", "k0s", "status").Output()
-		if err != nil {
+	err = wait.PollImmediateUntilWithContext(ctx, 2*time.Second, func(pollCtx context.Context) (bool, error) {
+		ms, err := util.GetControlPlaneMachinesByKcpName(pollCtx, "remote-test", "default", s.client)
+		if err != nil || len(ms) != 1 {
 			return false, nil
 		}
-
-		return strings.Contains(string(output), "Version: v1.29"), nil
+		// Skip machines that are still being deleted.
+		if !ms[0].DeletionTimestamp.IsZero() {
+			return false, nil
+		}
+		newMachine = ms[0]
+		return true, nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for node to be ready in updated cluster")
-	machines, err = util.GetControlPlaneMachinesByKcpName(ctx, "remote-test", "default", s.client)
-	s.Require().NoError(err)
-	s.Require().Len(machines, 1, "Expected 1 machine for K0sControlPlane remote-test, got %d", len(machines))
-
-	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, machines[0].GetName(), corev1.ConditionTrue))
+	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, newMachine.GetName(), corev1.ConditionTrue))
 }
 
 // rotateSSHKey generates a new SSH keypair, adds the public key to the machine's
@@ -468,6 +474,7 @@ metadata:
 spec:
   replicas: 1
   version: v1.29.2+k0s.0
+  updateStrategy: RecreateDeleteFirst
   k0sConfigSpec:
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
