@@ -21,6 +21,7 @@ package e2e
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,8 +33,8 @@ import (
 	capiutil "sigs.k8s.io/cluster-api/util"
 )
 
-func TestWorkloadClusterRecreateUpgrade(t *testing.T) {
-	setupAndRun(t, workloadClusterRecreateUpgradeSpec)
+func TestWorkloadClusterUpgrade(t *testing.T) {
+	setupAndRun(t, workloadClusterUpgradeSpec)
 }
 
 // Validation of the correct operation of k0smotron when the
@@ -42,13 +43,15 @@ func TestWorkloadClusterRecreateUpgrade(t *testing.T) {
 // 1. Creation of a workload cluster.
 //   - Ensures the cluster becomes operational.
 //
-// 2. Updating the control plane version using Recreate upgrade strategy.
+// 2. Updating the control plane version using the selected (flavor) upgrade strategy.
 //   - Verifies the cluster status aligns with the expected state after the update.
 //
-// 3. Performing a subsequent control plane version upgrade using Inplace upgrade strategy.
+// 3. Performing a subsequent control plane version upgrade using the selected (flavor) upgrade strategy.
 //   - Confirms the cluster status is consistent and desired post-update.
-func workloadClusterRecreateUpgradeSpec(t *testing.T) {
-	testName := "workload-recreate-upgrade"
+func workloadClusterUpgradeSpec(t *testing.T) {
+	testName := "workload-inplace-upgrade"
+
+	require.NotEmpty(t, flavor, "a flavor between InPlace, Recreate or RecreateDeleteFirst needs to be specified for this test")
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 	namespace, _ := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
@@ -56,11 +59,9 @@ func workloadClusterRecreateUpgradeSpec(t *testing.T) {
 	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
-		ClusterctlConfigPath: clusterctlConfigPath,
-		KubeconfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
-		// no flavor specified, so it will use the default one "cluster-template"
-		Flavor: "",
-
+		ClusterctlConfigPath:     clusterctlConfigPath,
+		KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+		Flavor:                   strings.ToLower(flavor),
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
@@ -69,9 +70,8 @@ func workloadClusterRecreateUpgradeSpec(t *testing.T) {
 		InfrastructureProvider: "docker",
 		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
-			"CLUSTER_NAME":    clusterName,
-			"NAMESPACE":       namespace.Name,
-			"UPDATE_STRATEGY": "Recreate",
+			"CLUSTER_NAME": clusterName,
+			"NAMESPACE":    namespace.Name,
 		},
 	})
 	require.NotNil(t, workloadClusterTemplate)
@@ -107,6 +107,12 @@ func workloadClusterRecreateUpgradeSpec(t *testing.T) {
 		Cluster: cluster,
 	}, util.GetInterval(e2eConfig, testName, "wait-controllers"))
 	require.NoError(t, err)
+
+	// For Inplace upgrades we need to wait for the controlplane to have all the replicas ready before upgrading it again.
+	if flavor == "InPlace" {
+		err = util.WaitForControlPlaneToBeReady(ctx, bootstrapClusterProxy.GetClient(), controlPlane, util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
+		require.NoError(t, err)
+	}
 
 	fmt.Println("Upgrading the Kubernetes control-plane version")
 	err = util.UpgradeControlPlaneAndWaitForReadyUpgrade(ctx, util.UpgradeControlPlaneAndWaitForUpgradeInput{

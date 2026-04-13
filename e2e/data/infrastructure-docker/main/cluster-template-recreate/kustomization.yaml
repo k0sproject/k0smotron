@@ -1,0 +1,12 @@
+resources:
+- ../cluster-template
+
+patches:
+  - target:
+      group: controlplane.cluster.x-k8s.io
+      version: v1beta1
+      kind: K0sControlPlane
+    patch: |
+      - op: add
+        path: /spec/updateStrategy
+        value: Recreate

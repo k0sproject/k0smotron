@@ -91,6 +91,9 @@ var (
 
 	// managementClusterProxy allows to interact with the management cluster to be used for the e2e tests.
 	bootstrapClusterProxy capiframework.ClusterProxy
+
+	// flavor is the workload cluster template variant to be used for a particular test.
+	flavor string
 )
 
 func init() {
@@ -99,6 +102,7 @@ func init() {
 	flag.BoolVar(&skipCleanup, "skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
 	flag.StringVar(&artifactFolder, "artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.BoolVar(&useExistingCluster, "use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
+	flag.StringVar(&flavor, "flavor", "", "the workload cluster template variant to be used for a particular test")
 
 	// On the k0smotron side we avoid using Gomega for assertions but since we want to use the
 	// cluster-api framework as much as possible, the framework assertions require registering

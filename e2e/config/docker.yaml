@@ -41,6 +41,9 @@ providers:
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-machinedeployment.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-remote-hcp.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-ingress.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/cluster-template-inplace.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreate.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreatedeletefirst.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
