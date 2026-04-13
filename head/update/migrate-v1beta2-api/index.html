@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-advanced/components/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/update/migrate-v1beta2-api/">
       
       
-        <link rel="prev" href="../../capi-examples/cilium-kube-proxy-replacement/">
+        <link rel="prev" href="../hcp-autopilot/">
       
       
-        <link rel="next" href="../cloud-init/">
+        <link rel="next" href="../../faq/">
       
       
       <link rel="icon" href="../../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Component customization - Documentation</title>
+        <title>Migrate to v1beta2 API - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#component-customization" class="md-skip">
+        <a href="#migrate-to-v1beta2-apis" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Component customization
+              Migrate to v1beta2 API
             
           </span>
         </div>
@@ -348,20 +348,18 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -377,7 +375,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Usage
@@ -618,20 +616,18 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
           <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
@@ -647,7 +643,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             Cluster API
@@ -1229,27 +1225,33 @@ You are not currently viewing the documentation for the current stable release o
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
               
                 
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_12" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_3_12" id="__nav_4_3_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
             
   
   
@@ -1262,8 +1264,8 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_12_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_3_12">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
             <span class="md-nav__icon md-icon"></span>
             Advanced
           </label>
@@ -1273,32 +1275,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Component customization
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../advanced/components/" class="md-nav__link">
         
   
   
@@ -1309,113 +1289,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      Overview
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#where-to-define-patches" class="md-nav__link">
-    <span class="md-ellipsis">
-      Where to define patches
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#standalone" class="md-nav__link">
-    <span class="md-ellipsis">
-      Standalone
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cluster-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      Cluster API
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#targeting-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      Targeting resources
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#patch-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Patch types
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#component-values" class="md-nav__link">
-    <span class="md-ellipsis">
-      Component values
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes-and-limitations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Notes and limitations
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1428,7 +1301,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../cloud-init/" class="md-nav__link">
+      <a href="../../advanced/cloud-init/" class="md-nav__link">
         
   
   
@@ -1439,14 +1312,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -1535,7 +1400,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/update-standalone/" class="md-nav__link">
+      <a href="../update-standalone/" class="md-nav__link">
         
   
   
@@ -1558,7 +1423,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/update-cluster-pod/" class="md-nav__link">
+      <a href="../update-cluster-pod/" class="md-nav__link">
         
   
   
@@ -1581,7 +1446,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/update-capi-cluster/" class="md-nav__link">
+      <a href="../update-capi-cluster/" class="md-nav__link">
         
   
   
@@ -1604,7 +1469,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/hcp-autopilot/" class="md-nav__link">
+      <a href="../hcp-autopilot/" class="md-nav__link">
         
   
   
@@ -1622,6 +1487,130 @@ You are not currently viewing the documentation for the current stable release o
             
           </ul>
         </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Migrate to v1beta2 API
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Migrate to v1beta2 API
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#deprecation-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecation Policy
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changes-per-api-group-in-v1beta2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changes per API group in v1beta2
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changes per API group in v1beta2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#k0smotronio" class="md-nav__link">
+    <span class="md-ellipsis">
+      k0smotron.io
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bootstrapclusterx-k8sio" class="md-nav__link">
+    <span class="md-ellipsis">
+      bootstrap.cluster.x-k8s.io
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#controlplaneclusterx-k8sio" class="md-nav__link">
+    <span class="md-ellipsis">
+      controlplane.cluster.x-k8s.io
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infrastructureclusterx-k8sio" class="md-nav__link">
+    <span class="md-ellipsis">
+      infrastructure.cluster.x-k8s.io
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1708,10 +1697,10 @@ You are not currently viewing the documentation for the current stable release o
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
             
   
   
@@ -1724,8 +1713,8 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
             <span class="md-nav__icon md-icon"></span>
             Contributing
           </label>
@@ -1890,10 +1879,10 @@ You are not currently viewing the documentation for the current stable release o
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
         
           
-          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
             
   
   
@@ -1906,8 +1895,8 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_11">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             Reference
           </label>
@@ -1928,10 +1917,10 @@ You are not currently viewing the documentation for the current stable release o
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12_1" >
         
           
-          <label class="md-nav__link" for="__nav_11_1" id="__nav_11_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12_1" id="__nav_12_1_label" tabindex="0">
             
   
   
@@ -1944,8 +1933,8 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_11_1">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_12_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12_1">
             <span class="md-nav__icon md-icon"></span>
             Custom resources
           </label>
@@ -2177,46 +2166,55 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#deprecation-policy" class="md-nav__link">
     <span class="md-ellipsis">
-      Overview
+      Deprecation Policy
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#where-to-define-patches" class="md-nav__link">
+  <a href="#changes-per-api-group-in-v1beta2" class="md-nav__link">
     <span class="md-ellipsis">
-      Where to define patches
+      Changes per API group in v1beta2
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
+    <nav class="md-nav" aria-label="Changes per API group in v1beta2">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#standalone" class="md-nav__link">
+  <a href="#k0smotronio" class="md-nav__link">
     <span class="md-ellipsis">
-      Standalone
+      k0smotron.io
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#cluster-api" class="md-nav__link">
+  <a href="#bootstrapclusterx-k8sio" class="md-nav__link">
     <span class="md-ellipsis">
-      Cluster API
+      bootstrap.cluster.x-k8s.io
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#controlplaneclusterx-k8sio" class="md-nav__link">
+    <span class="md-ellipsis">
+      controlplane.cluster.x-k8s.io
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infrastructureclusterx-k8sio" class="md-nav__link">
+    <span class="md-ellipsis">
+      infrastructure.cluster.x-k8s.io
     </span>
   </a>
   
@@ -2224,42 +2222,6 @@ You are not currently viewing the documentation for the current stable release o
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#targeting-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      Targeting resources
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#patch-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Patch types
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#component-values" class="md-nav__link">
-    <span class="md-ellipsis">
-      Component values
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes-and-limitations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Notes and limitations
-    </span>
-  </a>
   
 </li>
       
@@ -2279,231 +2241,121 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="component-customization">Component customization<a class="headerlink" href="#component-customization" title="Permanent link">#</a></h1>
-<p>This page explains how to customize Kubernetes resources generated by k0smotron.</p>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">#</a></h2>
-<p>k0smotron creates the Kubernetes resources (for example <code>StatefulSet</code>, <code>Service</code>, and <code>ConfigMap</code>) documented in <a href="../../generated-resources/">Generated Resources</a> through a <code>k0smotron.io/v1beta2</code> Cluster. You can customize those generated resources by defining patches.</p>
+<h1 id="migrate-to-v1beta2-apis">Migrate to v1beta2 APIs<a class="headerlink" href="#migrate-to-v1beta2-apis" title="Permanent link">#</a></h1>
+<p>This guide explains changes introduced in new <code>v1beta2</code> and how to migrate manifests from current <code>v1beta1</code> to the new k0smotron API. For more details about each Api Group, please check current custom resource references.</p>
+<h2 id="deprecation-policy">Deprecation Policy<a class="headerlink" href="#deprecation-policy" title="Permanent link">#</a></h2>
+<p>Starting from <code>v1.11.0</code>, k0smotron uses new <code>v1beta2</code> API version as <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/storage-version/">storage version</a> and deprecate <code>v1beta1</code>, which still served for compatibility. K0smotron follows the <a href="https://kubernetes.io/docs/reference/using-api/deprecation-policy/">Kubernetes API deprecation policy</a> for beta APIs:</p>
 <ul>
-<li><strong>Standalone</strong>: You create the <code>k0smotron.io/v1beta2</code> Cluster directly. See <a href="../../cluster/">Create a cluster</a>.</li>
-<li><strong>Cluster API integration</strong>: When k0smotron acts as a control plane provider (in-cluster), <code>K0smotronControlPlane</code> creates a <code>k0smotron.io/v1beta2</code> Cluster, which then produces the same set of generated resources. See <a href="../../cluster-api/">k0smotron as Cluster API provider</a>.</li>
+<li><code>v1beta1</code> is deprecated once <code>v1beta2</code> is the preferred/storage version.</li>
+<li><code>v1beta1</code> will be removed no earlier than <code>max(9 months, 3 minor releases)</code> after deprecation.</li>
+<li>Until removal, <code>v1beta1</code> may still be served via conversion webhooks.</li>
+<li>After removal, clients must use <code>v1beta2</code>.</li>
 </ul>
-<p>In both modes, the resources that can be customized are the same, and you define patches in the same field (<code>.spec.patches</code>); only the resource that has that spec differs (Cluster in standalone, K0smotronControlPlane in Cluster API).</p>
-<h2 id="where-to-define-patches">Where to define patches<a class="headerlink" href="#where-to-define-patches" title="Permanent link">#</a></h2>
-<p>Define patches in <code>spec.patches</code> on the resource that owns the generated resources:</p>
-<table>
-<thead>
-<tr>
-<th>Mode</th>
-<th>Resource</th>
-<th>Field</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Standalone</strong></td>
-<td><a href="../../resource-reference/k0smotron.io-v1beta2/"><code>k0smotron.io/v1beta2</code> Cluster</a></td>
-<td><code>Cluster.spec.patches</code></td>
-</tr>
-<tr>
-<td><strong>Cluster API (control plane provider - in-cluster)</strong></td>
-<td><a href="../../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/"><code>K0smotronControlPlane</code></a></td>
-<td><code>K0smotronControlPlane.spec.patches</code></td>
-</tr>
-</tbody>
-</table>
-<p>The patch format and targeting rules are identical in both modes.</p>
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">#</a></h2>
-<h3 id="standalone">Standalone<a class="headerlink" href="#standalone" title="Permanent link">#</a></h3>
-<p>The following example uses a <code>k0smotron.io/v1beta2</code> Cluster (standalone). It targets the k0s configuration <code>ConfigMap</code> and adds a custom label using a merge patch.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.3-k0s.0</span>
-<span class="w">  </span><span class="nt">patches</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">target</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
-<span class="w">      </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster-config</span>
-<span class="w">    </span><span class="nt">patch</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge</span>
-<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">        </span><span class="no">metadata:</span>
-<span class="w">          </span><span class="no">labels:</span>
-<span class="w">            </span><span class="no">custom-label: &quot;my-value&quot;</span>
-</code></pre></div>
-<h3 id="cluster-api">Cluster API<a class="headerlink" href="#cluster-api" title="Permanent link">#</a></h3>
-<p>The following example builds on the <a href="../../capi-docker/">Docker (HCP)</a> example and adds patches. It demonstrates all three patch types (<code>strategic</code>, <code>json</code>, <code>merge</code>) targeting different components. Before starting, ensure that you have met the <a href="../../capi-examples/#prerequisites">general prerequisites</a> and initialized the Docker infrastructure provider as described in the <a href="../../capi-docker/">Docker (HCP)</a> guide.</p>
-<p><strong>Note:</strong> The <code>K0smotronControlPlane</code> spec embeds the <code>k0smotron.io/v1beta2</code> <code>ClusterSpec</code>, so the <code>patches</code> field and all other fields follow the v1beta2 schema.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.0.0/16</span>
-<span class="w">    </span><span class="nt">serviceDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.local</span>
-<span class="w">    </span><span class="nt">services</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.128.0.0/12</span>
-<span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
-<span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerCluster</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-cp</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.3-k0s.0</span>
-<span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
-<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
-<span class="w">  </span><span class="nt">patches</span><span class="p">:</span>
-<span class="w">  </span><span class="c1"># Set resource requests/limits and probe timing on the control-plane pods</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">target</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StatefulSet</span>
-<span class="w">      </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-plane</span>
-<span class="w">    </span><span class="nt">patch</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">strategic</span>
-<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">        </span><span class="no">spec:</span>
-<span class="w">          </span><span class="no">template:</span>
-<span class="w">            </span><span class="no">spec:</span>
-<span class="w">              </span><span class="no">containers:</span>
-<span class="w">                </span><span class="no">- name: controller</span>
-<span class="w">                  </span><span class="no">resources:</span>
-<span class="w">                    </span><span class="no">requests:</span>
-<span class="w">                      </span><span class="no">memory: &quot;256Mi&quot;</span>
-<span class="w">                      </span><span class="no">cpu: &quot;250m&quot;</span>
-<span class="w">                    </span><span class="no">limits:</span>
-<span class="w">                      </span><span class="no">memory: &quot;512Mi&quot;</span>
-<span class="w">                      </span><span class="no">cpu: &quot;500m&quot;</span>
-<span class="w">                  </span><span class="no">readinessProbe:</span>
-<span class="w">                    </span><span class="no">initialDelaySeconds: 10</span>
-<span class="w">                  </span><span class="no">livenessProbe:</span>
-<span class="w">                    </span><span class="no">initialDelaySeconds: 10</span>
-<span class="w">  </span><span class="c1"># Increase the etcd readiness probe initial delay</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">target</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StatefulSet</span>
-<span class="w">      </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">etcd</span>
-<span class="w">    </span><span class="nt">patch</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
-<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[{&quot;op&quot;:&quot;add&quot;,&quot;path&quot;:&quot;/spec/template/spec/containers/0/readinessProbe/initialDelaySeconds&quot;,&quot;value&quot;:15}]&#39;</span>
-<span class="w">  </span><span class="c1"># Add an annotation to the control-plane Service</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">target</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
-<span class="w">      </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-plane</span>
-<span class="w">    </span><span class="nt">patch</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge</span>
-<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">        </span><span class="no">metadata:</span>
-<span class="w">          </span><span class="no">annotations:</span>
-<span class="w">            </span><span class="no">example.com/managed-by: &quot;k0smotron-customized&quot;</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerCluster</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron</span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineDeployment</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-md</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">      </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">        </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
-<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.3</span>
-<span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">configRef</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io</span>
-<span class="w">          </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
-<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-machine-config</span>
-<span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
-<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-mt</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-mt</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-machine-config</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.3+k0s.0</span>
-</code></pre></div>
-<p>After the cluster is provisioned, verify that the patches were applied. Resource names follow the conventions described in <a href="../../generated-resources/">Generated Resources</a>.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Verify resource limits on the control-plane StatefulSet</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].resources}&#39;</span>
-
-<span class="c1"># Verify the control-plane probe timing</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].readinessProbe.initialDelaySeconds}&#39;</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].livenessProbe.initialDelaySeconds}&#39;</span>
-
-<span class="c1"># Verify the etcd readiness probe initial delay</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test-etcd<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].readinessProbe.initialDelaySeconds}&#39;</span>
-
-<span class="c1"># Verify the annotation on the control-plane Service</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>service<span class="w"> </span>kmc-docker-test-lb<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.metadata.annotations}&#39;</span>
-</code></pre></div>
-<h2 id="targeting-resources">Targeting resources<a class="headerlink" href="#targeting-resources" title="Permanent link">#</a></h2>
-<p>To keep targeting predictable and maintainable, each patch entry has a <code>target</code> block that selects resources by:</p>
+<h2 id="changes-per-api-group-in-v1beta2">Changes per API group in <code>v1beta2</code><a class="headerlink" href="#changes-per-api-group-in-v1beta2" title="Permanent link">#</a></h2>
+<h3 id="k0smotronio">k0smotron.io<a class="headerlink" href="#k0smotronio" title="Permanent link">#</a></h3>
+<h4 id="cluster">Cluster<a class="headerlink" href="#cluster" title="Permanent link">#</a></h4>
 <ul>
-<li><code>kind</code>: Kubernetes Kind (for example <code>StatefulSet</code>, <code>Service</code>, <code>ConfigMap</code>)</li>
-<li><code>component</code>: value of the <code>app.kubernetes.io/component</code> label on the generated resource</li>
+<li>Storage config was restructured:<ul>
+<li><code>spec.kineDataSourceURL</code> -&gt; <code>spec.storage.kine.dataSourceURL</code></li>
+<li><code>spec.kineDataSourceSecretName</code> -&gt; <code>spec.storage.kine.dataSourceSecretName</code></li>
+<li><code>spec.etcd</code> -&gt; <code>spec.storage.etcd</code></li>
+<li>New selector field: <code>spec.storage.type</code> with values <code>etcd</code>, <code>kine</code>, <code>nats</code>.</li>
 </ul>
-<p>This avoids string-based targeting via names and avoids template-based targeting. See the <a href="#examples">Examples</a> above.</p>
-<h2 id="patch-types">Patch types<a class="headerlink" href="#patch-types" title="Permanent link">#</a></h2>
-<p>Each patch entry has a <code>patch</code> block containing <code>type</code> and <code>content</code>. The format of <code>content</code> depends on <code>type</code>:</p>
-<ul>
-<li><code>json</code>: a <a href="https://datatracker.ietf.org/doc/html/rfc6902">JSON Patch</a> array, an array of add/remove/replace operations</li>
-<li><code>strategic</code>: a <a href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#use-a-strategic-merge-patch-to-update-a-deployment">Kubernetes strategic merge patch</a> object, like merge but with array merge semantics based on <code>patchStrategy</code> tags</li>
-<li><code>merge</code>: a <a href="https://datatracker.ietf.org/doc/html/rfc7386">JSON Merge Patch</a> object, a partial JSON/YAML object that is merged into the target resource</li>
+</li>
+<li>Introduce of <code>spec.patches</code> for customize patching of generated resoruces in <code>v1beta2</code>. Check documentation about <a href="../../advanced/components/">patches</a> for more details.</li>
+<li>Now, a Cluster state is reported using conditions as Kubernetes conventions follows. This implies:<ul>
+<li>Move <code>Cluster</code> status reporting to Conditions. Details about introduced conditions can be found in Pull Request <a href="https://github.com/k0sproject/k0smotron/pull/1365">#1365</a>.</li>
+<li>Deprecate legacy status fields such as <code>status.ready</code> and <code>status.reconciliationStatus</code>. In <strong>v1beta2</strong>, this fields are stored under <code>status.deprecated.v1beta1</code> for backward compatibility, and will be removed once <strong>v1beta1</strong> support is dropped.</li>
 </ul>
-<h2 id="component-values">Component values<a class="headerlink" href="#component-values" title="Permanent link">#</a></h2>
-<p>k0smotron labels generated resources with <code>app.kubernetes.io/component</code> to describe their purpose. Use these values in the <code>target.component</code> field when targeting patches. For the full list of component values, resource types, and their naming conventions, see <a href="../../generated-resources/">Generated Resources</a>.</p>
-<p><strong>Note:</strong> A <code>(kind, component)</code> combination is not always unique. For example, <code>component: monitoring</code> is shared by two ConfigMaps (Prometheus and Nginx). A patch targeting such a combination will be applied to <strong>all</strong> matching resources.</p>
-<h2 id="notes-and-limitations">Notes and limitations<a class="headerlink" href="#notes-and-limitations" title="Permanent link">#</a></h2>
+</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Downgrade caveat: <code>spec.storage.type</code> for <code>nats</code> type  and <code>spec.patches</code> has no <code>v1beta1</code> equivalent.</p>
+</div>
+<h4 id="jointokenrequest">JoinTokenRequest<a class="headerlink" href="#jointokenrequest" title="Permanent link">#</a></h4>
 <ul>
-<li>Patches are applied <strong>in list order</strong> after k0smotron generates each resource and before it is applied to the cluster. Multiple patches that match the same resource (same <code>kind</code> and <code>component</code>) are applied in sequence.</li>
-<li>A patch is applied to all generated resources that match the given <code>kind</code> and <code>component</code> combination.</li>
-<li>Only resources created and managed by the K0smotron Cluster (documented in <a href="../../generated-resources/">Generated Resources</a>) are patch targets. Other resources are not; for example, when using Cluster API, certificate Secrets are created by Cluster API controllers and follow Cluster API naming conventions, so they are not patch targets.</li>
+<li>Changed the status section to use conditions for reporting status. This improvement includes:<ul>
+<li>Following Kubernetes conventions for status reporting by adding <code>status.conditions</code> in <strong>v1beta2</strong> (see related Pull Request <a href="https://github.com/k0sproject/k0smotron/pull/1416">#1416</a>).</li>
+<li>Deprecating the <code>status.reconciliationStatus</code> field. In <strong>v1beta2</strong>, this field is stored under <code>status.deprecated.v1beta1.reconciliationStatus</code> for backward compatibility, and will be removed once <strong>v1beta1</strong> support is dropped.</li>
+</ul>
+</li>
+</ul>
+<h3 id="bootstrapclusterx-k8sio">bootstrap.cluster.x-k8s.io<a class="headerlink" href="#bootstrapclusterx-k8sio" title="Permanent link">#</a></h3>
+<h4 id="k0scontrollerconfig-and-k0sworkerconfig">K0sControllerConfig and K0sWorkerConfig<a class="headerlink" href="#k0scontrollerconfig-and-k0sworkerconfig" title="Permanent link">#</a></h4>
+<ul>
+<li><code>spec.ignition</code> and <code>spec.customUserDataRef</code> moved under <code>spec.provisioner</code>.</li>
+<li>Renamed command fields:<ul>
+<li><code>spec.preStartCommands</code> -&gt; <code>spec.preK0sCommands</code>.</li>
+<li><code>spec.postStartCommands</code> -&gt; <code>spec.postK0sCommands</code>.</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>The Status section has been changed to follow the CAPI v1beta2 API proposal.<ul>
+<li>Status moved from boolean ready flag to initialization struct:<ul>
+<li><code>status.ready</code> -&gt; <code>status.initialization.dataSecretCreated</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>Some other changes may affect the internal Go types in k0smotron.</p>
+<h3 id="controlplaneclusterx-k8sio">controlplane.cluster.x-k8s.io<a class="headerlink" href="#controlplaneclusterx-k8sio" title="Permanent link">#</a></h3>
+<h4 id="k0scontrolplane">K0sControlPlane<a class="headerlink" href="#k0scontrolplane" title="Permanent link">#</a></h4>
+<ul>
+<li>Status fields aligned to CAPI v1beta2 style:<ul>
+<li><code>status.updatedReplicas</code> -&gt; <code>status.upToDateReplicas</code>.</li>
+<li><code>status.unavailableReplicas</code> replaced by <code>status.availableReplicas</code>.</li>
+<li><code>status.initialized</code> -&gt; <code>status.initialization.controlPlaneInitialized</code>.</li>
+</ul>
+</li>
+<li>Several status counters are now optional pointers (may be unset early in reconciliation).</li>
+</ul>
+<h4 id="k0smotroncontrolplane">K0smotronControlPlane<a class="headerlink" href="#k0smotroncontrolplane" title="Permanent link">#</a></h4>
+<ul>
+<li>Storage config was restructured:<ul>
+<li><code>spec.kineDataSourceURL</code> -&gt; <code>spec.storage.kine.dataSourceURL</code></li>
+<li><code>spec.kineDataSourceSecretName</code> -&gt; <code>spec.storage.kine.dataSourceSecretName</code></li>
+<li><code>spec.etcd</code> -&gt; <code>spec.storage.etcd</code></li>
+<li>New selector field: <code>spec.storage.type</code> with values <code>etcd</code>, <code>kine</code>, <code>nats</code>.</li>
+</ul>
+</li>
+<li>Introduce of <code>spec.patches</code> for customize patching of generated resoruces in <code>v1beta2</code>. Check documentation about <a href="../../advanced/components/">patches</a> for more details.</li>
+<li>Now, a Cluster state is reported using conditions as Kubernetes conventions follows. This implies:<ul>
+<li>Move <code>Cluster</code> status reporting to Conditions. Details about introduced conditions can be found in Pull Request <a href="https://github.com/k0sproject/k0smotron/pull/1365">#1365</a>.</li>
+<li>Deprecate legacy status fields such as <code>status.ready</code> and <code>status.reconciliationStatus</code>. In <strong>v1beta2</strong>, this fields are stored under <code>status.deprecated.v1beta1</code> for backward compatibility, and will be removed once <strong>v1beta1</strong> support is dropped.</li>
+</ul>
+</li>
+<li>Status fields aligned to CAPI v1beta2 style:<ul>
+<li><code>status.updatedReplicas</code> -&gt; <code>status.upToDateReplicas</code>.</li>
+<li><code>status.unavailableReplicas</code> replaced by <code>status.availableReplicas</code>.</li>
+<li><code>status.initialized</code> -&gt; <code>status.initialization.controlPlaneInitialized</code>.</li>
+</ul>
+</li>
+<li>Several status counters are now optional pointers (may be unset early in reconciliation).</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Downgrade caveat: <code>spec.storage.type</code> for <code>nats</code> type  and <code>spec.patches</code> has no <code>v1beta1</code> equivalent.</p>
+</div>
+<h3 id="infrastructureclusterx-k8sio">infrastructure.cluster.x-k8s.io<a class="headerlink" href="#infrastructureclusterx-k8sio" title="Permanent link">#</a></h3>
+<h4 id="remotemachine">RemoteMachine<a class="headerlink" href="#remotemachine" title="Permanent link">#</a></h4>
+<ul>
+<li>Rename <code>spec.CustomCleanCommands</code> to <code>spec.CleanCommands</code> for simplicity.</li>
+<li>Adapt <code>status</code> fields to the ones required by CAPI <code>v1beta2</code>:<ul>
+<li><code>ready</code> -&gt; <code>status.initialization.provisioned</code>.</li>
+<li>Remove <code>status.failureReason</code> and <code>status.failureMessage</code> and use conditions instead to report state related to RemoteMachine.</li>
+</ul>
+</li>
+</ul>
+<h4 id="remotecluster">RemoteCluster<a class="headerlink" href="#remotecluster" title="Permanent link">#</a></h4>
+<ul>
+<li>Adapt <code>status</code> fields to the ones required by CAPI <code>v1beta2</code>:<ul>
+<li><code>ready</code> -&gt; <code>status.initialization.provisioned</code>.</li>
+<li>Use conditions to report state related to RemoteCluster.</li>
+</ul>
+</li>
 </ul>
 
 
