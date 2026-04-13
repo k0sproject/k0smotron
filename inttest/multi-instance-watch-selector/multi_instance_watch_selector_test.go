@@ -375,7 +375,7 @@ func (s *MultiInstanceWatchSelectorSuite) patchClusterAnnotation(ctx context.Con
 }
 
 func (s *MultiInstanceWatchSelectorSuite) getClusterReconcileCounter(ctx context.Context, rc *rest.Config, namespace, podName string) (float64, error) {
-	fw, err := util.GetPortForwarder(rc, podName, namespace, 8080)
+	fw, err := util.GetPortForwarderWithPorts(rc, podName, namespace, 0, 8080)
 	if err != nil {
 		return 0, err
 	}
