@@ -173,6 +173,10 @@ generate-e2e-templates-main: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-machinedeployment.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-remote-hcp.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-ingress --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-ingress.yaml
+	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-inplace --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-inplace.yaml
+	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-recreate --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-recreate.yaml
+	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-recreatedeletefirst --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-recreatedeletefirst.yaml
+
 
 AWS_TEMPLATES := e2e/data/infrastructure-aws
 
@@ -187,6 +191,7 @@ e2e: generate-e2e-templates-main generate-aws-e2e-templates
 	    -artifacts-folder="$(ARTIFACTS)" \
 	    -config="$(E2E_CONF_FILE)" \
 	    -skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) \
+		-flavor="$(FLAVOR)" \
 		-timeout=30m
 
 e2e-aws:

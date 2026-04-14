@@ -253,19 +253,28 @@ jobs:
     with:
       smoke-suite: ${{ matrix.smoke-suite }}
 
-  e2e:
-    name: E2E test
+  e2e-workload-upgrade:
+    name: e2e - Workload Cluster Upgrade
     needs: [build, unittest]
-    runs-on: oracle-vm-16cpu-64gb-x86-64
     strategy:
       fail-fast: false
       matrix:
-        e2e-suite:
+        strategy: ["InPlace", "Recreate", "RecreateDeleteFirst"]
+
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      test-name: "TestWorkloadClusterUpgrade"
+      flavor: ${{ matrix.strategy }}
+
+  e2e:
+    name: e2e
+    needs: [build, unittest]
+    strategy:
+      fail-fast: false
+      matrix:
+        test-name:
           - TestControlplaneRemediation
           - TestControlplaneConditions
-          - TestWorkloadClusterInplaceUpgrade
-          - TestWorkloadClusterRecreateUpgrade
-          - TestWorkloadClusterRecreateDeleteFirstUpgrade
           - TestAdmissionWebhookRecreateStrategyInSingleMode
           - TestAdmissionWebhookK0sVersionNotCompatible
           - TestK0smotronUpgrade
@@ -273,32 +282,7 @@ jobs:
           - TestRemoteHostedControlPlanes
           - TestIngress
 
-    steps:
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
-        with:
-          go-version-file: go.mod
-
-      - name: Download image bundle
-        uses: actions/download-artifact@v5
-        with:
-          name: k0smotron-image-bundle
-
-      - name: Load k0smotron image bundle
-        run: |
-          docker load -i k0smotron-image-bundle.tar
-
-      - name: Run e2e test
-        run: |
-          make e2e TEST_NAME="${{ matrix.e2e-suite }}"
-
-      - name: Archive artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4.3.2
-        with:
-          name: e2e-artifacts
-          path: _artifacts
-          if-no-files-found: ignore
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      test-name: ${{ matrix.test-name }}
+      flavor: ""
