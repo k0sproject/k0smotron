@@ -1,0 +1,71 @@
+# -- Installation mode: "standalone" or "clusterapi"
+# standalone: manages k0smotron Clusters only (k0smotron.io API group)
+# clusterapi: full ClusterAPI provider (bootstrap + controlplane + infrastructure)
+mode: standalone
+
+image:
+  repository: quay.io/k0sproject/k0smotron
+  # -- Overrides chart appVersion when set
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# -- Override chart name
+nameOverride: ""
+# -- Override fully qualified app name
+fullnameOverride: ""
+
+# -- Number of controller replicas
+replicaCount: 1
+
+# -- Enable leader election (required when replicaCount > 1)
+leaderElect: true
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 128Mi
+  requests:
+    cpu: 10m
+    memory: 64Mi
+
+# -- Webhook admission controller configuration
+webhook:
+  enabled: true
+
+# -- cert-manager integration for webhook TLS certificates
+# Requires cert-manager to be installed in the cluster
+certManager:
+  enabled: true
+
+# -- Create namespace as part of the chart
+# Set to false if namespace already exists
+createNamespace: true
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# -- Extra arguments appended to the manager command after the built-in args.
+# Example:
+#   extraArgs:
+#     - --zap-log-level=debug
+#     - --feature-gates=SomeFeature=true
+extraArgs: []
+
+# -- Extra environment variables injected into the manager container.
+# Supports both plain values and valueFrom references.
+# Example:
+#   env:
+#     - name: HTTP_PROXY
+#       value: http://proxy.example.com:3128
+#     - name: MY_SECRET
+#       valueFrom:
+#         secretKeyRef:
+#           name: my-secret
+#           key: value
+env: []
+
+# -- Additional labels added to all resources
+commonLabels: {}
+# -- Additional annotations added to all resources
+commonAnnotations: {}

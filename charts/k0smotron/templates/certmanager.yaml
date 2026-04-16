@@ -1,0 +1,36 @@
+{{- if and .Values.webhook.enabled .Values.certManager.enabled }}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "k0smotron.fullname" . }}-selfsigned-issuer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k0smotron.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "k0smotron.certName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k0smotron.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  dnsNames:
+  - {{ include "k0smotron.webhookServiceName" . }}.{{ .Release.Namespace }}.svc
+  - {{ include "k0smotron.webhookServiceName" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: {{ include "k0smotron.fullname" . }}-selfsigned-issuer
+  secretName: {{ include "k0smotron.webhookSecretName" . }}
+{{- end }}
