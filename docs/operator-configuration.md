@@ -11,7 +11,8 @@ k0smotron operator accepts the following command-line flags.
 | `--feature-gates`             | string | `""`       | Feature gates to enable, as a comma-separated list of `key=value` pairs. Can also be set via the `K0SMOTRON_FEATURE_GATES` environment variable.                                                                                    |
 | `--concurrency`               | int    | `5`        | Number of concurrent reconciliations per controller.                                                                                                                                                                                |
 | `--enable-controller`         | string | `""` (all) | The controller to enable. Valid values: `bootstrap`, `control-plane`, `infrastructure`, `standalone`. Defaults to all controllers.                                                                                                  |
-| `--watch-label-selector`      | string | `""`       | Label selector to filter watched resources (e.g. `instance=foo`). Useful when running multiple k0smotron instances in the same cluster to avoid reconcile conflicts. See [Running multiple instances](#running-multiple-instances). |
+| `--watch-filter`              | string | `""`       | Label value used to filter reconciled objects. Only resources with label `cluster.x-k8s.io/watch-filter=<value>` are reconciled. See [Running multiple instances](#running-multiple-instances).                                     |
+| `--namespace`                 | string | `""`       | Namespace that the controller watches. If unspecified, all namespaces are watched.                                                                                                                                                  |
 
 ### Deprecated flags
 
@@ -34,27 +35,27 @@ Format: `--feature-gates=FeatureName=true,OtherFeature=false`
 
 ## Running multiple instances
 
-To run multiple k0smotron instances in the same cluster without reconcile conflicts, use `--watch-label-selector` to
-restrict each instance to a subset of resources.
+To run multiple k0smotron instances in the same cluster without reconcile conflicts, use `--watch-filter` to restrict
+each instance to a subset of resources. This follows the [CAPI multi-instance support](https://cluster-api.sigs.k8s.io/developer/core/support-multiple-instances) convention.
 
-Label the managed resources accordingly and pass a matching selector to each instance:
+Pass a distinct filter value to each instance:
 
 ```yaml
 # Instance A deployment args
 args:
-  - --watch-label-selector=k0smotron-instance=a
+  - --watch-filter=instance-a
 
 # Instance B deployment args
 args:
-  - --watch-label-selector=k0smotron-instance=b
+  - --watch-filter=instance-b
 ```
 
-Then label your `Cluster`, `K0smotronControlPlane`, and other managed resources with the corresponding label:
+Then label your `Cluster`, `K0smotronControlPlane`, and other managed resources with the standard CAPI watch-filter label:
 
 ```yaml
 metadata:
   labels:
-    k0smotron-instance: a
+    cluster.x-k8s.io/watch-filter: instance-a
 ```
 
-Each instance only reconciles resources matching its selector, preventing conflicts.
+Each instance only reconciles resources matching its filter value, preventing conflicts.

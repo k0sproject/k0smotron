@@ -49,8 +49,6 @@ const (
 	testClusterName         = "watch-selector-capi-test"
 	testControlPlaneName    = "watch-selector-capi-test-cp"
 	testInfrastructureName  = "watch-selector-capi-test"
-	testResourceLabelKey    = "instance"
-	primaryInstanceLabel    = "primary"
 	secondaryInstanceLabel  = "secondary"
 	controlPlaneEnableArg   = "--enable-controller=control-plane"
 	controlPlaneMetricLabel = `controller="k0smotroncontrolplane"`
@@ -92,7 +90,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) SetupSuite() {
 	s.Require().NoError(err)
 }
 
-func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchLabelSelectorIsolatesMultipleCAPIInstances() {
+func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAPIInstances() {
 	s.applyClusterObjects()
 	defer s.cleanupResources()
 
@@ -117,10 +115,10 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchLabelSelectorIsolatesMult
 		}
 		return counterAfterUnscopedPatch > initialCounter, nil
 	})
-	s.Require().NoError(err, "the secondary control-plane controller should reconcile the primary-labeled object without --watch-label-selector")
+	s.Require().NoError(err, "the secondary control-plane controller should reconcile the primary-labeled object without --watch-filter")
 
-	s.T().Log("rolling the second controller with --watch-label-selector=instance=secondary")
-	s.Require().NoError(s.applySecondaryControllerDeployment(s.ctx, ptrTo("--watch-label-selector="+testResourceLabelKey+"="+secondaryInstanceLabel)))
+	s.T().Log("rolling the second controller with --watch-filter=secondary")
+	s.Require().NoError(s.applySecondaryControllerDeployment(s.ctx, ptrTo("--watch-filter="+secondaryInstanceLabel)))
 	s.Require().NoError(util.WaitForRolloutCompleted(s.ctx, s.client, secondaryDeploymentName, operatorNamespace))
 
 	shadowPodName, err = s.getDeploymentPodName(s.ctx, secondaryDeploymentName, operatorNamespace)
@@ -233,7 +231,7 @@ func rewriteControllerArgs(args []string, watchSelectorArg *string) []string {
 		if arg == "--leader-elect" {
 			continue
 		}
-		if strings.HasPrefix(arg, "--watch-label-selector=") {
+		if strings.HasPrefix(arg, "--watch-filter=") {
 			continue
 		}
 		if arg == "--insecure-diagnostics" {
@@ -422,7 +420,7 @@ metadata:
   name: watch-selector-capi-test-cp
   namespace: default
   labels:
-    instance: primary
+    cluster.x-k8s.io/watch-filter: primary
 spec:
   version: v1.32.6+k0s.0
   persistence:

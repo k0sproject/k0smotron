@@ -112,7 +112,8 @@ func main() {
 		probeAddr            string
 		enabledController    string
 		concurrency          int
-		watchLabelSelector   string
+		watchFilter          string
+		namespace            string
 	)
 
 	pflag.CommandLine.StringVar(&metricsAddr, "metrics-bind-address", ":8443", "[Deprecated, use --diagnostics-address instead] The address the metric endpoint binds to. "+
@@ -129,7 +130,8 @@ func main() {
 	pflag.CommandLine.IntVar(&concurrency, "concurrency", 5, "controller concurrency, default: 5")
 
 	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
-	pflag.CommandLine.StringVar(&watchLabelSelector, "watch-label-selector", "", "Label selector to filter watched resources (e.g. 'instance=foo'). Useful when running multiple k0smotron instances in the same cluster to avoid reconcile conflicts.")
+	pflag.CommandLine.StringVar(&watchFilter, "watch-filter", "", "Label value used to filter reconciled objects via label "+clusterv1.WatchLabel+"=<value>. Enables running multiple provider instances in the same cluster.")
+	pflag.CommandLine.StringVar(&namespace, "namespace", "", "Namespace that the controller watches to reconcile cluster-api objects. If unspecified, all namespaces are watched.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -191,9 +193,9 @@ func main() {
 		}
 	}
 
-	cacheOptions, err := newCacheOptions(watchLabelSelector)
+	cacheOptions, err := newCacheOptions(namespace, watchFilter)
 	if err != nil {
-		setupLog.Error(err, "unable to parse --watch-label-selector")
+		setupLog.Error(err, "unable to parse watch flags")
 		os.Exit(1)
 	}
 
@@ -390,27 +392,33 @@ func main() {
 	}
 }
 
-func newCacheOptions(watchLabelSelector string) (cache.Options, error) {
+func newCacheOptions(namespace, watchFilter string) (cache.Options, error) {
 	req, _ := labels.NewRequirement(clusterv1.ClusterNameLabel, selection.Exists, nil)
 	clusterSecretCacheSelector := labels.NewSelector().Add(*req)
 
 	var watchSelector labels.Selector
-	if watchLabelSelector != "" {
-		parsedSelector, err := labels.Parse(watchLabelSelector)
+	if watchFilter != "" {
+		filterReq, err := labels.NewRequirement(clusterv1.WatchLabel, selection.Equals, []string{watchFilter})
 		if err != nil {
 			return cache.Options{}, err
 		}
-		watchSelector = parsedSelector
+		watchSelector = labels.NewSelector().Add(*filterReq)
 	}
 
-	return cache.Options{
+	opts := cache.Options{
 		DefaultLabelSelector: watchSelector,
 		ByObject: map[client.Object]cache.ByObject{
 			&corev1.Secret{}: {
 				Label: clusterSecretCacheSelector,
 			},
 		},
-	}, nil
+	}
+
+	if namespace != "" {
+		opts.DefaultNamespaces = map[string]cache.Config{namespace: {}}
+	}
+
+	return opts, nil
 }
 
 func isControllerEnabled(controllerName string) bool {
