@@ -167,10 +167,16 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().True(strings.Contains(k0sConfig, "192.168.0.0/16"))
 
 	s.T().Log("verifying cloud-init extras")
-	preStartFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/pre-start")
+	preStartFile, err := getDockerNodeFile(controlPlaneMachineName, "/tmp/pre-start")
 	s.Require().NoError(err)
 	s.Require().Equal("pre-start", preStartFile)
-	postStartFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/post-start")
+	postStartFile, err := getDockerNodeFile(controlPlaneMachineName, "/tmp/post-start")
+	s.Require().NoError(err)
+	s.Require().Equal("post-start", postStartFile)
+	preStartFile, err = getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/pre-start")
+	s.Require().NoError(err)
+	s.Require().Equal("pre-start", preStartFile)
+	postStartFile, err = getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/post-start")
 	s.Require().NoError(err)
 	s.Require().Equal("post-start", postStartFile)
 	customFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/custom")
@@ -336,6 +342,10 @@ spec:
         secretRef:
           name: test-file-secret
           key: value
+    preStartCommands:
+      - echo -n "pre-start" > /tmp/pre-start
+    postStartCommands:
+      - echo -n "post-start" > /tmp/post-start
     customUserDataRef:
       configMapRef:
         name: custom-user-data

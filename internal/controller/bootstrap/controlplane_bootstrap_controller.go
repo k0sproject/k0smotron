@@ -805,6 +805,7 @@ func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installC
 	commands = append(commands, installCmd, startCmd)
 	commandsMap[provisioner.VarK0sInstallCommand] = installCmd
 	commandsMap[provisioner.VarK0sStartCommand] = startCmd
+	commands = append(commands, scope.Config.Spec.PostStartCommands...)
 
 	return commands, commandsMap, nil
 }
