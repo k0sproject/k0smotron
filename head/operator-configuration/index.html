@@ -12,28 +12,28 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/contributing/dev-environment/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/operator-configuration/">
       
       
-        <link rel="prev" href="../contribute-overview/">
+        <link rel="prev" href="../install/">
       
       
-        <link rel="next" href="../contribute-workflow/">
+        <link rel="next" href="../usage-overview/">
       
       
-      <link rel="icon" href="../../img/k0s_social.png">
+      <link rel="icon" href="../img/k0s_social.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
     
     
       
-        <title>Development environment - Documentation</title>
+        <title>Operator Configuration - Documentation</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -52,9 +52,9 @@
       
     
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY3LK5RVBZ"></script>
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#set-up-capi-development-environment" class="md-skip">
+        <a href="#operator-configuration" class="md-skip">
           Skip to content
         </a>
       
@@ -102,12 +102,12 @@
             <div class="md-banner__inner md-grid md-typeset">
               
 You are not currently viewing the documentation for the current stable release of k0smotron.
-<a href="../../..">
+<a href="../..">
   <strong>Click here to go to the documentation of the current stable release.</strong>
 </a>
 
             </div>
-            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL(".."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
           </aside>
         
       </div>
@@ -119,9 +119,9 @@ You are not currently viewing the documentation for the current stable release o
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href=".." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="../../img/k0s_social.png" alt="logo">
+  <img src="../img/k0s_social.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Development environment
+              Operator Configuration
             
           </span>
         </div>
@@ -256,9 +256,9 @@ You are not currently viewing the documentation for the current stable release o
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href=".." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="../../img/k0s_social.png" alt="logo">
+  <img src="../img/k0s_social.png" alt="logo">
 
     </a>
     Documentation
@@ -285,7 +285,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -307,7 +307,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../status/" class="md-nav__link">
+      <a href="../status/" class="md-nav__link">
         
   
   
@@ -329,7 +329,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -348,10 +348,32 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../operator-configuration/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Operator Configuration
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -362,6 +384,68 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flags
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Flags">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deprecated-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated flags
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-gates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature gates
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-multiple-instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running multiple instances
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -411,7 +495,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../usage-overview/" class="md-nav__link">
+      <a href="../usage-overview/" class="md-nav__link">
         
   
   
@@ -472,7 +556,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../cluster/" class="md-nav__link">
+      <a href="../cluster/" class="md-nav__link">
         
   
   
@@ -495,7 +579,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../join-nodes/" class="md-nav__link">
+      <a href="../join-nodes/" class="md-nav__link">
         
   
   
@@ -518,7 +602,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   
@@ -541,7 +625,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../etcd/" class="md-nav__link">
+      <a href="../etcd/" class="md-nav__link">
         
   
   
@@ -564,7 +648,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../ha/" class="md-nav__link">
+      <a href="../ha/" class="md-nav__link">
         
   
   
@@ -587,7 +671,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../nats/" class="md-nav__link">
+      <a href="../nats/" class="md-nav__link">
         
   
   
@@ -610,7 +694,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../hcp-autoscaling/" class="md-nav__link">
+      <a href="../hcp-autoscaling/" class="md-nav__link">
         
   
   
@@ -679,7 +763,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../cluster-api/" class="md-nav__link">
+      <a href="../cluster-api/" class="md-nav__link">
         
   
   
@@ -702,7 +786,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-controlplane/" class="md-nav__link">
+      <a href="../capi-controlplane/" class="md-nav__link">
         
   
   
@@ -725,7 +809,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-controlplane-bootstrap/" class="md-nav__link">
+      <a href="../capi-controlplane-bootstrap/" class="md-nav__link">
         
   
   
@@ -748,7 +832,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-bootstrap/" class="md-nav__link">
+      <a href="../capi-bootstrap/" class="md-nav__link">
         
   
   
@@ -771,7 +855,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-remote/" class="md-nav__link">
+      <a href="../capi-remote/" class="md-nav__link">
         
   
   
@@ -794,7 +878,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../ingress-support/" class="md-nav__link">
+      <a href="../ingress-support/" class="md-nav__link">
         
   
   
@@ -817,7 +901,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../ignition-support/" class="md-nav__link">
+      <a href="../ignition-support/" class="md-nav__link">
         
   
   
@@ -840,7 +924,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-clusterclass/" class="md-nav__link">
+      <a href="../capi-clusterclass/" class="md-nav__link">
         
   
   
@@ -863,7 +947,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-machine-health-checks/" class="md-nav__link">
+      <a href="../capi-machine-health-checks/" class="md-nav__link">
         
   
   
@@ -886,7 +970,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../generated-resources/" class="md-nav__link">
+      <a href="../generated-resources/" class="md-nav__link">
         
   
   
@@ -947,7 +1031,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-examples/" class="md-nav__link">
+      <a href="../capi-examples/" class="md-nav__link">
         
   
   
@@ -970,7 +1054,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-adoption/" class="md-nav__link">
+      <a href="../capi-adoption/" class="md-nav__link">
         
   
   
@@ -993,7 +1077,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-aws/" class="md-nav__link">
+      <a href="../capi-aws/" class="md-nav__link">
         
   
   
@@ -1016,7 +1100,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-aws-vm/" class="md-nav__link">
+      <a href="../capi-aws-vm/" class="md-nav__link">
         
   
   
@@ -1039,7 +1123,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-hetzner/" class="md-nav__link">
+      <a href="../capi-hetzner/" class="md-nav__link">
         
   
   
@@ -1062,7 +1146,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-openstack/" class="md-nav__link">
+      <a href="../capi-openstack/" class="md-nav__link">
         
   
   
@@ -1085,7 +1169,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-docker/" class="md-nav__link">
+      <a href="../capi-docker/" class="md-nav__link">
         
   
   
@@ -1108,7 +1192,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-kubevirt/" class="md-nav__link">
+      <a href="../capi-kubevirt/" class="md-nav__link">
         
   
   
@@ -1131,7 +1215,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-vsphere/" class="md-nav__link">
+      <a href="../capi-vsphere/" class="md-nav__link">
         
   
   
@@ -1154,7 +1238,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-remotemachine-teleport/" class="md-nav__link">
+      <a href="../capi-remotemachine-teleport/" class="md-nav__link">
         
   
   
@@ -1177,7 +1261,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-remotemachine-okta-asa/" class="md-nav__link">
+      <a href="../capi-remotemachine-okta-asa/" class="md-nav__link">
         
   
   
@@ -1200,7 +1284,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-use-oci-registry/" class="md-nav__link">
+      <a href="../capi-use-oci-registry/" class="md-nav__link">
         
   
   
@@ -1223,7 +1307,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../capi-examples/cilium-kube-proxy-replacement/" class="md-nav__link">
+      <a href="../capi-examples/cilium-kube-proxy-replacement/" class="md-nav__link">
         
   
   
@@ -1300,7 +1384,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../advanced/components/" class="md-nav__link">
+      <a href="../advanced/components/" class="md-nav__link">
         
   
   
@@ -1323,7 +1407,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../advanced/cloud-init/" class="md-nav__link">
+      <a href="../advanced/cloud-init/" class="md-nav__link">
         
   
   
@@ -1354,7 +1438,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../monitoring/" class="md-nav__link">
+      <a href="../monitoring/" class="md-nav__link">
         
   
   
@@ -1422,7 +1506,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/update-standalone/" class="md-nav__link">
+      <a href="../update/update-standalone/" class="md-nav__link">
         
   
   
@@ -1445,7 +1529,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/update-cluster-pod/" class="md-nav__link">
+      <a href="../update/update-cluster-pod/" class="md-nav__link">
         
   
   
@@ -1468,7 +1552,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/update-capi-cluster/" class="md-nav__link">
+      <a href="../update/update-capi-cluster/" class="md-nav__link">
         
   
   
@@ -1491,7 +1575,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/hcp-autopilot/" class="md-nav__link">
+      <a href="../update/hcp-autopilot/" class="md-nav__link">
         
   
   
@@ -1521,7 +1605,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../update/migrate-v1beta2-api/" class="md-nav__link">
+      <a href="../update/migrate-v1beta2-api/" class="md-nav__link">
         
   
   
@@ -1543,7 +1627,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         
   
   
@@ -1565,7 +1649,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../troubleshooting/" class="md-nav__link">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1587,7 +1671,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../commercial-support/" class="md-nav__link">
+      <a href="../commercial-support/" class="md-nav__link">
         
   
   
@@ -1606,20 +1690,18 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
         
           
           <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
@@ -1635,7 +1717,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
             <span class="md-nav__icon md-icon"></span>
             Contributing
@@ -1649,7 +1731,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contribute-overview/" class="md-nav__link">
+      <a href="../contributing/contribute-overview/" class="md-nav__link">
         
   
   
@@ -1669,32 +1751,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Development environment
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../contributing/dev-environment/" class="md-nav__link">
         
   
   
@@ -1705,68 +1765,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#use-tilt-for-development" class="md-nav__link">
-    <span class="md-ellipsis">
-      Use Tilt for Development
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Use Tilt for Development">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      Prerequisites
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#standalone-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      Standalone Mode
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#capi-integration-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      CAPI Integration Mode
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1779,7 +1777,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contribute-workflow/" class="md-nav__link">
+      <a href="../contributing/contribute-workflow/" class="md-nav__link">
         
   
   
@@ -1802,7 +1800,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contribute-testing/" class="md-nav__link">
+      <a href="../contributing/contribute-testing/" class="md-nav__link">
         
   
   
@@ -1825,7 +1823,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../release-process/" class="md-nav__link">
+      <a href="../contributing/release-process/" class="md-nav__link">
         
   
   
@@ -1855,7 +1853,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../known-limitations/" class="md-nav__link">
+      <a href="../known-limitations/" class="md-nav__link">
         
   
   
@@ -1953,7 +1951,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/bootstrap.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
+      <a href="../resource-reference/bootstrap.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
         
   
   
@@ -1976,7 +1974,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -1999,7 +1997,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/controlplane.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
+      <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
         
   
   
@@ -2022,7 +2020,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -2045,7 +2043,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -2068,7 +2066,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/k0smotron.io-v1beta2/" class="md-nav__link">
+      <a href="../resource-reference/k0smotron.io-v1beta2/" class="md-nav__link">
         
   
   
@@ -2091,7 +2089,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
+      <a href="../resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -2122,7 +2120,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../../terminology/" class="md-nav__link">
+      <a href="../terminology/" class="md-nav__link">
         
   
   
@@ -2172,37 +2170,19 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#use-tilt-for-development" class="md-nav__link">
+  <a href="#flags" class="md-nav__link">
     <span class="md-ellipsis">
-      Use Tilt for Development
+      Flags
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Use Tilt for Development">
+    <nav class="md-nav" aria-label="Flags">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#deprecated-flags" class="md-nav__link">
     <span class="md-ellipsis">
-      Prerequisites
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#standalone-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      Standalone Mode
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#capi-integration-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      CAPI Integration Mode
+      Deprecated flags
     </span>
   </a>
   
@@ -2210,6 +2190,24 @@ You are not currently viewing the documentation for the current stable release o
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-gates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature gates
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-multiple-instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running multiple instances
+    </span>
+  </a>
   
 </li>
       
@@ -2229,154 +2227,132 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="set-up-capi-development-environment">Set up CAPI development environment<a class="headerlink" href="#set-up-capi-development-environment" title="Permanent link">#</a></h1>
-<p>To contribute to k0smotron, ensure you have set up the development environment properly.
-For simple development tasks, it is enough to install Go,
-and follow <a href="../contribute-workflow/">k0smotron GitHub workflow</a>.
-For more complicated changes that require running CAPI (Common Application Programming Interface)
-tests, follow the steps below to configure your environment:</p>
-<ol>
-<li>
-<p>Use KinD (Kubernetes in Docker) to create a Kubernetes cluster based on the
-provided configuration file:</p>
-<div class="highlight"><pre><span></span><code>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--config<span class="w"> </span>config/samples/capi/docker/kind.yaml
-</code></pre></div>
-</li>
-<li>
-<p>Generate a custom image bundle and load it into the KinD cluster:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>k0smotron-image-bundle.tar<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>kind<span class="w"> </span>load<span class="w"> </span>image-archive<span class="w"> </span>k0smotron-image-bundle.tar
-</code></pre></div>
-</li>
-<li>
-<p>Release the necessary components and install them into the Kubernetes cluster:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>release<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>install.yaml
-</code></pre></div>
-</li>
-<li>
-<p>Initialize the cluster, patch configurations, and enable features:</p>
-<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--infrastructure<span class="w"> </span>docker
-<span class="w">          </span>kubectl<span class="w"> </span>patch<span class="w"> </span>-n<span class="w"> </span>capi-system<span class="w"> </span>deployment/capi-controller-manager<span class="w"> </span>-p<span class="w"> </span><span class="se">\</span>
-<span class="w">            </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;template&quot;:{&quot;spec&quot;:{&quot;containers&quot;:[{&quot;name&quot;:&quot;manager&quot;,&quot;args&quot;:[&quot;--leader-elect&quot;, &quot;--metrics-bind-addr=localhost:8080&quot;, &quot;--feature-gates=ClusterTopology=true&quot;]}]}}}}&#39;</span>
-<span class="w">          </span>kubectl<span class="w"> </span>patch<span class="w"> </span>-n<span class="w"> </span>capd-system<span class="w"> </span>deployment/capd-controller-manager<span class="w"> </span>-p<span class="w"> </span><span class="se">\</span>
-<span class="w">            </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;template&quot;:{&quot;spec&quot;:{&quot;containers&quot;:[{&quot;name&quot;:&quot;manager&quot;,&quot;args&quot;:[&quot;--leader-elect&quot;, &quot;--metrics-bind-addr=localhost:8080&quot;, &quot;--feature-gates=ClusterTopology=true&quot;]}]}}}}&#39;</span>
-</code></pre></div>
-</li>
-<li>
-<p>Deploy the Local Path Provisioner for storage provisioning:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
-</code></pre></div>
-</li>
-<li>
-<p>Extract the Kubernetes configuration for the KinD cluster and save it
-to a <code>kind.conf</code> file:</p>
-<div class="highlight"><pre><span></span><code>kind<span class="w"> </span>get<span class="w"> </span>kubeconfig<span class="w"> </span>&gt;<span class="w"> </span>kind.conf
-</code></pre></div>
-</li>
-<li>
-<p>Run tests using the following command:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-C<span class="w"> </span>inttest<span class="w"> </span>check-capi-controlplane-docker<span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span><span class="k">$(</span>realpath<span class="w"> </span>kind.conf<span class="k">)</span>
-</code></pre></div>
-<p>This command runs tests against the control plane of the Kubernetes cluster
- deployed using Docker. It uses the Kubernetes configuration from <code>kind.conf</code>.</p>
-</li>
-</ol>
-<h2 id="use-tilt-for-development">Use Tilt for Development<a class="headerlink" href="#use-tilt-for-development" title="Permanent link">#</a></h2>
-<p>Using <a href="https://docs.tilt.dev/index.html">Tilt</a> can help when you want a fast development loop without spending time setting up a full environment. <strong>k0smotron</strong> provides different development environment setups depending on the mode you want to work in: <a href="../../usage-overview">standalone or CAPI integration</a>. </p>
-<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h3>
-<p>Before starting, ensure the following tools are installed and available in your environment:</p>
-<ul>
-<li><strong>Go</strong>: Required to build k0smotron components.</li>
-</ul>
-<ul>
-<li><strong>Docker</strong>: Used by Tilt to build container images.</li>
-</ul>
-<ul>
-<li><strong>kind</strong>: Used to create local Kubernetes clusters for development.</li>
-</ul>
-<ul>
-<li><strong>kubectl</strong>: Required to interact with Kubernetes clusters.</li>
-</ul>
-<ul>
-<li><strong>Tilt</strong>: Used to manage the development environment and enable live reload.</li>
-</ul>
-<hr />
-<h3 id="standalone-mode">Standalone Mode<a class="headerlink" href="#standalone-mode" title="Permanent link">#</a></h3>
-<p>For standalone mode, you first need a management cluster where the required providers will be deployed. You can create a local cluster using <code>kind</code> by running:</p>
-<div class="highlight"><pre><span></span><code>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--config<span class="w"> </span>config/samples/capi/docker/kind.yaml
-</code></pre></div>
-<p>Once the management cluster is created, deploy your development version of k0smotron in standalone mode by running:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>tilt-standalone-env
-</code></pre></div>
-<p>In k0smotron, the Tilt development environment for standalone mode is configured to <strong>rebuild the k0smotron controller manager and redeploy it to the cluster whenever standalone-related code changes.</strong> This allows developers to quickly verify how changes behave in the cluster without manually rebuilding, loading images, or restarting the k0smotron deployment.</p>
-<hr />
-<h4 id="run-headless-delve-debugger-for-k0smotron-controller-manager">Run headless delve debugger for k0smotron controller manager<a class="headerlink" href="#run-headless-delve-debugger-for-k0smotron-controller-manager" title="Permanent link">#</a></h4>
-<p>Alternatively, you can run the k0smotron controller manager with a <strong>headless Delve debugger</strong> and attach to it remotely.</p>
-<p>To start the development environment with Delve enabled, use the <code>DEBUG</code> variable set to <code>true</code>:</p>
-<div class="highlight"><pre><span></span><code>make tilt-standalone-env DEBUG=true
-</code></pre></div>
-<p>Once the k0smotron controller manager is listening on port <code>30000</code> for external connections, you can attach to it from your IDE.
-For example, in <strong>VS Code</strong>, you can add the following debug configuration to attach to the k0smotron controller manager:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="c1">// Use IntelliSense to learn about possible attributes.</span>
-<span class="w">    </span><span class="c1">// Hover to view descriptions of existing attributes.</span>
-<span class="w">    </span><span class="c1">// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387</span>
-<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;configurations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Connect to k0smotron controller manager&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;go&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;request&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;attach&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;remote&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30001</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;apiVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;showLog&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;substitutePath&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workspaceFolder}&quot;</span><span class="p">,</span>
-<span class="w">                    </span><span class="nt">&quot;to&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workspaceFolder}&quot;</span>
-<span class="w">                </span><span class="p">}</span>
-<span class="w">            </span><span class="p">]</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div>
-<hr />
-<h3 id="capi-integration-mode">CAPI Integration Mode<a class="headerlink" href="#capi-integration-mode" title="Permanent link">#</a></h3>
-<p>To set up a development environment using Tilt with <strong>k0smotron integrated as a CAPI provider</strong>, you need to clone both the <strong>cluster-api</strong> repository and the <strong>k0smotron</strong> repository locally. The general steps to set up a CAPI development environment using Tilt can be found in the <a href="https://cluster-api.sigs.k8s.io/developer/core/tilt">Cluster API documentation</a>.</p>
-<p>The k0smotron-specific configuration required to enable k0smotron as a provider and to create a development environment integrated with Cluster API is located in <code>tilt-provider.yaml</code>. For an initial setup, the configuration provided in this file should be sufficient. To activate it in your local <strong>cluster-api</strong> development environment, follow these steps:</p>
-<ol>
-<li>In the <code>tilt-settings.yaml</code> file of your local <strong>cluster-api</strong> project, set the path to your local <strong>k0smotron</strong> repository.</li>
-<li>Enable the k0smotron provider by adding <code>k0smotron</code> to the <code>enable_providers</code> list.</li>
-</ol>
-<p>A minimal example of a <code>tilt-settings.yaml</code> file in the <strong>cluster-api</strong> project looks like this:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">default_registry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcr.io/your-project-name-here</span>
+<h1 id="operator-configuration">Operator Configuration<a class="headerlink" href="#operator-configuration" title="Permanent link">#</a></h1>
+<p>k0smotron operator accepts the following command-line flags.</p>
+<h2 id="flags">Flags<a class="headerlink" href="#flags" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--health-probe-bind-address</code></td>
+<td>string</td>
+<td><code>:8081</code></td>
+<td>Address the health probe endpoint binds to.</td>
+</tr>
+<tr>
+<td><code>--leader-elect</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td>Enable leader election for controller manager. Ensures only one active controller manager at a time.</td>
+</tr>
+<tr>
+<td><code>--feature-gates</code></td>
+<td>string</td>
+<td><code>""</code></td>
+<td>Feature gates to enable, as a comma-separated list of <code>key=value</code> pairs. Can also be set via the <code>K0SMOTRON_FEATURE_GATES</code> environment variable.</td>
+</tr>
+<tr>
+<td><code>--concurrency</code></td>
+<td>int</td>
+<td><code>5</code></td>
+<td>Number of concurrent reconciliations per controller.</td>
+</tr>
+<tr>
+<td><code>--enable-controller</code></td>
+<td>string</td>
+<td><code>""</code> (all)</td>
+<td>The controller to enable. Valid values: <code>bootstrap</code>, <code>control-plane</code>, <code>infrastructure</code>, <code>standalone</code>. Defaults to all controllers.</td>
+</tr>
+<tr>
+<td><code>--watch-filter</code></td>
+<td>string</td>
+<td><code>""</code></td>
+<td>Label value used to filter reconciled objects. Only resources with label <code>cluster.x-k8s.io/watch-filter=&lt;value&gt;</code> are reconciled. See <a href="#running-multiple-instances">Running multiple instances</a>.</td>
+</tr>
+<tr>
+<td><code>--namespace</code></td>
+<td>string</td>
+<td><code>""</code></td>
+<td>Namespace that the controller watches. If unspecified, all namespaces are watched.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="deprecated-flags">Deprecated flags<a class="headerlink" href="#deprecated-flags" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--metrics-bind-address</code></td>
+<td>string</td>
+<td><code>:8443</code></td>
+<td>Address the metrics endpoint binds to. Use <code>--diagnostics-address</code> instead.</td>
+</tr>
+<tr>
+<td><code>--metrics-secure</code></td>
+<td>bool</td>
+<td><code>true</code></td>
+<td>Serve metrics endpoint over HTTPS. Use <code>--insecure-diagnostics</code> instead.</td>
+</tr>
+<tr>
+<td><code>--enable-http2</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td>Enable HTTP/2 for the metrics and webhook servers.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="feature-gates">Feature gates<a class="headerlink" href="#feature-gates" title="Permanent link">#</a></h2>
+<p>Feature gates can be set via <code>--feature-gates</code> flag or the <code>K0SMOTRON_FEATURE_GATES</code> environment variable. The
+environment variable takes precedence over the flag.</p>
+<p>Format: <code>--feature-gates=FeatureName=true,OtherFeature=false</code></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CloudInitVars</code></td>
+<td><code>false</code></td>
+<td>Store k0smotron-generated commands and files in cloud-init variables.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="running-multiple-instances">Running multiple instances<a class="headerlink" href="#running-multiple-instances" title="Permanent link">#</a></h2>
+<p>To run multiple k0smotron instances in the same cluster without reconcile conflicts, use <code>--watch-filter</code> to restrict
+each instance to a subset of resources. This follows the <a href="https://cluster-api.sigs.k8s.io/developer/core/support-multiple-instances">CAPI multi-instance support</a> convention.</p>
+<p>Pass a distinct filter value to each instance:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Instance A deployment args</span>
+<span class="nt">args</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--watch-filter=instance-a</span>
 
-<span class="nt">enable_providers</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubeadm-bootstrap</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubeadm-control-plane</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron</span>
-
-<span class="nt">provider_repos</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;k0smotron-project-path&gt;</span><span class="w"> </span><span class="c1"># Path to your local k0smotron repository</span>
-
-<span class="nt">debug</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">core</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">continue</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30000</span>
-<span class="w">  </span><span class="nt">k0smotron</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">continue</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30001</span>
-
-<span class="nt">kustomize_substitutions</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">EXP_IN_PLACE_UPDATES</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="c1"># Instance B deployment args</span>
+<span class="nt">args</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--watch-filter=instance-b</span>
 </code></pre></div>
-<p>Now you can run <code>make tilt-up</code> target in the <strong>cluster-api</strong> project to start the development environment.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The Cluster API <code>make tilt-up</code> target already provisions and deploys the management cluster, so no additional management cluster setup is required.</p>
-</div>
+<p>Then label your <code>Cluster</code>, <code>K0smotronControlPlane</code>, and other managed resources with the standard CAPI watch-filter label:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/watch-filter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instance-a</span>
+</code></pre></div>
+<p>Each instance only reconciles resources matching its filter value, preventing conflicts.</p>
 
 
 
@@ -2445,10 +2421,10 @@ For example, in <strong>VS Code</strong>, you can add the following debug config
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
     
   </body>
