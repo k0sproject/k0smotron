@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
@@ -34,6 +35,7 @@ type PortForwarder struct {
 	stopChan  chan struct{}
 	ReadyChan chan struct{}
 	fw        *portforward.PortForwarder
+	closeOnce sync.Once
 }
 
 // ErrorHandler is a function type for handling errors,
@@ -42,6 +44,11 @@ type ErrorHandler func(err error, msgAndArgs ...any)
 
 // GetPortForwarder creates a new PortForwarder for the specified pod and port.
 func GetPortForwarder(cfg *rest.Config, name string, namespace string, port int) (*PortForwarder, error) {
+	return GetPortForwarderWithPorts(cfg, name, namespace, port, port)
+}
+
+// GetPortForwarderWithPorts creates a new PortForwarder for the specified pod and port mapping.
+func GetPortForwarderWithPorts(cfg *rest.Config, name string, namespace string, localPort int, remotePort int) (*PortForwarder, error) {
 	transport, upgrader, err := spdy.RoundTripperFor(cfg)
 	if err != nil {
 		return nil, err
@@ -58,7 +65,7 @@ func GetPortForwarder(cfg *rest.Config, name string, namespace string, port int)
 
 	stopChan := make(chan struct{})
 	readyChan := make(chan struct{})
-	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d", port)}, stopChan, readyChan, io.Discard, os.Stderr)
+	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, remotePort)}, stopChan, readyChan, io.Discard, os.Stderr)
 	if err != nil {
 		return nil, err
 	}
@@ -79,8 +86,9 @@ func (pf *PortForwarder) Start(errorHandler ErrorHandler) {
 
 // Close closes the forwarder
 func (pf *PortForwarder) Close() {
-	close(pf.stopChan)
-	pf.fw.Close()
+	pf.closeOnce.Do(func() {
+		close(pf.stopChan)
+	})
 }
 
 // LocalPort returns the local port that is being forwarded to the pod.
