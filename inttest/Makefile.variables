@@ -36,4 +36,5 @@ smoketests := \
     check-capi-docker-machine-template-update-recreate \
     check-capi-docker-machine-template-update-recreate-kine \
     check-capi-docker-machine-template-update-recreate-single \
+    check-capi-multi-instance-watch-selector \
     check-upgrade \
