@@ -1,0 +1,108 @@
+{{- /* Webhook paths sourced from:
+     standalone: config/standalone/webhook/manifests.yaml
+     clusterapi: config/clusterapi/all/webhook/manifests.yaml
+     NOT auto-synced — review both source files when `make manifests` changes them. */}}
+{{- if .Values.webhook.enabled }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "k0smotron.fullname" . }}-mutating-webhook-configuration
+  labels:
+    {{- include "k0smotron.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.certManager.enabled }}
+    cert-manager.io/inject-ca-from: {{ include "k0smotron.caInjectAnnotation" . }}
+    {{- end }}
+    {{- with .Values.commonAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+webhooks:
+- admissionReviewVersions: [v1]
+  clientConfig:
+    service:
+      name: {{ include "k0smotron.webhookServiceName" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /mutate-k0smotron-io-v1beta2-cluster
+  failurePolicy: Fail
+  name: mutate-k0smotron-cluster-v1beta2.k0smotron.io
+  rules:
+  - apiGroups: [k0smotron.io]
+    apiVersions: [v1beta2]
+    operations: [CREATE, UPDATE]
+    resources: [clusters]
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ include "k0smotron.fullname" . }}-validating-webhook-configuration
+  labels:
+    {{- include "k0smotron.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.certManager.enabled }}
+    cert-manager.io/inject-ca-from: {{ include "k0smotron.caInjectAnnotation" . }}
+    {{- end }}
+    {{- with .Values.commonAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+webhooks:
+- admissionReviewVersions: [v1]
+  clientConfig:
+    service:
+      name: {{ include "k0smotron.webhookServiceName" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-k0smotron-io-v1beta2-cluster
+  failurePolicy: Fail
+  name: validate-k0smotron-cluster-v1beta2.k0smotron.io
+  rules:
+  - apiGroups: [k0smotron.io]
+    apiVersions: [v1beta2]
+    operations: [CREATE, UPDATE]
+    resources: [clusters]
+  sideEffects: None
+{{- if eq .Values.mode "clusterapi" }}
+- admissionReviewVersions: [v1]
+  clientConfig:
+    service:
+      name: {{ include "k0smotron.webhookServiceName" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-bootstrap-cluster-x-k8s-io-v1beta2-k0sworkerconfig
+  failurePolicy: Fail
+  name: validate-k0sworkerconfig-v1beta2.k0smotron.io
+  rules:
+  - apiGroups: [bootstrap.cluster.x-k8s.io]
+    apiVersions: [v1beta2]
+    operations: [CREATE, UPDATE]
+    resources: [k0sworkerconfigs]
+  sideEffects: None
+- admissionReviewVersions: [v1]
+  clientConfig:
+    service:
+      name: {{ include "k0smotron.webhookServiceName" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane
+  failurePolicy: Fail
+  name: validate-k0scontrolplane-v1beta2.k0smotron.io
+  rules:
+  - apiGroups: [controlplane.cluster.x-k8s.io]
+    apiVersions: [v1beta2]
+    operations: [CREATE, UPDATE]
+    resources: [k0scontrolplanes]
+  sideEffects: None
+- admissionReviewVersions: [v1]
+  clientConfig:
+    service:
+      name: {{ include "k0smotron.webhookServiceName" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-controlplane-cluster-x-k8s-io-v1beta2-k0smotroncontrolplane
+  failurePolicy: Fail
+  name: validate-k0smotroncontrolplane-v1beta2.k0smotron.io
+  rules:
+  - apiGroups: [controlplane.cluster.x-k8s.io]
+    apiVersions: [v1beta2]
+    operations: [CREATE, UPDATE]
+    resources: [k0smotroncontrolplanes]
+  sideEffects: None
+{{- end }}
+{{- end }}

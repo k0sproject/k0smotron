@@ -1,0 +1,22 @@
+k0smotron {{ .Chart.AppVersion }} installed in namespace {{ .Release.Namespace }}.
+
+Mode: {{ .Values.mode }}
+
+Controller manager: {{ include "k0smotron.fullname" . }}-controller-manager
+
+{{- if .Values.webhook.enabled }}
+
+Webhook server running on port 9443.
+{{- if .Values.certManager.enabled }}
+TLS certificate managed by cert-manager.
+{{- else }}
+WARNING: certManager.enabled=false. You must manually create a TLS Secret named
+{{ include "k0smotron.webhookSecretName" . }} in namespace {{ .Release.Namespace }}
+and configure the caBundle in the webhook configurations.
+{{- end }}
+{{- end }}
+
+CRDs are installed in the cluster.
+To skip CRD installation: helm upgrade --install ... --skip-crds
+
+For documentation: https://docs.k0smotron.io

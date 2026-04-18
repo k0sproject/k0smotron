@@ -1,0 +1,64 @@
+name: Publish Helm Chart
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  helm-publish:
+    name: Package and push Helm chart
+    runs-on: ubuntu-latest
+    # Only run from the canonical repo to avoid forks accidentally pushing charts
+    if: github.repository == 'k0sproject/k0smotron'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "v3.16.0"
+
+      - name: Derive version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Strip leading 'v' for semver chart/app version
+          echo "TAG=${TAG}" >> $GITHUB_OUTPUT
+          echo "VERSION=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Lint chart
+        run: helm lint charts/k0smotron
+
+      - name: Package chart
+        run: |
+          helm package charts/k0smotron \
+            --version "${{ steps.version.outputs.VERSION }}" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --destination /tmp/helm-packages
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push chart to OCI registry
+        run: |
+          helm push \
+            /tmp/helm-packages/k0smotron-${{ steps.version.outputs.VERSION }}.tgz \
+            oci://ghcr.io/k0sproject/charts
+
+      - name: Print install instructions
+        run: |
+          echo "Chart published:"
+          echo ""
+          echo "  helm upgrade --install k0smotron oci://ghcr.io/k0sproject/charts/k0smotron \\"
+          echo "    --version ${{ steps.version.outputs.VERSION }} \\"
+          echo "    --namespace k0smotron --create-namespace"
