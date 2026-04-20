@@ -99,4 +99,3 @@ kind: DockerCluster
 metadata:
   name: docker-test
   namespace: ${NAMESPACE}
-spec:
