@@ -17,6 +17,7 @@ package controlplane
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 
@@ -29,12 +30,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/labels/format"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	bootstrapv1beta2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
@@ -160,12 +163,24 @@ func (c *K0sController) regenerateKubeconfigSecret(ctx context.Context, kubeconf
 	return c.Update(ctx, kubeconfigSecret)
 }
 
-func (c *K0sController) getKubeClient(ctx context.Context, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
+func (c *K0sController) getWorkloadClusterClientset(ctx context.Context, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
+	logger := log.FromContext(ctx)
+
 	if c.workloadClusterKubeClient != nil {
 		return c.workloadClusterKubeClient, nil
 	}
 
-	return k0smoutil.GetKubeClient(ctx, c.SecretCachingClient, cluster)
+	restConfig, err := c.ClusterCache.GetRESTConfig(ctx, client.ObjectKeyFromObject(cluster))
+	if err != nil {
+		if errors.Is(err, clustercache.ErrClusterNotConnected) {
+			logger.Info("Connection to workload cluster is not available")
+			return nil, ErrNotReady
+		}
+
+		return nil, err
+	}
+
+	return k0smoutil.GetKubeClient(restConfig)
 }
 
 func enrichK0sConfigWithClusterData(cluster *clusterv1.Cluster, k0sConfig *unstructured.Unstructured) (*unstructured.Unstructured, error) {
