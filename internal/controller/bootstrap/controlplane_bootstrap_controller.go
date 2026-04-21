@@ -42,7 +42,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
@@ -461,7 +460,12 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	token := fmt.Sprintf("%s.%s", tokenID, tokenSecret)
 	tokenKubeSecret := createTokenSecret(tokenID, tokenSecret)
 
-	chCS, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(scope.Cluster))
+	cp, err := util.FindK0sControlPlane(ctx, c.Client, scope.Cluster)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get K0sControlPlane resource: %w", err)
+	}
+
+	chCS, err := util.GetControllerRuntimeClient(ctx, c.Client, cp, client.ObjectKeyFromObject(scope.Cluster))
 	if err != nil {
 		log.Error(err, "Failed to getting child cluster client set")
 		return nil, err
@@ -563,6 +567,10 @@ spec:
             - name: frpc-config
               mountPath: /etc/frp/frpc.ini
               subPath: frpc.ini
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
       volumes:
         - name: frpc-config
           configMap:

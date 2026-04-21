@@ -154,7 +154,7 @@ func (s *CAPIDockerMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
-			AbsPath("/apis/bootstrap.cluster.x-k8s.io/v1beta1/namespaces/default/k0scontrollerconfigs").
+			AbsPath("/apis/bootstrap.cluster.x-k8s.io/v1beta2/namespaces/default/k0scontrollerconfigs").
 			Do(s.ctx).
 			Into(&obj)
 		if err != nil {

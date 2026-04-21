@@ -21,17 +21,16 @@ import (
 	"fmt"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
-	"sigs.k8s.io/cluster-api/controllers/remote"
-	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ReconcileDynamicConfig updates the k0s ClusterConfig with the provided unstructured configuration.
-func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli client.Client, u unstructured.Unstructured) error {
+func ReconcileDynamicConfig(ctx context.Context, cluster client.ObjectKey, cli client.Client, u unstructured.Unstructured, kcp *cpv1beta2.K0sControlPlane) error {
 	u.SetName("k0s")
 	u.SetNamespace("kube-system")
 
@@ -46,7 +45,7 @@ func ReconcileDynamicConfig(ctx context.Context, cluster metav1.Object, cli clie
 		return fmt.Errorf("failed to marshal unstructured config: %w", err)
 	}
 
-	chCS, err := remote.NewClusterClient(ctx, "k0smotron", cli, util.ObjectKey(cluster))
+	chCS, err := kutil.GetControllerRuntimeClient(ctx, cli, kcp, cluster)
 	if err != nil {
 		return fmt.Errorf("failed to create workload cluster client: %w", err)
 	}
