@@ -239,6 +239,8 @@ spec:
   replicas: 1
   version: v1.27.1+k0s.0
   k0sConfigSpec:
+    args:
+      - --enable-worker
     tunneling:
       enabled: true
     k0s:

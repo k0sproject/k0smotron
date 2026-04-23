@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	"k8s.io/kubectl/pkg/scheme"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,6 +47,8 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 
 		kcp.Spec.UpdateStrategy = cpv1beta2.UpdateInPlace
 		require.NoError(t, testEnv.Create(ctx, kcp))
+		// Assume the control plane is already initialized.
+		kcp.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
 
 		defer func(do ...client.Object) {
 			require.NoError(t, testEnv.Cleanup(ctx, do...))
