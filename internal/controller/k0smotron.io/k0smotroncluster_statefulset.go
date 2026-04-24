@@ -711,7 +711,7 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 	}
 
 	if !isStatefulSetsEqual(&statefulSetPreview, foundStatefulSet) {
-		return ctrl.Result{}, scope.client.Patch(ctx, &statefulSet, client.Apply, patchOpts...) //nolint:forbidigo
+		return ctrl.Result{}, scope.reconcileResource(ctx, kmc, &statefulSet)
 	}
 	needsScale := *foundStatefulSet.Spec.Replicas != *statefulSet.Spec.Replicas
 	if needsScale {
