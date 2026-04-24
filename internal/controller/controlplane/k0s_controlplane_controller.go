@@ -398,6 +398,14 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		if len(errs) > 0 {
 			return kerrors.NewAggregate(errs)
 		}
+
+		// Wait for all deleted machines to be fully removed before proceeding
+		// with new deletions. This prevents CAPI's cached HTTP/2 connection
+		// from being pinned to a degraded API server (etcd removed) on a
+		// machine that is still shutting down, which would deadlock drain
+		// of the next machine behind an NLB.
+		logger.Info("Waiting for deleted machines to be fully removed before proceeding", "count", deletedMachines.Len())
+		return ErrNotReady
 	}
 
 	infraMachines, err := c.getInfraMachines(ctx, activeMachines)
