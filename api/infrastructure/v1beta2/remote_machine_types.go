@@ -27,6 +27,19 @@ func init() {
 	SchemeBuilder.Register(&RemoteMachine{}, &RemoteMachineList{}, &PooledRemoteMachine{}, &PooledRemoteMachineList{})
 }
 
+const (
+	// RemoteMachineBootstrapExecSucceededCondition is the condition type that indicates the success of the bootstrap commands execution on the remote machine.
+	RemoteMachineBootstrapExecSucceededCondition = "BootstrapExecSucceeded"
+	// RemoteMachineBootstrapExecSucceededReason is the reason used when the bootstrap commands were executed successfully on the remote machine.
+	RemoteMachineBootstrapExecSucceededReason = "BootstrapExecSucceeded"
+	// RemoteMachineReadyCondition is the condition type that indicates whether the RemoteMachine is ready.
+	RemoteMachineReadyCondition = "Ready"
+	// RemoteMachineReadyReason is the reason used when the RemoteMachine is ready after the bootstrap commands were executed successfully on the remote machine.
+	RemoteMachineReadyReason = "Ready"
+	// InternalErrorReason indicates that an internal error occurred during the provisioning process.
+	InternalErrorReason = "InternalError"
+)
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
@@ -118,9 +131,65 @@ type RemoteMachineStatus struct {
 	// addresses contains the associated addresses for the machine.
 	// +optional
 	Addresses []clusterv1.MachineAddress `json:"addresses,omitempty"`
+	// conditions contains the conditions of the RemoteMachine, which represent the current state of the machine.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
+	// +optional
+	Deprecated *RemoteMachineStatusDeprecated `json:"deprecated,omitempty"`
+}
 
+// RemoteMachineStatusDeprecated defines the observed state of RemoteMachine for deprecated fields, which will be removed in future versions.
+type RemoteMachineStatusDeprecated struct {
+	// v1beta1 groups all the status fields that are deprecated and will be removed when support for v1beta1 will be dropped.
+	// +optional
+	V1Beta1 *RemoteMachineStatusV1beta1Deprecated `json:"v1beta1,omitempty"`
+}
+
+// RemoteMachineStatusV1beta1Deprecated defines the observed state of RemoteMachine for v1beta1, which is deprecated and will be removed in future versions.
+type RemoteMachineStatusV1beta1Deprecated struct {
 	FailureReason  string `json:"failureReason,omitempty"`
 	FailureMessage string `json:"failureMessage,omitempty"`
+}
+
+// SetFailures sets the failure reason and message in the RemoteMachine status.
+func (rms *RemoteMachineStatus) SetFailures(reason, message string) {
+	if reason != "" || message != "" {
+		if rms.Deprecated == nil {
+			rms.Deprecated = &RemoteMachineStatusDeprecated{}
+		}
+		if rms.Deprecated.V1Beta1 == nil {
+			rms.Deprecated.V1Beta1 = &RemoteMachineStatusV1beta1Deprecated{}
+		}
+		rms.Deprecated.V1Beta1.FailureReason = reason
+		rms.Deprecated.V1Beta1.FailureMessage = message
+	}
+}
+
+// GetFailureReason gets the failure reason from the RemoteMachine status.
+func (rms *RemoteMachineStatus) GetFailureReason() string {
+	if rms.Deprecated != nil && rms.Deprecated.V1Beta1 != nil {
+		return rms.Deprecated.V1Beta1.FailureReason
+	}
+	return ""
+}
+
+// GetFailureMessage gets the failure message from the RemoteMachine status.
+func (rms *RemoteMachineStatus) GetFailureMessage() string {
+	if rms.Deprecated != nil && rms.Deprecated.V1Beta1 != nil {
+		return rms.Deprecated.V1Beta1.FailureMessage
+	}
+	return ""
+}
+
+// GetConditions returns the set of conditions for this object.
+func (rm *RemoteMachine) GetConditions() []metav1.Condition {
+	return rm.Status.Conditions
+}
+
+// SetConditions sets the conditions on the RemoteMachine status.
+func (rm *RemoteMachine) SetConditions(conditions []metav1.Condition) {
+	rm.Status.Conditions = conditions
 }
 
 // RemoteMachineInitializationStatus provides observations of the RemoteMachine initialization process.

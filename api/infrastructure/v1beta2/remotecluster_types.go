@@ -53,6 +53,19 @@ type RemoteClusterStatus struct {
 	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
 	// +optional
 	Initialization RemoteClusterInitializationStatus `json:"initialization,omitempty,omitzero"`
+	// conditions contains the conditions of the RemoteCluster, which represent the current state of the cluster.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// GetConditions returns the set of conditions for this object.
+func (rc *RemoteCluster) GetConditions() []metav1.Condition {
+	return rc.Status.Conditions
+}
+
+// SetConditions sets the conditions on the RemoteCluster status.
+func (rc *RemoteCluster) SetConditions(conditions []metav1.Condition) {
+	rc.Status.Conditions = conditions
 }
 
 // RemoteClusterInitializationStatus provides observations of the RemoteCluster initialization process.

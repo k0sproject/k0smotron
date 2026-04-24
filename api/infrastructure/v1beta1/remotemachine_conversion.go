@@ -33,10 +33,9 @@ func (rm *RemoteMachine) ConvertTo(dstRaw conversion.Hub) error {
 		Initialization: v1beta2.RemoteMachineInitializationStatus{
 			Provisioned: &rm.Status.Ready,
 		},
-		Addresses:      rm.Status.Addresses,
-		FailureReason:  rm.Status.FailureReason,
-		FailureMessage: rm.Status.FailureMessage,
+		Addresses: rm.Status.Addresses,
 	}
+	dst.Status.SetFailures(rm.Status.FailureReason, rm.Status.FailureMessage)
 
 	return nil
 }
@@ -50,11 +49,12 @@ func (rm *RemoteMachine) ConvertFrom(srcRaw conversion.Hub) error {
 	if src.Status.Initialization.Provisioned != nil {
 		ready = *src.Status.Initialization.Provisioned
 	}
+
 	rm.Status = RemoteMachineStatus{
 		Ready:          ready,
 		Addresses:      src.Status.Addresses,
-		FailureReason:  src.Status.FailureReason,
-		FailureMessage: src.Status.FailureMessage,
+		FailureReason:  src.Status.GetFailureReason(),
+		FailureMessage: src.Status.GetFailureMessage(),
 	}
 	return nil
 }

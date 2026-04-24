@@ -211,11 +211,7 @@ func (p *JobProvisioner) machineDSN() (dsn string) {
 }
 
 // Cleanup cleans up the resources created for provisioning the remote machine.
-func (p *JobProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) error {
-	if mode == ModeNonK0s {
-		return nil
-	}
-
+func (p *JobProvisioner) Cleanup(_ context.Context, _ RemoteMachineMode) error {
 	return nil
 }
 
