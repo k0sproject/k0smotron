@@ -21,14 +21,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/cluster-inventory-api/pkg/access"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 )
 
 // GetKmcClientFromClusterKubeconfigSecret retrieves a client for the K0smotron cluster using the kubeconfig stored in a secret.
-func GetKmcClientFromClusterKubeconfigSecret(ctx context.Context, hubClient client.Client, remoteClusterAccesor *kapi.RemoteHostCluster) (client.Client, *kubernetes.Clientset, *rest.Config, error) {
-	restConfig, err := getRemoteClusterClientRESTConfig(ctx, hubClient, remoteClusterAccesor)
+func GetKmcClientFromClusterKubeconfigSecret(ctx context.Context, hubClient client.Client, remoteClusterAccesor *kapi.RemoteHostCluster, accessCfg *access.Config) (client.Client, *kubernetes.Clientset, *rest.Config, error) {
+	restConfig, err := getRemoteClusterClientRESTConfig(ctx, hubClient, remoteClusterAccesor, accessCfg)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to get rest config for remote cluster: %w", err)
 	}
@@ -46,9 +47,9 @@ func GetKmcClientFromClusterKubeconfigSecret(ctx context.Context, hubClient clie
 	return c, clientSet, restConfig, nil
 }
 
-func getRemoteClusterClientRESTConfig(ctx context.Context, hubClient client.Client, remoteClusterAccesor *kapi.RemoteHostCluster) (*rest.Config, error) {
+func getRemoteClusterClientRESTConfig(ctx context.Context, hubClient client.Client, remoteClusterAccesor *kapi.RemoteHostCluster, accessCfg *access.Config) (*rest.Config, error) {
 	if remoteClusterAccesor.ClusterProfileRef != nil {
-		return restConfigFromClusterProfileRef(ctx, hubClient, remoteClusterAccesor.ClusterProfileRef)
+		return restConfigFromClusterProfileRef(ctx, hubClient, remoteClusterAccesor.ClusterProfileRef, accessCfg)
 	} else if remoteClusterAccesor.KubeconfigRef != nil {
 		return restConfigFromKubeconfigRef(ctx, hubClient, remoteClusterAccesor.KubeconfigRef)
 	}

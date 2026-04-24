@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/k0sproject/version"
-	"sigs.k8s.io/cluster-inventory-api/pkg/access"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	v1 "k8s.io/api/core/v1"
@@ -104,6 +103,8 @@ const (
 
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
+	// RemoteHostCluster defines the reference to the hosting cluster where the k0s control plane will be deployed.
+	// If not specified, the control plane will be deployed in the management cluster.
 	RemoteHostCluster *RemoteHostCluster `json:"hostCluster,omitempty"`
 	// Replicas is the desired number of replicas of the k0s control planes.
 	// If unspecified, defaults to 1. If the value is above 1, k0smotron requires spec.storage.kine.dataSourceURL to be set.
@@ -191,21 +192,25 @@ type ClusterSpec struct {
 	Patches []ComponentPatch `json:"patches,omitempty"`
 }
 
+// RemoteHostCluster defines the reference to the hosting cluster where the k0s control plane will be deployed.
 type RemoteHostCluster struct {
 	// KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
 	// This kubeconfig will be used to deploy the k0s control plane.
 	//+kubebuilder:validation:Optional
 	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
 	// ClusterProfileRef is the reference to the ClusterProfile of the hosting cluster.
+	//+kubebuilder:validation:Optional
 	ClusterProfileRef *ClusterProfileRef `json:"clusterProfileRef,omitempty"`
 }
 
+// ClusterProfileRef defines the reference to a ClusterProfile that contains the information about the hosting cluster where the k0s control plane will be deployed.
 type ClusterProfileRef struct {
 	// Name is the name of the ClusterProfile.
 	//+kubebuilder:validation:Required
-	Name            string            `json:"name"`
-	Namespace       string            `json:"namespace,omitempty"`
-	AccessProviders []access.Provider `json:"accessProviders,omitempty"`
+	Name string `json:"name"`
+	// Namespace is the namespace of the ClusterProfile.
+	// If not specified, it will be assumed to be in the same namespace as the K0smotronCluster.
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // ComponentPatch defines a patch to apply to a generated resource.

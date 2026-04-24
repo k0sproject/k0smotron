@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
+	"sigs.k8s.io/cluster-inventory-api/pkg/access"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -61,6 +62,7 @@ type ClusterReconciler struct {
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
 	Recorder            record.EventRecorder
+	AccessCfg           *access.Config
 }
 
 const (
@@ -136,6 +138,7 @@ func (scope *kmcScope) reconcileResource(ctx context.Context, kmc *km.Cluster, o
 // +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=create;update;patch;delete
 // +kubebuilder:rbac:groups=storage.k8s.io,resources=storageclasses,verbs=get;list;watch
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=multicluster.x-k8s.io,resources=clusterprofiles,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -436,7 +439,7 @@ func (r *ClusterReconciler) getKmcScope(ctx context.Context, kmc *km.Cluster) (*
 
 	if kmc.Spec.RemoteHostCluster != nil {
 		var err error
-		kmcScope.client, kmcScope.clienSet, kmcScope.restConfig, err = kutil.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kmc.Spec.RemoteHostCluster, kmc.Namespace)
+		kmcScope.client, kmcScope.clienSet, kmcScope.restConfig, err = kutil.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kmc.Spec.RemoteHostCluster, r.AccessCfg)
 		if err != nil {
 			logger.Error(err, "Error getting client from cluster kubeconfig reference")
 			return nil, err

@@ -212,7 +212,7 @@ require (
 	k8s.io/cluster-bootstrap v0.34.2 // indirect
 	k8s.io/component-base v0.35.3 // indirect
 	k8s.io/component-helpers v0.35.3 // indirect
-	k8s.io/controller-manager v0.32.3 // indirect
+	k8s.io/controller-manager v0.35.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20260319004828-5883c5ee87b9 // indirect
 	k8s.io/kubelet v0.32.3 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 // indirect
