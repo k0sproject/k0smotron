@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/k0sproject/version"
+	"sigs.k8s.io/cluster-inventory-api/pkg/access"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	v1 "k8s.io/api/core/v1"
@@ -103,10 +104,7 @@ const (
 
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
-	// KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-	// This kubeconfig will be used to deploy the k0s control plane.
-	//+kubebuilder:validation:Optional
-	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
+	RemoteHostCluster *RemoteHostCluster `json:"hostCluster,omitempty"`
 	// Replicas is the desired number of replicas of the k0s control planes.
 	// If unspecified, defaults to 1. If the value is above 1, k0smotron requires spec.storage.kine.dataSourceURL to be set.
 	// Recommended value is 3.
@@ -191,6 +189,23 @@ type ClusterSpec struct {
 	// For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.
 	// +kubebuilder:validation:Optional
 	Patches []ComponentPatch `json:"patches,omitempty"`
+}
+
+type RemoteHostCluster struct {
+	// KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+	// This kubeconfig will be used to deploy the k0s control plane.
+	//+kubebuilder:validation:Optional
+	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
+	// ClusterProfileRef is the reference to the ClusterProfile of the hosting cluster.
+	ClusterProfileRef *ClusterProfileRef `json:"clusterProfileRef,omitempty"`
+}
+
+type ClusterProfileRef struct {
+	// Name is the name of the ClusterProfile.
+	//+kubebuilder:validation:Required
+	Name            string            `json:"name"`
+	Namespace       string            `json:"namespace,omitempty"`
+	AccessProviders []access.Provider `json:"accessProviders,omitempty"`
 }
 
 // ComponentPatch defines a patch to apply to a generated resource.

@@ -18,13 +18,10 @@ package v1beta2
 
 import (
 	"context"
-	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -33,30 +30,20 @@ import (
 // K0sWorkerConfigValidator implements a validation webhook for K0sWorkerConfig.
 type K0sWorkerConfigValidator struct{}
 
-var _ webhook.CustomValidator = &K0sWorkerConfigValidator{}
+var _ admission.Validator[*K0sWorkerConfig] = &K0sWorkerConfigValidator{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (v *K0sWorkerConfigValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	c, ok := obj.(*K0sWorkerConfig)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a K0sWorkerConfig but got a %T", obj))
-	}
-
+func (v *K0sWorkerConfigValidator) ValidateCreate(_ context.Context, c *K0sWorkerConfig) (admission.Warnings, error) {
 	return nil, v.validate(c.Spec, c.Name)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
-	newC, ok := newObj.(*K0sWorkerConfig)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a K0sWorkerConfig but got a %T", newObj))
-	}
-
+func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, _, newC *K0sWorkerConfig) (admission.Warnings, error) {
 	return nil, v.validate(newC.Spec, newC.Name)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (v *K0sWorkerConfigValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (v *K0sWorkerConfigValidator) ValidateDelete(_ context.Context, _ *K0sWorkerConfig) (admission.Warnings, error) {
 	return nil, nil
 }
 
@@ -72,8 +59,7 @@ func (v *K0sWorkerConfigValidator) validate(c K0sWorkerConfigSpec, name string) 
 
 // SetupK0sWorkerConfigWebhookWithManager registers the webhook for K0sWorkerConfig in the manager.
 func (v *K0sWorkerConfigValidator) SetupK0sWorkerConfigWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&K0sWorkerConfig{}).
+	return ctrl.NewWebhookManagedBy(mgr, &K0sWorkerConfig{}).
 		WithValidator(v).
 		Complete()
 }

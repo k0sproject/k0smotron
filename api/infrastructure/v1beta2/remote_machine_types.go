@@ -232,14 +232,12 @@ type PooledRemoteMachineList struct {
 
 // SetupRemoteMachineWebhookWithManager registers the webhook for remote machines in the manager.
 func SetupRemoteMachineWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&RemoteMachine{}).
+	return ctrl.NewWebhookManagedBy(mgr, &RemoteMachine{}).
 		Complete()
 }
 
 // SetupPooledRemoteMachineWebhookWithManager registers the webhook for pooled remote machines in the manager.
 func SetupPooledRemoteMachineWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&PooledRemoteMachine{}).
+	return ctrl.NewWebhookManagedBy(mgr, &PooledRemoteMachine{}).
 		Complete()
 }
