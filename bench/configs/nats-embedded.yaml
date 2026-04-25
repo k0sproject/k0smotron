@@ -1,0 +1,12 @@
+# Embedded NATS JetStream storage backend (experimental).
+# No external dependencies. Scaling (replicas > 1) is not supported after creation.
+# For HA use cases with NATS, use the kine-nats configuration instead.
+#
+# API: k0smotron.io/v1beta2 Cluster – spec.storage section
+spec:
+  storage:
+    type: nats
+    nats:
+      persistence:
+        storageClass: ""  # use cluster default
+        size: 1Gi
