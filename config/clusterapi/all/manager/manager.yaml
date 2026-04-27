@@ -46,6 +46,7 @@ spec:
         - "--health-probe-bind-address=:8081"
         - "--diagnostics-address=127.0.0.1:8080"
         - "--leader-elect"
+        - "--clusterprofile-provider-file=/etc/clusterprofile/provider.json"
         image: controller
         imagePullPolicy: IfNotPresent
         name: manager
@@ -75,5 +76,14 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+        volumeMounts:
+        - mountPath: /etc/clusterprofile
+          name: provider
+          readOnly: true
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      volumes:
+      - name: provider
+        hostPath:
+          path: /etc/clusterprofile
+          type: Directory

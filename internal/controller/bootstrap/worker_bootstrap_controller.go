@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
+	"sigs.k8s.io/cluster-inventory-api/pkg/access"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -71,6 +72,7 @@ type Controller struct {
 	RESTConfig          *rest.Config
 	// workloadClusterClient is used during testing to inject a fake client
 	workloadClusterClient client.Client
+	AccessCfg             *access.Config
 }
 
 // Scope contains the information required to generate the bootstrap data for a worker machine.
@@ -542,9 +544,9 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 
 		scope.ingressSpec = kcp.Spec.Ingress
 
-		if kcp.Spec.KubeconfigRef != nil {
+		if kcp.Spec.RemoteHostCluster != nil {
 			var err error
-			scope.client, _, _, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kcp.Spec.KubeconfigRef)
+			scope.client, _, _, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kcp.Spec.RemoteHostCluster, r.AccessCfg)
 			if err != nil {
 				log.Error(err, "Error getting client from cluster kubeconfig reference")
 				return err

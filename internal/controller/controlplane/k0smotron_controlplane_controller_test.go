@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	kapi "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
@@ -39,7 +40,7 @@ func TestIsClusterSpecSynced(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{
 			Name: "test",
 			Annotations: map[string]string{
-				AnnotationKeyClusterSpecHash: "54984cbcdf",
+				AnnotationKeyClusterSpecHash: "dc7b676d5",
 			},
 		},
 	}
@@ -268,6 +269,7 @@ func TestIsClusterSpecSynced(t *testing.T) {
 				tc.name = fmt.Sprintf("%s - %s", tc.name, mode)
 				kmc.Spec = tc.kmcSpec
 				result, kcpSpecHash, err := isClusterSpecSynced(kmc, tc.kcpSpec)
+				cmp.Diff(kmc, tc.kmcSpec)
 				require.NoError(t, err)
 				require.EqualValues(t, tc.expected, result)
 				if mode == withAnnotation {
