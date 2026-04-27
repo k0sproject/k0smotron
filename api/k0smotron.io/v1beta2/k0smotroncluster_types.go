@@ -171,7 +171,7 @@ type ClusterSpec struct {
 	// kept unless they are overriden explicitly. Flags with arguments must
 	// be specified as a single string, e.g. --some-flag=argument
 	//+kubebuilder:validation:Optional
-	ControlPlaneFlags []string `json:"controllerPlaneFlags,omitempty"`
+	ControlPlaneFlags []string `json:"controlPlaneFlags,omitempty"`
 	// Monitoring defines the monitoring configuration.
 	//+kubebuilder:validation:Optional
 	Monitoring MonitoringSpec `json:"monitoring,omitempty"`

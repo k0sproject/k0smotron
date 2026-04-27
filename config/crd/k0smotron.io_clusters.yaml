@@ -4969,7 +4969,7 @@ spec:
                   - type
                   type: object
                 type: array
-              controllerPlaneFlags:
+              controlPlaneFlags:
                 description: |-
                   ControlPlaneFlags allows to configure additional flags for k0s
                   control plane and to override existing ones. The default flags are
