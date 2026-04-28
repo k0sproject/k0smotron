@@ -1,0 +1,9 @@
+# Kine storage backend using an in-pod SQLite database.
+# No external dependencies. Data is ephemeral unless persistence is configured.
+#
+# API: k0smotron.io/v1beta2 Cluster – spec.storage section
+spec:
+  storage:
+    type: kine
+    kine:
+      dataSourceURL: "sqlite:///data/kine.db"

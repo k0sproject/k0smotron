@@ -1,0 +1,12 @@
+# Kine storage backend backed by an external MySQL / MariaDB database.
+# Requires env var: BENCH_MYSQL_URL
+# Example URL: mysql://user:pass@tcp(mysql-host:3306)/dbname
+#
+# API: k0smotron.io/v1beta2 Cluster – spec.storage section
+spec:
+  storage:
+    type: kine
+    kine:
+      dataSourceURL: "mysql://user:pass@tcp(mysql-host:3306)/bench"
+      # Alternatively reference a secret:
+      # dataSourceSecretName: bench-mysql-dsn

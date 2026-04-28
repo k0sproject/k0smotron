@@ -548,6 +548,8 @@ type MonitoringSpec struct {
 type StorageType string
 
 const (
+	// StorageTypeCustom defines the custom storage backend, user must provide all the necessary configuration in this case.
+	StorageTypeCustom StorageType = "custom"
 	// StorageTypeEtcd defines the etcd storage backend type for the k0s control plane.
 	StorageTypeEtcd StorageType = "etcd"
 	// StorageTypeKine defines the kine storage backend type for the k0s control plane.

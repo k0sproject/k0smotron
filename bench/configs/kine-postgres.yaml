@@ -1,0 +1,13 @@
+# Kine storage backend backed by an external PostgreSQL database.
+# Requires env var: BENCH_POSTGRES_URL
+# Example URL: postgres://user:pass@postgres-host:5432/dbname
+#
+# API: k0smotron.io/v1beta2 Cluster – spec.storage section
+spec:
+  storage:
+    type: kine
+    kine:
+      # Provide via secret to avoid embedding credentials in the manifest.
+      dataSourceURL: "postgres://user:pass@postgres-host:5432/bench?sslmode=disable"
+      # Alternatively reference a secret:
+      # dataSourceSecretName: bench-postgres-dsn

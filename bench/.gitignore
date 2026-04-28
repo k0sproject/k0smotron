@@ -1,0 +1,10 @@
+kubeconfig
+kubeconfig.tmp
+kubeconfig.tmp.bak
+bench.env
+bench-results.csv
+bench-perf-results.csv
+prom-snapshot-*.tar.gz
+terraform.tfstate
+infra/.terraform
+infra/.terraform.lock.hcl

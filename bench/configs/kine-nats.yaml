@@ -1,0 +1,12 @@
+# Kine storage backend using an external NATS JetStream cluster.
+# Requires env var: BENCH_NATS_URL
+# Example URL: nats://user:pass@nats-host:4222
+#
+# API: k0smotron.io/v1beta2 Cluster – spec.storage section
+spec:
+  storage:
+    type: kine
+    kine:
+      dataSourceURL: "nats://user:pass@nats-host:4222"
+      # Alternatively reference a secret:
+      # dataSourceSecretName: bench-nats-dsn

@@ -1,0 +1,12 @@
+# Default embedded etcd storage backend.
+# No external dependencies required.
+#
+# API: k0smotron.io/v1beta2 Cluster – spec.storage section
+spec:
+  storage:
+    type: etcd
+    etcd:
+      image: quay.io/k0sproject/etcd:v3.5.13
+      persistence:
+        storageClass: ""   # use cluster default
+        size: 1Gi
