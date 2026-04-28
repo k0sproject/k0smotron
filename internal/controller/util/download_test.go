@@ -35,14 +35,14 @@ func Test_createDownloadCommands(t *testing.T) {
 		{
 			name:            "with pre-installed k0s",
 			preInstalledK0s: true,
-			url:             "",
+			url:             DefaultK0sDownloadURL,
 			version:         "",
 			want:            nil,
 		},
 		{
 			name:    "with default config",
 			version: "",
-			url:     "",
+			url:     DefaultK0sDownloadURL,
 			want: []string{
 				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/usr/local/bin sh",
 			},
@@ -50,7 +50,7 @@ func Test_createDownloadCommands(t *testing.T) {
 		{
 			name:    "with custom version",
 			version: "v1.2.3",
-			url:     "",
+			url:     DefaultK0sDownloadURL,
 			want: []string{
 				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/usr/local/bin K0S_VERSION=v1.2.3 sh",
 			},
@@ -67,7 +67,7 @@ func Test_createDownloadCommands(t *testing.T) {
 		{
 			name:        "with custom install path",
 			version:     "",
-			url:         "",
+			url:         DefaultK0sDownloadURL,
 			installPath: "/opt/bin",
 			want: []string{
 				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/opt/bin sh",
@@ -76,7 +76,7 @@ func Test_createDownloadCommands(t *testing.T) {
 		{
 			name:        "with custom version and install path",
 			version:     "v1.2.3",
-			url:         "",
+			url:         DefaultK0sDownloadURL,
 			installPath: "/opt/bin",
 			want: []string{
 				"curl -sSfL --retry 5 https://get.k0s.sh | K0S_INSTALL_PATH=/opt/bin K0S_VERSION=v1.2.3 sh",

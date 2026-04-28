@@ -107,6 +107,8 @@ If 'oci' schema is used and the OCI registry requires authentication, make sure 
 by adding a file to the Files section that contains the necessary config for ORAS. See: https://oras.land/docs/how_to_guides/authentication/
 The file must be placed at `/root` directory (HOME for cloud-init execution time) and named `config.json`.
 NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.<br/>
+          <br/>
+            <i>Default</i>: https://get.k0s.sh<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -888,6 +890,8 @@ See: https://docs.k0sproject.io/stable/cli/k0s_worker/<br/>
         <td>
           DownloadURL specifies the URL to download k0s binary from.
 If specified the version field is ignored and what ever version is downloaded from the URL is used.<br/>
+          <br/>
+            <i>Default</i>: https://get.k0s.sh<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1693,6 +1697,8 @@ See: https://docs.k0sproject.io/stable/cli/k0s_worker/<br/>
         <td>
           DownloadURL specifies the URL to download k0s binary from.
 If specified the version field is ignored and what ever version is downloaded from the URL is used.<br/>
+          <br/>
+            <i>Default</i>: https://get.k0s.sh<br/>
         </td>
         <td>false</td>
       </tr><tr>

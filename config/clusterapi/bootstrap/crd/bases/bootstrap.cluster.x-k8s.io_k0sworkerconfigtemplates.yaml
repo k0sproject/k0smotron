@@ -119,6 +119,7 @@ spec:
                             type: object
                         type: object
                       downloadURL:
+                        default: https://get.k0s.sh
                         description: |-
                           DownloadURL specifies the URL to download k0s binary from.
                           If specified the version field is ignored and what ever version is downloaded from the URL is used.
@@ -330,6 +331,7 @@ spec:
                           type: string
                         type: array
                       downloadURL:
+                        default: https://get.k0s.sh
                         description: |-
                           DownloadURL specifies the URL to download k0s binary from.
                           If specified the version field is ignored and what ever version is downloaded from the URL is used.

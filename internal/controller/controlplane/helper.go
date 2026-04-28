@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/imdario/mergo"
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/version"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -616,7 +617,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.
 	amd64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-amd64`
 	arm64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm64`
 	armDownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm`
-	if kcp.Spec.K0sConfigSpec.DownloadURL != "" {
+	if kcp.Spec.K0sConfigSpec.DownloadURL != util.DefaultK0sDownloadURL {
 		amd64DownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
 		arm64DownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
 		armDownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL

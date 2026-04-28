@@ -24,6 +24,8 @@ import (
 
 const (
 	k0sBinName = "k0s"
+	// DefaultK0sDownloadURL is the default URL used to download k0s if no custom URL is provided.
+	DefaultK0sDownloadURL = "https://get.k0s.sh"
 )
 
 // DownloadCommands constructs the download commands for a given URL and version.
@@ -38,7 +40,7 @@ func DownloadCommands(preInstalledK0s bool, downloadURL string, version string, 
 
 	k0sBinPath := fmt.Sprintf("%s/%s", k0sInstallPath, k0sBinName)
 
-	if downloadURL != "" {
+	if downloadURL != DefaultK0sDownloadURL {
 		parsedURL, err := url.Parse(downloadURL)
 		if err != nil {
 			return []string{fmt.Sprintf("echo 'Invalid download URL: %s'", downloadURL)}, nil
@@ -70,7 +72,7 @@ func DownloadCommands(preInstalledK0s bool, downloadURL string, version string, 
 		scriptVars = append(scriptVars, fmt.Sprintf("K0S_VERSION=%s", version))
 	}
 
-	cmd := "curl -sSfL --retry 5 https://get.k0s.sh"
+	cmd := fmt.Sprintf("curl -sSfL --retry 5 %s", DefaultK0sDownloadURL)
 	if len(scriptVars) > 0 {
 		cmd = fmt.Sprintf("%s | %s sh", cmd, strings.Join(scriptVars, " "))
 	} else {
