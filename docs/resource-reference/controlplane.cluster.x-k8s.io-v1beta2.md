@@ -2096,7 +2096,7 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>controllerPlaneFlags</b></td>
+        <td><b>controlPlaneFlags</b></td>
         <td>[]string</td>
         <td>
           ControlPlaneFlags allows to configure additional flags for k0s
@@ -12473,7 +12473,7 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>controllerPlaneFlags</b></td>
+        <td><b>controlPlaneFlags</b></td>
         <td>[]string</td>
         <td>
           ControlPlaneFlags allows to configure additional flags for k0s

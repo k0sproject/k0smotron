@@ -227,7 +227,7 @@ metadata:
   name: openstack-hcp-cluster-cp
   namespace: default
 spec:
-  controllerPlaneFlags:
+  controlPlaneFlags:
   - --enable-cloud-provider=true
   - --debug=true
   storage:

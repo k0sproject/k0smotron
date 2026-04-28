@@ -22,6 +22,7 @@ Starting from `v1.11.0`, k0smotron uses new `v1beta2` API version as [storage ve
   - `spec.kineDataSourceSecretName` -> `spec.storage.kine.dataSourceSecretName`
   - `spec.etcd` -> `spec.storage.etcd`
   - New selector field: `spec.storage.type` with values `etcd`, `kine`, `nats`.
+- `spec.controllerPlaneFlags` was renamed to `spec.controlPlaneFlags`.
 - Introduce of `spec.patches` for customize patching of generated resoruces in `v1beta2`. Check documentation about [patches](../advanced/components.md) for more details.
 - Now, a Cluster state is reported using conditions as Kubernetes conventions follows. This implies:
   - Move `Cluster` status reporting to Conditions. Details about introduced conditions can be found in Pull Request [#1365](https://github.com/k0sproject/k0smotron/pull/1365).
@@ -70,6 +71,7 @@ Some other changes may affect the internal Go types in k0smotron.
   - `spec.kineDataSourceSecretName` -> `spec.storage.kine.dataSourceSecretName`
   - `spec.etcd` -> `spec.storage.etcd`
   - New selector field: `spec.storage.type` with values `etcd`, `kine`, `nats`.
+- `spec.controllerPlaneFlags` was renamed to `spec.controlPlaneFlags`.
 - Introduce of `spec.patches` for customize patching of generated resoruces in `v1beta2`. Check documentation about [patches](../advanced/components.md) for more details.
 - Now, a Cluster state is reported using conditions as Kubernetes conventions follows. This implies:
   - Move `Cluster` status reporting to Conditions. Details about introduced conditions can be found in Pull Request [#1365](https://github.com/k0sproject/k0smotron/pull/1365).
