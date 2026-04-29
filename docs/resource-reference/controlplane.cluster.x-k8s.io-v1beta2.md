@@ -2139,14 +2139,6 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespeckubeconfigref">kubeconfigRef</a></b></td>
-        <td>object</td>
-        <td>
-          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-This kubeconfig will be used to deploy the k0s control plane.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespeckubeconfigsecretmetadata">kubeconfigSecretMetadata</a></b></td>
         <td>object</td>
         <td>
@@ -2202,6 +2194,14 @@ For the full list of generated resources and their component labels, see https:/
         <td>
           Persistence defines the persistence configuration. If empty k0smotron
 will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecremotehostcluster">remoteHostCluster</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
+If not specified, k0smotron will deploy the control plane in the management cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2362,50 +2362,6 @@ Default: true<br/>
           <br/>
             <i>Format</i>: int64<br/>
             <i>Default</i>: 443<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.kubeconfigRef
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
-
-
-
-KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-This kubeconfig will be used to deploy the k0s control plane.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>namespace</b></td>
-        <td>string</td>
-        <td>
-          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>key</b></td>
-        <td>string</td>
-        <td>
-          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
-          <br/>
-            <i>Default</i>: value<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11274,6 +11230,79 @@ Note: New statuses can be added in the future. Consumers should check for unknow
 </table>
 
 
+### K0smotronControlPlane.spec.remoteHostCluster
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
+If not specified, k0smotron will deploy the control plane in the management cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecremotehostclusterkubeconfigref">kubeconfigRef</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.remoteHostCluster.kubeconfigRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecremotehostcluster)</sup></sup>
+
+
+
+KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
+          <br/>
+            <i>Default</i>: value<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlane.spec.resources
 <sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
 
@@ -12516,14 +12545,6 @@ If empty, will be used default configuration. @see https://docs.k0sproject.io/st
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespeckubeconfigref">kubeconfigRef</a></b></td>
-        <td>object</td>
-        <td>
-          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-This kubeconfig will be used to deploy the k0s control plane.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespeckubeconfigsecretmetadata">kubeconfigSecretMetadata</a></b></td>
         <td>object</td>
         <td>
@@ -12579,6 +12600,14 @@ For the full list of generated resources and their component labels, see https:/
         <td>
           Persistence defines the persistence configuration. If empty k0smotron
 will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecremotehostcluster">remoteHostCluster</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
+If not specified, k0smotron will deploy the control plane in the management cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12739,50 +12768,6 @@ Default: true<br/>
           <br/>
             <i>Format</i>: int64<br/>
             <i>Default</i>: 443<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.kubeconfigRef
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
-
-
-
-KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-This kubeconfig will be used to deploy the k0s control plane.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>namespace</b></td>
-        <td>string</td>
-        <td>
-          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>key</b></td>
-        <td>string</td>
-        <td>
-          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
-          <br/>
-            <i>Default</i>: value<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -21645,6 +21630,79 @@ Note: New statuses can be added in the future. Consumers should check for unknow
         <td>string</td>
         <td>
           targetVolumeAttributesClassName is the name of the VolumeAttributesClass the PVC currently being reconciled<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.remoteHostCluster
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
+If not specified, k0smotron will deploy the control plane in the management cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecremotehostclusterkubeconfigref">kubeconfigRef</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.remoteHostCluster.kubeconfigRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecremotehostcluster)</sup></sup>
+
+
+
+KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
+          <br/>
+            <i>Default</i>: value<br/>
         </td>
         <td>false</td>
       </tr></tbody>

@@ -5026,28 +5026,6 @@ spec:
                   If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-              kubeconfigRef:
-                description: |-
-                  KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-                  This kubeconfig will be used to deploy the k0s control plane.
-                properties:
-                  key:
-                    default: value
-                    description: Key is the key in the secret containing the kubeconfig
-                      of the hosting cluster.
-                    type: string
-                  name:
-                    description: Name is the name of the secret containing the kubeconfig
-                      of the hosting cluster.
-                    type: string
-                  namespace:
-                    description: Namespace is the namespace of the secret containing
-                      the kubeconfig of the hosting cluster.
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
               kubeconfigSecretMetadata:
                 description: |-
                   KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
@@ -9396,6 +9374,34 @@ spec:
                     type: string
                 required:
                 - type
+                type: object
+              remoteHostCluster:
+                description: |-
+                  RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
+                  If not specified, k0smotron will deploy the control plane in the management cluster.
+                properties:
+                  kubeconfigRef:
+                    description: |-
+                      KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+                      This kubeconfig will be used to deploy the k0s control plane.
+                    properties:
+                      key:
+                        default: value
+                        description: Key is the key in the secret containing the kubeconfig
+                          of the hosting cluster.
+                        type: string
+                      name:
+                        description: Name is the name of the secret containing the
+                          kubeconfig of the hosting cluster.
+                        type: string
+                      namespace:
+                        description: Namespace is the namespace of the secret containing
+                          the kubeconfig of the hosting cluster.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
                 type: object
               replicas:
                 default: 1

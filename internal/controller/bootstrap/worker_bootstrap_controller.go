@@ -542,9 +542,9 @@ func (r *Controller) setClientScope(ctx context.Context, cluster *clusterv1.Clus
 
 		scope.ingressSpec = kcp.Spec.Ingress
 
-		if kcp.Spec.KubeconfigRef != nil {
+		if kcp.Spec.RemoteHostCluster != nil && kcp.Spec.RemoteHostCluster.KubeconfigRef != nil {
 			var err error
-			scope.client, _, _, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kcp.Spec.KubeconfigRef)
+			scope.client, _, _, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kcp.Spec.RemoteHostCluster.KubeconfigRef)
 			if err != nil {
 				log.Error(err, "Error getting client from cluster kubeconfig reference")
 				return err

@@ -65,8 +65,7 @@ func (kmc *Cluster) ConvertFrom(srcRaw conversion.Hub) error {
 
 // ClusterSpecToV2 converts a v1beta1 ClusterSpec to a v1beta2 ClusterSpec.
 func ClusterSpecToV2(spec ClusterSpec) v2.ClusterSpec {
-	return v2.ClusterSpec{
-		KubeconfigRef:             spec.KubeconfigRef,
+	v1beta2Spec := v2.ClusterSpec{
 		Replicas:                  spec.Replicas,
 		Image:                     spec.Image,
 		ServiceAccount:            spec.ServiceAccount,
@@ -86,13 +85,21 @@ func ClusterSpecToV2(spec ClusterSpec) v2.ClusterSpec {
 		Resources:                 spec.Resources,
 		KubeconfigSecretMetadata:  spec.KubeconfigSecretMetadata,
 	}
+
+	if spec.KubeconfigRef != nil {
+		v1beta2Spec.RemoteHostCluster = &v2.RemoteHostClusterSpec{
+			KubeconfigRef: spec.KubeconfigRef,
+		}
+	}
+
+	return v1beta2Spec
+
 }
 
 // ClusterSpecFromV2 converts a v1beta2 ClusterSpec to a v1beta1 ClusterSpec.
 // NATS storage type and Patches have no equivalent in v1beta1 and are silently dropped.
 func ClusterSpecFromV2(src v2.ClusterSpec) (ClusterSpec, error) {
 	spec := ClusterSpec{
-		KubeconfigRef:             src.KubeconfigRef,
 		Replicas:                  src.Replicas,
 		Image:                     src.Image,
 		ServiceAccount:            src.ServiceAccount,
@@ -115,6 +122,9 @@ func ClusterSpecFromV2(src v2.ClusterSpec) (ClusterSpec, error) {
 	if src.Storage.Type == v2.StorageTypeKine {
 		spec.KineDataSourceURL = src.Storage.Kine.DataSourceURL
 		spec.KineDataSourceSecretName = src.Storage.Kine.DataSourceSecretName
+	}
+	if src.RemoteHostCluster != nil && src.RemoteHostCluster.KubeconfigRef != nil {
+		spec.KubeconfigRef = src.RemoteHostCluster.KubeconfigRef
 	}
 	return spec, nil
 }
