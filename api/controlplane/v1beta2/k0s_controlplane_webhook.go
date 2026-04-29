@@ -23,9 +23,7 @@ import (
 	"strings"
 
 	"github.com/k0sproject/version"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -37,7 +35,7 @@ import (
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 type K0sControlPlaneValidator struct{}
 
-var _ webhook.CustomValidator = &K0sControlPlaneValidator{}
+var _ admission.Validator[*K0sControlPlane] = &K0sControlPlaneValidator{}
 
 // validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
 func (v *K0sControlPlaneValidator) validateVersionSuffix(version string) admission.Warnings {
@@ -49,34 +47,20 @@ func (v *K0sControlPlaneValidator) validateVersionSuffix(version string) admissi
 }
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	kcp, ok := obj.(*K0sControlPlane)
-	if !ok {
-		return nil, fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
-	}
-
+func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, kcp *K0sControlPlane) (admission.Warnings, error) {
 	warnings := v.validateVersionSuffix(kcp.Spec.Version)
 	return warnings, validateK0sControlPlane(kcp)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	newKCP, ok := newObj.(*K0sControlPlane)
-	if !ok {
-		return nil, fmt.Errorf("expected a new K0sControlPlane object but got %T", newObj)
-	}
-	oldKCP, ok := oldObj.(*K0sControlPlane)
-	if !ok {
-		return nil, fmt.Errorf("expected a old K0sControlPlane object but got %T", oldObj)
-	}
-
-	warnings := v.validateVersionSuffix(newKCP.Spec.Version)
-	if oldKCP.Spec.Version != newKCP.Spec.Version {
-		oldV, err := version.NewVersion(oldKCP.Spec.Version)
+func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, newKcp *K0sControlPlane) (admission.Warnings, error) {
+	warnings := v.validateVersionSuffix(newKcp.Spec.Version)
+	if oldKcp.Spec.Version != newKcp.Spec.Version {
+		oldV, err := version.NewVersion(oldKcp.Spec.Version)
 		if err != nil {
 			return warnings, fmt.Errorf("failed to parse old version: %v", err)
 		}
-		newV, err := version.NewVersion(newKCP.Spec.Version)
+		newV, err := version.NewVersion(newKcp.Spec.Version)
 		if err != nil {
 			return warnings, fmt.Errorf("failed to parse new version: %v", err)
 		}
@@ -87,11 +71,11 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, new
 		}
 	}
 
-	return warnings, validateK0sControlPlane(newKCP)
+	return warnings, validateK0sControlPlane(newKcp)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ *K0sControlPlane) (admission.Warnings, error) {
 	return nil, nil
 }
 
@@ -140,8 +124,7 @@ func denyRecreateOnSingleClusters(kcp *K0sControlPlane) error {
 
 // SetupK0sControlPlaneWebhookWithManager registers the webhook for K0sControlPlane in the manager.
 func (v *K0sControlPlaneValidator) SetupK0sControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&K0sControlPlane{}).
+	return ctrl.NewWebhookManagedBy(mgr, &K0sControlPlane{}).
 		WithValidator(v).
 		Complete()
 }

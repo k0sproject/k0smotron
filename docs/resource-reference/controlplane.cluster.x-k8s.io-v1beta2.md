@@ -2114,6 +2114,14 @@ Will be detected automatically for service type LoadBalancer.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespechostcluster">hostCluster</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteHostCluster defines the reference to the hosting cluster where the k0s control plane will be deployed.
+If not specified, the control plane will be deployed in the management cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>image</b></td>
         <td>string</td>
         <td>
@@ -2136,14 +2144,6 @@ will pick it automatically. Must not include the image tag.<br/>
         <td>
           k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanespeckubeconfigref">kubeconfigRef</a></b></td>
-        <td>object</td>
-        <td>
-          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-This kubeconfig will be used to deploy the k0s control plane.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2302,6 +2302,121 @@ CertificateRef defines a reference to a certificate that should be included in t
 </table>
 
 
+### K0smotronControlPlane.spec.hostCluster
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+RemoteHostCluster defines the reference to the hosting cluster where the k0s control plane will be deployed.
+If not specified, the control plane will be deployed in the management cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespechostclusterclusterprofileref">clusterProfileRef</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterProfileRef is the reference to the ClusterProfile of the hosting cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespechostclusterkubeconfigref">kubeconfigRef</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.hostCluster.clusterProfileRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespechostcluster)</sup></sup>
+
+
+
+ClusterProfileRef is the reference to the ClusterProfile of the hosting cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the ClusterProfile.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the ClusterProfile.
+If not specified, it will be assumed to be in the same namespace as the K0smotronCluster.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.hostCluster.kubeconfigRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespechostcluster)</sup></sup>
+
+
+
+KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
+          <br/>
+            <i>Default</i>: value<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlane.spec.ingress
 <sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
 
@@ -2362,50 +2477,6 @@ Default: true<br/>
           <br/>
             <i>Format</i>: int64<br/>
             <i>Default</i>: 443<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlane.spec.kubeconfigRef
-<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
-
-
-
-KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-This kubeconfig will be used to deploy the k0s control plane.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>namespace</b></td>
-        <td>string</td>
-        <td>
-          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>key</b></td>
-        <td>string</td>
-        <td>
-          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
-          <br/>
-            <i>Default</i>: value<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3781,7 +3852,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -3967,7 +4038,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -5612,6 +5683,25 @@ seconds (1 hour).  This constraint is enforced by kube-apiserver.
 longer than 24 hours.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7766,7 +7856,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -7952,7 +8042,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -9599,6 +9689,25 @@ longer than 24 hours.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -10718,7 +10827,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -10904,7 +11013,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -11084,9 +11193,7 @@ When this field is not set, it means that no resize operation is in progress for
 A controller that receives PVC update with previously unknown resourceName or ClaimResourceStatus
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
-resources associated with PVC.
-
-This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+resources associated with PVC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11112,9 +11219,7 @@ is equal or lower than the requested capacity.
 A controller that receives PVC update with previously unknown resourceName
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
-resources associated with PVC.
-
-This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+resources associated with PVC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12491,6 +12596,14 @@ Will be detected automatically for service type LoadBalancer.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespechostcluster">hostCluster</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteHostCluster defines the reference to the hosting cluster where the k0s control plane will be deployed.
+If not specified, the control plane will be deployed in the management cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>image</b></td>
         <td>string</td>
         <td>
@@ -12513,14 +12626,6 @@ will pick it automatically. Must not include the image tag.<br/>
         <td>
           k0sConfig defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
 If empty, will be used default configuration. @see https://docs.k0sproject.io/stable/configuration/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespeckubeconfigref">kubeconfigRef</a></b></td>
-        <td>object</td>
-        <td>
-          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-This kubeconfig will be used to deploy the k0s control plane.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12679,6 +12784,121 @@ CertificateRef defines a reference to a certificate that should be included in t
 </table>
 
 
+### K0smotronControlPlaneTemplate.spec.template.spec.hostCluster
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+RemoteHostCluster defines the reference to the hosting cluster where the k0s control plane will be deployed.
+If not specified, the control plane will be deployed in the management cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespechostclusterclusterprofileref">clusterProfileRef</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterProfileRef is the reference to the ClusterProfile of the hosting cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespechostclusterkubeconfigref">kubeconfigRef</a></b></td>
+        <td>object</td>
+        <td>
+          KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.hostCluster.clusterProfileRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespechostcluster)</sup></sup>
+
+
+
+ClusterProfileRef is the reference to the ClusterProfile of the hosting cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the ClusterProfile.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the ClusterProfile.
+If not specified, it will be assumed to be in the same namespace as the K0smotronCluster.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.hostCluster.kubeconfigRef
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespechostcluster)</sup></sup>
+
+
+
+KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+This kubeconfig will be used to deploy the k0s control plane.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
+          <br/>
+            <i>Default</i>: value<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### K0smotronControlPlaneTemplate.spec.template.spec.ingress
 <sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
 
@@ -12739,50 +12959,6 @@ Default: true<br/>
           <br/>
             <i>Format</i>: int64<br/>
             <i>Default</i>: 443<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0smotronControlPlaneTemplate.spec.template.spec.kubeconfigRef
-<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
-
-
-
-KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-This kubeconfig will be used to deploy the k0s control plane.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name is the name of the secret containing the kubeconfig of the hosting cluster.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>namespace</b></td>
-        <td>string</td>
-        <td>
-          Namespace is the namespace of the secret containing the kubeconfig of the hosting cluster.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>key</b></td>
-        <td>string</td>
-        <td>
-          Key is the key in the secret containing the kubeconfig of the hosting cluster.<br/>
-          <br/>
-            <i>Default</i>: value<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -14158,7 +14334,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -14344,7 +14520,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -15989,6 +16165,25 @@ seconds (1 hour).  This constraint is enforced by kube-apiserver.
 longer than 24 hours.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18143,7 +18338,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -18329,7 +18524,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -19976,6 +20171,25 @@ longer than 24 hours.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -21095,7 +21309,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -21281,7 +21495,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -21461,9 +21675,7 @@ When this field is not set, it means that no resize operation is in progress for
 A controller that receives PVC update with previously unknown resourceName or ClaimResourceStatus
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
-resources associated with PVC.
-
-This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+resources associated with PVC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21489,9 +21701,7 @@ is equal or lower than the requested capacity.
 A controller that receives PVC update with previously unknown resourceName
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
-resources associated with PVC.
-
-This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+resources associated with PVC.<br/>
         </td>
         <td>false</td>
       </tr><tr>

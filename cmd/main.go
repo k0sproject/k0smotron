@@ -37,6 +37,8 @@ import (
 	"k8s.io/client-go/rest"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/flags"
+	clusterinventoryapi "sigs.k8s.io/cluster-inventory-api/apis/v1alpha1"
+	"sigs.k8s.io/cluster-inventory-api/pkg/access"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -100,20 +102,24 @@ func init() {
 	utilruntime.Must(cpv1beta2.AddToScheme(scheme))
 	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme))
 	utilruntime.Must(infrastructurev1beta2.AddToScheme(scheme))
+
+	// Register cluster-inventory-api types
+	utilruntime.Must(clusterinventoryapi.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
 func main() {
 	var (
-		metricsAddr          string // deprecated, use capi's diagnostics-address instead
-		enableLeaderElection bool
-		secureMetrics        bool // deprecated, use capi's insecure-diagnostics instead
-		enableHTTP2          bool // deprecated
-		probeAddr            string
-		enabledController    string
-		concurrency          int
-		watchFilter          string
-		namespace            string
+		metricsAddr                string // deprecated, use capi's diagnostics-address instead
+		enableLeaderElection       bool
+		secureMetrics              bool // deprecated, use capi's insecure-diagnostics instead
+		enableHTTP2                bool // deprecated
+		probeAddr                  string
+		enabledController          string
+		concurrency                int
+		watchFilter                string
+		namespace                  string
+		clusterProfileProviderFile string
 	)
 
 	pflag.CommandLine.StringVar(&metricsAddr, "metrics-bind-address", ":8443", "[Deprecated, use --diagnostics-address instead] The address the metric endpoint binds to. "+
@@ -128,6 +134,7 @@ func main() {
 		"[Deprecated] If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	pflag.CommandLine.StringVar(&featureGates, "feature-gates", "", "feature gates to enable (comma separated list of key=value pairs)")
 	pflag.CommandLine.IntVar(&concurrency, "concurrency", 5, "controller concurrency, default: 5")
+	pflag.CommandLine.StringVar(&clusterProfileProviderFile, "clusterprofile-provider-file", "clusterprofile-provider-file.json", "Path to the JSON configuration file")
 
 	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	pflag.CommandLine.StringVar(&watchFilter, "watch-filter", "", "Label value used to filter reconciled objects via label "+clusterv1.WatchLabel+"=<value>. Enables running multiple provider instances in the same cluster.")
@@ -152,6 +159,11 @@ func main() {
 	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	accessCfg, err := access.NewFromFile(clusterProfileProviderFile)
+	if err != nil {
+		setupLog.Error(err, "unable to load cluster access configuration. Falling back kubeconfig-based access for remote clusters if expecified")
+	}
 
 	var metricsOpts metricsserver.Options
 	{
@@ -270,6 +282,7 @@ func main() {
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
+			AccessCfg:           accessCfg,
 		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
@@ -280,6 +293,7 @@ func main() {
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
+			AccessCfg:           accessCfg,
 		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
@@ -293,7 +307,7 @@ func main() {
 
 	if isControllerEnabled(controlPlaneController) {
 		// If 'control-plane' CAPI controller is explicitly enabled, it means also standalone controllers must be enabled
-		setStandaloneControllers(mgr, clientSet, restConfig, ctrlOptions)
+		setStandaloneControllers(mgr, clientSet, restConfig, ctrlOptions, accessCfg)
 
 		if runCAPIControllers {
 			if err = (&controlplane.K0smotronController{
@@ -302,6 +316,7 @@ func main() {
 				Scheme:              mgr.GetScheme(),
 				ClientSet:           clientSet,
 				RESTConfig:          restConfig,
+				AccessCfg:           accessCfg,
 			}).SetupWithManager(mgr, ctrlOptions); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "K0smotronControlPlane")
 				os.Exit(1)
@@ -329,7 +344,7 @@ func main() {
 		}
 	} else if isControllerEnabled(standaloneController) {
 		// If 'standalone' controller is explicitly enabled, run only standalone controllers.
-		setStandaloneControllers(mgr, clientSet, restConfig, ctrlOptions)
+		setStandaloneControllers(mgr, clientSet, restConfig, ctrlOptions, accessCfg)
 	}
 
 	if isControllerEnabled(infrastructureController) && runCAPIControllers {
@@ -425,7 +440,7 @@ func isControllerEnabled(controllerName string) bool {
 	return enabledControllers[controllerName]
 }
 
-func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, opts capictrl.Options) {
+func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, opts capictrl.Options, accessCfg *access.Config) {
 	_ = mgr.AddReadyzCheck("webhook-check", mgr.GetWebhookServer().StartedChecker())
 	if err := (&controller.ClusterReconciler{
 		Client:     mgr.GetClient(),
@@ -433,6 +448,7 @@ func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clients
 		ClientSet:  clientSet,
 		RESTConfig: restConfig,
 		Recorder:   mgr.GetEventRecorderFor("cluster-reconciler"),
+		AccessCfg:  accessCfg,
 	}).SetupWithManager(mgr, opts); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "K0smotronCluster")
 		os.Exit(1)
