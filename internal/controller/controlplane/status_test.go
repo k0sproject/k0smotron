@@ -19,8 +19,9 @@ limitations under the License.
 package controlplane
 
 import (
-	"k8s.io/utils/ptr"
 	"testing"
+
+	"k8s.io/utils/ptr"
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
@@ -185,69 +186,6 @@ func TestPlanStatusCompute(t *testing.T) {
 			},
 		}
 		require.NoError(t, rc.compute(originalKcp))
-		require.Equal(t, expectedKcp, originalKcp)
-	})
-
-	t.Run("plan is mutating controlplane", func(t *testing.T) {
-		originalKcp := &cpv1beta2.K0sControlPlane{
-			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpToDateReplicas:  ptr.To[int32](0),
-				ReadyReplicas:     ptr.To[int32](4),
-				AvailableReplicas: ptr.To[int32](4),
-				Replicas:          ptr.To[int32](4),
-				Version:           "v1.31.0+k0s.0",
-			},
-		}
-
-		expectedKcp := &cpv1beta2.K0sControlPlane{
-			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpToDateReplicas:  ptr.To[int32](1),
-				ReadyReplicas:     ptr.To[int32](2),
-				AvailableReplicas: ptr.To[int32](2),
-				Replicas:          ptr.To[int32](4),
-				Version:           "v1.31.0+k0s.0",
-			},
-		}
-
-		rc := planStatus{
-			plan: autopilot.Plan{
-				Spec: autopilot.PlanSpec{
-					Commands: []autopilot.PlanCommand{
-						{
-							K0sUpdate: &autopilot.PlanCommandK0sUpdate{},
-						},
-					},
-				},
-				Status: autopilot.PlanStatus{
-					State: core.PlanSchedulableWait,
-					Commands: []autopilot.PlanCommandStatus{
-						{
-							K0sUpdate: &autopilot.PlanCommandK0sUpdateStatus{
-								Controllers: []autopilot.PlanCommandTargetStatus{
-									{
-										Name:  "controller1",
-										State: core.SignalSent,
-									},
-									{
-										Name:  "controller2",
-										State: core.SignalCompleted,
-									},
-									{
-										Name:  "controller3",
-										State: core.SignalSent,
-									},
-									{
-										Name:  "controller4",
-										State: core.SignalPending,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		require.ErrorIs(t, rc.compute(originalKcp), errUpgradeNotCompleted)
 		require.Equal(t, expectedKcp, originalKcp)
 	})
 }

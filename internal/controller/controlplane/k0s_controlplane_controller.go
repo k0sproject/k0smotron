@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -109,13 +108,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	log := log.FromContext(ctx).WithValues("controlplane", req.NamespacedName)
 	kcp := &cpv1beta2.K0sControlPlane{}
 
-	defer func() {
-		version := ""
-		if kcp != nil {
-			version = kcp.Spec.Version
-		}
-		log.Info("Reconciliation finished", "result", res, "error", err, "status.version", version)
-	}()
 	if err := c.Get(ctx, req.NamespacedName, kcp); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -166,7 +158,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	// Always patch the object to update the status
 	defer func() {
 		log.Info("Updating status")
-		existingStatus := kcp.Status.DeepCopy()
 
 		// When controlplane is being deleted, we don't update the status to avoid requests workload API
 		// because it is terminating so machines probably are terminating too.
@@ -177,18 +168,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			// Separate var for status update errors to avoid shadowing err
 			derr = c.updateStatus(ctx, kcp, cluster)
 			if derr != nil {
-				if !errors.Is(derr, errUpgradeNotCompleted) {
-					log.Error(derr, "Failed to update status")
-					return
-				}
-
-				if res.IsZero() {
-					res = ctrl.Result{RequeueAfter: 10 * time.Second}
-				}
-			}
-
-			if errors.Is(err, ErrNotReady) || reflect.DeepEqual(existingStatus, kcp.Status) {
-				return
+				log.Error(derr, "Failed to calculate status")
 			}
 		}
 
@@ -207,12 +187,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			}
 		}
 
-		// Requeue the reconciliation if the status is not ready
-		if !ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
-			log.Info("Requeuing reconciliation in 20sec since the control plane is not ready")
-			res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
+		if needsRequeue(kcp) {
+			if res.IsZero() {
+				res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
+			}
 		}
-
 	}()
 
 	if !kcp.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -709,7 +688,7 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 			if err != nil {
 				return fmt.Errorf("error setting control plane endpoint: %v", err)
 			}
-		} else {
+		} else if cluster.Spec.ControlPlaneEndpoint.Host != "" {
 			sans := []string{cluster.Spec.ControlPlaneEndpoint.Host}
 			existingSANs, sansFound, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
 			if err == nil && sansFound {
@@ -734,7 +713,7 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 		}
 
 		// Reconcile the dynamic config
-		dErr := kutil.ReconcileDynamicConfig(ctx, cluster, c.Client, *kcp.Spec.K0sConfigSpec.K0s.DeepCopy())
+		dErr := kutil.ReconcileDynamicConfig(ctx, client.ObjectKeyFromObject(cluster), c.Client, *kcp.Spec.K0sConfigSpec.K0s.DeepCopy(), kcp)
 		if dErr != nil {
 			// Don't return error from dynamic config reconciliation, as it may not be created yet
 			log.Error(fmt.Errorf("failed to reconcile dynamic config, kubeconfig may not be available yet: %w", dErr), "Failed to reconcile dynamic config")

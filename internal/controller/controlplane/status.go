@@ -25,14 +25,13 @@ import (
 
 	"k8s.io/utils/ptr"
 
+	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	"sigs.k8s.io/cluster-api/controllers/remote"
-	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -47,8 +46,6 @@ import (
 )
 
 var (
-	// errUpgradeNotCompleted is returned when the upgrade is not completed yet so it is needed to retry the status computation later.
-	errUpgradeNotCompleted  = errors.New("waiting for plan to complete")
 	errUnsupportedPlanState = errors.New("unsupported plan state")
 )
 
@@ -59,7 +56,7 @@ type replicaStatusComputer interface {
 	compute(*cpv1beta2.K0sControlPlane) error
 }
 
-func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, cluster *clusterv2.Cluster) error {
+func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, cluster *clusterv2.Cluster) (err error) {
 	logger := log.FromContext(ctx)
 
 	defer func() {
@@ -85,6 +82,15 @@ func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *
 
 	switch kcp.Spec.UpdateStrategy {
 	case cpv1beta2.UpdateInPlace:
+		if kcp.Status.Initialization.ControlPlaneInitialized == nil || !*kcp.Status.Initialization.ControlPlaneInitialized {
+			// taking into account that `status.initialization.controlPlaneInitialized` will not transit from true to false,
+			// we can assume that if the control plane is not initialized, the Plan does not exist yet and it is not possible
+			// to compute the status based on it. In this case, we need to compute the status based on the state of the
+			// Machines associated to the controlplane.
+			logger.Info("Control plane is not initialized yet, using machine status to compute the control plane status using \"InPlace\" update strategy")
+			return newMachineStatusComputer(ctx, c.Client, cluster)
+		}
+
 		kc, err := c.getKubeClient(ctx, cluster)
 		if err != nil {
 			return nil, err
@@ -178,12 +184,6 @@ func (ic *planStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
 	kcp.Status.AvailableReplicas = ptr.To(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
 	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
-
-	// If status.updatedReplicas is not equal to desired ones by the spec, the control plane upgrade is not ready
-	// so we return an error to retry the status computation later.
-	if *kcp.Status.UpToDateReplicas != kcp.Spec.Replicas {
-		return errUpgradeNotCompleted
-	}
 
 	return nil
 }
@@ -312,7 +312,7 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
 	// Get the CAPI cluster accessor
-	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, util.ObjectKey(cluster))
+	client, err := kutil.GetControllerRuntimeClient(ctx, c.Client, kcp, client.ObjectKeyFromObject(cluster))
 	if err != nil {
 		logger.Info("Failed to create cluster client", "error", err)
 		return
@@ -344,6 +344,20 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	annotations.AddAnnotations(cluster, map[string]string{
 		cpv1beta2.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
 	})
+}
+
+// needsRequeue checks if the control plane needs to be requeued based on its status. It returns true if the control plane is not available
+// or if the number of up-to-date replicas is not equal to the desired number of replicas.
+func needsRequeue(kcp *cpv1beta2.K0sControlPlane) bool {
+	if !conditions.IsTrue(kcp, string(cpv1beta2.ControlPlaneAvailableCondition)) {
+		return true
+	}
+
+	if *kcp.Status.UpToDateReplicas != kcp.Spec.Replicas {
+		return true
+	}
+
+	return false
 }
 
 func getVersionSuffix(version string) string {

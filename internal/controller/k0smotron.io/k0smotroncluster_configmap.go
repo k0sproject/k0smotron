@@ -170,7 +170,7 @@ func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[
 		}
 	}
 
-	return util.ReconcileDynamicConfig(ctx, kmc, c, u)
+	return util.ReconcileDynamicConfig(ctx, client.ObjectKeyFromObject(kmc), c, u, nil)
 }
 
 func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {

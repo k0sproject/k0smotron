@@ -234,6 +234,7 @@ func main() {
 
 	secretCachingClient, err := client.New(mgr.GetConfig(), client.Options{
 		HTTPClient: mgr.GetHTTPClient(),
+		Scheme:     mgr.GetScheme(),
 		Cache: &client.CacheOptions{
 			Reader: mgr.GetCache(),
 		},
