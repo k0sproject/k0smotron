@@ -16,43 +16,25 @@ limitations under the License.
 package util
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/transport"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	capiutil "sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/kubeconfig"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// GetKubeClient returns a Kubernetes clientset for the given cluster.
-func GetKubeClient(ctx context.Context, client client.Client, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
-	data, err := kubeconfig.FromSecret(ctx, client, capiutil.ObjectKey(cluster))
-	if err != nil {
-		return nil, fmt.Errorf("error fetching %s kubeconfig from secret: %w", cluster.Name, err)
-	}
-	config, err := clientcmd.NewClientConfigFromBytes(data)
-	if err != nil {
-		return nil, fmt.Errorf("error generating %s clientconfig: %w", cluster.Name, err)
-	}
-	restConfig, err := config.ClientConfig()
-	if err != nil {
-		return nil, fmt.Errorf("error generating %s restconfig:  %w", cluster.Name, err)
-	}
-
+// GetKubeClient returns a Kubernetes clientset for the given cluster REST config.
+func GetKubeClient(restConfig *rest.Config) (*kubernetes.Clientset, error) {
 	tCfg, err := restConfig.TransportConfig()
 	if err != nil {
-		return nil, fmt.Errorf("error generating %s transport config: %w", cluster.Name, err)
+		return nil, fmt.Errorf("error generating transport config: %w", err)
 	}
 	tlsCfg, err := transport.TLSConfigFor(tCfg)
 	if err != nil {
-		return nil, fmt.Errorf("error generating %s tls config: %w", cluster.Name, err)
+		return nil, fmt.Errorf("error generating tls config: %w", err)
 	}
 
 	// Disable keep-alive to avoid hanging connections
