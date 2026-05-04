@@ -2,6 +2,59 @@
 
 This guide explains changes introduced in new `v1beta2` and how to migrate manifests from current `v1beta1` to the new k0smotron API. For more details about each Api Group, please check current custom resource references.
 
+## Migration tool
+
+k0smotron ships an experimental CLI tool that automates the manifest conversion described in this guide.
+
+### Download pre-built binary
+
+Pre-built binaries are published with every release for the following platforms:
+
+| Platform | Binary |
+|---|---|
+| Linux x86-64 | `convert_linux_amd64` |
+| Linux ARM 64-bit | `convert_linux_arm64` |
+| macOS x86-64 | `convert_darwin_amd64` |
+| macOS Apple Silicon | `convert_darwin_arm64` |
+| Windows x86-64 | `convert_windows_amd64.exe` |
+
+Download the binary for your platform from the [GitHub releases page](https://github.com/k0sproject/k0smotron/releases), make it executable, and run it:
+
+```shell
+# Example for Linux x86-64
+curl -L https://github.com/k0sproject/k0smotron/releases/latest/download/convert_linux_amd64 -o convert
+chmod +x convert
+
+# Convert a file
+./convert my-cluster.yaml > my-cluster-v1beta2.yaml
+
+# Read from stdin
+cat my-cluster.yaml | ./convert
+```
+
+### Build from source
+
+If you have the repository cloned, you can build or run the tool directly with `make`:
+
+```shell
+# Run without building (uses go run)
+make convert ARGS="my-cluster.yaml"
+make convert ARGS="my-cluster.yaml" > my-cluster-v1beta2.yaml
+cat my-cluster.yaml | make convert
+
+# Build a binary for the current platform
+make build-convert    # output: bin/convert
+
+# Build binaries for all release platforms
+make build-convert-all  # output: bin/convert_<os>_<arch>[.exe]
+```
+
+The tool processes multi-document YAML files and applies all the field renames listed below. Resources from other API groups are passed through unchanged.
+
+!!! warning
+    `convert` is a best-effort staging tool. Always review the output before applying it to a cluster, and keep a backup of the originals. This feature may be removed in future releases.
+
+
 ## Deprecation Policy
 
 Starting from `v1.11.0`, k0smotron uses new `v1beta2` API version as [storage version](https://kubernetes.io/docs/concepts/overview/working-with-objects/storage-version/) and deprecate `v1beta1`, which still served for compatibility. K0smotron follows the [Kubernetes API deprecation policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/) for beta APIs:
