@@ -88,7 +88,7 @@ jobs:
           kind get kubeconfig > kind.conf
           export KUBECONFIG=$(realpath kind.conf)
           docker system prune -f
-          make -C inttest ${{ inputs.smoke-suite }} K0S_VERSION=${{ inputs.k0s-version }} KEEP_AFTER_TESTS=true
+          make -C inttest ${{ inputs.smoke-suite }} K0S_VERSION=${{ inputs.k0s-version }} KEEP_AFTER_TEST=true
 
       - name: Get k0smotron logs
         if: failure()
