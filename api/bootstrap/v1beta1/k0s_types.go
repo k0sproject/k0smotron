@@ -132,6 +132,7 @@ type K0sWorkerConfigSpec struct {
 	// DownloadURL specifies the URL to download k0s binary from.
 	// If specified the version field is ignored and what ever version is downloaded from the URL is used.
 	// +kubebuilder:validation:Optional
+	//+kubebuilder:default="https://get.k0s.sh"
 	DownloadURL string `json:"downloadURL,omitempty"`
 
 	// CustomUserDataRef is a reference to a secret or a configmap that contains the custom user data.
@@ -282,6 +283,7 @@ type K0sConfigSpec struct {
 	// by adding a file to the Files section that contains the necessary config for ORAS. See: https://oras.land/docs/how_to_guides/authentication/
 	// The file must be placed at `/root` directory (HOME for cloud-init execution time) and named `config.json`.
 	// NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.
+	//+kubebuilder:default="https://get.k0s.sh"
 	DownloadURL string `json:"downloadURL,omitempty"`
 
 	// Tunneling defines the tunneling configuration for the cluster.

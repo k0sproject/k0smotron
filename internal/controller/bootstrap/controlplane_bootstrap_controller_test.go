@@ -21,6 +21,7 @@ package bootstrap
 import (
 	"testing"
 
+	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,8 +96,10 @@ func TestController_genK0sCommands(t *testing.T) {
 				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
 					Spec: bootstrapv2.K0sControllerConfigSpec{
-						Version:       "v1.31.0",
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+						Version: "v1.31.0",
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+							DownloadURL: util.DefaultK0sDownloadURL,
+						},
 					},
 				},
 			},
@@ -116,8 +119,10 @@ func TestController_genK0sCommands(t *testing.T) {
 				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
 					Spec: bootstrapv2.K0sControllerConfigSpec{
-						Version:       "v1.31.6",
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+						Version: "v1.31.6",
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+							DownloadURL: util.DefaultK0sDownloadURL,
+						},
 					},
 				},
 			},
@@ -134,8 +139,10 @@ func TestController_genK0sCommands(t *testing.T) {
 				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
 					Spec: bootstrapv2.K0sControllerConfigSpec{
-						Version:       "v1.31.6+k0s.0",
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+						Version: "v1.31.6+k0s.0",
+						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+							DownloadURL: util.DefaultK0sDownloadURL,
+						},
 					},
 				},
 			},
