@@ -18,6 +18,7 @@ package controlplane
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -44,7 +45,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	hashutil "k8s.io/kubernetes/pkg/util/hash"
 	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -795,11 +795,14 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0
 // generateClusterSpecHashWithoutExternalAddress generates a hash of the ClusterSpec. The ExternalAddress field is excluded from the hash generation
 // as the initial configuration'snapshot' may not contain the ExternalAddress, which is expected to be updated by the controller after the Cluster
 // creation and must not be a reason to mark the specs as not synced.
+// JSON marshaling is used instead of spew-based hashing so that fields with omitempty and zero/nil values are omitted from the hash input,
+// making the hash stable when new optional fields are added to ClusterSpec.
 func generateClusterSpecHashWithoutExternalAddress(spec kapi.ClusterSpec) string {
 	normalizedSpec := spec.DeepCopy()
 	normalizedSpec.ExternalAddress = ""
+	data, _ := json.Marshal(normalizedSpec)
 	hasher := fnv.New32a()
-	hashutil.DeepHashObject(hasher, normalizedSpec)
+	_, _ = hasher.Write(data)
 	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))
 }
 

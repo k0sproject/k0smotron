@@ -39,7 +39,7 @@ func TestIsClusterSpecSynced(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{
 			Name: "test",
 			Annotations: map[string]string{
-				AnnotationKeyClusterSpecHash: "54984cbcdf",
+				AnnotationKeyClusterSpecHash: "86c6b5f8df",
 			},
 		},
 	}
