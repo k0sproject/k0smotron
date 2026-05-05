@@ -443,3 +443,25 @@ sign-pub-key:
 	  gcr.io/projectsigstore/cosign:v2.2.0 \
 	  public-key \
 	  --key /k0s/cosign.key --output-file /out/cosign.pub
+
+.PHONY: convert
+convert: ## Run the v1beta1→v1beta2 conversion tool (pass ARGS="[flags] [files]")
+	go run ./hack/convert $(ARGS)
+
+.PHONY: build-convert
+build-convert: ## Build the convert binary for the current platform to bin/convert
+	go build -o bin/convert ./hack/convert
+
+CONVERT_PLATFORMS ?= linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
+
+.PHONY: build-convert-all
+build-convert-all: ## Build the convert binary for all release platforms to bin/
+	@mkdir -p bin
+	@for platform in $(CONVERT_PLATFORMS); do \
+		os=$$(echo $$platform | cut -d/ -f1); \
+		arch=$$(echo $$platform | cut -d/ -f2); \
+		ext=""; \
+		[ "$$os" = "windows" ] && ext=".exe"; \
+		echo "Building convert for $$os/$$arch..."; \
+		GOOS=$$os GOARCH=$$arch go build -o bin/convert_$${os}_$${arch}$${ext} ./hack/convert; \
+	done

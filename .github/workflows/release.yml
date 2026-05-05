@@ -164,3 +164,60 @@ jobs:
           asset_path: ./templates/cluster-template-hcp.yaml
           asset_name: cluster-template-hcp.yaml
           asset_content_type: application/octet-stream
+
+  build-convert:
+    needs:
+      - release
+    name: Build convert binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run git checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: '1.25'
+
+      - name: Build convert binaries for all platforms
+        run: make build-convert-all
+
+      - name: Upload convert binary - linux/amd64
+        uses: shogo82148/actions-upload-release-asset@v1.8.1
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./bin/convert_linux_amd64
+          asset_name: convert_linux_amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload convert binary - linux/arm64
+        uses: shogo82148/actions-upload-release-asset@v1.8.1
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./bin/convert_linux_arm64
+          asset_name: convert_linux_arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload convert binary - darwin/amd64
+        uses: shogo82148/actions-upload-release-asset@v1.8.1
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./bin/convert_darwin_amd64
+          asset_name: convert_darwin_amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload convert binary - darwin/arm64
+        uses: shogo82148/actions-upload-release-asset@v1.8.1
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./bin/convert_darwin_arm64
+          asset_name: convert_darwin_arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload convert binary - windows/amd64
+        uses: shogo82148/actions-upload-release-asset@v1.8.1
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./bin/convert_windows_amd64.exe
+          asset_name: convert_windows_amd64.exe
+          asset_content_type: application/octet-stream
