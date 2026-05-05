@@ -103,10 +103,10 @@ const (
 
 // ClusterSpec defines the desired state of K0smotronCluster
 type ClusterSpec struct {
-	// KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
-	// This kubeconfig will be used to deploy the k0s control plane.
-	//+kubebuilder:validation:Optional
-	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
+	// RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
+	// If not specified, k0smotron will deploy the control plane in the management cluster.
+	// +kubebuilder:validation:Optional
+	RemoteHostCluster *RemoteHostClusterSpec `json:"remoteHostCluster,omitempty"`
 	// Replicas is the desired number of replicas of the k0s control planes.
 	// If unspecified, defaults to 1. If the value is above 1, k0smotron requires spec.storage.kine.dataSourceURL to be set.
 	// Recommended value is 3.
@@ -191,6 +191,14 @@ type ClusterSpec struct {
 	// For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.
 	// +kubebuilder:validation:Optional
 	Patches []ComponentPatch `json:"patches,omitempty"`
+}
+
+// RemoteHostClusterSpec defines the configuration for deploying the k0s control plane in a remote hosting cluster.
+type RemoteHostClusterSpec struct {
+	// KubeconfigRef is the reference to the kubeconfig of the hosting cluster.
+	// This kubeconfig will be used to deploy the k0s control plane.
+	//+kubebuilder:validation:Optional
+	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
 }
 
 // ComponentPatch defines a patch to apply to a generated resource.

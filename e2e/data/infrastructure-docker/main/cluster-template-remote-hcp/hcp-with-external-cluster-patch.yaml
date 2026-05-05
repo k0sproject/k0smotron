@@ -4,10 +4,11 @@ metadata:
   name: ${CLUSTER_NAME}-docker-test
   namespace: ${NAMESPACE}
 spec:
-  kubeconfigRef:
-    name: hosting-cluster-kubeconfig
-    namespace: ${NAMESPACE}
-    key: value
+  remoteHostCluster:
+    kubeconfigRef:
+      name: hosting-cluster-kubeconfig
+      namespace: ${NAMESPACE}
+      key: value
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: v1.30.1-k0s.0
   service:

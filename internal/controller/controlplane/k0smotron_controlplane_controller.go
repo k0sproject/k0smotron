@@ -170,7 +170,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	// If the controlplane replicas run in a different cluster, we need to ensure the external owner is created
 	// for garbage collection purposes. Only if the K0smotronControlPlane is not being deleted, otherwise an infinite
 	// loop would be created creating the root owner - deleting it - creating it again.
-	if kcp.Spec.KubeconfigRef != nil && kcp.ObjectMeta.DeletionTimestamp.IsZero() {
+	if kcp.Spec.RemoteHostCluster != nil && kcp.Spec.RemoteHostCluster.KubeconfigRef != nil && kcp.ObjectMeta.DeletionTimestamp.IsZero() {
 		// Ensure the namespace exists in the remote cluster before creating any resources
 		if err := util.EnsureNamespaceExists(ctx, kmcScope.client, cluster.Namespace); err != nil {
 			log.Error(err, "Error ensuring namespace exists in remote cluster")
@@ -778,9 +778,9 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0
 		restConfig: c.RESTConfig,
 	}
 
-	if kcp.Spec.KubeconfigRef != nil {
+	if kcp.Spec.RemoteHostCluster != nil && kcp.Spec.RemoteHostCluster.KubeconfigRef != nil {
 		var err error
-		kmcScope.client, kmcScope.clientSet, kmcScope.restConfig, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, c.Client, kcp.Spec.KubeconfigRef)
+		kmcScope.client, kmcScope.clientSet, kmcScope.restConfig, err = util.GetKmcClientFromClusterKubeconfigSecret(ctx, c.Client, kcp.Spec.RemoteHostCluster.KubeconfigRef)
 		if err != nil {
 			logger.Error(err, "Error getting client from cluster kubeconfig reference")
 			return nil, err
