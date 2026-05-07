@@ -236,7 +236,8 @@ func Test_machineStatusCompute(t *testing.T) {
 		}
 
 		rc := &machineStatus{
-			machines: machines,
+			machines:         machines,
+			upToDateReplicas: 1,
 		}
 		err := rc.compute(kcp)
 
@@ -275,7 +276,8 @@ func Test_machineStatusCompute(t *testing.T) {
 		}
 
 		rc := &machineStatus{
-			machines: machines,
+			machines:         machines,
+			upToDateReplicas: 1,
 		}
 		err := rc.compute(kcp)
 
@@ -314,7 +316,8 @@ func Test_machineStatusCompute(t *testing.T) {
 		}
 
 		rc := &machineStatus{
-			machines: machines,
+			machines:         machines,
+			upToDateReplicas: 1,
 		}
 		err := rc.compute(kcp)
 
@@ -361,7 +364,8 @@ func Test_machineStatusCompute(t *testing.T) {
 		}
 
 		rc := &machineStatus{
-			machines: machines,
+			machines:         machines,
+			upToDateReplicas: 1,
 		}
 		err := rc.compute(kcp)
 
@@ -408,7 +412,8 @@ func Test_machineStatusCompute(t *testing.T) {
 		}
 
 		rc := &machineStatus{
-			machines: machines,
+			machines:         machines,
+			upToDateReplicas: 1,
 		}
 		err := rc.compute(kcp)
 
@@ -451,7 +456,8 @@ func Test_machineStatusCompute(t *testing.T) {
 		}
 
 		rc := &machineStatus{
-			machines: machines,
+			machines:         machines,
+			upToDateReplicas: 1,
 		}
 		err := rc.compute(kcp)
 

@@ -164,6 +164,9 @@ func TestReconcileReturnErrorWhenClusterControllerConfigBelongsIsNotFound(t *tes
 				},
 			},
 		},
+		Spec: bootstrapv1.K0sControllerConfigSpec{
+			Version: machineForControllerConfig.Spec.Version,
+		},
 	}
 	require.NoError(t, testEnv.Create(ctx, k0sControllerConfig))
 
@@ -234,6 +237,9 @@ func TestReconcileControllerConfigPausedCluster(t *testing.T) {
 				},
 			},
 		},
+		Spec: bootstrapv1.K0sControllerConfigSpec{
+			Version: machineForControllerConfig.Spec.Version,
+		},
 	}
 	require.NoError(t, testEnv.Create(ctx, k0sControllerConfig))
 
@@ -297,6 +303,9 @@ func TestReconcilePausedK0sControllerConfig(t *testing.T) {
 					UID:        "1",
 				},
 			},
+		},
+		Spec: bootstrapv1.K0sControllerConfigSpec{
+			Version: machineForControllerConfig.Spec.Version,
 		},
 	}
 
@@ -366,6 +375,9 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 					UID:        "1",
 				},
 			},
+		},
+		Spec: bootstrapv1.K0sControllerConfigSpec{
+			Version: machineForControllerConfig.Spec.Version,
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, k0sControllerConfig))
@@ -445,6 +457,9 @@ func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
 					UID:        "1",
 				},
 			},
+		},
+		Spec: bootstrapv1.K0sControllerConfigSpec{
+			Version: machineForControllerConfig.Spec.Version,
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, k0sControllerConfig))
@@ -526,6 +541,9 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 					UID:        "1",
 				},
 			},
+		},
+		Spec: bootstrapv1.K0sControllerConfigSpec{
+			Version: machineForControllerConfig.Spec.Version,
 		},
 	}
 	require.NoError(t, testEnv.Create(ctx, k0sControllerConfig))
