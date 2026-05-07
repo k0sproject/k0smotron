@@ -90,10 +90,10 @@ func (c *K0sController) generateKubeconfig(ctx context.Context, clusterKey clien
 
 }
 
-func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Config, cluster *clusterv1.Cluster, secretName string, secretMetadata bootstrapv1beta2.SecretMetadata) error {
+func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Config, cluster *clusterv1.Cluster, secretName string, secretMetadata bootstrapv1beta2.SecretMetadata) (*v1.Secret, error) {
 	cfgBytes, err := clientcmd.Write(*cfg)
 	if err != nil {
-		return fmt.Errorf("failed to serialize config to yaml: %w", err)
+		return nil, fmt.Errorf("failed to serialize config to yaml: %w", err)
 	}
 
 	clusterName := util.ObjectKey(cluster)
@@ -118,7 +118,11 @@ func (c *K0sController) createKubeconfigSecret(ctx context.Context, cfg *api.Con
 	}
 	maps.Copy(kcSecret.Annotations, secretMetadata.Annotations)
 
-	return c.Create(ctx, kcSecret)
+	err = c.Create(ctx, kcSecret)
+	if err != nil {
+		return nil, err
+	}
+	return kcSecret, nil
 }
 
 func (c *K0sController) regenerateKubeconfigSecret(ctx context.Context, kubeconfigSecret *v1.Secret, clusterName string) error {

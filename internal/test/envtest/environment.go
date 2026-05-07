@@ -157,6 +157,7 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 				DisableFor: []client.Object{
 					&v1.ConfigMap{},
 					&v1.Secret{},
+					&clusterv1.Machine{},
 				},
 				// Use the cache for all Unstructured get/list calls.
 				Unstructured: true,
