@@ -18,7 +18,7 @@ package controlplane
 
 import (
 	"context"
-	"fmt"
+
 	"k8s.io/utils/ptr"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
@@ -33,33 +33,27 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (retErr error) {
+func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *controlplane) (retErr error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
-	if err != nil {
-		return fmt.Errorf("failed to filter machines for control plane: %w", err)
-	}
-
-	healthyMachines := machines.Filter(isHealthy)
-
+	healthyMachines := scope.activeMachines.Filter(isHealthy)
 	// cleanup pending remediation actions not completed if the underlying machine is now back to healthy.
 	// machines to be sanitized has the following conditions:
 	//
 	// HealthCheckSucceeded=True (current machine's state is Health)
 	//         AND
 	// OwnerRemediated=False (machine was marked as unhealthy previously)
-	err = c.sanitizeHealthyMachines(ctx, healthyMachines)
+	err := c.sanitizeHealthyMachines(ctx, healthyMachines)
 	if err != nil {
 		return err
 	}
-	if _, ok := kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation]; ok {
+	if _, ok := scope.kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation]; ok {
 		log.Info("Another remediation is already in progress. Skipping remediation.")
 		return nil
 	}
 
 	// retrieve machines marked as unheathy by MHC controller
-	unhealthyMachines := machines.Filter(collections.IsUnhealthyAndOwnerRemediated)
+	unhealthyMachines := scope.activeMachines.Filter(collections.IsUnhealthyAndOwnerRemediated)
 
 	// no unhealthy machines to remediate. Reconciliation can move on to the next stage.
 	if len(unhealthyMachines) == 0 {
@@ -76,7 +70,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 	defer func() {
 		derr := c.Status().Patch(ctx, machineToBeRemediated, client.Merge)
 		if derr != nil {
-			log.Error(err, "Failed to patch control plane Machine", "Machine", machineToBeRemediated.Name)
+			log.Error(derr, "Failed to patch control plane Machine", "Machine", machineToBeRemediated.Name)
 			if retErr == nil {
 				retErr = errors.Wrapf(err, "failed to patch control plane Machine %s", machineToBeRemediated.Name)
 			}
@@ -85,10 +79,10 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 	}()
 	// Ensure that the cluster remains available during and after the remediation process. The remediation must not
 	// compromise the cluster's ability to serve workloads or cause disruption to the control plane's functionality.
-	if ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
+	if ptr.Deref(scope.kcp.Status.Initialization.ControlPlaneInitialized, false) {
 		// The cluster MUST have more than one replica, because this is the smallest cluster size that allows any etcd failure tolerance.
-		if !(machines.Len() > 1) {
-			log.Info("A control plane machine needs remediation, but the number of current replicas is less or equal to 1. Skipping remediation", "replicas", machines.Len())
+		if scope.activeMachines.Len() <= 1 {
+			log.Info("A control plane machine needs remediation, but the number of current replicas is less or equal to 1. Skipping remediation", "replicas", scope.activeMachines.Len())
 			conditions.Set(machineToBeRemediated, metav1.Condition{
 				Type:    string(clusterv1.MachineOwnerRemediatedCondition),
 				Status:  metav1.ConditionFalse,
@@ -111,7 +105,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 		}
 
 		// The cluster MUST have no machines with a deletion timestamp. This rule prevents KCP taking actions while the cluster is in a transitional state.
-		if len(machines.Filter(collections.HasDeletionTimestamp)) > 0 {
+		if len(scope.activeMachines.Filter(collections.HasDeletionTimestamp)) > 0 {
 			log.Info("A control plane machine needs remediation, but there are other control-plane machines being deleted. Skipping remediation")
 			conditions.Set(machineToBeRemediated, metav1.Condition{
 				Type:    string(clusterv1.MachineOwnerRemediatedCondition),
@@ -125,7 +119,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 
 	// After checks, remediation can be carried out.
 
-	if err := c.runMachineDeletionSequence(ctx, kcp, machineToBeRemediated); err != nil {
+	if err := c.deleteMachine(ctx, machineToBeRemediated.Name, scope.kcp); err != nil {
 		conditions.Set(machineToBeRemediated, metav1.Condition{
 			Type:    string(clusterv1.MachineOwnerRemediatedCondition),
 			Status:  metav1.ConditionFalse,
@@ -138,7 +132,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, cluster 
 
 	// Mark controlplane to track that remediation is in progress and do not proceed until machine is gone.
 	// This annotation is removed when new controlplane creates a new machine.
-	annotations.AddAnnotations(kcp, map[string]string{
+	annotations.AddAnnotations(scope.kcp, map[string]string{
 		cpv1beta2.RemediationInProgressAnnotation: "true",
 	})
 

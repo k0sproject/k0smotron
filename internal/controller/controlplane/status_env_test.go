@@ -92,8 +92,12 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 			Client:                    testEnv,
 			workloadClusterKubeClient: kubernetes.New(restClient),
 		}
+		controlplane := controlplane{
+			cluster: cluster,
+			kcp:     kcp,
+		}
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
-			rc, err := controller.newReplicasStatusComputer(ctx, cluster, kcp)
+			rc, err := controller.newReplicasStatusComputer(ctx, &controlplane)
 			assert.NoError(c, err)
 			ps, ok := rc.(*planStatus)
 			if !assert.True(c, ok) {
@@ -173,8 +177,14 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 			workloadClusterKubeClient: kubernetes.New(restClient),
 		}
 
+		controlplane := controlplane{
+			cluster:        cluster,
+			kcp:            kcp,
+			activeMachines: collections.FromMachines(expectedMachine),
+		}
+
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
-			rc, err := controller.newReplicasStatusComputer(ctx, cluster, kcp)
+			rc, err := controller.newReplicasStatusComputer(ctx, &controlplane)
 			assert.NoError(c, err)
 			ms, ok := rc.(*machineStatus)
 			if !assert.True(c, ok) {
@@ -245,8 +255,13 @@ func TestNewReplicaStatusComputer(t *testing.T) {
 		controller := &K0sController{
 			Client: testEnv,
 		}
+		controlplane := controlplane{
+			cluster:        cluster,
+			kcp:            kcp,
+			activeMachines: collections.FromMachines(expectedMachine),
+		}
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
-			rc, err := controller.newReplicasStatusComputer(ctx, cluster, kcp)
+			rc, err := controller.newReplicasStatusComputer(ctx, &controlplane)
 			assert.NoError(c, err)
 			ms, ok := rc.(*machineStatus)
 			if !assert.True(c, ok) {
