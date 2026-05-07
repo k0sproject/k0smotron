@@ -1571,6 +1571,39 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#migration-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migration tool
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Migration tool">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#download-pre-built-binary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Download pre-built binary
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build from source
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#deprecation-policy" class="md-nav__link">
     <span class="md-ellipsis">
       Deprecation Policy
@@ -2188,6 +2221,39 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#migration-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migration tool
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Migration tool">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#download-pre-built-binary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Download pre-built binary
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build from source
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#deprecation-policy" class="md-nav__link">
     <span class="md-ellipsis">
       Deprecation Policy
@@ -2265,6 +2331,69 @@ You are not currently viewing the documentation for the current stable release o
 
 <h1 id="migrate-to-v1beta2-apis">Migrate to v1beta2 APIs<a class="headerlink" href="#migrate-to-v1beta2-apis" title="Permanent link">#</a></h1>
 <p>This guide explains changes introduced in new <code>v1beta2</code> and how to migrate manifests from current <code>v1beta1</code> to the new k0smotron API. For more details about each Api Group, please check current custom resource references.</p>
+<h2 id="migration-tool">Migration tool<a class="headerlink" href="#migration-tool" title="Permanent link">#</a></h2>
+<p>k0smotron ships an experimental CLI tool that automates the manifest conversion described in this guide.</p>
+<h3 id="download-pre-built-binary">Download pre-built binary<a class="headerlink" href="#download-pre-built-binary" title="Permanent link">#</a></h3>
+<p>Pre-built binaries are published with every release for the following platforms:</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Binary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux x86-64</td>
+<td><code>convert-v1beta1-to-v1beta2-linux-amd64</code></td>
+</tr>
+<tr>
+<td>Linux ARM 64-bit</td>
+<td><code>convert-v1beta1-to-v1beta2-linux-arm64</code></td>
+</tr>
+<tr>
+<td>macOS x86-64</td>
+<td><code>convert-v1beta1-to-v1beta2-darwin-amd64</code></td>
+</tr>
+<tr>
+<td>macOS Apple Silicon</td>
+<td><code>convert-v1beta1-to-v1beta2-darwin-arm64</code></td>
+</tr>
+<tr>
+<td>Windows x86-64</td>
+<td><code>convert-v1beta1-to-v1beta2-windows-amd64.exe</code></td>
+</tr>
+</tbody>
+</table>
+<p>Download the binary for your platform from the <a href="https://github.com/k0sproject/k0smotron/releases">GitHub releases page</a>, make it executable, and run it:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Example for Linux x86-64</span>
+curl<span class="w"> </span>-L<span class="w"> </span>https://github.com/k0sproject/k0smotron/releases/latest/download/convert-v1beta1-to-v1beta2-linux-amd64<span class="w"> </span>-o<span class="w"> </span>convert
+chmod<span class="w"> </span>+x<span class="w"> </span>convert
+
+<span class="c1"># Convert a file</span>
+./convert<span class="w"> </span>my-cluster.yaml<span class="w"> </span>&gt;<span class="w"> </span>my-cluster-v1beta2.yaml
+
+<span class="c1"># Read from stdin</span>
+cat<span class="w"> </span>my-cluster.yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>./convert
+</code></pre></div>
+<h3 id="build-from-source">Build from source<a class="headerlink" href="#build-from-source" title="Permanent link">#</a></h3>
+<p>If you have the repository cloned, you can build or run the tool directly with <code>make</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run without building (uses go run)</span>
+make<span class="w"> </span>convert<span class="w"> </span><span class="nv">ARGS</span><span class="o">=</span><span class="s2">&quot;my-cluster.yaml&quot;</span>
+make<span class="w"> </span>convert<span class="w"> </span><span class="nv">ARGS</span><span class="o">=</span><span class="s2">&quot;my-cluster.yaml&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>my-cluster-v1beta2.yaml
+cat<span class="w"> </span>my-cluster.yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>make<span class="w"> </span>convert
+
+<span class="c1"># Build a binary for the current platform</span>
+make<span class="w"> </span>build-convert<span class="w">    </span><span class="c1"># output: bin/convert-v1beta1-to-v1beta2</span>
+
+<span class="c1"># Build binaries for all release platforms</span>
+make<span class="w"> </span>build-convert-all<span class="w">  </span><span class="c1"># output: bin/convert-v1beta1-to-v1beta2-&lt;os&gt;-&lt;arch&gt;[.exe]</span>
+</code></pre></div>
+<p>The tool processes multi-document YAML files and applies all the field renames listed below. Resources from other API groups are passed through unchanged.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>convert</code> is a best-effort staging tool. Always review the output before applying it to a cluster, and keep a backup of the originals. This feature may be removed in future releases.</p>
+</div>
 <h2 id="deprecation-policy">Deprecation Policy<a class="headerlink" href="#deprecation-policy" title="Permanent link">#</a></h2>
 <p>Starting from <code>v1.11.0</code>, k0smotron uses new <code>v1beta2</code> API version as <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/storage-version/">storage version</a> and deprecate <code>v1beta1</code>, which still served for compatibility. K0smotron follows the <a href="https://kubernetes.io/docs/reference/using-api/deprecation-policy/">Kubernetes API deprecation policy</a> for beta APIs:</p>
 <ul>
