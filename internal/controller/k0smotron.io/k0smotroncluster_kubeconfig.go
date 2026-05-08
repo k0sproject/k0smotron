@@ -18,9 +18,13 @@ package k0smotronio
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
@@ -37,8 +41,25 @@ import (
 	"github.com/k0sproject/k0smotron/internal/exec"
 )
 
+// kubeconfigRenewalThreshold is the safety margin before client cert expiry that triggers regeneration.
+// Above this threshold the existing kubeconfig is reused; this avoids a hot reconcile loop where the
+// admin cert (and therefore the secret content) would otherwise be regenerated on every reconcile.
+const kubeconfigRenewalThreshold = 30 * 24 * time.Hour
+
 func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, managementClusterClient client.Client, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
+
+	var existing v1.Secret
+	err := managementClusterClient.Get(ctx, client.ObjectKey{Name: kmc.GetAdminConfigSecretName(), Namespace: kmc.Namespace}, &existing)
+	if err != nil && !apierrors.IsNotFound(err) {
+		scope.currentReconcileState.controlplane.kubeconfig.message = err.Error()
+		return err
+	}
+	if kubeconfigStillValid(&existing, kmc) {
+		scope.currentReconcileState.controlplane.kubeconfig.data = existing.DeepCopy()
+		return nil
+	}
+
 	pod, err := findStatefulSetPod(ctx, kmc.GetStatefulSetName(), kmc.Namespace, scope.clienSet)
 	if err != nil {
 		scope.currentReconcileState.controlplane.kubeconfig.message = err.Error()
@@ -142,4 +163,50 @@ func rewriteKubeconfigValues(kubeconfigYAML string, kmc *km.Cluster) (string, er
 	}
 
 	return string(configBytes), nil
+}
+
+// kubeconfigStillValid reports whether the secret already holds a usable admin kubeconfig:
+// the client certificate is well above the renewal threshold and the server URL matches
+// the desired one when an Ingress is configured. Returning true lets the caller skip the
+// pod exec and SSA write, which is what prevents the reconcile-loop storm.
+func kubeconfigStillValid(secret *v1.Secret, kmc *km.Cluster) bool {
+	raw, ok := secret.Data["value"]
+	if !ok || len(raw) == 0 {
+		return false
+	}
+	obj, err := k8sruntime.Decode(clientcmdlatest.Codec, raw)
+	if err != nil {
+		return false
+	}
+	cfg, ok := obj.(*clientcmdapi.Config)
+	if !ok || cfg.CurrentContext == "" {
+		return false
+	}
+	ctxEntry, ok := cfg.Contexts[cfg.CurrentContext]
+	if !ok {
+		return false
+	}
+	cluster, ok := cfg.Clusters[ctxEntry.Cluster]
+	if !ok {
+		return false
+	}
+	if kmc.Spec.Ingress != nil {
+		expectedServer := fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
+		if cluster.Server != expectedServer {
+			return false
+		}
+	}
+	user, ok := cfg.AuthInfos[ctxEntry.AuthInfo]
+	if !ok || len(user.ClientCertificateData) == 0 {
+		return false
+	}
+	block, _ := pem.Decode(user.ClientCertificateData)
+	if block == nil {
+		return false
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false
+	}
+	return time.Until(cert.NotAfter) > kubeconfigRenewalThreshold
 }
