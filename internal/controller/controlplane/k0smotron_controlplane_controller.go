@@ -39,7 +39,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/controllers/external"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	crcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -635,7 +634,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	logger.Info("Pinging the workload cluster API")
 
 	// Get the CAPI cluster accessor
-	client, err := remote.NewClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
+	client, err := util.GetCachedWorkloadClusterClient(ctx, "k0smotron", c.Client, capiutil.ObjectKey(cluster))
 	if err != nil {
 		logger.Info("Failed to create cluster client", "error", err)
 		conditions.Set(kcp, metav1.Condition{

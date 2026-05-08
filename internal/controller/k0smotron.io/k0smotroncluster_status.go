@@ -28,9 +28,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
 func (r *ClusterReconciler) updateStatus(ctx context.Context, kmc *k0smotroniov1beta2.Cluster, scope currentReconcileState) {
@@ -268,7 +269,7 @@ func setControlPlaneFunctionalCondition(ctx context.Context, c client.Client, km
 		return
 	}
 
-	workloadClusterClient, err := remote.NewClusterClient(ctx, "k0smotron", c, client.ObjectKeyFromObject(kmc))
+	workloadClusterClient, err := kutil.GetCachedWorkloadClusterClient(ctx, "k0smotron", c, client.ObjectKeyFromObject(kmc))
 	if err != nil {
 		conditions.Set(kmc, metav1.Condition{
 			Type:    k0smotroniov1beta2.ClusterControlPlaneFunctionalCondition,
