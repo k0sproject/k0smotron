@@ -18,7 +18,7 @@ spec:
       - name: manager
         args:
         - "--health-probe-bind-address=:8081"
-        - "--diagnostics-address=127.0.0.1:8080"
+        - "--diagnostics-address=:8080"
         - "--leader-elect"
         - "--enable-controller=bootstrap"
         - --feature-gates=${K0SMOTRON_FEATURE_GATES:=""}
