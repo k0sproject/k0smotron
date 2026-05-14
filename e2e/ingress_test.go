@@ -113,7 +113,7 @@ func ingressSupportSpec(t *testing.T) {
 	}, e2eutil.GetInterval(e2eConfig, testName, "wait-cluster"))
 	require.NoError(t, err)
 
-	defer func() {
+	t.Cleanup(func() {
 		e2eutil.DumpSpecResourcesAndCleanup(
 			ctx,
 			testName,
@@ -128,7 +128,7 @@ func ingressSupportSpec(t *testing.T) {
 		)
 
 		testCancelWatches()
-	}()
+	})
 
 	// Wait for the control plane to be initialized
 	_, err = e2eutil.DiscoveryAndWaitForHCPToBeReady(ctx, e2eutil.DiscoveryAndWaitForHCPReadyInput{

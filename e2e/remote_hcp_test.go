@@ -106,7 +106,7 @@ func remoteHCPSpec(t *testing.T) {
 	}, util.GetInterval(e2eConfig, testName, "wait-cluster"))
 	require.NoError(t, err)
 
-	defer func() {
+	t.Cleanup(func() {
 		util.DumpSpecResourcesAndCleanup(
 			ctx,
 			testName,
@@ -119,7 +119,7 @@ func remoteHCPSpec(t *testing.T) {
 			skipCleanup,
 			clusterctlConfigPath,
 		)
-	}()
+	})
 
 	_, err = util.DiscoveryAndWaitForHCPToBeReady(ctx, util.DiscoveryAndWaitForHCPReadyInput{
 		Lister:  bootstrapClusterProxy.GetClient(),

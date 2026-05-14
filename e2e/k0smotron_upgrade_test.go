@@ -144,7 +144,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 	}, e2eutil.GetInterval(e2eConfig, testName, "wait-cluster"))
 	require.NoError(t, err)
 
-	defer func() {
+	t.Cleanup(func() {
 		e2eutil.DumpSpecResourcesAndCleanup(
 			ctx,
 			testName,
@@ -164,7 +164,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 			managementClusterProxy.Dispose(ctx)
 			managementClusterProvider.Dispose(ctx)
 		}
-	}()
+	})
 
 	controlPlane, err := e2eutil.DiscoveryAndWaitForControlPlaneInitialized(ctx, capiframework.DiscoveryAndWaitForControlPlaneInitializedInput{
 		Lister:  managementClusterProxy.GetClient(),
