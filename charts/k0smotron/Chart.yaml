@@ -1,0 +1,21 @@
+apiVersion: v2
+name: k0smotron
+description: Helm chart for k0smotron — operator for managing k0s-based Kubernetes clusters with optional ClusterAPI integration
+type: application
+version: 0.1.0
+appVersion: "1.10.5"
+keywords:
+  - k0s
+  - kubernetes
+  - cluster-api
+  - capi
+  - operator
+home: https://k0smotron.io
+sources:
+  - https://github.com/k0sproject/k0smotron
+maintainers:
+  - name: k0smotron maintainers
+    url: https://github.com/k0sproject/k0smotron
+annotations:
+  artifacthub.io/operator: "true"
+  artifacthub.io/operatorCapabilities: Full Lifecycle

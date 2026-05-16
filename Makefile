@@ -119,7 +119,19 @@ manifests-capi-integration-without-crd: $(CONTROLLER_GEN) # Generate RBAC and we
 	  output:webhook:dir=config/clusterapi/all/webhook
 
 .PHONY: manifests
-manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-standalone ## Generate all CRD YAMLs per group
+manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-standalone helm-sync ## Generate all CRD YAMLs per group
+
+##@ Helm
+
+HELM_CHART_DIR ?= charts/k0smotron
+
+.PHONY: helm-sync
+helm-sync: ## Sync Helm chart CRDs from controller-gen output in config/*/crd/bases/
+	rm -f $(HELM_CHART_DIR)/crds/*.yaml
+	cp config/standalone/crd/bases/*.yaml $(HELM_CHART_DIR)/crds/
+	cp config/clusterapi/bootstrap/crd/bases/*.yaml $(HELM_CHART_DIR)/crds/
+	cp config/clusterapi/controlplane/crd/bases/*.yaml $(HELM_CHART_DIR)/crds/
+	cp config/clusterapi/infrastructure/crd/bases/*.yaml $(HELM_CHART_DIR)/crds/
 
 ### generate
 generate_targets += api/k0smotron.io/v1beta1/zz_generated.deepcopy.go
