@@ -129,16 +129,6 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	log = log.WithValues("kind", configOwner.GetKind(), "version", configOwner.GetResourceVersion(), "name", configOwner.GetName())
 
-	machine := &clusterv1.Machine{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(configOwner.Object, machine); err != nil {
-		return ctrl.Result{}, fmt.Errorf("error converting %s to Machine: %w", configOwner.GetKind(), err)
-	}
-
-	// If the K0sWorkerConfig does not have a version set, use the machine's version.
-	if config.Spec.Version == "" && machine.Spec.Version != "" {
-		config.Spec.Version = machine.Spec.Version
-	}
-
 	// If the version does not contain the k0s suffix, append it.
 	if config.Spec.Version != "" {
 		// When machine is created by CAPI, for example by using a clusterclass template, the version

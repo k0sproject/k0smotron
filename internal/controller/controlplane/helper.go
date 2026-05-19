@@ -56,27 +56,6 @@ var (
 	errMachineWithoutK0sConfigAnnotation = fmt.Errorf("k0s config annotation not found on machine")
 )
 
-func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
-	machine, err := c.generateMachine(ctx, name, cluster, kcp, infraRef, failureDomain)
-	if err != nil {
-		return nil, fmt.Errorf("error generating machine: %w", err)
-	}
-	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
-
-	err = c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
-		FieldManager: "k0smotron",
-	})
-	if err != nil {
-		return machine, err
-	}
-
-	// Remove the annotation tracking that a remediation is in progress.
-	// A remediation is completed when the replacement machine has been created above.
-	delete(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
-
-	return machine, nil
-}
-
 func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv1beta2.K0sControlPlane) error {
 	machine := &clusterv1.Machine{
 
@@ -147,6 +126,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			InfrastructureRef: infraRef,
 		},
 	}
+	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
 
 	return machine, nil
 }
@@ -316,29 +296,11 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	return infraMachine, nil
 }
 
-func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
-	// Skip the check if the K0sControlPlane is not ready
-	if kcp.Status.Initialization.ControlPlaneInitialized == nil ||
-		!*kcp.Status.Initialization.ControlPlaneInitialized ||
-		kcp.Spec.Replicas != ptr.Deref(kcp.Status.Replicas, 0) {
-		return false
+func isBootstrapConfigUpToDate(bootstrapConfig *bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
+	if bootstrapConfig == nil {
+		// In cases where the bootstrap config is not found, follow more conservative approach and consider it up to date.
+		return true
 	}
-
-	if machine == nil {
-		return false
-	}
-
-	if machine.Status.Phase != string(clusterv1.MachinePhaseRunning) &&
-		machine.Status.Phase != string(clusterv1.MachinePhaseProvisioned) &&
-		machine.Status.Phase != string(clusterv1.MachinePhaseProvisioning) {
-		return false
-	}
-
-	bootstrapConfig, found := bootstrapConfigs[machine.Name]
-	if !found {
-		return false
-	}
-
 	// If the machine has the k0s config annotation, use it for comparison instead of manually comparing the K0sConfigSpec.
 	// We will fall back to the manual comparison only if the annotation is missing or invalid. This is required to support
 	// the scenario where the machine was created using old k0smotron versions where the k0s config was a mutable resource.
@@ -346,7 +308,7 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 	if err != nil {
 		// TODO: Remove this fallback logic in a future release.
 		if errors.Is(err, errMachineWithoutK0sConfigAnnotation) {
-			return deprecatedIsK0sConfigChanged(&bootstrapConfig, kcp, machine)
+			return !deprecatedIsK0sConfigChanged(bootstrapConfig, kcp, machine)
 		}
 
 		return false
@@ -358,8 +320,7 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 	kcpK0sConfig.K0s = nil
 	machineK0sConfig.K0s = nil
 
-	return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
-
+	return cmp.Diff(kcpK0sConfig, machineK0sConfig) == ""
 }
 
 // Deprecated: This function is kept for backward compatibility with clusters created with versions that does not add an annotation in the
@@ -421,12 +382,8 @@ func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv2.K0sConfigSpec
 	return k0sConfigSpec, nil
 }
 
-func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
+func isInfraMachineUpToDate(infraMachine *unstructured.Unstructured, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
 	if machine == nil {
-		return false
-	}
-	infraMachine, found := infraMachines[machine.Name]
-	if !found {
 		return false
 	}
 
