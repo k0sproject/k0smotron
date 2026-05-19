@@ -60,6 +60,12 @@ func (c *K0sController) updateStatus(ctx context.Context, kcp *cpv1beta2.K0sCont
 	logger := log.FromContext(ctx)
 
 	defer func() {
+		if err != nil {
+			if errors.Is(err, kutil.ErrNotReady) {
+				logger.Info("Skipping availability computation since the control plane is not ready yet")
+				return
+			}
+		}
 		// The availability of a controlplane is computed in the same way regardless of the type of strategy followed for its upgrade.
 		c.computeAvailability(ctx, cluster, kcp, logger)
 	}()
@@ -91,7 +97,7 @@ func (c *K0sController) newReplicasStatusComputer(ctx context.Context, cluster *
 			return newMachineStatusComputer(ctx, c.Client, cluster)
 		}
 
-		kc, err := c.getKubeClient(ctx, cluster)
+		kc, err := c.getWorkloadClusterClientset(ctx, cluster)
 		if err != nil {
 			return nil, err
 		}
@@ -312,9 +318,9 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
 	// Get the CAPI cluster accessor
-	client, err := kutil.GetControllerRuntimeClient(ctx, c.Client, kcp, client.ObjectKeyFromObject(cluster))
+	client, err := kutil.GetControllerRuntimeClient(ctx, c.Client, c.ClusterCache, kcp, client.ObjectKeyFromObject(cluster))
 	if err != nil {
-		logger.Info("Failed to create cluster client", "error", err)
+		logger.Info("Failed to get cluster client", "error", err)
 		return
 	}
 	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)

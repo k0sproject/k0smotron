@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
@@ -30,7 +28,7 @@ import (
 )
 
 // ReconcileDynamicConfig updates the k0s ClusterConfig with the provided unstructured configuration.
-func ReconcileDynamicConfig(ctx context.Context, cluster client.ObjectKey, cli client.Client, u unstructured.Unstructured, kcp *cpv1beta2.K0sControlPlane) error {
+func ReconcileDynamicConfig(ctx context.Context, workloadClient client.Client, u unstructured.Unstructured) error {
 	u.SetName("k0s")
 	u.SetNamespace("kube-system")
 
@@ -45,11 +43,6 @@ func ReconcileDynamicConfig(ctx context.Context, cluster client.ObjectKey, cli c
 		return fmt.Errorf("failed to marshal unstructured config: %w", err)
 	}
 
-	chCS, err := kutil.GetControllerRuntimeClient(ctx, cli, kcp, cluster)
-	if err != nil {
-		return fmt.Errorf("failed to create workload cluster client: %w", err)
-	}
-
 	err = retry.OnError(wait.Backoff{
 		Steps:    2,
 		Duration: 100 * time.Millisecond,
@@ -58,7 +51,7 @@ func ReconcileDynamicConfig(ctx context.Context, cluster client.ObjectKey, cli c
 	}, func(_ error) bool {
 		return true
 	}, func() error {
-		return chCS.Patch(ctx, &u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)
+		return workloadClient.Patch(ctx, &u, client.RawPatch(client.Merge.Type(), b), []client.PatchOption{}...)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to patch k0s config: %w", err)

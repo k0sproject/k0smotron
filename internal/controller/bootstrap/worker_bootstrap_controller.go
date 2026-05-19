@@ -34,6 +34,7 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -65,6 +66,7 @@ const (
 type Controller struct {
 	client.Client
 	SecretCachingClient client.Client
+	ClusterCache        clustercache.ClusterCache
 	Scheme              *runtime.Scheme
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
@@ -364,7 +366,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 			return "", fmt.Errorf("failed to get K0sControlPlane resource: %w", err)
 		}
 
-		wcClient, err = util.GetControllerRuntimeClient(ctx, r.Client, cp, client.ObjectKeyFromObject(scope.Cluster))
+		wcClient, err = util.GetControllerRuntimeClient(ctx, r.Client, r.ClusterCache, cp, client.ObjectKeyFromObject(scope.Cluster))
 		if err != nil {
 			return "", fmt.Errorf("failed to create child cluster client: %w", err)
 		}
