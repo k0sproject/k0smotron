@@ -374,7 +374,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		}
 		installCmd = createCPInstallCmd(scope)
 	} else {
-		oldest := getFirstRunningMachineWithLatestVersion(scope.machines)
+		oldest := getFirstRunningMachineExcludingMachineToBootstrap(scope)
 		if oldest == nil {
 			log.Info("wait for initial control plane provisioning")
 			return nil, err
@@ -967,10 +967,12 @@ exit 0`,
 	}
 }
 
-func getFirstRunningMachineWithLatestVersion(machines collections.Machines) *clusterv1.Machine {
-	res := make(machinesByVersionAndCreationTimestamp, 0, len(machines))
-	for _, value := range machines {
-		if value.Status.Phase == string(clusterv1.MachinePhasePending) {
+func getFirstRunningMachineExcludingMachineToBootstrap(scope *ControllerScope) *clusterv1.Machine {
+	res := make(machinesByVersionAndCreationTimestamp, 0, len(scope.machines))
+	// Assuming configs and machines have the same name
+	machineNameToBootstrap := scope.Config.Name
+	for _, value := range scope.machines {
+		if value.Status.Phase == string(clusterv1.MachinePhasePending) || machineNameToBootstrap == value.Name {
 			continue
 		}
 		res = append(res, value)
