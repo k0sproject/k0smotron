@@ -506,10 +506,11 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 }
 
 func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster) error {
-	kubeClient, err := c.getKubeClient(ctx, cluster)
+	kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
 	if err != nil {
-		return fmt.Errorf("error getting kube client: %w", err)
+		return fmt.Errorf("error getting workload cluster client: %w", err)
 	}
+
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
 	if err != nil {
 		return fmt.Errorf("error getting all machines: %w", err)
@@ -589,7 +590,7 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.
 			// it is necessary to check if the current autopilot process corresponds to a previous update by comparing the current
 			// version of the resource with the desired one. If that is the case, the state is not yet ready to proceed with a new plan.
 			if version != kcp.Spec.Version {
-				return fmt.Errorf("previous autopilot is not finished: %w", ErrNotReady)
+				return fmt.Errorf("previous autopilot is not finished: %w", util.ErrNotReady)
 			}
 
 			return nil

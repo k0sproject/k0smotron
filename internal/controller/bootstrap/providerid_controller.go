@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -41,8 +42,9 @@ import (
 // ProviderIDController is responsible for reconciling the ProviderID field of the Machine resource.
 type ProviderIDController struct {
 	client.Client
-	Scheme    *runtime.Scheme
-	ClientSet *kubernetes.Clientset
+	Scheme       *runtime.Scheme
+	ClientSet    *kubernetes.Clientset
+	ClusterCache clustercache.ClusterCache
 }
 
 // Reconcile reconciles the ProviderID field of the Machine resource and
@@ -82,7 +84,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, fmt.Errorf("can't get cluster %s/%s: %w", machine.Namespace, machine.Spec.ClusterName, err)
 	}
 
-	childClient, err := k0smoutil.GetKubeClient(context.Background(), p.Client, cluster)
+	childClient, err := k0smoutil.GetWorkloadClusterClientset(ctx, p.Client, p.ClusterCache, cluster)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("can't get kube client for cluster %s/%s: %w. may not be created yet", machine.Namespace, machine.Spec.ClusterName, err)
 	}
