@@ -85,7 +85,7 @@ func controlplaneConditionsSpec(t *testing.T) {
 	}, e2eutil.GetInterval(e2eConfig, testName, "wait-cluster"))
 	require.NoError(t, err)
 
-	defer func() {
+	t.Cleanup(func() {
 		e2eutil.DumpSpecResourcesAndCleanup(
 			ctx,
 			testName,
@@ -100,7 +100,7 @@ func controlplaneConditionsSpec(t *testing.T) {
 		)
 
 		testCancelWatches()
-	}()
+	})
 
 	// Wait for the control plane to be initialized
 	controlPlane, err := e2eutil.DiscoveryAndWaitForControlPlaneInitialized(ctx, capiframework.DiscoveryAndWaitForControlPlaneInitializedInput{

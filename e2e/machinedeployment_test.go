@@ -81,7 +81,7 @@ func TestMachineDeployment(t *testing.T) {
 		}, util.GetInterval(e2eConfig, testName, "wait-cluster"))
 		require.NoError(t, err)
 
-		defer func() {
+		t.Cleanup(func() {
 			util.DumpSpecResourcesAndCleanup(
 				ctx,
 				testName,
@@ -94,7 +94,7 @@ func TestMachineDeployment(t *testing.T) {
 				skipCleanup,
 				clusterctlConfigPath,
 			)
-		}()
+		})
 
 		err = util.DiscoveryAndWaitForK0smotronControlPlaneInitialized(ctx, capiframework.DiscoveryAndWaitForControlPlaneInitializedInput{
 			Lister:  bootstrapClusterProxy.GetClient(),

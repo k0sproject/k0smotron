@@ -87,7 +87,7 @@ func ignitionProvisioningSpec(t *testing.T) {
 	}, util.GetInterval(e2eConfig, testName, "wait-cluster"))
 	require.NoError(t, err)
 
-	defer func() {
+	t.Cleanup(func() {
 		util.DumpSpecResourcesAndCleanup(
 			ctx,
 			testName,
@@ -100,7 +100,7 @@ func ignitionProvisioningSpec(t *testing.T) {
 			skipCleanup,
 			clusterctlConfigPath,
 		)
-	}()
+	})
 
 	_, err = util.DiscoveryAndWaitForControlPlaneInitialized(ctx, capiframework.DiscoveryAndWaitForControlPlaneInitializedInput{
 		Lister:  bootstrapClusterProxy.GetClient(),

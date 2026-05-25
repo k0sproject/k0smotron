@@ -116,17 +116,35 @@ func setupAndRun(t *testing.T, test func(t *testing.T)) {
 	ctrl.SetLogger(klog.Background())
 	flag.Parse()
 
-	defer func() {
-		if !skipCleanup {
-			tearDown(bootstrapClusterProvider, bootstrapClusterProxy)
-		}
-	}()
 	err := setupMothership()
 	if err != nil {
 		panic(err)
 	}
 
+	// tearDown is registered via t.Cleanup so it shares LIFO ordering with the rest
+	// of the test cleanups. Registered FIRST → runs LAST: spec cleanups and the
+	// reconcile-storm assert both still see a live management cluster.
+	t.Cleanup(func() {
+		if !skipCleanup {
+			tearDown(bootstrapClusterProvider, bootstrapClusterProxy)
+		}
+	})
+
+	// Baseline reconcile counters for k0smotron controllers. The Assert cleanup is
+	// registered AFTER test(t) returns so it sits on top of the spec's t.Cleanup
+	// stack; LIFO ordering means Assert runs BEFORE the spec's own cleanup (and
+	// before tearDown), so the rate measurement does not include deletion-triggered
+	// reconciles or hit a torn-down apiserver.
+	guard, err := util.NewReconcileStormGuardForNamespace(ctx, bootstrapClusterProxy.GetClientSet(), "k0smotron")
+	if err != nil {
+		t.Fatalf("baseline reconcile counters: %v", err)
+	}
+
 	test(t)
+
+	t.Cleanup(func() {
+		guard.Assert(ctx, t, 2.0, nil)
+	})
 }
 
 func setupMothership() error {
@@ -194,6 +212,13 @@ func setupMothership() error {
 	}, util.GetInterval(e2eConfig, "bootstrap", "wait-deployment-available"))
 	if err != nil {
 		return fmt.Errorf("failed to init management cluster: %w", err)
+	}
+
+	// Enable plain-HTTP, unauthenticated metrics on the k0smotron controllers so e2e
+	// reconcile-storm guards can scrape /metrics via the apiserver pod-proxy without
+	// dealing with TLS or token-based auth. Prod manifests are unchanged.
+	if err := util.EnableInsecureMetricsForNamespace(ctx, bootstrapClusterProxy.GetClientSet(), "k0smotron"); err != nil {
+		return fmt.Errorf("failed to enable insecure metrics: %w", err)
 	}
 
 	return nil
