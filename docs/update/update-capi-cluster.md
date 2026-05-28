@@ -44,15 +44,17 @@ where deploying the new control plane is followed by decommissioning of the old 
         name: docker-test-cp
       infrastructureRef:
         apiGroup: infrastructure.cluster.x-k8s.io
-        kind: DockerCluster
+        kind: DevCluster
         name: docker-test
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: DockerCluster
+    kind: DevCluster
     metadata:
       name: docker-test
       namespace: default
     spec:
+      backend:
+        docker: {}
     ---
     apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: K0sControlPlane
@@ -79,18 +81,20 @@ where deploying the new control plane is followed by decommissioning of the old 
       machineTemplate:
         infrastructureRef:
           apiGroup: infrastructure.cluster.x-k8s.io
-          kind: DockerMachineTemplate
+          kind: DevMachineTemplate
           name: docker-test-cp-template
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: DockerMachineTemplate
+    kind: DevMachineTemplate
     metadata:
       name: docker-test-cp-template
       namespace: default
     spec:
       template:
         spec:
-          customImage: kindest/node:v1.31.0
+          backend:
+            docker:
+              customImage: kindest/node:v1.31.0
     ```
 
 2. Change the k0s version to [the target one](https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model). For example:
@@ -121,7 +125,7 @@ where deploying the new control plane is followed by decommissioning of the old 
      machineTemplate:
        infrastructureRef:
          apiGroup: infrastructure.cluster.x-k8s.io
-         kind: DockerMachineTemplate
+         kind: DevMachineTemplate
          name: docker-test-cp-template
    ```
 
@@ -167,15 +171,17 @@ For the example below, k0smotron will create 3 new machines for the control plan
         name: docker-test-cp
       infrastructureRef:
         apiGroup: infrastructure.cluster.x-k8s.io
-        kind: DockerCluster
+        kind: DevCluster
         name: docker-test
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: DockerCluster
+    kind: DevCluster
     metadata:
       name: docker-test
       namespace: default
     spec:
+      backend:
+        docker: {}
     ---
     apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: K0sControlPlane
@@ -202,18 +208,20 @@ For the example below, k0smotron will create 3 new machines for the control plan
       machineTemplate:
         infrastructureRef:
           apiGroup: infrastructure.cluster.x-k8s.io
-          kind: DockerMachineTemplate
+          kind: DevMachineTemplate
           name: docker-test-cp-template
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: DockerMachineTemplate
+    kind: DevMachineTemplate
     metadata:
       name: docker-test-cp-template
       namespace: default
     spec:
       template:
         spec:
-          customImage: kindest/node:v1.31.0
+          backend:
+            docker:
+              customImage: kindest/node:v1.31.0
     ```
 
 2. Change the k0s version to [the target one](https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model). For example:
@@ -244,7 +252,7 @@ For the example below, k0smotron will create 3 new machines for the control plan
      machineTemplate:
        infrastructureRef:
          apiGroup: infrastructure.cluster.x-k8s.io
-         kind: DockerMachineTemplate
+         kind: DevMachineTemplate
          name: docker-test-cp-template
    ```
 

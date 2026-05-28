@@ -285,18 +285,20 @@ spec:
     name: docker-test
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerCluster
+    kind: DevCluster
     name: docker-test
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-test-cp-template
   namespace: default
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.31.0
+      backend:
+        docker:
+          customImage: kindest/node:v1.31.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
@@ -326,16 +328,18 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: docker-test-cp-template
       namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerCluster
+kind: DevCluster
 metadata:
   name: docker-test
   namespace: default
 spec:
+  backend:
+    docker: {}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
@@ -352,7 +356,7 @@ spec:
       name: docker-test-worker-0
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerMachine
+    kind: DevMachine
     name: docker-test-worker-0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -365,12 +369,14 @@ spec:
   version: v1.30.1+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachine
+kind: DevMachine
 metadata:
   name: docker-test-worker-0
   namespace: default
 spec:
-  customImage: kindest/node:v1.31.0
+  backend:
+    docker:
+      customImage: kindest/node:v1.31.0
 `
 
 var controlPlaneUpdate = `
@@ -399,7 +405,7 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: docker-test-cp-template
       namespace: default
 `
@@ -430,7 +436,7 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: docker-test-cp-template
       namespace: default
 `

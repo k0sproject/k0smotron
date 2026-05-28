@@ -19,7 +19,7 @@ spec:
     name: ${CLUSTER_NAME}-docker-test
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerCluster
+    kind: DevCluster
     name: docker-test
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -41,10 +41,12 @@ spec:
         enabled: false
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerCluster
+kind: DevCluster
 metadata:
   name: docker-test
   namespace: ${NAMESPACE}
   annotations:
     cluster.x-k8s.io/managed-by: k0smotron # This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.
-spec: {}
+spec:
+  backend:
+    docker: {}

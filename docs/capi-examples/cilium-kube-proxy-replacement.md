@@ -107,7 +107,7 @@ spec:
   infrastructure:
     templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: DockerClusterTemplate
+      kind: DevClusterTemplate
       name: docker-cluster-template
   workers:
     machineDeployments:
@@ -121,7 +121,7 @@ spec:
         infrastructure:
           templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             name: worker-docker-machine-template
 ```
 

@@ -160,21 +160,25 @@ spec:
 var clusterClassYaml = `
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerClusterTemplate
+kind: DevClusterTemplate
 metadata:
   name: k0smotron-docker-cluster-tmpl
 spec:
   template:
-    spec: {}
+    spec:
+      backend:
+        docker: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-test-machine-template
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      backend:
+        docker: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0smotronControlPlaneTemplate
@@ -214,7 +218,7 @@ spec:
   infrastructure:
     ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerClusterTemplate
+      kind: DevClusterTemplate
       name: k0smotron-docker-cluster-tmpl
       namespace: default
   workers:
@@ -230,7 +234,7 @@ spec:
         infrastructure:
           ref:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             name: docker-test-machine-template
             namespace: default
 `

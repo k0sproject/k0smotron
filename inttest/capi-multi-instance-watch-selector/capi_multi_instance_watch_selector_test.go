@@ -404,15 +404,17 @@ spec:
     name: watch-selector-capi-test-cp
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerCluster
+    kind: DevCluster
     name: watch-selector-capi-test
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerCluster
+kind: DevCluster
 metadata:
   name: watch-selector-capi-test
   namespace: default
-spec: {}
+spec:
+  backend:
+    docker: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0smotronControlPlane

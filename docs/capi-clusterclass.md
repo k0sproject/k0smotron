@@ -18,13 +18,13 @@ spec:
       name: k0s-controlplane-template
     machineInfrastructure:
       templateRef:
-        kind: DockerMachineTemplate
+        kind: DevMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: cp-docker-machine-template
   infrastructure:
     templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: DockerClusterTemplate
+      kind: DevClusterTemplate
       name: docker-cluster-template
   workers:
     machineDeployments:
@@ -38,7 +38,7 @@ spec:
         infrastructure:
           templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             name: worker-docker-machine-template
 ---
 … # other objects omitted for brevity, see full example below
@@ -85,7 +85,7 @@ spec:
   infrastructure:
     templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: DockerClusterTemplate
+      kind: DevClusterTemplate
       name: docker-cluster-template
   workers:
     machineDeployments:
@@ -99,7 +99,7 @@ spec:
         infrastructure:
           templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             name: worker-docker-machine-template
 ---
 … # other objects omitted for brevity, see full example below
@@ -130,21 +130,25 @@ spec:
                 anonymous-auth: "true" # anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: cp-docker-machine-template
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      backend:
+        docker: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerClusterTemplate
+kind: DevClusterTemplate
 metadata:
   name: docker-cluster-template
 spec:
   template:
-    spec: {}
+    spec:
+      backend:
+        docker: {}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
@@ -157,13 +161,15 @@ spec:
       version: v1.27.2+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: worker-docker-machine-template
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      backend:
+        docker: {}
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
@@ -177,13 +183,13 @@ spec:
       name: k0s-controlplane-template
     machineInfrastructure:
       templateRef:
-        kind: DockerMachineTemplate
+        kind: DevMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: cp-docker-machine-template
   infrastructure:
     templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: DockerClusterTemplate
+      kind: DevClusterTemplate
       name: docker-cluster-template
   workers:
     machineDeployments:
@@ -197,6 +203,6 @@ spec:
         infrastructure:
           templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             name: worker-docker-machine-template
 ```

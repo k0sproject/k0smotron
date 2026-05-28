@@ -46,17 +46,19 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiGroup: infrastructure.cluster.x-k8s.io
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: cp-test-machine-template
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: cp-test-machine-template
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      backend:
+        docker: {}
 ```
 
 By applying this yaml, k0smotron will create 3 machines based on the `MachineTemplate` configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.
@@ -224,17 +226,19 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiGroup: infrastructure.cluster.x-k8s.io
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: docker-test-cp-template
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-test-cp-template
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      backend:
+        docker: {}
 ```
 
 **Note:** Controller nodes running with `--enable-worker` are assigned `node-role.kubernetes.io/master:NoExecute` taint automatically. You can disable default taints using `--no-taints`  parameter.

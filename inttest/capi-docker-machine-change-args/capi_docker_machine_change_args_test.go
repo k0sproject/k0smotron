@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package capidockermachinechangetemplate
+package capidevmachinechangetemplate
 
 import (
 	"context"
@@ -40,7 +40,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type CAPIDockerMachineChangeArgs struct {
+type CAPIDevMachineChangeArgs struct {
 	suite.Suite
 	client                 *kubernetes.Clientset
 	restConfig             *rest.Config
@@ -49,12 +49,12 @@ type CAPIDockerMachineChangeArgs struct {
 	ctx                    context.Context
 }
 
-func TestCAPIDockerMachineChangeArgs(t *testing.T) {
-	s := CAPIDockerMachineChangeArgs{}
+func TestCAPIDevMachineChangeArgs(t *testing.T) {
+	s := CAPIDevMachineChangeArgs{}
 	suite.Run(t, &s)
 }
 
-func (s *CAPIDockerMachineChangeArgs) SetupSuite() {
+func (s *CAPIDevMachineChangeArgs) SetupSuite() {
 	kubeConfigPath := os.Getenv("KUBECONFIG")
 	s.Require().NotEmpty(kubeConfigPath, "KUBECONFIG env var must be set and point to kind cluster")
 	// Get kube client from kubeconfig
@@ -78,7 +78,7 @@ func (s *CAPIDockerMachineChangeArgs) SetupSuite() {
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
 
-func (s *CAPIDockerMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
+func (s *CAPIDevMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 
 	// Apply the child cluster objects
 	s.applyClusterObjects()
@@ -186,13 +186,13 @@ func (s *CAPIDockerMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 	s.Require().NoError(err)
 }
 
-func (s *CAPIDockerMachineChangeArgs) applyClusterObjects() {
+func (s *CAPIDevMachineChangeArgs) applyClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
-func (s *CAPIDockerMachineChangeArgs) updateClusterObjects() {
+func (s *CAPIDevMachineChangeArgs) updateClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
@@ -234,18 +234,20 @@ spec:
     name: docker-test
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerCluster
+    kind: DevCluster
     name: docker-test
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-test-cp-template
   namespace: default
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.31.0
+      backend:
+        docker:
+          customImage: kindest/node:v1.31.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
@@ -273,19 +275,21 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: docker-test-cp-template
       namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerCluster
+kind: DevCluster
 metadata:
   name: docker-test
   namespace: default
 spec:
-  loadBalancer:
-    customHAProxyConfigTemplateRef:
-      name: ha-proxy-config
+  backend:
+    docker:
+      loadBalancer:
+        customHAProxyConfigTemplateRef:
+          name: ha-proxy-config
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
@@ -302,7 +306,7 @@ spec:
       name: docker-test-worker-0
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerMachine
+    kind: DevMachine
     name: docker-test-worker-0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -315,12 +319,14 @@ spec:
   version: v1.31.2+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachine
+kind: DevMachine
 metadata:
   name: docker-test-worker-0
   namespace: default
 spec:
-  customImage: kindest/node:v1.31.0
+  backend:
+    docker:
+      customImage: kindest/node:v1.31.0
 ---
 apiVersion: v1
 data:
@@ -405,7 +411,7 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: docker-test-cp-template
       namespace: default
 `

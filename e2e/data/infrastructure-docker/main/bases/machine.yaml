@@ -13,7 +13,7 @@ spec:
       name: docker-test-worker-0
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerMachine
+    kind: DevMachine
     name: ${CLUSTER_NAME}-docker-test-worker-0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -40,12 +40,14 @@ spec:
           key: value
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachine
+kind: DevMachine
 metadata:
   name: ${CLUSTER_NAME}-docker-test-worker-0
   namespace: ${NAMESPACE}
 spec:
-  customImage: kindest/node:v1.31.0
+  backend:
+    docker:
+      customImage: kindest/node:v1.31.0
 ---
 apiVersion: v1
 kind: Secret

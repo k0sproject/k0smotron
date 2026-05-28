@@ -391,25 +391,29 @@ metadata:
 var clusterClassYaml = `
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerClusterTemplate
+kind: DevClusterTemplate
 metadata:
   name: k0smotron-docker-cluster-tmpl
 spec:
   template:
     spec:
-      loadBalancer:
-        customHAProxyConfigTemplateRef:
-          name: ha-proxy-config
+      backend:
+        docker:
+          loadBalancer:
+            customHAProxyConfigTemplateRef:
+              name: ha-proxy-config
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-test-machine-template
   namespace: default
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.31.0
+      backend:
+        docker:
+          customImage: kindest/node:v1.31.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlaneTemplate
@@ -459,14 +463,14 @@ spec:
       namespace: default
     machineInfrastructure:
       ref:
-        kind: DockerMachineTemplate
+        kind: DevMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         name: docker-test-machine-template
         namespace: default
   infrastructure:
     ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: DockerClusterTemplate
+      kind: DevClusterTemplate
       name: k0smotron-docker-cluster-tmpl
       namespace: default
   workers:
@@ -482,7 +486,7 @@ spec:
         infrastructure:
           ref:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-            kind: DockerMachineTemplate
+            kind: DevMachineTemplate
             name: docker-test-machine-template
             namespace: default
 `
