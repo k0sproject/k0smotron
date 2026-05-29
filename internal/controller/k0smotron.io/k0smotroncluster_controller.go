@@ -64,6 +64,9 @@ type ClusterReconciler struct {
 }
 
 const (
+	// clusterUIDLabel is the label used to label the resources associated with a k0smotron.Cluster with the UID of the cluster. This is used to easily identify
+	// the resources associated with a cluster when were created using v1beta1 where the external owner cannot be used because the resources could be created
+	// in a different namespace than the cluster.
 	clusterUIDLabel  = "k0smotron.io/cluster-uid"
 	clusterFinalizer = "k0smotron.io/finalizer"
 )
@@ -336,26 +339,35 @@ func (r *ClusterReconciler) reconcileDelete(ctx context.Context, scope *kmcScope
 		}
 	}
 
-	// Note: owner references cannot be used in this case because JoinTokenRequest can be in a
-	// different namespace so we need to list and delete them manually.
-	jtrl := &km.JoinTokenRequestList{}
-	err := r.List(ctx, jtrl,
-		client.MatchingLabels{
-			clusterUIDLabel: string(kmc.GetUID()),
-		})
-	if err != nil {
-		scope.currentReconcileState.reason = km.InternalErrorReason
-		scope.currentReconcileState.message = fmt.Sprintf("Error retrieving JoinTokenRequests resources related to cluster: %v", err)
-		logger.Error(err, "Error retrieving JoinTokenRequests resources related to cluster")
-		return ctrl.Result{}, nil
-	}
-	for i := range jtrl.Items {
-		err := r.Delete(ctx, &jtrl.Items[i])
+	// TODO: Remove this deprecated JoinTokenRequests removal. Once v1beta1 is removed, this logic can be simplified by relying on owner references
+	// to automatically delete the JoinTokenRequests when the cluster is deleted.
+	{
+		outOfNamespaceJtrList := &km.JoinTokenRequestList{}
+		err := r.List(ctx, outOfNamespaceJtrList,
+			client.MatchingLabels{
+				clusterUIDLabel: string(kmc.GetUID()),
+			},
+		)
 		if err != nil {
 			scope.currentReconcileState.reason = km.InternalErrorReason
-			scope.currentReconcileState.message = fmt.Sprintf("Error removing JoinTokenRequests: %v", err)
-			logger.Error(err, "Error removing JoinTokenRequests")
+			scope.currentReconcileState.message = fmt.Sprintf("Error retrieving out-of-namespace JoinTokenRequests: %v", err)
+			logger.Error(err, "Error retrieving out-of-namespace JoinTokenRequests")
 			return ctrl.Result{}, nil
+		}
+		for i := range outOfNamespaceJtrList.Items {
+			jtr := &outOfNamespaceJtrList.Items[i]
+			if _, ok := jtr.Annotations[km.V1Beta1ClusterRefNamespaceAnnotation]; !ok {
+				// Having 'V1Beta1ClusterRefNamespaceAnnotation' annotation means that the JoinTokenRequest was created in v1beta1 where GC cannot use
+				// owner references because the JoinTokenRequest could be in a different namespace than the cluster, so we need to manually delete it.
+				continue
+			}
+			err := r.Delete(ctx, jtr)
+			if err != nil {
+				scope.currentReconcileState.reason = km.InternalErrorReason
+				scope.currentReconcileState.message = fmt.Sprintf("Error removing JoinTokenRequests: %v", err)
+				logger.Error(err, "Error removing JoinTokenRequests")
+				return ctrl.Result{}, nil
+			}
 		}
 	}
 

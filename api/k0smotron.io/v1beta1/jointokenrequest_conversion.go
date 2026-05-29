@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"fmt"
 
+	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	v2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
@@ -34,11 +35,21 @@ func (jtr *JoinTokenRequest) ConvertTo(dstRaw conversion.Hub) error {
 
 	dst.ObjectMeta = jtr.ObjectMeta
 
-	dst.Spec = jtr.Spec
+	dst.Spec = v1beta2.JoinTokenRequestSpec{
+		ClusterName: jtr.Spec.ClusterRef.Name,
+		Expiry:      jtr.Spec.Expiry,
+		Role:        jtr.Spec.Role,
+	}
+
+	if jtr.Spec.ClusterRef.Namespace != "" {
+		if dst.Annotations == nil {
+			dst.Annotations = make(map[string]string)
+		}
+		dst.Annotations[v2.V1Beta1ClusterRefNamespaceAnnotation] = jtr.Spec.ClusterRef.Namespace
+	}
 
 	dst.Status.TokenID = jtr.Status.TokenID
-	dst.Status.ClusterUID = jtr.Status.ClusterUID
-	dst.SetDeprecatedReconciliationStatus(jtr.Status.ReconciliationStatus)
+	dst.SetDeprecatedStatus(jtr.Status.ReconciliationStatus, jtr.Status.ClusterUID)
 
 	return nil
 }
@@ -53,10 +64,22 @@ func (jtr *JoinTokenRequest) ConvertFrom(srcRaw conversion.Hub) error {
 
 	jtr.ObjectMeta = src.ObjectMeta
 
-	jtr.Spec = src.Spec
+	clusterNamespace := ""
+	if ns, ok := src.Annotations[v2.V1Beta1ClusterRefNamespaceAnnotation]; ok {
+		clusterNamespace = ns
+	}
+
+	jtr.Spec = JoinTokenRequestSpec{
+		ClusterRef: ClusterRef{
+			Name:      src.Spec.ClusterName,
+			Namespace: clusterNamespace,
+		},
+		Expiry: src.Spec.Expiry,
+		Role:   src.Spec.Role,
+	}
 
 	jtr.Status.TokenID = src.Status.TokenID
-	jtr.Status.ClusterUID = src.Status.ClusterUID
+	jtr.Status.ClusterUID = src.GetDeprecatedClusterUUID()
 	jtr.Status.ReconciliationStatus = src.GetDeprecatedReconciliationStatus()
 
 	return nil

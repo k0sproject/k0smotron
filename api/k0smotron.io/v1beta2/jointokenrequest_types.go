@@ -29,12 +29,18 @@ const (
 	// JoinTokenRequestInternalErrorReason is the reason used in the condition when the join token request controller encounters an internal error
 	// while processing the request.
 	JoinTokenRequestInternalErrorReason = "InternalError"
+	// V1Beta1ClusterRefNamespaceAnnotation is the temporary annotation used to store the namespace of the cluster reference, since in v1beta1 the namespace was part
+	// of the spec and in v1beta2 it's not.
+	V1Beta1ClusterRefNamespaceAnnotation = "k0smotron.io/cluster-ref-namespace"
 )
 
 // JoinTokenRequestSpec defines the desired state of K0smotronJoinTokenRequest
 type JoinTokenRequestSpec struct {
-	// ClusterRef is the reference to the cluster for which the join token is requested.
-	ClusterRef ClusterRef `json:"clusterRef"`
+	// clusterName is the name of the k0smotron Cluster this object belongs to.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	ClusterName string `json:"clusterName,omitempty"`
 	// Expiration time of the token. Format 1.5h, 2h45m or 300ms.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default="0s"
@@ -55,8 +61,7 @@ type ClusterRef struct {
 
 // JoinTokenRequestStatus defines the observed state of K0smotronJoinTokenRequest
 type JoinTokenRequestStatus struct {
-	TokenID    string    `json:"tokenID,omitempty"`
-	ClusterUID types.UID `json:"clusterUID,omitempty"`
+	TokenID string `json:"tokenID,omitempty"`
 	// Conditions represents the observations of the k0smotron cluster's state.
 	// Known condition types are Available, Deleting.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
@@ -74,7 +79,8 @@ type JTRStatusDeprecated struct {
 
 // JTRStatusV1beta1Deprecated defines the observed state of K0smotronJoinTokenRequest for v1beta1, which is deprecated and will be removed in future versions.
 type JTRStatusV1beta1Deprecated struct {
-	ReconciliationStatus string `json:"reconciliationStatus,omitempty"`
+	ReconciliationStatus string    `json:"reconciliationStatus,omitempty"`
+	ClusterUID           types.UID `json:"clusterUID,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -111,21 +117,30 @@ type JoinTokenRequestList struct {
 	Items           []JoinTokenRequest `json:"items"`
 }
 
-// SetDeprecatedReconciliationStatus sets the deprecated reconciliation status of the JoinTokenRequest.
-func (jtr *JoinTokenRequest) SetDeprecatedReconciliationStatus(status string) {
+// SetDeprecatedStatus sets the deprecated  status of the JoinTokenRequest.
+func (jtr *JoinTokenRequest) SetDeprecatedStatus(reconcileStatus string, clusterUID types.UID) {
 	if jtr.Status.Deprecated == nil {
 		jtr.Status.Deprecated = &JTRStatusDeprecated{}
 	}
 	if jtr.Status.Deprecated.V1Beta1 == nil {
 		jtr.Status.Deprecated.V1Beta1 = &JTRStatusV1beta1Deprecated{}
 	}
-	jtr.Status.Deprecated.V1Beta1.ReconciliationStatus = status
+	jtr.Status.Deprecated.V1Beta1.ReconciliationStatus = reconcileStatus
+	jtr.Status.Deprecated.V1Beta1.ClusterUID = clusterUID
 }
 
 // GetDeprecatedReconciliationStatus returns the deprecated reconciliation status of the JoinTokenRequest.
 func (jtr *JoinTokenRequest) GetDeprecatedReconciliationStatus() string {
 	if jtr.Status.Deprecated != nil && jtr.Status.Deprecated.V1Beta1 != nil {
 		return jtr.Status.Deprecated.V1Beta1.ReconciliationStatus
+	}
+	return ""
+}
+
+// GetDeprecatedClusterUUID returns the deprecated cluster UUID of the JoinTokenRequest.
+func (jtr *JoinTokenRequest) GetDeprecatedClusterUUID() types.UID {
+	if jtr.Status.Deprecated != nil && jtr.Status.Deprecated.V1Beta1 != nil {
+		return jtr.Status.Deprecated.V1Beta1.ClusterUID
 	}
 	return ""
 }

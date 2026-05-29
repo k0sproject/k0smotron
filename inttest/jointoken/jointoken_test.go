@@ -134,7 +134,7 @@ func (s *JoinTokenSuite) createJoinTokenRequest(ctx context.Context, kc *kuberne
 
 	jtr := []byte(`
 	{
-		"apiVersion": "k0smotron.io/v1beta2",
+		"apiVersion": "k0smotron.io/v1beta1",
 		"kind": "JoinTokenRequest",
 		"metadata": {
 		  "name": "jtr-test",
@@ -148,7 +148,7 @@ func (s *JoinTokenSuite) createJoinTokenRequest(ctx context.Context, kc *kuberne
 		}
 	}`)
 
-	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta2/namespaces/jtr-test/jointokenrequests").Body(jtr).Do(ctx)
+	res := kc.RESTClient().Post().AbsPath("/apis/k0smotron.io/v1beta1/namespaces/jtr-test/jointokenrequests").Body(jtr).Do(ctx)
 	s.Require().NoError(res.Error())
 }
 
