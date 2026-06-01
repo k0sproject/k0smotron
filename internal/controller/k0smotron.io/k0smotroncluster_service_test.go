@@ -19,14 +19,21 @@ limitations under the License.
 package k0smotronio
 
 import (
+	"encoding/json"
 	"testing"
 
+	v1beta1km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func mustMarshal(v any) string {
+	b, _ := json.Marshal(v)
+	return string(b)
+}
 
 func TestClusterReconciler_serviceLabels(t *testing.T) {
 	tests := []struct {
@@ -76,14 +83,11 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 					Labels: map[string]string{
 						"test": "test",
 					},
-				},
-				Spec: km.ClusterSpec{
-					Service: km.ServiceSpec{
-						Labels: map[string]string{
-							"foo": "bar",
-						},
+					Annotations: map[string]string{
+						v1beta1km.ServiceAnnotationLabels: mustMarshal(map[string]string{"foo": "bar"}),
 					},
 				},
+				Spec: km.ClusterSpec{},
 			},
 			want: map[string]string{
 				"app":               "k0smotron",
@@ -102,14 +106,11 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 					Labels: map[string]string{
 						"test": "test",
 					},
-				},
-				Spec: km.ClusterSpec{
-					Service: km.ServiceSpec{
-						Labels: map[string]string{
-							"test": "foobar",
-						},
+					Annotations: map[string]string{
+						v1beta1km.ServiceAnnotationLabels: mustMarshal(map[string]string{"test": "foobar"}),
 					},
 				},
+				Spec: km.ClusterSpec{},
 			},
 			want: map[string]string{
 				"app":               "k0smotron",
@@ -166,20 +167,16 @@ func TestClusterReconciler_serviceAnnotations(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
 					Annotations: map[string]string{
-						"test": "test",
+						"test":                                 "test",
+						v1beta1km.ServiceAnnotationAnnotations: mustMarshal(map[string]string{"foo": "bar"}),
 					},
 				},
-				Spec: km.ClusterSpec{
-					Service: km.ServiceSpec{
-						Annotations: map[string]string{
-							"foo": "bar",
-						},
-					},
-				},
+				Spec: km.ClusterSpec{},
 			},
 			want: map[string]string{
-				"test": "test",
-				"foo":  "bar",
+				"test":                                 "test",
+				v1beta1km.ServiceAnnotationAnnotations: mustMarshal(map[string]string{"foo": "bar"}),
+				"foo":                                  "bar",
 			},
 		},
 		{
@@ -188,19 +185,15 @@ func TestClusterReconciler_serviceAnnotations(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
 					Annotations: map[string]string{
-						"test": "test",
+						"test":                                 "test",
+						v1beta1km.ServiceAnnotationAnnotations: mustMarshal(map[string]string{"test": "foobar"}),
 					},
 				},
-				Spec: km.ClusterSpec{
-					Service: km.ServiceSpec{
-						Annotations: map[string]string{
-							"test": "foobar",
-						},
-					},
-				},
+				Spec: km.ClusterSpec{},
 			},
 			want: map[string]string{
-				"test": "foobar",
+				"test":                                 "foobar",
+				v1beta1km.ServiceAnnotationAnnotations: mustMarshal(map[string]string{"test": "foobar"}),
 			},
 		},
 	}
@@ -234,11 +227,13 @@ func TestClusterReconciler_serviceLoadBalancerClass(t *testing.T) {
 			kmc: &km.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
+					Annotations: map[string]string{
+						v1beta1km.ServiceAnnotationLoadBalancerClass: mustMarshal("class1"),
+					},
 				},
 				Spec: km.ClusterSpec{
 					Service: km.ServiceSpec{
-						Type:              v1.ServiceTypeLoadBalancer,
-						LoadBalancerClass: new("class1"),
+						Type: v1.ServiceTypeLoadBalancer,
 					},
 				},
 			},
@@ -249,11 +244,13 @@ func TestClusterReconciler_serviceLoadBalancerClass(t *testing.T) {
 			kmc: &km.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
+					Annotations: map[string]string{
+						v1beta1km.ServiceAnnotationLoadBalancerClass: mustMarshal("class1"),
+					},
 				},
 				Spec: km.ClusterSpec{
 					Service: km.ServiceSpec{
-						Type:              v1.ServiceTypeClusterIP,
-						LoadBalancerClass: new("class1"),
+						Type: v1.ServiceTypeClusterIP,
 					},
 				},
 			},

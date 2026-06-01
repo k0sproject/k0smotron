@@ -11423,13 +11423,6 @@ Service defines the service configuration.
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>annotations</b></td>
-        <td>map[string]string</td>
-        <td>
-          Annotations defines extra annotations to be added to the service.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>apiPort</b></td>
         <td>integer</td>
         <td>
@@ -11440,15 +11433,6 @@ will pick it automatically.<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>externalTrafficPolicy</b></td>
-        <td>enum</td>
-        <td>
-          ExternalTrafficPolicy defines the external traffic policy for the service. Used only when service type is NodePort or LoadBalancer.<br/>
-          <br/>
-            <i>Enum</i>: Cluster, Local<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>konnectivityPort</b></td>
         <td>integer</td>
         <td>
@@ -11456,20 +11440,6 @@ will pick it automatically.<br/>
 will pick it automatically.<br/>
           <br/>
             <i>Default</i>: 30132<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>labels</b></td>
-        <td>map[string]string</td>
-        <td>
-          Labels defines extra labels to be added to the service.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>loadBalancerClass</b></td>
-        <td>string</td>
-        <td>
-          LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -21829,13 +21799,6 @@ Service defines the service configuration.
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>annotations</b></td>
-        <td>map[string]string</td>
-        <td>
-          Annotations defines extra annotations to be added to the service.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>apiPort</b></td>
         <td>integer</td>
         <td>
@@ -21846,15 +21809,6 @@ will pick it automatically.<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>externalTrafficPolicy</b></td>
-        <td>enum</td>
-        <td>
-          ExternalTrafficPolicy defines the external traffic policy for the service. Used only when service type is NodePort or LoadBalancer.<br/>
-          <br/>
-            <i>Enum</i>: Cluster, Local<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>konnectivityPort</b></td>
         <td>integer</td>
         <td>
@@ -21862,20 +21816,6 @@ will pick it automatically.<br/>
 will pick it automatically.<br/>
           <br/>
             <i>Default</i>: 30132<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>labels</b></td>
-        <td>map[string]string</td>
-        <td>
-          Labels defines extra labels to be added to the service.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>loadBalancerClass</b></td>
-        <td>string</td>
-        <td>
-          LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
