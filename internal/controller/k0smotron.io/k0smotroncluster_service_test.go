@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 )
 
 func TestClusterReconciler_serviceLabels(t *testing.T) {
@@ -239,11 +238,11 @@ func TestClusterReconciler_serviceLoadBalancerClass(t *testing.T) {
 				Spec: km.ClusterSpec{
 					Service: km.ServiceSpec{
 						Type:              v1.ServiceTypeLoadBalancer,
-						LoadBalancerClass: ptr.To("class1"),
+						LoadBalancerClass: new("class1"),
 					},
 				},
 			},
-			want: ptr.To("class1"),
+			want: new("class1"),
 		},
 		{
 			name: "when loadBalancerClass is set on non LoadBalancer service",
@@ -254,7 +253,7 @@ func TestClusterReconciler_serviceLoadBalancerClass(t *testing.T) {
 				Spec: km.ClusterSpec{
 					Service: km.ServiceSpec{
 						Type:              v1.ServiceTypeClusterIP,
-						LoadBalancerClass: ptr.To("class1"),
+						LoadBalancerClass: new("class1"),
 					},
 				},
 			},

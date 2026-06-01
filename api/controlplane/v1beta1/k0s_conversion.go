@@ -33,13 +33,13 @@ func (kcpv1beta1 *K0sControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec = k0sControlPlaneSpecV1beta1ToV1beta2(kcpv1beta1.Spec)
 	dst.Status = v1beta2.K0sControlPlaneStatus{
 		Initialization:              v1beta2.Initialization{ControlPlaneInitialized: &kcpv1beta1.Status.Initialized},
-		ExternalManagedControlPlane: ptr.To(kcpv1beta1.Status.ExternalManagedControlPlane),
-		Replicas:                    ptr.To(kcpv1beta1.Status.Replicas),
+		ExternalManagedControlPlane: new(kcpv1beta1.Status.ExternalManagedControlPlane),
+		Replicas:                    new(kcpv1beta1.Status.Replicas),
 		Version:                     kcpv1beta1.Status.Version,
 		Selector:                    kcpv1beta1.Status.Selector,
-		ReadyReplicas:               ptr.To(kcpv1beta1.Status.ReadyReplicas),
-		UpToDateReplicas:            ptr.To(kcpv1beta1.Status.UpdatedReplicas),
-		AvailableReplicas:           ptr.To(kcpv1beta1.Status.Replicas - kcpv1beta1.Status.UnavailableReplicas),
+		ReadyReplicas:               new(kcpv1beta1.Status.ReadyReplicas),
+		UpToDateReplicas:            new(kcpv1beta1.Status.UpdatedReplicas),
+		AvailableReplicas:           new(kcpv1beta1.Status.Replicas - kcpv1beta1.Status.UnavailableReplicas),
 		Conditions:                  kcpv1beta1.Status.Conditions,
 	}
 	return nil

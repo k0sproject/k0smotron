@@ -144,10 +144,10 @@ func TestPlanStatusCompute(t *testing.T) {
 				Replicas: 2,
 			},
 			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpToDateReplicas:  ptr.To[int32](0),
-				ReadyReplicas:     ptr.To[int32](2),
-				AvailableReplicas: ptr.To[int32](2),
-				Replicas:          ptr.To[int32](2),
+				UpToDateReplicas:  new(int32(0)),
+				ReadyReplicas:     new(int32(2)),
+				AvailableReplicas: new(int32(2)),
+				Replicas:          new(int32(2)),
 				Version:           "v1.31.0+k0s.0",
 			},
 		}
@@ -156,10 +156,10 @@ func TestPlanStatusCompute(t *testing.T) {
 				Replicas: 2,
 			},
 			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpToDateReplicas:  ptr.To[int32](2),
-				ReadyReplicas:     ptr.To[int32](2),
-				AvailableReplicas: ptr.To[int32](2),
-				Replicas:          ptr.To[int32](2),
+				UpToDateReplicas:  new(int32(2)),
+				ReadyReplicas:     new(int32(2)),
+				AvailableReplicas: new(int32(2)),
+				Replicas:          new(int32(2)),
 				Version:           "v1.31.0+k0s.0",
 			},
 		}

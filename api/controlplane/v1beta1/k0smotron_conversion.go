@@ -36,12 +36,12 @@ func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 		Initialization: v1beta2.Initialization{
 			ControlPlaneInitialized: &k.Status.Initialized,
 		},
-		ExternalManagedControlPlane: ptr.To(k.Status.ExternalManagedControlPlane),
+		ExternalManagedControlPlane: new(k.Status.ExternalManagedControlPlane),
 		Version:                     k.Status.Version,
-		Replicas:                    ptr.To(k.Status.Replicas),
-		UpToDateReplicas:            ptr.To(k.Status.UpdatedReplicas),
-		ReadyReplicas:               ptr.To(k.Status.ReadyReplicas),
-		AvailableReplicas:           ptr.To(k.Status.Replicas - k.Status.UnavailableReplicas),
+		Replicas:                    new(k.Status.Replicas),
+		UpToDateReplicas:            new(k.Status.UpdatedReplicas),
+		ReadyReplicas:               new(k.Status.ReadyReplicas),
+		AvailableReplicas:           new(k.Status.Replicas - k.Status.UnavailableReplicas),
 		Selector:                    k.Status.Selector,
 		Conditions:                  k.Status.Conditions,
 	}

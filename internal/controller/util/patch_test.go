@@ -159,7 +159,7 @@ func TestApplyComponentPatches_StrategicMergePatch_Applied(t *testing.T) {
 			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 		Spec: apps.StatefulSetSpec{
-			Replicas:    ptr(int32(1)),
+			Replicas:    new(int32(1)),
 			Selector:    &metav1.LabelSelector{MatchLabels: map[string]string{"app": "k0smotron"}},
 			Template:    v1.PodTemplateSpec{},
 			ServiceName: "test",
@@ -247,7 +247,7 @@ func TestApplyComponentPatches_StrategicMergePatch_YAML_Applied(t *testing.T) {
 			Labels: map[string]string{ComponentLabel: "control-plane"},
 		},
 		Spec: apps.StatefulSetSpec{
-			Replicas:    ptr(int32(1)),
+			Replicas:    new(int32(1)),
 			Selector:    &metav1.LabelSelector{MatchLabels: map[string]string{"app": "k0smotron"}},
 			Template:    v1.PodTemplateSpec{},
 			ServiceName: "test",
@@ -368,5 +368,3 @@ func TestApplyComponentPatches_MergePatch_NullDeletesField(t *testing.T) {
 	_, exists := svc.Annotations["to-delete"]
 	assert.False(t, exists, "annotation 'to-delete' should have been removed by null merge patch")
 }
-
-func ptr(i int32) *int32 { return &i }

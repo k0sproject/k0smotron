@@ -34,7 +34,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
@@ -80,7 +79,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: ptr.To[int64](3),
+		ControlPlaneMachineCount: new(int64(3)),
 		// TODO: make infra provider configurable
 		InfrastructureProvider: "docker",
 		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
@@ -461,7 +460,7 @@ func getAuthenticationToken(ctx context.Context, managementClusterProxy framewor
 
 	tokenRequest := &authenticationv1.TokenRequest{
 		Spec: authenticationv1.TokenRequestSpec{
-			ExpirationSeconds: ptr.To[int64](2 * 60 * 60), // 2 hours.
+			ExpirationSeconds: new(int64(2 * 60 * 60)), // 2 hours.
 		},
 	}
 	tokenRequest, err = managementClusterProxy.GetClientSet().CoreV1().ServiceAccounts(namespace).CreateToken(ctx, "mhc-test", tokenRequest, metav1.CreateOptions{})

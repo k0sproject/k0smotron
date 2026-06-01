@@ -29,7 +29,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 
 	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
@@ -477,7 +476,7 @@ func updateStatus(ctx context.Context, rm *infrastructure.RemoteMachine, reconci
 	}
 
 	if conditions.IsTrue(rm, infrastructure.RemoteMachineBootstrapExecSucceededCondition) {
-		rm.Status.Initialization.Provisioned = ptr.To(true)
+		rm.Status.Initialization.Provisioned = new(true)
 		rm.Status.Addresses = []clusterv1.MachineAddress{
 			{
 				Type:    clusterv1.MachineExternalIP,
