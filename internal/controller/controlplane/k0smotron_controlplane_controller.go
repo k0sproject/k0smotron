@@ -243,7 +243,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		return res, err
 	}
 
-	kcp.Status.ExternalManagedControlPlane = ptr.To(true)
+	kcp.Status.ExternalManagedControlPlane = new(true)
 
 	return res, err
 }
@@ -525,7 +525,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		return err
 	}
 
-	kcp.Status.Replicas = ptr.To(int32(len(contolPlanePods.Items)))
+	kcp.Status.Replicas = new(int32(len(contolPlanePods.Items)))
 
 	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
 
@@ -577,9 +577,9 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		}
 	}
 
-	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
-	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
-	kcp.Status.AvailableReplicas = ptr.To(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
+	kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
+	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
+	kcp.Status.AvailableReplicas = new(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
 
 	if ptr.Deref(kcp.Status.ReadyReplicas, 0) > 0 {
 		kcp.Status.Version = minimumVersion.String()
@@ -678,7 +678,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 		Reason: cpv1beta2.ControlPlaneAvailableReason,
 	})
 
-	kcp.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
+	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 
 	// Set the k0s cluster ID annotation
 	annotations.AddAnnotations(cluster, map[string]string{

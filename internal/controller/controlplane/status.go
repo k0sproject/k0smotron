@@ -187,9 +187,9 @@ func (ic *planStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 		// TODO: Surface this error reason as a status.condition for controlplane
 		return errUnsupportedPlanState
 	}
-	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
-	kcp.Status.AvailableReplicas = ptr.To(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
-	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
+	kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
+	kcp.Status.AvailableReplicas = new(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
+	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
 
 	return nil
 }
@@ -212,7 +212,7 @@ func newMachineStatusComputer(ctx context.Context, c client.Client, cluster *clu
 }
 
 func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
-	kcp.Status.Replicas = ptr.To(int32(len(rc.machines)))
+	kcp.Status.Replicas = new(int32(len(rc.machines)))
 	readyReplicas := 0
 	unavailableReplicas := 0
 	upToDateReplicas := 0
@@ -245,9 +245,9 @@ func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 		unavailableReplicas += int(kcp.Spec.Replicas) - rc.machines.Len()
 	}
 
-	kcp.Status.ReadyReplicas = ptr.To(int32(readyReplicas))
-	kcp.Status.UpToDateReplicas = ptr.To(int32(upToDateReplicas))
-	kcp.Status.AvailableReplicas = ptr.To(int32(rc.machines.Len() - unavailableReplicas))
+	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
+	kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
+	kcp.Status.AvailableReplicas = new(int32(rc.machines.Len() - unavailableReplicas))
 
 	// Find the lowest version
 	lowestMachineVersion, err := minVersion(rc.machines)
@@ -273,7 +273,7 @@ func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 	// TODO Check with upstream CAPI folks whether this is the correct approach in this case when
 	// we still run the controlplane on Machines
 	if !kcp.WorkerEnabled() {
-		kcp.Status.ExternalManagedControlPlane = ptr.To(true)
+		kcp.Status.ExternalManagedControlPlane = new(true)
 	}
 
 	return nil
@@ -344,7 +344,7 @@ func (c *K0sController) computeAvailability(ctx context.Context, cluster *cluste
 		Status: metav1.ConditionTrue,
 		Reason: cpv1beta2.ControlPlaneAvailableReason,
 	})
-	kcp.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
+	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 
 	// Set the k0s cluster ID annotation
 	annotations.AddAnnotations(cluster, map[string]string{

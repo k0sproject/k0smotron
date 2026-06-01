@@ -26,7 +26,6 @@ import (
 
 	"github.com/k0sproject/k0smotron/e2e/util"
 	"github.com/stretchr/testify/require"
-	"k8s.io/utils/ptr"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -63,7 +62,7 @@ func ignitionProvisioningSpec(t *testing.T) {
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: ptr.To[int64](3),
+		ControlPlaneMachineCount: new(int64(3)),
 		// CAPD doesn't support ignition, so we hardcode AWS as infrastructure provider
 		InfrastructureProvider: "aws",
 		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),

@@ -33,7 +33,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -59,7 +58,7 @@ func TestMachineDeployment(t *testing.T) {
 			Namespace:                namespace.Name,
 			ClusterName:              clusterName,
 			KubernetesVersion:        "v1.32.2",
-			ControlPlaneMachineCount: ptr.To[int64](1),
+			ControlPlaneMachineCount: new(int64(1)),
 			// TODO: make infra provider configurable
 			InfrastructureProvider: "docker",
 			LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),

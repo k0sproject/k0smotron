@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
@@ -272,8 +271,8 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	log.Info("Bootstrap secret created", "secret", bootstrapSecret.Name)
 
 	// Set the status to ready
-	scope.Config.Status.Initialization.DataSecretCreated = ptr.To(true)
-	scope.Config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
+	scope.Config.Status.Initialization.DataSecretCreated = new(true)
+	scope.Config.Status.DataSecretName = new(bootstrapSecret.Name)
 
 	log.Info("Reconciled succesfully")
 
@@ -509,7 +508,7 @@ func createBootstrapSecret(scope *Scope, bootstrapData []byte, format provisione
 					Kind:       scope.Config.Kind,
 					Name:       scope.Config.Name,
 					UID:        scope.Config.UID,
-					Controller: ptr.To(true),
+					Controller: new(true),
 				},
 			},
 		},

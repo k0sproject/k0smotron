@@ -118,7 +118,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 	s.Require().NoError(err, "the secondary control-plane controller should reconcile the primary-labeled object without --watch-filter")
 
 	s.T().Log("rolling the second controller with --watch-filter=secondary")
-	s.Require().NoError(s.applySecondaryControllerDeployment(s.ctx, ptrTo("--watch-filter="+secondaryInstanceLabel)))
+	s.Require().NoError(s.applySecondaryControllerDeployment(s.ctx, new("--watch-filter="+secondaryInstanceLabel)))
 	s.Require().NoError(util.WaitForRolloutCompleted(s.ctx, s.client, secondaryDeploymentName, operatorNamespace))
 
 	shadowPodName, err = s.getDeploymentPodName(s.ctx, secondaryDeploymentName, operatorNamespace)
@@ -378,10 +378,6 @@ func mergeStringMaps(base, overlay map[string]string) map[string]string {
 	maps.Copy(out, base)
 	maps.Copy(out, overlay)
 	return out
-}
-
-func ptrTo[T any](value T) *T {
-	return &value
 }
 
 const clusterYAML = `apiVersion: cluster.x-k8s.io/v1beta1

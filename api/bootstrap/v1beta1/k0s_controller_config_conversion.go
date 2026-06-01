@@ -19,7 +19,6 @@ package v1beta1
 import (
 	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
@@ -35,7 +34,7 @@ func (c *K0sControllerConfig) ConvertTo(dstRaw conversion.Hub) error {
 		DataSecretName: c.Status.DataSecretName,
 		Conditions:     c.Status.Conditions,
 		Initialization: v1beta2.StatusInitialization{
-			DataSecretCreated: ptr.To(c.Status.Ready),
+			DataSecretCreated: new(c.Status.Ready),
 		},
 	}
 

@@ -7,7 +7,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -215,7 +214,7 @@ func newCluster(namespace string) *clusterv1.Cluster {
 			Name:      clusterName,
 		},
 		Spec: clusterv1.ClusterSpec{
-			Paused: ptr.To(false),
+			Paused: new(false),
 			ControlPlaneEndpoint: clusterv1.APIEndpoint{
 				Host: "test.host",
 				Port: 9999,

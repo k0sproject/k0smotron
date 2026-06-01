@@ -32,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	fakeremote "sigs.k8s.io/cluster-api/controllers/remote/fake"
@@ -191,7 +190,7 @@ func TestReconcilePausedCluster(t *testing.T) {
 	cluster := newCluster(ns.Name)
 
 	// Cluster 'paused'.
-	cluster.Spec.Paused = ptr.To(true)
+	cluster.Spec.Paused = new(true)
 
 	require.NoError(t, testEnv.Create(ctx, cluster))
 
@@ -374,7 +373,7 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 	require.NoError(t, testEnv.Create(ctx, k0sWorkerConfig))
 
 	// Bootstrap data is already crreated.
-	k0sWorkerConfig.Status.Initialization.DataSecretCreated = ptr.To(true)
+	k0sWorkerConfig.Status.Initialization.DataSecretCreated = new(true)
 	require.NoError(t, testEnv.Status().Update(ctx, k0sWorkerConfig))
 
 	defer func(do ...client.Object) {

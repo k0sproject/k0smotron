@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -289,7 +288,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 					Labels: labels,
 				},
 				Spec: v1.PodSpec{
-					AutomountServiceAccountToken: ptr.To(false),
+					AutomountServiceAccountToken: new(false),
 					Affinity: &v1.Affinity{PodAntiAffinity: &v1.PodAntiAffinity{
 						PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
 							{
@@ -347,7 +346,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 						},
 					}},
 					SecurityContext: &v1.PodSecurityContext{
-						FSGroup: ptr.To(int64(1001)),
+						FSGroup: new(int64(1001)),
 					},
 					InitContainers: generateEtcdInitContainers(kmc, existingSts),
 					Containers: []v1.Container{{
