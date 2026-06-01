@@ -48,7 +48,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	"k8s.io/kubectl/pkg/scheme"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
@@ -122,7 +121,7 @@ func TestReconcilePausedCluster(t *testing.T) {
 	cluster, kcp, _ := createClusterWithControlPlane(ns.Name)
 
 	// Cluster 'paused'.
-	cluster.Spec.Paused = ptr.To(true)
+	cluster.Spec.Paused = new(true)
 
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
@@ -1027,8 +1026,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               firstMachineRelatedToControlPlane.GetName(),
 				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1073,8 +1072,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               secondMachineRelatedToControlPlane.GetName(),
 				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1119,8 +1118,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               thirdMachineRelatedToControlPlane.GetName(),
 				UID:                thirdMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1161,8 +1160,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               machineNotRelatedToControlPlane.GetName(),
 				UID:                machineNotRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1267,8 +1266,8 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 				Kind:               "Machine",
 				Name:               firstMachineRelatedToControlPlane.GetName(),
 				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1312,8 +1311,8 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 				Kind:               "Machine",
 				Name:               secondMachineRelatedToControlPlane.GetName(),
 				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1356,8 +1355,8 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 				Kind:               "Machine",
 				Name:               thirdMachineRelatedToControlPlane.GetName(),
 				UID:                thirdMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1529,8 +1528,8 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 		APIVersion:         clusterv1.GroupVersion.String(),
 		Kind:               "Cluster",
 		Name:               cluster.Name,
-		Controller:         ptr.To(true),
-		BlockOwnerDeletion: ptr.To(true),
+		Controller:         new(true),
+		BlockOwnerDeletion: new(true),
 		UID:                cluster.UID,
 	})
 	require.False(t, conditions.IsFalse(kcp, string(cpv1beta1.ControlPlaneAvailableCondition)))

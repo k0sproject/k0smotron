@@ -24,7 +24,6 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -208,7 +207,7 @@ func (w *Watcher[T]) list(ctx context.Context, condition Condition[T]) (*startWa
 	resourceVersion, items, err := w.List(ctx, metav1.ListOptions{
 		FieldSelector:  w.fieldSelector,
 		LabelSelector:  w.labelSelector,
-		TimeoutSeconds: ptr.To(int64(maxListDurationSecs)),
+		TimeoutSeconds: new(int64(maxListDurationSecs)),
 	})
 	if err != nil {
 		return nil, err
@@ -237,7 +236,7 @@ func (w *Watcher[T]) watch(ctx context.Context, resourceVersion string, conditio
 		ResourceVersion:     resourceVersion,
 		AllowWatchBookmarks: true,
 		FieldSelector:       w.fieldSelector,
-		TimeoutSeconds:      ptr.To(int64(maxWatchDurationSecs)),
+		TimeoutSeconds:      new(int64(maxWatchDurationSecs)),
 	})
 	if err != nil {
 		return nil, err

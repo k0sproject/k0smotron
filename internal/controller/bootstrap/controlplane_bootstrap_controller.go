@@ -37,7 +37,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	"k8s.io/utils/ptr"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
@@ -309,7 +308,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 					Kind:       config.Kind,
 					Name:       config.Name,
 					UID:        config.UID,
-					Controller: ptr.To(true),
+					Controller: new(true),
 				},
 			},
 		},
@@ -340,7 +339,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Set the status to ready
 	config.Status.Ready = true
-	config.Status.DataSecretName = ptr.To(bootstrapSecret.Name)
+	config.Status.DataSecretName = new(bootstrapSecret.Name)
 
 	log.Info("Reconciled succesfully")
 

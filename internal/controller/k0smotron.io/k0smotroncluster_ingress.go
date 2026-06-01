@@ -23,7 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -357,7 +356,7 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 						HTTP: &v1.HTTPIngressRuleValue{
 							Paths: []v1.HTTPIngressPath{{
 								Path:     "/",
-								PathType: ptr.To(v1.PathTypePrefix),
+								PathType: new(v1.PathTypePrefix),
 								Backend: v1.IngressBackend{
 									Service: &v1.IngressServiceBackend{
 										Name: kmc.GetServiceName(),
@@ -376,7 +375,7 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 						HTTP: &v1.HTTPIngressRuleValue{
 							Paths: []v1.HTTPIngressPath{{
 								Path:     "/",
-								PathType: ptr.To(v1.PathTypePrefix),
+								PathType: new(v1.PathTypePrefix),
 								Backend: v1.IngressBackend{
 									Service: &v1.IngressServiceBackend{
 										Name: kmc.GetServiceName(),

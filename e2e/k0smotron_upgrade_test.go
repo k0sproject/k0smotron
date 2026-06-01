@@ -29,7 +29,6 @@ import (
 	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
 	"github.com/k0sproject/k0smotron/internal/util"
 	"github.com/stretchr/testify/require"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
@@ -121,7 +120,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		ClusterName:       workloadClusterName,
 		KubernetesVersion: e2eConfig.MustGetVariable(KubernetesVersion),
 		// TODO: make replicas value configurable
-		ControlPlaneMachineCount: ptr.To[int64](3),
+		ControlPlaneMachineCount: new(int64(3)),
 		// TODO: make infra provider configurable
 		InfrastructureProvider: "docker",
 		LogFolder:              filepath.Join(artifactFolder, "clusters", managementClusterProxy.GetName()),
