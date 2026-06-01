@@ -90,7 +90,6 @@ func generateService(kmc *km.Cluster) v1.Service {
 	// Selector must match pods (same as main); ObjectMeta gets app.kubernetes.io/component.
 	selectorLabels := map[string]string{}
 	maps.Copy(selectorLabels, util.LabelsForK0smotronCluster(kmc))
-	maps.Copy(selectorLabels, kmc.Spec.Service.Labels)
 	metadataLabels := map[string]string{}
 	maps.Copy(metadataLabels, util.LabelsForK0smotronComponent(kmc, util.ComponentControlPlane))
 	maps.Copy(metadataLabels, kmc.Spec.Service.Labels)
