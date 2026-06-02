@@ -1520,18 +1520,78 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#updating-the-control-plane-using-k0s-autopilot" class="md-nav__link">
+  <a href="#what-triggers-a-control-plane-upgrade" class="md-nav__link">
     <span class="md-ellipsis">
-      Updating the control plane using k0s autopilot
+      What triggers a control plane upgrade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What triggers a control plane upgrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#k0s-version-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      k0s version change
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration change
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#machine-template-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      Machine template change
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update strategies
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#updating-the-control-plane-using-the-cluster-api-workflow" class="md-nav__link">
+  <a href="#monitoring-upgrade-status" class="md-nav__link">
     <span class="md-ellipsis">
-      Updating the control plane using the Cluster API workflow
+      Monitoring upgrade status
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updating-the-control-plane-using-k0s-autopilot-inplace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updating the control plane using k0s autopilot (InPlace)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updating-the-control-plane-using-the-cluster-api-workflow-recreate" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updating the control plane using the Cluster API workflow (Recreate)
     </span>
   </a>
   
@@ -2157,18 +2217,78 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#updating-the-control-plane-using-k0s-autopilot" class="md-nav__link">
+  <a href="#what-triggers-a-control-plane-upgrade" class="md-nav__link">
     <span class="md-ellipsis">
-      Updating the control plane using k0s autopilot
+      What triggers a control plane upgrade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What triggers a control plane upgrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#k0s-version-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      k0s version change
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration change
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#machine-template-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      Machine template change
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update strategies
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#updating-the-control-plane-using-the-cluster-api-workflow" class="md-nav__link">
+  <a href="#monitoring-upgrade-status" class="md-nav__link">
     <span class="md-ellipsis">
-      Updating the control plane using the Cluster API workflow
+      Monitoring upgrade status
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updating-the-control-plane-using-k0s-autopilot-inplace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updating the control plane using k0s autopilot (InPlace)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updating-the-control-plane-using-the-cluster-api-workflow-recreate" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updating the control plane using the Cluster API workflow (Recreate)
     </span>
   </a>
   
@@ -2200,27 +2320,103 @@ You are not currently viewing the documentation for the current stable release o
 
 
 <h1 id="update-control-nodes-in-cluster-api-clusters">Update control nodes in Cluster API clusters<a class="headerlink" href="#update-control-nodes-in-cluster-api-clusters" title="Permanent link">#</a></h1>
-<p>k0smotron supports three update strategies to update the control plane in the Cluster API clusters:</p>
+<p>This page explains what can trigger a control plane upgrade in k0smotron and how to perform one.</p>
+<h2 id="what-triggers-a-control-plane-upgrade">What triggers a control plane upgrade<a class="headerlink" href="#what-triggers-a-control-plane-upgrade" title="Permanent link">#</a></h2>
+<p>k0smotron continuously reconciles each <code>K0sControlPlane</code> resource and detects that an upgrade is needed when any of the following change:</p>
+<h3 id="k0s-version-change">k0s version change<a class="headerlink" href="#k0s-version-change" title="Permanent link">#</a></h3>
+<p>The most common trigger is changing <code>spec.version</code> in the <code>K0sControlPlane</code> resource. k0smotron compares this value against the version reported by each control plane machine and starts the upgrade process if they differ.</p>
+<p>Version values are normalized before comparison, so for example <code>v1.31.2</code> and <code>v1.31.2+k0s.0</code> are treated as equivalent.</p>
+<h3 id="configuration-change">Configuration change<a class="headerlink" href="#configuration-change" title="Permanent link">#</a></h3>
+<p>k0smotron handles configuration changes differently depending on which part of <code>spec.k0sConfigSpec</code> is modified:</p>
 <ul>
-<li><code>InPlace</code> (default): uses <a href="https://docs.k0sproject.io/stable/autopilot/">k0s autopilot</a> to update the k0s version on the control plane nodes in-place without recycling the machines.</li>
-<li><code>Recreate</code>: uses the Cluster API workflow to update the control plane by creating new machines for the control plane and decommissioning the old ones.</li>
-<li><code>RecreateDeleteFirst</code>: similar to <code>Recreate</code>, but deletes the old machines before creating the new ones. This strategy is suitable for clusters with limited resources.</li>
+<li><strong>Changes to <code>spec.k0sConfigSpec.k0s</code></strong> (the k0s <code>ClusterConfig</code> object) are applied using <a href="https://docs.k0sproject.io/stable/dynamic-configuration/">k0s dynamic configuration</a>. k0smotron patches the <code>ClusterConfig</code> resource directly in the workload cluster without replacing any machines. Note that some fields cannot be changed via dynamic configuration and are ignored. See the <a href="https://docs.k0sproject.io/stable/dynamic-configuration/#cluster-configuration-vs-controller-node-configuration">k0s documentation</a> for the full list.</li>
+</ul>
+<ul>
+<li><strong>Changes to any other field in <code>spec.k0sConfigSpec</code></strong> (such as <code>args</code>, <code>files</code>, <code>preStartCommands</code>, etc.) are detected by comparing a hash of the bootstrap config stored in each machine's annotations against the current spec. Machines whose config no longer matches are marked for replacement, using the Recreate workflow regardless of <code>spec.updateStrategy</code>.</li>
 </ul>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The <code>RecreateDeleteFirst</code> update strategy is not supported for k0s clusters of less than 3 control plane nodes</p>
+<p>k0smotron only detects configuration changes made <strong>directly in the <code>K0sControlPlane</code> spec</strong>. The <code>spec.k0sConfigSpec.files</code> field supports loading file content from external <code>Secret</code> or <code>ConfigMap</code> objects via <code>contentFrom</code>, but if only the content of those objects changes, k0smotron will <strong>not</strong> detect it and no upgrade will be triggered. To propagate updated file content, create a new <code>Secret</code> or <code>ConfigMap</code> and update <code>contentFrom</code> in the <code>K0sControlPlane</code> spec to reference the new object.</p>
 </div>
-<h2 id="updating-the-control-plane-using-k0s-autopilot">Updating the control plane using k0s autopilot<a class="headerlink" href="#updating-the-control-plane-using-k0s-autopilot" title="Permanent link">#</a></h2>
-<p>In case <code>K0sContolPlane</code> is created with <code>spec.updateStrategy=InPlace</code>, k0smotron uses <a href="https://docs.k0sproject.io/stable/autopilot/">k0s autopilot</a>
-to seamlessly update the k0s version on the control plane <strong>in-place</strong>.</p>
-<p>k0smotron does not recycle new machines for the new nodes
-to make the control plane upgrade process faster by avoiding the need to spin up
-and configure the new machine, and safer by keeping any data on the machine safe.
-This differs from the usual Cluster API workflow,
-where deploying the new control plane is followed by decommissioning of the old one.</p>
+<h3 id="machine-template-change">Machine template change<a class="headerlink" href="#machine-template-change" title="Permanent link">#</a></h3>
+<p>When <code>spec.machineTemplate.infrastructureRef</code> points to a new or changed infrastructure template, machines that were cloned from an older template revision are marked for replacement. k0smotron detects this by inspecting the <code>cluster.x-k8s.io/cloned-from-name</code> and <code>cluster.x-k8s.io/cloned-from-groupkind</code> annotations on each infrastructure machine.</p>
+<p>Like configuration changes, template changes always trigger machine recreation.</p>
+<h2 id="update-strategies">Update strategies<a class="headerlink" href="#update-strategies" title="Permanent link">#</a></h2>
+<p>k0smotron supports three update strategies, configured via <code>spec.updateStrategy</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>InPlace</code> (default)</td>
+<td>Updates k0s on existing machines without replacing them, using <a href="https://docs.k0sproject.io/stable/autopilot/">k0s autopilot</a></td>
+</tr>
+<tr>
+<td><code>Recreate</code></td>
+<td>Creates new machines first, then removes old ones</td>
+</tr>
+<tr>
+<td><code>RecreateDeleteFirst</code></td>
+<td>Removes old machines first, then creates new ones</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <code>Recreate</code> strategy is not supported for clusters running in <code>--single</code> mode.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <code>RecreateDeleteFirst</code> strategy requires at least 3 control plane nodes.</p>
+</div>
+<h2 id="monitoring-upgrade-status">Monitoring upgrade status<a class="headerlink" href="#monitoring-upgrade-status" title="Permanent link">#</a></h2>
+<p>The <code>K0sControlPlane</code> status fields give visibility into an in-progress upgrade:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>k0scontrolplane<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
+</code></pre></div>
+<p>Relevant status fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>status.replicas</code></td>
+<td>Total number of non-terminated control plane machines</td>
+</tr>
+<tr>
+<td><code>status.readyReplicas</code></td>
+<td>Machines that are fully running and ready</td>
+</tr>
+<tr>
+<td><code>status.upToDateReplicas</code></td>
+<td>Machines running the desired k0s version</td>
+</tr>
+<tr>
+<td><code>status.availableReplicas</code></td>
+<td>Machines currently available to serve traffic</td>
+</tr>
+<tr>
+<td><code>status.version</code></td>
+<td>Minimum Kubernetes version across all machines</td>
+</tr>
+</tbody>
+</table>
+<p>For <code>InPlace</code> upgrades, you can also inspect the autopilot plan running inside the workload cluster:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>--kubeconfig<span class="w"> </span>&lt;workload-cluster-kubeconfig&gt;<span class="w"> </span>get<span class="w"> </span>plan<span class="w"> </span>autopilot<span class="w"> </span>-o<span class="w"> </span>yaml
+</code></pre></div>
+<p>See the <a href="https://docs.k0sproject.io/stable/autopilot/?h=plan#how-it-works">k0s autopilot documentation</a> for a description of the plan states.</p>
+<h2 id="updating-the-control-plane-using-k0s-autopilot-inplace">Updating the control plane using k0s autopilot (InPlace)<a class="headerlink" href="#updating-the-control-plane-using-k0s-autopilot-inplace" title="Permanent link">#</a></h2>
+<p>When <code>spec.updateStrategy</code> is <code>InPlace</code> (or omitted), k0smotron uses <a href="https://docs.k0sproject.io/stable/autopilot/">k0s autopilot</a> to update k0s on each control plane node without replacing the machines. This is faster than recreating machines and keeps any local data on the node intact.</p>
 <ol>
 <li>
-<p>Check the configuration of deployed k0smotron cluster in your repository. For example:</p>
+<p>Check the configuration of your deployed cluster. For example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2291,7 +2487,7 @@ where deploying the new control plane is followed by decommissioning of the old 
 </code></pre></div>
 </li>
 <li>
-<p>Change the k0s version to <a href="https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model">the target one</a>. For example:</p>
+<p>Update <code>spec.version</code> to the <a href="https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model">target k0s release</a>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta2</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2301,19 +2497,19 @@ where deploying the new control plane is followed by decommissioning of the old 
 <span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.3+k0s.0</span><span class="w"> </span><span class="c1"># updated version</span>
 <span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">InPlace</span>
 <span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
-<span class="w">   </span><span class="nt">args</span><span class="p">:</span>
-<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-worker</span>
-<span class="w">   </span><span class="nt">k0s</span><span class="p">:</span>
-<span class="w">     </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s.k0sproject.io/v1beta1</span>
-<span class="w">     </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterConfig</span>
-<span class="w">     </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">       </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
-<span class="w">     </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">       </span><span class="nt">api</span><span class="p">:</span>
-<span class="w">         </span><span class="nt">extraArgs</span><span class="p">:</span>
-<span class="w">           </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="c1"># anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz</span>
-<span class="w">       </span><span class="nt">telemetry</span><span class="p">:</span>
-<span class="w">         </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-worker</span>
+<span class="w">    </span><span class="nt">k0s</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s.k0sproject.io/v1beta1</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterConfig</span>
+<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
+<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">api</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">extraArgs</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">        </span><span class="nt">telemetry</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
@@ -2322,23 +2518,22 @@ where deploying the new control plane is followed by decommissioning of the old 
 </code></pre></div>
 </li>
 <li>
-<p>Update the resources:</p>
+<p>Apply the change:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>./path-to-file.yaml
 </code></pre></div>
+<p>k0smotron creates an autopilot <code>Plan</code> resource inside the workload cluster that orchestrates the rolling update across all control plane nodes.</p>
 </li>
 </ol>
-<h2 id="updating-the-control-plane-using-the-cluster-api-workflow">Updating the control plane using the Cluster API workflow<a class="headerlink" href="#updating-the-control-plane-using-the-cluster-api-workflow" title="Permanent link">#</a></h2>
-<p>In case <code>K0sControlPlane</code> is created with <code>spec.updateStrategy=Recreate</code> or <code>spec.updateStrategy=RecreateDeleteFirst</code>, k0smotron uses the Cluster API workflow to update the control plane,
-which involves creating a new machines for control plane and decommissioning the old ones.</p>
+<h2 id="updating-the-control-plane-using-the-cluster-api-workflow-recreate">Updating the control plane using the Cluster API workflow (Recreate)<a class="headerlink" href="#updating-the-control-plane-using-the-cluster-api-workflow-recreate" title="Permanent link">#</a></h2>
+<p>When <code>spec.updateStrategy</code> is <code>Recreate</code>, k0smotron replaces control plane machines one at a time: it creates new machines at the desired version, waits for them to become ready, then removes the old ones.</p>
+<p>When <code>spec.updateStrategy</code> is <code>RecreateDeleteFirst</code>, it removes an old machine first before creating the replacement. This is useful when resources are constrained, but requires at least 3 control plane nodes to maintain quorum during the rollout.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The <code>Recreate</code> update strategy is not supported for k0s clusters running in <code>--single</code> mode.
-The <code>RecreateDeleteFirst</code> update strategy is not supported for k0s clusters of less than 3 control plane nodes</p>
+<p>The <code>Recreate</code> strategy is not supported for clusters running in <code>--single</code> mode.</p>
 </div>
-<p>For the example below, k0smotron will create 3 new machines for the control plane, ensure that the new control plane nodes are online, and then remove the old machines.</p>
 <ol>
 <li>
-<p>Check the configuration of deployed k0smotron cluster in your repository. For example:</p>
+<p>Check the configuration of your deployed cluster. For example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2409,7 +2604,7 @@ The <code>RecreateDeleteFirst</code> update strategy is not supported for k0s cl
 </code></pre></div>
 </li>
 <li>
-<p>Change the k0s version to <a href="https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model">the target one</a>. For example:</p>
+<p>Update <code>spec.version</code> to the <a href="https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model">target k0s release</a>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta2</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2446,19 +2641,24 @@ The <code>RecreateDeleteFirst</code> update strategy is not supported for k0s cl
 </li>
 </ol>
 <h2 id="known-issues">Known issues<a class="headerlink" href="#known-issues" title="Permanent link">#</a></h2>
-<p>Due to the bug in the older k0s autopilot versions,
-the control plane upgrade may get stuck on the <code>Cordoning</code> stage
-if the control plane is running on the same node as
-the worker nodes. For example, <code>--enable-worker</code> flag was used during
-the control plane deployment. The bug is fixed in the latest patch versions of k0s.</p>
-<p>To fix this issue:</p>
-<ul>
-<li>Check the current node that is being updated from the <code>kubectl get plan autopilot -o yaml</code> output.</li>
-<li>Manually drain the node.</li>
-<li>In <code>Controlnode</code> object patch the corresponding <code>k0sproject.io/autopilot-signal-data</code> annotation:
-  change the <code>status</code> field in the JSON from <code>Cordoning</code> to <code>ApplyingUpdate</code>.</li>
-<li>Repeat the steps for all the nodes that are being updated.</li>
-</ul>
+<p>Due to a bug in older k0s autopilot versions, the control plane upgrade may get stuck on the <code>Cordoning</code> stage when control plane nodes also run workloads (for example, when the <code>--enable-worker</code> flag is used). This bug is fixed in the latest patch versions of k0s.</p>
+<p>If the upgrade stalls, use the following steps to recover:</p>
+<ol>
+<li>
+<p>Identify the node that is stuck:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>--kubeconfig<span class="w"> </span>&lt;workload-cluster-kubeconfig&gt;<span class="w"> </span>get<span class="w"> </span>plan<span class="w"> </span>autopilot<span class="w"> </span>-o<span class="w"> </span>yaml
+</code></pre></div>
+</li>
+<li>
+<p>Manually drain the node.</p>
+</li>
+<li>
+<p>Patch the <code>k0sproject.io/autopilot-signal-data</code> annotation on the corresponding <code>ControlNode</code> object: change the <code>status</code> field in the JSON value from <code>Cordoning</code> to <code>ApplyingUpdate</code>.</p>
+</li>
+<li>
+<p>Repeat for any other nodes that are stuck.</p>
+</li>
+</ol>
 
 
 
