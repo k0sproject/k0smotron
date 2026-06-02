@@ -24,6 +24,7 @@ import (
 
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 
+	deprecatedkmc "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
 	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,17 +88,12 @@ func generateService(kmc *km.Cluster) v1.Service {
 			})
 	}
 
-	// Selector must match pods (same as main); ObjectMeta gets app.kubernetes.io/component.
-	selectorLabels := map[string]string{}
-	maps.Copy(selectorLabels, util.LabelsForK0smotronCluster(kmc))
 	metadataLabels := map[string]string{}
 	maps.Copy(metadataLabels, util.LabelsForK0smotronComponent(kmc, util.ComponentControlPlane))
-	maps.Copy(metadataLabels, kmc.Spec.Service.Labels)
-
-	// Copy both Cluster level annotations and Service annotations
-	annotations := map[string]string{}
-	maps.Copy(annotations, util.AnnotationsForK0smotronCluster(kmc))
-	maps.Copy(annotations, kmc.Spec.Service.Annotations)
+	maps.Copy(metadataLabels, deprecatedkmc.GetServiceLabels(kmc.Annotations))
+	metadataAnnotations := map[string]string{}
+	maps.Copy(metadataAnnotations, util.AnnotationsForK0smotronCluster(kmc))
+	maps.Copy(metadataAnnotations, deprecatedkmc.GetServiceAnnotations(kmc.Annotations))
 
 	svc := v1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -108,18 +104,18 @@ func generateService(kmc *km.Cluster) v1.Service {
 			Name:        name,
 			Namespace:   kmc.Namespace,
 			Labels:      metadataLabels,
-			Annotations: annotations,
+			Annotations: metadataAnnotations,
 		},
 		Spec: v1.ServiceSpec{
 			Type:                  kmc.Spec.Service.Type,
-			Selector:              selectorLabels,
+			Selector:              util.LabelsForK0smotronCluster(kmc),
 			Ports:                 ports,
-			ExternalTrafficPolicy: kmc.Spec.Service.ExternalTrafficPolicy,
+			ExternalTrafficPolicy: deprecatedkmc.GetServiceExternalTrafficPolicy(kmc.Annotations),
 		},
 	}
 
 	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer {
-		svc.Spec.LoadBalancerClass = kmc.Spec.Service.LoadBalancerClass
+		svc.Spec.LoadBalancerClass = deprecatedkmc.GetServiceLoadBalancerClass(kmc.Annotations)
 	}
 
 	return svc

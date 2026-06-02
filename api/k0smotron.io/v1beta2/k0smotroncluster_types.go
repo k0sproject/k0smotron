@@ -457,20 +457,6 @@ type ServiceSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=30132
 	KonnectivityPort int `json:"konnectivityPort,omitempty"`
-
-	// Annotations defines extra annotations to be added to the service.
-	//+kubebuilder:validation:Optional
-	Annotations map[string]string `json:"annotations,omitempty"`
-	// Labels defines extra labels to be added to the service.
-	//+kubebuilder:validation:Optional
-	Labels map[string]string `json:"labels,omitempty"`
-	// LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.
-	//+kubebuilder:validation:Optional
-	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
-	// ExternalTrafficPolicy defines the external traffic policy for the service. Used only when service type is NodePort or LoadBalancer.
-	//+kubebuilder:validation:Optional
-	//+kubebuilder:validation:Enum=Cluster;Local
-	ExternalTrafficPolicy v1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy,omitempty"`
 }
 
 //+kubebuilder:object:root=true

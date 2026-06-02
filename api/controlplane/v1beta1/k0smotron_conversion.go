@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"encoding/json"
 	"fmt"
 
 	kmcv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
@@ -31,7 +32,20 @@ func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0smotronControlPlane)
 	dst.ObjectMeta = *k.ObjectMeta.DeepCopy()
 
-	dst.Spec = kmcv1beta1.ClusterSpecToV2(k.Spec)
+	v2Spec, nonSupportedFields := kmcv1beta1.ClusterSpecToV2(k.Spec)
+	dst.Spec = v2Spec
+	if len(nonSupportedFields) > 0 {
+		if dst.Annotations == nil {
+			dst.Annotations = make(map[string]string)
+		}
+		for key, value := range nonSupportedFields {
+			encoded, err := json.Marshal(value)
+			if err != nil {
+				return fmt.Errorf("error encoding annotation %s: %w", key, err)
+			}
+			dst.Annotations[key] = string(encoded)
+		}
+	}
 	dst.Status = v1beta2.K0smotronControlPlaneStatus{
 		Initialization: v1beta2.Initialization{
 			ControlPlaneInitialized: &k.Status.Initialized,
@@ -52,10 +66,23 @@ func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 func (k *K0smotronControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.K0smotronControlPlaneTemplate)
 	dst.ObjectMeta = *k.ObjectMeta.DeepCopy()
+	v2Spec, nonSupportedFields := kmcv1beta1.ClusterSpecToV2(k.Spec.Template.Spec)
+	if len(nonSupportedFields) > 0 {
+		if dst.Annotations == nil {
+			dst.Annotations = make(map[string]string)
+		}
+		for key, value := range nonSupportedFields {
+			encoded, err := json.Marshal(value)
+			if err != nil {
+				return fmt.Errorf("error encoding annotation %s: %w", key, err)
+			}
+			dst.Annotations[key] = string(encoded)
+		}
+	}
 	dst.Spec = v1beta2.K0smotronControlPlaneTemplateSpec{
 		Template: v1beta2.K0smotronControlPlaneTemplateResource{
 			ObjectMeta: k.Spec.Template.ObjectMeta,
-			Spec:       kmcv1beta1.ClusterSpecToV2(k.Spec.Template.Spec),
+			Spec:       v2Spec,
 		},
 	}
 	return nil
@@ -65,7 +92,7 @@ func (k *K0smotronControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
 func (k *K0smotronControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta2.K0smotronControlPlaneTemplate)
 	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
-	spec, err := kmcv1beta1.ClusterSpecFromV2(src.Spec.Template.Spec)
+	spec, err := kmcv1beta1.ClusterSpecFromV2(src.Spec.Template.Spec, src.Annotations)
 	if err != nil {
 		return err
 	}
@@ -82,7 +109,7 @@ func (k *K0smotronControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error
 func (k *K0smotronControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta2.K0smotronControlPlane)
 	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
-	v1beta1Spec, err := kmcv1beta1.ClusterSpecFromV2(src.Spec)
+	v1beta1Spec, err := kmcv1beta1.ClusterSpecFromV2(src.Spec, src.Annotations)
 	if err != nil {
 		return fmt.Errorf("failed to convert K0smotronControlPlane.Spec: %w", err)
 	}

@@ -61,7 +61,7 @@ type ClusterSpec struct {
 	// Service defines the service configuration.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default={"type":"ClusterIP","apiPort":30443,"konnectivityPort":30132}
-	Service v2.ServiceSpec `json:"service,omitempty"`
+	Service ServiceSpec `json:"service,omitempty"`
 	// Persistence defines the persistence configuration. If empty k0smotron
 	// will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
 	//+kubebuilder:validation:Optional
@@ -120,6 +120,37 @@ type ClusterSpec struct {
 	// Note: This metadata will have precedence over default labels/annotations on the Secret.
 	// +kubebuilder:validation:Optional
 	KubeconfigSecretMetadata v2.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
+}
+
+// ServiceSpec defines the service configuration for the k0s control plane.
+type ServiceSpec struct {
+	//+kubebuilder:validation:Enum=ClusterIP;NodePort;LoadBalancer
+	//+kubebuilder:default=ClusterIP
+	Type v1.ServiceType `json:"type"`
+	// APIPort defines the kubernetes API port. If empty k0smotron
+	// will pick it automatically.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=30443
+	APIPort int `json:"apiPort,omitempty"`
+	// KonnectivityPort defines the konnectivity port. If empty k0smotron
+	// will pick it automatically.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:default=30132
+	KonnectivityPort int `json:"konnectivityPort,omitempty"`
+
+	// Annotations defines extra annotations to be added to the service.
+	//+kubebuilder:validation:Optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// Labels defines extra labels to be added to the service.
+	//+kubebuilder:validation:Optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// LoadBalancerClass defines the load balancer class to be used for the service. Used only when service type is LoadBalancer.
+	//+kubebuilder:validation:Optional
+	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
+	// ExternalTrafficPolicy defines the external traffic policy for the service. Used only when service type is NodePort or LoadBalancer.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:validation:Enum=Cluster;Local
+	ExternalTrafficPolicy v1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy,omitempty"`
 }
 
 const (

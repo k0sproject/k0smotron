@@ -17,10 +17,19 @@ limitations under the License.
 package v1beta1
 
 import (
+	"encoding/json"
 	"fmt"
 
 	v2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
+)
+
+// Annotation keys used to persist v1beta1 Service fields that have no equivalent in v1beta2.
+const (
+	ServiceAnnotationLabels                = "k0smotron.io/conversion-dropped-service.labels"
+	ServiceAnnotationAnnotations           = "k0smotron.io/conversion-dropped-service.annotations"
+	ServiceAnnotationExternalTrafficPolicy = "k0smotron.io/conversion-dropped-service.externalTrafficPolicy"
+	ServiceAnnotationLoadBalancerClass     = "k0smotron.io/conversion-dropped-service.loadBalancerClass"
 )
 
 var _ conversion.Convertible = &Cluster{}
@@ -33,7 +42,21 @@ func (kmc *Cluster) ConvertTo(dstRaw conversion.Hub) error {
 	}
 
 	dst.ObjectMeta = kmc.ObjectMeta
-	dst.Spec = ClusterSpecToV2(kmc.Spec)
+	v1beta2Spec, nonSupportedFields := ClusterSpecToV2(kmc.Spec)
+	dst.Spec = v1beta2Spec
+
+	if len(nonSupportedFields) > 0 {
+		if dst.Annotations == nil {
+			dst.Annotations = make(map[string]string)
+		}
+		for key, value := range nonSupportedFields {
+			encoded, err := json.Marshal(value)
+			if err != nil {
+				return fmt.Errorf("error encoding annotation %s: %w", key, err)
+			}
+			dst.Annotations[key] = string(encoded)
+		}
+	}
 
 	dst.SetReconciliationStatus(kmc.Status.ReconciliationStatus)
 	dst.SetReadyStatus(kmc.Status.Ready)
@@ -51,7 +74,7 @@ func (kmc *Cluster) ConvertFrom(srcRaw conversion.Hub) error {
 
 	kmc.ObjectMeta = src.ObjectMeta
 
-	spec, err := ClusterSpecFromV2(src.Spec)
+	spec, err := ClusterSpecFromV2(src.Spec, src.Annotations)
 	if err != nil {
 		return fmt.Errorf("error converting ClusterSpec from v1beta2 to v1beta1: %w", err)
 	}
@@ -64,7 +87,7 @@ func (kmc *Cluster) ConvertFrom(srcRaw conversion.Hub) error {
 }
 
 // ClusterSpecToV2 converts a v1beta1 ClusterSpec to a v1beta2 ClusterSpec.
-func ClusterSpecToV2(spec ClusterSpec) v2.ClusterSpec {
+func ClusterSpecToV2(spec ClusterSpec) (v2.ClusterSpec, map[string]any) {
 	v1beta2Spec := v2.ClusterSpec{
 		Replicas:                  spec.Replicas,
 		Image:                     spec.Image,
@@ -72,7 +95,6 @@ func ClusterSpecToV2(spec ClusterSpec) v2.ClusterSpec {
 		Version:                   spec.Version,
 		ExternalAddress:           spec.ExternalAddress,
 		Ingress:                   spec.Ingress,
-		Service:                   spec.Service,
 		Persistence:               spec.Persistence,
 		Storage:                   convertStorageV1toV2(spec),
 		K0sConfig:                 spec.K0sConfig,
@@ -86,19 +108,40 @@ func ClusterSpecToV2(spec ClusterSpec) v2.ClusterSpec {
 		KubeconfigSecretMetadata:  spec.KubeconfigSecretMetadata,
 	}
 
+	svcSpec := v2.ServiceSpec{
+		Type:             spec.Service.Type,
+		APIPort:          spec.Service.APIPort,
+		KonnectivityPort: spec.Service.KonnectivityPort,
+	}
+	v1beta2Spec.Service = svcSpec
+
+	nonSupportedFields := map[string]any{}
+	if spec.Service.Labels != nil {
+		nonSupportedFields[ServiceAnnotationLabels] = spec.Service.Labels
+	}
+	if spec.Service.Annotations != nil {
+		nonSupportedFields[ServiceAnnotationAnnotations] = spec.Service.Annotations
+	}
+	if spec.Service.ExternalTrafficPolicy != "" {
+		nonSupportedFields[ServiceAnnotationExternalTrafficPolicy] = spec.Service.ExternalTrafficPolicy
+	}
+	if spec.Service.LoadBalancerClass != nil {
+		nonSupportedFields[ServiceAnnotationLoadBalancerClass] = spec.Service.LoadBalancerClass
+	}
+
 	if spec.KubeconfigRef != nil {
 		v1beta2Spec.RemoteHostCluster = &v2.RemoteHostClusterSpec{
 			KubeconfigRef: spec.KubeconfigRef,
 		}
 	}
 
-	return v1beta2Spec
+	return v1beta2Spec, nonSupportedFields
 
 }
 
 // ClusterSpecFromV2 converts a v1beta2 ClusterSpec to a v1beta1 ClusterSpec.
 // NATS storage type and Patches have no equivalent in v1beta1 and are silently dropped.
-func ClusterSpecFromV2(src v2.ClusterSpec) (ClusterSpec, error) {
+func ClusterSpecFromV2(src v2.ClusterSpec, srcAnnotations map[string]string) (ClusterSpec, error) {
 	spec := ClusterSpec{
 		Replicas:                  src.Replicas,
 		Image:                     src.Image,
@@ -106,7 +149,6 @@ func ClusterSpecFromV2(src v2.ClusterSpec) (ClusterSpec, error) {
 		Version:                   src.Version,
 		ExternalAddress:           src.ExternalAddress,
 		Ingress:                   src.Ingress,
-		Service:                   src.Service,
 		Persistence:               src.Persistence,
 		Etcd:                      src.Storage.Etcd,
 		K0sConfig:                 src.K0sConfig,
@@ -125,6 +167,18 @@ func ClusterSpecFromV2(src v2.ClusterSpec) (ClusterSpec, error) {
 	}
 	if src.RemoteHostCluster != nil && src.RemoteHostCluster.KubeconfigRef != nil {
 		spec.KubeconfigRef = src.RemoteHostCluster.KubeconfigRef
+	}
+
+	spec.Service = ServiceSpec{
+		Type:             src.Service.Type,
+		APIPort:          src.Service.APIPort,
+		KonnectivityPort: src.Service.KonnectivityPort,
+	}
+	if len(srcAnnotations) > 0 {
+		spec.Service.Labels = GetServiceLabels(srcAnnotations)
+		spec.Service.Annotations = GetServiceAnnotations(srcAnnotations)
+		spec.Service.ExternalTrafficPolicy = GetServiceExternalTrafficPolicy(srcAnnotations)
+		spec.Service.LoadBalancerClass = GetServiceLoadBalancerClass(srcAnnotations)
 	}
 	return spec, nil
 }
