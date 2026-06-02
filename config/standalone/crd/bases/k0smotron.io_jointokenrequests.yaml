@@ -117,20 +117,12 @@ spec:
           spec:
             description: JoinTokenRequestSpec defines the desired state of K0smotronJoinTokenRequest
             properties:
-              clusterRef:
-                description: ClusterRef is the reference to the cluster for which
-                  the join token is requested.
-                properties:
-                  name:
-                    description: Name of the cluster.
-                    type: string
-                  namespace:
-                    description: Namespace of the cluster.
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
+              clusterName:
+                description: clusterName is the name of the k0smotron Cluster this
+                  object belongs to.
+                maxLength: 63
+                minLength: 1
+                type: string
               expiry:
                 default: 0s
                 description: Expiration time of the token. Format 1.5h, 2h45m or 300ms.
@@ -144,17 +136,11 @@ spec:
                 - controller
                 type: string
             required:
-            - clusterRef
+            - clusterName
             type: object
           status:
             description: JoinTokenRequestStatus defines the observed state of K0smotronJoinTokenRequest
             properties:
-              clusterUID:
-                description: |-
-                  UID is a type that holds unique ID values, including UUIDs.  Because we
-                  don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                  intent and helps make sure that UIDs and names do not get conflated.
-                type: string
               conditions:
                 description: |-
                   Conditions represents the observations of the k0smotron cluster's state.
@@ -222,6 +208,12 @@ spec:
                     description: v1beta1 groups all the status fields that are deprecated
                       and will be removed when support for v1beta1 will be dropped.
                     properties:
+                      clusterUID:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
                       reconciliationStatus:
                         type: string
                     type: object

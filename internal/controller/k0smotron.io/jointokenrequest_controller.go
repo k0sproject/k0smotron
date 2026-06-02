@@ -78,33 +78,75 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if finalizerAdded, err := util.EnsureFinalizer(ctx, r.Client, &jtr, joinTokenRequestFinalizer); err != nil || finalizerAdded {
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+	}
+
 	patchHelper, err := patch.NewHelper(&jtr, r.Client)
 	if err != nil {
 		logger.Error(err, "Failed to configure the patch helper")
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	reconcileFailureMessage := ""
-	defer func() {
-		r.updateStatus(&jtr, reconcileFailureMessage)
+	isJTRBeingDeleted := !jtr.ObjectMeta.DeletionTimestamp.IsZero()
 
-		err = patchHelper.Patch(ctx, &jtr)
-		if err != nil {
-			logger.Error(err, "Unable to update JoinTokenRequest status")
+	reconcileFailureMessage := ""
+	clusterUID := types.UID("")
+	defer func() {
+		if !isJTRBeingDeleted {
+			r.updateStatus(&jtr, reconcileFailureMessage, clusterUID)
+
+			err = patchHelper.Patch(ctx, &jtr)
+			if err != nil {
+				logger.Error(err, "Unable to update JoinTokenRequest status")
+			}
 		}
 	}()
 
+	// In v1beta1, it is allowed to create a JoinTokenRequest in a different namespace than the cluster, so we need to check the annotation
+	// for the cluster namespace to keep backward compatibility until v1beta1 is fully removed. If the annotation, which stores the v1beta1
+	// namespace used, is not present we assume the JoinTokenRequest is in the same namespace as the cluster.
+	clusterNamespace := jtr.Namespace
+	isV1Beta1WithPossibleCrossNamespace := false
+	if ns, ok := jtr.Annotations[km.V1Beta1ClusterRefNamespaceAnnotation]; ok {
+		clusterNamespace = ns
+		isV1Beta1WithPossibleCrossNamespace = true
+	} else {
+		// Do not try to add owner references when deleting because the cluster might be deleted at this point.
+		if !isJTRBeingDeleted {
+			// JoinTokenRequest created in v1beta2
+			var kmc km.Cluster
+			err = r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterName, Namespace: clusterNamespace}, &kmc)
+			if err != nil {
+				reconcileFailureMessage = "Failed to get k0smotron cluster"
+				return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+			}
+			if ownerRefAdded := ensureOwnerReference(&jtr, kmc); ownerRefAdded {
+				// If the owner reference was updated, we need to patch the JoinTokenRequest to persist it before proceeding with the reconciliation,
+				// otherwise the controller may try to update the status of the JoinTokenRequest without the owner reference, which will cause a validation error.
+				err = patchHelper.Patch(ctx, &jtr)
+				if err != nil {
+					logger.Error(err, "Failed to patch JoinTokenRequest with owner reference")
+				}
+				return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
+			}
+		}
+	}
+
 	logger.Info("Reconciling")
-	pod, err := util.FindStatefulSetPod(ctx, r.ClientSet, km.GetStatefulSetName(jtr.Spec.ClusterRef.Name), jtr.Spec.ClusterRef.Namespace)
-	if err != nil {
+	pod, err := util.FindStatefulSetPod(ctx, r.ClientSet, km.GetStatefulSetName(jtr.Spec.ClusterName), clusterNamespace)
+	if err != nil && !isJTRBeingDeleted {
 		reconcileFailureMessage = "Failed finding pods in statefulset"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	if !jtr.ObjectMeta.DeletionTimestamp.IsZero() {
+	if isJTRBeingDeleted {
 		if controllerutil.ContainsFinalizer(&jtr, joinTokenRequestFinalizer) {
-			if err := r.invalidateToken(ctx, &jtr, pod); err != nil {
-				return ctrl.Result{}, err
+			if pod != nil {
+				logger.Info("Invalidating token before deletion")
+				if err := r.invalidateToken(ctx, &jtr, pod); err != nil {
+					return ctrl.Result{}, err
+				}
 			}
 			controllerutil.RemoveFinalizer(&jtr, joinTokenRequestFinalizer)
 			if err := r.Update(ctx, &jtr); err != nil {
@@ -114,24 +156,23 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
-	if finalizerAdded, err := util.EnsureFinalizer(ctx, r.Client, &jtr, joinTokenRequestFinalizer); err != nil || finalizerAdded {
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
-	}
-
 	if jtr.Status.TokenID != "" {
 		logger.Info("Already reconciled")
 		return ctrl.Result{}, nil
 	}
 
 	var cluster km.Cluster
-	err = r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterRef.Name, Namespace: jtr.Spec.ClusterRef.Namespace}, &cluster)
+	err = r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterName, Namespace: clusterNamespace}, &cluster)
 	if err != nil {
 		reconcileFailureMessage = "Failed to get cluster"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
-	clusterUID := cluster.GetUID()
-	jtr.Status.ClusterUID = clusterUID
-	jtr.SetLabels(map[string]string{clusterUIDLabel: string(clusterUID)})
+	clusterUID = cluster.GetUID()
+	if isV1Beta1WithPossibleCrossNamespace {
+		// Cross namespace JoinTokenRequest created in v1beta1, we set the cluster UID label for filtering the JoinTokenRequests related to a cluster
+		// in the same namespace, which is needed for the cleanup of the JoinTokenRequests when a cluster is deleted.
+		jtr.SetLabels(map[string]string{clusterUIDLabel: string(clusterUID)})
+	}
 
 	cmd := fmt.Sprintf("k0s token create --role=%s --expiry=%s", jtr.Spec.Role, jtr.Spec.Expiry)
 	token, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, pod.Namespace, cmd)
@@ -184,8 +225,7 @@ func (r *JoinTokenRequestReconciler) reconcileSecret(ctx context.Context, jtr km
 
 func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, token string) (v1.Secret, error) {
 	labels := map[string]string{
-		clusterLabel:                 jtr.Spec.ClusterRef.Name,
-		"k0smotron.io/cluster-uid":   string(jtr.Status.ClusterUID),
+		clusterLabel:                 jtr.Spec.ClusterName,
 		"k0smotron.io/role":          jtr.Spec.Role,
 		"k0smotron.io/token-request": jtr.Name,
 		util.ComponentLabel:          util.ComponentJointoken,
@@ -211,11 +251,11 @@ func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, to
 	return secret, nil
 }
 
-func (r *JoinTokenRequestReconciler) updateStatus(jtr *km.JoinTokenRequest, failureMessage string) {
+func (r *JoinTokenRequestReconciler) updateStatus(jtr *km.JoinTokenRequest, failureMessage string, clusterUID types.UID) {
 	if failureMessage != "" {
 		// For backward compatibility and webhook conversion, we use the deprecated status field to store the failure reason,
 		// which will be removed in future versions.
-		jtr.SetDeprecatedReconciliationStatus(failureMessage)
+		jtr.SetDeprecatedStatus(failureMessage, clusterUID)
 
 		conditions.Set(jtr, metav1.Condition{
 			Type:    k0smotroniov1beta2.JoinTokenRequestSecretCondition,
@@ -227,13 +267,34 @@ func (r *JoinTokenRequestReconciler) updateStatus(jtr *km.JoinTokenRequest, fail
 	}
 
 	// Clean the deprecated status field on successful reconciliation.
-	jtr.SetDeprecatedReconciliationStatus("Reconciliation successful")
+	jtr.SetDeprecatedStatus("Reconciliation successful", clusterUID)
 
 	conditions.Set(jtr, metav1.Condition{
 		Type:   k0smotroniov1beta2.JoinTokenRequestSecretCondition,
 		Status: metav1.ConditionTrue,
 		Reason: k0smotroniov1beta2.JoinTokenRequestSecretCreatedReason,
 	})
+}
+
+func ensureOwnerReference(jtr *km.JoinTokenRequest, kmc km.Cluster) bool {
+	refs := jtr.GetOwnerReferences()
+	for _, ref := range refs {
+		if ref.UID == kmc.GetUID() {
+			// Owner reference already exists, no update needed
+			return false
+		}
+	}
+
+	refs = append(refs, metav1.OwnerReference{
+		APIVersion: km.GroupVersion.String(),
+		Kind:       kmc.GroupVersionKind().Kind,
+		Name:       kmc.GetName(),
+		UID:        kmc.GetUID(),
+		Controller: new(true),
+	})
+
+	jtr.SetOwnerReferences(refs)
+	return true
 }
 
 // SetupWithManager sets up the controller with the Manager.
