@@ -22,7 +22,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -126,7 +125,7 @@ func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error 
 
 	if kmc.Spec.Ingress != nil {
 		if kmc.Spec.Ingress.Deploy == nil {
-			kmc.Spec.Ingress.Deploy = ptr.To(true)
+			kmc.Spec.Ingress.Deploy = new(true)
 		}
 	}
 

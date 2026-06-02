@@ -29,7 +29,6 @@ import (
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/ptr"
 
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -87,7 +86,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 					Annotations: annotations,
 				},
 				Spec: v1.PodSpec{
-					AutomountServiceAccountToken: ptr.To(false),
+					AutomountServiceAccountToken: new(false),
 					Affinity: &v1.Affinity{PodAntiAffinity: &v1.PodAntiAffinity{
 						PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
 							{

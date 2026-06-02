@@ -30,7 +30,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
@@ -188,7 +187,7 @@ func TestReconcileControllerConfigPausedCluster(t *testing.T) {
 	cluster := newCluster(ns.Name)
 
 	// Cluster 'paused'.
-	cluster.Spec.Paused = ptr.To(true)
+	cluster.Spec.Paused = new(true)
 
 	require.NoError(t, testEnv.Create(ctx, cluster))
 

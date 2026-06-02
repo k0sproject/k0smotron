@@ -42,7 +42,6 @@ import (
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -644,8 +643,8 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 				Kind:               machine.Kind,
 				Name:               machine.GetName(),
 				UID:                machine.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 		Spec: bootstrapv1.K0sControllerConfigSpec{

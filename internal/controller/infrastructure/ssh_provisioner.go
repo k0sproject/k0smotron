@@ -28,13 +28,14 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	rig "github.com/k0sproject/rig/v2"
-	rigssh "github.com/k0sproject/rig/v2/protocol/ssh"
+	"github.com/k0sproject/rig"
+	"github.com/k0sproject/rig/exec"
+	"github.com/k0sproject/rig/pkg/rigfs"
+	"github.com/k0sproject/rig/pkg/ssh/hostkey"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
-	"github.com/k0sproject/rig/v2/protocol/ssh/hostkey"
 )
 
 var regex = regexp.MustCompile(`--kubelet-root-dir[ =](/[/a-zA-Z0-9_-]+)+`)
@@ -75,31 +76,32 @@ const (
 func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	log := log.FromContext(ctx).WithValues("remotemachine", p.machine.Name)
 
-	authM, err := rigssh.ParseSSHPrivateKey(p.sshKey, nil)
+	authM, err := rig.ParseSSHPrivateKey(p.sshKey, nil)
 	if err != nil {
 		return fmt.Errorf("failed to parse ssh key: %w", err)
 	}
 
-	config := rigssh.Config{
-		Address:     p.machine.Spec.Address,
-		Port:        p.machine.Spec.Port,
-		User:        p.machine.Spec.User,
-		AuthMethods: authM,
-	}
-	rigClient, err := rig.NewClient(rig.WithConnectionConfigurer(&config))
-	if err != nil {
-		return fmt.Errorf("failed to create SSH client: %w", err)
+	connection := &rig.Connection{
+		SSH: &rig.SSH{
+			Address:     p.machine.Spec.Address,
+			Port:        p.machine.Spec.Port,
+			User:        p.machine.Spec.User,
+			AuthMethods: authM,
+		},
 	}
 
-	err = rigClient.Connect(ctx)
-	if err != nil {
+	if err := connection.Connect(); err != nil {
 		return fmt.Errorf("failed to connect to host: %w", err)
 	}
-	defer rigClient.Disconnect()
+	defer connection.Disconnect()
 
+	// If sudo is required, run commands with elevated permissions and use the
+	// sudo-capable filesystem for uploads.
+	var execOpts []exec.Option
+	fsys := connection.Fsys()
 	if p.machine.Spec.UseSudo {
-		// If sudo is required, wrap the client with sudo capabilities
-		rigClient = rigClient.Sudo()
+		execOpts = append(execOpts, exec.Sudo(connection))
+		fsys = connection.SudoFsys()
 	}
 
 	if p.machine.Spec.CommandsAsScript {
@@ -116,7 +118,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	// Write files first
 	for _, file := range p.cloudInit.Files {
 		p.log.Info("Uploading file", "path", file.Path, "permissions", file.Permissions)
-		if err := p.uploadFile(rigClient, file); err != nil {
+		if err := p.uploadFile(fsys, file); err != nil {
 			return fmt.Errorf("failed to upload file: %w", err)
 		}
 		p.log.Info("Uploaded file", "path", file.Path, "permissions", file.Permissions)
@@ -126,7 +128,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		// Run the install script
 		installScriptPath := filepath.Join(p.machine.Spec.WorkingDir, "k0s_install.sh")
 		p.log.Info("running install script", "command", installScriptPath)
-		output, err := rigClient.ExecOutput(installScriptPath)
+		output, err := connection.ExecOutput(installScriptPath, execOpts...)
 		if err != nil {
 			p.log.Error(err, "failed to run command", "command", installScriptPath, "output", output)
 			return fmt.Errorf("failed to run command: %w", err)
@@ -136,7 +138,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		// Run commands
 		for _, cmd := range p.cloudInit.Commands {
 			p.log.Info("running command", "command", cmd)
-			output, err := rigClient.ExecOutputContext(ctx, cmd)
+			output, err := connection.ExecOutput(cmd, execOpts...)
 			if err != nil {
 				p.log.Error(err, "failed to run command", "command", cmd, "output", output)
 				return fmt.Errorf("failed to run command: %w", err)
@@ -146,7 +148,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	}
 
 	// Check for sentinel file
-	if _, err := rigClient.Sudo().FS().Stat("/run/cluster-api/bootstrap-success.complete"); err != nil {
+	if _, err := connection.SudoFsys().Stat("/run/cluster-api/bootstrap-success.complete"); err != nil {
 		return errors.New("bootstrap sentinel file not found")
 	}
 
@@ -159,39 +161,36 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 // 2. Stops k0s
 // 3. Removes node from etcd
 // 4. Runs k0s reset
-func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) error {
-	authM, err := rigssh.ParseSSHPrivateKey(p.sshKey, nil)
+func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) error {
+	authM, err := rig.ParseSSHPrivateKey(p.sshKey, nil)
 	if err != nil {
 		return fmt.Errorf("failed to parse ssh key: %w", err)
 	}
 
-	config := rigssh.Config{
-		Address:     p.machine.Spec.Address,
-		Port:        p.machine.Spec.Port,
-		User:        p.machine.Spec.User,
-		AuthMethods: authM,
+	connection := &rig.Connection{
+		SSH: &rig.SSH{
+			Address:     p.machine.Spec.Address,
+			Port:        p.machine.Spec.Port,
+			User:        p.machine.Spec.User,
+			AuthMethods: authM,
+		},
 	}
 
-	rigClient, err := rig.NewClient(rig.WithConnectionConfigurer(&config))
-	if err != nil {
-		return fmt.Errorf("failed to create SSH client: %w", err)
-	}
-
-	err = rigClient.Connect(ctx)
-	if err != nil {
+	if err := connection.Connect(); err != nil {
 		return fmt.Errorf("failed to connect to host: %w", err)
 	}
-	defer rigClient.Disconnect()
+	defer connection.Disconnect()
 
+	// If sudo is required, run commands with elevated permissions.
+	var execOpts []exec.Option
 	if p.machine.Spec.UseSudo {
-		// If sudo is required, wrap the client with sudo capabilities
-		rigClient = rigClient.Sudo()
+		execOpts = append(execOpts, exec.Sudo(connection))
 	}
 
 	if p.machine.Spec.CustomCleanUpCommands != nil {
 		p.log.Info("Cleaning up remote machine...")
 		for _, cmd := range p.machine.Spec.CustomCleanUpCommands {
-			output, err := rigClient.ExecOutput(cmd)
+			output, err := connection.ExecOutput(cmd, execOpts...)
 			if err != nil {
 				p.log.Error(err, "failed to run command", "command", cmd, "output", output)
 			} else {
@@ -235,13 +234,13 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 
 	p.log.Info("Cleaning up remote machine...")
 	for _, cmd := range cmds {
-		output, err := rigClient.ExecOutputContext(ctx, cmd)
+		output, err := connection.ExecOutput(cmd, execOpts...)
 		if err != nil {
 			// if k0s command is not installed, manually remove files added for k0s bootstrap.
 			if strings.Contains(err.Error(), "command not found") {
 				for _, file := range p.cloudInit.Files {
 					p.log.Info("Removing file", "path", file.Path)
-					err := rigClient.Sudo().FS().Remove(file.Path)
+					err := connection.SudoFsys().Remove(file.Path)
 					if err != nil {
 						p.log.Error(err, "failed to remove file", "path", file.Path)
 					} else {
@@ -256,8 +255,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 	return nil
 }
 
-func (p *SSHProvisioner) uploadFile(client *rig.Client, file provisioner.File) error {
-	fsys := client.FS()
+func (p *SSHProvisioner) uploadFile(fsys rigfs.Fsys, file provisioner.File) error {
 	// Ensure base dir exists for target
 	dir := filepath.Dir(file.Path)
 	perms, err := file.PermissionsAsInt()
@@ -266,7 +264,7 @@ func (p *SSHProvisioner) uploadFile(client *rig.Client, file provisioner.File) e
 	}
 
 	if _, err := fsys.Stat(dir); errors.Is(err, fs.ErrNotExist) {
-		if err := fsys.MkdirAll(dir, fs.FileMode(perms)); err != nil {
+		if err := fsys.MkDirAll(dir, fs.FileMode(perms)); err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 	}

@@ -25,7 +25,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -139,5 +138,5 @@ func resizeStatefulSetAndPVC(ctx context.Context, kmc *km.Cluster, desiredStorag
 		}
 	}
 
-	return c.Delete(ctx, &sts, &client.DeleteOptions{PropagationPolicy: ptr.To(metav1.DeletePropagationOrphan)})
+	return c.Delete(ctx, &sts, &client.DeleteOptions{PropagationPolicy: new(metav1.DeletePropagationOrphan)})
 }

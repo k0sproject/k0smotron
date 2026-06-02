@@ -38,7 +38,6 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -90,7 +89,7 @@ func ingressSupportSpec(t *testing.T) {
 		Namespace:                workloadClusterNamespace,
 		ClusterName:              workloadClusterName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: ptr.To[int64](1),
+		ControlPlaneMachineCount: new(int64(1)),
 		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
 			"CLUSTER_NAME": workloadClusterName,
