@@ -77,6 +77,17 @@ Starting from `v1.11.0`, k0smotron uses new `v1beta2` API version as [storage ve
   - New selector field: `spec.storage.type` with values `etcd`, `kine`, `nats`.
 - `spec.controllerPlaneFlags` was renamed to `spec.controlPlaneFlags`.
 - Introduce of `spec.patches` for customize patching of generated resoruces in `v1beta2`. Check documentation about [patches](../advanced/components.md) for more details.
+- `spec.kubeconfigRef` was moved under a new `spec.remoteHostCluster` wrapper field:
+  - `spec.kubeconfigRef` -> `spec.remoteHostCluster.kubeconfigRef`.
+- Service metadata fields removed from `spec.service` in **v1beta2**. Use `spec.patches` instead to set these on the generated Service resource:
+  - `spec.service.annotations` — use `spec.patches` to annotate the Service.
+  - `spec.service.labels` — use `spec.patches` to label the Service.
+  - `spec.service.loadBalancerClass` — use `spec.patches` to set `spec.loadBalancerClass` on the Service.
+  - `spec.service.externalTrafficPolicy` — use `spec.patches` to set `spec.externalTrafficPolicy` on the Service.
+
+  !!! note
+      During conversion from **v1beta1** to **v1beta2**, non-zero values for these fields are preserved as object annotations (`k0smotron.io/conversion-dropped-service.*`) so they are not silently lost. Review and migrate them to `spec.patches` manually.
+
 - Now, a Cluster state is reported using conditions as Kubernetes conventions follows. This implies:
   - Move `Cluster` status reporting to Conditions. Details about introduced conditions can be found in Pull Request [#1365](https://github.com/k0sproject/k0smotron/pull/1365).
   - Deprecate legacy status fields such as `status.ready` and `status.reconciliationStatus`. In **v1beta2**, this fields are stored under `status.deprecated.v1beta1` for backward compatibility, and will be removed once **v1beta1** support is dropped.
@@ -87,6 +98,9 @@ Starting from `v1.11.0`, k0smotron uses new `v1beta2` API version as [storage ve
 
 #### JoinTokenRequest
 
+- `spec.clusterRef` (object with `name` and `namespace`) was replaced by `spec.clusterName` (string). In **v1beta2**, a `JoinTokenRequest` must live in the same namespace as its `Cluster`, so the namespace is implicit:
+  - `spec.clusterRef.name` -> `spec.clusterName`.
+  - `spec.clusterRef.namespace` is no longer supported; the `JoinTokenRequest` must be created in the same namespace as the referenced `Cluster`.
 - Changed the status section to use conditions for reporting status. This improvement includes:
   - Following Kubernetes conventions for status reporting by adding `status.conditions` in **v1beta2** (see related Pull Request [#1416](https://github.com/k0sproject/k0smotron/pull/1416)).
   - Deprecating the `status.reconciliationStatus` field. In **v1beta2**, this field is stored under `status.deprecated.v1beta1.reconciliationStatus` for backward compatibility, and will be removed once **v1beta1** support is dropped.
@@ -129,6 +143,17 @@ Some other changes may affect the internal Go types in k0smotron.
 - Now, a Cluster state is reported using conditions as Kubernetes conventions follows. This implies:
   - Move `Cluster` status reporting to Conditions. Details about introduced conditions can be found in Pull Request [#1365](https://github.com/k0sproject/k0smotron/pull/1365).
   - Deprecate legacy status fields such as `status.ready` and `status.reconciliationStatus`. In **v1beta2**, this fields are stored under `status.deprecated.v1beta1` for backward compatibility, and will be removed once **v1beta1** support is dropped.
+- `spec.kubeconfigRef` was moved under a new `spec.remoteHostCluster` wrapper field:
+  - `spec.kubeconfigRef` -> `spec.remoteHostCluster.kubeconfigRef`.
+- Service metadata fields removed from `spec.service` in **v1beta2**. Use `spec.patches` instead to set these on the generated Service resource:
+  - `spec.service.annotations` — use `spec.patches` to annotate the Service.
+  - `spec.service.labels` — use `spec.patches` to label the Service.
+  - `spec.service.loadBalancerClass` — use `spec.patches` to set `spec.loadBalancerClass` on the Service.
+  - `spec.service.externalTrafficPolicy` — use `spec.patches` to set `spec.externalTrafficPolicy` on the Service.
+
+  !!! note
+      During conversion from **v1beta1** to **v1beta2**, non-zero values for these fields are preserved as object annotations (`k0smotron.io/conversion-dropped-service.*`) so they are not silently lost. Review and migrate them to `spec.patches` manually.
+
 - Status fields aligned to CAPI v1beta2 style:
   - `status.updatedReplicas` -> `status.upToDateReplicas`.
   - `status.unavailableReplicas` replaced by `status.availableReplicas`.
