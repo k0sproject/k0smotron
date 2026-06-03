@@ -2415,6 +2415,25 @@ make<span class="w"> </span>build-convert-all<span class="w">  </span><span clas
 </li>
 <li><code>spec.controllerPlaneFlags</code> was renamed to <code>spec.controlPlaneFlags</code>.</li>
 <li>Introduce of <code>spec.patches</code> for customize patching of generated resoruces in <code>v1beta2</code>. Check documentation about <a href="../../advanced/components/">patches</a> for more details.</li>
+<li><code>spec.kubeconfigRef</code> was moved under a new <code>spec.remoteHostCluster</code> wrapper field:<ul>
+<li><code>spec.kubeconfigRef</code> -&gt; <code>spec.remoteHostCluster.kubeconfigRef</code>.</li>
+</ul>
+</li>
+<li>
+<p>Service metadata fields removed from <code>spec.service</code> in <strong>v1beta2</strong>. Use <code>spec.patches</code> instead to set these on the generated Service resource:</p>
+<ul>
+<li><code>spec.service.annotations</code> — use <code>spec.patches</code> to annotate the Service.</li>
+<li><code>spec.service.labels</code> — use <code>spec.patches</code> to label the Service.</li>
+<li><code>spec.service.loadBalancerClass</code> — use <code>spec.patches</code> to set <code>spec.loadBalancerClass</code> on the Service.</li>
+<li><code>spec.service.externalTrafficPolicy</code> — use <code>spec.patches</code> to set <code>spec.externalTrafficPolicy</code> on the Service.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>During conversion from <strong>v1beta1</strong> to <strong>v1beta2</strong>, non-zero values for these fields are preserved as object annotations (<code>k0smotron.io/conversion-dropped-service.*</code>) so they are not silently lost. Review and migrate them to <code>spec.patches</code> manually.</p>
+</div>
+</li>
+</ul>
+<ul>
 <li>Now, a Cluster state is reported using conditions as Kubernetes conventions follows. This implies:<ul>
 <li>Move <code>Cluster</code> status reporting to Conditions. Details about introduced conditions can be found in Pull Request <a href="https://github.com/k0sproject/k0smotron/pull/1365">#1365</a>.</li>
 <li>Deprecate legacy status fields such as <code>status.ready</code> and <code>status.reconciliationStatus</code>. In <strong>v1beta2</strong>, this fields are stored under <code>status.deprecated.v1beta1</code> for backward compatibility, and will be removed once <strong>v1beta1</strong> support is dropped.</li>
@@ -2427,6 +2446,11 @@ make<span class="w"> </span>build-convert-all<span class="w">  </span><span clas
 </div>
 <h4 id="jointokenrequest">JoinTokenRequest<a class="headerlink" href="#jointokenrequest" title="Permanent link">#</a></h4>
 <ul>
+<li><code>spec.clusterRef</code> (object with <code>name</code> and <code>namespace</code>) was replaced by <code>spec.clusterName</code> (string). In <strong>v1beta2</strong>, a <code>JoinTokenRequest</code> must live in the same namespace as its <code>Cluster</code>, so the namespace is implicit:<ul>
+<li><code>spec.clusterRef.name</code> -&gt; <code>spec.clusterName</code>.</li>
+<li><code>spec.clusterRef.namespace</code> is no longer supported; the <code>JoinTokenRequest</code> must be created in the same namespace as the referenced <code>Cluster</code>.</li>
+</ul>
+</li>
 <li>Changed the status section to use conditions for reporting status. This improvement includes:<ul>
 <li>Following Kubernetes conventions for status reporting by adding <code>status.conditions</code> in <strong>v1beta2</strong> (see related Pull Request <a href="https://github.com/k0sproject/k0smotron/pull/1416">#1416</a>).</li>
 <li>Deprecating the <code>status.reconciliationStatus</code> field. In <strong>v1beta2</strong>, this field is stored under <code>status.deprecated.v1beta1.reconciliationStatus</code> for backward compatibility, and will be removed once <strong>v1beta1</strong> support is dropped.</li>
@@ -2480,6 +2504,25 @@ make<span class="w"> </span>build-convert-all<span class="w">  </span><span clas
 <li>Deprecate legacy status fields such as <code>status.ready</code> and <code>status.reconciliationStatus</code>. In <strong>v1beta2</strong>, this fields are stored under <code>status.deprecated.v1beta1</code> for backward compatibility, and will be removed once <strong>v1beta1</strong> support is dropped.</li>
 </ul>
 </li>
+<li><code>spec.kubeconfigRef</code> was moved under a new <code>spec.remoteHostCluster</code> wrapper field:<ul>
+<li><code>spec.kubeconfigRef</code> -&gt; <code>spec.remoteHostCluster.kubeconfigRef</code>.</li>
+</ul>
+</li>
+<li>
+<p>Service metadata fields removed from <code>spec.service</code> in <strong>v1beta2</strong>. Use <code>spec.patches</code> instead to set these on the generated Service resource:</p>
+<ul>
+<li><code>spec.service.annotations</code> — use <code>spec.patches</code> to annotate the Service.</li>
+<li><code>spec.service.labels</code> — use <code>spec.patches</code> to label the Service.</li>
+<li><code>spec.service.loadBalancerClass</code> — use <code>spec.patches</code> to set <code>spec.loadBalancerClass</code> on the Service.</li>
+<li><code>spec.service.externalTrafficPolicy</code> — use <code>spec.patches</code> to set <code>spec.externalTrafficPolicy</code> on the Service.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>During conversion from <strong>v1beta1</strong> to <strong>v1beta2</strong>, non-zero values for these fields are preserved as object annotations (<code>k0smotron.io/conversion-dropped-service.*</code>) so they are not silently lost. Review and migrate them to <code>spec.patches</code> manually.</p>
+</div>
+</li>
+</ul>
+<ul>
 <li>Status fields aligned to CAPI v1beta2 style:<ul>
 <li><code>status.updatedReplicas</code> -&gt; <code>status.upToDateReplicas</code>.</li>
 <li><code>status.unavailableReplicas</code> replaced by <code>status.availableReplicas</code>.</li>
