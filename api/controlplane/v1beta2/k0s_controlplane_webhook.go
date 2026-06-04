@@ -22,6 +22,7 @@ import (
 	"slices"
 	"strings"
 
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/internal/provisioner"
 	"github.com/k0sproject/version"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -129,7 +130,8 @@ func validateK0sControlPlane(kcp *K0sControlPlane) error {
 }
 
 func denyIncompatibleProvisioners(kcp *K0sControlPlane) error {
-	if kcp.Spec.K0sConfigSpec.Provisioner.Type == provisioner.PowershellXMLProvisioningFormat ||
+	if kcp.Spec.K0sConfigSpec.Provisioner.Platform == bootstrapv1.PlatformWindows ||
+		kcp.Spec.K0sConfigSpec.Provisioner.Type == provisioner.PowershellXMLProvisioningFormat ||
 		kcp.Spec.K0sConfigSpec.Provisioner.Type == provisioner.PowershellProvisioningFormat {
 		return fmt.Errorf("K0sControlPlane does not support powershell and powershell-xml provisioning formats")
 	}

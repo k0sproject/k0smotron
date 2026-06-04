@@ -353,7 +353,7 @@ func getWindowsCommands(scope *Scope) ([]string, []provisioner.File) {
 	installScript := fmt.Sprintf(`$ErrorActionPreference = "Stop"
 Start-Transcript -Path C:\bootstrap.log -Append
 
-if (Test-Path C:\bootstrap.done) {
+if (Test-Path C:\run\cluster-api\bootstrap-success.complete) {
     Write-Host "Bootstrap already completed, skipping."
     exit 0
 }
@@ -438,7 +438,8 @@ Write-Host "=== Executing k0s to check version ==="
 
 	installScript += `
 Unregister-ScheduledTask -TaskName "k0s-bootstrap" -Confirm:$false -ErrorAction SilentlyContinue
-New-Item C:\bootstrap.done -ItemType File
+New-Item -Path 'C:\run\cluster-api' -ItemType Directory -Force | Out-Null
+New-Item C:\run\cluster-api\bootstrap-success.complete -ItemType File -Force
 Stop-Transcript
 `
 
