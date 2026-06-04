@@ -57,7 +57,7 @@ The tool processes multi-document YAML files and applies all the field renames l
 
 ## Deprecation Policy
 
-Starting from `v1.11.0`, k0smotron uses new `v1beta2` API version as [storage version](https://kubernetes.io/docs/concepts/overview/working-with-objects/storage-version/) and deprecate `v1beta1`, which still served for compatibility. K0smotron follows the [Kubernetes API deprecation policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/) for beta APIs:
+Starting from `v2.0.0`, k0smotron uses new `v1beta2` API version as [storage version](https://kubernetes.io/docs/concepts/overview/working-with-objects/storage-version/) and deprecate `v1beta1`, which still served for compatibility. K0smotron follows the [Kubernetes API deprecation policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/) for beta APIs:
 
 - `v1beta1` is deprecated once `v1beta2` is the preferred/storage version.
 - `v1beta1` will be removed no earlier than `max(9 months, 3 minor releases)` after deprecation.

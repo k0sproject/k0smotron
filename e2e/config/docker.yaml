@@ -15,21 +15,21 @@ providers:
       - name: "{go://sigs.k8s.io/cluster-api@v1.11}"
         value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.11}/core-components.yaml
         type: url
-        contract: v1beta2
+        contract: v1beta1
         files:
-          - sourcePath: "../data/shared/v1beta2/metadata.yaml"
+          - sourcePath: "../data/shared/v1beta1_capi/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
   - name: docker
     type: InfrastructureProvider
     versions:
-      - name: "{go://sigs.k8s.io/cluster-api@v1.10}"
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.10}/infrastructure-components-development.yaml
+      - name: "{go://sigs.k8s.io/cluster-api@v1.11}"
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.11}/infrastructure-components-development.yaml
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+          - sourcePath: "../data/shared/v1beta1_capi/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -47,21 +47,12 @@ providers:
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
-      - name: "{go://github.com/k0sproject/k0smotron@v1.7}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.7}/control-plane-components.yaml
-        type: url
-        contract: v1beta1
-        files:
-          - sourcePath: "../../metadata.yaml"
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
       - name: "{go://github.com/k0sproject/k0smotron@v1.8}"
         value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.8}/control-plane-components.yaml
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../data/shared/v1.8/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -70,11 +61,20 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../data/shared/v1.9/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: v1.10.99 # potentially next release. Manifest from source files (development) are used.
+      - name: "{go://github.com/k0sproject/k0smotron@v1.10}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.10}/control-plane-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../data/shared/v1.10/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: v2.0.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../config/clusterapi/controlplane
         contract: v1beta1
         files:
@@ -87,21 +87,12 @@ providers:
   - name: k0sproject-k0smotron
     type: BootstrapProvider
     versions:
-      - name: "{go://github.com/k0sproject/k0smotron@v1.7}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.7}/bootstrap-components.yaml
-        type: url
-        contract: v1beta1
-        files:
-          - sourcePath: "../../metadata.yaml"
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
       - name: "{go://github.com/k0sproject/k0smotron@v1.8}"
         value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.8}/bootstrap-components.yaml
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../data/shared/v1.8/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -110,38 +101,20 @@ providers:
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../data/shared/v1.9/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: "{go://github.com/k0sproject/k0smotron@v1.7}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.7}/bootstrap-components.yaml
+      - name: "{go://github.com/k0sproject/k0smotron@v1.10}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.10}/bootstrap-components.yaml
         type: url
         contract: v1beta1
         files:
-          - sourcePath: "../../metadata.yaml"
+          - sourcePath: "../data/shared/v1.10/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: "{go://github.com/k0sproject/k0smotron@v1.8}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.8}/bootstrap-components.yaml
-        type: url
-        contract: v1beta1
-        files:
-          - sourcePath: "../../metadata.yaml"
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-      - name: "{go://github.com/k0sproject/k0smotron@v1.9}"
-        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v1.9}/bootstrap-components.yaml
-        type: url
-        contract: v1beta1
-        files:
-          - sourcePath: "../../metadata.yaml"
-        replacements:
-          - old: "imagePullPolicy: Always"
-            new: "imagePullPolicy: IfNotPresent"
-      - name: v1.10.99 # potentially next release. Manifest from source files (development) are used.
+      - name: v2.0.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../config/clusterapi/bootstrap
         contract: v1beta1
         files:
