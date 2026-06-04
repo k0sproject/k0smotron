@@ -24,6 +24,10 @@ const (
 	CloudInitProvisioningFormat ProvisioningFormat = "cloud-config"
 	// IgnitionProvisioningFormat represents the ignition format.
 	IgnitionProvisioningFormat ProvisioningFormat = "ignition"
+	// PowershellProvisioningFormat represents the format of powershell script.
+	PowershellProvisioningFormat ProvisioningFormat = "powershell"
+	// PowershellXMLProvisioningFormat represents the format of powershell script wrapped in XML tags. Suitable for AWS Windows user data.
+	PowershellXMLProvisioningFormat ProvisioningFormat = "powershell-xml"
 )
 
 // InputProvisionData holds the data needed for provisioning a machine.
