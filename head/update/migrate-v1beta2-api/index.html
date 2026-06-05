@@ -2395,7 +2395,7 @@ make<span class="w"> </span>build-convert-all<span class="w">  </span><span clas
 <p><code>convert</code> is a best-effort staging tool. Always review the output before applying it to a cluster, and keep a backup of the originals. This feature may be removed in future releases.</p>
 </div>
 <h2 id="deprecation-policy">Deprecation Policy<a class="headerlink" href="#deprecation-policy" title="Permanent link">#</a></h2>
-<p>Starting from <code>v1.11.0</code>, k0smotron uses new <code>v1beta2</code> API version as <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/storage-version/">storage version</a> and deprecate <code>v1beta1</code>, which still served for compatibility. K0smotron follows the <a href="https://kubernetes.io/docs/reference/using-api/deprecation-policy/">Kubernetes API deprecation policy</a> for beta APIs:</p>
+<p>Starting from <code>v2.0.0</code>, k0smotron uses new <code>v1beta2</code> API version as <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/storage-version/">storage version</a> and deprecate <code>v1beta1</code>, which still served for compatibility. K0smotron follows the <a href="https://kubernetes.io/docs/reference/using-api/deprecation-policy/">Kubernetes API deprecation policy</a> for beta APIs:</p>
 <ul>
 <li><code>v1beta1</code> is deprecated once <code>v1beta2</code> is the preferred/storage version.</li>
 <li><code>v1beta1</code> will be removed no earlier than <code>max(9 months, 3 minor releases)</code> after deprecation.</li>
