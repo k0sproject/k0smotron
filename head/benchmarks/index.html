@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-bootstrap/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/benchmarks/">
       
       
-        <link rel="prev" href="../capi-controlplane-bootstrap/">
+        <link rel="prev" href="../update/migrate-v1beta2-api/">
       
       
-        <link rel="next" href="../capi-remote/">
+        <link rel="next" href="../faq/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Worker Node Bootstrap - Documentation</title>
+        <title>Benchmarks - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cluster-api-bootstrap-provider" class="md-skip">
+        <a href="#benchmarks" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Worker Node Bootstrap
+              Benchmarks
             
           </span>
         </div>
@@ -370,20 +370,18 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -399,7 +397,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Usage
@@ -640,20 +638,18 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
         
           
           <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
@@ -669,7 +665,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_3">
             <span class="md-nav__icon md-icon"></span>
             Cluster API
@@ -749,32 +745,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Worker Node Bootstrap
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../capi-bootstrap/" class="md-nav__link">
         
   
   
@@ -785,104 +759,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#machines" class="md-nav__link">
-    <span class="md-ellipsis">
-      Machines
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#prepost-start-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      Pre/Post Start Commands
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pre/Post Start Commands">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#prestartcommands" class="md-nav__link">
-    <span class="md-ellipsis">
-      PreStartCommands
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#poststartcommands" class="md-nav__link">
-    <span class="md-ellipsis">
-      PostStartCommands
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#command-execution-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      Command Execution Order
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      Use Cases
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#important-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Important Notes
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#machinedeployments" class="md-nav__link">
-    <span class="md-ellipsis">
-      MachineDeployments
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1664,10 +1540,19 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../benchmarks/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1678,6 +1563,7 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
     </li>
   
 
@@ -2225,92 +2111,6 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#machines" class="md-nav__link">
-    <span class="md-ellipsis">
-      Machines
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#prepost-start-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      Pre/Post Start Commands
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pre/Post Start Commands">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#prestartcommands" class="md-nav__link">
-    <span class="md-ellipsis">
-      PreStartCommands
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#poststartcommands" class="md-nav__link">
-    <span class="md-ellipsis">
-      PostStartCommands
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#command-execution-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      Command Execution Order
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      Use Cases
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#important-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Important Notes
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#machinedeployments" class="md-nav__link">
-    <span class="md-ellipsis">
-      MachineDeployments
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -2325,199 +2125,26 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="cluster-api-bootstrap-provider">Cluster API - Bootstrap provider<a class="headerlink" href="#cluster-api-bootstrap-provider" title="Permanent link">#</a></h1>
-<p>k0smotron serves as a Cluster API Bootstrap provider. Given that k0smotron runs the cluster control plane within the management cluster, the Bootstrap provider currently concentrates on worker node bootstrapping.</p>
-<p>Just like with any other Cluster API provider, you have the flexibility to create either a <code>Machine</code> or <code>MachineDeployment</code> object. While <code>MachineDeployment</code> objects are scalable, certain use-cases necessitate the use of <code>Machine</code>.</p>
-<h2 id="machines">Machines<a class="headerlink" href="#machines" title="Permanent link">#</a></h2>
-<p>To configure the machine, you first need to create a <code>Machine</code> object with a reference to a bootstrap provider and configuration for the bootstrapping <code>K0sWorkerConfig</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Machine</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">machine-test-0</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
-<span class="w">  </span><span class="nt">bootstrap</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">configRef</span><span class="p">:</span><span class="w"> </span><span class="c1"># This triggers our controller to create cloud-init secret</span>
-<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
-<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">machine-test-config</span>
-<span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span><span class="w"> </span><span class="c1"># This references the infrastructure provider machine object</span>
-<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSMachine</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">machine-test-0</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">machine-test-config</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">  </span><span class="c1"># Details of the worker configuration can be set here</span>
-</code></pre></div>
-<p>This configuration sets up a <code>Machine</code> object that will trigger the k0smotron controller to create a cloud-init secret and prepare the machine for bootstrapping. Note that the specific parameters in the <code>K0sWorkerConfig</code> spec will depend on your worker node configuration requirements.</p>
-<p>For reference on what can be configured via <code>K0sWorkerConfig</code> see the <a href="../resource-reference/bootstrap.cluster.x-k8s.io-v1beta2/">reference docs</a>.</p>
-<h2 id="prepost-start-commands">Pre/Post Start Commands<a class="headerlink" href="#prepost-start-commands" title="Permanent link">#</a></h2>
-<p>k0smotron supports executing custom commands before and after starting k0s on worker and controller nodes. This feature is useful for:</p>
+<h1 id="benchmarks">Benchmarks<a class="headerlink" href="#benchmarks" title="Permanent link">#</a></h1>
+<p>We ran a benchmark comparing storage backends for hosted control planes (HCPs) to answer:</p>
 <ul>
-<li>Installing additional packages or dependencies</li>
-<li>Configuring system settings</li>
-<li>Setting up monitoring agents</li>
-<li>Running health checks</li>
-<li>Performing cleanup operations</li>
+<li>How much CPU and memory does it take to run 10, 50, and 100 HCPs?</li>
+<li>How do different storage backends (etcd, kine on PostgreSQL/MySQL/SQLite/T4, embedded NATS) perform under realistic Kubernetes API load?</li>
+<li>Is the k0smotron operator itself a bottleneck, and how many resources does it use?</li>
 </ul>
-<h3 id="prestartcommands">PreStartCommands<a class="headerlink" href="#prestartcommands" title="Permanent link">#</a></h3>
-<p>Commands specified in <code>preK0sCommands</code> are executed before k0s binary is downloaded and installed.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-config</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">  </span><span class="nt">preK0sCommands</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;apt-get</span><span class="nv"> </span><span class="s">update</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">apt-get</span><span class="nv"> </span><span class="s">install</span><span class="nv"> </span><span class="s">-y</span><span class="nv"> </span><span class="s">curl</span><span class="nv"> </span><span class="s">jq&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;mkdir</span><span class="nv"> </span><span class="s">-p</span><span class="nv"> </span><span class="s">/etc/k0s/monitoring&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;export</span><span class="nv"> </span><span class="s">MONITORING_ENABLED=true&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/etc/environment&quot;</span>
-</code></pre></div>
-<h3 id="poststartcommands">PostStartCommands<a class="headerlink" href="#poststartcommands" title="Permanent link">#</a></h3>
-<p>Commands specified in <code>postK0sCommands</code> are executed after k0s has started successfully. These commands run after the k0s service is running and the node is ready.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-config</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">  </span><span class="nt">postK0sCommands</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">enable</span><span class="nv"> </span><span class="s">monitoring-agent&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">start</span><span class="nv"> </span><span class="s">monitoring-agent&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;kubectl</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">nodes</span><span class="nv"> </span><span class="s">--kubeconfig=/var/lib/k0s/pki/admin.conf&quot;</span>
-</code></pre></div>
-<h3 id="command-execution-order">Command Execution Order<a class="headerlink" href="#command-execution-order" title="Permanent link">#</a></h3>
-<p>The commands are executed in the following order:</p>
-<ol>
-<li><strong>PreStartCommands</strong> - Custom commands before k0s starts</li>
-<li><strong>Download and Install</strong> - k0s binary download and installation</li>
-<li><strong>k0s start</strong> - k0s service startup</li>
-<li><strong>PostStartCommands</strong> - Custom commands after k0s starts</li>
-</ol>
-<h3 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">#</a></h3>
-<h4 id="installing-monitoring-agents">Installing Monitoring Agents<a class="headerlink" href="#installing-monitoring-agents" title="Permanent link">#</a></h4>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-with-monitoring</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">  </span><span class="nt">preK0sCommands</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;curl</span><span class="nv"> </span><span class="s">-fsSL</span><span class="nv"> </span><span class="s">https://get.docker.com</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">sh&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">enable</span><span class="nv"> </span><span class="s">docker&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">start</span><span class="nv"> </span><span class="s">docker&quot;</span>
-<span class="w">  </span><span class="nt">postK0sCommands</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;docker</span><span class="nv"> </span><span class="s">run</span><span class="nv"> </span><span class="s">-d</span><span class="nv"> </span><span class="s">--name</span><span class="nv"> </span><span class="s">node-exporter</span><span class="nv"> </span><span class="s">-p</span><span class="nv"> </span><span class="s">9100:9100</span><span class="nv"> </span><span class="s">prom/node-exporter&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Node</span><span class="nv"> </span><span class="s">exporter</span><span class="nv"> </span><span class="s">started</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">port</span><span class="nv"> </span><span class="s">9100&#39;&quot;</span>
-</code></pre></div>
-<h4 id="configuring-system-settings">Configuring System Settings<a class="headerlink" href="#configuring-system-settings" title="Permanent link">#</a></h4>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-with-config</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">  </span><span class="nt">preK0sCommands</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;vm.max_map_count=262144&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/etc/sysctl.conf&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;sysctl</span><span class="nv"> </span><span class="s">-p&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;net.core.somaxconn=65535&#39;</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">/etc/sysctl.conf&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;sysctl</span><span class="nv"> </span><span class="s">-p&quot;</span>
-<span class="w">  </span><span class="nt">postK0sCommands</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;System</span><span class="nv"> </span><span class="s">configuration</span><span class="nv"> </span><span class="s">applied</span><span class="nv"> </span><span class="s">successfully&#39;&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;sysctl</span><span class="nv"> </span><span class="s">vm.max_map_count</span><span class="nv"> </span><span class="s">net.core.somaxconn&quot;</span>
-</code></pre></div>
-<h4 id="health-checks-and-validation">Health Checks and Validation<a class="headerlink" href="#health-checks-and-validation" title="Permanent link">#</a></h4>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-with-health-checks</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">  </span><span class="nt">postK0sCommands</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;kubectl</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">nodes</span><span class="nv"> </span><span class="s">--kubeconfig=/var/lib/k0s/pki/admin.conf&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;kubectl</span><span class="nv"> </span><span class="s">describe</span><span class="nv"> </span><span class="s">node</span><span class="nv"> </span><span class="s">$(hostname)</span><span class="nv"> </span><span class="s">--kubeconfig=/var/lib/k0s/pki/admin.conf&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Health</span><span class="nv"> </span><span class="s">check</span><span class="nv"> </span><span class="s">completed</span><span class="nv"> </span><span class="s">successfully&#39;&quot;</span>
-</code></pre></div>
-<h3 id="important-notes">Important Notes<a class="headerlink" href="#important-notes" title="Permanent link">#</a></h3>
+<p>The full benchmark report is available on <a href="https://blog.k0sproject.io/posts/k0smotron-big-bang-benchmark/">our blog</a>.</p>
+<p>Key takeaways:</p>
 <ul>
-<li>Commands are executed as root user</li>
-<li>Each command is executed in a separate shell session</li>
-<li>If any command fails, the bootstrap process will fail</li>
-<li>Commands are executed in the order they appear in the array</li>
-<li>Environment variables from the system are available to the commands</li>
-<li>The k0s kubeconfig is available at <code>/var/lib/k0s/pki/admin.conf</code> for PostStartCommands</li>
+<li><strong>Operator overhead</strong>: the k0smotron operator stays under 0.5 CPU cores and ~100 MiB RAM even at 100 HCPs. The cost is dominated by HCP pods and storage backends, not the operator.</li>
+<li><strong>etcd</strong>: safe default. Zero write errors and complete watch delivery across the tested range, predictable and well understood.</li>
+<li><strong>T4</strong>: matches etcd on the load tests — zero write errors, full watch delivery (~1M events), and p99 watch lag of 5.5–6.4s versus etcd's 7.5s. Embedded T4 has the smallest 100-HCP footprint of any kine backend (98.5 CPU cores total, below all SQL variants).</li>
+<li><strong>PostgreSQL</strong>: handles create/list cleanly after raising connection limits, but watch-churn exposes write errors (9–15%) and database tuning sensitivity. Connection count was the only DB tuning applied.</li>
+<li><strong>MySQL</strong>: strongest SQL write throughput on create/list, but watch-churn write error rate climbs to 12–45% and watch delivery drops to 60–89%.</li>
+<li><strong>SQLite</strong>: suitable only as a dependency-minimizing option for very small or low-load setups. Write error rate reaches 32–89% under concurrent writes.</li>
+<li><strong>Embedded NATS</strong>: accepts create/list load but watch delivery falls far behind under churn (p99 watch lag ~50s+), causing controllers to lag.</li>
+<li><strong>Scalability</strong>: resource usage scales roughly linearly with HCP count. At 100 HCPs the per-cluster envelope is roughly 0.4–1.3 CPU cores and 210–560 MiB of RAM, depending on backend.</li>
+<li><strong>HA (3 replicas)</strong>: changes cost but not the ranking. etcd and both T4 modes still deliver the full watch stream; weaker backends do not become reliable by adding replicas.</li>
 </ul>
-<p>The <code>infrastructureRef</code> in the <code>Machine</code> object specifies a reference to the provider-specific infrastructure required for the operation of the machine. In the above example, the kind <code>AWSMachine</code> indicates that the machine will be run on AWS. The parameters within <code>infrastructureRef</code> will be provider-specific and vary based on your chosen infrastructure.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSMachine</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">machine-test-0</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="c1"># More details about the aws machine can be set here</span>
-</code></pre></div>
-<h2 id="machinedeployments">MachineDeployments<a class="headerlink" href="#machinedeployments" title="Permanent link">#</a></h2>
-<p>To leverage k0smotron as a Bootstrap provider for <code>MachineDeployment</code> utilize the <code>K0sWorkerConfigTemplate</code> type:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineDeployment</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">md-test</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
-<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
-<span class="w">      </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
-<span class="w">        </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test</span>
-<span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">configRef</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io</span>
-<span class="w">          </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
-<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">md-test-config</span>
-<span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
-<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSMachineTemplate</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mt-test</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">md-test-config</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">      </span><span class="c1"># More details of the worker configuration can be set here</span>
-</code></pre></div>
-<p>The <code>MachineDeployment</code> configuration must be associated with the appropriate infrastructure provider's machine template type. In this example, AWS is used as the infrastructure provider, hence a <code>AWSMachineTemplate</code> is utilized:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSMachineTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mt-test</span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">    </span><span class="c1"># More details about the aws machine template can be set here</span>
-</code></pre></div>
-<p>This example creates a <code>MachineDeployment</code> with 2 replicas, using k0smotron as the bootstrap provider. The <code>infrastructureRef</code> is used to specify the infrastructure requirements for the machines, in this case, AWS.</p>
-<p>Check the <a href="../capi-examples/">examples</a> pages for more detailed examples how k0smotron can be used with various Cluster API infrastructure providers.</p>
 
 
 
