@@ -25,14 +25,14 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-mt-cp
-  namespace: default
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
       uncompressedUserData: false
       ami:
         # Replace with your AMI ID
-        id: ami-0fa91bc90632c73c9 # Ubuntu in eu-north-1
+        id: ami-0de864d6a3bd20ea8 # Ubuntu in eu-west-1
       instanceType: t3.large
       iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io # Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`
       cloudInit:
@@ -45,7 +45,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-mt-worker
-  namespace: default
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -53,7 +53,7 @@ spec:
       #      uncompressedUserData: false
       ami:
         # Replace with your AMI ID
-        id: ami-010e40c6557403885 # Windows in eu-north-1
+        id: ami-0bc74d0ac37f50b4b # Windows in eu-west-1
       instanceType: t3.medium
       iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io # Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`
       cloudInit:
@@ -65,7 +65,8 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
 metadata:
-  name: aws-test
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   version: v1.34.2+k0s.0
@@ -91,15 +92,15 @@ spec:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: AWSMachineTemplate
       name: ${CLUSTER_NAME}-mt-cp
-      namespace: default
+      namespace: ${NAMESPACE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSCluster
 metadata:
   name: ${CLUSTER_NAME}
-  namespace: default
+  namespace: ${NAMESPACE}
 spec:
-  region: eu-north-1
+  region: eu-west-1
   sshKeyName: ${SSH_KEY_NAME}
   controlPlaneLoadBalancer:
     healthCheckProtocol: TCP
@@ -114,24 +115,24 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md
-  namespace: default
+  namespace: ${NAMESPACE}
 spec:
-  clusterName: aws-test-cluster
+  clusterName: ${CLUSTER_NAME}
   replicas: 1
   selector:
     matchLabels:
-      cluster.x-k8s.io/cluster-name: aws-test-cluster
+      cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
       pool: worker-pool-1
   template:
     metadata:
       labels:
-        cluster.x-k8s.io/cluster-name: aws-test-cluster
+        cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
         pool: worker-pool-1
     spec:
-      clusterName: aws-test-cluster
+      clusterName: ${CLUSTER_NAME}
       bootstrap:
         configRef: # This triggers our controller to create cloud-init secret
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
           kind: K0sWorkerConfigTemplate
           name: ${CLUSTER_NAME}-machine-config
       infrastructureRef:
@@ -139,10 +140,11 @@ spec:
         kind: AWSMachineTemplate
         name: ${CLUSTER_NAME}-mt-worker
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-machine-config
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
