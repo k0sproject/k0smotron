@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-aws/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/capi-remotemachine-windows/">
       
       
-        <link rel="prev" href="../capi-adoption/">
+        <link rel="prev" href="../capi-remotemachine-okta-asa/">
       
       
-        <link rel="next" href="../capi-aws-vm/">
+        <link rel="next" href="../capi-use-oci-registry/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>AWS (HCP) - Documentation</title>
+        <title>Windows worker with Remote Machine - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cluster-api-aws-hosted-control-plane" class="md-skip">
+        <a href="#windows-worker-with-the-remote-machine-provider" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              AWS (HCP)
+              Windows worker with Remote Machine
             
           </span>
         </div>
@@ -1019,32 +1019,10 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    AWS (HCP)
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../capi-aws/" class="md-nav__link">
         
   
   
@@ -1055,92 +1033,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      Prerequisites
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Prerequisites">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#prepare-the-aws-infra-provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      Prepare the AWS infra provider
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#creating-a-child-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Creating a child cluster
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Creating a child cluster">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#networking-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      Networking Options
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accessing-the-workload-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Accessing the workload cluster
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#deleting-the-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Deleting the cluster
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1334,10 +1226,32 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../capi-remotemachine-windows/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Windows worker with Remote Machine
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1348,6 +1262,95 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#preparing-the-windows-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparing the Windows machine
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ssh-key-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSH key secrets
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cluster-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster definition
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-control-plane" class="md-nav__link">
+    <span class="md-ellipsis">
+      Linux control plane
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-worker" class="md-nav__link">
+    <span class="md-ellipsis">
+      Windows worker
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apply-and-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      Apply and verify
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2278,9 +2281,9 @@ You are not currently viewing the documentation for the current stable release o
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#prepare-the-aws-infra-provider" class="md-nav__link">
+  <a href="#preparing-the-windows-machine" class="md-nav__link">
     <span class="md-ellipsis">
-      Prepare the AWS infra provider
+      Preparing the Windows machine
     </span>
   </a>
   
@@ -2292,42 +2295,45 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
-  <a href="#creating-a-child-cluster" class="md-nav__link">
+  <a href="#ssh-key-secrets" class="md-nav__link">
     <span class="md-ellipsis">
-      Creating a child cluster
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Creating a child cluster">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#networking-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      Networking Options
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accessing-the-workload-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      Accessing the workload cluster
+      SSH key secrets
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#deleting-the-cluster" class="md-nav__link">
+  <a href="#cluster-definition" class="md-nav__link">
     <span class="md-ellipsis">
-      Deleting the cluster
+      Cluster definition
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-control-plane" class="md-nav__link">
+    <span class="md-ellipsis">
+      Linux control plane
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-worker" class="md-nav__link">
+    <span class="md-ellipsis">
+      Windows worker
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apply-and-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      Apply and verify
     </span>
   </a>
   
@@ -2349,184 +2355,230 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="cluster-api-aws-hosted-control-plane">Cluster API - AWS (Hosted Control Plane)<a class="headerlink" href="#cluster-api-aws-hosted-control-plane" title="Permanent link">#</a></h1>
-<p>This example demonstrates how k0smotron can be used with CAPA (Cluster API Provider Amazon Web Services) to deploy
-a cluster with hosted control plane and workers in AWS.</p>
-<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
-<p>Before starting this example, ensure that you have met the <a href="../capi-examples/#prerequisites">general prerequisites</a>. In addition to those, you should also have appropriate AWS credentials available and the AWS CLI configured on your local machine.</p>
-<h3 id="prepare-the-aws-infra-provider">Prepare the AWS infra provider<a class="headerlink" href="#prepare-the-aws-infra-provider" title="Permanent link">#</a></h3>
-<p>Before launching a cluster, it's crucial to set up your infrastructure provider. Each provider has its unique prerequisites and configuration steps.</p>
-<p>Follow the AWS Provider <a href="https://cluster-api-aws.sigs.k8s.io/getting-started.html#initialize-the-management-cluster">installation guide</a> for detailed steps.</p>
-<h2 id="creating-a-child-cluster">Creating a child cluster<a class="headerlink" href="#creating-a-child-cluster" title="Permanent link">#</a></h2>
-<p>Once all the controllers are up and running, you can apply the cluster manifests containing the specifications of the cluster you want to provision.</p>
+<h1 id="windows-worker-with-the-remote-machine-provider">Windows worker with the Remote Machine provider<a class="headerlink" href="#windows-worker-with-the-remote-machine-provider" title="Permanent link">#</a></h1>
+<p>This example provisions a hybrid cluster with a Linux control plane and a
+<strong>Windows worker</strong> using the k0smotron <a href="../capi-remote/">Remote Machine provider</a>.
+The Remote Machine provider connects to pre-existing machines over SSH, so you
+bring your own VMs (any cloud, bare metal, etc.) — here a Linux box for the
+control plane and a Windows Server box for the Windows workload.</p>
 <div class="admonition note">
-<p class="admonition-title">k0smotron in standalone mode is only able to work with <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html">externally managed</a> cluster infrastructure.</p>
-<p>This is because in CAPA there is no way to disable it to provision all control plane related infrastructure (VPC, ELB, etc.).
-This also renders k0smotron unable to dynamically edit the <code>AWSCluster</code> API endpoint details. Make sure your VPC and subnets you are planning to use fullfill the <a href="https://cluster-api-aws.sigs.k8s.io/topics/bring-your-own-aws-infrastructure.html#prerequisites">needed prerequisites</a>.
-This limitation is not applicable to the clusters on the VMs.</p>
+<p class="admonition-title">Experimental</p>
+<p>Windows worker support is experimental. The control plane must run on Linux,
+and at least one Linux worker is required for CoreDNS. Networking uses Calico.</p>
+<p>Read the k0s docs for more details on <a href="https://docs.k0sproject.io/stable/experimental-windows/">Windows support</a>.</p>
 </div>
-<p>Here is an example:</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
+<ul>
+<li>A management cluster with k0smotron installed (provides the bootstrap,
+  control plane and Remote Machine infrastructure providers).</li>
+<li><strong>Linux machine</strong> (e.g. Ubuntu) reachable over SSH — used for the control
+  plane with <code>--enable-worker</code>, which also satisfies the Linux-worker
+  requirement for CoreDNS.</li>
+<li><strong>Windows Server machine</strong> (2019/2022) reachable over SSH.</li>
+</ul>
+<h3 id="preparing-the-windows-machine">Preparing the Windows machine<a class="headerlink" href="#preparing-the-windows-machine" title="Permanent link">#</a></h3>
+<p>The Remote Machine provider needs key-based SSH access <strong>before</strong> it bootstraps
+the node — k0smotron does not install SSH for you. On the Windows box, install
+and enable the OpenSSH Server, authorize your public key for the administrator
+account, and open the firewall. Run in an elevated PowerShell (or via EC2
+user-data at first boot):</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Install + enable OpenSSH Server (includes the sftp-server subsystem)</span>
+<span class="nb">Add-WindowsCapability</span> <span class="n">-Online</span> <span class="n">-Name</span> <span class="n">OpenSSH</span><span class="p">.</span><span class="n">Server</span><span class="p">~~~~</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">0</span>
+<span class="nb">Set-Service</span> <span class="n">-Name</span> <span class="n">sshd</span> <span class="n">-StartupType</span> <span class="n">Automatic</span>
+<span class="nb">Start-Service</span> <span class="n">sshd</span>
+
+<span class="c"># Authorize your SSH public key for the Administrator account</span>
+<span class="nv">$pubKey</span>   <span class="p">=</span> <span class="s2">&quot;ssh-ed25519 AAAA... your public key&quot;</span>
+<span class="nv">$sshDir</span>   <span class="p">=</span> <span class="s2">&quot;C:\ProgramData\ssh&quot;</span>
+<span class="nv">$authKeys</span> <span class="p">=</span> <span class="nb">Join-Path</span> <span class="nv">$sshDir</span> <span class="s2">&quot;administrators_authorized_keys&quot;</span>
+<span class="nb">New-Item</span> <span class="n">-ItemType</span> <span class="n">Directory</span> <span class="n">-Force</span> <span class="n">-Path</span> <span class="nv">$sshDir</span> <span class="p">|</span> <span class="nb">Out-Null</span>
+<span class="nb">Set-Content</span> <span class="n">-Path</span> <span class="nv">$authKeys</span> <span class="n">-Value</span> <span class="nv">$pubKey</span> <span class="n">-Encoding</span> <span class="n">ascii</span>
+<span class="c"># Admin authorized_keys MUST be locked to Administrators+SYSTEM, or sshd ignores it</span>
+<span class="n">icacls</span> <span class="nv">$authKeys</span> <span class="p">/</span><span class="n">inheritance</span><span class="p">:</span><span class="nb">r </span><span class="p">|</span> <span class="nb">Out-Null</span>
+<span class="n">icacls</span> <span class="nv">$authKeys</span> <span class="p">/</span><span class="n">grant</span> <span class="s2">&quot;Administrators:F&quot;</span> <span class="s2">&quot;SYSTEM:F&quot;</span> <span class="p">|</span> <span class="nb">Out-Null</span>
+
+<span class="c"># Allow inbound SSH</span>
+<span class="nb">New-NetFirewallRule</span> <span class="n">-Name</span> <span class="n">sshd</span> <span class="n">-DisplayName</span> <span class="s1">&#39;OpenSSH Server (sshd)&#39;</span> <span class="p">`</span>
+  <span class="n">-Enabled</span> <span class="n">True</span> <span class="n">-Direction</span> <span class="n">Inbound</span> <span class="n">-Protocol</span> <span class="n">TCP</span> <span class="n">-Action</span> <span class="n">Allow</span> <span class="n">-LocalPort</span> <span class="n">22</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Firewall</p>
+<p>Installing OpenSSH with <code>Add-WindowsCapability</code> does <strong>not</strong> create the
+inbound firewall rule. Without the <code>New-NetFirewallRule</code> above, SSH
+connections hang (the SYN is dropped) rather than being refused.</p>
+</div>
+<p>Verify from your workstation that SSH works before continuing:</p>
+<div class="highlight"><pre><span></span><code>ssh<span class="w"> </span>Administrator@&lt;windows-ip&gt;<span class="w"> </span>hostname
+</code></pre></div>
+<h2 id="ssh-key-secrets">SSH key secrets<a class="headerlink" href="#ssh-key-secrets" title="Permanent link">#</a></h2>
+<p>Create a secret per machine holding the <strong>private</strong> key under the <code>value</code> key:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>linux-ssh-key<span class="w">   </span>--from-file<span class="o">=</span><span class="nv">value</span><span class="o">=</span>&lt;/path/to/linux/key&gt;
+kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>windows-ssh-key<span class="w"> </span>--from-file<span class="o">=</span><span class="nv">value</span><span class="o">=</span>&lt;/path/to/windows/key&gt;
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Use an OpenSSH-format key (<code>BEGIN OPENSSH PRIVATE KEY</code>). Convert an old PEM
+key with <code>ssh-keygen -p -m RFC4716 -f &lt;key&gt;</code>.</p>
+</div>
+<h2 id="cluster-definition">Cluster definition<a class="headerlink" href="#cluster-definition" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Required when the control plane runs on Remote Machines.</span>
+<span class="w">  </span><span class="nt">controlPlaneEndpoint</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;linux-ip&gt;</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
 <span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.244.0.0/16</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.0.0/16</span>
+<span class="w">    </span><span class="nt">serviceDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.local</span>
 <span class="w">    </span><span class="nt">services</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.96.0.0/12</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.128.0.0/12</span>
 <span class="w">  </span><span class="nt">controlPlaneRef</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span><span class="w"> </span><span class="c1"># This tells that k0smotron should create the controlplane</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-cp</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote</span>
 <span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
-<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSCluster</span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteCluster</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote</span>
 <span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0smotronControlPlane</span><span class="w"> </span><span class="c1"># This is the config for the controlplane</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteCluster</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-cp</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2-k0s.0</span>
-<span class="w">  </span><span class="nt">persistence</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
-<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
-<span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
-<span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8132</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSCluster</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron</span><span class="w"> </span><span class="c1"># This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1</span>
-<span class="w">  </span><span class="nt">sshKeyName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ssh-key</span>
-<span class="w">  </span><span class="nt">network</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">vpc</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vpc-12345678901234567</span><span class="w"> </span><span class="c1"># Machines will be created in this VPC</span>
-<span class="w">    </span><span class="nt">subnets</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subnet-099730c9ea2e42134</span><span class="w"> </span><span class="c1"># Machines will be created in this Subnet</span>
-<span class="w">        </span><span class="nt">availabilityZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1a</span>
-<span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineDeployment</span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+</code></pre></div>
+<h2 id="linux-control-plane">Linux control plane<a class="headerlink" href="#linux-control-plane" title="Permanent link">#</a></h2>
+<p>The control plane runs on the Linux machine with <code>--enable-worker</code> (so it also
+serves as the required Linux worker) and Calico networking.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-md</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
-<span class="w">      </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
-<span class="w">        </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test</span>
-<span class="w">      </span><span class="nt">failureDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1a</span>
-<span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">configRef</span><span class="p">:</span><span class="w"> </span><span class="c1"># This triggers our controller to create cloud-init secret</span>
-<span class="w">          </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="w">          </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
-<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-machine-config</span>
-<span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
-<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSMachineTemplate</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-mt</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.2+k0s.0</span>
+<span class="w">  </span><span class="nt">updateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
+<span class="w">  </span><span class="nt">k0sConfigSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-worker</span>
+<span class="w">    </span><span class="nt">k0s</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s.k0sproject.io/v1beta1</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterConfig</span>
+<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s</span>
+<span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">network</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calico</span><span class="w">   </span><span class="c1"># required for Windows nodes</span>
+<span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># This ref is a classic ObjectReference -&gt; use apiVersion, not apiGroup.</span>
+<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachineTemplate</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-cp</span>
 <span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWSMachineTemplate</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachineTemplate</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-mt</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-cp</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">ami</span><span class="p">:</span>
-<span class="w">        </span><span class="c1"># Replace with your AMI ID</span>
-<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0989fb15ce71ba39e</span><span class="w"> </span><span class="c1"># Ubuntu 22.04 in eu-central-1</span>
-<span class="w">      </span><span class="nt">instanceType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.large</span>
-<span class="w">      </span><span class="nt">iamInstanceProfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nodes.cluster-api-provider-aws.sigs.k8s.io</span><span class="w"> </span><span class="c1"># Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`</span>
-<span class="w">      </span><span class="nt">cloudInit</span><span class="p">:</span>
-<span class="w">        </span><span class="c1"># Makes CAPA use k0s bootstrap cloud-init directly and not via SSM</span>
-<span class="w">        </span><span class="c1"># Simplifies the VPC setup as we do not need custom SSM endpoints etc.</span>
-<span class="w">        </span><span class="nt">insecureSkipSecretsManager</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">      </span><span class="nt">subnet</span><span class="p">:</span>
-<span class="w">        </span><span class="c1"># Make sure this matches the failureDomain in the Machine, i.e. you pick the subnet ID for the AZ</span>
-<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subnet-099730c9ea2e42134</span>
-<span class="w">      </span><span class="nt">additionalSecurityGroups</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sg-01ce46c31291e3447</span><span class="w"> </span><span class="c1"># Needs to be belong to the subnet</span>
-<span class="w">      </span><span class="nt">sshKeyName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jhennig-key</span>
+<span class="w">      </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PooledRemoteMachine</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-cp-0</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp</span>
+<span class="w">  </span><span class="nt">machine</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;linux-ip&gt;</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">22</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu</span>
+<span class="w">    </span><span class="nt">useSudo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">            </span><span class="c1"># non-root SSH user needs sudo</span>
+<span class="w">    </span><span class="nt">sshKeyRef</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linux-ssh-key</span>
+</code></pre></div>
+<h2 id="windows-worker">Windows worker<a class="headerlink" href="#windows-worker" title="Permanent link">#</a></h2>
+<p>The Windows worker is a plain <code>Machine</code> backed by a <code>RemoteMachine</code>. Key
+differences from Linux:</p>
+<ul>
+<li><code>platform: windows</code> and provisioner <code>type: cloud-config</code> on the
+  <code>K0sWorkerConfig</code>.</li>
+<li><code>k0sInstallDir</code> set to a Windows path — the default <code>/usr/local/bin</code> is invalid
+  on Windows.</li>
+<li><code>useSudo: false</code> and <code>user: Administrator</code> on the <code>RemoteMachine</code>.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Machine</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-worker-0</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.2+k0s.0</span>
+<span class="w">  </span><span class="nt">bootstrap</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">configRef</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-worker-0</span>
+<span class="w">  </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachine</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-worker-0</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfig</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0s-aws-test-machine-config</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-worker-0</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2+k0s.0</span>
-<span class="w">      </span><span class="c1"># More details of the worker configuration can be set here</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.2+k0s.0</span>
+<span class="w">  </span><span class="nt">k0sInstallDir</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;C:\k0s&#39;</span><span class="w">    </span><span class="c1"># must be a Windows path</span>
+<span class="w">  </span><span class="nt">provisioner</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">windows</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloud-config</span><span class="w">       </span><span class="c1"># Remote Machine (SSH) path; not powershell-xml</span>
 <span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachine</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-worker-0</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;windows-ip&gt;</span>
+<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">22</span>
+<span class="w">  </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Administrator</span>
+<span class="w">  </span><span class="nt">sshKeyRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">windows-ssh-key</span>
 </code></pre></div>
-<p>Once complete, your command line should display output similar to this:</p>
-<div class="highlight"><pre><span></span><code>%<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>cluster,machine
-NAME<span class="w">                                    </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
-cluster.cluster.x-k8s.io/k0s-aws-test<span class="w">   </span>Provisioned<span class="w">   </span>16m
-
-NAME<span class="w">                                         </span>CLUSTER<span class="w">        </span>NODENAME<span class="w">   </span>PROVIDERID<span class="w">                                 </span>PHASE<span class="w">         </span>AGE<span class="w">   </span>VERSION
-machine.cluster.x-k8s.io/k0s-aws-test-md-0<span class="w">   </span>k0s-aws-test<span class="w">              </span>aws:///eu-central-1a/i-05f2de7da41dc542a<span class="w">   </span>Provisioned<span class="w">   </span>16m
+<h2 id="apply-and-verify">Apply and verify<a class="headerlink" href="#apply-and-verify" title="Permanent link">#</a></h2>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>cluster.yaml
+kubectl<span class="w"> </span>get<span class="w"> </span>cluster,k0scontrolplane,machine<span class="w"> </span>-w
 </code></pre></div>
-<p>You can also check the status of the cluster deployment with <code>clusterctl</code>:
-<div class="highlight"><pre><span></span><code>%<span class="w"> </span>clusterctl<span class="w"> </span>describe<span class="w"> </span>cluster
-NAME<span class="w">                                                   </span>READY<span class="w">  </span>SEVERITY<span class="w">  </span>REASON<span class="w">                    </span>SINCE<span class="w">  </span>MESSAGE
-Cluster/k0s-aws-test<span class="w">                                   </span>True<span class="w">                                       </span>25m
-├─ClusterInfrastructure<span class="w"> </span>-<span class="w"> </span>AWSCluster/k0s-aws-test
-├─ControlPlane<span class="w"> </span>-<span class="w"> </span>K0smotronControlPlane/k0s-aws-test-cp
-└─Workers
-<span class="w">  </span>└─Other
-</code></pre></div></p>
-<h3 id="networking-options">Networking Options<a class="headerlink" href="#networking-options" title="Permanent link">#</a></h3>
-<p>k0smotron, running in a management cluster in AWS, supports flexible networking options, allowing you to choose between Network Load Balancers (NLB) and Classic Elastic Load Balancers (ELB) based on your requirements for exposing the Control Planes.</p>
-<p>If you prefer using an NLB instead of ELB, you must specify annotations for the Service in the <code>k0smotronControlPlane</code>. These annotations guide the AWS Cloud Controller Manager (CCM) or the AWS Load Balancer Controller to create the respective services.</p>
-<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
-<span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
-<span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8132</span>
-<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;nlb&quot;</span>
+<p>The Linux control plane provisions first. Once its API answers on
+<code>&lt;linux-ip&gt;:6443</code>, the Windows worker bootstraps: k0smotron uploads
+<code>C:\bootstrap\k0s_install.ps1</code>, enables the Windows <code>Containers</code> feature
+(which may reboot — a scheduled task resumes bootstrap on startup), downloads
+<code>k0s.exe</code> and joins the cluster.</p>
+<div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>get<span class="w"> </span>kubeconfig<span class="w"> </span>win-remote<span class="w"> </span>&gt;<span class="w"> </span>win.kubeconfig
+<span class="nv">KUBECONFIG</span><span class="o">=</span>win.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>-o<span class="w"> </span>wide
 </code></pre></div>
-<p>For scenarios involving Classic ELBs or NLBs without special options, the AWS CCM can be utilized.</p>
-<h4 id="internal-nlb">Internal NLB<a class="headerlink" href="#internal-nlb" title="Permanent link">#</a></h4>
-<p>If you aim to use the NLB and set the schema to <code>internal</code>, the target group attribute <code>preserve_client_ip.enabled=false</code> is required due to "hairpinning" or "NAT loopback". In such cases, the AWS CCM cannot be used because it doesn't support setting Target Group Attributes. Therefore, the AWS Load Balancer Controller, which has the ability to set Target Group Attributes, becomes necessary. Follow <a href="https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html">this guide</a> to install the AWS Load Balancer Controller.</p>
-<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">service</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
-<span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
-<span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8132</span>
-<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;external&quot;</span><span class="w"> </span><span class="c1"># AWS Loadbalancer Controller creates a NLB when type is &quot;external&quot;</span>
-<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-internal</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-target-group-attributes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">preserve_client_ip.enabled=false</span>
+<p>You should see the Linux control-plane node and a <code>Ready</code> Windows node
+(<code>OS-IMAGE</code> reporting Windows). Schedule Windows workloads with a node selector:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">nodeSelector</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">kubernetes.io/os</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">windows</span>
 </code></pre></div>
-<p><strong><em>Note:</em></strong> Please make sure that the Security Group does allow the access to the NLB on port 6443 and 8132 from the management cluster nodes. This access is crucial for Cluster API (CAPI), Cluster API Provider for AWS (CAPA), and k0smotron, as they require access to the Control Plane API. Additionally, the port for the Konnectivity service need to be accessible from worker nodes.</p>
-<h2 id="accessing-the-workload-cluster">Accessing the workload cluster<a class="headerlink" href="#accessing-the-workload-cluster" title="Permanent link">#</a></h2>
-<p>To access the child cluster we can get the kubeconfig for it with <code>clusterctl get kubeconfig k0s-aws-test</code>. You can then save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a>.</p>
-<h2 id="deleting-the-cluster">Deleting the cluster<a class="headerlink" href="#deleting-the-cluster" title="Permanent link">#</a></h2>
-<p>For cluster deletion, do <strong>NOT</strong> use <code>kubectl delete -f my-aws-cluster.yaml</code> as that will result in orphan AWS resources. Instead, delete the top level <code>Cluster</code> object. This approach ensures the proper sequence in deleting all child resources, effectively avoiding orphan resources.</p>
 
 
 

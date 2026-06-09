@@ -15,6 +15,10 @@
         <link rel="canonical" href="https://docs.k0smotron.io/head/windows-workers/">
       
       
+        <link rel="prev" href="../capi-remote/">
+      
+      
+        <link rel="next" href="../ingress-support/">
       
       
       <link rel="icon" href="../img/k0s_social.png">
@@ -22,7 +26,7 @@
     
     
       
-        <title>Windows workers - Documentation</title>
+        <title>Windows support - Documentation</title>
       
     
     
@@ -134,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Windows workers
+              Windows support
             
           </span>
         </div>
@@ -366,18 +370,20 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -393,7 +399,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Usage
@@ -634,18 +640,20 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" checked>
         
           
           <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
@@ -661,7 +669,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_3">
             <span class="md-nav__icon md-icon"></span>
             Cluster API
@@ -778,6 +786,178 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Windows support
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Windows support
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Limitations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#networking" class="md-nav__link">
+    <span class="md-ellipsis">
+      Networking
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dns" class="md-nav__link">
+    <span class="md-ellipsis">
+      DNS
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#k0sworkerconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      K0sWorkerConfig
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provisioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Provisioning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Cases
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-example-with-aws" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full Example with AWS
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -913,10 +1093,10 @@ You are not currently viewing the documentation for the current stable release o
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3_12" >
         
           
-          <label class="md-nav__link" for="__nav_5_3_11" id="__nav_5_3_11_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_3_12" id="__nav_5_3_12_label" tabindex="0">
             
   
   
@@ -929,8 +1109,8 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_3_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_3_11">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_3_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3_12">
             <span class="md-nav__icon md-icon"></span>
             Examples
           </label>
@@ -1179,6 +1359,29 @@ You are not currently viewing the documentation for the current stable release o
   
   <span class="md-ellipsis">
     Remote Machine with Okta ASA
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../capi-remotemachine-windows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Windows worker with Remote Machine
     
   </span>
   
@@ -2228,7 +2431,7 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-  <h1>Windows workers</h1>
+  <h1>Windows support</h1>
 
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">#</a></h2>
 <p>k0smotron supports Windows worker nodes as an experimental feature, allowing you to run Linux and Windows workloads in the same Kubernetes cluster. This capability is particularly useful for organizations maintaining both modern Linux services and Windows applications.</p>
