@@ -31,6 +31,7 @@ nav:
       - Control Plane Bootstrap: capi-controlplane-bootstrap.md
       - Worker Node Bootstrap: capi-bootstrap.md
       - Remote Machine Provider: capi-remote.md
+      - Windows support: windows-workers.md
       - Ingress support: ingress-support.md
       - Ignition support: ignition-support.md
       - ClusterClass: capi-clusterclass.md
@@ -48,6 +49,7 @@ nav:
         - vSphere: capi-vsphere.md
         - Remote Machine with Teleport: capi-remotemachine-teleport.md
         - Remote Machine with Okta ASA: capi-remotemachine-okta-asa.md
+        - Windows worker with Remote Machine: capi-remotemachine-windows.md
         - Using OCI registry to pull k0s: capi-use-oci-registry.md
         - Cilium with kube-proxy replacement (HCP): capi-examples/cilium-kube-proxy-replacement.md
     - Advanced:
