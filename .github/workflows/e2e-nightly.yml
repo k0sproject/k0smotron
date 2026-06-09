@@ -120,7 +120,7 @@ jobs:
       matrix:
         e2e-suite:
           - TestIgnitionProvisioning
-          #- TestWindowsProvisioning
+          - TestWindowsProvisioning
     env:
       SSH_KEY_NAME: ${{ secrets.SSH_KEY_NAME }}
       SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}

@@ -184,7 +184,7 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 			}
 		}
 		if input.ExpectedWorkers != currentWorkerMachines {
-			return false, fmt.Errorf("expected worker machines is %d but got %d", input.ExpectedWorkers, currentWorkerMachines)
+			return false, nil
 		}
 
 		return true, nil
