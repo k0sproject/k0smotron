@@ -2412,17 +2412,19 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
+<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DevMachineTemplate</span>
 <span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test-machine-template</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DockerMachineTemplate</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DevMachineTemplate</span>
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp-test-machine-template</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">backend</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">docker</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 </code></pre></div>
 <p>By applying this yaml, k0smotron will create 3 machines based on the <code>MachineTemplate</code> configuration, installs k0s with the role controller on each machine and bootstraps the k0s control plane.</p>
 <p>For a full reference on <code>K0sControlPlane</code> configurability see the <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta2/">reference docs</a>.</p>
@@ -2552,17 +2554,19 @@ spec:
 <span class="w">  </span>machineTemplate:
 <span class="w">    </span>infrastructureRef:
 <span class="w">      </span>apiGroup:<span class="w"> </span>infrastructure.cluster.x-k8s.io
-<span class="w">      </span>kind:<span class="w"> </span>DockerMachineTemplate
+<span class="w">      </span>kind:<span class="w"> </span>DevMachineTemplate
 <span class="w">      </span>name:<span class="w"> </span>docker-test-cp-template
 ---
 apiVersion:<span class="w"> </span>infrastructure.cluster.x-k8s.io/v1beta2
-kind:<span class="w"> </span>DockerMachineTemplate
+kind:<span class="w"> </span>DevMachineTemplate
 metadata:
 <span class="w">  </span>name:<span class="w"> </span>docker-test-cp-template
 <span class="w">  </span>namespace:<span class="w"> </span>default
 spec:
 <span class="w">  </span>template:
-<span class="w">    </span>spec:<span class="w"> </span><span class="o">{}</span>
+<span class="w">    </span>spec:
+<span class="w">      </span>backend:
+<span class="w">        </span>docker:<span class="w"> </span><span class="o">{}</span>
 </code></pre></div>
 <p><strong>Note:</strong> Controller nodes running with <code>--enable-worker</code> are assigned <code>node-role.kubernetes.io/master:NoExecute</code> taint automatically. You can disable default taints using <code>--no-taints</code>  parameter.</p>
 <h2 id="client-connection-tunneling">Client connection tunneling<a class="headerlink" href="#client-connection-tunneling" title="Permanent link">#</a></h2>
