@@ -322,6 +322,12 @@ func main() {
 		setStandaloneControllers(mgr, clientSet, restConfig, ctrlOptions)
 
 		if runCAPIControllers {
+			// Setup the func to retrieve apiVersion for a GroupKind for conversion webhooks.
+			apiVersionGetter := func(gk schema.GroupKind) (string, error) {
+				return cpv1beta1.ResolveAPIVersion(ctx, mgr.GetClient(), gk)
+			}
+			cpv1beta1.SetAPIVersionGetter(apiVersionGetter)
+
 			if err = (&controlplane.K0smotronController{
 				Client:              mgr.GetClient(),
 				SecretCachingClient: secretCachingClient,

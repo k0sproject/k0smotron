@@ -22,6 +22,7 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
@@ -83,8 +84,8 @@ type K0sControlPlane struct {
 
 // K0sControlPlaneSpec defines the desired state of K0sControlPlane.
 type K0sControlPlaneSpec struct {
-	K0sConfigSpec   bootstrapv1.K0sConfigSpec            `json:"k0sConfigSpec"`
-	MachineTemplate *cpv2.K0sControlPlaneMachineTemplate `json:"machineTemplate"`
+	K0sConfigSpec   bootstrapv1.K0sConfigSpec       `json:"k0sConfigSpec"`
+	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate"`
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
 	Replicas int32 `json:"replicas,omitempty"`
@@ -173,6 +174,18 @@ type K0sControlPlaneStatus struct {
 	// Conditions defines current service state of the K0sControlPlane.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.
+type K0sControlPlaneMachineTemplate struct {
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
+
+	// InfrastructureRef is a required reference to a custom resource
+	// offered by an infrastructure provider.
+	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
 }
 
 // GetConditions returns the conditions of the K0sControlPlane status.

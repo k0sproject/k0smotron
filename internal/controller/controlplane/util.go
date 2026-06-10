@@ -41,23 +41,6 @@ import (
 	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
 )
 
-func (c *K0sController) getMachineTemplate(ctx context.Context, kcp *cpv1beta2.K0sControlPlane) (*unstructured.Unstructured, error) {
-	infRef := kcp.Spec.MachineTemplate.InfrastructureRef
-
-	infraMachineTemplate := new(unstructured.Unstructured)
-	infraMachineTemplate.SetAPIVersion(infRef.APIVersion)
-	infraMachineTemplate.SetKind(infRef.Kind)
-	infraMachineTemplate.SetName(infRef.Name)
-
-	key := client.ObjectKey{Name: infRef.Name, Namespace: kcp.Namespace}
-
-	err := c.Get(ctx, key, infraMachineTemplate)
-	if err != nil {
-		return nil, err
-	}
-	return infraMachineTemplate, nil
-}
-
 func (c *K0sController) generateKubeconfig(ctx context.Context, clusterKey client.ObjectKey, endpoint string) (*api.Config, error) {
 	clusterCA, err := secret.GetFromNamespacedName(ctx, c.SecretCachingClient, clusterKey, secret.ClusterCA)
 	if err != nil {
