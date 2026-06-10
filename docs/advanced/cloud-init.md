@@ -46,16 +46,18 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiGroup: infrastructure.cluster.x-k8s.io
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: my-cp-tpl
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: my-cp-tpl
 spec:
   template:
-    spec: {}
+    spec:
+      backend:
+        docker: {}
 ```
 
 Example (WorkerConfigTemplate):

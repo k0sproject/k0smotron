@@ -18,7 +18,7 @@ spec:
     name: docker-test
   infrastructureRef:
     apiGroup: infrastructure.cluster.x-k8s.io
-    kind: DockerCluster
+    kind: DevCluster
     name: docker-test
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
@@ -33,11 +33,13 @@ spec:
     type: NodePort
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerCluster
+kind: DevCluster
 metadata:
   name: docker-test
   namespace: default
 spec:
+  backend:
+    docker: {}
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: Machine
@@ -53,7 +55,7 @@ spec:
       name: docker-test-0
   infrastructureRef:
     apiGroup: infrastructure.cluster.x-k8s.io
-    kind: DockerMachine
+    kind: DevMachine
     name: docker-test-0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
@@ -65,7 +67,7 @@ spec:
   version: v1.27.2+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachine
+kind: DevMachine
 metadata:
   name: docker-test-0
   namespace: default

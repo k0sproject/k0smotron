@@ -235,18 +235,20 @@ spec:
     name: docker-test
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerCluster
+    kind: DevCluster
     name: docker-test
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-test-cp-template
   namespace: default
 spec:
   template:
     spec:
-      customImage: kindest/node:v1.32.0
+      backend:
+        docker:
+          customImage: kindest/node:v1.31.0
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
@@ -270,19 +272,21 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: docker-test-cp-template
       namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerCluster
+kind: DevCluster
 metadata:
   name: docker-test
   namespace: default
 spec:
-  loadBalancer:
-    customHAProxyConfigTemplateRef:
-      name: ha-proxy-config
+  backend:
+    docker:
+      loadBalancer:
+        customHAProxyConfigTemplateRef:
+          name: ha-proxy-config
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
@@ -299,7 +303,7 @@ spec:
       name: docker-test-worker-0
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerMachine
+    kind: DevMachine
     name: docker-test-worker-0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -321,12 +325,14 @@ spec:
       content: test-file
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachine
+kind: DevMachine
 metadata:
   name: docker-test-worker-0
   namespace: default
 spec:
-  customImage: kindest/node:v1.32.0
+  backend:
+    docker:
+      customImage: kindest/node:v1.32.0
 ---
 apiVersion: v1
 data:
@@ -409,7 +415,7 @@ spec:
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DockerMachineTemplate
+      kind: DevMachineTemplate
       name: docker-test-cp-template
       namespace: default
 `

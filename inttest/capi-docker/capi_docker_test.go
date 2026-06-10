@@ -250,7 +250,7 @@ spec:
     name: docker-test-cp
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerCluster
+    kind: DevCluster
     name: docker-test
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -287,11 +287,13 @@ spec:
         enabled: false
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerCluster
+kind: DevCluster
 metadata:
   name: docker-test
   namespace: default
 spec:
+  backend:
+    docker: {}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
@@ -308,7 +310,7 @@ spec:
       name: docker-test-0
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: DockerMachine
+    kind: DevMachine
     name: docker-test-0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -330,10 +332,12 @@ spec:
       content: test-file
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: DockerMachine
+kind: DevMachine
 metadata:
   name: docker-test-0
   namespace: default
 spec:
-  customImage: kindest/node:v1.31.0
+  backend:
+    docker:
+      customImage: kindest/node:v1.31.0
 `

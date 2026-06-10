@@ -43,7 +43,7 @@ spec:
     name: docker-test-cp
   infrastructureRef:
     apiGroup: infrastructure.cluster.x-k8s.io
-    kind: DockerCluster
+    kind: DevCluster
     name: docker-test
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
@@ -59,13 +59,15 @@ spec:
     type: NodePort
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerCluster
+kind: DevCluster
 metadata:
   name: docker-test
   namespace: default
   annotations:
     cluster.x-k8s.io/managed-by: k0smotron # This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.
-spec: {}
+spec:
+  backend:
+    docker: {}
   # More details of the DockerCluster can be set here
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
@@ -95,17 +97,19 @@ spec:
           name: docker-test-machine-config
       infrastructureRef:
         apiGroup: infrastructure.cluster.x-k8s.io
-        kind: DockerMachineTemplate
+        kind: DevMachineTemplate
         name: docker-test-mt
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: DockerMachineTemplate
+kind: DevMachineTemplate
 metadata:
   name: docker-test-mt
   namespace: default
 spec:
   template:
-    spec: {}
+    spec:
+      backend:
+        docker: {}
   # More details of the DockerMachineTemplate can be set here
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2

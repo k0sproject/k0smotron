@@ -26,7 +26,7 @@ the k0s version and machine names in the YAML configuration file:
         name: docker-test-cp
       infrastructureRef:
         apiGroup: infrastructure.cluster.x-k8s.io
-        kind: DockerCluster
+        kind: DevCluster
         name: docker-test
     ---
     apiVersion: controlplane.cluster.x-k8s.io/v1beta2
@@ -87,7 +87,7 @@ with the new names to create machines for the target k0smotron version. For exam
          name: docker-test-1 # new machine
      infrastructureRef:
        apiGroup: infrastructure.cluster.x-k8s.io
-       kind: DockerMachine
+       kind: DevMachine
        name: docker-test-1 # new machine
    ---
    apiVersion: bootstrap.cluster.x-k8s.io/v1beta2

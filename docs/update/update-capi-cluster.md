@@ -98,15 +98,17 @@ When `spec.updateStrategy` is `InPlace` (or omitted), k0smotron uses [k0s autopi
         name: docker-test-cp
       infrastructureRef:
         apiGroup: infrastructure.cluster.x-k8s.io
-        kind: DockerCluster
+        kind: DevCluster
         name: docker-test
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: DockerCluster
+    kind: DevCluster
     metadata:
       name: docker-test
       namespace: default
     spec:
+      backend:
+        docker: {}
     ---
     apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: K0sControlPlane
@@ -133,18 +135,20 @@ When `spec.updateStrategy` is `InPlace` (or omitted), k0smotron uses [k0s autopi
       machineTemplate:
         infrastructureRef:
           apiGroup: infrastructure.cluster.x-k8s.io
-          kind: DockerMachineTemplate
+          kind: DevMachineTemplate
           name: docker-test-cp-template
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: DockerMachineTemplate
+    kind: DevMachineTemplate
     metadata:
       name: docker-test-cp-template
       namespace: default
     spec:
       template:
         spec:
-          customImage: kindest/node:v1.31.0
+          backend:
+            docker:
+              customImage: kindest/node:v1.31.0
     ```
 
 2. Update `spec.version` to the [target k0s release](https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model):
@@ -175,7 +179,7 @@ When `spec.updateStrategy` is `InPlace` (or omitted), k0smotron uses [k0s autopi
      machineTemplate:
        infrastructureRef:
          apiGroup: infrastructure.cluster.x-k8s.io
-         kind: DockerMachineTemplate
+         kind: DevMachineTemplate
          name: docker-test-cp-template
    ```
 
@@ -219,15 +223,17 @@ When `spec.updateStrategy` is `RecreateDeleteFirst`, it removes an old machine f
         name: docker-test-cp
       infrastructureRef:
         apiGroup: infrastructure.cluster.x-k8s.io
-        kind: DockerCluster
+        kind: DevCluster
         name: docker-test
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: DockerCluster
+    kind: DevCluster
     metadata:
       name: docker-test
       namespace: default
     spec:
+      backend:
+        docker: {}
     ---
     apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: K0sControlPlane
@@ -254,18 +260,20 @@ When `spec.updateStrategy` is `RecreateDeleteFirst`, it removes an old machine f
       machineTemplate:
         infrastructureRef:
           apiGroup: infrastructure.cluster.x-k8s.io
-          kind: DockerMachineTemplate
+          kind: DevMachineTemplate
           name: docker-test-cp-template
     ---
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: DockerMachineTemplate
+    kind: DevMachineTemplate
     metadata:
       name: docker-test-cp-template
       namespace: default
     spec:
       template:
         spec:
-          customImage: kindest/node:v1.31.0
+          backend:
+            docker:
+              customImage: kindest/node:v1.31.0
     ```
 
 2. Update `spec.version` to the [target k0s release](https://docs.k0sproject.io/stable/releases/#k0s-release-and-support-model):
@@ -296,7 +304,7 @@ When `spec.updateStrategy` is `RecreateDeleteFirst`, it removes an old machine f
      machineTemplate:
        infrastructureRef:
          apiGroup: infrastructure.cluster.x-k8s.io
-         kind: DockerMachineTemplate
+         kind: DevMachineTemplate
          name: docker-test-cp-template
    ```
 
