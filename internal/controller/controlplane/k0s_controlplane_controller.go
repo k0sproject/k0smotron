@@ -45,6 +45,7 @@ import (
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/certs"
@@ -201,6 +202,10 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 	log = log.WithValues("cluster", cluster.Name)
 
+	if err := c.reconcileExternalReference(ctx, cluster, kcp); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	if err := c.ensureCertificates(ctx, cluster, kcp); err != nil {
 		log.Error(err, "Failed to ensure certificates")
 		return ctrl.Result{}, err
@@ -226,6 +231,33 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 	return res, err
 
+}
+
+func (c *K0sController) reconcileExternalReference(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
+	ref := kcp.Spec.MachineTemplate.Spec.InfrastructureRef
+	if !strings.HasSuffix(ref.Kind, clusterv1.TemplateSuffix) {
+		return nil
+	}
+
+	obj, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, ref, kcp.Namespace)
+	if err != nil {
+		return err
+	}
+
+	desiredOwnerRef := metav1.OwnerReference{
+		APIVersion: clusterv1.GroupVersion.String(),
+		Kind:       "Cluster",
+		Name:       cluster.Name,
+		UID:        cluster.UID,
+	}
+
+	if capiutil.HasExactOwnerRef(obj.GetOwnerReferences(), desiredOwnerRef) {
+		return nil
+	}
+
+	original := obj.DeepCopyObject().(client.Object)
+	obj.SetOwnerReferences(capiutil.EnsureOwnerRef(obj.GetOwnerReferences(), desiredOwnerRef))
+	return c.Client.Patch(ctx, obj, client.MergeFrom(original))
 }
 
 func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {

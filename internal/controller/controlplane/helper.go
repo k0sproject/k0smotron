@@ -31,6 +31,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/k0sproject/k0smotron/internal/controller/util"
 	"github.com/k0sproject/version"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -277,41 +278,48 @@ func (c *K0sController) createMachineFromTemplate(ctx context.Context, name stri
 }
 
 func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (*unstructured.Unstructured, error) {
-	infraMachineTemplate, err := c.getMachineTemplate(ctx, kcp)
+	template, err := external.GetObjectFromContractVersionedRef(ctx, c, kcp.Spec.MachineTemplate.Spec.InfrastructureRef, kcp.Namespace)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get object from contract versioned ref: %w", err)
 	}
 
-	_ = ctrl.SetControllerReference(cluster, infraMachineTemplate, c.Client.Scheme())
-	err = c.Client.Patch(ctx, infraMachineTemplate, client.Merge, &client.PatchOptions{FieldManager: "k0smotron"})
+	templateRef := &corev1.ObjectReference{
+		APIVersion: template.GetAPIVersion(),
+		Kind:       kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Kind,
+		Namespace:  kcp.Namespace,
+		Name:       kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
+	}
+
+	template, err = external.Get(ctx, c, templateRef)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compute desired InfraMachine: %w", err)
 	}
-
-	template, found, err := unstructured.NestedMap(infraMachineTemplate.UnstructuredContent(), "spec", "template")
-	if !found {
-		return nil, fmt.Errorf("missing spec.template on %v %q", infraMachineTemplate.GroupVersionKind(), infraMachineTemplate.GetName())
-	} else if err != nil {
-		return nil, fmt.Errorf("error getting spec.template map on %v %q: %w", infraMachineTemplate.GroupVersionKind(), infraMachineTemplate.GetName(), err)
-	}
-
-	infraMachine := &unstructured.Unstructured{Object: template}
-	infraMachine.SetName(name)
-	infraMachine.SetNamespace(kcp.Namespace)
 
 	annotations := map[string]string{}
 	maps.Copy(annotations, kcp.Annotations)
-
 	maps.Copy(annotations, kcp.Spec.MachineTemplate.ObjectMeta.Annotations)
+	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name
+	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.Spec.InfrastructureRef.GroupKind().String()
 
-	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.Name
-	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
-	infraMachine.SetAnnotations(annotations)
-
-	infraMachine.SetLabels(controlPlaneCommonLabelsForCluster(kcp, cluster.GetName()))
-
-	infraMachine.SetAPIVersion(infraMachineTemplate.GetAPIVersion())
-	infraMachine.SetKind(strings.TrimSuffix(infraMachineTemplate.GetKind(), clusterv1.TemplateSuffix))
+	generateTemplateInput := &external.GenerateTemplateInput{
+		Template:    template,
+		TemplateRef: templateRef,
+		Namespace:   kcp.Namespace,
+		Name:        name,
+		ClusterName: cluster.Name,
+		OwnerRef: &metav1.OwnerReference{
+			APIVersion: cpv1beta2.GroupVersion.String(),
+			Kind:       "K0sControlPlane",
+			Name:       kcp.Name,
+			UID:        kcp.UID,
+		},
+		Labels:      controlPlaneCommonLabelsForCluster(kcp, cluster.GetName()),
+		Annotations: annotations,
+	}
+	infraMachine, err := external.GenerateTemplate(generateTemplateInput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute desired InfraMachine: %w", err)
+	}
 
 	return infraMachine, nil
 }
@@ -433,8 +441,8 @@ func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructur
 	clonedFromName := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation]
 	clonedFromGroupKind := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation]
 
-	return clonedFromName == kcp.Spec.MachineTemplate.InfrastructureRef.Name &&
-		clonedFromGroupKind == kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
+	return clonedFromName == kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name &&
+		clonedFromGroupKind == kcp.Spec.MachineTemplate.Spec.InfrastructureRef.GroupKind().String()
 }
 
 func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clientset *kubernetes.Clientset) (bool, error) {

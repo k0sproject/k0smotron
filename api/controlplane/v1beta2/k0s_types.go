@@ -18,7 +18,6 @@ import (
 	"slices"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
@@ -107,8 +106,8 @@ func (k *K0sControlPlane) WorkerEnabled() bool {
 
 // K0sControlPlaneSpec defines the desired state of K0sControlPlane
 type K0sControlPlaneSpec struct {
-	K0sConfigSpec   bootstrapv2.K0sConfigSpec       `json:"k0sConfigSpec"`
-	MachineTemplate *K0sControlPlaneMachineTemplate `json:"machineTemplate"`
+	K0sConfigSpec   bootstrapv2.K0sConfigSpec      `json:"k0sConfigSpec"`
+	MachineTemplate K0sControlPlaneMachineTemplate `json:"machineTemplate"`
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default=1
 	Replicas int32 `json:"replicas,omitempty"`
@@ -135,9 +134,18 @@ type K0sControlPlaneMachineTemplate struct {
 	// +optional
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 
-	// InfrastructureRef is a required reference to a custom resource
+	// spec defines the spec for Machines
+	// in a KubeadmControlPlane object.
+	// +required
+	Spec K0sControlPlaneMachineTemplateSpec `json:"spec"`
+}
+
+// K0sControlPlaneMachineTemplateSpec defines the desired state of K0sControlPlaneMachineTemplate
+type K0sControlPlaneMachineTemplateSpec struct {
+	// infrastructureRef is a required reference to a custom infra machine template resource
 	// offered by an infrastructure provider.
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
+	// +required
+	InfrastructureRef clusterv1.ContractVersionedObjectReference `json:"infrastructureRef"`
 }
 
 // +kubebuilder:object:root=true
