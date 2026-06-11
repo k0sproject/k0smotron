@@ -31,72 +31,44 @@ spec:
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
-        - description: IP address or DNS name of the remote machine
-          jsonPath: .spec.machine.address
+        - jsonPath: .spec.machine.address
           name: Address
           type: string
-        - description: Indicates if the machine is reserved
-          jsonPath: .status.reserved
+        - jsonPath: .status.reserved
           name: Reserved
           type: string
-        - description: Reference to the RemoteMachine
-          jsonPath: .status.machineRef.name
+        - jsonPath: .status.machineRef.name
           name: Remote Machine
           type: string
       name: v1beta1
       schema:
         openAPIV3Schema:
-          description: PooledRemoteMachine represents a RemoteMachine that is part of a pool and can be reserved for use.
           properties:
             apiVersion:
-              description: |-
-                APIVersion defines the versioned schema of this representation of an object.
-                Servers should convert recognized schemas to the latest internal value, and
-                may reject unrecognized values.
-                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
               type: string
             kind:
-              description: |-
-                Kind is a string value representing the REST resource this object represents.
-                Servers may infer this from the endpoint the client submits requests to.
-                Cannot be updated.
-                In CamelCase.
-                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
               type: string
             metadata:
               type: object
             spec:
-              description: PooledRemoteMachineSpec defines the desired state of PooledRemoteMachine
               properties:
                 machine:
-                  description: PooledMachineSpec defines the connection details and provisioning information for a machine in a pool.
                   properties:
                     address:
-                      description: Address is the IP address or DNS name of the remote machine.
                       type: string
                     commandsAsScript:
                       default: false
-                      description: |-
-                        CommandsAsScript indicates if the commands should be executed as a script.
-                        If true, the commands will be written to a file and executed as a script.
-                        If false, the commands will be executed one by one.
                       type: boolean
                     customCleanUpCommands:
-                      description: CleanUpCommands allow the user to run custom command for the clean up process of the machine.
                       items:
                         type: string
                       type: array
                     port:
                       default: 22
-                      description: Port is the SSH port of the remote machine.
                       type: integer
                     sshKeyRef:
-                      description: |-
-                        SSHKeyRef is a reference to a secret that contains the SSH private key.
-                        The key must be placed on the secret using the key "value".
                       properties:
                         name:
-                          description: Name is the name of the secret.
                           type: string
                       required:
                         - name
@@ -105,11 +77,9 @@ spec:
                       type: boolean
                     user:
                       default: root
-                      description: User is the user to use when connecting to the remote machine.
                       type: string
                     workingDir:
                       default: /etc/k0smotron
-                      description: WorkingDir is the directory to use as working directory when connecting to the remote machine.
                       type: string
                   required:
                     - address
@@ -122,10 +92,8 @@ spec:
                 - pool
               type: object
             status:
-              description: PooledRemoteMachineStatus defines the observed state of PooledRemoteMachine
               properties:
                 machineRef:
-                  description: RemoteMachineRef is a reference to a RemoteMachine that has been reserved for use.
                   properties:
                     name:
                       type: string
@@ -147,72 +115,44 @@ spec:
       subresources:
         status: {}
     - additionalPrinterColumns:
-        - description: IP address or DNS name of the remote machine
-          jsonPath: .spec.machine.address
+        - jsonPath: .spec.machine.address
           name: Address
           type: string
-        - description: Indicates if the machine is reserved
-          jsonPath: .status.reserved
+        - jsonPath: .status.reserved
           name: Reserved
           type: string
-        - description: Reference to the RemoteMachine
-          jsonPath: .status.machineRef.name
+        - jsonPath: .status.machineRef.name
           name: Remote Machine
           type: string
       name: v1beta2
       schema:
         openAPIV3Schema:
-          description: PooledRemoteMachine represents a RemoteMachine that is part of a pool and can be reserved for use.
           properties:
             apiVersion:
-              description: |-
-                APIVersion defines the versioned schema of this representation of an object.
-                Servers should convert recognized schemas to the latest internal value, and
-                may reject unrecognized values.
-                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
               type: string
             kind:
-              description: |-
-                Kind is a string value representing the REST resource this object represents.
-                Servers may infer this from the endpoint the client submits requests to.
-                Cannot be updated.
-                In CamelCase.
-                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
               type: string
             metadata:
               type: object
             spec:
-              description: PooledRemoteMachineSpec defines the desired state of PooledRemoteMachine
               properties:
                 machine:
-                  description: PooledMachineSpec defines the connection details and provisioning information for a machine in a pool.
                   properties:
                     address:
-                      description: Address is the IP address or DNS name of the remote machine.
                       type: string
                     cleanUpCommands:
-                      description: CleanUpCommands allow the user to run custom command for the clean up process of the machine.
                       items:
                         type: string
                       type: array
                     commandsAsScript:
                       default: false
-                      description: |-
-                        CommandsAsScript indicates if the commands should be executed as a script.
-                        If true, the commands will be written to a file and executed as a script.
-                        If false, the commands will be executed one by one.
                       type: boolean
                     port:
                       default: 22
-                      description: Port is the SSH port of the remote machine.
                       type: integer
                     sshKeyRef:
-                      description: |-
-                        SSHKeyRef is a reference to a secret that contains the SSH private key.
-                        The key must be placed on the secret using the key "value".
                       properties:
                         name:
-                          description: Name is the name of the secret.
                           type: string
                       required:
                         - name
@@ -221,11 +161,9 @@ spec:
                       type: boolean
                     user:
                       default: root
-                      description: User is the user to use when connecting to the remote machine.
                       type: string
                     workingDir:
                       default: /etc/k0smotron
-                      description: WorkingDir is the directory to use as working directory when connecting to the remote machine.
                       type: string
                   required:
                     - address
@@ -238,10 +176,8 @@ spec:
                 - pool
               type: object
             status:
-              description: PooledRemoteMachineStatus defines the observed state of PooledRemoteMachine
               properties:
                 machineRef:
-                  description: RemoteMachineRef is a reference to a RemoteMachine that has been reserved for use.
                   properties:
                     name:
                       type: string
