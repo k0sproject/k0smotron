@@ -13,6 +13,8 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 CRDOC ?= $(LOCALBIN)/crdoc
+YQ ?= $(LOCALBIN)/yq
+KUBEBUILDER ?= $(LOCALBIN)/kubebuilder
 
 ## e2e configuration
 E2E_CONF_FILE ?= $(shell pwd)/e2e/config/docker.yaml
@@ -290,6 +292,21 @@ infrastructure-components.yaml: $(CONTROLLER_GEN) manifests-infrastructure kusto
 	$(KUSTOMIZE) build config/clusterapi/infrastructure/ > infrastructure-components.yaml
 	git checkout config/manager/kustomization.yaml
 
+# Helm chart version (SemVer2, no leading v) and the app version it deploys.
+# Lock-step: both default to the same value. Release CI overrides from the git tag.
+CHART_VERSION ?= 0.0.0-dev
+CHART_APP_VERSION ?= $(CHART_VERSION)
+
+.PHONY: helm-chart
+helm-chart: manifests-capi-integration kustomize $(YQ) $(KUBEBUILDER) ## Generate the Helm chart (kubebuilder scaffold + conversion-complete CRDs)
+	$(KUBEBUILDER) edit --plugins=helm/v1-alpha
+	KUSTOMIZE=$(KUSTOMIZE) YQ=$(YQ) ./hack/helm-crds.sh
+	# Stamp the manager image (split IMG on its last colon to keep registry ports intact).
+	repo='$(IMG)'; tag="$${repo##*:}"; repo="$${repo%:*}"; \
+	  $(YQ) -i ".controllerManager.container.image.repository = \"$$repo\" | .controllerManager.container.image.tag = \"$$tag\"" dist/chart/values.yaml
+	# Stamp chart version (lock-step with appVersion by default).
+	$(YQ) -i '.version = "$(CHART_VERSION)" | .appVersion = "$(CHART_APP_VERSION)"' dist/chart/Chart.yaml
+
 ##@ Build Dependencies
 
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary. If wrong version is installed, it will be removed before downloading.
@@ -320,6 +337,15 @@ docs-serve-dev:
 crdoc: $(CRDOC) ## Download crdoc locally if necessary. If wrong version is installed, it will be overwritten.
 $(CRDOC): Makefile.variables | $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install fybrik.io/crdoc@$(CRDOC_VERSION)
+
+yq: $(YQ) ## Download mikefarah yq locally if necessary.
+$(YQ): Makefile.variables | $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/mikefarah/yq/v4@$(YQ_VERSION)
+
+kubebuilder: $(KUBEBUILDER) ## Download kubebuilder locally if necessary.
+$(KUBEBUILDER): Makefile.variables | $(LOCALBIN)
+	curl -fsSL -o $(KUBEBUILDER) https://github.com/kubernetes-sigs/kubebuilder/releases/download/$(KUBEBUILDER_VERSION)/kubebuilder_$(shell go env GOOS)_$(shell go env GOARCH)
+	chmod +x $(KUBEBUILDER)
 
 .PHONY: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron-v1beta2 docs-generate-reference
 docs-generate-bootstrap: $(CRDOC) ## Generate docs for bootstrap CRDs
