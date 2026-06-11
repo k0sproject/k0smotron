@@ -74,6 +74,15 @@ providers:
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v2.0}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v2.0}/control-plane-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
       - name: v2.0.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../config/clusterapi/controlplane
         contract: v1beta1
@@ -111,6 +120,15 @@ providers:
         contract: v1beta1
         files:
           - sourcePath: "../data/shared/v1.10/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: "{go://github.com/k0sproject/k0smotron@v2.0}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v2.0}/bootstrap-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../../metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"

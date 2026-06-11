@@ -396,7 +396,7 @@ kind-deploy-capi:
 
 .PHONY: kind-deploy-k0smotron
 kind-deploy-k0smotron: release k0smotron-image-bundle.tar
-	kind load image-archive k0smotron-image-bundle.tar --name k0smotron
+	kind load image-archive k0smotron-image-bundle.tar 
 	kubectl apply --server-side=true -f install.yaml
 	kubectl rollout restart -n k0smotron deployment/k0smotron-controller-manager
 

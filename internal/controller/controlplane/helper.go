@@ -46,6 +46,7 @@ import (
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
 const (
@@ -316,7 +317,9 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	return infraMachine, nil
 }
 
-func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
+func hasControllerConfigChanged(ctx context.Context, bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
+	logger := log.FromContext(ctx)
+
 	// Skip the check if the K0sControlPlane is not ready
 	if kcp.Status.Initialization.ControlPlaneInitialized == nil ||
 		!*kcp.Status.Initialization.ControlPlaneInitialized ||
@@ -351,6 +354,7 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 
 		return false
 	}
+	withV1Beta2Defaults(machineK0sConfig)
 
 	// IMPORTANT: make a copy of the K0sConfigSpec from the K0sControlPlane, as we will modify it.
 	kcpK0sConfig := kcp.Spec.K0sConfigSpec.DeepCopy()
@@ -358,8 +362,27 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 	kcpK0sConfig.K0s = nil
 	machineK0sConfig.K0s = nil
 
-	return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
+	diff := cmp.Diff(kcpK0sConfig, machineK0sConfig)
+	if diff != "" {
+		logger.Info("K0sConfigSpec has changed", "machine", machine.Name, "diff", diff)
+		return true
+	}
 
+	return false
+
+}
+
+func withV1Beta2Defaults(k0sConfig *bootstrapv2.K0sConfigSpec) {
+	if k0sConfig == nil {
+		return
+	}
+
+	if k0sConfig.Provisioner.Type == "" {
+		k0sConfig.Provisioner.Type = provisioner.CloudInitProvisioningFormat
+	}
+	if k0sConfig.DownloadURL == "" {
+		k0sConfig.DownloadURL = util.DefaultK0sDownloadURL
+	}
 }
 
 // Deprecated: This function is kept for backward compatibility with clusters created with versions that does not add an annotation in the
