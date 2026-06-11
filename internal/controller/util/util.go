@@ -96,6 +96,11 @@ func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {
 		kmc.Annotations = make(map[string]string)
 	}
 	maps.Copy(kmc.Annotations, kmc.Spec.KubeconfigSecretMetadata.Annotations)
+
+	// km.K0sClusterIDAnnotation is generated after cluster is created so adding it later to the cluster resources
+	// will provoke a rollout of the control plane and etcd components, which is not desired.
+	delete(kmc.Annotations, km.K0sClusterIDAnnotation)
+
 	return kmc.Annotations
 }
 
