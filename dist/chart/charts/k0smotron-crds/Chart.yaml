@@ -1,0 +1,6 @@
+apiVersion: v2
+name: k0smotron-crds
+description: k0smotron CustomResourceDefinitions
+type: application
+version: 0.0.0-dev
+appVersion: "0.0.0-dev"

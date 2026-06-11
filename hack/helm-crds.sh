@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
-# Render CRDs and RBAC into the Helm chart from the kustomize install.
+# Render RBAC into the parent chart and CRDs into a bundled crds subchart, both
+# from the kustomize install (config/clusterapi/all, the install.yaml source).
 #
-# The kubebuilder helm/v1-alpha plugin scaffolds from the standard kubebuilder
-# layout, which k0smotron doesn't follow:
-#   - CRDs: the plugin copies the raw config/crd/bases, missing the conversion-
-#     webhook and cert-manager CA-injection patches. k0smotron serves v1beta1 and
-#     v1beta2 with a conversion webhook, so raw CRDs would be broken.
-#   - RBAC: the plugin only finds config/rbac/role.yaml (a partial standalone
-#     role), missing the full manager ClusterRole, the ServiceAccount, the
-#     leader-election Role, and both bindings - so the manager can't even start.
+# Why this exists - the kubebuilder helm/v1-alpha plugin scaffolds from the
+# standard kubebuilder layout, which k0smotron doesn't follow, so its output is
+# incomplete:
+#   - RBAC: only config/rbac/role.yaml (a partial standalone ClusterRole) is
+#     found - no ServiceAccount, no leader-election Role, no bindings, so the
+#     manager can't start.
+#   - CRDs: the raw config/crd/bases are copied without the conversion-webhook or
+#     cert-manager CA wiring, so v1beta1<->v1beta2 conversion is broken.
 #
-# Both come out correct and mutually consistent from `config/clusterapi/all`
-# (the same source as install.yaml). We render them, re-point namespace/cert
-# references at the release, gate them behind their chart toggles, and write them
-# over the plugin's output.
+# RBAC is small and namespace-dependent, so it goes in the parent templates/ and
+# is templated to .Release.Namespace.
+#
+# CRDs go in the k0smotron-crds subchart's crds/ directory: crds/ is installed
+# but never rendered into the manifest, so the full-fat CRDs (descriptions kept)
+# are stored only once and fit Helm's 1 MiB release-Secret limit. crds/ is not
+# templated, so the conversion-webhook and cert-manager namespaces are baked to
+# $CRD_NAMESPACE; the parent NOTES guard enforces installing into that namespace.
 #
 # Run this AFTER `kubebuilder edit --plugins=helm/v1-alpha`.
 set -euo pipefail
@@ -21,63 +26,75 @@ set -euo pipefail
 KUSTOMIZE=${KUSTOMIZE:-bin/kustomize}
 YQ=${YQ:-yq}
 SRC=${SRC:-config/clusterapi/all}
-TPL=${TPL:-dist/chart/templates}
+CHART=${CHART:-dist/chart}
+CHART_VERSION=${CHART_VERSION:-0.0.0-dev}
+CRD_NAMESPACE=${CRD_NAMESPACE:-k0smotron-system}
 
-# Build the full install once and reuse it for every extraction. Keep scratch
-# files inside the chart tree so we never depend on a writable system TMPDIR
-# (restricted in some CI/sandbox environments).
+TPL="$CHART/templates"
+SUB="$CHART/charts/k0smotron-crds"
+
 mkdir -p "$TPL"
 rendered="$TPL/.rendered.yaml"
 "$KUSTOMIZE" build "$SRC" --load-restrictor LoadRestrictionsNone > "$rendered"
 trap 'rm -f "$rendered"' EXIT
 
-# split_wrap <input.yaml> <out_dir> <guard>
-# Splits a multi-doc stream one file per resource (yq mistakes the dots in names
-# like clusters.k0smotron.io for an extension, so we wrap whatever it writes
-# rather than assume a suffix) and wraps each in a Helm enable toggle.
-split_wrap() {
-  local input="$1" out="$2" guard="$3" tmp="$2/.split" name count=0
-  rm -rf "$out"; mkdir -p "$tmp"
-  "$YQ" eval --no-doc --split-exp "\"$tmp/\" + .metadata.name" "$input"
-  for f in "$tmp"/*; do
-    # yq appends .yml only when the name has no dot (e.g. RBAC names); CRD names
-    # like clusters.k0smotron.io keep none. Strip it so we don't get .yml.yaml.
-    name=$(basename "$f"); name="${name%.yml}"
-    { echo "{{- if $guard }}"; cat "$f"; echo '{{- end }}'; } > "$out/$name.yaml"
-    count=$((count + 1))
-  done
-  rm -rf "$tmp"
-  echo "$count"
-}
+# --- RBAC + ServiceAccount (parent templates/, namespace-templated) ----------
+# The manager Deployment references .Values.controllerManager.serviceAccountName;
+# kustomize names the SA/roles/bindings k0smotron-* to match. Namespaced objects
+# and binding subjects are pinned to k0smotron by kustomize - re-point at release.
+# One file, gated by a single conditional wrapping all docs.
+rm -rf "$TPL/rbac"; mkdir -p "$TPL/rbac"
+{
+  echo '{{- if .Values.rbac.enable }}'
+  "$YQ" eval '
+    select(.kind == "ServiceAccount" or .kind == "ClusterRole" or .kind == "ClusterRoleBinding" or .kind == "Role" or .kind == "RoleBinding")
+    | with(select(.metadata.namespace != null); .metadata.namespace = "{{ .Release.Namespace }}")
+    | with(select(.subjects != null); .subjects[].namespace = "{{ .Release.Namespace }}")
+  ' "$rendered"
+  echo '{{- end }}'
+} > "$TPL/rbac/rbac.yaml"
 
-# --- CRDs --------------------------------------------------------------------
-# Strip schema descriptions: Helm stores the whole chart (raw templates) plus the
-# rendered manifest in one release Secret capped at 1 MiB; the embedded
-# PodSpec/JobSpec descriptions (~5 MiB of CRDs) blow that. Descriptions are docs
-# only - no effect on validation/conversion - and install.yaml keeps the full
-# CRDs for `kubectl explain`.
-# Use with(select(...); ...) not a guarded assignment: referencing a deep path on
-# the left of `=` makes yq materialise the intermediate nodes even when a trailing
-# select filters out the write, injecting a half-built conversion block (no
-# strategy) into CRDs that have none - the apiserver rejects that.
-CRD_TRANSFORM='select(.kind == "CustomResourceDefinition")
-  | del(.. | .description?)
-  | with(select(.spec.conversion.strategy == "Webhook"); .spec.conversion.webhook.clientConfig.service.namespace = "{{ .Release.Namespace }}")
-  | with(select(.metadata.annotations."cert-manager.io/inject-ca-from" != null); .metadata.annotations."cert-manager.io/inject-ca-from" = "{{ .Release.Namespace }}/serving-cert")'
-"$YQ" eval "$CRD_TRANSFORM" "$rendered" > "$TPL/.crds.yaml"
-crd_count=$(split_wrap "$TPL/.crds.yaml" "$TPL/crd" ".Values.crd.enable")
-rm -f "$TPL/.crds.yaml"
+# --- CRDs (crds subchart, full descriptions, baked namespace) ----------------
+# One file per CRD: with full descriptions the combined set is >5 MiB, Helm's
+# per-file limit. Not templated, so bake $CRD_NAMESPACE. Use with(select(...);...)
+# not a guarded assignment: a deep path on the left of `=` makes yq materialise
+# the intermediate nodes, injecting a half-built conversion block (no strategy)
+# into CRDs that have none - the apiserver rejects that. yq's --split-exp keeps
+# the dotted CRD name verbatim (no extension), so just append .yaml.
+rm -rf "$CHART/templates/crd" "$SUB/crds"; mkdir -p "$SUB/crds/.split"
+"$YQ" eval '
+  select(.kind == "CustomResourceDefinition")
+  | with(select(.spec.conversion.strategy == "Webhook"); .spec.conversion.webhook.clientConfig.service.namespace = "'"$CRD_NAMESPACE"'")
+  | with(select(.metadata.annotations."cert-manager.io/inject-ca-from" != null); .metadata.annotations."cert-manager.io/inject-ca-from" = "'"$CRD_NAMESPACE"'/serving-cert")
+' "$rendered" \
+  | "$YQ" eval --no-doc --split-exp "\"$SUB/crds/.split/\" + .metadata.name" -
+for f in "$SUB/crds/.split"/*; do
+  mv "$f" "$SUB/crds/$(basename "$f").yaml"
+done
+rmdir "$SUB/crds/.split"
 
-# --- RBAC + ServiceAccount ---------------------------------------------------
-# The manager Deployment (from the plugin) references
-# .Values.controllerManager.serviceAccountName; kustomize names the SA, roles and
-# bindings k0smotron-* to match. Namespaced objects and binding subjects are
-# pinned to k0smotron by kustomize, so re-point them at the release namespace.
-RBAC_TRANSFORM='select(.kind == "ServiceAccount" or .kind == "ClusterRole" or .kind == "ClusterRoleBinding" or .kind == "Role" or .kind == "RoleBinding")
-  | with(select(.metadata.namespace != null); .metadata.namespace = "{{ .Release.Namespace }}")
-  | with(select(.subjects != null); .subjects[].namespace = "{{ .Release.Namespace }}")'
-"$YQ" eval "$RBAC_TRANSFORM" "$rendered" > "$TPL/.rbac.yaml"
-rbac_count=$(split_wrap "$TPL/.rbac.yaml" "$TPL/rbac" ".Values.rbac.enable")
-rm -f "$TPL/.rbac.yaml"
+# Subchart metadata.
+cat > "$SUB/Chart.yaml" <<EOF
+apiVersion: v2
+name: k0smotron-crds
+description: k0smotron CustomResourceDefinitions
+type: application
+version: $CHART_VERSION
+appVersion: "$CHART_VERSION"
+EOF
 
-echo "helm-crds: wrote $crd_count CRD and $rbac_count RBAC templates to $TPL"
+# Wire the subchart into the parent: dependency (for the condition toggle) + values.
+"$YQ" -i '.dependencies = [{"name": "k0smotron-crds", "version": "'"$CHART_VERSION"'", "condition": "crds.enabled", "repository": "file://charts/k0smotron-crds"}]' "$CHART/Chart.yaml"
+"$YQ" -i '.crds.enabled = true | .crds.namespace = "'"$CRD_NAMESPACE"'"' "$CHART/values.yaml"
+
+# The CRDs' conversion webhook is baked to .Values.crds.namespace (crds/ can't be
+# templated). Abort the install up front if the release namespace differs.
+cat > "$TPL/validate-namespace.yaml" <<'EOF'
+{{- if .Values.crds.enabled }}
+{{- if ne .Release.Namespace .Values.crds.namespace }}
+{{- fail (printf "\nk0smotron CRDs are baked to namespace %q (the conversion webhook references it) but you are installing into %q.\nInstall into %q (helm install ... --namespace %s), or regenerate the chart with `make helm-chart CRD_NAMESPACE=%s`." .Values.crds.namespace .Release.Namespace .Values.crds.namespace .Values.crds.namespace .Release.Namespace) }}
+{{- end }}
+{{- end }}
+EOF
+
+echo "helm-crds: wrote templates/rbac/rbac.yaml and a CRD subchart (namespace=$CRD_NAMESPACE)"
