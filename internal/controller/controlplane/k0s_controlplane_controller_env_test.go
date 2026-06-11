@@ -54,7 +54,6 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
-	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -73,7 +72,6 @@ func TestReconcileReturnErrorWhenOwnerClusterIsMissing(t *testing.T) {
 	require.NoError(t, err)
 
 	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
-	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 	require.NoError(t, testEnv.Create(ctx, gmt))
 
@@ -87,9 +85,8 @@ func TestReconcileReturnErrorWhenOwnerClusterIsMissing(t *testing.T) {
 		ClusterCache:        clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}),
 	}
 
-	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
-	require.NoError(t, err)
-	require.Equal(t, ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}, result)
+	_, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
+	require.Error(t, err)
 	require.NoError(t, testEnv.CleanupAndWait(ctx, cluster))
 
 	require.Eventually(t, func() bool {
@@ -197,7 +194,11 @@ func TestReconcileTunneling(t *testing.T) {
 		ClientSet:           clientSet,
 		SecretCachingClient: secretCachingClient,
 	}
-	err = r.reconcileTunneling(ctx, cluster, kcp)
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
+	err = r.reconcileTunneling(ctx, &controlplane)
 	require.NoError(t, err)
 
 	frpToken, err := clientSet.CoreV1().Secrets(ns.Name).Get(ctx, fmt.Sprintf(FRPTokenNameTemplate, cluster.Name), metav1.GetOptions{})
@@ -237,7 +238,11 @@ func TestReconcileKubeconfigEmptyAPIEndpoints(t *testing.T) {
 		Client:              testEnv,
 		SecretCachingClient: secretCachingClient,
 	}
-	err = r.reconcileKubeconfig(ctx, cluster, kcp)
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
+	err = r.reconcileKubeconfig(ctx, &controlplane)
 	require.Error(t, err)
 
 	kubeconfigSecret := &corev1.Secret{}
@@ -265,8 +270,12 @@ func TestReconcileKubeconfigMissingCACertificate(t *testing.T) {
 		SecretCachingClient: secretCachingClient,
 	}
 
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		err = r.reconcileKubeconfig(ctx, cluster, kcp)
+		err = r.reconcileKubeconfig(ctx, &controlplane)
 		assert.Error(c, err)
 
 		kubeconfigSecret := &corev1.Secret{}
@@ -315,8 +324,12 @@ func TestReconcileKubeconfigTunnelingModeNotEnabled(t *testing.T) {
 		SecretCachingClient: secretCachingClient,
 	}
 
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
 	require.Eventually(t, func() bool {
-		return r.reconcileKubeconfig(ctx, cluster, kcp) == nil
+		return r.reconcileKubeconfig(ctx, &controlplane) == nil
 	}, 5*time.Second, 100*time.Millisecond)
 
 }
@@ -381,8 +394,13 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 		SecretCachingClient: secretCachingClient,
 	}
 
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
+
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		err = r.reconcileKubeconfig(ctx, cluster, kcp)
+		err = r.reconcileKubeconfig(ctx, &controlplane)
 		assert.NoError(c, err)
 
 		secretKey := client.ObjectKey{
@@ -473,8 +491,13 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 		SecretCachingClient: secretCachingClient,
 	}
 
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
+
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		err = r.reconcileKubeconfig(ctx, cluster, kcp)
+		err = r.reconcileKubeconfig(ctx, &controlplane)
 		assert.NoError(c, err)
 
 		secretKey := client.ObjectKey{
@@ -590,8 +613,13 @@ func TestReconcileKubeconfigCertsRotation(t *testing.T) {
 			SecretCachingClient: secretCachingClient,
 		}
 
+		controlplane := controlplane{
+			cluster: cluster,
+			kcp:     kcp,
+		}
+
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
-			err = r.reconcileKubeconfig(ctx, cluster, kcp)
+			err = r.reconcileKubeconfig(ctx, &controlplane)
 			assert.NoError(c, err)
 
 			for _, s := range secretsWithCertsToRotate {
@@ -630,7 +658,11 @@ func TestReconcileK0sConfigNotProvided(t *testing.T) {
 	r := &K0sController{
 		Client: testEnv,
 	}
-	err = r.reconcileConfig(ctx, cluster, kcp)
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
+	err = r.reconcileConfig(ctx, &controlplane)
 	require.NoError(t, err)
 	require.Nil(t, kcp.Spec.K0sConfigSpec.K0s)
 }
@@ -677,7 +709,11 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 		// be complete until the Cluster is fully connected and available.
 		ClusterCache: clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: "another-cluster", Namespace: "another-namespace"}),
 	}
-	err = r.reconcileConfig(ctx, cluster, kcp)
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
+	err = r.reconcileConfig(ctx, &controlplane)
 	require.NoError(t, err)
 
 	expectedk0sConfig := &unstructured.Unstructured{
@@ -739,7 +775,11 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 		// be complete until the Cluster is fully connected and available.
 		ClusterCache: clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: "another-cluster", Namespace: "another-namespace"}),
 	}
-	err = r.reconcileConfig(ctx, cluster, kcp)
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
+	err = r.reconcileConfig(ctx, &controlplane)
 	require.NoError(t, err)
 
 	expectedk0sConfig := &unstructured.Unstructured{
@@ -799,7 +839,11 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 		// be complete until the Cluster is fully connected and available.
 		ClusterCache: clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: "another-cluster", Namespace: "another-namespace"}),
 	}
-	err = r.reconcileConfig(ctx, cluster, kcp)
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
+	err = r.reconcileConfig(ctx, &controlplane)
 	require.NoError(t, err)
 
 	expectedk0sConfig := &unstructured.Unstructured{
@@ -820,588 +864,6 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 	require.Equal(t, normalizeUnstructured(expectedk0sConfig), normalizeUnstructured(kcp.Spec.K0sConfigSpec.K0s))
 }
 
-func TestReconcileMachinesScaleUp(t *testing.T) {
-	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-machine-scale-up")
-	require.NoError(t, err)
-
-	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
-	require.NoError(t, testEnv.Create(ctx, cluster))
-	require.NoError(t, testEnv.Create(ctx, gmt))
-
-	desiredReplicas := 5
-	kcp.Spec.Replicas = int32(desiredReplicas)
-	require.NoError(t, testEnv.Create(ctx, kcp))
-
-	defer func(do ...client.Object) {
-		require.NoError(t, testEnv.Cleanup(ctx, do...))
-	}(kcp, gmt, cluster, ns)
-
-	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))
-
-	firstMachineRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachineTemplate",
-				Name:     gmt.GetName(),
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	firstMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
-	require.NoError(t, testEnv.Create(ctx, firstMachineRelatedToControlPlane))
-
-	secondMachineRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachineTemplate",
-				Name:     gmt.GetName(),
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	secondMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
-	require.NoError(t, testEnv.Create(ctx, secondMachineRelatedToControlPlane))
-
-	machineNotRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "external-machine",
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: cluster.Name,
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachine",
-				Name:     "machine-for-controller-infra",
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	require.NoError(t, testEnv.Create(ctx, machineNotRelatedToControlPlane))
-
-	frt := &fakeRoundTripper{}
-	fakeClient := &restfake.RESTClient{
-		Client: restfake.CreateHTTPClient(frt.run),
-	}
-
-	restClient, _ := rest.RESTClientFor(&rest.Config{
-		ContentConfig: rest.ContentConfig{
-			NegotiatedSerializer: scheme.Codecs,
-			GroupVersion:         &metav1.SchemeGroupVersion,
-		},
-	})
-	restClient.Client = fakeClient.Client
-
-	clientSet, err := kubernetes.NewForConfig(testEnv.Config)
-	require.NoError(t, err)
-
-	r := &K0sController{
-		Client:                    testEnv,
-		ClientSet:                 clientSet,
-		workloadClusterKubeClient: kubernetes.New(restClient),
-	}
-
-	require.Eventually(t, func() bool {
-		return r.reconcileMachines(ctx, cluster, kcp) == nil
-	}, 5*time.Second, 100*time.Millisecond)
-
-	machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
-	require.NoError(t, err)
-	require.Len(t, machines, desiredReplicas)
-	for _, m := range machines {
-		expectedLabels := map[string]string{
-			clusterv1.ClusterNameLabel:             cluster.GetName(),
-			clusterv1.MachineControlPlaneLabel:     "true",
-			clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-		}
-		require.Equal(t, expectedLabels, m.Labels)
-		require.True(t, metav1.IsControlledBy(m, kcp))
-		require.Equal(t, kcp.Spec.Version, m.Spec.Version)
-	}
-}
-
-func TestReconcileMachinesScaleDown(t *testing.T) {
-	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-machines-scale-down")
-	require.NoError(t, err)
-
-	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
-	require.NoError(t, testEnv.Create(ctx, cluster))
-	require.NoError(t, testEnv.Create(ctx, gmt))
-
-	desiredReplicas := 1
-	kcp.Spec.Replicas = int32(desiredReplicas)
-	require.NoError(t, testEnv.Create(ctx, kcp))
-
-	defer func(do ...client.Object) {
-		require.NoError(t, testEnv.Cleanup(ctx, do...))
-	}(kcp, gmt, cluster, ns)
-
-	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))
-
-	frt := &fakeRoundTripper{}
-	fakeClient := &restfake.RESTClient{
-		Client: restfake.CreateHTTPClient(frt.run),
-	}
-
-	restClient, _ := rest.RESTClientFor(&rest.Config{
-		ContentConfig: rest.ContentConfig{
-			NegotiatedSerializer: scheme.Codecs,
-			GroupVersion:         &metav1.SchemeGroupVersion,
-		},
-	})
-	restClient.Client = fakeClient.Client
-
-	clientSet, err := kubernetes.NewForConfig(testEnv.Config)
-	require.NoError(t, err)
-
-	r := &K0sController{
-		Client:                    testEnv,
-		ClientSet:                 clientSet,
-		workloadClusterKubeClient: kubernetes.New(restClient),
-	}
-
-	firstMachineRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachineTemplate",
-				Name:     gmt.GetName(),
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	firstMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
-	require.NoError(t, testEnv.Create(ctx, firstMachineRelatedToControlPlane))
-	firstControllerConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
-			Namespace: ns.Name,
-			Labels:    controlPlaneCommonLabelsForCluster(kcp, cluster.Name),
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "cluster.x-k8s.io/v1beta1",
-				Kind:               "Machine",
-				Name:               firstMachineRelatedToControlPlane.GetName(),
-				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: new(true),
-				Controller:         new(true),
-			}},
-		},
-	}
-	require.NoError(t, testEnv.Create(ctx, firstControllerConfig))
-
-	secondMachineRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachineTemplate",
-				Name:     gmt.GetName(),
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	secondMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
-	require.NoError(t, testEnv.Create(ctx, secondMachineRelatedToControlPlane))
-	secondControllerConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
-			Namespace: ns.Name,
-			Labels:    controlPlaneCommonLabelsForCluster(kcp, cluster.Name),
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "cluster.x-k8s.io/v1beta1",
-				Kind:               "Machine",
-				Name:               secondMachineRelatedToControlPlane.GetName(),
-				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: new(true),
-				Controller:         new(true),
-			}},
-		},
-	}
-	require.NoError(t, testEnv.Create(ctx, secondControllerConfig))
-
-	thirdMachineRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 2),
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachineTemplate",
-				Name:     gmt.GetName(),
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	thirdMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
-	require.NoError(t, testEnv.Create(ctx, thirdMachineRelatedToControlPlane))
-	thirdControllerConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 2),
-			Namespace: ns.Name,
-			Labels:    controlPlaneCommonLabelsForCluster(kcp, cluster.Name),
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "cluster.x-k8s.io/v1beta1",
-				Kind:               "Machine",
-				Name:               thirdMachineRelatedToControlPlane.GetName(),
-				UID:                thirdMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: new(true),
-				Controller:         new(true),
-			}},
-		},
-	}
-	require.NoError(t, testEnv.Create(ctx, thirdControllerConfig))
-
-	machineNotRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "external-machine",
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: cluster.Name,
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachine",
-				Name:     gmt.GetName(),
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	require.NoError(t, testEnv.Create(ctx, machineNotRelatedToControlPlane))
-	notRelatedControllerConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "external-machine",
-			Namespace: ns.Name,
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "cluster.x-k8s.io/v1beta1",
-				Kind:               "Machine",
-				Name:               machineNotRelatedToControlPlane.GetName(),
-				UID:                machineNotRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: new(true),
-				Controller:         new(true),
-			}},
-		},
-	}
-	require.NoError(t, testEnv.Create(ctx, notRelatedControllerConfig))
-
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		err = r.reconcileMachines(ctx, cluster, kcp)
-		assert.NoError(c, err)
-
-		machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
-		assert.NoError(c, err)
-		assert.Len(c, machines, desiredReplicas)
-
-		for _, m := range machines {
-			expectedLabels := map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.GetName(),
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			}
-			assert.Equal(c, expectedLabels, m.Labels)
-			assert.True(c, metav1.IsControlledBy(m, kcp))
-			assert.Equal(c, kcp.Spec.Version, m.Spec.Version)
-		}
-	}, 10*time.Second, 100*time.Millisecond)
-}
-
-func TestReconcileMachinesSyncOldMachines(t *testing.T) {
-	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-machines-sync-old-machines")
-	require.NoError(t, err)
-
-	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
-	require.NoError(t, testEnv.Create(ctx, cluster))
-	require.NoError(t, testEnv.Create(ctx, gmt))
-
-	desiredReplicas := 3
-	kcp.Spec.Replicas = int32(desiredReplicas)
-	require.NoError(t, testEnv.Create(ctx, kcp))
-
-	defer func(do ...client.Object) {
-		require.NoError(t, testEnv.Cleanup(ctx, do...))
-	}(kcp, gmt, cluster, ns)
-
-	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))
-
-	frt := &fakeRoundTripper{}
-	fakeClient := &restfake.RESTClient{
-		Client: restfake.CreateHTTPClient(frt.run),
-	}
-
-	restClient, _ := rest.RESTClientFor(&rest.Config{
-		ContentConfig: rest.ContentConfig{
-			NegotiatedSerializer: scheme.Codecs,
-			GroupVersion:         &metav1.SchemeGroupVersion,
-		},
-	})
-	restClient.Client = fakeClient.Client
-
-	clientSet, err := kubernetes.NewForConfig(testEnv.Config)
-	require.NoError(t, err)
-
-	r := &K0sController{
-		Client:                    testEnv,
-		workloadClusterKubeClient: kubernetes.New(restClient),
-		ClientSet:                 clientSet,
-	}
-
-	firstMachineRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.29.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachineTemplate",
-				Name:     gmt.GetName(),
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	firstMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
-	require.NoError(t, testEnv.Create(ctx, firstMachineRelatedToControlPlane))
-	firstControllerConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 0),
-			Namespace: ns.Name,
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "cluster.x-k8s.io/v1beta1",
-				Kind:               "Machine",
-				Name:               firstMachineRelatedToControlPlane.GetName(),
-				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: new(true),
-				Controller:         new(true),
-			}},
-		},
-	}
-	require.NoError(t, testEnv.Create(ctx, firstControllerConfig))
-
-	secondMachineRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.30.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachineTemplate",
-				Name:     gmt.GetName(),
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	secondMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
-	require.NoError(t, testEnv.Create(ctx, secondMachineRelatedToControlPlane))
-	secondControllerConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 1),
-			Namespace: ns.Name,
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "cluster.x-k8s.io/v1beta1",
-				Kind:               "Machine",
-				Name:               secondMachineRelatedToControlPlane.GetName(),
-				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: new(true),
-				Controller:         new(true),
-			}},
-		},
-	}
-	require.NoError(t, testEnv.Create(ctx, secondControllerConfig))
-	thirdMachineRelatedToControlPlane := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 2),
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.Name,
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			},
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     "v1.29.0",
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     "GenericInfrastructureMachine",
-				Name:     gmt.GetName(),
-				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-			},
-			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Name:     "machine-for-controller-bootstrap",
-					APIGroup: clusterv1.GroupVersionBootstrap.Group,
-					Kind:     "K0sControllerConfig",
-				},
-			},
-		},
-	}
-	thirdMachineRelatedToControlPlane.SetOwnerReferences([]metav1.OwnerReference{kcpOwnerRef})
-	require.NoError(t, testEnv.Create(ctx, thirdMachineRelatedToControlPlane))
-	thirdControllerConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", kcp.Name, 2),
-			Namespace: ns.Name,
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "cluster.x-k8s.io/v1beta1",
-				Kind:               "Machine",
-				Name:               thirdMachineRelatedToControlPlane.GetName(),
-				UID:                thirdMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: new(true),
-				Controller:         new(true),
-			}},
-		},
-	}
-	require.NoError(t, testEnv.Create(ctx, thirdControllerConfig))
-
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		err = r.reconcileMachines(ctx, cluster, kcp)
-		assert.NoError(c, err)
-
-		machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
-		assert.NoError(c, err)
-		assert.Len(c, machines, desiredReplicas)
-
-		for _, m := range machines {
-			expectedLabels := map[string]string{
-				clusterv1.ClusterNameLabel:             cluster.GetName(),
-				clusterv1.MachineControlPlaneLabel:     "true",
-				clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
-			}
-			assert.Equal(c, expectedLabels, m.Labels)
-			assert.True(c, metav1.IsControlledBy(m, kcp))
-			assert.Equal(c, kcp.Spec.Version, m.Spec.Version)
-		}
-	}, 5*time.Second, 100*time.Millisecond)
-}
-
 func TestReconcileDeleteControlPlanes(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-delete-controlplane")
 	require.NoError(t, err)
@@ -1418,8 +880,12 @@ func TestReconcileDeleteControlPlanes(t *testing.T) {
 		Client: testEnv,
 	}
 
+	controlplane := controlplane{
+		cluster: cluster,
+		kcp:     kcp,
+	}
 	// All control plane machines are already deleted.
-	res, err := r.reconcileDelete(ctx, cluster, kcp)
+	res, err := r.reconcileDelete(ctx, &controlplane)
 	require.NoError(t, err)
 	require.True(t, res.IsZero())
 
@@ -1485,7 +951,7 @@ func TestReconcileDeleteControlPlanes(t *testing.T) {
 
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		// Worker machines needs to be deleted first.
-		res, err = r.reconcileDelete(ctx, cluster, kcp)
+		res, err = r.reconcileDelete(ctx, &controlplane)
 		assert.NoError(c, err)
 		assert.False(c, res.IsZero())
 	}, 10*time.Second, 100*time.Millisecond)
@@ -1494,7 +960,7 @@ func TestReconcileDeleteControlPlanes(t *testing.T) {
 
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		// Control plane machine can be deleted.
-		res, err = r.reconcileDelete(ctx, cluster, kcp)
+		res, err = r.reconcileDelete(ctx, &controlplane)
 		assert.NoError(c, err)
 		assert.False(c, res.IsZero())
 	}, 10*time.Second, 100*time.Millisecond)
@@ -1603,8 +1069,6 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	k0sBootstrapConfigList := &bootstrapv2.K0sControllerConfigList{}
 	require.NoError(t, testEnv.GetAPIReader().List(ctx, k0sBootstrapConfigList, client.InNamespace(cluster.Namespace)))
 	require.Len(t, k0sBootstrapConfigList.Items, 1)
-
-	require.True(t, metav1.IsControlledBy(&k0sBootstrapConfigList.Items[0], &machine))
 }
 
 func generateKubeconfigRequiringRotation(clusterName string) ([]byte, error) {

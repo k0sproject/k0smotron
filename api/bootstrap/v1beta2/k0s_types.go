@@ -18,6 +18,7 @@ package v1beta2
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/k0sproject/version"
@@ -256,6 +257,11 @@ func (c *K0sControllerConfig) GetConditions() []metav1.Condition {
 // SetConditions sets the conditions on the K0sControllerConfig status.
 func (c *K0sControllerConfig) SetConditions(conditions []metav1.Condition) {
 	c.Status.Conditions = conditions
+}
+
+// WorkerEnabled returns true if the control plane is configured to also run worker nodes.
+func (c *K0sControllerConfig) WorkerEnabled() bool {
+	return slices.Contains(c.Spec.K0sConfigSpec.Args, "--enable-worker")
 }
 
 // +kubebuilder:object:root=true
