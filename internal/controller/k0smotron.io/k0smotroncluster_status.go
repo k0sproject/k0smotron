@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api/controllers/remote"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -307,6 +308,11 @@ func setControlPlaneFunctionalCondition(ctx context.Context, c client.Client, km
 		})
 		return
 	}
+
+	// Set the k0s cluster ID annotation
+	annotations.AddAnnotations(kmc, map[string]string{
+		k0smotroniov1beta2.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
+	})
 
 	conditions.Set(kmc, metav1.Condition{
 		Type:   k0smotroniov1beta2.ClusterControlPlaneFunctionalCondition,
