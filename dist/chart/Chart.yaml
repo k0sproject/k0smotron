@@ -1,0 +1,7 @@
+apiVersion: v2
+name: k0smotron
+description: A Helm chart to distribute the project k0smotron
+type: application
+version: 0.0.0-dev
+appVersion: "0.0.0-dev"
+icon: "https://example.com/icon.png"
