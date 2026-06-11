@@ -4,7 +4,7 @@ controllerManager:
   container:
     image:
       repository: quay.io/k0sproject/k0smotron
-      tag: v2.0.0
+      tag: latest
     args:
       - "--leader-elect"
       - "--metrics-bind-address=:8443"
@@ -73,3 +73,6 @@ certmanager:
 # [NETWORK POLICIES]: To enable NetworkPolicies set true
 networkPolicy:
   enable: false
+crds:
+  enabled: true
+  namespace: k0smotron-system

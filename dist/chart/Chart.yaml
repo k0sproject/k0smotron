@@ -5,3 +5,8 @@ type: application
 version: 0.0.0-dev
 appVersion: "0.0.0-dev"
 icon: "https://example.com/icon.png"
+dependencies:
+  - name: k0smotron-crds
+    version: 0.0.0-dev
+    condition: crds.enabled
+    repository: file://charts/k0smotron-crds
