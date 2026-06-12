@@ -47,10 +47,18 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
 const (
 	etcdMemberConditionTypeJoined = "Joined"
+
+	// Defaults applied by the v1beta2 CRD schema. Kept here to normalize machine configs parsed
+	// from annotations, which are not defaulted by the API server. See withV1Beta2Defaults.
+	defaultK0sInstallDir           = "/usr/local/bin"
+	defaultTunnelingServerNodePort = 31700
+	defaultTunnelingNodePort       = 31443
+	defaultTunnelingMode           = "tunnel"
 )
 
 var (
@@ -359,8 +367,47 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 	kcpK0sConfig.K0s = nil
 	machineK0sConfig.K0s = nil
 
+	// Apply the v1beta2 defaults to both sides before comparing. The API server defaults the
+	// K0sControlPlane spec on read, but the value parsed from the machine annotation is not
+	// defaulted. Normalizing both sides ensures a default-only difference is never reported as a
+	// configuration change, which would trigger a needless control plane rollout (e.g. on upgrade).
+	// See https://github.com/k0sproject/k0smotron/issues/1478
+	withV1Beta2Defaults(kcpK0sConfig)
+	withV1Beta2Defaults(machineK0sConfig)
+
 	return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
 
+}
+
+// withV1Beta2Defaults mutates spec in place, filling unset fields with the same defaults the
+// v1beta2 CRD schema applies via the API server. Keep this in sync with the +kubebuilder:default
+// markers on bootstrapv2.K0sConfigSpec, ProvisionerSpec and TunnelingSpec.
+func withV1Beta2Defaults(spec *bootstrapv2.K0sConfigSpec) {
+	if spec == nil {
+		return
+	}
+
+	if spec.K0sInstallDir == "" {
+		spec.K0sInstallDir = defaultK0sInstallDir
+	}
+	if spec.DownloadURL == "" {
+		spec.DownloadURL = util.DefaultK0sDownloadURL
+	}
+	if spec.Provisioner.Type == "" {
+		spec.Provisioner.Type = provisioner.CloudInitProvisioningFormat
+	}
+	if spec.Provisioner.Platform == "" {
+		spec.Provisioner.Platform = bootstrapv2.PlatformLinux
+	}
+	if spec.Tunneling.ServerNodePort == 0 {
+		spec.Tunneling.ServerNodePort = defaultTunnelingServerNodePort
+	}
+	if spec.Tunneling.TunnelingNodePort == 0 {
+		spec.Tunneling.TunnelingNodePort = defaultTunnelingNodePort
+	}
+	if spec.Tunneling.Mode == "" {
+		spec.Tunneling.Mode = defaultTunnelingMode
+	}
 }
 
 // Deprecated: This function is kept for backward compatibility with clusters created with versions that does not add an annotation in the

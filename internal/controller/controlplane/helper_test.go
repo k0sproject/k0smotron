@@ -378,3 +378,53 @@ func TestGetMachineK0sConfig_LegacyAnnotation(t *testing.T) {
 	require.Equal(t, []string{"echo pre"}, got.PreK0sCommands)
 	require.Equal(t, []string{"echo post"}, got.PostK0sCommands)
 }
+
+// TestHasControllerConfigChanged_LegacyAnnotationNoRollout reproduces issue #1478: after upgrading
+// k0smotron, an API-server-defaulted K0sControlPlane is compared against a minimal legacy
+// annotation that carries none of those defaults. The configs are semantically equal, so no
+// rollout must be triggered.
+func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
+	// Minimal v1beta1 config as written by k0smotron < v2.0.0: no provisioner, no defaulted
+	// scalar fields persisted.
+	legacyJSON, err := json.Marshal(bootstrapv1.K0sConfigSpec{})
+	require.NoError(t, err)
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+			Annotations: map[string]string{
+				cpv1beta2.MachineK0sConfigAnnotation: string(legacyJSON),
+			},
+		},
+		Status: clusterv1.MachineStatus{
+			Phase: string(clusterv1.MachinePhaseRunning),
+		},
+	}
+
+	// K0sControlPlane spec as the API server serves it: provisioner + scalar defaults applied.
+	kcp := &cpv1beta2.K0sControlPlane{
+		Spec: cpv1beta2.K0sControlPlaneSpec{
+			K0sConfigSpec: bootstrapv2.K0sConfigSpec{
+				K0sInstallDir: "/usr/local/bin",
+				DownloadURL:   "https://get.k0s.sh",
+				Provisioner: bootstrapv2.ProvisionerSpec{
+					Type:     provisioner.CloudInitProvisioningFormat,
+					Platform: bootstrapv2.PlatformLinux,
+				},
+				Tunneling: bootstrapv2.TunnelingSpec{
+					ServerNodePort:    31700,
+					TunnelingNodePort: 31443,
+					Mode:              "tunnel",
+				},
+			},
+		},
+		Status: cpv1beta2.K0sControlPlaneStatus{
+			Initialization: cpv1beta2.Initialization{
+				ControlPlaneInitialized: new(true),
+			},
+		},
+	}
+
+	// bootstrapConfigs is only used by the deprecated fallback path; the annotation path is taken here.
+	require.False(t, hasControllerConfigChanged(map[string]bootstrapv2.K0sControllerConfig{}, kcp, machine))
+}
