@@ -58,8 +58,12 @@ func ConvertK0sConfigSpecV1beta1ToV1beta2(spec *K0sConfigSpec) *v1beta2.K0sConfi
 	}
 	res := &v1beta2.K0sConfigSpec{
 		Provisioner: v1beta2.ProvisionerSpec{
-			// Default to CloudInit, will be overridden below if Ignition is set
+			// Default to CloudInit, will be overridden below if Ignition is set.
 			Type: provisioner.CloudInitProvisioningFormat,
+			// v1beta1 has no platform concept; it always provisioned Linux nodes. Default
+			// to Linux so the converted spec matches the v1beta2 API server defaults and is
+			// not seen as a configuration change. See issue #1478.
+			Platform: v1beta2.PlatformLinux,
 		},
 		K0sInstallDir:     spec.K0sInstallDir,
 		K0s:               spec.K0s,
@@ -76,6 +80,7 @@ func ConvertK0sConfigSpecV1beta1ToV1beta2(spec *K0sConfigSpec) *v1beta2.K0sConfi
 	if spec.Ignition != nil {
 		res.Provisioner = v1beta2.ProvisionerSpec{
 			Type:     provisioner.IgnitionProvisioningFormat,
+			Platform: v1beta2.PlatformLinux,
 			Ignition: spec.Ignition,
 		}
 	}

@@ -44,12 +44,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 )
 
 const (
 	etcdMemberConditionTypeJoined = "Joined"
+
+	// Defaults applied by the v1beta2 CRD schema. Kept here to normalize machine configs parsed
+	// from annotations, which are not defaulted by the API server. See withV1Beta2Defaults.
+	defaultK0sInstallDir           = "/usr/local/bin"
+	defaultTunnelingServerNodePort = 31700
+	defaultTunnelingNodePort       = 31443
+	defaultTunnelingMode           = "tunnel"
 )
 
 var (
@@ -358,8 +367,47 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 	kcpK0sConfig.K0s = nil
 	machineK0sConfig.K0s = nil
 
+	// Apply the v1beta2 defaults to both sides before comparing. The API server defaults the
+	// K0sControlPlane spec on read, but the value parsed from the machine annotation is not
+	// defaulted. Normalizing both sides ensures a default-only difference is never reported as a
+	// configuration change, which would trigger a needless control plane rollout (e.g. on upgrade).
+	// See https://github.com/k0sproject/k0smotron/issues/1478
+	withV1Beta2Defaults(kcpK0sConfig)
+	withV1Beta2Defaults(machineK0sConfig)
+
 	return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
 
+}
+
+// withV1Beta2Defaults mutates spec in place, filling unset fields with the same defaults the
+// v1beta2 CRD schema applies via the API server. Keep this in sync with the +kubebuilder:default
+// markers on bootstrapv2.K0sConfigSpec, ProvisionerSpec and TunnelingSpec.
+func withV1Beta2Defaults(spec *bootstrapv2.K0sConfigSpec) {
+	if spec == nil {
+		return
+	}
+
+	if spec.K0sInstallDir == "" {
+		spec.K0sInstallDir = defaultK0sInstallDir
+	}
+	if spec.DownloadURL == "" {
+		spec.DownloadURL = util.DefaultK0sDownloadURL
+	}
+	if spec.Provisioner.Type == "" {
+		spec.Provisioner.Type = provisioner.CloudInitProvisioningFormat
+	}
+	if spec.Provisioner.Platform == "" {
+		spec.Provisioner.Platform = bootstrapv2.PlatformLinux
+	}
+	if spec.Tunneling.ServerNodePort == 0 {
+		spec.Tunneling.ServerNodePort = defaultTunnelingServerNodePort
+	}
+	if spec.Tunneling.TunnelingNodePort == 0 {
+		spec.Tunneling.TunnelingNodePort = defaultTunnelingNodePort
+	}
+	if spec.Tunneling.Mode == "" {
+		spec.Tunneling.Mode = defaultTunnelingMode
+	}
 }
 
 // Deprecated: This function is kept for backward compatibility with clusters created with versions that does not add an annotation in the
@@ -411,6 +459,24 @@ func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv2.K0sConfigSpec
 	k0sConfigAnnotationValue, ok := machine.GetAnnotations()[cpv1beta2.MachineK0sConfigAnnotation]
 	if !ok {
 		return nil, errMachineWithoutK0sConfigAnnotation
+	}
+
+	// Machines created by k0smotron < v2.0.0 stored the annotation using the v1beta1 K0sConfigSpec
+	// schema, which has no "provisioner" object and uses preStartCommands/postStartCommands. v1beta2
+	// always serializes the provisioner (it is a value struct), so its absence means the annotation
+	// predates v1beta2 and must be converted before comparison. Otherwise the diff against the
+	// (defaulted) v1beta2 K0sControlPlane spec is always non-empty and triggers a needless control
+	// plane rollout on upgrade. See https://github.com/k0sproject/k0smotron/issues/1478
+	var probe map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(k0sConfigAnnotationValue), &probe); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal K0sConfigSpec: %w", err)
+	}
+	if _, hasProvisioner := probe["provisioner"]; !hasProvisioner {
+		legacySpec := &bootstrapv1.K0sConfigSpec{}
+		if err := json.Unmarshal([]byte(k0sConfigAnnotationValue), legacySpec); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal legacy K0sConfigSpec: %w", err)
+		}
+		return bootstrapv1.ConvertK0sConfigSpecV1beta1ToV1beta2(legacySpec), nil
 	}
 
 	k0sConfigSpec := &bootstrapv2.K0sConfigSpec{}
