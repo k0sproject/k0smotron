@@ -19,10 +19,13 @@ limitations under the License.
 package controlplane
 
 import (
+	"encoding/json"
 	"testing"
 
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/internal/provisioner"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -334,4 +337,44 @@ func TestHasControllerConfigChanged(t *testing.T) {
 			require.Equal(t, tc.configHasChanged, hasControllerConfigChanged(tc.bootstrapConfigs, tc.kcp, tc.machine))
 		})
 	}
+}
+
+// TestGetMachineK0sConfig_LegacyAnnotation ensures that a machine carrying a v1beta1-formatted
+// k0s config annotation (written by k0smotron < v2.0.0) is converted to v1beta2 on read, so that
+// the comparison in hasControllerConfigChanged does not report a spurious change and trigger a
+// control plane rollout after upgrading k0smotron. See https://github.com/k0sproject/k0smotron/issues/1478
+func TestGetMachineK0sConfig_LegacyAnnotation(t *testing.T) {
+	// Serialize a K0sConfigSpec the way old k0smotron versions did: using the v1beta1 schema,
+	// which has no "provisioner" field and uses preStartCommands/postStartCommands.
+	legacySpec := bootstrapv1.K0sConfigSpec{
+		K0sInstallDir:     "/usr/local/bin",
+		DownloadURL:       "https://get.k0s.sh",
+		PreStartCommands:  []string{"echo pre"},
+		PostStartCommands: []string{"echo post"},
+		Args:              []string{"--enable-worker"},
+	}
+	legacyJSON, err := json.Marshal(legacySpec)
+	require.NoError(t, err)
+	require.NotContains(t, string(legacyJSON), "provisioner")
+	require.Contains(t, string(legacyJSON), "preStartCommands")
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+			Annotations: map[string]string{
+				cpv1beta2.MachineK0sConfigAnnotation: string(legacyJSON),
+			},
+		},
+	}
+
+	got, err := getMachineK0sConfig(machine)
+	require.NoError(t, err)
+
+	// The provisioner must be defaulted exactly as the API server defaults the K0sControlPlane
+	// spec it is compared against, otherwise the diff is non-empty and the machine is recreated.
+	require.Equal(t, provisioner.CloudInitProvisioningFormat, got.Provisioner.Type)
+	require.Equal(t, bootstrapv2.PlatformLinux, got.Provisioner.Platform)
+	// Renamed command fields must be carried over.
+	require.Equal(t, []string{"echo pre"}, got.PreK0sCommands)
+	require.Equal(t, []string{"echo post"}, got.PostK0sCommands)
 }

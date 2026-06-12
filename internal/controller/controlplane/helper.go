@@ -44,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
 )
@@ -411,6 +412,24 @@ func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv2.K0sConfigSpec
 	k0sConfigAnnotationValue, ok := machine.GetAnnotations()[cpv1beta2.MachineK0sConfigAnnotation]
 	if !ok {
 		return nil, errMachineWithoutK0sConfigAnnotation
+	}
+
+	// Machines created by k0smotron < v2.0.0 stored the annotation using the v1beta1 K0sConfigSpec
+	// schema, which has no "provisioner" object and uses preStartCommands/postStartCommands. v1beta2
+	// always serializes the provisioner (it is a value struct), so its absence means the annotation
+	// predates v1beta2 and must be converted before comparison. Otherwise the diff against the
+	// (defaulted) v1beta2 K0sControlPlane spec is always non-empty and triggers a needless control
+	// plane rollout on upgrade. See https://github.com/k0sproject/k0smotron/issues/1478
+	var probe map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(k0sConfigAnnotationValue), &probe); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal K0sConfigSpec: %w", err)
+	}
+	if _, hasProvisioner := probe["provisioner"]; !hasProvisioner {
+		legacySpec := &bootstrapv1.K0sConfigSpec{}
+		if err := json.Unmarshal([]byte(k0sConfigAnnotationValue), legacySpec); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal legacy K0sConfigSpec: %w", err)
+		}
+		return bootstrapv1.ConvertK0sConfigSpecV1beta1ToV1beta2(legacySpec), nil
 	}
 
 	k0sConfigSpec := &bootstrapv2.K0sConfigSpec{}
