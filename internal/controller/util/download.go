@@ -40,6 +40,10 @@ func DownloadCommands(preInstalledK0s bool, downloadURL string, version string, 
 
 	k0sBinPath := fmt.Sprintf("%s/%s", k0sInstallPath, k0sBinName)
 
+	if downloadURL == "" {
+		// If no download URL is specified, use the default one.
+		downloadURL = DefaultK0sDownloadURL
+	}
 	if downloadURL != DefaultK0sDownloadURL {
 		parsedURL, err := url.Parse(downloadURL)
 		if err != nil {
