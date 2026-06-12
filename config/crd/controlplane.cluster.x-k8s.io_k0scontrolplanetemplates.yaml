@@ -119,7 +119,6 @@ spec:
                                 type: object
                             type: object
                           downloadURL:
-                            default: https://get.k0s.sh
                             description: |-
                               DownloadURL specifies the URL from which to download the k0s binary.
                               If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
@@ -129,6 +128,7 @@ spec:
                               by adding a file to the Files section that contains the necessary config for ORAS. See: https://oras.land/docs/how_to_guides/authentication/
                               The file must be placed at `/root` directory (HOME for cloud-init execution time) and named `config.json`.
                               NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.
+                              When no value is specified, k0smotron will use the default URL: https://get.k0s.sh
                             type: string
                           files:
                             description: Files specifies extra files to be passed
@@ -426,7 +426,6 @@ spec:
                               type: string
                             type: array
                           downloadURL:
-                            default: https://get.k0s.sh
                             description: |-
                               DownloadURL specifies the URL from which to download the k0s binary.
                               If the version field is specified, it is ignored, and whatever version is downloaded from the URL is used.
@@ -436,6 +435,7 @@ spec:
                               by adding a file to the Files section that contains the necessary config for ORAS. See: https://oras.land/docs/how_to_guides/authentication/
                               The file must be placed at `/root` directory (HOME for cloud-init execution time) and named `config.json`.
                               NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.
+                              When no value is specified, k0smotron will use the default URL: https://get.k0s.sh
                             type: string
                           files:
                             description: Files specifies extra files to be passed
