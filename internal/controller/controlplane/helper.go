@@ -684,6 +684,10 @@ func (c *K0sController) createAutopilotPlan(ctx context.Context, kcp *cpv1beta2.
 	amd64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-amd64`
 	arm64DownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm64`
 	armDownloadURL := `https://get.k0sproject.io/` + kcp.Spec.Version + `/k0s-` + kcp.Spec.Version + `-arm`
+	if kcp.Spec.K0sConfigSpec.DownloadURL == "" {
+		// Use the default download URL if the user has not specified a custom one.
+		kcp.Spec.K0sConfigSpec.DownloadURL = util.DefaultK0sDownloadURL
+	}
 	if kcp.Spec.K0sConfigSpec.DownloadURL != util.DefaultK0sDownloadURL {
 		amd64DownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
 		arm64DownloadURL = kcp.Spec.K0sConfigSpec.DownloadURL
