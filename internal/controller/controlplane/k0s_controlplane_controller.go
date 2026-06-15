@@ -379,6 +379,13 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		if len(errs) > 0 {
 			return kerrors.NewAggregate(errs)
 		}
+
+		if kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreateDeleteFirst {
+			// Wait until there is no machine being deleted before creating
+			// new machines when the UpdateRecreateDeleteFirst strategy is used to
+			// prevent excessive number of machines.
+			return util.ErrNotReady
+		}
 	}
 
 	infraMachines, err := c.getInfraMachines(ctx, activeMachines)
@@ -497,6 +504,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		}
 
 		logger.Info("Deleted machine", "machine", machineToDelete.Name)
+		return util.ErrNotReady
 	}
 
 	if len(desiredMachines) < int(kcp.Spec.Replicas) {
