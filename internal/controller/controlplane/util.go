@@ -36,9 +36,9 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	bootstrapv1beta2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	bootstrapv1beta2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	k0smoutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 )
 
 func (c *K0sController) getMachineTemplate(ctx context.Context, kcp *cpv1beta2.K0sControlPlane) (*unstructured.Unstructured, error) {

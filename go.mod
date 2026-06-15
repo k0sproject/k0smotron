@@ -1,4 +1,4 @@
-module github.com/k0sproject/k0smotron
+module github.com/k0sproject/k0smotron/v2
 
 go 1.26
 

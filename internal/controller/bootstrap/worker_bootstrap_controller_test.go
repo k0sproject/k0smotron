@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 )
 
 func Test_createInstallCmd(t *testing.T) {

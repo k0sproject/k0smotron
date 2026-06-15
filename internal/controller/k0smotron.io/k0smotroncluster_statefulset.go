@@ -28,9 +28,9 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/controller/util"
-	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
+	kcontrollerutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"k8s.io/client-go/kubernetes"
 
 	apps "k8s.io/api/apps/v1"

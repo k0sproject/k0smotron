@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/k0sproject/k0smotron/e2e/util"
+	"github.com/k0sproject/k0smotron/v2/e2e/util"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

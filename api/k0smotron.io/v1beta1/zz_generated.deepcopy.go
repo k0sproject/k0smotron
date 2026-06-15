@@ -21,7 +21,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )

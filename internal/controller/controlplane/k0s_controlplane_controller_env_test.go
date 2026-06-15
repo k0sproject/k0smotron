@@ -63,8 +63,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
-	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	kubeadmConfig "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 )
 

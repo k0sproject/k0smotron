@@ -25,9 +25,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/k0sproject/k0smotron/e2e/mothership"
-	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
-	"github.com/k0sproject/k0smotron/internal/util"
+	"github.com/k0sproject/k0smotron/v2/e2e/mothership"
+	e2eutil "github.com/k0sproject/k0smotron/v2/e2e/util"
+	"github.com/k0sproject/k0smotron/v2/internal/util"
 	"github.com/stretchr/testify/require"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"

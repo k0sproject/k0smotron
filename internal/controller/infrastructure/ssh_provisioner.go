@@ -34,8 +34,8 @@ import (
 	"github.com/k0sproject/rig/pkg/ssh/hostkey"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	api "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/provisioner"
+	api "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 )
 
 var regex = regexp.MustCompile(`--kubelet-root-dir[ =](/[/a-zA-Z0-9_-]+)+`)

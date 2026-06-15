@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/k0sproject/k0smotron/internal/provisioner"
+	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )

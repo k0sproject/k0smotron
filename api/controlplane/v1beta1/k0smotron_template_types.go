@@ -18,7 +18,7 @@ package v1beta1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kmapiv1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
+	kmapiv1 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta1"
 )
 
 func init() {

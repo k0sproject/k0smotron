@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/exec"
-	"github.com/k0sproject/k0smotron/inttest/util"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/exec"
+	"github.com/k0sproject/k0smotron/v2/inttest/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/stretchr/testify/suite"

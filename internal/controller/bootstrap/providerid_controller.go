@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	k0smoutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	k0smoutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 )
 
 // ProviderIDController is responsible for reconciling the ProviderID field of the Machine resource.

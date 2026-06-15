@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
+	infrastructure "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
 )
 
 // ClusterController is responsible for reconciling the RemoteCluster resource,

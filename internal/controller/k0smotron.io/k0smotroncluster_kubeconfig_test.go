@@ -20,7 +20,7 @@ package k0smotronio
 import (
 	"testing"
 
-	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 )

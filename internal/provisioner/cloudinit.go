@@ -23,7 +23,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/k0sproject/k0smotron/internal/featuregate"
+	"github.com/k0sproject/k0smotron/v2/internal/featuregate"
 )
 
 // CloudInitProvisioner implements the Provisioner interface for cloud-init.

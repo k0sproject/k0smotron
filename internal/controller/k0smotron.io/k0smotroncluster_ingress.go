@@ -24,8 +24,8 @@ import (
 	v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
-	kcontrollerutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	kcontrollerutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 )
 
 func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) error {

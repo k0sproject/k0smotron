@@ -22,10 +22,10 @@ import (
 	"maps"
 	"time"
 
-	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 
-	deprecatedkmc "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
+	deprecatedkmc "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
