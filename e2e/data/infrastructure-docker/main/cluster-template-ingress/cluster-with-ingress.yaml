@@ -45,6 +45,10 @@ spec:
           anonymous-auth: "true"
       telemetry:
         enabled: false
+      images:
+        konnectivity:
+          image: quay.io/k0sproject/apiserver-network-proxy-agent
+          version: v0.33.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DockerCluster
