@@ -267,23 +267,26 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
-	clusterCache, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
-		SecretClient: secretCachingClient,
-		Cache:        clustercache.CacheOptions{},
-		Client: clustercache.ClientOptions{
-			UserAgent: "k0smotron",
-			Cache: clustercache.ClientCacheOptions{
-				DisableFor: []client.Object{
-					// Don't cache ConfigMaps & Secrets.
-					&corev1.ConfigMap{},
-					&corev1.Secret{},
+	var clusterCache clustercache.ClusterCache
+	if runCAPIControllers {
+		clusterCache, err = clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
+			SecretClient: secretCachingClient,
+			Cache:        clustercache.CacheOptions{},
+			Client: clustercache.ClientOptions{
+				UserAgent: "k0smotron",
+				Cache: clustercache.ClientCacheOptions{
+					DisableFor: []client.Object{
+						// Don't cache ConfigMaps & Secrets.
+						&corev1.ConfigMap{},
+						&corev1.Secret{},
+					},
 				},
 			},
-		},
-	}, ctrlOptions)
-	if err != nil {
-		setupLog.Error(err, "Unable to create ClusterCache")
-		os.Exit(1)
+		}, ctrlOptions)
+		if err != nil {
+			setupLog.Error(err, "Unable to create ClusterCache")
+			os.Exit(1)
+		}
 	}
 
 	if isControllerEnabled(bootstrapController) && runCAPIControllers {
