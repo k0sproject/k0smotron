@@ -19,10 +19,12 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	kcontrollerutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
@@ -90,6 +92,75 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 	}
 
 	return nil
+}
+
+const (
+	konnectivityDefaultImage   = "quay.io/k0sproject/apiserver-network-proxy-agent"
+	konnectivityDefaultVersion = "v0.33.0"
+)
+
+// overrideImageRepository replicates k0s's overrideRepository logic from
+// pkg/apis/k0s/v1beta1/images.go: replaces the registry host of originalImage
+// with repository, or prepends repository/ if no host is present.
+func overrideImageRepository(repository, originalImage string) string {
+	if repository == "" {
+		return originalImage
+	}
+	if strings.HasPrefix(originalImage, repository) {
+		return originalImage
+	}
+	if host := imageRegistryHost(originalImage); host != "" {
+		return strings.Replace(originalImage, host, repository, 1)
+	}
+	return fmt.Sprintf("%s/%s", repository, originalImage)
+}
+
+// imageRegistryHost replicates k0s's getHostName: returns the registry host
+// portion of an image reference, or "" if the first path component has no
+// dot/colon and is not "localhost" (i.e. it's not a registry host).
+func imageRegistryHost(imageName string) string {
+	i := strings.IndexRune(imageName, '/')
+	if i == -1 {
+		return ""
+	}
+	host := imageName[:i]
+	if !strings.ContainsAny(host, ".:") && host != "localhost" {
+		return ""
+	}
+	return host
+}
+
+func (scope *kmcScope) getKonnectivityAgentImage(kmc *km.Cluster) string {
+	image := konnectivityDefaultImage
+	version := konnectivityDefaultVersion
+	customImage := false
+
+	if kmc.Spec.K0sConfig != nil {
+		if v, _, _ := unstructured.NestedString(kmc.Spec.K0sConfig.Object, "spec", "images", "konnectivity", "image"); v != "" {
+			image = v
+			customImage = true
+			version = "" // don't apply default version to a custom image
+		}
+		if v, _, _ := unstructured.NestedString(kmc.Spec.K0sConfig.Object, "spec", "images", "konnectivity", "version"); v != "" {
+			version = v
+		}
+		repo, _, _ := unstructured.NestedString(kmc.Spec.K0sConfig.Object, "spec", "images", "repository")
+		image = overrideImageRepository(repo, image)
+	}
+
+	if customImage && version == "" {
+		return image
+	}
+	return fmt.Sprintf("%s:%s", image, version)
+}
+
+func (scope *kmcScope) getKonnectivityAgentPullPolicy(kmc *km.Cluster) string {
+	if kmc.Spec.K0sConfig != nil {
+		if v, _, _ := unstructured.NestedString(kmc.Spec.K0sConfig.Object, "spec", "images", "default_pull_policy"); v != "" {
+			return v
+		}
+	}
+	return "IfNotPresent"
 }
 
 func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster) (corev1.ConfigMap, error) {
@@ -282,8 +353,8 @@ spec:
       tolerations:
         - operator: Exists
       containers:
-        - image: quay.io/k0sproject/apiserver-network-proxy-agent:v0.33.0
-          imagePullPolicy: IfNotPresent
+        - image: %s
+          imagePullPolicy: %s
           name: konnectivity-agent
           command: ["/proxy-agent"]
           env:
@@ -321,7 +392,7 @@ spec:
             sources:
               - serviceAccountToken:
                   path: konnectivity-agent-token
-                  audience: system:konnectivity-server`, kmc.Spec.Ingress.KonnectivityHost, kmc.Spec.Ingress.Port),
+                  audience: system:konnectivity-server`, scope.getKonnectivityAgentImage(kmc), scope.getKonnectivityAgentPullPolicy(kmc), kmc.Spec.Ingress.KonnectivityHost, kmc.Spec.Ingress.Port),
 		},
 	}
 
