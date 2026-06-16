@@ -42,10 +42,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	k0smotroniov1beta2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/controller/util"
-	"github.com/k0sproject/k0smotron/internal/exec"
+	k0smotroniov1beta2 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
+	"github.com/k0sproject/k0smotron/v2/internal/exec"
 )
 
 // joinTokenRequestFinalizer is the finalizer used by JoinTokenRequest to clean up resources.

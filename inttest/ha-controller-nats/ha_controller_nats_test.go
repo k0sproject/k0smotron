@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/k0sproject/k0smotron/inttest/util"
+	"github.com/k0sproject/k0smotron/v2/inttest/util"
 )
 
 type HAControllerNatsSuite struct {

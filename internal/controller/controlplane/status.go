@@ -25,7 +25,7 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	kutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -41,7 +41,7 @@ import (
 	"github.com/go-logr/logr"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/k0sproject/version"
 )
 

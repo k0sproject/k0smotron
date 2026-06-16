@@ -17,9 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	"github.com/stretchr/testify/require"
 )
 
 func TestK0sWorkerConfig_ConvertTo(t *testing.T) {

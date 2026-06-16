@@ -30,8 +30,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 
-	infrastructure "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/provisioner"
+	infrastructure "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"

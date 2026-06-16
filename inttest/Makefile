@@ -36,7 +36,7 @@ $(smoketests): ../k0smotron-image-bundle.tar ../install-standalone.yaml .footloo
 	CERT_MANAGER_INSTALL_YAML='$(CERT_MANAGER_INSTALL_YAML)' \
 	WEBHOOK_CHECKER_INSTALL_YAML='$(WEBHOOK_CHECKER_INSTALL_YAML)' \
 	K0S_USE_DEFAULT_K0S_BINARIES=$(K0S_USE_DEFAULT_K0S_BINARIES) \
-	go test -count=1 -v -timeout $(TIMEOUT) github.com/k0sproject/k0smotron/inttest/$(TEST_PACKAGE)
+	go test -count=1 -v -timeout $(TIMEOUT) github.com/k0sproject/k0smotron/v2/inttest/$(TEST_PACKAGE)
 
 clean:
 	rm -rf .*.stamp

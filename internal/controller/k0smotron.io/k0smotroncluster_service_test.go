@@ -22,9 +22,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	v1beta1km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/controller/util"
+	v1beta1km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta1"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

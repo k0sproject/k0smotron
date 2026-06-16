@@ -21,14 +21,14 @@ package bootstrap
 import (
 	"testing"
 
-	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 
-	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 )
 
 func Test_createCPInstallCmd(t *testing.T) {

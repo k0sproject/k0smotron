@@ -19,9 +19,10 @@ package controlplane
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/utils/ptr"
 
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"

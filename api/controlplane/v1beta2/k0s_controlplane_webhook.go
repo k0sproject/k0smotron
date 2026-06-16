@@ -22,8 +22,8 @@ import (
 	"slices"
 	"strings"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/provisioner"
+	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/k0sproject/version"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"

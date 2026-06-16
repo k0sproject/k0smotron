@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/k0sproject/k0s/inttest/common"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 
-	"github.com/k0sproject/k0smotron/inttest/util"
+	"github.com/k0sproject/k0smotron/v2/inttest/util"
 )
 
 type HAControllerEtcdSuite struct {

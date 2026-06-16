@@ -23,7 +23,7 @@ import (
 	"time"
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

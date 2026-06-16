@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/k0sproject/k0smotron/internal/featuregate"
+	"github.com/k0sproject/k0smotron/v2/internal/featuregate"
 )
 
 func TestCloudInit(t *testing.T) {

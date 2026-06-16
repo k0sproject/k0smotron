@@ -28,7 +28,7 @@ import (
 
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/controller/util"
+	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -58,9 +58,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	kutil "github.com/k0sproject/k0smotron/internal/util"
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	kutil "github.com/k0sproject/k0smotron/v2/internal/util"
 )
 
 const (

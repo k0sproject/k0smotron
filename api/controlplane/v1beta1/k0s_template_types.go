@@ -16,8 +16,8 @@ limitations under the License.
 package v1beta1
 
 import (
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta1"
+	cpv2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )

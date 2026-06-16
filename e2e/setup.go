@@ -39,10 +39,10 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/yaml"
 
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	"github.com/k0sproject/k0smotron/e2e/mothership"
-	"github.com/k0sproject/k0smotron/e2e/util"
+	cpv1beta1 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/e2e/mothership"
+	"github.com/k0sproject/k0smotron/v2/e2e/util"
 )
 
 // Test suite constants for e2e config variables.

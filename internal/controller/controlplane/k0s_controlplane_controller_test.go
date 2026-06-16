@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
-	bootstrapv1beta2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	bootstrapv1beta2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 )
 
 func TestK0sConfigEnrichment(t *testing.T) {

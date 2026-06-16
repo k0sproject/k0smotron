@@ -46,12 +46,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
-	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/controller/util"
-	"github.com/k0sproject/k0smotron/internal/provisioner"
-	kutil "github.com/k0sproject/k0smotron/internal/util"
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
+	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
+	kutil "github.com/k0sproject/k0smotron/v2/internal/util"
 )
 
 const (

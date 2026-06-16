@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	bootstrapv1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
+	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"

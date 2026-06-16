@@ -30,7 +30,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
-	"github.com/k0sproject/k0smotron/inttest/util"
+	"github.com/k0sproject/k0smotron/v2/inttest/util"
 
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"

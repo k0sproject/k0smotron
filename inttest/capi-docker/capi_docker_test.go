@@ -25,14 +25,14 @@ import (
 	"testing"
 	"time"
 
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 
-	"github.com/k0sproject/k0smotron/inttest/util"
+	"github.com/k0sproject/k0smotron/v2/inttest/util"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

@@ -19,8 +19,8 @@ package v1beta1
 import (
 	"fmt"
 
-	"github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
-	v2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	v2 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 

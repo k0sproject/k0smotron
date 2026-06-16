@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 )
 
 func (scope *kmcScope) reconcilePVC(ctx context.Context, kmc *km.Cluster) error {

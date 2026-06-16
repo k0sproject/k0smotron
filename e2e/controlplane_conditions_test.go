@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	e2eutil "github.com/k0sproject/k0smotron/e2e/util"
-	"github.com/k0sproject/k0smotron/internal/util"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	e2eutil "github.com/k0sproject/k0smotron/v2/e2e/util"
+	"github.com/k0sproject/k0smotron/v2/internal/util"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api/test/framework"

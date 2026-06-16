@@ -39,7 +39,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	k0stestutil "github.com/k0sproject/k0s/inttest/common"
-	"github.com/k0sproject/k0smotron/inttest/util"
+	"github.com/k0sproject/k0smotron/v2/inttest/util"
 )
 
 type CAPIDevMachineTemplateUpdateRecreateKine struct {

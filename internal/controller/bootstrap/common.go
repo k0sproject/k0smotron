@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	bootstrapv2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	"github.com/k0sproject/k0smotron/internal/provisioner"
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"

@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	v2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
+	v2 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 )
 
 // ClusterSpec defines the desired state of K0smotronCluster

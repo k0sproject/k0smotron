@@ -32,14 +32,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 	sigsyaml "sigs.k8s.io/yaml"
 
-	bootstrapv1beta1 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta1"
-	bootstrapv1beta2 "github.com/k0sproject/k0smotron/api/bootstrap/v1beta2"
-	cpv1beta1 "github.com/k0sproject/k0smotron/api/controlplane/v1beta1"
-	cpv1beta2 "github.com/k0sproject/k0smotron/api/controlplane/v1beta2"
-	infrav1beta1 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta1"
-	infrav1beta2 "github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
-	k0smotronv1beta1 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta1"
-	k0smotronv1beta2 "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
+	bootstrapv1beta1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta1"
+	bootstrapv1beta2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	cpv1beta1 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta1"
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	infrav1beta1 "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta1"
+	infrav1beta2 "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
+	k0smotronv1beta1 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta1"
+	k0smotronv1beta2 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 )
 
 var scheme = runtime.NewScheme()

@@ -33,8 +33,8 @@ import (
 	"github.com/cloudflare/cfssl/signer/local"
 	"sigs.k8s.io/cluster-api/util/secret"
 
-	km "github.com/k0sproject/k0smotron/api/k0smotron.io/v1beta2"
-	kutil "github.com/k0sproject/k0smotron/internal/controller/util"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	kutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 )
 
 func (scope *kmcScope) ensureEtcdCertificates(ctx context.Context, kmc *km.Cluster) error {

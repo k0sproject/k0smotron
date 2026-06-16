@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/k0sproject/k0smotron/e2e/util"
+	"github.com/k0sproject/k0smotron/v2/e2e/util"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	capiutil "sigs.k8s.io/cluster-api/util"

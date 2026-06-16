@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/k0sproject/k0smotron/api/infrastructure/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
