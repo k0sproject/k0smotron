@@ -39,7 +39,7 @@ import (
 )
 
 type PVCSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *PVCSuite) TestK0sGetsUp() {
@@ -135,7 +135,7 @@ func (s *PVCSuite) TestK0sGetsUp() {
 
 func TestPVCSuite(t *testing.T) {
 	s := PVCSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,

@@ -40,7 +40,7 @@ import (
 )
 
 type BasicSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *BasicSuite) TestK0sGetsUp() {
@@ -143,7 +143,7 @@ func (s *BasicSuite) TestK0sGetsUp() {
 
 func TestBasicSuite(t *testing.T) {
 	s := BasicSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,

@@ -51,7 +51,7 @@ import (
 )
 
 type RemoteMachineTemplateUpdateSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 
 	client                  *kubernetes.Clientset
 	restConfig              *rest.Config
@@ -62,7 +62,7 @@ type RemoteMachineTemplateUpdateSuite struct {
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) SetupSuite() {
-	s.FootlooseSuite.SetupSuite()
+	s.BootlooseSuite.SetupSuite()
 }
 
 func TestRemoteMachineSuite(t *testing.T) {
@@ -100,11 +100,10 @@ func TestRemoteMachineSuite(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	s := RemoteMachineTemplateUpdateSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:      0,
 			WorkerCount:          0,
 			K0smotronWorkerCount: 1,
-			K0smotronNetworks:    []string{"kind"},
 		},
 		kubeClient,
 		restCfg,

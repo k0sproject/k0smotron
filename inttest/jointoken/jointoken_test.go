@@ -33,7 +33,7 @@ import (
 )
 
 type JoinTokenSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *JoinTokenSuite) TestK0sGetsUp() {
@@ -81,7 +81,7 @@ func (s *JoinTokenSuite) TestK0sGetsUp() {
 
 func TestJoinTokenSuite(t *testing.T) {
 	s := JoinTokenSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,

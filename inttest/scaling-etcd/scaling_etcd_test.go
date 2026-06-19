@@ -39,7 +39,7 @@ import (
 )
 
 type ScalingSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *ScalingSuite) TestK0sGetsUp() {
@@ -128,7 +128,7 @@ func (s *ScalingSuite) TestK0sGetsUp() {
 
 func TestScalingSuite(t *testing.T) {
 	s := ScalingSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,

@@ -47,7 +47,7 @@ import (
 )
 
 type RemoteMachineSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 
 	client     *kubernetes.Clientset
 	restConfig *rest.Config
@@ -56,7 +56,7 @@ type RemoteMachineSuite struct {
 }
 
 func (s *RemoteMachineSuite) SetupSuite() {
-	s.FootlooseSuite.SetupSuite()
+	s.BootlooseSuite.SetupSuite()
 }
 
 func TestRemoteMachineSuite(t *testing.T) {
@@ -92,11 +92,10 @@ func TestRemoteMachineSuite(t *testing.T) {
 	sshPublicKeyBytes := ssh.MarshalAuthorizedKey(sshPublicKey)
 
 	s := RemoteMachineSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:      0,
 			WorkerCount:          0,
 			K0smotronWorkerCount: 1,
-			K0smotronNetworks:    []string{"kind"},
 		},
 		kubeClient,
 		restCfg,

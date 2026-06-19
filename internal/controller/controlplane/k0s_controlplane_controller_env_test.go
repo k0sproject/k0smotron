@@ -63,6 +63,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
+	etcdv1beta1 "github.com/k0sproject/k0s/pkg/apis/etcd/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	kubeadmConfig "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
@@ -925,7 +926,25 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 	}
 	require.NoError(t, testEnv.Create(ctx, machineNotRelatedToControlPlane))
 
-	frt := &fakeRoundTripper{}
+	etcdMember := &etcdv1beta1.EtcdMember{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "etcd-member",
+			Namespace: "workload-cluster-namespace",
+		},
+		Spec: etcdv1beta1.EtcdMemberSpec{},
+		Status: etcdv1beta1.Status{
+			Conditions: []etcdv1beta1.JoinCondition{
+				{
+					Type:   etcdv1beta1.ConditionTypeJoined,
+					Status: etcdv1beta1.ConditionTrue,
+				},
+			},
+		},
+	}
+
+	frt := &fakeRoundTripper{
+		etcdMember: etcdMember,
+	}
 	fakeClient := &restfake.RESTClient{
 		Client: restfake.CreateHTTPClient(frt.run),
 	}
@@ -984,7 +1003,25 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 
 	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))
 
-	frt := &fakeRoundTripper{}
+	etcdMember := &etcdv1beta1.EtcdMember{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "etcd-member",
+			Namespace: "workload-cluster-namespace",
+		},
+		Spec: etcdv1beta1.EtcdMemberSpec{},
+		Status: etcdv1beta1.Status{
+			Conditions: []etcdv1beta1.JoinCondition{
+				{
+					Type:   etcdv1beta1.ConditionTypeJoined,
+					Status: etcdv1beta1.ConditionTrue,
+				},
+			},
+		},
+	}
+
+	frt := &fakeRoundTripper{
+		etcdMember: etcdMember,
+	}
 	fakeClient := &restfake.RESTClient{
 		Client: restfake.CreateHTTPClient(frt.run),
 	}
@@ -1225,7 +1262,25 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 
 	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))
 
-	frt := &fakeRoundTripper{}
+	etcdMember := &etcdv1beta1.EtcdMember{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "etcd-member",
+			Namespace: "workload-cluster-namespace",
+		},
+		Spec: etcdv1beta1.EtcdMemberSpec{},
+		Status: etcdv1beta1.Status{
+			Conditions: []etcdv1beta1.JoinCondition{
+				{
+					Type:   etcdv1beta1.ConditionTypeJoined,
+					Status: etcdv1beta1.ConditionTrue,
+				},
+			},
+		},
+	}
+
+	frt := &fakeRoundTripper{
+		etcdMember: etcdMember,
+	}
 	fakeClient := &restfake.RESTClient{
 		Client: restfake.CreateHTTPClient(frt.run),
 	}
@@ -1672,7 +1727,8 @@ func generateKubeconfigRequiringRotation(clusterName string) ([]byte, error) {
 }
 
 type fakeRoundTripper struct {
-	plan *autopilot.Plan
+	plan       *autopilot.Plan
+	etcdMember *etcdv1beta1.EtcdMember
 }
 
 func (f *fakeRoundTripper) run(req *http.Request) (*http.Response, error) {
@@ -1688,6 +1744,16 @@ func (f *fakeRoundTripper) run(req *http.Request) (*http.Response, error) {
 			}
 			return &http.Response{StatusCode: http.StatusOK, Header: header, Body: io.NopCloser(bytes.NewReader(res))}, nil
 
+		}
+		if strings.HasPrefix(req.URL.Path, "/apis/etcd.k0sproject.io/v1beta1/etcdmembers/") {
+			if f.etcdMember != nil {
+				res, err := json.Marshal(f.etcdMember)
+				if err != nil {
+					return nil, err
+				}
+				return &http.Response{StatusCode: http.StatusOK, Header: header, Body: io.NopCloser(bytes.NewReader(res))}, nil
+			}
+			return &http.Response{StatusCode: http.StatusNotFound, Header: header, Body: nil}, nil
 		}
 		if strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/plans/autopilot") {
 			if f.plan != nil {

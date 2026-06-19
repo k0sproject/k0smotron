@@ -11,7 +11,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/imdario/mergo v0.3.16
-	github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29
+	github.com/k0sproject/k0s v1.30.1-0.20240510084816-eb96d7ee8dd0
 	github.com/k0sproject/rig v0.21.8
 	github.com/k0sproject/version v0.6.0
 	github.com/onsi/gomega v1.38.2
@@ -42,10 +42,9 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/containerd/containerd v1.7.11 // indirect
+	github.com/containerd/containerd v1.7.16 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/docker v28.3.3+incompatible // indirect
@@ -62,15 +61,14 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sirupsen/logrus v1.9.3
-	github.com/weaveworks/footloose v0.0.0-20210208164054-2862489574a3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	golang.org/x/crypto v0.48.0
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/tools v0.42.0
-	helm.sh/helm/v3 v3.14.2 // indirect
-	k8s.io/kube-aggregator v0.27.2 // indirect
+	helm.sh/helm/v3 v3.14.4 // indirect
+	k8s.io/kube-aggregator v0.30.0 // indirect
 )
 
 require (
@@ -138,6 +136,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/k0sproject/bootloose v0.7.2 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -171,6 +170,8 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tidwall/transform v0.0.0-20201103190739-32f242e2dbde // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
+	github.com/vishvananda/netlink v1.3.1 // indirect
+	github.com/vishvananda/netns v0.0.5 // indirect
 	github.com/weppos/publicsuffix-go v0.15.1-0.20210511084619-b1f36a2d6c0b // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zmap/zcrypto v0.0.0-20210511125630-18f1e0152cfc // indirect
@@ -218,8 +219,6 @@ require (
 
 // Cluster API deps
 require sigs.k8s.io/cluster-api v1.11.4
-
-replace github.com/weaveworks/footloose => github.com/ncopa/footloose v0.0.0-20220210144732-fe970537b890
 
 replace (
 	k8s.io/cri-client => k8s.io/cri-client v0.32.3

@@ -51,7 +51,7 @@ import (
 )
 
 type CAPIDockerClusterClassSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 
 	client                *kubernetes.Clientset
 	restConfig            *rest.Config
@@ -64,7 +64,7 @@ type CAPIDockerClusterClassSuite struct {
 }
 
 func (s *CAPIDockerClusterClassSuite) SetupSuite() {
-	s.FootlooseSuite.SetupSuite()
+	s.BootlooseSuite.SetupSuite()
 }
 
 func TestCAPIDockerClusterClassSuite(t *testing.T) {
@@ -102,11 +102,10 @@ func TestCAPIDockerClusterClassSuite(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Log("111cluster objects applied, waiting for cluster to be ready")
 	s := CAPIDockerClusterClassSuite{
-		FootlooseSuite: common.FootlooseSuite{
+		BootlooseSuite: common.BootlooseSuite{
 			ControllerCount:      0,
 			WorkerCount:          0,
 			K0smotronWorkerCount: 1,
-			K0smotronNetworks:    []string{"kind"},
 		},
 		client:                kubeClient,
 		restConfig:            restCfg,
