@@ -40,16 +40,16 @@ import (
 )
 
 type UpgradeSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func TestUpgradeSuite(t *testing.T) {
 	s := UpgradeSuite{
-		common.FootlooseSuite{
-			ControllerCount:                 1,
-			WorkerCount:                     1,
-			K0smotronWorkerCount:            1,
-			K0smotronImageBundleMountPoints: []string{"/dist/bundle.tar"},
+		common.BootlooseSuite{
+			ControllerCount:                1,
+			WorkerCount:                    1,
+			K0smotronWorkerCount:           1,
+			K0sExtraImageBundleMountPoints: []string{"/dist/bundle.tar"},
 		},
 	}
 	suite.Run(t, &s)
@@ -87,7 +87,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	s.addState(s.Context(), pod.Spec.Containers[0].VolumeMounts[1].MountPath, kc, rc)
 
 	s.T().Log("deploying development k0smotron operator")
-	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
+	s.Require().NoError(util.ImportK0smotronImages(s.Context(), &s.BootlooseSuite))
 	s.Require().NoError(util.ApplyFromYAML(s.Context(), kc, rc, os.Getenv("K0SMOTRON_STANDALONE_INSTALL_YAML")))
 	s.Require().NoError(util.WaitForRolloutCompleted(s.Context(), kc, "k0smotron-controller-manager", "k0smotron"))
 

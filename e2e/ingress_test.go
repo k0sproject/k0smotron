@@ -174,7 +174,7 @@ func ingressSupportSpec(flavor string) func(t *testing.T) {
 		}))
 		wcs, err := kubernetes.NewForConfig(workloadCluster.GetRESTConfig())
 		require.NoError(t, err, "Should get workload clientset")
-		require.NoError(t, common.WaitForDaemonSet(ctx, wcs, "konnectivity-agent"))
+		require.NoError(t, common.WaitForDaemonSet(ctx, wcs, "konnectivity-agent", "kube-system"))
 
 		podList := &corev1.PodList{}
 		err = bootstrapClusterProxy.GetClient().List(ctx, podList, client.InNamespace(testNamespace.Name))

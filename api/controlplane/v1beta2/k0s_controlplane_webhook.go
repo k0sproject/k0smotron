@@ -25,9 +25,7 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/k0sproject/version"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -43,16 +41,11 @@ type K0sControlPlaneValidator struct{}
 // K0sControlPlaneDefaulter struct is responsible for setting default values for the K0sControlPlane resource when it is created or updated.
 type K0sControlPlaneDefaulter struct{}
 
-var _ webhook.CustomValidator = &K0sControlPlaneValidator{}
-var _ webhook.CustomDefaulter = &K0sControlPlaneDefaulter{}
+var _ admission.Validator[*K0sControlPlane] = &K0sControlPlaneValidator{}
+var _ admission.Defaulter[*K0sControlPlane] = &K0sControlPlaneDefaulter{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type K0sControlPlane.
-func (d *K0sControlPlaneDefaulter) Default(_ context.Context, obj runtime.Object) error {
-	_, ok := obj.(*K0sControlPlane)
-	if !ok {
-		return fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
-	}
-
+func (d *K0sControlPlaneDefaulter) Default(_ context.Context, _ *K0sControlPlane) error {
 	return nil
 }
 
@@ -66,27 +59,13 @@ func (v *K0sControlPlaneValidator) validateVersionSuffix(version string) admissi
 }
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	kcp, ok := obj.(*K0sControlPlane)
-	if !ok {
-		return nil, fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
-	}
-
+func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, kcp *K0sControlPlane) (admission.Warnings, error) {
 	warnings := v.validateVersionSuffix(kcp.Spec.Version)
 	return warnings, validateK0sControlPlane(kcp)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	newKCP, ok := newObj.(*K0sControlPlane)
-	if !ok {
-		return nil, fmt.Errorf("expected a new K0sControlPlane object but got %T", newObj)
-	}
-	oldKCP, ok := oldObj.(*K0sControlPlane)
-	if !ok {
-		return nil, fmt.Errorf("expected a old K0sControlPlane object but got %T", oldObj)
-	}
-
+func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKCP, newKCP *K0sControlPlane) (admission.Warnings, error) {
 	warnings := v.validateVersionSuffix(newKCP.Spec.Version)
 	if oldKCP.Spec.Version != newKCP.Spec.Version {
 		oldV, err := version.NewVersion(oldKCP.Spec.Version)
@@ -99,7 +78,7 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, new
 		}
 
 		// According to the Kubernetes skew policy, we can't upgrade more than one minor version at a time.
-		if newV.Core().Segments()[1]-oldV.Core().Segments()[1] > 1 {
+		if newV.Segments()[1]-oldV.Segments()[1] > 1 {
 			return warnings, fmt.Errorf("upgrading more than one minor version at a time is not allowed by the Kubernetes skew policy")
 		}
 	}
@@ -108,7 +87,7 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, new
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ *K0sControlPlane) (admission.Warnings, error) {
 	return nil, nil
 }
 
@@ -148,7 +127,9 @@ func denyIncompatibleK0sVersions(kcp *K0sControlPlane) error {
 		return fmt.Errorf("failed to parse version: %v", err)
 	}
 
-	if vv, ok := incompatibleVersions[v.Core().String()]; ok {
+	segs := v.Segments()
+	coreStr := fmt.Sprintf("%d.%d.%d", segs[0], segs[1], segs[2])
+	if vv, ok := incompatibleVersions[coreStr]; ok {
 		return fmt.Errorf("version %s is not compatible with K0sControlPlane, use %s", kcp.Spec.Version, vv)
 	}
 
@@ -171,8 +152,7 @@ func denyRecreateOnSingleClusters(kcp *K0sControlPlane) error {
 
 // SetupK0sControlPlaneWebhookWithManager registers the webhook for K0sControlPlane in the manager.
 func SetupK0sControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&K0sControlPlane{}).
+	return ctrl.NewWebhookManagedBy(mgr, &K0sControlPlane{}).
 		WithValidator(&K0sControlPlaneValidator{}).
 		WithDefaulter(&K0sControlPlaneDefaulter{}).
 		Complete()
