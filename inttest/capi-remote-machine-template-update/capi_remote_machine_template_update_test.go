@@ -51,7 +51,7 @@ import (
 )
 
 type RemoteMachineTemplateUpdateSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 
 	client                  *kubernetes.Clientset
 	restConfig              *rest.Config
@@ -62,7 +62,7 @@ type RemoteMachineTemplateUpdateSuite struct {
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) SetupSuite() {
-	s.FootlooseSuite.SetupSuite()
+	s.BootlooseSuite.SetupSuite()
 }
 
 func TestRemoteMachineSuite(t *testing.T) {
@@ -100,11 +100,11 @@ func TestRemoteMachineSuite(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	s := RemoteMachineTemplateUpdateSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:      0,
 			WorkerCount:          0,
 			K0smotronWorkerCount: 1,
-			K0smotronNetworks:    []string{"kind"},
+			Networks:             []string{"kind"},
 		},
 		kubeClient,
 		restCfg,
@@ -389,12 +389,12 @@ spec:
     port: 22
     user: root
     sshKeyRef:
-      name: footloose-key
+      name: bootloose-key
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name:  footloose-key
+  name:  bootloose-key
   namespace: default
 data:
    value: {{ .SSHKey }}

@@ -125,7 +125,7 @@ func TestPlanStatusCompute(t *testing.T) {
 					},
 				},
 				Status: autopilot.PlanStatus{
-					State: core.PlanMissingSignalNode,
+					State: core.PlanIncompleteTargets,
 					Commands: []autopilot.PlanCommandStatus{
 						{
 							K0sUpdate: &autopilot.PlanCommandK0sUpdateStatus{},

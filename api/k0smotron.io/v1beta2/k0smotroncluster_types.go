@@ -290,7 +290,7 @@ func (i *IngressSpec) Validate(clusterVersion string) (admission.Warnings, error
 
 	for _, iv := range ingressCompatibleVersions {
 		if v.Segments()[1] == iv.Segments()[1] {
-			if v.Core().LessThan(iv.Core()) {
+			if v.Segments()[2] < iv.Segments()[2] {
 				return warnings, fmt.Errorf("ingress controller is not supported with k0s version %s, minimum supported version for ingress is %s", clusterVersion, iv.String())
 			}
 		}
