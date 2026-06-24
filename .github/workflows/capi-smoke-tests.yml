@@ -34,7 +34,7 @@ jobs:
           docker load -i k0smotron-image-bundle.tar
 
       - name: Download kind
-        uses: supplypike/setup-bin@v4
+        uses: supplypike/setup-bin@v5
         with:
           name: kind
           version: v0.27.0
@@ -55,7 +55,7 @@ jobs:
           kind load image-archive k0smotron-image-bundle.tar
 
       - name: Download clusterctl
-        uses: supplypike/setup-bin@v4
+        uses: supplypike/setup-bin@v5
         with:
           name: clusterctl
           version: v1.11.4
