@@ -2,9 +2,9 @@
 
 Packages:
 
-- [infrastructure.cluster.x-k8s.io/v1beta1](#infrastructureclusterx-k8siov1beta1)
+- [infrastructure.cluster.x-k8s.io/v1beta2](#infrastructureclusterx-k8siov1beta2)
 
-# infrastructure.cluster.x-k8s.io/v1beta1
+# infrastructure.cluster.x-k8s.io/v1beta2
 
 Resource Types:
 
@@ -22,7 +22,7 @@ Resource Types:
 
 
 ## PooledRemoteMachine
-<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta2 )</sup></sup>
 
 
 
@@ -43,7 +43,7 @@ PooledRemoteMachine represents a RemoteMachine that is part of a pool and can be
     <tbody><tr>
       <td><b>apiVersion</b></td>
       <td>string</td>
-      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta2</td>
       <td>true</td>
       </tr>
       <tr>
@@ -141,6 +141,13 @@ The key must be placed on the secret using the key "value".<br/>
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>cleanUpCommands</b></td>
+        <td>[]string</td>
+        <td>
+          CleanUpCommands allow the user to run custom command for the clean up process of the machine.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>commandsAsScript</b></td>
         <td>boolean</td>
         <td>
@@ -149,13 +156,6 @@ If true, the commands will be written to a file and executed as a script.
 If false, the commands will be executed one by one.<br/>
           <br/>
             <i>Default</i>: false<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>customCleanUpCommands</b></td>
-        <td>[]string</td>
-        <td>
-          CleanUpCommands allow the user to run custom command for the clean up process of the machine.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -292,7 +292,7 @@ RemoteMachineRef is a reference to a RemoteMachine that has been reserved for us
 </table>
 
 ## RemoteCluster
-<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta2 )</sup></sup>
 
 
 
@@ -313,7 +313,7 @@ RemoteCluster is the Schema for the remoteclusters API
     <tbody><tr>
       <td><b>apiVersion</b></td>
       <td>string</td>
-      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta2</td>
       <td>true</td>
       </tr>
       <tr>
@@ -427,19 +427,131 @@ RemoteClusterStatus defines the observed state of RemoteCluster
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>ready</b></td>
-        <td>boolean</td>
+        <td><b><a href="#remoteclusterstatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
         <td>
-          Ready denotes that the remote cluster is ready to be used.<br/>
+          conditions contains the conditions of the RemoteCluster, which represent the current state of the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remoteclusterstatusinitialization">initialization</a></b></td>
+        <td>object</td>
+        <td>
+          initialization provides observations of the RemoteCluster initialization process.
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteCluster.status.conditions[index]
+<sup><sup>[↩ Parent](#remoteclusterstatus)</sup></sup>
+
+
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/>
           <br/>
-            <i>Default</i>: false<br/>
+            <i>Format</i>: date-time<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is a human readable message indicating details about the transition.
+This may be an empty string.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>enum</td>
+        <td>
+          status of the condition, one of True, False, Unknown.<br/>
+          <br/>
+            <i>Enum</i>: True, False, Unknown<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteCluster.status.initialization
+<sup><sup>[↩ Parent](#remoteclusterstatus)</sup></sup>
+
+
+
+initialization provides observations of the RemoteCluster initialization process.
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>provisioned</b></td>
+        <td>boolean</td>
+        <td>
+          provisioned is true when the infrastructure provider reports that the Cluster's infrastructure is fully provisioned.
+NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
 ## RemoteClusterTemplate
-<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta2 )</sup></sup>
 
 
 
@@ -460,7 +572,7 @@ RemoteClusterTemplate is the Schema for the remoteclustertemplates API.
     <tbody><tr>
       <td><b>apiVersion</b></td>
       <td>string</td>
-      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta2</td>
       <td>true</td>
       </tr>
       <tr>
@@ -691,7 +803,7 @@ More info: http://kubernetes.io/docs/user-guide/labels<br/>
 </table>
 
 ## RemoteMachine
-<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta2 )</sup></sup>
 
 
 
@@ -712,7 +824,7 @@ RemoteMachine is the Schema for the remotemachines API
     <tbody><tr>
       <td><b>apiVersion</b></td>
       <td>string</td>
-      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta2</td>
       <td>true</td>
       </tr>
       <tr>
@@ -768,6 +880,16 @@ RemoteMachineSpec defines the desired state of RemoteMachine
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>cleanUpCommands</b></td>
+        <td>[]string</td>
+        <td>
+          CleanUpCommands allows the user to run custom commands during the machine cleanup process.
+If CleanUpCommands is set and k0s is used as the bootstrap provider,
+the user is responsible for the complete cleanup of the k0s installation.
+See https://docs.k0sproject.io/stable/reset/ for more details.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>commandsAsScript</b></td>
         <td>boolean</td>
         <td>
@@ -776,16 +898,6 @@ If true, the commands will be written to a file and executed as a script.
 If false, the commands will be executed one by one.<br/>
           <br/>
             <i>Default</i>: false<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>customCleanUpCommands</b></td>
-        <td>[]string</td>
-        <td>
-          CustomCleanUpCommands allows the user to run custom commands during the machine cleanup process.
-If CustomCleanUpCommands is set and k0s is used as the bootstrap provider,
-the user is responsible for the complete cleanup of the k0s installation.
-See https://docs.k0sproject.io/stable/reset/ for more details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18103,24 +18215,25 @@ RemoteMachineStatus defines the observed state of RemoteMachine
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>failureMessage</b></td>
-        <td>string</td>
+        <td><b><a href="#remotemachinestatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
         <td>
-          <br/>
+          conditions contains the conditions of the RemoteMachine, which represent the current state of the machine.<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>failureReason</b></td>
-        <td>string</td>
+        <td><b><a href="#remotemachinestatusdeprecated">deprecated</a></b></td>
+        <td>object</td>
         <td>
-          <br/>
+          deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.<br/>
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>ready</b></td>
-        <td>boolean</td>
+        <td><b><a href="#remotemachinestatusinitialization">initialization</a></b></td>
+        <td>object</td>
         <td>
-          Ready denotes that the remote machine is ready to be used.<br/>
+          initialization provides observations of the RemoteMachine initialization process.
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18162,8 +18275,175 @@ MachineAddress contains information for the node's address.
       </tr></tbody>
 </table>
 
+
+### RemoteMachine.status.conditions[index]
+<sup><sup>[↩ Parent](#remotemachinestatus)</sup></sup>
+
+
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is a human readable message indicating details about the transition.
+This may be an empty string.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>enum</td>
+        <td>
+          status of the condition, one of True, False, Unknown.<br/>
+          <br/>
+            <i>Enum</i>: True, False, Unknown<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.status.deprecated
+<sup><sup>[↩ Parent](#remotemachinestatus)</sup></sup>
+
+
+
+deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remotemachinestatusdeprecatedv1beta1">v1beta1</a></b></td>
+        <td>object</td>
+        <td>
+          v1beta1 groups all the status fields that are deprecated and will be removed when support for v1beta1 will be dropped.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.status.deprecated.v1beta1
+<sup><sup>[↩ Parent](#remotemachinestatusdeprecated)</sup></sup>
+
+
+
+v1beta1 groups all the status fields that are deprecated and will be removed when support for v1beta1 will be dropped.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>failureMessage</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>failureReason</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.status.initialization
+<sup><sup>[↩ Parent](#remotemachinestatus)</sup></sup>
+
+
+
+initialization provides observations of the RemoteMachine initialization process.
+NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>provisioned</b></td>
+        <td>boolean</td>
+        <td>
+          provisioned is true when the RemoteMachine's infrastructure is fully provisioned.
+NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
 ## RemoteMachineTemplate
-<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta1 )</sup></sup>
+<sup><sup>[↩ Parent](#infrastructureclusterx-k8siov1beta2 )</sup></sup>
 
 
 
@@ -18184,7 +18464,7 @@ RemoteMachineTemplate is the Schema for the remotemachinetemplates API
     <tbody><tr>
       <td><b>apiVersion</b></td>
       <td>string</td>
-      <td>infrastructure.cluster.x-k8s.io/v1beta1</td>
+      <td>infrastructure.cluster.x-k8s.io/v1beta2</td>
       <td>true</td>
       </tr>
       <tr>

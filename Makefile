@@ -321,7 +321,7 @@ crdoc: $(CRDOC) ## Download crdoc locally if necessary. If wrong version is inst
 $(CRDOC): Makefile.variables | $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install fybrik.io/crdoc@$(CRDOC_VERSION)
 
-.PHONY: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron-v1beta2 docs-generate-reference
+.PHONY: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron docs-generate-reference
 docs-generate-bootstrap: $(CRDOC) ## Generate docs for bootstrap CRDs
 	$(CRDOC) --resources config/clusterapi/bootstrap/crd/bases --output docs/resource-reference/bootstrap.cluster.x-k8s.io-v1beta1.md --toc docs/resource-reference/bootstrap-v1beta1-toc.yaml
 	$(CRDOC) --resources config/clusterapi/bootstrap/crd/bases --output docs/resource-reference/bootstrap.cluster.x-k8s.io-v1beta2.md --toc docs/resource-reference/bootstrap-v1beta2-toc.yaml
@@ -331,14 +331,15 @@ docs-generate-controlplane: $(CRDOC) ## Generate docs for controlplane CRDs
 	$(CRDOC) --resources config/clusterapi/controlplane/crd/bases --output docs/resource-reference/controlplane.cluster.x-k8s.io-v1beta2.md --toc docs/resource-reference/controlplane-v1beta2-toc.yaml
 
 docs-generate-infrastructure: $(CRDOC) ## Generate docs for infrastructure CRDs
-	$(CRDOC) --resources config/clusterapi/infrastructure/crd/bases --output docs/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1.md
+	$(CRDOC) --resources config/clusterapi/infrastructure/crd/bases --output docs/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1.md --toc docs/resource-reference/infrastructure-v1beta1-toc.yaml
+	$(CRDOC) --resources config/clusterapi/infrastructure/crd/bases --output docs/resource-reference/infrastructure.cluster.x-k8s.io-v1beta2.md --toc docs/resource-reference/infrastructure-v1beta2-toc.yaml
 
 docs-generate-k0smotron: $(CRDOC) ## Generate docs for k0smotron CRDs
 	$(CRDOC) --resources config/standalone/crd/bases --output docs/resource-reference/k0smotron.io-v1beta1.md --toc docs/resource-reference/k0smotron.io-v1beta1-toc.yaml
 	$(CRDOC) --resources config/standalone/crd/bases --output docs/resource-reference/k0smotron.io-v1beta2.md --toc docs/resource-reference/k0smotron.io-v1beta2-toc.yaml
 
 # Generate docs for all CRDs apis
-docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron-v1beta2 ## Generate docs for all CRDs apis
+docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron ## Generate docs for all CRDs apis
 
 ## Generate all code, manifests, documentation, and release artifacts
 .PHONY: generate-all
