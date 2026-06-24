@@ -242,6 +242,11 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// If the machine is already provisioned, skip reconciliation.
 	if rm.Status.Initialization.Provisioned != nil && *rm.Status.Initialization.Provisioned {
+		conditions.Set(rm, metav1.Condition{
+			Type:   string(infrastructure.RemoteMachineBootstrapExecSucceededCondition),
+			Status: metav1.ConditionTrue,
+			Reason: infrastructure.RemoteMachineBootstrapExecSucceededReason,
+		})
 		return ctrl.Result{}, nil
 	}
 	if rm.Spec.ProviderID != "" {
@@ -457,11 +462,6 @@ func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine 
 	}
 
 	return secret.Data["value"], nil
-}
-
-func isBeingDeletedWithoutBeingProvisioned(rm *infrastructure.RemoteMachine) bool {
-	return !rm.ObjectMeta.DeletionTimestamp.IsZero() &&
-		(rm.Status.Initialization.Provisioned == nil || !*rm.Status.Initialization.Provisioned)
 }
 
 func updateStatus(ctx context.Context, rm *infrastructure.RemoteMachine, reconcileErr error) {
