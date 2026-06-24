@@ -40,12 +40,12 @@ import (
 )
 
 type UpgradeSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func TestUpgradeSuite(t *testing.T) {
 	s := UpgradeSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,

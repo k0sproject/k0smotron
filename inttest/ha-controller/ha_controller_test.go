@@ -29,7 +29,7 @@ import (
 )
 
 type HAControllerSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *HAControllerSuite) TestK0sGetsUp() {
@@ -85,7 +85,7 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 
 func TestHAControllerSuite(t *testing.T) {
 	s := HAControllerSuite{
-		common.FootlooseSuite{
+		common.BootlooseSuite{
 			ControllerCount:                 1,
 			WorkerCount:                     1,
 			K0smotronWorkerCount:            1,

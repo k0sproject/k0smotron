@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	"github.com/google/uuid"
-	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/version"
 	appsv1 "k8s.io/api/apps/v1"
@@ -479,10 +478,10 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 	if infraMachineMissing ||
 		tooManyMachines ||
 		isRecreateDeleteFirstPossible(kcp, clusterHasChanged, machineNamesToDelete, desiredMachines) {
-		m := activeMachines.Newest().Name
+		m := activeMachines.Newest()
 		err := c.checkMachineIsReady(ctx, m, cluster)
 		if err != nil {
-			logger.Error(err, "Error checking machine left", "machine", m)
+			logger.Error(err, "Error checking machine is ready", "machine", m)
 			return err
 		}
 
@@ -523,7 +522,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv
 		// machine to be ready It's not slowing down the process overall, as we wait to the first machine anyway to
 		// create join tokens.
 		if activeMachines.Len() >= 1 {
-			err := c.checkMachineIsReady(ctx, activeMachines.Newest().Name, cluster)
+			err := c.checkMachineIsReady(ctx, activeMachines.Newest(), cluster)
 			if err != nil {
 				return err
 			}
@@ -591,14 +590,14 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
 		}
 
+		if err := c.markNodeToLeave(ctx, kubeClient, machine.Name); err != nil {
+			return fmt.Errorf("error marking controlnode to leave: %w", err)
+		}
+
 		waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		defer cancel()
 		err = wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
-			if err := c.markChildControlNodeToLeave(fctx, machine.Name, kubeClient); err != nil {
-				return false, fmt.Errorf("error marking controlnode to leave: %w", err)
-			}
-
-			ok, err := c.checkMachineLeft(fctx, machine.Name, kubeClient)
+			ok, err := checkMachineLeftEtcd(fctx, machine.Name, kubeClient)
 			if err != nil {
 				logger.Error(err, "Error checking machine left", "machine", machine.Name)
 			}
@@ -606,6 +605,11 @@ func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clu
 		})
 		if err != nil {
 			return fmt.Errorf("error checking machine left: %w", err)
+		}
+
+		err = deleteEtcdMember(ctx, kubeClient, machine.Name)
+		if err != nil {
+			return fmt.Errorf("error deleting etcd member: %w", err)
 		}
 	}
 
@@ -647,31 +651,6 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 		FieldManager: "k0smotron",
 	}); err != nil {
 		return fmt.Errorf("error patching K0sControllerConfig: %w", err)
-	}
-
-	return nil
-}
-
-func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName string, cluster *clusterv1.Cluster) error {
-	kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
-	if err != nil {
-		return fmt.Errorf("error getting cluster client set for machine update: %w", err)
-	}
-	var cn autopilot.ControlNode
-	err = kubeClient.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + machineName).Do(ctx).Into(&cn)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return ErrNewMachinesNotReady
-		}
-		return fmt.Errorf("error getting controlnode: %w", err)
-	}
-
-	joinedAt := cn.CreationTimestamp.Time
-
-	// Check if the node has joined properly more than a minute ago
-	// This allows a small "cool down" period between new nodes joining and old ones leaving
-	if time.Since(joinedAt) < time.Minute {
-		return ErrNewMachinesNotReady
 	}
 
 	return nil

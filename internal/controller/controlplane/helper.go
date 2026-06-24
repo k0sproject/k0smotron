@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/imdario/mergo"
+	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/version"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -51,8 +52,6 @@ import (
 )
 
 const (
-	etcdMemberConditionTypeJoined = "Joined"
-
 	// Defaults applied by the v1beta2 CRD schema. Kept here to normalize machine configs parsed
 	// from annotations, which are not defaulted by the API server. See withV1Beta2Defaults.
 	defaultK0sInstallDir           = "/usr/local/bin"
@@ -503,72 +502,74 @@ func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructur
 		clonedFromGroupKind == kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
 }
 
-func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clientset *kubernetes.Clientset) (bool, error) {
-	var etcdMember unstructured.Unstructured
-	err := clientset.RESTClient().
-		Get().
-		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
-		Do(ctx).
-		Into(&etcdMember)
+func isMachineEtcdMemberJoined(ctx context.Context, client *kubernetes.Clientset, machine *clusterv1.Machine) bool {
+	logger := log.FromContext(ctx)
 
+	etcdMember, err := getEtcdMember(ctx, client, machine.Name)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false
+		}
+
+		logger.Error(err, "Error getting etcd member", "machine", machine.Name)
+		return false
+	}
+
+	joined, err := getEtcdMemberJoinedConditionStatus(etcdMember)
+	if err != nil {
+		logger.Error(err, "Error checking etcd member condition", "machine", machine.Name)
+		return false
+	}
+
+	return joined
+}
+
+func (c *K0sController) checkMachineIsReady(ctx context.Context, machine *clusterv1.Machine, cluster *clusterv1.Cluster) error {
+	kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
+	if err != nil {
+		return fmt.Errorf("error getting cluster client set for machine update: %w", err)
+	}
+	var cn autopilot.ControlNode
+	err = kubeClient.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + machine.Name).Do(ctx).Into(&cn)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return ErrNewMachinesNotReady
+		}
+		return fmt.Errorf("error getting controlnode: %w", err)
+	}
+
+	if !isMachineEtcdMemberJoined(ctx, kubeClient, machine) {
+		return ErrNewMachinesNotReady
+	}
+
+	joinedAt := cn.CreationTimestamp.Time
+
+	// Check if the node has joined properly more than a minute ago
+	// This allows a small "cool down" period between new nodes joining and old ones leaving
+	if time.Since(joinedAt) < time.Minute {
+		return ErrNewMachinesNotReady
+	}
+
+	return nil
+}
+
+func checkMachineLeftEtcd(ctx context.Context, name string, workloadClient *kubernetes.Clientset) (bool, error) {
+	etcdMember, err := getEtcdMember(ctx, workloadClient, name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}
+
 		return false, fmt.Errorf("error getting etcd member: %w", err)
 	}
 
-	conditions, _, err := unstructured.NestedSlice(etcdMember.Object, "status", "conditions")
+	joined, err := getEtcdMemberJoinedConditionStatus(etcdMember)
 	if err != nil {
-		return false, fmt.Errorf("error getting etcd member conditions: %w", err)
+		return false, fmt.Errorf("error checking etcd member condition: %w", err)
 	}
 
-	for _, condition := range conditions {
-		conditionMap := condition.(map[string]any)
-		if conditionMap["type"] == etcdMemberConditionTypeJoined && conditionMap["status"] == "False" {
-			err = clientset.RESTClient().
-				Delete().
-				AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
-				Do(ctx).
-				Into(&etcdMember)
-			if err != nil && !apierrors.IsNotFound(err) {
-				return false, fmt.Errorf("error deleting etcd member %s: %w", name, err)
-			}
-
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name string, clientset *kubernetes.Clientset) error {
-	if clientset == nil {
-		return nil
-	}
-
-	logger := log.FromContext(ctx).WithValues("controlNode", name)
-
-	err := clientset.RESTClient().
-		Patch(types.MergePatchType).
-		AbsPath("/apis/etcd.k0sproject.io/v1beta1/etcdmembers/" + name).
-		Body([]byte(`{"spec":{"leave":true}, "metadata": {"annotations": {"k0smotron.io/marked-to-leave-at": "` + time.Now().String() + `"}}}`)).
-		Do(ctx).
-		Error()
-	if err != nil {
-		logger.Error(err, "error marking etcd member to leave. Trying to mark control node to leave")
-		err := clientset.RESTClient().
-			Patch(types.MergePatchType).
-			AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes/" + name).
-			Body([]byte(`{"metadata":{"annotations":{"k0smotron.io/leave":"true"}}}`)).
-			Do(ctx).
-			Error()
-		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("error marking control node to leave: %w", err)
-		}
-	}
-	logger.Info("marked etcd to leave")
-
-	return nil
+	// Consider the member as left if it is not joined.
+	return joined == false, nil
 }
 
 func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster) error {
