@@ -1,0 +1,11 @@
+metadata:
+  title: "API Reference"
+  weight: 1
+groups:
+  - group: controlplane.cluster.x-k8s.io
+    version: v1beta1
+    kinds:
+      - name: K0sControlPlane
+      - name: K0sControlPlaneTemplate
+      - name: K0smotronControlPlane
+      - name: K0smotronControlPlaneTemplate
