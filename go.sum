@@ -242,8 +242,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29 h1:a+SBzZ2S5LCbf2lmPcfc2FwKjIaLdC28HpD/TXBM/MQ=
 github.com/k0sproject/k0s v1.27.2-0.20230504131248-94378e521a29/go.mod h1:oD35DgMlQxZynZlZ/nJpvI1Vj3ru4EaCWHRY4im007o=
-github.com/k0sproject/rig v0.21.8 h1:bFptIHrcFnK5IA+IHykGSDWzx52b7Je1cx3hjrJtFjo=
-github.com/k0sproject/rig v0.21.8/go.mod h1:bdRDs2dJngbYAEWd6+irYlzUqqBeVXVBcSelpaIvuCw=
+github.com/k0sproject/rig v0.21.11 h1:hXElTYqYJeKj0FhSkPALXZIlZxyhDsnhKYqhk13MTzw=
+github.com/k0sproject/rig v0.21.11/go.mod h1:EgLRaRBorLg7aeYGjj2qISKdpU9oxSJxW0Ccjz3gieE=
 github.com/k0sproject/version v0.6.0 h1:Wi8wu9j+H36+okIQA47o/YHbzNpKeIYj8IjGdJOdqsI=
 github.com/k0sproject/version v0.6.0/go.mod h1:5/7Js62gDCLBP6mEs0mUcYEEkYneM5qXDKN/hyFlQTM=
 github.com/kevinburke/ssh_config v1.6.0 h1:J1FBfmuVosPHf5GRdltRLhPJtJpTlMdKTBjRgTaQBFY=

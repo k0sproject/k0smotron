@@ -27,7 +27,6 @@ import (
 	"regexp"
 	"strings"
 
-	"al.essio.dev/pkg/shellescape"
 	"github.com/go-logr/logr"
 	"github.com/k0sproject/rig"
 	"github.com/k0sproject/rig/exec"
@@ -139,8 +138,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		// Run commands
 		for _, cmd := range p.cloudInit.Commands {
 			p.log.Info("running command", "command", cmd)
-			cmdWithShell := "sh -c " + shellescape.Quote(cmd)
-			output, err := connection.ExecOutput(cmdWithShell, execOpts...)
+			output, err := connection.ExecOutput(cmd, execOpts...)
 			if err != nil {
 				p.log.Error(err, "failed to run command", "command", cmd, "output", output)
 				return fmt.Errorf("failed to run command: %w", err)
