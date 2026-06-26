@@ -113,7 +113,8 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 	defer workerSSH.Disconnect()
 	s.T().Log("Pushing public key to worker")
-	s.Require().NoError(workerSSH.Exec(s.Context(), "cat >>/root/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(s.publicKey)}))
+	s.Require().NoError(workerSSH.Exec(s.Context(), "cat >>/home/test/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(s.publicKey)}))
+	s.Require().NoError(workerSSH.Exec(s.Context(), "chown test:test /home/test/.ssh/authorized_keys && chmod 600 /home/test/.ssh/authorized_keys", common.SSHStreams{}))
 
 	s.Require().NoError(err)
 	defer func() {
@@ -338,7 +339,8 @@ metadata:
 spec:
   address: {{ .Address }}
   port: 22
-  user: root
+  user: test
+  useSudo: true
   sshKeyRef:
     name: footloose-key
 ---
