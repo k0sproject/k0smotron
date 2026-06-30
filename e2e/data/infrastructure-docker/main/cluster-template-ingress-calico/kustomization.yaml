@@ -1,0 +1,2 @@
+resources:
+- cluster-with-ingress-calico.yaml
