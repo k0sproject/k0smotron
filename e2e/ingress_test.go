@@ -43,147 +43,161 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
-func TestIngress(t *testing.T) {
-	setupAndRun(t, ingressSupportSpec)
+func TestIngressKubeRouter(t *testing.T) {
+	setupAndRun(t, ingressSupportSpec("ingress"))
 }
 
-func ingressSupportSpec(t *testing.T) {
-	testName := "ingress"
+// TestIngressCalico reproduces the worker bootstrap deadlock from
+// https://github.com/k0sproject/k0smotron/issues/1492. With Calico as the CNI,
+// calico-node reaches the API through the in-cluster `kubernetes` Service VIP.
+// While the node is NotReady the node-lifecycle controller marks the hostNetwork
+// HAProxy pod NotReady, so the Service endpoints are empty and calico-node cannot
+// reach the API to install the CNI -> the node never becomes Ready. kube-router
+// (the default CNI) hides this because it does not route bootstrap traffic through
+// the VIP.
+func TestIngressCalico(t *testing.T) {
+	setupAndRun(t, ingressSupportSpec("ingress-calico"))
+}
 
-	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
-	testNamespace, testCancelWatches := framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
-		Creator:   bootstrapClusterProxy.GetClient(),
-		ClientSet: bootstrapClusterProxy.GetClientSet(),
-		Name:      testName,
-		LogFolder: filepath.Join(artifactFolder, "clusters", "bootstrap"),
-	})
+func ingressSupportSpec(flavor string) func(t *testing.T) {
+	return func(t *testing.T) {
+		testName := flavor
 
-	// Install HAProxy ingress controller
-	installHAProxyIngress(t, bootstrapClusterProxy)
+		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
+		testNamespace, testCancelWatches := framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
+			Creator:   bootstrapClusterProxy.GetClient(),
+			ClientSet: bootstrapClusterProxy.GetClientSet(),
+			Name:      testName,
+			LogFolder: filepath.Join(artifactFolder, "clusters", "bootstrap"),
+		})
 
-	workloadClusterName := fmt.Sprintf("%s-workload-%s", testName, util.RandomString(6))
-	workloadClusterNamespace := testNamespace.Name
+		// Install HAProxy ingress controller
+		installHAProxyIngress(t, bootstrapClusterProxy)
 
-	// Detect kind IP for DNS names
-	kindIP := detectKindIP(t)
-	t.Logf("Detected kind IP: %s", kindIP)
+		workloadClusterName := fmt.Sprintf("%s-workload-%s", testName, util.RandomString(6))
+		workloadClusterNamespace := testNamespace.Name
 
-	// Create test file secret for the cluster template
-	testFileSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-file-secret",
-			Namespace: workloadClusterNamespace,
-		},
-		Data: map[string][]byte{
-			"value": []byte("test-content"),
-		},
-	}
-	require.NoError(t, bootstrapClusterProxy.GetClient().Create(ctx, testFileSecret), "Should create test file secret")
+		// Detect kind IP for DNS names
+		kindIP := detectKindIP(t)
+		t.Logf("Detected kind IP: %s", kindIP)
 
-	// Create a cluster with ingress configuration
-	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
-		ClusterctlConfigPath:     clusterctlConfigPath,
-		KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-		InfrastructureProvider:   "docker",
-		Flavor:                   "ingress",
-		Namespace:                workloadClusterNamespace,
-		ClusterName:              workloadClusterName,
-		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-		ControlPlaneMachineCount: new(int64(1)),
-		LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
-		ClusterctlVariables: map[string]string{
-			"CLUSTER_NAME": workloadClusterName,
-			"NAMESPACE":    workloadClusterNamespace,
-			"KIND_IP":      kindIP,
-			"HAPROXY_PORT": "32143", // HAProxy svc NodePort for HTTPS
-		},
-	})
+		// Create test file secret for the cluster template
+		testFileSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-file-secret",
+				Namespace: workloadClusterNamespace,
+			},
+			Data: map[string][]byte{
+				"value": []byte("test-content"),
+			},
+		}
+		require.NoError(t, bootstrapClusterProxy.GetClient().Create(ctx, testFileSecret), "Should create test file secret")
 
-	// Apply the cluster template yaml
-	require.Eventually(t, func() bool {
-		return bootstrapClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate) == nil
-	}, 10*time.Second, 1*time.Second, "Failed to apply the cluster template")
+		// Create a cluster with ingress configuration
+		workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
+			ClusterctlConfigPath:     clusterctlConfigPath,
+			KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+			InfrastructureProvider:   "docker",
+			Flavor:                   flavor,
+			Namespace:                workloadClusterNamespace,
+			ClusterName:              workloadClusterName,
+			KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
+			ControlPlaneMachineCount: new(int64(1)),
+			LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+			ClusterctlVariables: map[string]string{
+				"CLUSTER_NAME": workloadClusterName,
+				"NAMESPACE":    workloadClusterNamespace,
+				"KIND_IP":      kindIP,
+				"HAPROXY_PORT": "32143", // HAProxy svc NodePort for HTTPS
+			},
+		})
 
-	// Wait for the cluster to be ready using the utility function
-	cluster, err := e2eutil.DiscoveryAndWaitForCluster(ctx, capiframework.DiscoveryAndWaitForClusterInput{
-		Getter:    bootstrapClusterProxy.GetClient(),
-		Namespace: workloadClusterNamespace,
-		Name:      workloadClusterName,
-	}, e2eutil.GetInterval(e2eConfig, testName, "wait-cluster"))
-	require.NoError(t, err)
+		// Apply the cluster template yaml
+		require.Eventually(t, func() bool {
+			return bootstrapClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate) == nil
+		}, 10*time.Second, 1*time.Second, "Failed to apply the cluster template")
 
-	t.Cleanup(func() {
-		e2eutil.DumpSpecResourcesAndCleanup(
-			ctx,
-			testName,
-			bootstrapClusterProxy,
-			artifactFolder,
-			testNamespace,
-			testCancelWatches,
-			cluster,
-			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
-			skipCleanup,
-			clusterctlConfigPath,
-		)
-
-		testCancelWatches()
-	})
-
-	// Wait for the control plane to be initialized
-	_, err = e2eutil.DiscoveryAndWaitForHCPToBeReady(ctx, e2eutil.DiscoveryAndWaitForHCPReadyInput{
-		Cluster: cluster,
-		Lister:  bootstrapClusterProxy.GetClient(),
-		Getter:  bootstrapClusterProxy.GetClient(),
-	}, e2eutil.GetInterval(e2eConfig, testName, "wait-controllers"))
-	require.NoError(t, err)
-
-	fmt.Print("Waiting for MachineDeployment to be ready\n")
-	require.Eventually(t, func() bool {
-		md := &clusterv1.MachineDeployment{}
-		err := bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{
+		// Wait for the cluster to be ready using the utility function
+		cluster, err := e2eutil.DiscoveryAndWaitForCluster(ctx, capiframework.DiscoveryAndWaitForClusterInput{
+			Getter:    bootstrapClusterProxy.GetClient(),
 			Namespace: workloadClusterNamespace,
 			Name:      workloadClusterName,
-		}, md)
-		if err != nil {
-			return false
+		}, e2eutil.GetInterval(e2eConfig, testName, "wait-cluster"))
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			e2eutil.DumpSpecResourcesAndCleanup(
+				ctx,
+				testName,
+				bootstrapClusterProxy,
+				artifactFolder,
+				testNamespace,
+				testCancelWatches,
+				cluster,
+				e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
+				skipCleanup,
+				clusterctlConfigPath,
+			)
+
+			testCancelWatches()
+		})
+
+		// Wait for the control plane to be initialized
+		_, err = e2eutil.DiscoveryAndWaitForHCPToBeReady(ctx, e2eutil.DiscoveryAndWaitForHCPReadyInput{
+			Cluster: cluster,
+			Lister:  bootstrapClusterProxy.GetClient(),
+			Getter:  bootstrapClusterProxy.GetClient(),
+		}, e2eutil.GetInterval(e2eConfig, testName, "wait-controllers"))
+		require.NoError(t, err)
+
+		fmt.Print("Waiting for MachineDeployment to be ready\n")
+		require.Eventually(t, func() bool {
+			md := &clusterv1.MachineDeployment{}
+			err := bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{
+				Namespace: workloadClusterNamespace,
+				Name:      workloadClusterName,
+			}, md)
+			if err != nil {
+				return false
+			}
+			return *md.Status.ReadyReplicas == 2
+		}, 5*time.Minute, 10*time.Second, "MachineDeployment failed to become ready")
+
+		fmt.Println("Check kube api connection from the nodes through the proxy")
+		machineList := &clusterv1.MachineList{}
+		require.NoError(t, bootstrapClusterProxy.GetClient().List(ctx, machineList, client.InNamespace(workloadClusterNamespace), client.MatchingLabels{
+			clusterv1.ClusterNameLabel: workloadClusterName,
+		}), "Should list machines")
+
+		workloadCluster := bootstrapClusterProxy.GetWorkloadCluster(ctx, workloadClusterNamespace, workloadClusterName, capiframework.WithRESTConfigModifier(func(config *rest.Config) {
+			config.Host = "https://localhost:30443"
+		}))
+		wcs, err := kubernetes.NewForConfig(workloadCluster.GetRESTConfig())
+		require.NoError(t, err, "Should get workload clientset")
+		require.NoError(t, common.WaitForDaemonSet(ctx, wcs, "konnectivity-agent"))
+
+		podList := &corev1.PodList{}
+		err = bootstrapClusterProxy.GetClient().List(ctx, podList, client.InNamespace(testNamespace.Name))
+		require.NoError(t, err, "Should list k0smotron pods")
+		out, err := podexec.PodExecCmdOutput(ctx, bootstrapClusterProxy.GetClientSet(), bootstrapClusterProxy.GetRESTConfig(), podList.Items[0].Name, testNamespace.Name, "k0s kc logs -n kube-system ds/konnectivity-agent")
+		require.NoError(t, err)
+		t.Logf("Konnectivity agent logs:\n%s", out)
+		require.Contains(t, out, "change detected in proxy")
+
+		for _, m := range machineList.Items {
+			var (
+				stdout bytes.Buffer
+				stderr bytes.Buffer
+			)
+			cmd := exec.Command("docker", "exec", m.Name, "curl", "https://10.128.0.1/healthz", "--cacert", "/etc/haproxy/certs/ca.crt")
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+			err = cmd.Run()
+			require.NoError(t, err, stderr.String())
+			require.Equal(t, "ok", stdout.String(), "Expected to get 'ok' from the healthz endpoint")
 		}
-		return *md.Status.ReadyReplicas == 2
-	}, 5*time.Minute, 10*time.Second, "MachineDeployment failed to become ready")
-
-	fmt.Println("Check kube api connection from the nodes through the proxy")
-	machineList := &clusterv1.MachineList{}
-	require.NoError(t, bootstrapClusterProxy.GetClient().List(ctx, machineList, client.InNamespace(workloadClusterNamespace), client.MatchingLabels{
-		clusterv1.ClusterNameLabel: workloadClusterName,
-	}), "Should list machines")
-
-	workloadCluster := bootstrapClusterProxy.GetWorkloadCluster(ctx, workloadClusterNamespace, workloadClusterName, capiframework.WithRESTConfigModifier(func(config *rest.Config) {
-		config.Host = "https://localhost:30443"
-	}))
-	wcs, err := kubernetes.NewForConfig(workloadCluster.GetRESTConfig())
-	require.NoError(t, err, "Should get workload clientset")
-	require.NoError(t, common.WaitForDaemonSet(ctx, wcs, "konnectivity-agent"))
-
-	podList := &corev1.PodList{}
-	err = bootstrapClusterProxy.GetClient().List(ctx, podList, client.InNamespace(testNamespace.Name))
-	require.NoError(t, err, "Should list k0smotron pods")
-	out, err := podexec.PodExecCmdOutput(ctx, bootstrapClusterProxy.GetClientSet(), bootstrapClusterProxy.GetRESTConfig(), podList.Items[0].Name, testNamespace.Name, "k0s kc logs -n kube-system ds/konnectivity-agent")
-	require.NoError(t, err)
-	t.Logf("Konnectivity agent logs:\n%s", out)
-	require.Contains(t, out, "change detected in proxy")
-
-	for _, m := range machineList.Items {
-		var (
-			stdout bytes.Buffer
-			stderr bytes.Buffer
-		)
-		cmd := exec.Command("docker", "exec", m.Name, "curl", "https://10.128.0.1/healthz", "--cacert", "/etc/haproxy/certs/ca.crt")
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		err = cmd.Run()
-		require.NoError(t, err, stderr.String())
-		require.Equal(t, "ok", stdout.String(), "Expected to get 'ok' from the healthz endpoint")
+		fmt.Println("All good")
 	}
-	fmt.Println("All good")
 }
 
 func detectKindIP(t *testing.T) string {

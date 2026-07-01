@@ -281,7 +281,8 @@ jobs:
           - TestK0smotronUpgrade
           - TestMachineDeployment
           - TestRemoteHostedControlPlanes
-          - TestIngress
+          - TestIngressKubeRouter
+          - TestIngressCalico
 
     uses: ./.github/workflows/e2e.yaml
     with:

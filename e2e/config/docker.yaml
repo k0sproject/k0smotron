@@ -41,6 +41,7 @@ providers:
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-machinedeployment.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-remote-hcp.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-ingress.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/cluster-template-ingress-calico.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-inplace.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreate.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreatedeletefirst.yaml"
@@ -169,6 +170,7 @@ intervals:
   default/wait-machine-remediation: ["5m", "10s"]
   default/wait-autoscaler: ["5m", "10s"]
   ingress/wait-controllers: ["5m", "10s"]
+  ingress-calico/wait-controllers: ["5m", "10s"]
   remote-hcp/wait-controllers: ["5m", "10s"]
   bootstrap/wait-deployment-available: ["3m", "10s"]
   node-drain/wait-deployment-available: ["3m", "10s"]
