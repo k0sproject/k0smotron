@@ -4,7 +4,8 @@ controllerManager:
   container:
     image:
       repository: quay.io/k0sproject/k0smotron
-      tag: latest
+      # Defaults to the chart's appVersion when left empty.
+      tag: ""
     args:
       - "--leader-elect"
       - "--metrics-bind-address=:8443"
@@ -76,3 +77,17 @@ networkPolicy:
 crds:
   enabled: true
   namespace: k0smotron-system
+# [GLOBAL]: Values shared with subcharts (e.g. the CRD subchart).
+global:
+  # [CONTROLLER]: Which controller to run, mapped to the manager's
+  # "--enable-controller" flag. This also selects which CRDs are installed.
+  # One of: all, bootstrap, control-plane, infrastructure.
+  #   all             - run every controller and install every CRD (default)
+  #   bootstrap       - K0sWorkerConfig/K0sControllerConfig (bootstrap.cluster.x-k8s.io)
+  #   control-plane   - K0s(motron)ControlPlane (controlplane.cluster.x-k8s.io)
+  #                     plus the k0smotron.io CRDs it relies on
+  #   infrastructure  - RemoteMachine/RemoteCluster (infrastructure.cluster.x-k8s.io)
+  controller: all
+  # Adds "helm.sh/resource-policy": keep to the CRDs so they survive a
+  # `helm uninstall`. Mirrors crd.keep for the CRD subchart.
+  crdKeep: true

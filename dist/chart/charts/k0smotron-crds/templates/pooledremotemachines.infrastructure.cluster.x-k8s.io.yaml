@@ -1,7 +1,12 @@
+{{- $ctrl := (.Values.global | default dict).controller | default "all" -}}
+{{- if has $ctrl (list "all" "infrastructure") }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
+    {{- if (.Values.global | default dict).crdKeep }}
+    "helm.sh/resource-policy": keep
+    {{- end }}
     cert-manager.io/inject-ca-from: k0smotron-system/serving-cert
     controller-gen.kubebuilder.io/version: v0.18.0
   labels:
@@ -261,3 +266,4 @@ spec:
       storage: true
       subresources:
         status: {}
+{{- end }}
