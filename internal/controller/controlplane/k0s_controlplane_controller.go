@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -35,21 +34,20 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/collections"
-	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
@@ -81,6 +79,26 @@ var (
 	FRPServiceNameTemplate = "%s-frps"
 	minVersionForETCDName  = version.MustParse("v1.31.1")
 )
+
+type machineState struct {
+	isVersionUpToDate   bool
+	isInfraUpToDate     bool
+	isBootstrapUpToDate bool
+	controllerConfig    *bootstrapv2.K0sControllerConfig
+	infraMachine        *unstructured.Unstructured
+}
+
+type controlplane struct {
+	cluster                   *clusterv1.Cluster
+	kcp                       *cpv1beta2.K0sControlPlane
+	activeMachines            collections.Machines
+	deletedMachines           collections.Machines
+	upToDateMachines          collections.Machines
+	notUpToDateMachines       collections.Machines
+	controllerConfigs         map[string]*bootstrapv2.K0sControllerConfig
+	infraMachines             map[string]*unstructured.Unstructured
+	hasMachinesWithOldVersion bool
+}
 
 // K0sController is responsible for reconciling K0sControlPlane objects.
 type K0sController struct {
@@ -155,6 +173,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, nil
 	}
 
+	controlplane, err := c.retrieveControlPlaneState(ctx, cluster, kcp)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting machines state: %w", err)
+	}
+
 	// Always patch the object to update the status
 	defer func() {
 		log.Info("Updating status")
@@ -166,13 +189,13 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		var derr error
 		if kcp.DeletionTimestamp.IsZero() {
 			// Separate var for status update errors to avoid shadowing err
-			derr = c.updateStatus(ctx, kcp, cluster)
+			derr = c.updateStatus(ctx, controlplane)
 			if derr != nil {
 				log.Error(derr, "Failed to calculate status")
 			}
 		}
 
-		derr = kcpPatchHelper.Patch(ctx, kcp)
+		derr = kcpPatchHelper.Patch(ctx, controlplane.kcp)
 		if derr != nil {
 			log.Error(derr, "Failed to patch status")
 			res = ctrl.Result{}
@@ -181,57 +204,53 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		}
 		log.Info("Status updated successfully")
 
-		if ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
-			if perr := clusterPatchHelper.Patch(ctx, cluster); perr != nil {
+		if ptr.Deref(controlplane.kcp.Status.Initialization.ControlPlaneInitialized, false) {
+			if perr := clusterPatchHelper.Patch(ctx, controlplane.cluster); perr != nil {
 				err = fmt.Errorf("failed to patch cluster: %w", perr)
 			}
 		}
 
-		if needsRequeue(kcp) {
+		if needsRequeue(controlplane.kcp) {
 			if res.IsZero() {
 				res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
 			}
 		}
 	}()
 
-	if !kcp.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !controlplane.kcp.ObjectMeta.DeletionTimestamp.IsZero() {
 		log.Info("Reconcile K0sControlPlane deletion")
-		return c.reconcileDelete(ctx, cluster, kcp)
+		return c.reconcileDelete(ctx, controlplane)
 	}
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	if err := c.ensureCertificates(ctx, cluster, kcp); err != nil {
+	if err := c.ensureCertificates(ctx, controlplane); err != nil {
 		log.Error(err, "Failed to ensure certificates")
 		return ctrl.Result{}, err
 	}
 
-	if err := c.reconcileTunneling(ctx, cluster, kcp); err != nil {
+	if err := c.reconcileTunneling(ctx, controlplane); err != nil {
 		log.Error(err, "Failed to reconcile tunneling")
 		return ctrl.Result{}, err
 	}
 
-	if err := c.reconcileConfig(ctx, cluster, kcp); err != nil {
+	if err := c.reconcileConfig(ctx, controlplane); err != nil {
 		log.Error(err, "Failed to reconcile config")
 		return ctrl.Result{}, err
 	}
 
-	err = c.reconcile(ctx, cluster, kcp)
+	err = c.reconcileKubeconfig(ctx, controlplane)
 	if err != nil {
-		if errors.Is(err, util.ErrNotReady) {
-			return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
-		}
-		return res, err
+		return ctrl.Result{}, fmt.Errorf("error reconciling kubeconfig secret: %w", err)
 	}
 
-	return res, err
-
+	return c.reconcileMachines(ctx, controlplane)
 }
 
-func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
-	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
+func (c *K0sController) reconcileKubeconfig(ctx context.Context, controlplane *controlplane) error {
+	logger := log.FromContext(ctx, "cluster", controlplane.cluster.Name, "kcp", controlplane.kcp.Name)
 
-	if cluster.Spec.ControlPlaneEndpoint.IsZero() {
+	if controlplane.cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		return fmt.Errorf("control plane endpoint is not set: %w", util.ErrNotReady)
 	}
 
@@ -248,7 +267,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 
 			if needsRotation {
 				logger.Info("Rotating kubeconfig secret", "Secret", kc.GetName())
-				if err := c.regenerateKubeconfigSecret(ctx, kc, cluster.Name); err != nil {
+				if err := c.regenerateKubeconfigSecret(ctx, kc, controlplane.cluster.Name); err != nil {
 					logger.Error(err, "Failed to regenerate kubeconfig")
 					return
 				}
@@ -257,45 +276,45 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 	}()
 
 	clusterKey := client.ObjectKey{
-		Name:      cluster.GetName(),
-		Namespace: cluster.GetNamespace(),
+		Name:      controlplane.cluster.GetName(),
+		Namespace: controlplane.cluster.GetNamespace(),
 	}
 
-	workloadClusterKubeconfigSecret, err := secret.GetFromNamespacedName(ctx, c.SecretCachingClient, capiutil.ObjectKey(cluster), secret.Kubeconfig)
+	workloadClusterKubeconfigSecret, err := secret.GetFromNamespacedName(ctx, c.SecretCachingClient, capiutil.ObjectKey(controlplane.cluster), secret.Kubeconfig)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s", cluster.Spec.ControlPlaneEndpoint.String()))
+			kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s", controlplane.cluster.Spec.ControlPlaneEndpoint.String()))
 			if err != nil {
 				return err
 			}
 
-			return c.createKubeconfigSecret(ctx, kc, cluster, secret.Name(cluster.Name, secret.Kubeconfig), kcp.Spec.KubeconfigSecretMetadata)
+			workloadClusterKubeconfigSecret, err = c.createKubeconfigSecret(ctx, kc, controlplane.cluster, secret.Name(controlplane.cluster.Name, secret.Kubeconfig), controlplane.kcp.Spec.KubeconfigSecretMetadata)
+		} else {
+			return err
 		}
-
-		return err
 	}
 	kubeconfigSecrets = append(kubeconfigSecrets, workloadClusterKubeconfigSecret)
 
-	if kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
+	if controlplane.kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
 
-		if kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
+		if controlplane.kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
 
-			secretName := secret.Name(cluster.Name+"-proxied", secret.Kubeconfig)
+			secretName := secret.Name(controlplane.cluster.Name+"-proxied", secret.Kubeconfig)
 
 			proxiedKubeconfig := &corev1.Secret{}
-			err := c.SecretCachingClient.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, proxiedKubeconfig)
+			err := c.SecretCachingClient.Get(ctx, client.ObjectKey{Namespace: controlplane.cluster.Namespace, Name: secretName}, proxiedKubeconfig)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s", cluster.Spec.ControlPlaneEndpoint.String()))
+					kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s", controlplane.cluster.Spec.ControlPlaneEndpoint.String()))
 					if err != nil {
 						return err
 					}
 
 					for cn := range kc.Clusters {
-						kc.Clusters[cn].ProxyURL = fmt.Sprintf("http://%s:%d", kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort)
+						kc.Clusters[cn].ProxyURL = fmt.Sprintf("http://%s:%d", controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort)
 					}
 
-					err = c.createKubeconfigSecret(ctx, kc, cluster, secretName, kcp.Spec.KubeconfigSecretMetadata)
+					proxiedKubeconfig, err = c.createKubeconfigSecret(ctx, kc, controlplane.cluster, secretName, controlplane.kcp.Spec.KubeconfigSecretMetadata)
 					if err != nil {
 						return err
 					}
@@ -306,18 +325,18 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 			kubeconfigSecrets = append(kubeconfigSecrets, proxiedKubeconfig)
 
 		} else {
-			secretName := secret.Name(cluster.Name+"-tunneled", secret.Kubeconfig)
+			secretName := secret.Name(controlplane.cluster.Name+"-tunneled", secret.Kubeconfig)
 
 			tunneledKubeconfig := &corev1.Secret{}
-			err := c.SecretCachingClient.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: secretName}, tunneledKubeconfig)
+			err := c.SecretCachingClient.Get(ctx, client.ObjectKey{Namespace: controlplane.cluster.Namespace, Name: secretName}, tunneledKubeconfig)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s:%d", kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))
+					kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s:%d", controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))
 					if err != nil {
 						return err
 					}
 
-					err = c.createKubeconfigSecret(ctx, kc, cluster, secretName, kcp.Spec.KubeconfigSecretMetadata)
+					tunneledKubeconfig, err = c.createKubeconfigSecret(ctx, kc, controlplane.cluster, secretName, controlplane.kcp.Spec.KubeconfigSecretMetadata)
 					if err != nil {
 						return err
 					}
@@ -332,291 +351,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, cluster *cluste
 	return nil
 }
 
-func (c *K0sController) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
-	var err error
-	kcp.Spec.K0sConfigSpec.K0s, err = enrichK0sConfigWithClusterData(cluster, kcp.Spec.K0sConfigSpec.K0s)
-	if err != nil {
-		return err
-	}
-
-	err = c.reconcileKubeconfig(ctx, cluster, kcp)
-	if err != nil {
-		return fmt.Errorf("error reconciling kubeconfig secret: %w", err)
-	}
-
-	err = c.reconcileUnhealthyMachines(ctx, cluster, kcp)
-	if err != nil {
-		return err
-	}
-
-	err = c.reconcileMachines(ctx, cluster, kcp)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *K0sController) reconcileMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
-	logger := log.FromContext(ctx, "cluster", cluster.Name, "kcp", kcp.Name)
-
-	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
-	if err != nil {
-		return fmt.Errorf("error collecting machines: %w", err)
-	}
-	activeMachines := allMachines.Filter(collections.ActiveMachines)
-	deletedMachines := allMachines.Filter(collections.HasDeletionTimestamp)
-
-	if deletedMachines.Len() > 0 {
-		var errs []error
-		for _, m := range deletedMachines.SortedByCreationTimestamp() {
-			err := c.deleteK0sNodeResources(ctx, cluster, kcp, m)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("error deleting k0s node resources: %w", err))
-			}
-		}
-
-		if len(errs) > 0 {
-			return kerrors.NewAggregate(errs)
-		}
-
-		if kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreateDeleteFirst {
-			// Wait until there is no machine being deleted before creating
-			// new machines when the UpdateRecreateDeleteFirst strategy is used to
-			// prevent excessive number of machines.
-			return util.ErrNotReady
-		}
-	}
-
-	infraMachines, err := c.getInfraMachines(ctx, activeMachines)
-	if err != nil {
-		return fmt.Errorf("error getting infra machines: %w", err)
-	}
-
-	bootstrapConfigs, err := c.getBootstrapConfigs(ctx, activeMachines)
-	if err != nil {
-		return fmt.Errorf("error getting bootstrap configs: %w", err)
-	}
-
-	currentVersion, err := minVersion(activeMachines)
-	if err != nil {
-		return fmt.Errorf("error getting current cluster version from machines: %w", err)
-	}
-	log.Log.Info("Got current cluster version", "version", currentVersion)
-
-	machineNamesToDelete := make(map[string]bool)
-	desiredMachines := make(collections.Machines, len(allMachines))
-
-	var (
-		clusterIsUpdating       bool
-		infraMachineMissing     bool
-		configurationHasChanged bool
-	)
-	for _, m := range activeMachines.SortedByCreationTimestamp() {
-		if m.Spec.Version == "" || (!versionMatches(m, kcp.Spec.Version)) {
-			clusterIsUpdating = true
-			if kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace {
-				desiredMachines.Insert(m)
-			} else {
-				machineNamesToDelete[m.Name] = true
-			}
-		} else if !matchesTemplateClonedFrom(infraMachines, kcp, m) || hasControllerConfigChanged(bootstrapConfigs, kcp, m) {
-			if _, found := infraMachines[m.Name]; !found {
-				infraMachineMissing = true
-			}
-			configurationHasChanged = true
-			machineNamesToDelete[m.Name] = true
-		} else {
-			err := c.inplaceSyncMachineValues(ctx, m)
-			if err != nil {
-				return fmt.Errorf("error syncing in-place updates to machine %s: %w", m.Name, err)
-			}
-			desiredMachines.Insert(m)
-		}
-	}
-
-	// if it is necessary to reduce the number of replicas even counting the replicas to be eliminated
-	// because they are outdated, we choose the oldest among the valid ones.
-	if activeMachines.Len() > int(kcp.Spec.Replicas)+len(machineNamesToDelete) && len(desiredMachines) > 0 {
-		machineNamesToDelete[desiredMachines.Oldest().Name] = true
-	}
-	log.Log.Info("Collected machines", "count", activeMachines.Len(), "desired", kcp.Spec.Replicas, "updating", clusterIsUpdating, "deleting", len(machineNamesToDelete), "desiredMachines", desiredMachines.Names())
-
-	go func() {
-		// The k8s API of the workload cluster must be available to make requests.
-		if ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
-			err = c.deleteOldControlNodes(ctx, cluster)
-			if err != nil {
-				logger.Error(err, "Error deleting old control nodes")
-			}
-		}
-	}()
-
-	if clusterIsUpdating {
-		log.Log.Info("Cluster is updating", "currentVersion", currentVersion, "newVersion", kcp.Spec.Version, "strategy", kcp.Spec.UpdateStrategy)
-		if kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreate {
-			// If the cluster is running in single mode, we can't use the Recreate strategy
-			if kcp.Spec.K0sConfigSpec.Args != nil {
-				if slices.Contains(kcp.Spec.K0sConfigSpec.Args, "--single") {
-					return fmt.Errorf("UpdateRecreate strategy is not allowed when the cluster is running in single mode")
-				}
-			}
-		} else {
-			kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
-			if err != nil {
-				return fmt.Errorf("error getting cluster client set for machine update: %w", err)
-			}
-
-			err = c.createAutopilotPlan(ctx, kcp, cluster, kubeClient)
-			if err != nil {
-				return fmt.Errorf("error creating autopilot plan: %w", err)
-			}
-		}
-	}
-
-	tooManyMachines := len(machineNamesToDelete)+len(desiredMachines) > int(kcp.Spec.Replicas)
-	clusterHasChanged := configurationHasChanged || clusterIsUpdating
-	if infraMachineMissing ||
-		tooManyMachines ||
-		isRecreateDeleteFirstPossible(kcp, clusterHasChanged, machineNamesToDelete, desiredMachines) {
-		m := activeMachines.Newest().Name
-		err := c.checkMachineIsReady(ctx, m, cluster)
-		if err != nil {
-			logger.Error(err, "Error checking machine left", "machine", m)
-			return err
-		}
-
-		logger.Info("Found machines to delete", "count", len(machineNamesToDelete))
-
-		// Remove the oldest machine abd wait for the machine to be deleted to avoid etcd issues
-		machineToDelete := activeMachines.Filter(func(m *clusterv1.Machine) bool {
-			return machineNamesToDelete[m.Name]
-		}).Oldest()
-		logger.Info("Found oldest machine to delete", "machine", machineToDelete.Name)
-		if machineToDelete.Status.Phase == string(clusterv1.MachinePhaseDeleting) {
-			logger.Info("Machine is being deleted, waiting for it to be deleted", "machine", machineToDelete.Name)
-			return fmt.Errorf("waiting for previous machine to be deleted")
-		}
-
-		err = c.runMachineDeletionSequence(ctx, kcp, machineToDelete)
-		if err != nil {
-			return err
-		}
-
-		logger.Info("Deleted machine", "machine", machineToDelete.Name)
-		return util.ErrNotReady
-	}
-
-	if len(desiredMachines) < int(kcp.Spec.Replicas) {
-
-		name := names.SimpleNameGenerator.GenerateName(fmt.Sprintf("%s-", kcp.Name))
-		log.Log.Info("desire machine", "name", name)
-
-		for _, mn := range deletedMachines.Names() {
-			if name == mn {
-				logger.Info("machine is being deleted, requeue", "machine", mn)
-				return util.ErrNotReady
-			}
-		}
-		// If it is not the first machine to create, wait for the previous machine to be created to avoid etcd issues
-		// if cluster if updating. Some providers don't publish failure domains immediately, so wait for the first
-		// machine to be ready It's not slowing down the process overall, as we wait to the first machine anyway to
-		// create join tokens.
-		if activeMachines.Len() >= 1 {
-			err := c.checkMachineIsReady(ctx, activeMachines.Newest().Name, cluster)
-			if err != nil {
-				return err
-			}
-		}
-
-		infraMachine, err := c.createMachineFromTemplate(ctx, name, cluster, kcp)
-		if err != nil {
-			return fmt.Errorf("error creating machine from template: %w", err)
-		}
-
-		infraRef := clusterv1.ContractVersionedObjectReference{
-			Kind:     infraMachine.GetKind(),
-			Name:     infraMachine.GetName(),
-			APIGroup: clusterv1.GroupVersionInfrastructure.Group,
-		}
-		selectedFailureDomain := failuredomains.PickFewest(ctx, filterControlPlaneFailureDomains(*cluster), activeMachines, deletedMachines)
-		machine, err := c.createMachine(ctx, name, cluster, kcp, infraRef, selectedFailureDomain)
-		if err != nil {
-			return fmt.Errorf("error creating machine: %w", err)
-		}
-		activeMachines[machine.Name] = machine
-		desiredMachines.Insert(machine)
-
-		machineK0sConfig, err := getMachineK0sConfig(machine)
-		if err != nil {
-			return fmt.Errorf("error getting machine k0s config: %w", err)
-		}
-
-		err = c.createBootstrapConfig(ctx, name, machineK0sConfig, kcp, activeMachines[name], cluster.Name)
-		if err != nil {
-			return fmt.Errorf("error creating bootstrap config: %w", err)
-		}
-	}
-
-	if len(desiredMachines) < int(kcp.Spec.Replicas) {
-		return ErrNewMachinesNotReady
-	}
-
-	return nil
-}
-
-func (c *K0sController) inplaceSyncMachineValues(ctx context.Context, machine *clusterv1.Machine) error {
-	patchHelper, err := patch.NewHelper(machine, c.Client)
-	if err != nil {
-		return err
-	}
-
-	return patchHelper.Patch(ctx, machine)
-}
-
-func (c *K0sController) runMachineDeletionSequence(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) error {
-	if err := c.deleteMachine(ctx, machine.Name, kcp); err != nil {
-		return fmt.Errorf("error deleting machine from template: %w", err)
-	}
-
-	return nil
-}
-
-func (c *K0sController) deleteK0sNodeResources(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) error {
-	logger := log.FromContext(ctx)
-
-	if ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
-		kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
-		if err != nil {
-			return fmt.Errorf("error getting cluster client set for deletion: %w", err)
-		}
-
-		waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-		defer cancel()
-		err = wait.PollUntilContextCancel(waitCtx, 10*time.Second, true, func(fctx context.Context) (bool, error) {
-			if err := c.markChildControlNodeToLeave(fctx, machine.Name, kubeClient); err != nil {
-				return false, fmt.Errorf("error marking controlnode to leave: %w", err)
-			}
-
-			ok, err := c.checkMachineLeft(fctx, machine.Name, kubeClient)
-			if err != nil {
-				logger.Error(err, "Error checking machine left", "machine", machine.Name)
-			}
-			return ok, err
-		})
-		if err != nil {
-			return fmt.Errorf("error checking machine left: %w", err)
-		}
-	}
-
-	if err := c.removePreTerminateHookAnnotationFromMachine(ctx, machine); err != nil {
-		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine '%s': %w", machine.Name, err)
-	}
-
-	return nil
-}
-
-func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, k0sConfigSpec *bootstrapv2.K0sConfigSpec, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine, clusterName string) error {
+func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, k0sConfigSpec *bootstrapv2.K0sConfigSpec, kcp *cpv1beta2.K0sControlPlane, clusterName string) error {
 
 	controllerConfig := bootstrapv2.K0sControllerConfig{
 		TypeMeta: metav1.TypeMeta{
@@ -629,12 +364,10 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 			Labels:      controlPlaneCommonLabelsForCluster(kcp, clusterName),
 			Annotations: kcp.Spec.MachineTemplate.ObjectMeta.Annotations,
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         machine.APIVersion,
-				Kind:               machine.Kind,
-				Name:               machine.GetName(),
-				UID:                machine.GetUID(),
-				BlockOwnerDeletion: new(true),
-				Controller:         new(true),
+				APIVersion: cpv1beta2.GroupVersion.String(),
+				Kind:       "K0sControlPlane",
+				Name:       kcp.GetName(),
+				UID:        kcp.GetUID(),
 			}},
 		},
 		Spec: bootstrapv2.K0sControllerConfigSpec{
@@ -677,53 +410,58 @@ func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName str
 	return nil
 }
 
-func (c *K0sController) ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
+func (c *K0sController) ensureCertificates(ctx context.Context, controlplane *controlplane) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
-	return certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(cluster), *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")))
+	return certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(controlplane.cluster), *metav1.NewControllerRef(controlplane.kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")))
 }
 
-func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
+func (c *K0sController) reconcileConfig(ctx context.Context, controlplane *controlplane) error {
 	logger := log.FromContext(ctx)
 
-	if kcp.Spec.K0sConfigSpec.K0s != nil {
-		nllbEnabled, found, err := unstructured.NestedBool(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
+	if controlplane.kcp.Spec.K0sConfigSpec.K0s != nil {
+		nllbEnabled, found, err := unstructured.NestedBool(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
 			return fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
 		}
 		// Set the external address if NLLB is not enabled
 		// Otherwise, just add the external address to the SANs to allow the clients to connect using LB address
 		if !(found && nllbEnabled) {
-			err = unstructured.SetNestedField(kcp.Spec.K0sConfigSpec.K0s.Object, cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
+			err = unstructured.SetNestedField(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, controlplane.cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
 			if err != nil {
 				return fmt.Errorf("error setting control plane endpoint: %v", err)
 			}
-		} else if cluster.Spec.ControlPlaneEndpoint.Host != "" {
-			sans := []string{cluster.Spec.ControlPlaneEndpoint.Host}
-			existingSANs, sansFound, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
+		} else if controlplane.cluster.Spec.ControlPlaneEndpoint.Host != "" {
+			sans := []string{controlplane.cluster.Spec.ControlPlaneEndpoint.Host}
+			existingSANs, sansFound, err := unstructured.NestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
 			if err == nil && sansFound {
 				sans = util.AddToExistingSans(existingSANs, sans)
 			}
-			err = unstructured.SetNestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
+			err = unstructured.SetNestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
 			if err != nil {
 				return fmt.Errorf("error setting sans: %v", err)
 			}
 		}
 
-		if kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress != "" {
-			sans, _, err := unstructured.NestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
+		if controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress != "" {
+			sans, _, err := unstructured.NestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
 			if err != nil {
 				return fmt.Errorf("error getting sans from config: %v", err)
 			}
-			sans = util.AddToExistingSans(sans, []string{kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress})
-			err = unstructured.SetNestedStringSlice(kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
+			sans = util.AddToExistingSans(sans, []string{controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress})
+			err = unstructured.SetNestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
 			if err != nil {
 				return fmt.Errorf("error setting sans to the config: %v", err)
 			}
 		}
 
-		workloadClient, err := util.GetControllerRuntimeClient(ctx, c.Client, c.ClusterCache, kcp, client.ObjectKeyFromObject(cluster))
+		controlplane.kcp.Spec.K0sConfigSpec.K0s, err = enrichK0sConfigWithClusterData(controlplane.cluster, controlplane.kcp.Spec.K0sConfigSpec.K0s)
+		if err != nil {
+			return err
+		}
+
+		workloadClient, err := util.GetControllerRuntimeClient(ctx, c.Client, c.ClusterCache, controlplane.kcp, client.ObjectKeyFromObject(controlplane.cluster))
 		if err != nil {
 			if errors.Is(err, util.ErrNotReady) {
 				return nil
@@ -732,7 +470,7 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 			return fmt.Errorf("error getting workload cluster client: %w", err)
 		}
 
-		err = kutil.ReconcileDynamicConfig(ctx, workloadClient, *kcp.Spec.K0sConfigSpec.K0s.DeepCopy())
+		err = kutil.ReconcileDynamicConfig(ctx, workloadClient, *controlplane.kcp.Spec.K0sConfigSpec.K0s.DeepCopy())
 		if err != nil {
 			logger.Error(err, "Failed to reconcile dynamic config, will retry")
 		}
@@ -741,37 +479,26 @@ func (c *K0sController) reconcileConfig(ctx context.Context, cluster *clusterv1.
 	return nil
 }
 
-func isRecreateDeleteFirstPossible(kcp *cpv1beta2.K0sControlPlane, clusterHasChanged bool, machineNamesToDelete map[string]bool, desiredMachines collections.Machines) bool {
-	if !clusterHasChanged {
-		return false
-	}
-	return kcp.Spec.Replicas >= 3 && // if we have at least 3 replicas
-		// and we are running recreate delete first strategy
-		kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreateDeleteFirst &&
-		// and the number of machines we have and the ones we want to delete is more or equal to the desired replicas
-		len(machineNamesToDelete)+len(desiredMachines) >= int(kcp.Spec.Replicas)
-}
-
-func (c *K0sController) reconcileTunneling(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) error {
-	if !kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
+func (c *K0sController) reconcileTunneling(ctx context.Context, controlplane *controlplane) error {
+	if !controlplane.kcp.Spec.K0sConfigSpec.Tunneling.Enabled {
 		return nil
 	}
 
-	if kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress == "" {
+	if controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress == "" {
 		ip, err := util.FindNodeAddress(ctx, c.Client)
 		if err != nil {
 			return fmt.Errorf("error detecting node IP: %w", err)
 		}
-		kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress = ip
+		controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress = ip
 	}
 
-	frpToken, err := c.createFRPToken(ctx, cluster, kcp)
+	frpToken, err := c.createFRPToken(ctx, controlplane.cluster, controlplane.kcp)
 	if err != nil {
 		return fmt.Errorf("error creating FRP token secret: %w", err)
 	}
 
 	var frpsConfig string
-	if kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
+	if controlplane.kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
 		frpsConfig = `
 [common]
 bind_port = 7000
@@ -788,7 +515,7 @@ token = ` + frpToken + `
 `
 	}
 
-	frpsCMName := fmt.Sprintf(FRPConfigMapNameTemplate, kcp.GetName())
+	frpsCMName := fmt.Sprintf(FRPConfigMapNameTemplate, controlplane.kcp.GetName())
 	cm := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -796,7 +523,7 @@ token = ` + frpToken + `
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      frpsCMName,
-			Namespace: kcp.GetNamespace(),
+			Namespace: controlplane.kcp.GetNamespace(),
 			Labels: map[string]string{
 				util.ComponentLabel: util.ComponentTunneling,
 			},
@@ -806,7 +533,7 @@ token = ` + frpToken + `
 		},
 	}
 
-	_ = ctrl.SetControllerReference(kcp, &cm, c.Client.Scheme())
+	_ = ctrl.SetControllerReference(controlplane.kcp, &cm, c.Client.Scheme())
 	err = c.Client.Patch(ctx, &cm, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"})
 	if err != nil {
 		return fmt.Errorf("error creating ConfigMap: %w", err)
@@ -814,7 +541,7 @@ token = ` + frpToken + `
 
 	// Deployment selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
 	frpsSelectorLabels := map[string]string{
-		"k0smotron_cluster": kcp.GetName(),
+		"k0smotron_cluster": controlplane.kcp.GetName(),
 		"app":               "frps",
 	}
 	frpsDeployment := appsv1.Deployment{
@@ -823,10 +550,10 @@ token = ` + frpToken + `
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf(FRPDeploymentNameTemplate, kcp.GetName()),
-			Namespace: kcp.GetNamespace(),
+			Name:      fmt.Sprintf(FRPDeploymentNameTemplate, controlplane.kcp.GetName()),
+			Namespace: controlplane.kcp.GetNamespace(),
 			Labels: map[string]string{
-				"k0smotron_cluster": kcp.GetName(),
+				"k0smotron_cluster": controlplane.kcp.GetName(),
 				"app":               "frps",
 				util.ComponentLabel: util.ComponentTunneling,
 			},
@@ -838,7 +565,7 @@ token = ` + frpToken + `
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"k0smotron_cluster": kcp.GetName(),
+						"k0smotron_cluster": controlplane.kcp.GetName(),
 						"app":               "frps",
 						util.ComponentLabel: util.ComponentTunneling,
 					},
@@ -883,7 +610,7 @@ token = ` + frpToken + `
 				}},
 		},
 	}
-	_ = ctrl.SetControllerReference(kcp, &frpsDeployment, c.Client.Scheme())
+	_ = ctrl.SetControllerReference(controlplane.kcp, &frpsDeployment, c.Client.Scheme())
 	err = c.Client.Patch(ctx, &frpsDeployment, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"})
 	if err != nil {
 		return fmt.Errorf("error creating Deployment: %w", err)
@@ -895,10 +622,10 @@ token = ` + frpToken + `
 			Kind:       "Service",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf(FRPServiceNameTemplate, kcp.GetName()),
-			Namespace: kcp.GetNamespace(),
+			Name:      fmt.Sprintf(FRPServiceNameTemplate, controlplane.kcp.GetName()),
+			Namespace: controlplane.kcp.GetNamespace(),
 			Labels: map[string]string{
-				"k0smotron_cluster": kcp.GetName(),
+				"k0smotron_cluster": controlplane.kcp.GetName(),
 				"app":               "frps",
 				util.ComponentLabel: util.ComponentTunneling,
 			},
@@ -910,18 +637,18 @@ token = ` + frpToken + `
 				Protocol:   corev1.ProtocolTCP,
 				Port:       7000,
 				TargetPort: intstr.FromInt(7000),
-				NodePort:   kcp.Spec.K0sConfigSpec.Tunneling.ServerNodePort,
+				NodePort:   controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerNodePort,
 			}, {
 				Name:       "tunnel",
 				Protocol:   corev1.ProtocolTCP,
 				Port:       6443,
 				TargetPort: intstr.FromInt(6443),
-				NodePort:   kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort,
+				NodePort:   controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort,
 			}},
 			Type: corev1.ServiceTypeNodePort,
 		},
 	}
-	_ = ctrl.SetControllerReference(kcp, &frpsService, c.Client.Scheme())
+	_ = ctrl.SetControllerReference(controlplane.kcp, &frpsService, c.Client.Scheme())
 	err = c.Client.Patch(ctx, &frpsService, client.Apply, &client.PatchOptions{FieldManager: "k0s-bootstrap"})
 	if err != nil {
 		return fmt.Errorf("error creating Service: %w", err)
@@ -930,19 +657,19 @@ token = ` + frpToken + `
 	return nil
 }
 
-func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (ctrl.Result, error) {
+func (c *K0sController) reconcileDelete(ctx context.Context, controlplane *controlplane) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster)
+	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c, controlplane.cluster)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get machines: %w", err)
 	}
 
-	cpMachines := allMachines.Filter(collections.ControlPlaneMachines(cluster.Name))
+	cpMachines := allMachines.Filter(collections.ControlPlaneMachines(controlplane.cluster.Name))
 
 	if len(cpMachines) == 0 {
 		// No machines left, we can finally delete the K0sControlPlane by removing the finalizer.
-		controllerutil.RemoveFinalizer(kcp, cpv1beta2.K0sControlPlaneFinalizer)
+		controllerutil.RemoveFinalizer(controlplane.kcp, cpv1beta2.K0sControlPlaneFinalizer)
 		return ctrl.Result{}, nil
 	}
 
@@ -972,24 +699,6 @@ func (c *K0sController) reconcileDelete(ctx context.Context, cluster *clusterv1.
 
 	// Requeue to wait for the machines and their dependencies to be deleted.
 	return ctrl.Result{RequeueAfter: 10 * time.Second}, kerrors.NewAggregate(errs)
-}
-
-func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.Context, machine *clusterv1.Machine) error {
-	if _, exists := machine.Annotations[cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation]; !exists {
-		// Nothing to do, the annotation is not set (anymore) on the Machine
-		return nil
-	}
-
-	log := log.FromContext(ctx)
-	log.Info("Removing pre-terminate hook from control plane Machine")
-
-	machineOriginal := machine.DeepCopy()
-	delete(machine.Annotations, cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation)
-	if err := c.Client.Patch(ctx, machine, client.MergeFrom(machineOriginal)); err != nil {
-		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine: %w", err)
-	}
-
-	return nil
 }
 
 func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (string, error) {
@@ -1027,6 +736,99 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 	return frpToken, c.Client.Patch(ctx, frpSecret, client.Apply, &client.PatchOptions{
 		FieldManager: "k0smotron",
 	})
+}
+
+func (c *K0sController) retrieveControlPlaneState(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (*controlplane, error) {
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
+	if err != nil {
+		return nil, fmt.Errorf("failed to filter machines for control plane: %w", err)
+	}
+
+	if machines == nil {
+		return nil, fmt.Errorf("machines collection is nil")
+	}
+
+	deletedMachines := machines.Filter(collections.HasDeletionTimestamp)
+	activeMachines := machines.Filter(collections.ActiveMachines)
+
+	var (
+		upToDateMachines          = collections.New()
+		controllerConfigs         = make(map[string]*bootstrapv2.K0sControllerConfig)
+		infraMachines             = make(map[string]*unstructured.Unstructured)
+		hasMachinesWithOldVersion bool
+	)
+	for _, machine := range activeMachines {
+		machineState, err := c.calculateMachineState(ctx, kcp, machine)
+		if err != nil {
+			return nil, fmt.Errorf("error calculating machine state for machine %s: %w", machine.Name, err)
+		}
+		if !machineState.isVersionUpToDate {
+			hasMachinesWithOldVersion = true
+		}
+
+		if machineState.isVersionUpToDate && machineState.isInfraUpToDate && machineState.isBootstrapUpToDate {
+			upToDateMachines.Insert(machine)
+		}
+
+		if machineState.controllerConfig != nil {
+			controllerConfigs[machine.Name] = machineState.controllerConfig
+		}
+
+		if machineState.infraMachine != nil {
+			infraMachines[machine.Name] = machineState.infraMachine
+		}
+	}
+
+	scope := &controlplane{
+		cluster:                   cluster,
+		kcp:                       kcp,
+		deletedMachines:           deletedMachines,
+		activeMachines:            activeMachines,
+		upToDateMachines:          upToDateMachines,
+		notUpToDateMachines:       activeMachines.Difference(upToDateMachines),
+		hasMachinesWithOldVersion: hasMachinesWithOldVersion,
+		controllerConfigs:         controllerConfigs,
+		infraMachines:             infraMachines,
+	}
+
+	return scope, nil
+}
+
+func (c *K0sController) calculateMachineState(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, m *clusterv1.Machine) (machineState, error) {
+	logger := log.FromContext(ctx, "machine", m.Name)
+
+	uInfraMachine, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, m.Spec.InfrastructureRef, m.Namespace)
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return machineState{}, fmt.Errorf("failed to retrieve infra machine for machine object %s: %w", m.Name, err)
+		}
+		logger.Info("Infrastructure machine not found")
+	}
+
+	uBootstrapConfig, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, m.Spec.Bootstrap.ConfigRef, m.Namespace)
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return machineState{}, fmt.Errorf("failed to retrieve controller config for machine object %s: %w", m.Name, err)
+		}
+		logger.Info("Bootstrap config not found")
+	}
+	var bootstrapConfig *bootstrapv2.K0sControllerConfig
+	if uBootstrapConfig != nil {
+		bootstrapConfig = &bootstrapv2.K0sControllerConfig{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uBootstrapConfig.Object, bootstrapConfig)
+		if err != nil {
+			return machineState{}, fmt.Errorf("failed to convert bootstrap config for machine object %s: %w", m.Name, err)
+		}
+	}
+
+	ms := machineState{
+		isVersionUpToDate:   versionMatches(m, kcp.Spec.Version),
+		isInfraUpToDate:     isInfraMachineUpToDate(uInfraMachine, kcp, m),
+		isBootstrapUpToDate: isBootstrapConfigUpToDate(bootstrapConfig, kcp, m),
+		controllerConfig:    bootstrapConfig,
+		infraMachine:        uInfraMachine,
+	}
+	return ms, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
