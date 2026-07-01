@@ -501,6 +501,24 @@ func ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cp
 	return certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, capiutil.ObjectKey(cluster), owner)
 }
 
+// listControlPlanePods returns the control plane pods for the given cluster. The listing is scoped to the
+// cluster's namespace so that clusters sharing the same name in different namespaces do not affect each
+// other's replica counts.
+func listControlPlanePods(ctx context.Context, cl client.Client, cluster *clusterv1.Cluster) (*corev1.PodList, error) {
+	controlPlanePods := &corev1.PodList{}
+	opts := &client.ListOptions{
+		Namespace: cluster.Namespace,
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			"cluster.x-k8s.io/cluster-name":  cluster.Name,
+			"cluster.x-k8s.io/control-plane": "true",
+		}),
+	}
+	if err := cl.List(ctx, controlPlanePods, opts); err != nil {
+		return nil, err
+	}
+	return controlPlanePods, nil
+}
+
 func (c *K0smotronController) computeStatus(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane, scope *kmcScope) error {
 	var kmc kapi.Cluster
 	err := c.Client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &kmc)
@@ -513,14 +531,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		return err
 	}
 
-	contolPlanePods := &corev1.PodList{}
-	opts := &client.ListOptions{
-		LabelSelector: labels.SelectorFromSet(map[string]string{
-			"cluster.x-k8s.io/cluster-name":  cluster.Name,
-			"cluster.x-k8s.io/control-plane": "true",
-		}),
-	}
-	err = scope.client.List(ctx, contolPlanePods, opts)
+	contolPlanePods, err := listControlPlanePods(ctx, scope.client, cluster)
 	if err != nil {
 		return err
 	}

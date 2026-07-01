@@ -18,6 +18,7 @@ limitations under the License.
 package controlplane
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -27,7 +28,58 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+func TestListControlPlanePods_IsNamespaceScoped(t *testing.T) {
+	const clusterName = "test"
+
+	// Two clusters share the same name in different namespaces, each with its own
+	// control plane pods. Counting must not leak pods across namespaces.
+	newPod := func(name, namespace string) *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+				Labels: map[string]string{
+					"cluster.x-k8s.io/cluster-name":  clusterName,
+					"cluster.x-k8s.io/control-plane": "true",
+				},
+			},
+		}
+	}
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+
+	cl := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(
+			newPod("foo-cp-0", "ns-foo"),
+			newPod("foo-cp-1", "ns-foo"),
+			newPod("foo-cp-2", "ns-foo"),
+			newPod("bar-cp-0", "ns-bar"),
+			newPod("bar-cp-1", "ns-bar"),
+			newPod("bar-cp-2", "ns-bar"),
+		).
+		Build()
+
+	for _, ns := range []string{"ns-foo", "ns-bar"} {
+		t.Run(ns, func(t *testing.T) {
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: v1.ObjectMeta{Name: clusterName, Namespace: ns},
+			}
+			pods, err := listControlPlanePods(context.Background(), cl, cluster)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 3, "control plane pod count must be scoped to the cluster namespace")
+			for _, pod := range pods.Items {
+				require.Equal(t, ns, pod.Namespace)
+			}
+		})
+	}
+}
 
 func TestIsClusterSpecSynced(t *testing.T) {
 	const (
