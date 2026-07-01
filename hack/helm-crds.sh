@@ -14,11 +14,12 @@
 # RBAC is small and namespace-dependent, so it goes in the parent templates/ and
 # is templated to .Release.Namespace.
 #
-# CRDs go in the k0smotron-crds subchart's crds/ directory: crds/ is installed
-# but never rendered into the manifest, so the full-fat CRDs (descriptions kept)
-# are stored only once and fit Helm's 1 MiB release-Secret limit. crds/ is not
-# templated, so the conversion-webhook and cert-manager namespaces are baked to
-# $CRD_NAMESPACE; the parent NOTES guard enforces installing into that namespace.
+# CRDs go in the k0smotron-crds subchart's templates/ directory so they can be
+# gated per controller via .Values.global.controllers. The full-fat CRDs
+# (descriptions kept) are ~5 MiB raw but gzip to well under Helm's 1 MiB
+# release-Secret limit. The conversion-webhook and cert-manager namespaces are
+# baked to $CRD_NAMESPACE (not templated to .Release.Namespace); the parent NOTES
+# guard enforces installing into that namespace.
 #
 # Run this AFTER `kubebuilder edit --plugins=helm/v1-alpha`.
 set -euo pipefail
@@ -54,24 +55,49 @@ rm -rf "$TPL/rbac"; mkdir -p "$TPL/rbac"
   echo '{{- end }}'
 } > "$TPL/rbac/rbac.yaml"
 
-# --- CRDs (crds subchart, full descriptions, baked namespace) ----------------
-# One file per CRD: with full descriptions the combined set is >5 MiB, Helm's
-# per-file limit. Not templated, so bake $CRD_NAMESPACE. Use with(select(...);...)
-# not a guarded assignment: a deep path on the left of `=` makes yq materialise
-# the intermediate nodes, injecting a half-built conversion block (no strategy)
-# into CRDs that have none - the apiserver rejects that. yq's --split-exp keeps
-# the dotted CRD name verbatim (no extension), so just append .yaml.
-rm -rf "$CHART/templates/crd" "$SUB/crds"; mkdir -p "$SUB/crds/.split"
+# --- CRDs (crds subchart, templated for per-controller selection) ------------
+# CRDs live in the subchart's templates/ (not crds/) so that
+# .Values.global.controller can gate which CRDs install: each CRD is wrapped in
+# a controller conditional keyed off the CRD's API group. The full set is ~5 MiB
+# raw but gzips to well under Helm's ~1 MiB release-Secret limit. The
+# conversion-webhook / cert-manager CA namespaces are still baked to
+# $CRD_NAMESPACE (the parent NOTES guard enforces installing there). When
+# .Values.global.crdKeep is set, each CRD is annotated helm.sh/resource-policy:
+# keep so it survives `helm uninstall`. Use with(select(...);...) not a guarded
+# assignment: a deep path on the left of `=` makes yq materialise the
+# intermediate nodes, injecting a half-built conversion block (no strategy) into
+# CRDs that have none - the apiserver rejects that. yq's --split-exp keeps the
+# dotted CRD name verbatim (no extension), so just append .yaml.
+rm -rf "$CHART/templates/crd" "$SUB/crds" "$SUB/templates"; mkdir -p "$SUB/.split"
 "$YQ" eval '
   select(.kind == "CustomResourceDefinition")
   | with(select(.spec.conversion.strategy == "Webhook"); .spec.conversion.webhook.clientConfig.service.namespace = "'"$CRD_NAMESPACE"'")
   | with(select(.metadata.annotations."cert-manager.io/inject-ca-from" != null); .metadata.annotations."cert-manager.io/inject-ca-from" = "'"$CRD_NAMESPACE"'/serving-cert")
 ' "$rendered" \
-  | "$YQ" eval --no-doc --split-exp "\"$SUB/crds/.split/\" + .metadata.name" -
-for f in "$SUB/crds/.split"/*; do
-  mv "$f" "$SUB/crds/$(basename "$f").yaml"
+  | "$YQ" eval --no-doc --split-exp "\"$SUB/.split/\" + .metadata.name" -
+mkdir -p "$SUB/templates"
+# Injected under each CRD's metadata.annotations (which yq emits at line 4).
+keep='    {{- if (.Values.global | default dict).crdKeep }}\n    "helm.sh/resource-policy": keep\n    {{- end }}'
+for f in "$SUB/.split"/*; do
+  base=$(basename "$f")
+  # Map the CRD's API group to the controller that owns it. The k0smotron.io
+  # (standalone) CRDs ship with control-plane: enabling that controller also
+  # runs the standalone controllers, which reconcile them.
+  case "$base" in
+    *.bootstrap.cluster.x-k8s.io)      name='bootstrap';;
+    *.controlplane.cluster.x-k8s.io)   name='control-plane';;
+    *.infrastructure.cluster.x-k8s.io) name='infrastructure';;
+    *.k0smotron.io)                    name='control-plane';;
+    *) echo "helm-crds: unclassified CRD $base" >&2; exit 1;;
+  esac
+  {
+    echo '{{- $ctrl := (.Values.global | default dict).controller | default "all" -}}'
+    echo "{{- if has \$ctrl (list \"all\" \"$name\") }}"
+    awk -v keep="$keep" 'NR==4 && $0=="  annotations:"{print; print keep; next} {print}' "$f"
+    echo '{{- end }}'
+  } > "$SUB/templates/$base.yaml"
 done
-rmdir "$SUB/crds/.split"
+rm -rf "$SUB/.split"
 
 # Subchart metadata.
 cat > "$SUB/Chart.yaml" <<EOF
@@ -86,6 +112,11 @@ EOF
 # Wire the subchart into the parent: dependency (for the condition toggle) + values.
 "$YQ" -i '.dependencies = [{"name": "k0smotron-crds", "version": "'"$CHART_VERSION"'", "condition": "crds.enabled", "repository": "file://charts/k0smotron-crds"}]' "$CHART/Chart.yaml"
 "$YQ" -i '.crds.enabled = true | .crds.namespace = "'"$CRD_NAMESPACE"'"' "$CHART/values.yaml"
+# global.* is shared with the CRD subchart: which controller to run (drives both
+# the manager --enable-controller flag and CRD selection) and whether CRDs get the
+# resource-policy: keep annotation. Only seed defaults if absent, to preserve any
+# hand-written values/comments.
+"$YQ" -i '.global.controller = (.global.controller // "all") | .global.crdKeep = (.global.crdKeep // true)' "$CHART/values.yaml"
 
 # The CRDs' conversion webhook is baked to .Values.crds.namespace (crds/ can't be
 # templated). Abort the install up front if the release namespace differs.

@@ -1,7 +1,12 @@
+{{- $ctrl := (.Values.global | default dict).controller | default "all" -}}
+{{- if has $ctrl (list "all" "control-plane") }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
+    {{- if (.Values.global | default dict).crdKeep }}
+    "helm.sh/resource-policy": keep
+    {{- end }}
     cert-manager.io/inject-ca-from: k0smotron-system/serving-cert
     controller-gen.kubebuilder.io/version: v0.18.0
   labels:
@@ -124,7 +129,7 @@ spec:
                   type: array
                 etcd:
                   default:
-                    image: quay.io/k0sproject/etcd:v3.5.13
+                    image: quay.io/k0sproject/etcd:v3.7.1
                     persistence: {}
                   description: Etcd defines the etcd configuration.
                   properties:
@@ -165,7 +170,7 @@ spec:
                         - schedule
                       type: object
                     image:
-                      default: quay.io/k0sproject/etcd:v3.5.13
+                      default: quay.io/k0sproject/etcd:v3.7.1
                       description: Image defines the etcd image to be deployed.
                       type: string
                     persistence:
@@ -9140,7 +9145,7 @@ spec:
                   properties:
                     etcd:
                       default:
-                        image: quay.io/k0sproject/etcd:v3.5.13
+                        image: quay.io/k0sproject/etcd:v3.7.1
                         persistence: {}
                       description: Etcd defines the etcd storage configuration.
                       properties:
@@ -9181,7 +9186,7 @@ spec:
                             - schedule
                           type: object
                         image:
-                          default: quay.io/k0sproject/etcd:v3.5.13
+                          default: quay.io/k0sproject/etcd:v3.7.1
                           description: Image defines the etcd image to be deployed.
                           type: string
                         persistence:
@@ -9596,3 +9601,4 @@ spec:
           specReplicasPath: .spec.replicas
           statusReplicasPath: .status.replicas
         status: {}
+{{- end }}

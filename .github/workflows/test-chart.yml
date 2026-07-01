@@ -1,0 +1,133 @@
+name: Test Chart
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "dist/chart/**"
+      - "hack/helm-crds.sh"
+      - "Makefile"
+      - "Makefile.variables"
+      - "config/**"
+      - "api/**"
+      - ".github/workflows/test-chart.yml"
+  pull_request:
+    paths:
+      - "dist/chart/**"
+      - "hack/helm-crds.sh"
+      - "Makefile"
+      - "Makefile.variables"
+      - "config/**"
+      - "api/**"
+      - ".github/workflows/test-chart.yml"
+
+env:
+  NAMESPACE: k0smotron-system
+  RELEASE: my-release
+  IMG: k0smotron:v0.1.0
+
+jobs:
+  test-e2e:
+    name: Run on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install the latest version of kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Verify kind installation
+        run: kind version
+
+      - name: Create kind cluster
+        run: kind create cluster
+
+      - name: Prepare k0smotron
+        run: |
+          go mod tidy
+          make docker-build IMG=${IMG}
+          kind load docker-image ${IMG}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      # `make helm-chart` installs its own pinned tooling (kubebuilder, yq,
+      # kustomize, controller-gen) into bin/ per Makefile.variables.
+      # Pin the chart's image to the kind-loaded one.
+      - name: Generate Helm chart
+        run: |
+          make helm-chart IMG=${IMG} CHART_VERSION=0.0.0-test
+
+      # --namespace must match the baked CRD namespace, or the chart's
+      # namespace guard aborts rendering during lint.
+      - name: Lint Helm Chart
+        run: |
+          helm lint ./dist/chart --namespace ${NAMESPACE}
+
+      # The chart's CRD conversion webhooks and admission webhooks need cert-manager.
+      - name: Install cert-manager via Helm
+        run: |
+          helm repo add jetstack https://charts.jetstack.io
+          helm repo update
+          helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true
+
+      - name: Wait for cert-manager to be ready
+        run: |
+          kubectl wait --namespace cert-manager --for=condition=available --timeout=300s deployment/cert-manager
+          kubectl wait --namespace cert-manager --for=condition=available --timeout=300s deployment/cert-manager-cainjector
+          kubectl wait --namespace cert-manager --for=condition=available --timeout=300s deployment/cert-manager-webhook
+
+      - name: Install Helm chart for project
+        run: |
+          helm install ${RELEASE} ./dist/chart --create-namespace --namespace ${NAMESPACE} --wait --timeout 5m
+
+      - name: Check Helm release status
+        run: |
+          helm status ${RELEASE} --namespace ${NAMESPACE}
+          kubectl wait --namespace ${NAMESPACE} --for=condition=available --timeout=300s deployment --all
+
+      - name: Assert manager is rolled out and stable
+        run: |
+          set -euo pipefail
+          kubectl rollout status deploy/k0smotron-controller-manager -n ${NAMESPACE} --timeout=300s
+          # Pod must be Ready...
+          kubectl wait --namespace ${NAMESPACE} \
+            --for=condition=Ready pod \
+            -l control-plane=controller-manager --timeout=120s
+          # ...and not crash-looping.
+          restarts=$(kubectl get pods -n ${NAMESPACE} -l control-plane=controller-manager \
+            -o jsonpath='{range .items[*]}{range .status.containerStatuses[*]}{.restartCount}{"\n"}{end}{end}')
+          echo "container restart counts:"
+          echo "${restarts}"
+          total=$(echo "${restarts}" | awk '{s += $1} END {print s + 0}')
+          if [ "${total}" -ne 0 ]; then
+            echo "::error::manager containers restarted ${total} time(s) (possible crashloop)"
+            exit 1
+          fi
+
+      - name: Assert services exist
+        run: |
+          set -euo pipefail
+          kubectl get svc k0smotron-webhook-service -n ${NAMESPACE}
+          kubectl get svc k0smotron-controller-manager-metrics-service -n ${NAMESPACE}
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          echo "===== pods ====="
+          kubectl get pods -A -o wide || true
+          echo "===== manager describe ====="
+          kubectl describe pods -n ${NAMESPACE} -l control-plane=controller-manager || true
+          echo "===== manager logs ====="
+          kubectl logs -n ${NAMESPACE} -l control-plane=controller-manager --all-containers --tail=200 || true
+          echo "===== events ====="
+          kubectl get events -n ${NAMESPACE} --sort-by=.lastTimestamp || true
