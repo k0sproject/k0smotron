@@ -27,6 +27,7 @@ import (
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	kapi "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -212,8 +213,7 @@ func (s *CAPIDockerSuite) checkClusterIDAnnotation(ctx context.Context) {
 			Do(ctx).
 			Into(&cluster)
 
-		s.T().Log(cluster)
-		clusterIDAnnotation, found := cluster.GetAnnotations()[cpv1beta2.K0sClusterIDAnnotation]
+		clusterIDAnnotation, found := cluster.GetAnnotations()[kapi.K0sClusterIDAnnotation]
 		return found && strings.Contains(clusterIDAnnotation, "kube-system"), nil
 	})
 
