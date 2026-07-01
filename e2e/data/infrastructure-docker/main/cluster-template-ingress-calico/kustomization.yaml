@@ -1,2 +1,15 @@
 resources:
-- cluster-with-ingress-calico.yaml
+- ../cluster-template-ingress
+
+patches:
+  - target:
+      group: controlplane.cluster.x-k8s.io
+      version: v1beta1
+      kind: K0smotronControlPlane
+    patch: |
+      - op: add
+        path: /spec/k0sConfig/spec/network
+        value:
+          provider: calico
+          calico:
+            mode: vxlan
