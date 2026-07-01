@@ -39,7 +39,7 @@ import (
 )
 
 type PVCSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *PVCSuite) TestK0sGetsUp() {
@@ -60,7 +60,7 @@ func (s *PVCSuite) TestK0sGetsUp() {
 	s.Require().NoError(err)
 	defer ssh.Disconnect()
 
-	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
+	s.Require().NoError(util.ImportK0smotronImages(s.Context(), &s.BootlooseSuite))
 
 	s.T().Log("deploying k0smotron operator")
 	s.Require().NoError(util.InstallK0smotronOperator(s.Context(), kc, rc))
@@ -135,11 +135,11 @@ func (s *PVCSuite) TestK0sGetsUp() {
 
 func TestPVCSuite(t *testing.T) {
 	s := PVCSuite{
-		common.FootlooseSuite{
-			ControllerCount:                 1,
-			WorkerCount:                     1,
-			K0smotronWorkerCount:            1,
-			K0smotronImageBundleMountPoints: []string{"/dist/bundle.tar"},
+		common.BootlooseSuite{
+			ControllerCount:                1,
+			WorkerCount:                    1,
+			K0smotronWorkerCount:           1,
+			K0sExtraImageBundleMountPoints: []string{"/dist/bundle.tar"},
 		},
 	}
 	suite.Run(t, &s)

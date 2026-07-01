@@ -29,7 +29,7 @@ import (
 )
 
 type HAControllerSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *HAControllerSuite) TestK0sGetsUp() {
@@ -45,7 +45,7 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 	err = s.WaitForNodeReady(s.WorkerNode(0), kc)
 	s.NoError(err)
 
-	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
+	s.Require().NoError(util.ImportK0smotronImages(s.Context(), &s.BootlooseSuite))
 
 	s.T().Log("deploying postgres")
 	s.Require().NoError(util.CreateFromYAML(s.Context(), kc, rc, "postgresql.yaml"))
@@ -85,11 +85,11 @@ func (s *HAControllerSuite) TestK0sGetsUp() {
 
 func TestHAControllerSuite(t *testing.T) {
 	s := HAControllerSuite{
-		common.FootlooseSuite{
-			ControllerCount:                 1,
-			WorkerCount:                     1,
-			K0smotronWorkerCount:            1,
-			K0smotronImageBundleMountPoints: []string{"/dist/bundle.tar"},
+		common.BootlooseSuite{
+			ControllerCount:                1,
+			WorkerCount:                    1,
+			K0smotronWorkerCount:           1,
+			K0sExtraImageBundleMountPoints: []string{"/dist/bundle.tar"},
 		},
 	}
 	suite.Run(t, &s)
