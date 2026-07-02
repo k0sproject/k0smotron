@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -35,6 +36,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -53,6 +55,12 @@ const (
 	controlPlaneEnableArg   = "--enable-controller=control-plane"
 	controlPlaneMetricLabel = `controller="k0smotroncontrolplane"`
 	reconcileMetricName     = "controller_runtime_reconcile_total"
+
+	// Namespace-scoping regression check: decoy control-plane pods sharing the
+	// cluster name live in this namespace. The test cluster's reported replicas
+	// must never include them.
+	decoyNamespace = "watch-selector-decoy"
+	decoyPodCount  = 3
 )
 
 type CAPIMultiInstanceWatchSelectorSuite struct {
@@ -141,6 +149,119 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 		return false, nil
 	})
 	s.ErrorContains(err, "context deadline exceeded", "the secondary controller should stay idle for primary-labeled resources once scoped")
+
+	s.verifyReplicaCountingIsNamespaceScoped()
+}
+
+// verifyReplicaCountingIsNamespaceScoped ensures the control plane's reported
+// replicas are scoped to its own namespace. It plants decoy pods that share the
+// cluster name and control-plane labels in a different namespace: a
+// namespace-unscoped counter would leak them into the test cluster's status,
+// while a correctly scoped counter ignores them.
+func (s *CAPIMultiInstanceWatchSelectorSuite) verifyReplicaCountingIsNamespaceScoped() {
+	s.T().Logf("planting %d decoy control-plane pods in %q", decoyPodCount, decoyNamespace)
+	s.Require().NoError(s.ensureNamespace(s.ctx, decoyNamespace))
+	for i := range decoyPodCount {
+		s.Require().NoError(s.createControlPlaneDecoyPod(s.ctx, fmt.Sprintf("decoy-cp-%d", i), decoyNamespace))
+	}
+	defer func() {
+		keep := os.Getenv("KEEP_AFTER_TEST")
+		if keep == "true" || (keep == "on-failure" && s.T().Failed()) {
+			return
+		}
+		_ = s.client.CoreV1().Namespaces().Delete(context.Background(), decoyNamespace, metav1.DeleteOptions{})
+	}()
+
+	s.T().Log("triggering a status recompute on the test cluster's control plane")
+	s.Require().NoError(s.annotateControlPlane("reconcile-probe", "namespace-scope"))
+
+	// Poll expecting the reported replicas to never exceed the number of
+	// control-plane pods in the cluster's own namespace. We compare against the
+	// live count each iteration so that real pods appearing in the cluster
+	// namespace are tolerated; only pods leaking in from another namespace (the
+	// decoys) push the reported count above the own-namespace count. The check
+	// succeeds by timing out with no leak observed, mirroring the watch-filter
+	// negative assertion above.
+	s.T().Log("verifying the reported replicas never include the decoy pods from another namespace")
+	err := wait.PollUntilContextTimeout(s.ctx, 3*time.Second, 90*time.Second, true, func(ctx context.Context) (bool, error) {
+		reported, err := s.getReportedControlPlaneReplicas(ctx, testResourceNamespace)
+		if err != nil {
+			return false, nil
+		}
+		ownNamespaceCount, err := s.countControlPlanePods(ctx, testResourceNamespace)
+		if err != nil {
+			return false, nil
+		}
+		if reported > ownNamespaceCount {
+			return false, fmt.Errorf("control plane reported %d replicas but only %d control-plane pods exist in %q: %d pods leaked from another namespace", reported, ownNamespaceCount, testResourceNamespace, reported-ownNamespaceCount)
+		}
+		return false, nil
+	})
+	s.ErrorContains(err, "context deadline exceeded", "reported control-plane replicas must stay scoped to the cluster namespace and exclude decoy pods in other namespaces")
+}
+
+func (s *CAPIMultiInstanceWatchSelectorSuite) ensureNamespace(ctx context.Context, name string) error {
+	_, err := s.client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+	}, metav1.CreateOptions{})
+	if apierrors.IsAlreadyExists(err) {
+		return nil
+	}
+	return err
+}
+
+func (s *CAPIMultiInstanceWatchSelectorSuite) getReportedControlPlaneReplicas(ctx context.Context, namespace string) (int, error) {
+	out, err := exec.CommandContext(ctx, "kubectl", "get", "k0smotroncontrolplane", testControlPlaneName,
+		"-n", namespace, "-o", "jsonpath={.status.replicas}").CombinedOutput()
+	if err != nil {
+		return 0, fmt.Errorf("get K0smotronControlPlane replicas: %s", string(out))
+	}
+	value := strings.TrimSpace(string(out))
+	if value == "" {
+		// Status not populated yet.
+		return 0, nil
+	}
+	return strconv.Atoi(value)
+}
+
+// countControlPlanePods counts the pods in a namespace that carry the control
+// plane labels the status counter matches on.
+func (s *CAPIMultiInstanceWatchSelectorSuite) countControlPlanePods(ctx context.Context, namespace string) (int, error) {
+	pods, err := s.client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("cluster.x-k8s.io/cluster-name=%s,cluster.x-k8s.io/control-plane=true", testClusterName),
+	})
+	if err != nil {
+		return 0, err
+	}
+	return len(pods.Items), nil
+}
+
+// createControlPlaneDecoyPod creates a bare pod that carries the same
+// control-plane labels (and cluster name) as the test cluster, but in a
+// different namespace. A namespace-unscoped replica counter would wrongly
+// include it in the test cluster's status.
+func (s *CAPIMultiInstanceWatchSelectorSuite) createControlPlaneDecoyPod(ctx context.Context, name, namespace string) error {
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"cluster.x-k8s.io/cluster-name":  testClusterName,
+				"cluster.x-k8s.io/control-plane": "true",
+			},
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{
+				Name:  "pause",
+				Image: "registry.k8s.io/pause:3.9",
+			}},
+		},
+	}
+	_, err := s.client.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
+	if apierrors.IsAlreadyExists(err) {
+		return nil
+	}
+	return err
 }
 
 func (s *CAPIMultiInstanceWatchSelectorSuite) findControlPlaneDeploymentName(ctx context.Context) (string, error) {
