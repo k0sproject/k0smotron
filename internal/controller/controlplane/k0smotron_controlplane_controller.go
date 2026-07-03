@@ -19,7 +19,6 @@ package controlplane
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hash/fnv"
 	"reflect"
@@ -188,13 +187,9 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	defer func() {
 		derr := c.computeStatus(ctx, cluster, kcp, kmcScope)
 		if derr != nil {
-			if errors.Is(derr, util.ErrNotReady) {
-				res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
-			} else {
-				log.Error(derr, "Failed to update K0smotronControlPlane status")
-				err = derr
-				return
-			}
+			log.Error(derr, "Failed to update K0smotronControlPlane status")
+			err = derr
+			return
 		}
 
 		derr = kcpPatchHelper.Patch(ctx, kcp)
@@ -205,7 +200,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		derr = clusterPatchHelper.Patch(ctx, cluster)
 		if derr != nil {
-			log.Error(err, "Failed to update Cluster endpoint")
+			log.Error(derr, "Failed to update Cluster endpoint")
 			err = kerrors.NewAggregate([]error{err, derr})
 		}
 
@@ -219,6 +214,10 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 		if derr != nil {
 			log.Error(derr, "Failed to patch Infrastructure object status")
 			err = kerrors.NewAggregate([]error{err, derr})
+		}
+
+		if !isK0smotronControlplaneReady(kcp) {
+			res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
 		}
 	}()
 
@@ -246,6 +245,32 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	kcp.Status.ExternalManagedControlPlane = new(true)
 
 	return res, err
+}
+
+func isK0smotronControlplaneReady(kcp *cpv1beta2.K0smotronControlPlane) bool {
+	if !conditions.IsTrue(kcp, string(cpv1beta2.ControlPlaneAvailableCondition)) {
+		// The control plane is not completely as desired, as the ControlPlaneAvailableCondition is false.
+		return false
+	}
+
+	unavailableReplicas := ptr.Deref(kcp.Status.Replicas, 0) - ptr.Deref(kcp.Status.ReadyReplicas, 0)
+	desiredReplicas := kcp.Spec.Replicas
+	statusReplicas := ptr.Deref(kcp.Status.Replicas, 0)
+	updatedReplicas := ptr.Deref(kcp.Status.UpToDateReplicas, 0)
+	readyReplicas := ptr.Deref(kcp.Status.ReadyReplicas, 0)
+	availableReplicas := ptr.Deref(kcp.Status.AvailableReplicas, 0)
+
+	if statusReplicas != desiredReplicas ||
+		unavailableReplicas > 0 ||
+		updatedReplicas != desiredReplicas ||
+		readyReplicas != desiredReplicas ||
+		availableReplicas != desiredReplicas ||
+		versionWithK0sSuffix(kcp.Spec.Version) != kcp.Status.Version {
+		// The control plane is not completely as desired, as the number of replicas or the version does not match the desired state.
+		return false
+	}
+
+	return true
 }
 
 // ensureExternalAddress watches the external address of the control plane and updates the status accordingly
@@ -538,34 +563,14 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 
 	kcp.Status.Replicas = new(int32(len(contolPlanePods.Items)))
 
-	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
-
-	desiredVersionStr := kcp.Spec.Version
-	if !strings.Contains(desiredVersionStr, "-k0s.") && !strings.Contains(desiredVersionStr, "+k0s.") {
-		// Use default k0s suffix format when spec version does not contain either -k0s. or +k0s.
-		desiredVersionStr = fmt.Sprintf("%s+%s", desiredVersionStr, kapi.DefaultK0SSuffix)
-	}
-	desiredVersion, err := version.NewVersion(desiredVersionStr)
+	desiredVersion, err := version.NewVersion(versionWithK0sSuffix(kcp.Spec.Version))
 	if err != nil {
 		return err
 	}
 	minimumVersion := *desiredVersion
 
 	for _, pod := range contolPlanePods.Items {
-		isPodReady := false
-		for _, c := range pod.Status.Conditions {
-			// readiness probe in pod will propagate pod status Ready = True if k0s service is running successfully.
-			if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
-				isPodReady = true
-				break
-			}
-		}
-		if isPodReady {
-			readyReplicas++
-			availableReplicas++
-		} else {
-			unavailableReplicas++
-			// if pod is unavailable subsequent checks do not apply
+		if pod.Status.Phase != corev1.PodRunning {
 			continue
 		}
 
@@ -579,33 +584,29 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 			return err
 		}
 
-		if desiredVersion.Equal(currentVersion) {
-			upToDateReplicas++
-		}
-
 		if currentVersion.LessThan(&minimumVersion) {
 			minimumVersion = *currentVersion
 		}
 	}
 
-	kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
-	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
-	kcp.Status.AvailableReplicas = new(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
+	kcp.Status.UpToDateReplicas = new(int32(kmc.Status.UpdatedReplicas))
+	kcp.Status.ReadyReplicas = new(int32(kmc.Status.ReadyReplicas))
+	kcp.Status.AvailableReplicas = new(int32(kmc.Status.ReadyReplicas))
 
 	if ptr.Deref(kcp.Status.ReadyReplicas, 0) > 0 {
 		kcp.Status.Version = minimumVersion.String()
 	}
 
-	c.computeAvailability(ctx, cluster, kcp)
-
-	// if no replicas are yet available or the desired version is not in the current state of the
-	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
-	// Additionally, if the ControlPlaneReadyCondition is false (e.g., due to DNS resolution failures),
-	// we should also requeue to retry the connection.
-	if unavailableReplicas > 0 ||
-		desiredVersion.String() != kcp.Status.Version ||
-		!conditions.IsTrue(kcp, string(cpv1beta2.ControlPlaneAvailableCondition)) {
-		return util.ErrNotReady
+	// propagate conditions from KMC.
+	kcp.Status.Conditions = kmc.Status.Conditions
+	if conditions.IsTrue(&kmc, string(cpv1beta2.ControlPlaneAvailableCondition)) {
+		kcp.Status.Initialization.ControlPlaneInitialized = new(true)
+	}
+	// propagate KMC UID to CAPI Cluster annotation.
+	if nsUID, ok := kmc.GetAnnotations()[kapi.K0sClusterIDAnnotation]; ok {
+		annotations.AddAnnotations(cluster, map[string]string{
+			kapi.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", nsUID),
+		})
 	}
 
 	return nil
@@ -636,65 +637,6 @@ func alignToSpecVersionFormat(specVersion, currentVersion *version.Version) (*ve
 	// Convert currentVersion to match it.
 	currentVersionAlignedStr := strings.Replace(currentVersionStr, "-k0s.", "+k0s.", 1)
 	return version.NewVersion(currentVersionAlignedStr)
-}
-
-// computeAvailability checks if the control plane is ready by connecting to the API server
-// and checking if the control plane is initialized
-func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane) {
-	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
-	// Check if the control plane is ready by connecting to the API server
-	// and checking if the control plane is initialized
-	logger.Info("Pinging the workload cluster API")
-
-	// Get the CAPI cluster accessor
-	client, err := c.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(cluster))
-	if err != nil {
-		logger.Info("Failed to get cluster client", "error", err)
-		conditions.Set(kcp, metav1.Condition{
-			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  "ClusterClientCreationFailed",
-			Message: err.Error(),
-		})
-		return
-	}
-
-	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	// If we can get 'kube-system' namespace, it's safe to say the API is up-and-running
-	ns := &corev1.Namespace{}
-	nsKey := types.NamespacedName{
-		Namespace: "",
-		Name:      "kube-system",
-	}
-	err = client.Get(pingCtx, nsKey, ns)
-	if err != nil {
-		logger.Info("Failed to get workload cluster namespace", "error", err)
-		conditions.Set(kcp, metav1.Condition{
-			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  "KubeSystemNamespaceNotAccessible",
-			Message: err.Error(),
-		})
-		return
-	}
-
-	logger.Info("Successfully verified workload cluster API availability")
-
-	// Set condition for successful API access
-	conditions.Set(kcp, metav1.Condition{
-		Type:   string(cpv1beta2.ControlPlaneAvailableCondition),
-		Status: metav1.ConditionTrue,
-		Reason: cpv1beta2.ControlPlaneAvailableReason,
-	})
-
-	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
-
-	// Set the k0s cluster ID annotation
-	annotations.AddAnnotations(cluster, map[string]string{
-		cpv1beta2.K0sClusterIDAnnotation: fmt.Sprintf("kube-system:%s", ns.GetUID()),
-	})
 }
 
 func (scope *kmcScope) getK0sVersionRunningInPod(ctx context.Context, pod *corev1.Pod) (*version.Version, error) {
@@ -802,6 +744,15 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0
 	}
 
 	return kmcScope, nil
+}
+
+func versionWithK0sSuffix(versionStr string) string {
+	if !strings.Contains(versionStr, "-k0s.") && !strings.Contains(versionStr, "+k0s.") {
+		// Use default k0s suffix format when spec version does not contain either -k0s. or +k0s.
+		versionStr = fmt.Sprintf("%s+%s", versionStr, kapi.DefaultK0SSuffix)
+	}
+
+	return versionStr
 }
 
 // generateClusterSpecHashWithoutExternalAddress generates a hash of the ClusterSpec. The ExternalAddress field is excluded from the hash generation

@@ -34,6 +34,7 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -149,7 +150,7 @@ func (scope *kmcScope) reconcileResource(ctx context.Context, kmc *km.Cluster, o
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
-func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
 	logger := log.FromContext(ctx)
 
 	kmc := &km.Cluster{}
@@ -212,6 +213,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		err = patchHelper.Patch(ctx, kmc)
 		if err != nil {
 			logger.Error(err, "Unable to update k0smotron Cluster")
+		}
+
+		// Check if the cluster has reached the desired state and if not, requeue the
+		// reconciliation after 10 seconds.
+		if kmcNeedsRequeueBasedOnStatus(kmc) && res.IsZero() {
+			res = ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second}
 		}
 	}()
 
@@ -298,11 +305,9 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	logger.Info("Reconciling statefulset")
-	if result, err := kmcScope.reconcileStatefulSet(ctx, kmc); err != nil || !result.IsZero() {
-		if err != nil {
-			kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling statefulset, %s", err.Error()))
-		}
-		return result, err
+	if err := kmcScope.reconcileStatefulSet(ctx, kmc); err != nil {
+		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling statefulset, %s", err.Error()))
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
 	// We obtain the kubeconfig secret by running "k0s kubeconfig create admin" meaning that we need at least one ready replica ready.
@@ -321,6 +326,24 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	kmc.SetReconciliationStatus("Reconciliation successful")
 
 	return result, nil
+}
+
+func kmcNeedsRequeueBasedOnStatus(kmc *km.Cluster) bool {
+	// Available conditions means that other conditions are met, so we can just check
+	// this condition to determine if the cluster is ready or not.
+	if conditions.IsFalse(kmc, km.ClusterAvailableCondition) {
+		return true
+	}
+
+	// Replicas needs to be equal to the desired, up-to-date and ready, meaning
+	// that cluster does not need to perform any more work to reach the desired state.
+	if kmc.Status.Replicas != kmc.Spec.Replicas ||
+		kmc.Status.ReadyReplicas != kmc.Spec.Replicas ||
+		kmc.Status.UpdatedReplicas != kmc.Spec.Replicas {
+		return true
+	}
+
+	return false
 }
 
 func (r *ClusterReconciler) reconcileDelete(ctx context.Context, scope *kmcScope, kmc *km.Cluster) (ctrl.Result, error) {
