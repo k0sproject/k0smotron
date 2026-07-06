@@ -39,11 +39,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// ErrNotReady is used to indicate that the control plane is not ready yet.
-var ErrNotReady = fmt.Errorf("waiting for the state")
+var (
+	// ErrNotReady is used to indicate that the control plane is not ready yet.
+	ErrNotReady = fmt.Errorf("waiting for the state")
+)
 
 // GetWorkloadClusterClientset returns a Kubernetes clientset for the given cluster.
 func GetWorkloadClusterClientset(ctx context.Context, hubClient client.Client, cache clustercache.ClusterCache, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
+
 	k0sControlPlane, err := FindK0sControlPlane(ctx, hubClient, cluster)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find K0sControlPlane: %w", err)
@@ -87,27 +90,6 @@ func GetWorkloadClusterClientset(ctx context.Context, hubClient client.Client, c
 func GetControllerRuntimeClient(ctx context.Context, hubClient client.Client, clustercache clustercache.ClusterCache, kcp *cpv1beta2.K0sControlPlane, cluster client.ObjectKey) (client.Client, error) {
 	restConfig, err := getRESTConfig(ctx, hubClient, clustercache, kcp, cluster)
 	if err != nil {
-		return nil, err
-	}
-
-	return client.New(restConfig, client.Options{Scheme: hubClient.Scheme()})
-}
-
-// GetWorkloadClusterClientFromKubeconfigSecret returns a controller-runtime client for the given cluster built
-// directly from the CAPI-managed kubeconfig secret, bypassing ClusterCache. Intended as a fallback for callers whose
-// workload API is reachable independently of Cluster.status.initialization.infrastructureProvisioned, i.e.
-// K0smotronControlPlane, whose hosted CP runs as pods in the mgmt cluster. Wraps ErrNotReady when the kubeconfig
-// secret does not exist yet.
-func GetWorkloadClusterClientFromKubeconfigSecret(ctx context.Context, hubClient client.Client, cluster client.ObjectKey) (client.Client, error) {
-	restConfig, err := fromKubeconfigSecretToRestConfig(ctx, hubClient, client.ObjectKey{
-		Namespace: cluster.Namespace,
-		Name:      secret.Name(cluster.Name, secret.Kubeconfig),
-	})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, fmt.Errorf("%w: %v", ErrNotReady, err)
-		}
-
 		return nil, err
 	}
 
