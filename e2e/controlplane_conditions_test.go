@@ -91,7 +91,6 @@ func controlplaneConditionsSpec(t *testing.T) {
 			bootstrapClusterProxy,
 			artifactFolder,
 			testNamespace,
-			testCancelWatches,
 			cluster,
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,
@@ -125,7 +124,6 @@ func controlplaneConditionsSpec(t *testing.T) {
 	require.NotNil(t, condition, "ControlPlaneAvailableCondition should exist")
 	require.Equal(t, metav1.ConditionTrue, condition.Status, "ControlPlaneAvailableCondition should be True")
 
-	// Test: Verify that the status is ready
-	require.True(t, controlPlane.Status.Ready, "K0smotronControlPlane should be ready")
-	require.True(t, controlPlane.Status.Initialization.ControlPlaneInitialized, "K0smotronControlPlane should be initialized")
+	// Test: Verify that the cp ins initialized
+	require.True(t, *controlPlane.Status.Initialization.ControlPlaneInitialized, "K0smotronControlPlane should be initialized")
 }

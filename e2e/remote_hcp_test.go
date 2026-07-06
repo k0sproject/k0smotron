@@ -112,7 +112,6 @@ func remoteHCPSpec(t *testing.T) {
 			bootstrapClusterProxy,
 			artifactFolder,
 			namespace,
-			cancelWatches,
 			cluster,
 			util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,

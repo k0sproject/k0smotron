@@ -69,19 +69,20 @@ func GetWorkloadClusterClientset(ctx context.Context, hubClient client.Client, c
 	}
 
 	// Disable keep-alive to avoid hanging connections
-	cl := http.DefaultClient
-	cl.Transport = &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout:   3 * time.Second,
-			KeepAlive: -1,
-		}).DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          10,
-		IdleConnTimeout:       5 * time.Second,
-		TLSHandshakeTimeout:   5 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		ResponseHeaderTimeout: 15 * time.Second,
-		TLSClientConfig:       tlsCfg,
+	cl := &http.Client{
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   3 * time.Second,
+				KeepAlive: -1,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          10,
+			IdleConnTimeout:       5 * time.Second,
+			TLSHandshakeTimeout:   5 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			ResponseHeaderTimeout: 15 * time.Second,
+			TLSClientConfig:       tlsCfg,
+		},
 	}
 
 	return kubernetes.NewForConfigAndClient(restConfig, cl)

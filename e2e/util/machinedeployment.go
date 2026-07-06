@@ -27,95 +27,73 @@ import (
 	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
-	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// DiscoveryAndWaitForMachineDeploymentReady discovers MachineDeployments for a given Cluster and waits for
-// its Machines to be in Running phase.
+// DiscoveryAndWaitForMachineDeploymentReady discovers MachineDeployments for a given Cluster with the desired version and waits for it to be ready.
 func DiscoveryAndWaitForMachineDeploymentReady(ctx context.Context, input capiframework.DiscoveryAndWaitForMachineDeploymentsInput) (*clusterv1.MachineDeployment, error) {
-	machineDeployments := capiframework.GetMachineDeploymentsByCluster(ctx, capiframework.GetMachineDeploymentsByClusterInput{
-		Lister:      input.Lister,
-		ClusterName: input.Cluster.Name,
-		Namespace:   input.Cluster.Namespace,
-	})
-	if len(machineDeployments) == 0 {
-		return nil, fmt.Errorf("no MachineDeployments found for Cluster %s", klog.KObj(input.Cluster))
-	}
+	var desiredMachineDeployment *clusterv1.MachineDeployment
 
-	machineDeployment := &clusterv1.MachineDeployment{}
-	machineDeployment = machineDeployments[0]
-
-	err := wait.PollUntilContextTimeout(ctx, time.Second*10, time.Minute*5, true, func(ctx context.Context) (done bool, err error) {
-		mdMachines := &clusterv1.MachineList{}
-		err = input.Lister.List(ctx, mdMachines, client.MatchingLabels(machineDeployment.Spec.Selector.MatchLabels))
-		if err != nil {
-			return false, fmt.Errorf("failed to list machines for MachineDeployment %s: %w", klog.KObj(machineDeployment), err)
+	err := wait.PollUntilContextTimeout(ctx, time.Second*5, time.Minute*5, true, func(ctx context.Context) (done bool, err error) {
+		machineDeployments := capiframework.GetMachineDeploymentsByCluster(ctx, capiframework.GetMachineDeploymentsByClusterInput{
+			Lister:      input.Lister,
+			ClusterName: input.Cluster.Name,
+			Namespace:   input.Cluster.Namespace,
+		})
+		if len(machineDeployments) == 0 {
+			return false, fmt.Errorf("no MachineDeployments found for Cluster %s/%s", input.Cluster.Namespace, input.Cluster.Name)
 		}
-		for _, m := range mdMachines.Items {
-			if m.Status.Phase != string(clusterv1.MachinePhaseRunning) {
-				return false, nil
+
+		for _, md := range machineDeployments {
+			if md.Spec.Template.Spec.Version == input.Cluster.Spec.Topology.Version {
+				desiredMachineDeployment = md
+				return true, nil
 			}
 		}
-		return true, nil
+
+		return false, nil
+	})
+
+	err = WaitForMachineDeploymentToBeReady(ctx, input.Lister, desiredMachineDeployment, Interval{
+		tick:    time.Second * 5,
+		timeout: time.Minute * 5,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed waiting for MachineDeployment %s to be upgraded: %w", klog.KObj(machineDeployment), err)
+		return nil, fmt.Errorf("failed to wait for MachineDeployment %s/%s to be ready: %w", desiredMachineDeployment.Namespace, desiredMachineDeployment.Name, err)
 	}
 
-	return machineDeployment, nil
-}
-
-// UpgradeMachineDeploymentAndWaitForReadyUpgradeInput is the input type for UpgradeMachineDeploymentAndWaitForReadyUpgrade.
-type UpgradeMachineDeploymentAndWaitForReadyUpgradeInput struct {
-	ClusterProxy                            capiframework.ClusterProxy
-	Cluster                                 *clusterv1.Cluster
-	MachineDeployment                       *clusterv1.MachineDeployment
-	KubernetesUpgradeVersion                string
-	WaitForMachineDeploymentUpgradeInterval Interval
+	return desiredMachineDeployment, nil
 }
 
 // UpgradeMachineDeploymentAndWaitForReadyUpgrade upgrades a MachineDeployment and waits for it to be upgraded.
-func UpgradeMachineDeploymentAndWaitForReadyUpgrade(ctx context.Context, input UpgradeMachineDeploymentAndWaitForReadyUpgradeInput) error {
-	mgmtClient := input.ClusterProxy.GetClient()
-
-	fmt.Println("Patching the new kubernetes version to MachineDeployment")
-	patchHelper, err := patch.NewHelper(input.MachineDeployment, mgmtClient)
-	if err != nil {
-		return err
-	}
-
-	input.MachineDeployment.Spec.Template.Spec.Version = input.KubernetesUpgradeVersion
-
-	err = wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
-		return patchHelper.Patch(ctx, input.MachineDeployment) == nil, nil
-	})
-	if err != nil {
-		return fmt.Errorf("failed to patch the new kubernetes version to MachineDeployment %s: %w", klog.KObj(input.MachineDeployment), err)
-	}
-
+func WaitForMachineDeploymentToBeReady(ctx context.Context, lister capiframework.Lister, machineDeployment *clusterv1.MachineDeployment, waitInterval Interval) error {
 	fmt.Println("Waiting for MachineDeployment to be upgraded")
 
-	err = wait.PollUntilContextTimeout(ctx, input.WaitForMachineDeploymentUpgradeInterval.tick, input.WaitForMachineDeploymentUpgradeInterval.timeout, true, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(ctx, waitInterval.tick, waitInterval.timeout, true, func(ctx context.Context) (done bool, err error) {
 		mdMachines := &clusterv1.MachineList{}
-		err = mgmtClient.List(ctx, mdMachines, client.MatchingLabels(input.MachineDeployment.Spec.Selector.MatchLabels))
+		err = lister.List(ctx, mdMachines, client.MatchingLabels(machineDeployment.Spec.Selector.MatchLabels))
 		if err != nil {
-			return false, fmt.Errorf("failed to list machines for MachineDeployment %s: %w", klog.KObj(input.MachineDeployment), err)
+			return false, fmt.Errorf("failed to list machines for MachineDeployment %s: %w", klog.KObj(machineDeployment), err)
 		}
 
 		for _, m := range mdMachines.Items {
-			if m.Spec.Version != input.KubernetesUpgradeVersion {
+			if m.Spec.Version != machineDeployment.Spec.Template.Spec.Version {
 				return false, nil
 			}
 
 			if m.Status.Phase != string(clusterv1.MachinePhaseRunning) {
 				return false, nil
 			}
+
+			if !conditions.IsTrue(&m, clusterv1.AvailableCondition) {
+				return false, nil
+			}
 		}
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("failed waiting for MachineDeployment %s to be upgraded: %w", klog.KObj(input.MachineDeployment), err)
+		return fmt.Errorf("failed waiting for MachineDeployment %s to be ready: %w", klog.KObj(machineDeployment), err)
 	}
 
 	return nil
