@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"testing"
 
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	kapi "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
@@ -30,6 +31,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/clustercache"
+	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/secret"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -328,7 +333,6 @@ func TestIsClusterSpecSynced(t *testing.T) {
 			})
 		}
 	}
-
 }
 
 func Test_alignToSpecVersionFormat(t *testing.T) {
@@ -362,6 +366,99 @@ func Test_alignToSpecVersionFormat(t *testing.T) {
 			got, err := alignToSpecVersionFormat(tt.specVersion, tt.currentVersion)
 			require.NoError(t, err)
 			require.True(t, tt.want.Equal(got), "alignToSpecVersionFormat() = %v, want %v", got, tt.want)
+		})
+	}
+}
+
+// Test_computeAvailability regression-guards k0rdent/kcm#2884
+func Test_computeAvailability(t *testing.T) {
+	const (
+		clusterName = "hosted"
+		clusterNs   = "default"
+	)
+
+	// syntactically valid kubeconfig pointing to an unroutable endpoint; the fallback only builds a client
+	// from this blob, the subsequent ping is expected to fail and that is exactly what distinguishes
+	// fallback success from a pre-ping ClusterClientCreationFailed
+	kubeconfigYAML := []byte(`apiVersion: v1
+kind: Config
+clusters:
+- name: test
+  cluster:
+    server: https://127.0.0.1:1
+    insecure-skip-tls-verify: true
+contexts:
+- name: test
+  context:
+    cluster: test
+    user: test
+current-context: test
+users:
+- name: test
+  user:
+    token: dummy
+`)
+
+	kubeconfigSecret := &corev1.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      secret.Name(clusterName, secret.Kubeconfig),
+			Namespace: clusterNs,
+		},
+		Data: map[string][]byte{
+			secret.KubeconfigDataName: kubeconfigYAML,
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+
+	tests := []struct {
+		name          string
+		hubObjects    []client.Object
+		wantCondition string
+	}{
+		{
+			name:          "fallback client used when ClusterCache is not connected and kubeconfig secret exists",
+			hubObjects:    []client.Object{kubeconfigSecret},
+			wantCondition: "KubeSystemNamespaceNotAccessible",
+		},
+		{
+			name:          "ClusterClientCreationFailed surfaced when kubeconfig secret is missing",
+			hubObjects:    nil,
+			wantCondition: "ClusterClientCreationFailed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: v1.ObjectMeta{Name: clusterName, Namespace: clusterNs},
+			}
+
+			hubClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(tt.hubObjects...).Build()
+
+			// non-matching cluster key -> clustercache.ErrClusterNotConnected on GetClient (kcm#2884)
+			disconnectedCache := clustercache.NewFakeClusterCache(
+				fake.NewClientBuilder().Build(),
+				client.ObjectKey{Name: "unrelated", Namespace: "unrelated"},
+			)
+
+			c := &K0smotronController{
+				Client:       hubClient,
+				ClusterCache: disconnectedCache,
+				Scheme:       scheme,
+			}
+			kcp := &cpv1beta2.K0smotronControlPlane{
+				ObjectMeta: v1.ObjectMeta{Name: clusterName, Namespace: clusterNs},
+			}
+
+			c.computeAvailability(context.Background(), cluster, kcp)
+
+			cond := conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
+			require.NotNil(t, cond, "Available condition must be set")
+			require.Equal(t, tt.wantCondition, cond.Reason)
 		})
 	}
 }

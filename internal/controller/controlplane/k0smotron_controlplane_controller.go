@@ -646,17 +646,42 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
 
+	clusterKey := client.ObjectKeyFromObject(cluster)
+
 	// Get the CAPI cluster accessor
-	client, err := c.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(cluster))
+	client, err := c.ClusterCache.GetClient(ctx, clusterKey)
 	if err != nil {
-		logger.Info("Failed to get cluster client", "error", err)
-		conditions.Set(kcp, metav1.Condition{
-			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  "ClusterClientCreationFailed",
-			Message: err.Error(),
-		})
-		return
+		// ClusterCache refuses to connect until Cluster.status.initialization.infrastructureProvisioned=true.
+		// For K0smotronControlPlane the hosted CP runs in the mgmt cluster and its API is reachable via the
+		// CAPI kubeconfig secret regardless of infra state; when infra is externally managed by k0smotron
+		// itself with cluster.x-k8s.io/managed-by: k0smotron, that ClusterCache gate
+		// and the ControlPlaneInitialized->status.ready patch chain form a permanent deadlock, see k0rdent/kcm#2884.
+		// Fall back to a direct kubeconfig-secret client on ErrClusterNotConnected to break it
+		if errors.Is(err, clustercache.ErrClusterNotConnected) {
+			logger.Info("ClusterCache not connected yet, falling back to direct kubeconfig-secret client")
+			directClient, fbErr := util.GetWorkloadClusterClientFromKubeconfigSecret(ctx, c.Client, clusterKey)
+			if fbErr != nil {
+				logger.Error(fbErr, "Failed to build direct workload cluster client fallback")
+				conditions.Set(kcp, metav1.Condition{
+					Type:    cpv1beta2.ControlPlaneAvailableCondition,
+					Status:  metav1.ConditionFalse,
+					Reason:  "ClusterClientCreationFailed",
+					Message: fbErr.Error(),
+				})
+				return
+			}
+
+			client = directClient
+		} else {
+			logger.Error(err, "Failed to get cluster client")
+			conditions.Set(kcp, metav1.Condition{
+				Type:    cpv1beta2.ControlPlaneAvailableCondition,
+				Status:  metav1.ConditionFalse,
+				Reason:  "ClusterClientCreationFailed",
+				Message: err.Error(),
+			})
+			return
+		}
 	}
 
 	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -752,7 +777,6 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 
 // reconcileDelete handles the deletion of the K0smotronControlPlane object when the controlplane replicas runs in a different cluster.
 func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.NamespacedName, kcp *cpv1beta2.K0smotronControlPlane) (res ctrl.Result, err error) {
-
 	defer func() {
 		if err != nil && apierrors.IsNotFound(err) {
 			// The cluster is already deleted. Remove the finalizer from the K0smotronControlPlane object for complete cleanup.
