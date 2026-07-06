@@ -19,17 +19,28 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
-	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/k0sproject/k0smotron/v2/e2e/util"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	capiutil "sigs.k8s.io/cluster-api/util"
+	utilyaml "sigs.k8s.io/cluster-api/util/yaml"
+)
+
+const (
+	clusterclassNamespacePlaceholder = "clusterclass-namespace-placeholder"
+	clusterNamePlaceholder           = "cluster-name-placeholder"
 )
 
 func TestWorkloadClusterUpgrade(t *testing.T) {
@@ -48,90 +59,200 @@ func TestWorkloadClusterUpgrade(t *testing.T) {
 // 3. Performing a subsequent control plane version upgrade using the selected (flavor) upgrade strategy.
 //   - Confirms the cluster status is consistent and desired post-update.
 func workloadClusterUpgradeSpec(t *testing.T) {
-	testName := "workload-inplace-upgrade"
+	testName := "workload-upgrade"
 
 	require.NotEmpty(t, flavor, "a flavor between InPlace, Recreate or RecreateDeleteFirst needs to be specified for this test")
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
-	namespace, _ := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
+	clusterClassNamespace, _ := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
 
-	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
+	clusterClassName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 
-	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
+	clusterWithCCTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
 		ClusterctlConfigPath:     clusterctlConfigPath,
 		KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-		Flavor:                   strings.ToLower(flavor),
-		Namespace:                namespace.Name,
-		ClusterName:              clusterName,
+		Flavor:                   "clusterclass",
+		Namespace:                clusterclassNamespacePlaceholder,
+		ClusterName:              clusterClassName,
 		KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 		ControlPlaneMachineCount: new(int64(3)),
 		// TODO: make infra provider configurable
 		InfrastructureProvider: "docker",
 		LogFolder:              filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 		ClusterctlVariables: map[string]string{
-			"CLUSTER_NAME": clusterName,
-			"NAMESPACE":    namespace.Name,
+			"K0S_VERSION":            e2eConfig.MustGetVariable(K0sVersion),
+			"CLUSTERCLASS_NAMESPACE": clusterClassNamespace.Name,
+			"UPDATE_STRATEGY":        flavor,
 		},
 	})
-	require.NotNil(t, workloadClusterTemplate)
+	require.NotNil(t, clusterWithCCTemplate)
+	fmt.Println(string(clusterWithCCTemplate))
 
-	require.Eventually(t, func() bool {
-		return bootstrapClusterProxy.CreateOrUpdate(ctx, workloadClusterTemplate) == nil
-	}, 10*time.Second, 1*time.Second, "Failed to apply the cluster template")
-
-	cluster, err := util.DiscoveryAndWaitForCluster(ctx, capiframework.DiscoveryAndWaitForClusterInput{
-		Getter:    bootstrapClusterProxy.GetClient(),
-		Namespace: namespace.Name,
-		Name:      clusterName,
-	}, util.GetInterval(e2eConfig, testName, "wait-cluster"))
+	clusterClassTemplate, clusterTemplate, err := extractClusterClassAndClusterFromTemplate(clusterWithCCTemplate)
 	require.NoError(t, err)
+	require.NotNil(t, clusterClassTemplate)
+	require.NotNil(t, clusterTemplate)
 
-	t.Cleanup(func() {
-		util.DumpSpecResourcesAndCleanup(
-			ctx,
-			testName,
-			bootstrapClusterProxy,
-			artifactFolder,
-			namespace,
-			cancelWatches,
-			cluster,
-			util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
-			skipCleanup,
-			clusterctlConfigPath,
-		)
-	})
+	clusterClassTemplate = bytes.ReplaceAll(clusterClassTemplate, []byte(clusterclassNamespacePlaceholder), []byte(clusterClassNamespace.Name))
+	require.Eventually(t, func() bool {
+		return bootstrapClusterProxy.CreateOrUpdate(ctx, clusterClassTemplate) == nil
+	}, 10*time.Second, 1*time.Second, "Failed to apply the clusterclass template")
 
+	wg := &sync.WaitGroup{}
+	errCh := make(chan error)
+	for i := 0; i < nWorkloads; i++ {
+		clusterName := fmt.Sprintf("cluster-%d", i)
+		wg.Add(1)
+		go func(clusterName string) {
+			defer wg.Done()
+
+			clusterNamespace, _ := framework.CreateNamespaceAndWatchEvents(ctx, framework.CreateNamespaceAndWatchEventsInput{
+				Creator:   bootstrapClusterProxy.GetClient(),
+				ClientSet: bootstrapClusterProxy.GetClientSet(),
+				Name:      clusterName,
+				LogFolder: filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+			})
+
+			customClusterTemplate := bytes.ReplaceAll(clusterTemplate, []byte(clusterNamePlaceholder), []byte(clusterName))
+			customClusterTemplate = bytes.ReplaceAll(customClusterTemplate, []byte(clusterclassNamespacePlaceholder), []byte(clusterNamespace.Name))
+
+			err := bootstrapClusterProxy.CreateOrUpdate(ctx, customClusterTemplate)
+			if err != nil {
+				errCh <- fmt.Errorf("failed to apply the cluster template for cluster %s: %w", clusterName, err)
+				return
+			}
+
+			cluster, err := util.DiscoveryAndWaitForCluster(ctx, capiframework.DiscoveryAndWaitForClusterInput{
+				Getter:    bootstrapClusterProxy.GetClient(),
+				Namespace: clusterNamespace.Name,
+				Name:      clusterName,
+			}, util.GetInterval(e2eConfig, testName, "wait-cluster"))
+			if err != nil {
+				errCh <- fmt.Errorf("failed to discover and wait for cluster %s: %w", clusterName, err)
+				return
+			}
+
+			t.Cleanup(func() {
+				util.DumpSpecResourcesAndCleanup(
+					ctx,
+					testName,
+					bootstrapClusterProxy,
+					artifactFolder,
+					clusterNamespace,
+					cluster,
+					util.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
+					skipCleanup,
+					clusterctlConfigPath,
+				)
+			})
+
+			err = checkUpgradeOnCluster(&checkUpgradeOnClusterInput{
+				testName:        testName,
+				clusterTemplate: customClusterTemplate,
+				cluster:         cluster,
+				wg:              wg,
+			})
+			if err != nil {
+				errCh <- err
+			}
+		}(clusterName)
+
+	}
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		fmt.Println("All clusters have been upgraded successfully")
+	case err := <-errCh:
+		t.Fatalf("Error upgrading clusters: %v", err)
+	case <-ctx.Done():
+		t.Fatalf("Test context cancelled: %v", ctx.Err())
+	}
+}
+
+type checkUpgradeOnClusterInput struct {
+	testName        string
+	clusterTemplate []byte
+	cluster         *clusterv1.Cluster
+	wg              *sync.WaitGroup
+}
+
+func checkUpgradeOnCluster(input *checkUpgradeOnClusterInput) error {
 	controlPlane, err := util.DiscoveryAndWaitForControlPlaneInitialized(ctx, capiframework.DiscoveryAndWaitForControlPlaneInitializedInput{
 		Lister:  bootstrapClusterProxy.GetClient(),
-		Cluster: cluster,
-	}, util.GetInterval(e2eConfig, testName, "wait-controllers"))
-	require.NoError(t, err)
+		Cluster: input.cluster,
+	}, util.GetInterval(e2eConfig, input.testName, "wait-controllers"))
+	if err != nil {
+		return fmt.Errorf("failed to discover and wait for control plane to be initialized: %w", err)
+	}
 
 	// For Inplace upgrades we need to wait for the controlplane to have all the replicas ready before upgrading it again.
 	if flavor == "InPlace" {
-		err = util.WaitForControlPlaneToBeReady(ctx, bootstrapClusterProxy.GetClient(), controlPlane, util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
-		require.NoError(t, err)
+		err = util.WaitForControlPlaneToBeReady(ctx, bootstrapClusterProxy.GetClient(), controlPlane, util.GetInterval(e2eConfig, input.testName, "wait-kube-proxy-upgrade"))
+		if err != nil {
+			return fmt.Errorf("failed to wait for control plane to be ready: %w", err)
+		}
 	}
 
-	fmt.Println("Upgrading the Kubernetes control-plane version")
-	err = util.UpgradeControlPlaneAndWaitForReadyUpgrade(ctx, util.UpgradeControlPlaneAndWaitForUpgradeInput{
+	fmt.Printf("Upgrading the Kubernetes control-plane version to %s in cluster %s/%s\n", e2eConfig.MustGetVariable(K0sVersionFirstUpgradeTo), input.cluster.Namespace, input.cluster.Name)
+	err = util.UpgradeClusterTopologyAndWaitForReadyUpgrade(ctx, util.UpgradeClusterTopologyAndWaitForReadyUpgradeInput{
 		ClusterProxy:                     bootstrapClusterProxy,
-		Cluster:                          cluster,
+		Cluster:                          input.cluster,
 		ControlPlane:                     controlPlane,
-		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(KubernetesVersionFirstUpgradeTo),
-		WaitForKubeProxyUpgradeInterval:  util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"),
-		WaitForControlPlaneReadyInterval: util.GetInterval(e2eConfig, testName, "wait-control-plane"),
+		GetLister:                        bootstrapClusterProxy.GetClient(),
+		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(K0sVersionFirstUpgradeTo),
+		WaitForKubeProxyUpgradeInterval:  util.GetInterval(e2eConfig, input.testName, "wait-kube-proxy-upgrade"),
+		WaitForControlPlaneReadyInterval: util.GetInterval(e2eConfig, input.testName, "wait-control-plane"),
 	})
-	require.NoError(t, err)
+	if err != nil {
+		return fmt.Errorf("failed to upgrade cluster topology to k0s version %s and wait for ready upgrade: %w", e2eConfig.MustGetVariable(K0sVersionFirstUpgradeTo), err)
+	}
 
-	fmt.Println("Upgrading the Kubernetes control-plane version again")
-	err = util.UpgradeControlPlaneAndWaitForReadyUpgrade(ctx, util.UpgradeControlPlaneAndWaitForUpgradeInput{
+	fmt.Printf("Upgrading the Kubernetes control-plane version to %s in cluster %s/%s\n", e2eConfig.MustGetVariable(K0sVersionSecondUpgradeTo), input.cluster.Namespace, input.cluster.Name)
+	err = util.UpgradeClusterTopologyAndWaitForReadyUpgrade(ctx, util.UpgradeClusterTopologyAndWaitForReadyUpgradeInput{
 		ClusterProxy:                     bootstrapClusterProxy,
-		Cluster:                          cluster,
+		Cluster:                          input.cluster,
 		ControlPlane:                     controlPlane,
-		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(KubernetesVersionSecondUpgradeTo),
-		WaitForKubeProxyUpgradeInterval:  util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"),
-		WaitForControlPlaneReadyInterval: util.GetInterval(e2eConfig, testName, "wait-control-plane"),
+		GetLister:                        bootstrapClusterProxy.GetClient(),
+		KubernetesUpgradeVersion:         e2eConfig.MustGetVariable(K0sVersionSecondUpgradeTo),
+		WaitForKubeProxyUpgradeInterval:  util.GetInterval(e2eConfig, input.testName, "wait-kube-proxy-upgrade"),
+		WaitForControlPlaneReadyInterval: util.GetInterval(e2eConfig, input.testName, "wait-control-plane"),
 	})
-	require.NoError(t, err)
+	if err != nil {
+		return fmt.Errorf("failed to upgrade cluster topology to k0s version %s and wait for ready upgrade: %w", e2eConfig.MustGetVariable(K0sVersionSecondUpgradeTo), err)
+	}
+
+	return nil
+}
+
+func extractClusterClassAndClusterFromTemplate(manifestYAML []byte) ([]byte, []byte, error) {
+	objs, err := utilyaml.ToUnstructured(manifestYAML)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to convert clusterclass and cluster yaml to unstructured: %w", err)
+	}
+	clusterObjs := []unstructured.Unstructured{}
+	clusterClassAndTemplates := []unstructured.Unstructured{}
+	for _, obj := range objs {
+		if obj.GroupVersionKind().GroupKind() == clusterv1.GroupVersion.WithKind("Cluster").GroupKind() {
+			clusterObjs = append(clusterObjs, obj)
+		} else if obj.GroupVersionKind().GroupKind() == corev1.SchemeGroupVersion.WithKind("ConfigMap").GroupKind() {
+			clusterObjs = append(clusterObjs, obj)
+		} else {
+			clusterClassAndTemplates = append(clusterClassAndTemplates, obj)
+		}
+	}
+	clusterObjsYAML, err := utilyaml.FromUnstructured(clusterObjs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to convert cluster unstructured to yaml: %w", err)
+	}
+	clusterClassYAML, err := utilyaml.FromUnstructured(clusterClassAndTemplates)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to convert clusterclass and templates unstructured to yaml: %w", err)
+	}
+	return clusterClassYAML, clusterObjsYAML, nil
 }

@@ -150,7 +150,6 @@ func k0smotronUpgradeSpec(t *testing.T) {
 			managementClusterProxy,
 			artifactFolder,
 			testNamespace,
-			cancelWatches,
 			cluster,
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,

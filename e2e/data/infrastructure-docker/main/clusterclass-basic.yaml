@@ -1,0 +1,94 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: basic
+spec:
+  template:
+    spec:
+      version: ${K0S_VERSION}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: basic
+spec:
+  controlPlane:
+    machineInfrastructure:
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: DevMachineTemplate
+        name: basic
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: K0sControlPlaneTemplate
+      name: basic
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DevClusterTemplate
+      name: basic
+  workers:
+    machineDeployments:
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: K0sWorkerConfigTemplate
+            name: basic
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: DevMachineTemplate
+            name: basic
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlaneTemplate
+metadata:
+  name: basic
+spec:
+  template:
+    spec:
+      k0sConfigSpec:
+        args:
+        - --enable-worker
+        k0s:
+          apiVersion: k0s.k0sproject.io/v1beta1
+          kind: ClusterConfig
+          metadata:
+            name: k0s
+          spec:
+            api:
+              extraArgs:
+                anonymous-auth: "true"
+            network:
+              controlPlaneLoadBalancing:
+                enabled: false
+            telemetry:
+              enabled: false
+      version: ${K0S_VERSION}
+      updateStrategy: ${UPDATE_STRATEGY}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DevClusterTemplate
+metadata:
+  name: basic
+spec:
+  template:
+    spec:
+      backend:
+        docker:
+          loadBalancer:
+            customHAProxyConfigTemplateRef:
+              name: basic
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DevMachineTemplate
+metadata:
+  name: basic
+spec:
+  template:
+    spec:
+      backend:
+        docker:
+          customImage: kindest/node:v1.31.0

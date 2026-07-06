@@ -195,3 +195,30 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 
 	return nil
 }
+
+func WaitForMachinesToBeDeleted(ctx context.Context, lister framework.Lister, namespace string, clusterName string, waitForMachinesIntervals Interval) error {
+	inClustersNamespaceListOption := client.InNamespace(namespace)
+	matchClusterListOption := client.MatchingLabels{
+		clusterv1.ClusterNameLabel: clusterName,
+	}
+
+	machineList := &clusterv1.MachineList{}
+	// Waits for the desired set of machines to be deleted.
+	err := wait.PollUntilContextTimeout(ctx, waitForMachinesIntervals.tick, waitForMachinesIntervals.timeout, true, func(ctx context.Context) (done bool, err error) {
+		if err := lister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterListOption); err != nil {
+			return false, err
+		}
+
+		for _, m := range machineList.Items {
+			if m.GetDeletionTimestamp() != nil {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to wait for the expected list of machines to be deleted: %w", err)
+	}
+
+	return nil
+}
