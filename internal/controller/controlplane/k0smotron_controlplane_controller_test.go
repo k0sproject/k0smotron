@@ -26,10 +26,13 @@ import (
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/contract"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -362,6 +365,112 @@ func Test_alignToSpecVersionFormat(t *testing.T) {
 			got, err := alignToSpecVersionFormat(tt.specVersion, tt.currentVersion)
 			require.NoError(t, err)
 			require.True(t, tt.want.Equal(got), "alignToSpecVersionFormat() = %v, want %v", got, tt.want)
+		})
+	}
+}
+
+// Test_patchInfrastructureStatus regression-guards k0rdent/kcm#2884: the k0smotron-managed
+// Infrastructure must be marked provisioned off the control-plane endpoint being available, not off
+// ControlPlaneInitialized. The latter requires a successful API ping through ClusterCache, which
+// itself won't connect until Infrastructure is provisioned -> permanent deadlock.
+// It also asserts the provisioned bit is written to the contract-correct field: status.ready for the
+// v1beta1 contract, status.initialization.provisioned for v1beta2.
+func Test_patchInfrastructureStatus(t *testing.T) {
+	const (
+		clusterName = "hosted"
+		clusterNs   = "default"
+		infraGroup  = "infrastructure.cluster.x-k8s.io"
+		infraKind   = "GenericInfrastructureCluster"
+	)
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, apiextensionsv1.AddToScheme(scheme))
+
+	validEndpoint := clusterv1.APIEndpoint{Host: "api.example.com", Port: 6443}
+
+	tests := []struct {
+		name      string
+		apiVer    string   // API version the InfrastructureCluster CRD serves
+		wantPath  []string // status field CAPI reads for this version
+		endpoint  clusterv1.APIEndpoint
+		wantReady bool
+	}{
+		{
+			name:      "v1beta1, endpoint provisioned -> status.ready true",
+			apiVer:    "v1beta1",
+			wantPath:  []string{"status", "ready"},
+			endpoint:  validEndpoint,
+			wantReady: true,
+		},
+		{
+			name:      "v1beta1, endpoint not provisioned -> status.ready false",
+			apiVer:    "v1beta1",
+			wantPath:  []string{"status", "ready"},
+			endpoint:  clusterv1.APIEndpoint{},
+			wantReady: false,
+		},
+		{
+			name:      "v1beta2, endpoint provisioned -> status.initialization.provisioned true",
+			apiVer:    "v1beta2",
+			wantPath:  []string{"status", "initialization", "provisioned"},
+			endpoint:  validEndpoint,
+			wantReady: true,
+		},
+		{
+			name:      "v1beta2, endpoint not provisioned -> status.initialization.provisioned false",
+			apiVer:    "v1beta2",
+			wantPath:  []string{"status", "initialization", "provisioned"},
+			endpoint:  clusterv1.APIEndpoint{},
+			wantReady: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// CRD contract label maps the contract version to the served apiVersions; GetObjectFromContractVersionedRef
+			// resolves the InfrastructureRef to that served version and stamps it onto the returned object.
+			crd := &apiextensionsv1.CustomResourceDefinition{
+				ObjectMeta: v1.ObjectMeta{
+					Name:   contract.CalculateCRDName(infraGroup, infraKind),
+					Labels: map[string]string{"cluster.x-k8s.io/" + tt.apiVer: tt.apiVer},
+				},
+			}
+
+			infra := &unstructured.Unstructured{}
+			infra.SetAPIVersion(infraGroup + "/" + tt.apiVer)
+			infra.SetKind(infraKind)
+			infra.SetName(clusterName)
+			infra.SetNamespace(clusterNs)
+			infra.SetAnnotations(map[string]string{AnnotationKeyManagedBy: AnnotationValueManagedByK0smotron})
+
+			fc := fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(crd, infra).
+				WithStatusSubresource(infra).
+				Build()
+
+			c := &K0smotronController{Client: fc, Scheme: scheme}
+			cluster := &clusterv1.Cluster{
+				ObjectMeta: v1.ObjectMeta{Name: clusterName, Namespace: clusterNs},
+				Spec: clusterv1.ClusterSpec{
+					ControlPlaneEndpoint: tt.endpoint,
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						APIGroup: infraGroup,
+						Kind:     infraKind,
+						Name:     clusterName,
+					},
+				},
+			}
+
+			require.NoError(t, c.patchInfrastructureStatus(context.Background(), cluster))
+
+			got := &unstructured.Unstructured{}
+			got.SetGroupVersionKind(infra.GroupVersionKind())
+			require.NoError(t, fc.Get(context.Background(), client.ObjectKeyFromObject(infra), got))
+			ready, _, err := unstructured.NestedBool(got.Object, tt.wantPath...)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantReady, ready)
 		})
 	}
 }
