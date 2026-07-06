@@ -16,7 +16,30 @@ limitations under the License.
 
 package v1beta2
 
+import (
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+)
+
 const (
 	// ControlPlaneAvailableReason documents the fact that the control plane is reachable.
 	ControlPlaneAvailableReason = "Available"
+	// K0sControlPlaneScalingUpCondition is true if actual replicas < desired replicas.
+	// Note: In case a K0sControlPlane preflight check is preventing scale up, this will surface in the condition message.
+	K0sControlPlaneScalingUpCondition = clusterv1.ScalingUpCondition
+
+	// K0sControlPlaneScalingUpReason surfaces when actual replicas < desired replicas.
+	K0sControlPlaneScalingUpReason = clusterv1.ScalingUpReason
+
+	// K0sControlPlaneNotScalingUpReason surfaces when actual replicas >= desired replicas.
+	K0sControlPlaneNotScalingUpReason = clusterv1.NotScalingUpReason
+
+	// K0sControlPlaneScalingDownCondition is true if actual replicas > desired replicas.
+	// Note: In case a K0sControlPlane preflight check is preventing scale down, this will surface in the condition message.
+	K0sControlPlaneScalingDownCondition = clusterv1.ScalingDownCondition
+
+	// K0sControlPlaneScalingDownReason surfaces when actual replicas > desired replicas.
+	K0sControlPlaneScalingDownReason = clusterv1.ScalingDownReason
+
+	// K0sControlPlaneNotScalingDownReason surfaces when actual replicas <= desired replicas.
+	K0sControlPlaneNotScalingDownReason = clusterv1.NotScalingDownReason
 )

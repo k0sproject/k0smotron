@@ -38,7 +38,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util/collections"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -64,27 +63,6 @@ const (
 var (
 	errMachineWithoutK0sConfigAnnotation = fmt.Errorf("k0s config annotation not found on machine")
 )
-
-func (c *K0sController) createMachine(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
-	machine, err := c.generateMachine(ctx, name, cluster, kcp, infraRef, failureDomain)
-	if err != nil {
-		return nil, fmt.Errorf("error generating machine: %w", err)
-	}
-	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
-
-	err = c.Client.Patch(ctx, machine, client.Apply, &client.PatchOptions{
-		FieldManager: "k0smotron",
-	})
-	if err != nil {
-		return machine, err
-	}
-
-	// Remove the annotation tracking that a remediation is in progress.
-	// A remediation is completed when the replacement machine has been created above.
-	delete(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
-
-	return machine, nil
-}
 
 func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv1beta2.K0sControlPlane) error {
 	machine := &clusterv1.Machine{
@@ -156,6 +134,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			InfrastructureRef: infraRef,
 		},
 	}
+	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
 
 	return machine, nil
 }
@@ -197,37 +176,6 @@ func generateK0sConfigAnnotationValueForMachine(kcp *cpv1beta2.K0sControlPlane, 
 		return "", fmt.Errorf("failed to marshal K0sConfigSpec: %w", err)
 	}
 	return string(k0sConfigSpec), nil
-}
-
-func (c *K0sController) getInfraMachines(ctx context.Context, machines collections.Machines) (map[string]*unstructured.Unstructured, error) {
-	result := map[string]*unstructured.Unstructured{}
-	for _, m := range machines {
-		infraMachine, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, m.Spec.InfrastructureRef, m.Namespace)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				continue
-			}
-			return nil, fmt.Errorf("failed to retrieve infra machine for machine object %s: %w", m.Name, err)
-		}
-		result[m.Name] = infraMachine
-	}
-	return result, nil
-}
-
-func (c *K0sController) getBootstrapConfigs(ctx context.Context, machines collections.Machines) (map[string]bootstrapv2.K0sControllerConfig, error) {
-	result := map[string]bootstrapv2.K0sControllerConfig{}
-	for _, m := range machines {
-		var b bootstrapv2.K0sControllerConfig
-		err := c.Client.Get(ctx, client.ObjectKey{Namespace: m.Namespace, Name: m.Name}, &b)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				continue
-			}
-			return nil, fmt.Errorf("failed to retrieve bootstrap data for machine object %s: %w", m.Name, err)
-		}
-		result[m.Name] = b
-	}
-	return result, nil
 }
 
 func (c *K0sController) createMachineFromTemplate(ctx context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (*unstructured.Unstructured, error) {
@@ -325,29 +273,15 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	return infraMachine, nil
 }
 
-func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
-	// Skip the check if the K0sControlPlane is not ready
-	if kcp.Status.Initialization.ControlPlaneInitialized == nil ||
-		!*kcp.Status.Initialization.ControlPlaneInitialized ||
-		kcp.Spec.Replicas != ptr.Deref(kcp.Status.Replicas, 0) {
-		return false
-	}
-
+func isBootstrapConfigUpToDate(bootstrapConfig *bootstrapv2.K0sControllerConfig, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
 	if machine == nil {
 		return false
 	}
 
-	if machine.Status.Phase != string(clusterv1.MachinePhaseRunning) &&
-		machine.Status.Phase != string(clusterv1.MachinePhaseProvisioned) &&
-		machine.Status.Phase != string(clusterv1.MachinePhaseProvisioning) {
-		return false
+	if bootstrapConfig == nil {
+		// In cases where the bootstrap config is not found, follow more conservative approach and consider it up to date.
+		return true
 	}
-
-	bootstrapConfig, found := bootstrapConfigs[machine.Name]
-	if !found {
-		return false
-	}
-
 	// If the machine has the k0s config annotation, use it for comparison instead of manually comparing the K0sConfigSpec.
 	// We will fall back to the manual comparison only if the annotation is missing or invalid. This is required to support
 	// the scenario where the machine was created using old k0smotron versions where the k0s config was a mutable resource.
@@ -355,7 +289,7 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 	if err != nil {
 		// TODO: Remove this fallback logic in a future release.
 		if errors.Is(err, errMachineWithoutK0sConfigAnnotation) {
-			return deprecatedIsK0sConfigChanged(&bootstrapConfig, kcp, machine)
+			return !deprecatedIsK0sConfigChanged(bootstrapConfig, kcp, machine)
 		}
 
 		return false
@@ -375,7 +309,7 @@ func hasControllerConfigChanged(bootstrapConfigs map[string]bootstrapv2.K0sContr
 	withV1Beta2Defaults(kcpK0sConfig)
 	withV1Beta2Defaults(machineK0sConfig)
 
-	return cmp.Diff(kcpK0sConfig, machineK0sConfig) != ""
+	return cmp.Diff(kcpK0sConfig, machineK0sConfig) == ""
 
 }
 
@@ -487,12 +421,12 @@ func getMachineK0sConfig(machine *clusterv1.Machine) (*bootstrapv2.K0sConfigSpec
 	return k0sConfigSpec, nil
 }
 
-func matchesTemplateClonedFrom(infraMachines map[string]*unstructured.Unstructured, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
+func isInfraMachineUpToDate(infraMachine *unstructured.Unstructured, kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) bool {
 	if machine == nil {
 		return false
 	}
-	infraMachine, found := infraMachines[machine.Name]
-	if !found {
+
+	if infraMachine == nil {
 		return false
 	}
 
@@ -567,45 +501,6 @@ func (c *K0sController) markChildControlNodeToLeave(ctx context.Context, name st
 		}
 	}
 	logger.Info("marked etcd to leave")
-
-	return nil
-}
-
-func (c *K0sController) deleteOldControlNodes(ctx context.Context, cluster *clusterv1.Cluster) error {
-	kubeClient, err := c.getWorkloadClusterClientset(ctx, cluster)
-	if err != nil {
-		return fmt.Errorf("error getting workload cluster client: %w", err)
-	}
-
-	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
-	if err != nil {
-		return fmt.Errorf("error getting all machines: %w", err)
-	}
-
-	var controlNodeList unstructured.UnstructuredList
-	err = kubeClient.RESTClient().
-		Get().
-		AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes").
-		Do(ctx).
-		Into(&controlNodeList)
-
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
-
-	existingMachineNames := make(map[string]struct{})
-	for _, n := range machines.Names() {
-		existingMachineNames[n] = struct{}{}
-	}
-
-	for _, controlNode := range controlNodeList.Items {
-		if _, ok := existingMachineNames[controlNode.GetName()]; !ok {
-			err := c.deleteControlNode(ctx, controlNode.GetName(), kubeClient)
-			if err != nil {
-				return err
-			}
-		}
-	}
 
 	return nil
 }

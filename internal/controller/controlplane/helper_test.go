@@ -34,11 +34,11 @@ import (
 
 func TestHasControllerConfigChanged(t *testing.T) {
 	var testCases = []struct {
-		name             string
-		machine          *clusterv1.Machine
-		kcp              *cpv1beta2.K0sControlPlane
-		bootstrapConfigs map[string]bootstrapv2.K0sControllerConfig
-		configHasChanged bool
+		name                      string
+		machine                   *clusterv1.Machine
+		kcp                       *cpv1beta2.K0sControlPlane
+		bootstrapConfig           *bootstrapv2.K0sControllerConfig
+		isBootstrapConfigUpToDate bool
 	}{
 		{
 			name: "equal configs",
@@ -93,37 +93,35 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 			},
-			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
-				"test": {
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
-							K0s: &unstructured.Unstructured{
-								Object: map[string]any{
-									"apiVersion": "k0s.k0sproject.io/v1beta1",
-									"kind":       "ClusterConfig",
-									"metadata": map[string]any{
-										"name": "k0s",
+			bootstrapConfig: &bootstrapv2.K0sControllerConfig{
+				Spec: bootstrapv2.K0sControllerConfigSpec{
+					K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+						K0s: &unstructured.Unstructured{
+							Object: map[string]any{
+								"apiVersion": "k0s.k0sproject.io/v1beta1",
+								"kind":       "ClusterConfig",
+								"metadata": map[string]any{
+									"name": "k0s",
+								},
+								"spec": map[string]any{
+									"api": map[string]any{
+										"externalAddress": "172.18.0.3",
+										"extraArgs": map[string]any{
+											"anonymous-auth": "true",
+										},
 									},
-									"spec": map[string]any{
-										"api": map[string]any{
-											"externalAddress": "172.18.0.3",
+									"network": map[string]any{
+										"clusterDomain": "cluster.local",
+										"podCIDR":       "192.168.0.0/16",
+										"serviceCIDR":   "10.128.0.0/12",
+									},
+									"telemetry": map[string]any{
+										"enabled": "false",
+									},
+									"storage": map[string]any{
+										"etcd": map[string]any{
 											"extraArgs": map[string]any{
-												"anonymous-auth": "true",
-											},
-										},
-										"network": map[string]any{
-											"clusterDomain": "cluster.local",
-											"podCIDR":       "192.168.0.0/16",
-											"serviceCIDR":   "10.128.0.0/12",
-										},
-										"telemetry": map[string]any{
-											"enabled": "false",
-										},
-										"storage": map[string]any{
-											"etcd": map[string]any{
-												"extraArgs": map[string]any{
-													"name": "test",
-												},
+												"name": "test",
 											},
 										},
 									},
@@ -133,7 +131,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 			},
-			configHasChanged: false,
+			isBootstrapConfigUpToDate: true,
 		},
 		{
 			name: "not equal configs: new k0sInstallDir",
@@ -189,38 +187,36 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 			},
-			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
-				"test": {
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
-							K0sInstallDir: "/usr/local/bin",
-							K0s: &unstructured.Unstructured{
-								Object: map[string]any{
-									"apiVersion": "k0s.k0sproject.io/v1beta1",
-									"kind":       "ClusterConfig",
-									"metadata": map[string]any{
-										"name": "k0s",
+			bootstrapConfig: &bootstrapv2.K0sControllerConfig{
+				Spec: bootstrapv2.K0sControllerConfigSpec{
+					K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+						K0sInstallDir: "/usr/local/bin",
+						K0s: &unstructured.Unstructured{
+							Object: map[string]any{
+								"apiVersion": "k0s.k0sproject.io/v1beta1",
+								"kind":       "ClusterConfig",
+								"metadata": map[string]any{
+									"name": "k0s",
+								},
+								"spec": map[string]any{
+									"api": map[string]any{
+										"externalAddress": "172.18.0.3",
+										"extraArgs": map[string]any{
+											"anonymous-auth": "true",
+										},
 									},
-									"spec": map[string]any{
-										"api": map[string]any{
-											"externalAddress": "172.18.0.3",
+									"network": map[string]any{
+										"clusterDomain": "cluster.local",
+										"podCIDR":       "192.168.0.0/16",
+										"serviceCIDR":   "10.128.0.0/12",
+									},
+									"telemetry": map[string]any{
+										"enabled": "false",
+									},
+									"storage": map[string]any{
+										"etcd": map[string]any{
 											"extraArgs": map[string]any{
-												"anonymous-auth": "true",
-											},
-										},
-										"network": map[string]any{
-											"clusterDomain": "cluster.local",
-											"podCIDR":       "192.168.0.0/16",
-											"serviceCIDR":   "10.128.0.0/12",
-										},
-										"telemetry": map[string]any{
-											"enabled": "false",
-										},
-										"storage": map[string]any{
-											"etcd": map[string]any{
-												"extraArgs": map[string]any{
-													"name": "test",
-												},
+												"name": "test",
 											},
 										},
 									},
@@ -230,7 +226,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 			},
-			configHasChanged: true,
+			isBootstrapConfigUpToDate: false,
 		},
 		{
 			name: "not equal configs: enabling worker in kcp",
@@ -288,37 +284,35 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 			},
-			bootstrapConfigs: map[string]bootstrapv2.K0sControllerConfig{
-				"test": {
-					Spec: bootstrapv2.K0sControllerConfigSpec{
-						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
-							K0s: &unstructured.Unstructured{
-								Object: map[string]any{
-									"apiVersion": "k0s.k0sproject.io/v1beta1",
-									"kind":       "ClusterConfig",
-									"metadata": map[string]any{
-										"name": "k0s",
+			bootstrapConfig: &bootstrapv2.K0sControllerConfig{
+				Spec: bootstrapv2.K0sControllerConfigSpec{
+					K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+						K0s: &unstructured.Unstructured{
+							Object: map[string]any{
+								"apiVersion": "k0s.k0sproject.io/v1beta1",
+								"kind":       "ClusterConfig",
+								"metadata": map[string]any{
+									"name": "k0s",
+								},
+								"spec": map[string]any{
+									"api": map[string]any{
+										"externalAddress": "172.18.0.3",
+										"extraArgs": map[string]any{
+											"anonymous-auth": "true",
+										},
 									},
-									"spec": map[string]any{
-										"api": map[string]any{
-											"externalAddress": "172.18.0.3",
+									"network": map[string]any{
+										"clusterDomain": "cluster.local",
+										"podCIDR":       "192.168.0.0/16",
+										"serviceCIDR":   "10.128.0.0/12",
+									},
+									"telemetry": map[string]any{
+										"enabled": "false",
+									},
+									"storage": map[string]any{
+										"etcd": map[string]any{
 											"extraArgs": map[string]any{
-												"anonymous-auth": "true",
-											},
-										},
-										"network": map[string]any{
-											"clusterDomain": "cluster.local",
-											"podCIDR":       "192.168.0.0/16",
-											"serviceCIDR":   "10.128.0.0/12",
-										},
-										"telemetry": map[string]any{
-											"enabled": "false",
-										},
-										"storage": map[string]any{
-											"etcd": map[string]any{
-												"extraArgs": map[string]any{
-													"name": "test",
-												},
+												"name": "test",
 											},
 										},
 									},
@@ -328,13 +322,13 @@ func TestHasControllerConfigChanged(t *testing.T) {
 					},
 				},
 			},
-			configHasChanged: true,
+			isBootstrapConfigUpToDate: false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.configHasChanged, hasControllerConfigChanged(tc.bootstrapConfigs, tc.kcp, tc.machine))
+			require.Equal(t, tc.isBootstrapConfigUpToDate, isBootstrapConfigUpToDate(tc.bootstrapConfig, tc.kcp, tc.machine))
 		})
 	}
 }
@@ -386,7 +380,15 @@ func TestGetMachineK0sConfig_LegacyAnnotation(t *testing.T) {
 func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
 	// Minimal v1beta1 config as written by k0smotron < v2.0.0: no provisioner, no defaulted
 	// scalar fields persisted.
-	legacyJSON, err := json.Marshal(bootstrapv1.K0sConfigSpec{})
+	legacyConfig := bootstrapv1.K0sControllerConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+		},
+		Spec: bootstrapv1.K0sControllerConfigSpec{
+			K0sConfigSpec: &bootstrapv1.K0sConfigSpec{},
+		},
+	}
+	legacyJSON, err := json.Marshal(legacyConfig.Spec)
 	require.NoError(t, err)
 
 	machine := &clusterv1.Machine{
@@ -425,6 +427,12 @@ func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
 		},
 	}
 
+	convertedLegacyConfig := &bootstrapv2.K0sControllerConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+		},
+	}
+	require.NoError(t, legacyConfig.ConvertTo(convertedLegacyConfig))
 	// bootstrapConfigs is only used by the deprecated fallback path; the annotation path is taken here.
-	require.False(t, hasControllerConfigChanged(map[string]bootstrapv2.K0sControllerConfig{}, kcp, machine))
+	require.True(t, isBootstrapConfigUpToDate(convertedLegacyConfig, kcp, machine))
 }
