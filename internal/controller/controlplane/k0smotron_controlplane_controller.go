@@ -215,7 +215,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			return
 		}
 
-		derr = c.patchInfrastructureStatus(ctx, cluster, kcp.Status.Initialization.ControlPlaneInitialized)
+		derr = c.patchInfrastructureStatus(ctx, cluster)
 		if derr != nil {
 			log.Error(derr, "Failed to patch Infrastructure object status")
 			err = kerrors.NewAggregate([]error{err, derr})
@@ -706,9 +706,11 @@ func (scope *kmcScope) getK0sVersionRunningInPod(ctx context.Context, pod *corev
 	return version.NewVersion(currentVersionStr)
 }
 
-// patchInfrastructureStatus updates the ready status of the infrastructure object referenced by the cluster
-func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, cluster *clusterv1.Cluster, ready *bool) error {
+// patchInfrastructureStatus updates the ready status of the infrastructure object referenced by the cluster.
+func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, cluster *clusterv1.Cluster) error {
 	log := log.FromContext(ctx).WithValues("cluster", cluster.Name)
+
+	ready := cluster.Spec.ControlPlaneEndpoint.IsValid()
 
 	infraObj, err := external.GetObjectFromContractVersionedRef(ctx, c, cluster.Spec.InfrastructureRef, cluster.Namespace)
 	if err != nil {
@@ -721,25 +723,30 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 		return nil
 	}
 
-	// Check current status.ready value
-	currentReady, found, err := unstructured.NestedBool(infraObj.Object, "status", "ready")
+	var (
+		statusPath []string
+		patchData  []byte
+	)
+	switch infraObj.GroupVersionKind().Version {
+	case "v1beta1":
+		statusPath = []string{"status", "ready"}
+		patchData = fmt.Appendf(nil, `{"status":{"ready":%t}}`, ready)
+	default:
+		statusPath = []string{"status", "initialization", "provisioned"}
+		patchData = fmt.Appendf(nil, `{"status":{"initialization":{"provisioned":%t}}}`, ready)
+	}
+
+	// Check current provisioned value
+	currentReady, found, err := unstructured.NestedBool(infraObj.Object, statusPath...)
 	if err != nil {
-		return fmt.Errorf("failed to get ready status: %w", err)
+		return fmt.Errorf("failed to get provisioned status: %w", err)
 	}
 
 	// Only patch if status is not set or different from desired value
-	if !found || currentReady != ptr.Deref(ready, false) {
-		log.Info("Patching Infrastructure object status", "ready", ready)
+	if !found || currentReady != ready {
+		log.Info("Patching Infrastructure object status", "field", strings.Join(statusPath, "."), "provisioned", ready)
 
-		// Apply the patch
-		err = c.Client.Status().Patch(
-			ctx,
-			infraObj,
-			client.RawPatch(
-				types.MergePatchType,
-				fmt.Appendf(nil, `{"status": {"ready": %t}}`, ptr.Deref(ready, false)),
-			),
-		)
+		err = c.Client.Status().Patch(ctx, infraObj, client.RawPatch(types.MergePatchType, patchData))
 		if err != nil {
 			return fmt.Errorf("failed to patch Infrastructure object: %w", err)
 		}
