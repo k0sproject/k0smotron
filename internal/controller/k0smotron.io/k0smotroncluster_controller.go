@@ -224,6 +224,13 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
+	if kmc.Spec.Ingress != nil {
+		err := kmcScope.ensureHAProxyCerts(ctx, kmc)
+		if err != nil {
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating ingress certificates: %w", err)
+		}
+	}
+
 	if err := kmcScope.reconcileIngress(ctx, kmc); err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling ingress, %s", err.Error()))
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
@@ -270,13 +277,6 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				Type: string(secret.APIServerEtcdClient),
 				Name: secret.Name(kmc.Name, secret.APIServerEtcdClient),
 			})
-		}
-	}
-
-	if kmc.Spec.Ingress != nil {
-		err := kmcScope.ensureHAProxyCerts(ctx, kmc)
-		if err != nil {
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating ingress certificates: %w", err)
 		}
 	}
 

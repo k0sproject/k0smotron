@@ -1,0 +1,214 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 192.168.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+        - 10.128.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0smotronControlPlane
+    name: ${CLUSTER_NAME}-cp
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: ${CLUSTER_NAME}
+---
+# Hosted control plane: runs as pods in the kind management cluster, reachable
+# from the AWS workers via the management cluster's HAProxy ingress front door
+# using nip.io hostnames built from the management host's PUBLIC IP.
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-cp
+  namespace: ${NAMESPACE}
+spec:
+  version: ${KUBERNETES_VERSION}
+  service:
+    # NodePort backed by the kind management cluster's extra port mapping for
+    # 30443 (see e2e/setup.go), same trick already used by the docker "ingress"
+    # flavor (e2e/data/infrastructure-docker/main/cluster-template-ingress/cluster-with-ingress.yaml).
+    type: NodePort
+  ingress:
+    # ${HOST_IP} is the management/kind host's private IPv4, auto-discovered
+    # from EC2 IMDS by e2e/windows_ingress_test.go (detectHostInternalIP). The
+    # same-VPC workers reach the ingress front door over this private address.
+    apiHost: kube-api.${HOST_IP}.nip.io
+    konnectivityHost: konnectivity.${HOST_IP}.nip.io
+    # ${INGRESS_PORT} matches the HostPort kind is configured with (see
+    # e2e/setup.go ExtraPortMappings, currently 32143); the test also opens
+    # this port on the host security group automatically.
+    port: ${INGRESS_PORT}
+    annotations:
+      haproxy.org/ssl-passthrough: "true"
+  k0sConfig:
+    apiVersion: k0s.k0sproject.io/v1beta1
+    kind: ClusterConfig
+    spec:
+      api:
+        extraArgs:
+          anonymous-auth: "true"
+      network:
+        # Windows nodes require Calico (kube-router, the k0s default, does not
+        # support Windows).
+        provider: calico
+      telemetry:
+        enabled: false
+---
+# AWSCluster is annotated as externally managed because there is no
+# CAPA-managed control plane machine (the control plane is hosted, see above).
+# ${AWS_VPC_ID}/${AWS_SUBNET_ID}/${AWS_AVAILABILITY_ZONE} are auto-discovered
+# from IMDS as the host's OWN VPC/subnet/AZ so the workers land in the same VPC.
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+  annotations:
+    cluster.x-k8s.io/managed-by: k0smotron
+spec:
+  region: eu-west-1
+  sshKeyName: ${SSH_KEY_NAME}
+  network:
+    vpc:
+      id: ${AWS_VPC_ID}
+    subnets:
+      - id: ${AWS_SUBNET_ID}
+        availabilityZone: ${AWS_AVAILABILITY_ZONE}
+---
+# Windows worker pool -- this is what exercises the k0smotron-proxy-win
+# HostProcess DaemonSet.
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-mt-worker-windows
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      publicIP: true
+      # Pin to the host's own subnet (auto-discovered) so the worker is in the
+      # same VPC/subnet/AZ as the management host and can reach ${HOST_IP}.
+      subnet:
+        id: ${AWS_SUBNET_ID}
+      ami:
+        # TODO(e2e-env): Windows in eu-west-1, replace if it rotates/expires.
+        id: ami-0bc74d0ac37f50b4b
+      instanceType: t3.medium
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+      cloudInit:
+        insecureSkipSecretsManager: true
+      sshKeyName: ${SSH_KEY_NAME}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-windows
+  namespace: ${NAMESPACE}
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+      pool: worker-windows
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+        pool: worker-windows
+    spec:
+      clusterName: ${CLUSTER_NAME}
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: ${CLUSTER_NAME}-windows-config
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        name: ${CLUSTER_NAME}-mt-worker-windows
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-windows-config
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      version: ${KUBERNETES_VERSION}
+      provisioner:
+        platform: windows
+        type: powershell-xml
+---
+# Linux worker pool -- required so CoreDNS/Calico (and the Linux flavor of the
+# node-local proxy, k0smotron-proxy) have somewhere to schedule; a
+# Windows-only cluster would not come up.
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-mt-worker-linux
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      publicIP: true
+      # Pin to the host's own subnet (auto-discovered) so the worker is in the
+      # same VPC/subnet/AZ as the management host and can reach ${HOST_IP}.
+      subnet:
+        id: ${AWS_SUBNET_ID}
+      ami:
+        # TODO(e2e-env): Ubuntu in eu-west-1, replace if it rotates/expires.
+        id: ami-0de864d6a3bd20ea8
+      instanceType: t3.large
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+      cloudInit:
+        insecureSkipSecretsManager: true
+      sshKeyName: ${SSH_KEY_NAME}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-linux
+  namespace: ${NAMESPACE}
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+      pool: worker-linux
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+        pool: worker-linux
+    spec:
+      clusterName: ${CLUSTER_NAME}
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: K0sWorkerConfigTemplate
+          name: ${CLUSTER_NAME}-linux-config
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        name: ${CLUSTER_NAME}-mt-worker-linux
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-linux-config
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      version: ${KUBERNETES_VERSION}
