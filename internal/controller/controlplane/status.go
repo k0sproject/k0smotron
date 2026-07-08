@@ -23,12 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/utils/ptr"
-
 	kutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
-	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -39,8 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
-	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
-	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/k0sproject/version"
 )
@@ -48,13 +42,6 @@ import (
 var (
 	errUnsupportedPlanState = errors.New("unsupported plan state")
 )
-
-// replicaStatusComputer defines an interface for computing the status of a control plane.
-// Implementations of this interface will provide logic to compute the control plane
-// status based on the upgrade strategy for the controlplane.
-type replicaStatusComputer interface {
-	compute(*cpv1beta2.K0sControlPlane) error
-}
 
 func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlplane) (err error) {
 	logger := log.FromContext(ctx)
@@ -72,155 +59,22 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 
 	controlplane.kcp.Status.Selector = collections.ControlPlaneSelectorForCluster(controlplane.cluster.Name).String()
 
-	sc, err := c.newReplicasStatusComputer(ctx, controlplane)
-	if err != nil {
-		return err
-	}
-	if sc == nil {
-		return nil
-	}
-
-	return sc.compute(controlplane.kcp)
+	return computeReplicas(controlplane)
 }
 
-func (c *K0sController) newReplicasStatusComputer(ctx context.Context, controlplane *controlplane) (replicaStatusComputer, error) {
-	logger := log.FromContext(ctx)
-
-	switch controlplane.kcp.Spec.UpdateStrategy {
-	case cpv1beta2.UpdateInPlace:
-		if controlplane.kcp.Status.Initialization.ControlPlaneInitialized == nil || !*controlplane.kcp.Status.Initialization.ControlPlaneInitialized {
-			// taking into account that `status.initialization.controlPlaneInitialized` will not transit from true to false,
-			// we can assume that if the control plane is not initialized, the Plan does not exist yet and it is not possible
-			// to compute the status based on it. In this case, we need to compute the status based on the state of the
-			// Machines associated to the controlplane.
-			logger.Info("Control plane is not initialized yet, using machine status to compute the control plane status using \"InPlace\" update strategy")
-			return newMachineStatusComputer(controlplane)
-		}
-
-		kc, err := c.getWorkloadClusterClientset(ctx, controlplane.cluster)
-		if err != nil {
-			return nil, err
-		}
-
-		result, err := kc.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/plans/autopilot").DoRaw(ctx)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				logger.Info("Plan not found, falling back to machine status computer")
-				// If the controlplane has not been updated, the calculation of the replica status must be based
-				// on the status of the Machines associated to the controlplane instead of the Plan status since
-				// it does not exist. At this point it is safe to calculate the state via the Machines because the
-				// initial state of the Machine describes the initial state of the controlplane.
-				return newMachineStatusComputer(controlplane)
-			}
-
-			return nil, err
-		}
-
-		var plan autopilot.Plan
-		if err := yaml.Unmarshal(result, &plan); err != nil {
-			return nil, err
-		}
-
-		return &planStatus{plan}, nil
-	case cpv1beta2.UpdateRecreate, cpv1beta2.UpdateRecreateDeleteFirst:
-		return newMachineStatusComputer(controlplane)
-	default:
-		return nil, errors.New("upgrade strategy not found")
-	}
-}
-
-type planStatus struct {
-	plan autopilot.Plan
-}
-
-func (ic *planStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
-	logger := log.FromContext(context.Background())
-
-	if len(ic.plan.Spec.Commands) == 0 || len(ic.plan.Status.Commands) == 0 {
-		return fmt.Errorf("no plan commands found")
-	}
-
-	if ic.plan.Spec.Commands[0].K0sUpdate == nil || ic.plan.Status.Commands[0].K0sUpdate == nil {
-		return fmt.Errorf("no plan command for k0s update found")
-	}
-
-	// At this point, it is considered that the controlplane status has been computed before using the strategy
-	// which takes into account Machines state so we can assume that the only field to compute based on the
-	// Plan's state is the version and the updated replicas.
-	updatedReplicas := 0
-	readyReplicas := 0
-	unavailableReplicas := 0
-	upToDateReplicas := 0
-	availableReplicas := 0
-	switch ic.plan.Status.State {
-	case core.PlanCompleted:
-		// If the Plan is completed, the status of the control plane is updated with the version
-		// of the Plan. Otherwise, the status of the control plane remains the same.
-		kcp.Status.Version = ic.plan.Spec.Commands[0].K0sUpdate.Version
-		// When the update is completed, it is safe to say that the number of updated replicas
-		// and ready replicas is as desired.
-		updatedReplicas = int(kcp.Spec.Replicas)
-		upToDateReplicas = int(kcp.Spec.Replicas)
-		availableReplicas = int(kcp.Spec.Replicas)
-		readyReplicas = int(kcp.Spec.Replicas)
-	case core.PlanSchedulableWait, core.PlanSchedulable:
-		for _, c := range ic.plan.Status.Commands[0].K0sUpdate.Controllers {
-			switch c.State {
-			case core.SignalCompleted:
-				updatedReplicas++
-				upToDateReplicas++
-				availableReplicas++
-				readyReplicas++
-			case core.SignalPending:
-				// Controller is still available.
-				readyReplicas++
-				availableReplicas++
-			case core.SignalSent:
-				// When the controller state is 'SignalSent', the controlplane is undergoing the
-				// update so it cannot be considered as available.
-				unavailableReplicas++
-			default:
-				logger.Info("Unsupported controller state", "state", c.State)
-			}
-		}
-	default:
-		// TODO: Surface this error reason as a status.condition for controlplane
-		return errUnsupportedPlanState
-	}
-	kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
-	kcp.Status.AvailableReplicas = new(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
-	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
-
-	return nil
-}
-
-type machineStatus struct {
-	machines         collections.Machines
-	upToDateReplicas int
-}
-
-func newMachineStatusComputer(controlplane *controlplane) (replicaStatusComputer, error) {
-	ms := &machineStatus{
-		machines:         controlplane.activeMachines,
-		upToDateReplicas: controlplane.upToDateMachines.Len(),
-	}
-
-	return ms, nil
-}
-
-func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
-	kcp.Status.Replicas = new(int32(len(rc.machines)))
+func computeReplicas(controlplane *controlplane) error {
+	controlplane.kcp.Status.Replicas = new(int32(len(controlplane.activeMachines)))
 	readyReplicas := 0
 	unavailableReplicas := 0
 	// Count the machines in different states
-	for _, machine := range rc.machines {
+	for _, machine := range controlplane.activeMachines {
 		switch machine.Status.Phase {
 		case string(clusterv2.MachinePhaseRunning):
 			readyReplicas++
 		case string(clusterv2.MachinePhaseProvisioned):
 			// If we're running without --enable-worker, the machine will never transition
 			// to running state, so we need to count it as ready when it's provisioned
-			if !kcp.WorkerEnabled() {
+			if !controlplane.kcp.WorkerEnabled() {
 				readyReplicas++
 			} else {
 				unavailableReplicas++
@@ -233,30 +87,30 @@ func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 	}
 
 	// If some machines are missing, count them as unavailable
-	if int(kcp.Spec.Replicas) > rc.machines.Len() {
-		unavailableReplicas += int(kcp.Spec.Replicas) - rc.machines.Len()
+	if int(controlplane.kcp.Spec.Replicas) > controlplane.activeMachines.Len() {
+		unavailableReplicas += int(controlplane.kcp.Spec.Replicas) - controlplane.activeMachines.Len()
 	}
 
-	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
-	kcp.Status.UpToDateReplicas = new(int32(rc.upToDateReplicas))
-	kcp.Status.AvailableReplicas = new(int32(rc.machines.Len() - unavailableReplicas))
+	controlplane.kcp.Status.ReadyReplicas = new(int32(readyReplicas))
+	controlplane.kcp.Status.UpToDateReplicas = new(int32(controlplane.upToDateMachines.Len()))
+	controlplane.kcp.Status.AvailableReplicas = new(int32(controlplane.activeMachines.Len() - unavailableReplicas))
 
 	// Find the lowest version
-	lowestMachineVersion, err := minVersion(rc.machines)
+	lowestMachineVersion, err := minVersion(controlplane.activeMachines)
 	if err != nil {
 		log.Log.Error(err, "Failed to get the lowest version")
 		return err
 	}
 
-	kcp.Status.Version = lowestMachineVersion
+	controlplane.kcp.Status.Version = lowestMachineVersion
 
 	// If kcp has suffix but machines don't, we need to add it to minVersion
 	// Otherwise CAPI topology will not be able to match the versions and might try to recreate the machines
 	// or restrict the upgrade path
-	if strings.Contains(kcp.Spec.Version, "+") && !strings.Contains(lowestMachineVersion, "+") && lowestMachineVersion != "" {
+	if strings.Contains(controlplane.kcp.Spec.Version, "+") && !strings.Contains(lowestMachineVersion, "+") && lowestMachineVersion != "" {
 		// Get the suffix from kcp version
-		suffix := strings.Split(kcp.Spec.Version, "+")[1]
-		kcp.Status.Version = kcp.Status.Version + "+" + suffix
+		suffix := strings.Split(controlplane.kcp.Spec.Version, "+")[1]
+		controlplane.kcp.Status.Version = controlplane.kcp.Status.Version + "+" + suffix
 	}
 
 	// If the controlplane spec does NOT have workers enabled
@@ -264,42 +118,44 @@ func (rc *machineStatus) compute(kcp *cpv1beta2.K0sControlPlane) error {
 	// Otherwise CAPI assumes it'll find node objects for the machines
 	// TODO Check with upstream CAPI folks whether this is the correct approach in this case when
 	// we still run the controlplane on Machines
-	if !kcp.WorkerEnabled() {
-		kcp.Status.ExternalManagedControlPlane = new(true)
+	if !controlplane.kcp.WorkerEnabled() {
+		controlplane.kcp.Status.ExternalManagedControlPlane = new(true)
 	}
 
-	setScalingConditions(kcp, rc)
+	setScalingConditions(controlplane)
 
 	return nil
 }
 
-func setScalingConditions(kcp *cpv1beta2.K0sControlPlane, rc *machineStatus) {
-	if rc.upToDateReplicas < int(kcp.Spec.Replicas) {
-		conditions.Set(kcp, metav1.Condition{
+func setScalingConditions(controlplane *controlplane) {
+	upToDateReplicas := controlplane.upToDateMachines.Len()
+
+	if upToDateReplicas < int(controlplane.kcp.Spec.Replicas) {
+		conditions.Set(controlplane.kcp, metav1.Condition{
 			Type:   string(cpv1beta2.K0sControlPlaneScalingUpCondition),
 			Status: metav1.ConditionTrue,
 			Reason: cpv1beta2.K0sControlPlaneScalingUpReason,
 			Message: fmt.Sprintf("Control plane is scaling up: %d/%d",
-				rc.upToDateReplicas, kcp.Spec.Replicas),
+				upToDateReplicas, controlplane.kcp.Spec.Replicas),
 		})
 	} else {
-		conditions.Set(kcp, metav1.Condition{
+		conditions.Set(controlplane.kcp, metav1.Condition{
 			Type:   string(cpv1beta2.K0sControlPlaneScalingUpCondition),
 			Status: metav1.ConditionFalse,
 			Reason: cpv1beta2.K0sControlPlaneNotScalingUpReason,
 		})
 	}
 
-	if rc.upToDateReplicas > int(kcp.Spec.Replicas) {
-		conditions.Set(kcp, metav1.Condition{
+	if upToDateReplicas > int(controlplane.kcp.Spec.Replicas) {
+		conditions.Set(controlplane.kcp, metav1.Condition{
 			Type:   string(cpv1beta2.K0sControlPlaneScalingDownCondition),
 			Status: metav1.ConditionTrue,
 			Reason: cpv1beta2.K0sControlPlaneScalingDownReason,
 			Message: fmt.Sprintf("Control plane is scaling down: %d/%d",
-				rc.upToDateReplicas, kcp.Spec.Replicas),
+				upToDateReplicas, controlplane.kcp.Spec.Replicas),
 		})
 	} else {
-		conditions.Set(kcp, metav1.Condition{
+		conditions.Set(controlplane.kcp, metav1.Condition{
 			Type:   string(cpv1beta2.K0sControlPlaneScalingDownCondition),
 			Status: metav1.ConditionFalse,
 			Reason: cpv1beta2.K0sControlPlaneNotScalingDownReason,

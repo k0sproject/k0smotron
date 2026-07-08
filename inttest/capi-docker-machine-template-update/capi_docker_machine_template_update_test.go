@@ -308,9 +308,6 @@ spec:
   replicas: 3
   version: v1.30.1+k0s.0
   k0sConfigSpec:
-    postStartCommands:
-    - sed -i 's/RestartSec=120/RestartSec=1/' /etc/systemd/system/k0scontroller.service
-    - systemctl daemon-reload
     args:
       - --enable-worker
       - --no-taints

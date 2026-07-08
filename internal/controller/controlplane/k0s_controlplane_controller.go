@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -89,15 +90,15 @@ type machineState struct {
 }
 
 type controlplane struct {
-	cluster                   *clusterv1.Cluster
-	kcp                       *cpv1beta2.K0sControlPlane
-	activeMachines            collections.Machines
-	deletedMachines           collections.Machines
-	upToDateMachines          collections.Machines
-	notUpToDateMachines       collections.Machines
-	controllerConfigs         map[string]*bootstrapv2.K0sControllerConfig
-	infraMachines             map[string]*unstructured.Unstructured
-	hasMachinesWithOldVersion bool
+	cluster                            *clusterv1.Cluster
+	kcp                                *cpv1beta2.K0sControlPlane
+	activeMachines                     collections.Machines
+	deletedMachines                    collections.Machines
+	upToDateMachines                   collections.Machines
+	notUpToDateMachines                collections.Machines
+	controllerConfigs                  map[string]*bootstrapv2.K0sControllerConfig
+	infraMachines                      map[string]*unstructured.Unstructured
+	hasMachinesWithOnlyVersionOutdated bool
 }
 
 // K0sController is responsible for reconciling K0sControlPlane objects.
@@ -109,6 +110,9 @@ type K0sController struct {
 	RESTConfig          *rest.Config
 	// workloadClusterKubeClient is used during testing to inject a fake client
 	workloadClusterKubeClient *kubernetes.Clientset
+	// autopilotUpdateCancels holds the cancel function for the running updateMachineVersions
+	// goroutine of each control plane, keyed by its NamespacedName.
+	autopilotUpdateCancels sync.Map
 }
 
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes/status,verbs=get;list;watch;create;update;patch;delete
@@ -752,22 +756,27 @@ func (c *K0sController) retrieveControlPlaneState(ctx context.Context, cluster *
 	activeMachines := machines.Filter(collections.ActiveMachines)
 
 	var (
-		upToDateMachines          = collections.New()
-		controllerConfigs         = make(map[string]*bootstrapv2.K0sControllerConfig)
-		infraMachines             = make(map[string]*unstructured.Unstructured)
-		hasMachinesWithOldVersion bool
+		upToDateMachines                   = collections.New()
+		controllerConfigs                  = make(map[string]*bootstrapv2.K0sControllerConfig)
+		infraMachines                      = make(map[string]*unstructured.Unstructured)
+		hasMachinesWithOnlyVersionOutdated bool
 	)
 	for _, machine := range activeMachines {
 		machineState, err := c.calculateMachineState(ctx, kcp, machine)
 		if err != nil {
 			return nil, fmt.Errorf("error calculating machine state for machine %s: %w", machine.Name, err)
 		}
-		if !machineState.isVersionUpToDate {
-			hasMachinesWithOldVersion = true
+
+		infraSpecAndBootstrapSpecUpToDate := machineState.isInfraUpToDate && machineState.isBootstrapUpToDate
+
+		if machineState.isVersionUpToDate && infraSpecAndBootstrapSpecUpToDate {
+			upToDateMachines.Insert(machine)
 		}
 
-		if machineState.isVersionUpToDate && machineState.isInfraUpToDate && machineState.isBootstrapUpToDate {
-			upToDateMachines.Insert(machine)
+		// InPlace upgrade strategy needs to know if there are any machines that have only version outdated,
+		// otherwise a recreation strategy will be used.
+		if !machineState.isVersionUpToDate && infraSpecAndBootstrapSpecUpToDate {
+			hasMachinesWithOnlyVersionOutdated = true
 		}
 
 		if machineState.controllerConfig != nil {
@@ -780,15 +789,15 @@ func (c *K0sController) retrieveControlPlaneState(ctx context.Context, cluster *
 	}
 
 	scope := &controlplane{
-		cluster:                   cluster,
-		kcp:                       kcp,
-		deletedMachines:           deletedMachines,
-		activeMachines:            activeMachines,
-		upToDateMachines:          upToDateMachines,
-		notUpToDateMachines:       activeMachines.Difference(upToDateMachines),
-		hasMachinesWithOldVersion: hasMachinesWithOldVersion,
-		controllerConfigs:         controllerConfigs,
-		infraMachines:             infraMachines,
+		cluster:                            cluster,
+		kcp:                                kcp,
+		deletedMachines:                    deletedMachines,
+		activeMachines:                     activeMachines,
+		upToDateMachines:                   upToDateMachines,
+		notUpToDateMachines:                activeMachines.Difference(upToDateMachines),
+		hasMachinesWithOnlyVersionOutdated: hasMachinesWithOnlyVersionOutdated,
+		controllerConfigs:                  controllerConfigs,
+		infraMachines:                      infraMachines,
 	}
 
 	return scope, nil

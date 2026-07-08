@@ -23,172 +23,12 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
-	"github.com/k0sproject/k0s/pkg/autopilot/controller/plans/core"
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/require"
 	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
 )
-
-func TestPlanStatusCompute(t *testing.T) {
-	t.Run("plan without commands", func(t *testing.T) {
-
-		var kcp *cpv1beta2.K0sControlPlane
-
-		rc := planStatus{
-			plan: autopilot.Plan{
-				Spec: autopilot.PlanSpec{
-					Commands: []autopilot.PlanCommand{},
-				},
-			},
-		}
-		require.Error(t, rc.compute(kcp))
-		require.Nil(t, kcp)
-
-		rc = planStatus{
-			plan: autopilot.Plan{
-				Spec: autopilot.PlanSpec{
-					Commands: []autopilot.PlanCommand{
-						{
-							K0sUpdate: &autopilot.PlanCommandK0sUpdate{},
-						},
-					},
-				},
-				Status: autopilot.PlanStatus{
-					Commands: []autopilot.PlanCommandStatus{},
-				},
-			},
-		}
-		require.Error(t, rc.compute(kcp))
-		require.Nil(t, kcp)
-	})
-
-	t.Run("plan without a K0sUpdate", func(t *testing.T) {
-		var kcp *cpv1beta2.K0sControlPlane
-
-		rc := planStatus{
-			plan: autopilot.Plan{
-				Spec: autopilot.PlanSpec{
-					Commands: []autopilot.PlanCommand{
-						{
-							AirgapUpdate: &autopilot.PlanCommandAirgapUpdate{},
-						},
-					},
-				},
-				Status: autopilot.PlanStatus{
-					Commands: []autopilot.PlanCommandStatus{
-						{
-							AirgapUpdate: &autopilot.PlanCommandAirgapUpdateStatus{},
-						},
-					},
-				},
-			},
-		}
-		require.Error(t, rc.compute(kcp))
-		require.Nil(t, kcp)
-
-		rc = planStatus{
-			plan: autopilot.Plan{
-				Spec: autopilot.PlanSpec{
-					Commands: []autopilot.PlanCommand{
-						{
-							K0sUpdate: &autopilot.PlanCommandK0sUpdate{},
-						},
-					},
-				},
-				Status: autopilot.PlanStatus{
-					Commands: []autopilot.PlanCommandStatus{
-						{
-							AirgapUpdate: &autopilot.PlanCommandAirgapUpdateStatus{},
-						},
-					},
-				},
-			},
-		}
-		require.Error(t, rc.compute(kcp))
-		require.Nil(t, kcp)
-	})
-
-	t.Run("plan state unsupported", func(t *testing.T) {
-		originalKcp := &cpv1beta2.K0sControlPlane{}
-		expectedKcp := &cpv1beta2.K0sControlPlane{}
-
-		rc := planStatus{
-			plan: autopilot.Plan{
-				Spec: autopilot.PlanSpec{
-					Commands: []autopilot.PlanCommand{
-						{
-							K0sUpdate: &autopilot.PlanCommandK0sUpdate{},
-						},
-					},
-				},
-				Status: autopilot.PlanStatus{
-					State: core.PlanMissingSignalNode,
-					Commands: []autopilot.PlanCommandStatus{
-						{
-							K0sUpdate: &autopilot.PlanCommandK0sUpdateStatus{},
-						},
-					},
-				},
-			},
-		}
-		require.ErrorIs(t, rc.compute(originalKcp), errUnsupportedPlanState)
-		require.Equal(t, expectedKcp, originalKcp)
-	})
-
-	t.Run("plan is completed", func(t *testing.T) {
-		originalKcp := &cpv1beta2.K0sControlPlane{
-			Spec: cpv1beta2.K0sControlPlaneSpec{
-				Replicas: 2,
-			},
-			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpToDateReplicas:  new(int32(0)),
-				ReadyReplicas:     new(int32(2)),
-				AvailableReplicas: new(int32(2)),
-				Replicas:          new(int32(2)),
-				Version:           "v1.31.0+k0s.0",
-			},
-		}
-		expectedKcp := &cpv1beta2.K0sControlPlane{
-			Spec: cpv1beta2.K0sControlPlaneSpec{
-				Replicas: 2,
-			},
-			Status: cpv1beta2.K0sControlPlaneStatus{
-				UpToDateReplicas:  new(int32(2)),
-				ReadyReplicas:     new(int32(2)),
-				AvailableReplicas: new(int32(2)),
-				Replicas:          new(int32(2)),
-				Version:           "v1.31.0+k0s.0",
-			},
-		}
-
-		rc := planStatus{
-			plan: autopilot.Plan{
-				Spec: autopilot.PlanSpec{
-					Commands: []autopilot.PlanCommand{
-						{
-							K0sUpdate: &autopilot.PlanCommandK0sUpdate{
-								Version: "v1.31.0+k0s.0",
-							},
-						},
-					},
-				},
-				Status: autopilot.PlanStatus{
-					State: core.PlanCompleted,
-					Commands: []autopilot.PlanCommandStatus{
-						{
-							K0sUpdate: &autopilot.PlanCommandK0sUpdateStatus{},
-						},
-					},
-				},
-			},
-		}
-		require.NoError(t, rc.compute(originalKcp))
-		require.Equal(t, expectedKcp, originalKcp)
-	})
-}
 
 func Test_machineStatusCompute(t *testing.T) {
 	t.Run("test no machines", func(t *testing.T) {
@@ -199,10 +39,11 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 
-		rc := &machineStatus{
-			machines: collections.Machines{},
+		scope := &controlplane{
+			kcp:            kcp,
+			activeMachines: collections.Machines{},
 		}
-		err := rc.compute(kcp)
+		err := computeReplicas(scope)
 
 		require.NoError(t, err)
 		require.Zero(t, ptr.Deref(kcp.Status.Replicas, 0))
@@ -235,11 +76,14 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 
-		rc := &machineStatus{
-			machines:         machines,
-			upToDateReplicas: 1,
+		scope := &controlplane{
+			kcp:            kcp,
+			activeMachines: machines,
+			upToDateMachines: collections.Machines{
+				"machine1": machines["machine1"],
+			},
 		}
-		err := rc.compute(kcp)
+		err := computeReplicas(scope)
 
 		require.NoError(t, err)
 		require.Equal(t, int32(2), *kcp.Status.Replicas)
@@ -275,11 +119,14 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 
-		rc := &machineStatus{
-			machines:         machines,
-			upToDateReplicas: 1,
+		scope := &controlplane{
+			kcp:            kcp,
+			activeMachines: machines,
+			upToDateMachines: collections.Machines{
+				"machine1": machines["machine1"],
+			},
 		}
-		err := rc.compute(kcp)
+		err := computeReplicas(scope)
 
 		require.NoError(t, err)
 		require.Equal(t, int32(2), *kcp.Status.Replicas)
@@ -315,11 +162,14 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 
-		rc := &machineStatus{
-			machines:         machines,
-			upToDateReplicas: 1,
+		scope := &controlplane{
+			kcp:            kcp,
+			activeMachines: machines,
+			upToDateMachines: collections.Machines{
+				"machine1": machines["machine1"],
+			},
 		}
-		err := rc.compute(kcp)
+		err := computeReplicas(scope)
 
 		require.NoError(t, err)
 		require.Equal(t, int32(2), *kcp.Status.Replicas)
@@ -362,12 +212,14 @@ func Test_machineStatusCompute(t *testing.T) {
 				},
 			},
 		}
-
-		rc := &machineStatus{
-			machines:         machines,
-			upToDateReplicas: 1,
+		scope := &controlplane{
+			kcp:            kcp,
+			activeMachines: machines,
+			upToDateMachines: collections.Machines{
+				"machine1": machines["machine1"],
+			},
 		}
-		err := rc.compute(kcp)
+		err := computeReplicas(scope)
 
 		require.NoError(t, err)
 		require.Equal(t, int32(3), *kcp.Status.Replicas)
@@ -411,11 +263,14 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 
-		rc := &machineStatus{
-			machines:         machines,
-			upToDateReplicas: 1,
+		scope := &controlplane{
+			kcp:            kcp,
+			activeMachines: machines,
+			upToDateMachines: collections.Machines{
+				"machine1": machines["machine1"],
+			},
 		}
-		err := rc.compute(kcp)
+		err := computeReplicas(scope)
 
 		require.NoError(t, err)
 		require.Equal(t, int32(3), *kcp.Status.Replicas)
@@ -455,11 +310,14 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 
-		rc := &machineStatus{
-			machines:         machines,
-			upToDateReplicas: 1,
+		scope := &controlplane{
+			kcp:            kcp,
+			activeMachines: machines,
+			upToDateMachines: collections.Machines{
+				"machine1": machines["machine1"],
+			},
 		}
-		err := rc.compute(kcp)
+		err := computeReplicas(scope)
 
 		require.NoError(t, err)
 		require.Equal(t, int32(2), *kcp.Status.Replicas)
