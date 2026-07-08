@@ -58,8 +58,8 @@ jobs:
         uses: supplypike/setup-bin@v4
         with:
           name: clusterctl
-          version: v1.11.4
-          uri: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.4/clusterctl-linux-amd64
+          version: v1.12.1
+          uri: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.1/clusterctl-linux-amd64
 
       - name: Download cluster-api components
         uses: actions/download-artifact@v5

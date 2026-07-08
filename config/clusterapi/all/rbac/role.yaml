@@ -139,6 +139,14 @@ rules:
   - list
   - watch
 - apiGroups:
+  - clusterctl.cluster.x-k8s.io
+  resources:
+  - providers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - controlplane.cluster.x-k8s.io
   resources:
   - k0scontrolplanes
@@ -212,6 +220,14 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - runtime.cluster.x-k8s.io
+  resources:
+  - extensionconfigs
+  verbs:
+  - get
+  - list
   - watch
 - apiGroups:
   - storage.k8s.io

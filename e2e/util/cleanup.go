@@ -41,9 +41,10 @@ func deleteClusterAndWait(ctx context.Context, input capiframework.DeleteCluster
 
 	fmt.Printf("Waiting for the Cluster %s to be deleted\n", klog.KObj(input.Cluster))
 	waitForClusterDeleted(ctx, capiframework.WaitForClusterDeletedInput{
-		ClusterProxy:   input.ClusterProxy,
-		Cluster:        input.Cluster,
-		ArtifactFolder: input.ArtifactFolder,
+		ClusterProxy:         input.ClusterProxy,
+		Cluster:              input.Cluster,
+		ArtifactFolder:       input.ArtifactFolder,
+		ClusterctlConfigPath: input.ClusterctlConfigPath,
 	}, interval)
 
 	return nil
@@ -67,9 +68,11 @@ func waitForClusterDeleted(ctx context.Context, input capiframework.WaitForClust
 		if input.ArtifactFolder != "" {
 			// Dump all Cluster API related resources to artifacts.
 			capiframework.DumpAllResources(ctx, capiframework.DumpAllResourcesInput{
-				Lister:    input.ClusterProxy.GetClient(),
-				Namespace: clusterNamespace,
-				LogPath:   filepath.Join(input.ArtifactFolder, "clusters-afterDeletionTimedOut", clusterName, "resources"),
+				Lister:               input.ClusterProxy.GetClient(),
+				KubeConfigPath:       input.ClusterProxy.GetKubeconfigPath(),
+				ClusterctlConfigPath: input.ClusterctlConfigPath,
+				Namespace:            clusterNamespace,
+				LogPath:              filepath.Join(input.ArtifactFolder, "clusters-afterDeletionTimedOut", clusterName, "resources"),
 			})
 		}
 

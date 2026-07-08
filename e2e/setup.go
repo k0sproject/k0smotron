@@ -154,6 +154,11 @@ func setupMothership() error {
 		return fmt.Errorf("failed to load e2e config: %w", err)
 	}
 
+	if flavor == "InPlaceCAPI" {
+		e2eConfig.Variables["EXP_IN_PLACE_UPDATES"] = "true"
+		e2eConfig.Variables["K0SMOTRON_FEATURE_GATES"] = "InPlaceUpdates=true"
+	}
+
 	if clusterctlConfig == "" {
 		clusterctlConfigPath = clusterctl.CreateRepository(ctx, clusterctl.CreateRepositoryInput{
 			E2EConfig:        e2eConfig,
@@ -202,13 +207,14 @@ func setupMothership() error {
 	}
 
 	err = mothership.InitAndWatchControllerLogs(watchesCtx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
-		ClusterProxy:             bootstrapClusterProxy,
-		ClusterctlConfigPath:     clusterctlConfigPath,
-		InfrastructureProviders:  e2eConfig.InfrastructureProviders(),
-		DisableMetricsCollection: true,
-		BootstrapProviders:       []string{"k0sproject-k0smotron"},
-		ControlPlaneProviders:    []string{"k0sproject-k0smotron"},
-		LogFolder:                filepath.Join(artifactFolder, "capi"),
+		ClusterProxy:              bootstrapClusterProxy,
+		ClusterctlConfigPath:      clusterctlConfigPath,
+		InfrastructureProviders:   e2eConfig.InfrastructureProviders(),
+		DisableMetricsCollection:  true,
+		BootstrapProviders:        []string{"k0sproject-k0smotron"},
+		ControlPlaneProviders:     []string{"k0sproject-k0smotron"},
+		RuntimeExtensionProviders: []string{"k0sproject-k0smotron"},
+		LogFolder:                 filepath.Join(artifactFolder, "capi"),
 	}, util.GetInterval(e2eConfig, "bootstrap", "wait-deployment-available"))
 	if err != nil {
 		return fmt.Errorf("failed to init management cluster: %w", err)

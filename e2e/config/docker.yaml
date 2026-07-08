@@ -12,8 +12,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: "{go://sigs.k8s.io/cluster-api@v1.11}"
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.11}/core-components.yaml
+      - name: "{go://sigs.k8s.io/cluster-api@v1.12}"
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.12}/core-components.yaml
         type: url
         contract: v1beta1
         files:
@@ -24,8 +24,8 @@ providers:
   - name: docker
     type: InfrastructureProvider
     versions:
-      - name: "{go://sigs.k8s.io/cluster-api@v1.11}"
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.11}/infrastructure-components-development.yaml
+      - name: "{go://sigs.k8s.io/cluster-api@v1.12}"
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.12}/infrastructure-components-development.yaml
         type: url
         contract: v1beta1
         files:
@@ -45,6 +45,7 @@ providers:
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-inplace.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreate.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreatedeletefirst.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/cluster-template-inplacecapi.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -144,6 +145,17 @@ providers:
           - old: "image: k0s/k0smotron:latest"
             new: "image: quay.io/k0sproject/k0smotron:latest"
 
+  - name: k0sproject-k0smotron
+    type: RuntimeExtensionProvider
+    versions:
+      - name: v2.0.99 # potentially next release. Manifest from source files (development) are used.
+        value: ../../extensions/config/default
+        files:
+        - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "image: k0s/k0smotron:latest"
+            new: "image: quay.io/k0sproject/k0smotron:latest"
+
 variables:
   KUBERNETES_VERSION_MANAGEMENT: "v1.30.0"
   KUBERNETES_VERSION: "v1.31.0"
@@ -154,6 +166,7 @@ variables:
   # Enabling the feature flags by setting the env variables.
   CLUSTER_TOPOLOGY: "true"
   EXP_MACHINE_POOL: "true"
+  EXP_RUNTIME_SDK: "true"
 
 intervals:
   # The array is defined as [timeout, polling interval]
@@ -166,6 +179,7 @@ intervals:
   default/wait-delete-cluster: ["3m", "10s"]
   default/wait-kube-proxy-upgrade: ["30m", "10s"]
   default/wait-machine-pool-upgrade: ["30m", "10s"]
+  default/wait-md-upgrade: ["10m", "10s"]
   default/wait-nodes-ready: ["10m", "10s"]
   default/wait-machine-remediation: ["5m", "10s"]
   default/wait-autoscaler: ["5m", "10s"]
