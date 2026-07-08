@@ -37,6 +37,7 @@ providers:
       - sourcePath: "../data/infrastructure-aws/cluster-template-ignition-flatcar.yaml"
       - sourcePath: "../data/infrastructure-aws/cluster-template-ignition-fedora.yaml"
       - sourcePath: "../data/infrastructure-aws/cluster-template-windows.yaml"
+      - sourcePath: "../data/infrastructure-aws/cluster-template-windows-ingress.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -166,3 +167,6 @@ intervals:
   windows/wait-cluster: ["10m", "10s"]
   windows/wait-controllers: ["10m", "10s"]
   windows/wait-machines: ["15m", "10s"]
+  windows-ingress/wait-cluster: ["10m", "10s"]
+  windows-ingress/wait-controllers: ["10m", "10s"]
+  windows-ingress/wait-machines: ["15m", "10s"]
