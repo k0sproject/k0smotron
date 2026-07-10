@@ -18,17 +18,22 @@ package controlplane
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/storage/names"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/failuredomains"
+	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -37,9 +42,12 @@ import (
 func (c *K0sController) reconcileMachines(ctx context.Context, scope *controlplane) (res ctrl.Result, err error) {
 	logger := log.FromContext(ctx)
 
-	// Perform preflight checks before scaling up or down the control plane, ensuring that the cluster is in a healthy state and ready
-	// for scaling operations.
 	if res, err := c.preflightChecks(ctx, scope); err != nil || !res.IsZero() {
+		return res, err
+	}
+
+	// Reconcile k0s version with in-place update strategy, if required.
+	if res, err := c.reconcileInplaceK0sVersionUpdate(ctx, scope); err != nil || !res.IsZero() {
 		return res, err
 	}
 
@@ -225,8 +233,8 @@ func (c *K0sController) scaleDown(ctx context.Context, scope *controlplane) erro
 	return c.deleteMachine(ctx, machineToDelete.Name, scope.kcp)
 }
 
-// preflightChecks performs necessary checks before scaling up or down the control plane, ensuring that the cluster is in a healthy state and ready
-// for scaling operations. This includes verifying that there are no machines currently being deleted, and that the most recently created machine
+// preflightChecks performs necessary checks before updating the control plane, ensuring that the cluster is in a healthy state and ready
+// for scaling/updating operations. This includes verifying that there are no machines currently being deleted, and that the most recently created machine
 // is available before proceeding with scaling.
 func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
@@ -254,18 +262,6 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
 	}
 
-	// Ensure machines have the same version before scaling up or down, to avoid having mixed versions in the cluster. This is needed to
-	// ensure a stable upgrade process and avoid having machines with old versions running while the cluster is trying to scale up or down.
-	if scope.hasMachinesWithOldVersion && scope.kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace {
-		logger.Info("Machines with old version detected, triggering in-place update", "strategy", scope.kcp.Spec.UpdateStrategy)
-		err := c.inplaceUpdate(ctx, scope)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("error performing in-place update: %w", err)
-		}
-
-		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
-	}
-
 	return ctrl.Result{}, nil
 }
 
@@ -287,18 +283,102 @@ func (c *K0sController) isLatestMachineReady(ctx context.Context, scope *control
 	return conditions.IsTrue(latestCreatedMachine, clusterv1.MachineAvailableCondition)
 }
 
-func (c *K0sController) inplaceUpdate(ctx context.Context, scope *controlplane) error {
+func (c *K0sController) reconcileInplaceK0sVersionUpdate(ctx context.Context, scope *controlplane) (ctrl.Result, error) {
+	if !conditions.IsTrue(scope.kcp, cpv1beta2.ControlPlaneAvailableCondition) {
+		// If the control plane is not available, we cannot proceed with the in-place update, as access to the
+		// workload cluster is required to manage the autopilot plan.
+		return ctrl.Result{}, nil
+	}
+
+	controlplaneRequiresUpdate := scope.hasMachinesWithOnlyVersionOutdated && scope.kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace
+
+	logger := log.FromContext(ctx).WithValues("version", scope.kcp.Spec.Version)
+
 	kubeClient, err := c.getWorkloadClusterClientset(ctx, scope.cluster)
 	if err != nil {
-		return fmt.Errorf("error getting cluster client set for machine update: %w", err)
+		return ctrl.Result{}, fmt.Errorf("error getting cluster client set for machine update: %w", err)
 	}
 
-	err = c.createAutopilotPlan(ctx, scope.kcp, scope.cluster, kubeClient)
+	plan, err := getAutopilotPlan(ctx, kubeClient)
 	if err != nil {
-		return fmt.Errorf("error creating autopilot plan: %w", err)
+		if apierrors.IsNotFound(err) {
+			if controlplaneRequiresUpdate {
+				err = createAutopilotPlan(ctx, kubeClient, scope.kcp, scope.activeMachines)
+				if err != nil {
+					return ctrl.Result{}, fmt.Errorf("error creating autopilot plan: %w", err)
+				}
+				logger.Info("Autopilot plan created for in-place update")
+
+				c.startUpdateMachineVersions(ctx, kubeClient, scope)
+
+				// Requeue until the autopilot plan is completed, to avoid scaling up or down the control plane
+				// while the update is still in progress.
+				return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+			}
+			// Update is not required, so we can proceed with the scaling operations.
+			return ctrl.Result{}, nil
+		}
+
+		return ctrl.Result{}, fmt.Errorf("error getting autopilot plan: %w", err)
 	}
 
-	return nil
+	completed, err := isAutopilotPlanCompleted(plan, scope.kcp.Spec.Version)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error checking if autopilot plan is completed: %w", err)
+	}
+
+	if !completed {
+		// Requeue until the autopilot plan is completed, to avoid scaling up or down the control plane
+		// while the update is still in progress.
+		logger.Info("Autopilot plan is still in progress, requeuing")
+		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+	}
+
+	// The plan is completed, so the background updateMachineVersions loop, if still running, no
+	// longer has anything to wait for. Stop it now instead of leaving it to notice the plan is gone
+	// on its next poll, so it can't race with a new plan created for a subsequent version update.
+	c.stopUpdateMachineVersions(scope.kcp)
+	// Ensure that all machines have the desired version. Update version go routine may have been stopped
+	// before all machines were updated, so we need to ensure that all machines are updated to the
+	// desired version. At this point, the autopilot plan is completed, so we can safely update the
+	// machines to the desired version.
+	err = c.ensureMachineVersionsUpdated(ctx, scope)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error ensuring machine versions are updated: %w", err)
+	}
+
+	if controlplaneRequiresUpdate {
+		// Only delete the last autopilot plan if the control plane requires a new update, preserving it
+		// for historical purposes.
+		err = deleteAutopilotPlan(ctx, kubeClient)
+		if err != nil && !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, fmt.Errorf("error deleting autopilot plan: %w", err)
+		}
+
+		err = createAutopilotPlan(ctx, kubeClient, scope.kcp, scope.activeMachines)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("error creating autopilot plan: %w", err)
+		}
+		logger.Info("Autopilot plan created for in-place update")
+
+		c.startUpdateMachineVersions(ctx, kubeClient, scope)
+
+		// Requeue until the autopilot plan is completed, to avoid scaling up or down the control plane
+		// while the update is still in progress.
+		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+	}
+
+	// Re-initialize the control plane scope to get the updated state after updating the machines. Machines
+	// upToDateMachines and notUpToDateMachines control the scaling operations, so we need to ensure that
+	// the state is updated after the update is completed.
+	updatedScope, err := c.retrieveControlPlaneState(ctx, scope.cluster, scope.kcp)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error re-initializing control plane scope: %w", err)
+	}
+	*scope = *updatedScope
+
+	logger.Info("Autopilot plan completed and deleted, in-place update finished")
+	return ctrl.Result{}, nil
 }
 
 func (c *K0sController) reconcileManualDeletions(ctx context.Context, scope *controlplane) error {
@@ -309,7 +389,7 @@ func (c *K0sController) reconcileManualDeletions(ctx context.Context, scope *con
 		for _, m := range scope.deletedMachines.SortedByCreationTimestamp() {
 			err := c.deleteK0sNodeResources(ctx, scope, m)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("error deleting k0s node resources: %w", err))
+				errs = append(errs, fmt.Errorf("error deleting k0s node resources for machine %s: %w", m.Name, err))
 			}
 		}
 	}
@@ -401,6 +481,131 @@ func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.
 	delete(machine.Annotations, cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation)
 	if err := c.Client.Patch(ctx, machine, client.MergeFrom(machineOriginal)); err != nil {
 		return fmt.Errorf("failed to remove pre-terminate hook from control plane Machine: %w", err)
+	}
+
+	return nil
+}
+
+func (c *K0sController) ensureMachineVersionsUpdated(ctx context.Context, scope *controlplane) error {
+	for _, machine := range scope.activeMachines {
+		if machine.Spec.Version == scope.kcp.Spec.Version {
+			continue
+		}
+
+		err := c.updateMachineVersion(ctx, machine, scope.kcp.Spec.Version)
+		if err != nil {
+			return fmt.Errorf("error updating machine version for %s: %w", machine.Name, err)
+		}
+	}
+
+	return nil
+}
+
+// cancelHandle wraps a context.CancelFunc so it can be stored in and compared by sync.Map, which
+// requires comparable values: function values (context.CancelFunc) are not comparable, but
+// pointers to this struct are.
+type cancelHandle struct {
+	cancel context.CancelFunc
+}
+
+// startUpdateMachineVersions launches updateMachineVersions in the background with a cancellable
+// context, and tracks the cancel function so stopUpdateMachineVersions can stop it early.
+func (c *K0sController) startUpdateMachineVersions(ctx context.Context, clientset *kubernetes.Clientset, scope *controlplane) {
+	updateCtx, cancel := context.WithCancel(ctx)
+	key := client.ObjectKeyFromObject(scope.kcp)
+	handle := &cancelHandle{cancel: cancel}
+	c.autopilotUpdateCancels.Store(key, handle)
+
+	go func() {
+		defer c.autopilotUpdateCancels.CompareAndDelete(key, handle)
+
+		if err := c.updateMachineVersions(updateCtx, clientset, scope); err != nil && !errors.Is(err, context.Canceled) {
+			log.FromContext(updateCtx).Error(err, "error updating machine versions for in-place update")
+		}
+	}()
+}
+
+// stopUpdateMachineVersions cancels the running updateMachineVersions goroutine for kcp, if any.
+func (c *K0sController) stopUpdateMachineVersions(kcp *cpv1beta2.K0sControlPlane) {
+	key := client.ObjectKeyFromObject(kcp)
+	if v, ok := c.autopilotUpdateCancels.LoadAndDelete(key); ok {
+		v.(*cancelHandle).cancel()
+	}
+}
+
+func (c *K0sController) updateMachineVersions(ctx context.Context, clientset *kubernetes.Clientset, scope *controlplane) error {
+	return wait.PollUntilContextCancel(ctx, 5*time.Second, true, func(ctx context.Context) (bool, error) {
+		plan, err := getAutopilotPlan(ctx, clientset)
+		if err != nil {
+			return false, err
+		}
+
+		commands, found, err := unstructured.NestedSlice(plan.Object, "status", "commands")
+		if err != nil {
+			return false, fmt.Errorf("error reading status.commands: %w", err)
+		}
+		if !found || len(commands) == 0 {
+			return false, nil
+		}
+
+		k0sUpdateCommand, ok := commands[0].(map[string]any)
+		if !ok {
+			return false, fmt.Errorf("unexpected type for command")
+		}
+
+		controllers, found, err := unstructured.NestedSlice(k0sUpdateCommand, "k0supdate", "controllers")
+		if err != nil {
+			return false, fmt.Errorf("error reading k0supdate.controllers: %w", err)
+		}
+		if !found {
+			return false, nil
+		}
+
+		allCompleted := true
+		for _, ctrl := range controllers {
+			ctrlMap, ok := ctrl.(map[string]any)
+			if !ok {
+				continue
+			}
+
+			name, _, _ := unstructured.NestedString(ctrlMap, "name")
+			state, _, _ := unstructured.NestedString(ctrlMap, "state")
+
+			if state != "SignalCompleted" {
+				allCompleted = false
+				continue
+			}
+
+			machine, exists := scope.activeMachines[name]
+			if !exists {
+				continue
+			}
+
+			err := c.updateMachineVersion(ctx, machine, scope.kcp.Spec.Version)
+			if err != nil {
+				return false, fmt.Errorf("error updating machine version for %s: %w", machine.Name, err)
+			}
+
+		}
+
+		return allCompleted, nil
+	})
+}
+
+func (c *K0sController) updateMachineVersion(ctx context.Context, machine *clusterv1.Machine, version string) error {
+	if machine.Spec.Version == version {
+		return nil
+	}
+
+	patchHelper, err := patch.NewHelper(machine, c)
+	if err != nil {
+		return fmt.Errorf("error creating patch helper for machine %s: %w", machine.Name, err)
+	}
+
+	machine.Spec.Version = version
+
+	if err := patchHelper.Patch(ctx, machine); err != nil {
+		return fmt.Errorf("error patching machine %s: %w", machine.Name, err)
 	}
 
 	return nil
