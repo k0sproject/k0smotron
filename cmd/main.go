@@ -25,6 +25,7 @@ import (
 
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -101,6 +102,9 @@ func init() {
 	utilruntime.Must(cpv1beta2.AddToScheme(scheme))
 	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme))
 	utilruntime.Must(infrastructurev1beta2.AddToScheme(scheme))
+	// Register apiextensions so the control-plane controller can read provider
+	// CRDs to determine the CAPI contract version when patching infra status.
+	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
