@@ -24,6 +24,7 @@ import (
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -41,6 +42,13 @@ import (
 
 func (c *K0sController) reconcileMachines(ctx context.Context, scope *controlplane) (res ctrl.Result, err error) {
 	logger := log.FromContext(ctx)
+
+	defer func() {
+		// UpToDate conditions is set by the controller owning the machine.
+		if err := c.setUpToDateMachineCondition(ctx, scope); err != nil {
+			logger.Error(err, "Failed to set up-to-date machine condition")
+		}
+	}()
 
 	if res, err := c.preflightChecks(ctx, scope); err != nil || !res.IsZero() {
 		return res, err
@@ -89,6 +97,34 @@ func (c *K0sController) reconcileMachines(ctx context.Context, scope *controlpla
 
 	logger.Info("Control plane machines are in the desired state")
 	return ctrl.Result{}, nil
+}
+
+func (c *K0sController) setUpToDateMachineCondition(ctx context.Context, scope *controlplane) error {
+	errs := make([]error, 0, len(scope.activeMachines))
+	for _, machine := range scope.activeMachines {
+		patchHelper, err := patch.NewHelper(machine, c.Client)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if scope.upToDateMachines.Has(machine) {
+			conditions.Set(machine, metav1.Condition{
+				Type:   clusterv1.MachineUpToDateCondition,
+				Status: metav1.ConditionTrue,
+				Reason: clusterv1.MachineUpToDateReason,
+			})
+		} else {
+			conditions.Set(machine, metav1.Condition{
+				Type:   clusterv1.MachineUpToDateCondition,
+				Status: metav1.ConditionFalse,
+				Reason: clusterv1.MachineNotUpToDateReason,
+			})
+		}
+
+		errs = append(errs, patchHelper.Patch(ctx, machine))
+	}
+
+	return kerrors.NewAggregate(errs)
 }
 
 // isDesiredStateReached checks if the control plane has reached the desired state, which is when the number of up to date machines is
