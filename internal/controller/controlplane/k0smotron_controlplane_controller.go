@@ -31,6 +31,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -40,8 +41,10 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
+	"sigs.k8s.io/cluster-api/util/contract"
 	crcontroller "sigs.k8s.io/controller-runtime/pkg/controller"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -723,15 +726,28 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 		return nil
 	}
 
+	// The status field a provider uses for "provisioned" depends on the CAPI
+	// CONTRACT it implements, which is NOT the same as the object's apiVersion:
+	// a provider can serve a v1beta2 apiVersion while still implementing the
+	// older `status.ready` contract (e.g. CAPA v2.9.0). Determine the contract
+	// from the provider CRD's `cluster.x-k8s.io/<contract>` labels — keying off
+	// the apiVersion would pick `status.initialization.provisioned` for such
+	// providers, an unknown field that a merge patch silently prunes (the API
+	// server returns success while nothing is actually set).
+	contractVersion, err := c.infraContractVersion(ctx, infraObj.GroupVersionKind().GroupKind())
+	if err != nil {
+		return fmt.Errorf("failed to determine infrastructure contract version: %w", err)
+	}
+
 	var (
 		statusPath []string
 		patchData  []byte
 	)
-	switch infraObj.GroupVersionKind().Version {
+	switch contractVersion {
 	case "v1beta1":
 		statusPath = []string{"status", "ready"}
 		patchData = fmt.Appendf(nil, `{"status":{"ready":%t}}`, ready)
-	default:
+	default: // v1beta2 and newer use the initialization contract
 		statusPath = []string{"status", "initialization", "provisioned"}
 		patchData = fmt.Appendf(nil, `{"status":{"initialization":{"provisioned":%t}}}`, ready)
 	}
@@ -741,20 +757,52 @@ func (c *K0smotronController) patchInfrastructureStatus(ctx context.Context, clu
 	if err != nil {
 		return fmt.Errorf("failed to get provisioned status: %w", err)
 	}
-
-	// Only patch if status is not set or different from desired value
-	if !found || currentReady != ready {
-		log.Info("Patching Infrastructure object status", "field", strings.Join(statusPath, "."), "provisioned", ready)
-
-		err = c.Client.Status().Patch(ctx, infraObj, client.RawPatch(types.MergePatchType, patchData))
-		if err != nil {
-			return fmt.Errorf("failed to patch Infrastructure object: %w", err)
-		}
-
-		log.Info("Successfully patched Infrastructure object status")
+	if found && currentReady == ready {
+		return nil
 	}
 
+	field := strings.Join(statusPath, ".")
+	log.Info("Patching Infrastructure object status", "field", field, "provisioned", ready)
+	if err := c.Client.Status().Patch(ctx, infraObj, client.RawPatch(types.MergePatchType, patchData)); err != nil {
+		return fmt.Errorf("failed to patch Infrastructure object: %w", err)
+	}
+
+	// Verify the patch took effect. A field the provider's schema does not
+	// define is pruned by the API server and returns no error, which would
+	// otherwise be reported as a success while nothing changed.
+	verify := infraObj.DeepCopy()
+	if err := c.Client.Get(ctx, client.ObjectKeyFromObject(infraObj), verify); err != nil {
+		return fmt.Errorf("failed to re-read Infrastructure object after patch: %w", err)
+	}
+	if got, ok, err := unstructured.NestedBool(verify.Object, statusPath...); err != nil || !ok || got != ready {
+		return fmt.Errorf("status patch to %s did not take effect (field missing or pruned); provider may not implement the %s contract", field, contractVersion)
+	}
+
+	log.Info("Successfully patched Infrastructure object status", "field", field)
 	return nil
+}
+
+// infraContractVersion returns the CAPI contract version the infrastructure
+// provider implements, read from its CRD's `cluster.x-k8s.io/<contract>`
+// labels. This is authoritative even when it differs from the object's
+// apiVersion (a provider may serve apiVersion v1beta2 while still implementing
+// the v1beta1 contract).
+func (c *K0smotronController) infraContractVersion(ctx context.Context, gk schema.GroupKind) (string, error) {
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	if err := c.Client.Get(ctx, client.ObjectKey{Name: contract.CalculateCRDName(gk.Group, gk.Kind)}, crd); err != nil {
+		return "", fmt.Errorf("failed to get CRD for %s: %w", gk.String(), err)
+	}
+
+	labels := crd.GetLabels()
+	// Prefer the newest known contract the provider advertises.
+	switch {
+	case labels[clusterv1.GroupVersion.Group+"/v1beta2"] != "":
+		return "v1beta2", nil
+	case labels[clusterv1.GroupVersion.Group+"/v1beta1"] != "":
+		return "v1beta1", nil
+	default:
+		return "", fmt.Errorf("CRD %s has no cluster.x-k8s.io/<contract> version label", crd.GetName())
+	}
 }
 
 // reconcileDelete handles the deletion of the K0smotronControlPlane object when the controlplane replicas runs in a different cluster.
