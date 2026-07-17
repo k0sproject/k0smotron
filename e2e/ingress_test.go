@@ -182,7 +182,7 @@ func ingressSupportSpec(flavor string) func(t *testing.T) {
 		out, err := podexec.PodExecCmdOutput(ctx, bootstrapClusterProxy.GetClientSet(), bootstrapClusterProxy.GetRESTConfig(), podList.Items[0].Name, testNamespace.Name, "k0s kc logs -n kube-system ds/konnectivity-agent")
 		require.NoError(t, err)
 		t.Logf("Konnectivity agent logs:\n%s", out)
-		require.Contains(t, out, "change detected in proxy")
+		require.Contains(t, out, "successfully connected to new proxy server")
 
 		for _, m := range machineList.Items {
 			var (

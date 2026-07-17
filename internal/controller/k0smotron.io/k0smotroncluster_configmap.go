@@ -268,10 +268,19 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
 		v1beta1Spec["api"].(map[string]any)["extraArgs"] = map[string]any{
 			"endpoint-reconciler-type": "none",
 		}
-		v1beta1Spec["konnectivity"] = map[string]any{
-			"externalAddress": kmc.Spec.Ingress.KonnectivityHost,
-			"agentPort":       int64(kmc.Spec.Service.KonnectivityPort),
+		konnectivity := map[string]any{
+			"agentPort": int64(kmc.Spec.Service.KonnectivityPort),
 		}
+		if kmc.Spec.HasNativeIngressKonnectivity() {
+			// k0s deploys the konnectivity agent itself; point it at the ingress
+			// endpoint (host:ingressPort), reached via SNI routing.
+			konnectivity["externalAddress"] = net.JoinHostPort(kmc.Spec.Ingress.KonnectivityHost, strconv.FormatInt(kmc.Spec.Ingress.Port, 10))
+		} else {
+			// Older k0s ignores externalAddress; k0smotron ships its own agent
+			// manifest instead. Keep the host-only value for parity.
+			konnectivity["externalAddress"] = kmc.Spec.Ingress.KonnectivityHost
+		}
+		v1beta1Spec["konnectivity"] = konnectivity
 	}
 
 	return v1beta1Spec

@@ -45,44 +45,70 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 		return fmt.Errorf("failed to patch haproxy configmap for ingress: %w", err)
 	}
 
-	configMap, err = scope.generateKonnectivityIngressConfigMap(kmc)
-	if err != nil {
-		return fmt.Errorf("failed to generate ingress manifests configmap: %w", err)
-	}
-	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
-
-	err = scope.reconcileResource(ctx, kmc, &configMap)
-	if err != nil {
-		return fmt.Errorf("failed to patch haproxy configmap for ingress: %w", err)
-	}
-
-	var foundManifest bool
-	for _, manifest := range kmc.Spec.Manifests {
-		if manifest.Name == kmc.GetIngressManifestsConfigMapName() {
-			foundManifest = true
-			break
+	// On k0s versions that honor spec.konnectivity.externalAddress the
+	// konnectivity agent is deployed by k0s itself; on older versions the field
+	// is accepted but ignored, so we ship our own konnectivity agent manifest
+	// pointed at the ingress endpoint.
+	native := kmc.Spec.HasNativeIngressKonnectivity()
+	if !native {
+		configMap, err = scope.generateKonnectivityIngressConfigMap(kmc)
+		if err != nil {
+			return fmt.Errorf("failed to generate konnectivity ingress configmap: %w", err)
+		}
+		_ = kcontrollerutil.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
+		if err = scope.reconcileResource(ctx, kmc, &configMap); err != nil {
+			return fmt.Errorf("failed to reconcile konnectivity configmap for ingress: %w", err)
 		}
 	}
+
+	ingressVolume := corev1.Volume{
+		Name: kmc.GetIngressManifestsConfigMapName(),
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: kmc.GetIngressManifestsConfigMapName(),
+				},
+			},
+		},
+	}
+	konnectivityVolume := corev1.Volume{
+		Name: "konnectivity",
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
+				},
+			},
+		},
+	}
+
+	// Ensure the ingress bundle volume is present, and the konnectivity volume
+	// only on non-native k0s. On native k0s a stale konnectivity volume is
+	// dropped so the control-plane pod doesn't mount a ConfigMap we no longer
+	// ship.
+	var foundManifest, foundKonnectivity bool
+	filtered := kmc.Spec.Manifests[:0]
+	for _, m := range kmc.Spec.Manifests {
+		switch m.Name {
+		case ingressVolume.Name:
+			foundManifest = true
+			filtered = append(filtered, m)
+		case konnectivityVolume.Name:
+			if native {
+				continue
+			}
+			foundKonnectivity = true
+			filtered = append(filtered, m)
+		default:
+			filtered = append(filtered, m)
+		}
+	}
+	kmc.Spec.Manifests = filtered
 	if !foundManifest {
-		kmc.Spec.Manifests = append(kmc.Spec.Manifests, corev1.Volume{
-			Name: kmc.GetIngressManifestsConfigMapName(),
-			VolumeSource: corev1.VolumeSource{
-				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: kmc.GetIngressManifestsConfigMapName(),
-					},
-				},
-			},
-		}, corev1.Volume{
-			Name: "konnectivity",
-			VolumeSource: corev1.VolumeSource{
-				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
-					},
-				},
-			},
-		})
+		kmc.Spec.Manifests = append(kmc.Spec.Manifests, ingressVolume)
+	}
+	if !native && !foundKonnectivity {
+		kmc.Spec.Manifests = append(kmc.Spec.Manifests, konnectivityVolume)
 	}
 
 	if *kmc.Spec.Ingress.Deploy {

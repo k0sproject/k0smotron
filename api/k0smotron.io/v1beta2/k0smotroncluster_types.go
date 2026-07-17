@@ -346,6 +346,31 @@ func (c *ClusterSpec) GetImage() string {
 	return fmt.Sprintf("%s:%s", c.Image, k0sVersion)
 }
 
+// nativeKonnectivityMinVersion is the first k0s release whose konnectivity
+// agent honors spec.konnectivity.externalAddress (k0s commit c5b3a4ef, first
+// released in v1.35.1+k0s.0). Below this, the field is accepted but silently
+// ignored, so k0smotron must ship its own konnectivity agent manifest for the
+// ingress topology. Compared on Core() (major.minor.patch) since the
+// "+k0s.N"/"-k0s.N" build suffix is not meaningful for this decision.
+var nativeKonnectivityMinVersion = version.MustParse("v1.35.1")
+
+// HasNativeIngressKonnectivity reports whether the target k0s version deploys
+// the ingress konnectivity agent itself (pointed at externalAddress). When
+// false, k0smotron ships its own konnectivity agent manifest instead (see
+// generateKonnectivityIngressConfigMap). An unparseable version falls back to
+// false so we keep shipping the manifest rather than silently lose konnectivity.
+func (c *ClusterSpec) HasNativeIngressKonnectivity() bool {
+	k0sVersion := c.Version
+	if k0sVersion == "" {
+		k0sVersion = DefaultK0SVersion
+	}
+	v, err := version.NewVersion(k0sVersion)
+	if err != nil {
+		return false
+	}
+	return !v.Core().LessThan(nativeKonnectivityMinVersion.Core())
+}
+
 // GetConditions returns the conditions of the Cluster status.
 func (kmc *Cluster) GetConditions() []metav1.Condition {
 	return kmc.Status.Conditions
