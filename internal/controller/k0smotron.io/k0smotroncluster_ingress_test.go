@@ -214,3 +214,24 @@ func TestGetKonnectivityAgentPullPolicy(t *testing.T) {
 		assert.Equal(t, "Always", scope.getKonnectivityAgentPullPolicy(kmc))
 	})
 }
+
+func TestHasNativeIngressKonnectivity(t *testing.T) {
+	cases := []struct {
+		version string
+		native  bool
+	}{
+		{"v1.35.1+k0s.0", true},
+		{"v1.35.1-k0s.0", true},
+		{"v1.35.2+k0s.0", true},
+		{"v1.36.0+k0s.0", true},
+		{"v1.34.1+k0s.0", false},
+		{"v1.34.5+k0s.0", false},
+		{"v1.27.9-k0s.0", false},
+		{"", false}, // defaults to DefaultK0SVersion (old)
+		{"not-a-version", false},
+	}
+	for _, tc := range cases {
+		spec := km.ClusterSpec{Version: tc.version}
+		assert.Equal(t, tc.native, spec.HasNativeIngressKonnectivity(), "version: %q", tc.version)
+	}
+}
