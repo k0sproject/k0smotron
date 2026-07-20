@@ -13,6 +13,8 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 CRDOC ?= $(LOCALBIN)/crdoc
+YQ ?= $(LOCALBIN)/yq
+KUBEBUILDER ?= $(LOCALBIN)/kubebuilder
 
 ## e2e configuration
 E2E_CONF_FILE ?= $(shell pwd)/e2e/config/docker.yaml
@@ -291,6 +293,28 @@ infrastructure-components.yaml: $(CONTROLLER_GEN) manifests-infrastructure kusto
 	$(KUSTOMIZE) build config/clusterapi/infrastructure/ > infrastructure-components.yaml
 	git checkout config/manager/kustomization.yaml
 
+# Helm chart version (SemVer2, no leading v) and the app version it deploys.
+# Lock-step: both default to the same value. Release CI overrides from the git tag.
+CHART_VERSION ?= 0.0.0-dev
+CHART_APP_VERSION ?= $(CHART_VERSION)
+# CRDs ship templated in the crds subchart so they can be gated per controller,
+# but the conversion-webhook namespace is baked here (not templated to the
+# release namespace). The chart must be installed into this namespace.
+CRD_NAMESPACE ?= k0smotron-system
+
+.PHONY: helm-chart
+helm-chart: manifests-capi-integration kustomize $(YQ) $(KUBEBUILDER) ## Generate the Helm chart (kubebuilder scaffold + conversion-complete CRDs)
+	$(KUBEBUILDER) edit --plugins=helm/v1-alpha
+	KUSTOMIZE=$(KUSTOMIZE) YQ=$(YQ) CHART_VERSION=$(CHART_VERSION) CRD_NAMESPACE=$(CRD_NAMESPACE) ./hack/helm-crds.sh
+	# Stamp the manager image (split IMG on its last colon to keep registry ports
+	# intact). Map the floating "latest" default to an empty tag so the chart
+	# defaults to appVersion; any explicit tag (release/CI) is stamped as-is.
+	repo='$(IMG)'; tag="$${repo##*:}"; repo="$${repo%:*}"; \
+	  if [ "$$tag" = "latest" ]; then tag=""; fi; \
+	  $(YQ) -i ".controllerManager.container.image.repository = \"$$repo\" | .controllerManager.container.image.tag = \"$$tag\"" dist/chart/values.yaml
+	# Stamp chart version (lock-step with appVersion by default).
+	$(YQ) -i '.version = "$(CHART_VERSION)" | .appVersion = "$(CHART_APP_VERSION)"' dist/chart/Chart.yaml
+
 ##@ Build Dependencies
 
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary. If wrong version is installed, it will be removed before downloading.
@@ -322,6 +346,15 @@ crdoc: $(CRDOC) ## Download crdoc locally if necessary. If wrong version is inst
 $(CRDOC): Makefile.variables | $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install fybrik.io/crdoc@$(CRDOC_VERSION)
 
+yq: $(YQ) ## Download mikefarah yq locally if necessary.
+$(YQ): Makefile.variables | $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/mikefarah/yq/v4@$(YQ_VERSION)
+
+kubebuilder: $(KUBEBUILDER) ## Download kubebuilder locally if necessary.
+$(KUBEBUILDER): Makefile.variables | $(LOCALBIN)
+	curl -fsSL -o $(KUBEBUILDER) https://github.com/kubernetes-sigs/kubebuilder/releases/download/$(KUBEBUILDER_VERSION)/kubebuilder_$(shell go env GOOS)_$(shell go env GOARCH)
+	chmod +x $(KUBEBUILDER)
+
 .PHONY: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron docs-generate-reference
 docs-generate-bootstrap: $(CRDOC) ## Generate docs for bootstrap CRDs
 	$(CRDOC) --resources config/clusterapi/bootstrap/crd/bases --output docs/resource-reference/bootstrap.cluster.x-k8s.io-v1beta1.md --toc docs/resource-reference/bootstrap-v1beta1-toc.yaml
@@ -344,7 +377,7 @@ docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs
 
 ## Generate all code, manifests, documentation, and release artifacts
 .PHONY: generate-all
-generate-all: clean headers-go generate docs-generate-reference release
+generate-all: clean headers-go generate docs-generate-reference release helm-chart
 
 .PHONY: $(smoketests)
 $(smoketests): release k0smotron-image-bundle.tar

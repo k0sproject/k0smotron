@@ -3,3 +3,6 @@ CONTROLLER_TOOLS_VERSION ?= v0.18.0
 GO_VERSION ?= 1.26.0
 GOLANGCILINT_VERSION ?= 2.10.1
 CRDOC_VERSION ?= v0.6.2
+# Pinned for reproducible Helm chart generation (committed dist/chart must match).
+KUBEBUILDER_VERSION ?= v4.6.0
+YQ_VERSION ?= v4.47.2

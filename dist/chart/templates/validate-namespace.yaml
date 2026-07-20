@@ -1,0 +1,5 @@
+{{- if .Values.crds.enabled }}
+{{- if ne .Release.Namespace .Values.crds.namespace }}
+{{- fail (printf "\nk0smotron CRDs are baked to namespace %q (the conversion webhook references it) but you are installing into %q.\nInstall into %q (helm install ... --namespace %s), or regenerate the chart with `make helm-chart CRD_NAMESPACE=%s`." .Values.crds.namespace .Release.Namespace .Values.crds.namespace .Values.crds.namespace .Release.Namespace) }}
+{{- end }}
+{{- end }}
