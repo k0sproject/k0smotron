@@ -1,6 +1,9 @@
-# Update control nodes in Cluster API clusters
+# Update control plane nodes in Cluster API clusters (VMs)
 
 This page explains what can trigger a control plane upgrade in k0smotron and how to perform one.
+
+!!! info "Worker nodes"
+    This page only covers control plane machines. See [Update worker nodes in Cluster API clusters (VMs)](update-capi-cluster-workers.md) for how (and whether) worker machines are covered by each mechanism described below.
 
 ## What triggers a control plane upgrade
 
@@ -18,7 +21,7 @@ k0smotron handles configuration changes differently depending on which part of `
 
 - **Changes to `spec.k0sConfigSpec.k0s`** (the k0s `ClusterConfig` object) are applied using [k0s dynamic configuration](https://docs.k0sproject.io/stable/dynamic-configuration/). k0smotron patches the `ClusterConfig` resource directly in the workload cluster without replacing any machines. Note that some fields cannot be changed via dynamic configuration and are ignored. See the [k0s documentation](https://docs.k0sproject.io/stable/dynamic-configuration/#cluster-configuration-vs-controller-node-configuration) for the full list.
 
-- **Changes to any other field in `spec.k0sConfigSpec`** (such as `args`, `files`, `preStartCommands`, etc.) are detected by comparing a hash of the bootstrap config stored in each machine's annotations against the current spec. Machines whose config no longer matches are marked for replacement, using the Recreate workflow regardless of `spec.updateStrategy`.
+- **Changes to any other field in `spec.k0sConfigSpec`** (such as `args`, `files`, `preStartCommands`, etc.) are detected by comparing a hash of the bootstrap config stored in each machine's annotations against the current spec. Machines whose config no longer matches are marked for replacement, using the Recreate workflow regardless of `spec.updateStrategy`. 
 
 !!! warning
     k0smotron only detects configuration changes made **directly in the `K0sControlPlane` spec**. The `spec.k0sConfigSpec.files` field supports loading file content from external `Secret` or `ConfigMap` objects via `contentFrom`, but if only the content of those objects changes, k0smotron will **not** detect it and no upgrade will be triggered. To propagate updated file content, create a new `Secret` or `ConfigMap` and update `contentFrom` in the `K0sControlPlane` spec to reference the new object.
@@ -44,6 +47,37 @@ k0smotron supports three update strategies, configured via `spec.updateStrategy`
 
 !!! warning
     The `RecreateDeleteFirst` strategy requires at least 3 control plane nodes.
+
+### Use InPlace strategy
+
+Under the `InPlace` strategy, control plane nodes are always updated the same way under the hood: k0smotron creates a k0s [autopilot](https://docs.k0sproject.io/stable/autopilot/) `Plan` in the workload cluster, and autopilot rolls the new k0s version onto each control plane node without replacing the machine.
+
+This in-place mechanism only updates **the k0s version** running on a node. It does not apply configuration or machine template changes, those are always handled by recreating machines regardless of `spec.updateStrategy`, as described above.
+
+#### Standalone (default)
+
+k0smotron's `K0sControlPlane` controller manages the autopilot `Plan` itself, independently of Cluster API's machine lifecycle. No webhook server or extra component is required.
+
+#### Cluster API in-place updates (experimental)
+
+k0smotron instead delegates the rollout to Cluster API's own [in-place updates mechanism](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240807-in-place-updates.md): a k0smotron webhook server, installed as a Cluster API runtime extension, receives the `UpdateMachine` hook calls that Cluster API core sends for each machine and creates the autopilot `Plan` on its behalf. This path is used automatically once all of the following are satisfied:
+
+  - Cluster API core **v1.12.0 or newer**.
+  
+  - The `InPlaceUpdates` feature gate enabled on Cluster API core (`EXP_IN_PLACE_UPDATES=true`).
+  
+  - The k0smotron in-place version update extension installed in the management cluster:
+
+```bash
+kubectl apply --server-side=true -f https://docs.k0smotron.io/{{{ extra.k0smotron_version }}}/install-extension-webhook.yaml
+```
+
+!!! note
+
+    If any of the requirements above aren't met, k0smotron transparently falls back to the standalone path, no further action is required.
+
+!!! info "Worker nodes"
+    Because the standalone path has no controller watching worker `Machine`/`MachineDeployment` objects, only the Cluster API in-place updates extension can perform in-place updates of worker nodes — the same webhook server also handles the hook calls Cluster API sends for machines owned by a `MachineDeployment`/`MachineSet`. See [Update worker nodes in Cluster API clusters (VMs)](update-capi-cluster-workers.md) for details.
 
 ## Monitoring upgrade status
 

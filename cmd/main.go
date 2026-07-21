@@ -37,6 +37,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	runtimev1 "sigs.k8s.io/cluster-api/api/runtime/v1beta2"
+	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -96,7 +98,6 @@ func init() {
 	utilruntime.Must(bootstrapv1beta2.AddToScheme(scheme))
 
 	// Register cluster-api types
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(cpv1beta1.AddToScheme(scheme))
 	utilruntime.Must(cpv1beta2.AddToScheme(scheme))
@@ -105,6 +106,8 @@ func init() {
 	// Register apiextensions so the control-plane controller can read provider
 	// CRDs to determine the CAPI contract version when patching infra status.
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
+	utilruntime.Must(runtimev1.AddToScheme(scheme))
+	utilruntime.Must(clusterctlv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
