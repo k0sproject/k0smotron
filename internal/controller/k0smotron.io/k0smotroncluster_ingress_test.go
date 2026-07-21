@@ -273,27 +273,27 @@ func TestGenerateIngressManifestsConfigMap_Traefik(t *testing.T) {
 		},
 	}
 
-	cm, err := scope.generateIngressManifestsConfigMap(kmc, []byte("CERTPEM"), []byte("KEYPEM"), []byte("CAPEM"))
+	cm, err := scope.generateIngressManifestsSecret(kmc, []byte("CERTPEM"), []byte("KEYPEM"), []byte("CAPEM"))
 	assert.NoError(t, err)
 
 	assert.Equal(t, "kmc-test-ingress", cm.Name)
-	assert.NotContains(t, cm.Data, "1_haproxy-configmap.yaml")
-	assert.NotContains(t, cm.Data, "2_haproxy-ds.yaml")
-	assert.Contains(t, cm.Data, "1_proxy-config.yaml")
-	assert.Contains(t, cm.Data, "2_proxy-certs.yaml")
-	assert.Contains(t, cm.Data, "2a_proxy-ds-linux.yaml")
-	assert.Contains(t, cm.Data["1_proxy-config.yaml"], "kube-api.example.com:443")
-	assert.Contains(t, cm.Data["2_proxy-certs.yaml"], base64.StdEncoding.EncodeToString([]byte("CERTPEM")))
-	assert.Contains(t, cm.Data["2_proxy-certs.yaml"], base64.StdEncoding.EncodeToString([]byte("KEYPEM")))
-	assert.Contains(t, cm.Data["2_proxy-certs.yaml"], base64.StdEncoding.EncodeToString([]byte("CAPEM")))
+	assert.NotContains(t, cm.StringData, "1_haproxy-configmap.yaml")
+	assert.NotContains(t, cm.StringData, "2_haproxy-ds.yaml")
+	assert.Contains(t, cm.StringData, "1_proxy-config.yaml")
+	assert.Contains(t, cm.StringData, "2_proxy-certs.yaml")
+	assert.Contains(t, cm.StringData, "2a_proxy-ds-linux.yaml")
+	assert.Contains(t, cm.StringData["1_proxy-config.yaml"], "kube-api.example.com:443")
+	assert.Contains(t, cm.StringData["2_proxy-certs.yaml"], base64.StdEncoding.EncodeToString([]byte("CERTPEM")))
+	assert.Contains(t, cm.StringData["2_proxy-certs.yaml"], base64.StdEncoding.EncodeToString([]byte("KEYPEM")))
+	assert.Contains(t, cm.StringData["2_proxy-certs.yaml"], base64.StdEncoding.EncodeToString([]byte("CAPEM")))
 
-	ds := cm.Data["2a_proxy-ds-linux.yaml"]
+	ds := cm.StringData["2a_proxy-ds-linux.yaml"]
 	assert.Contains(t, ds, "image: "+traefikProxyImage)
 	assert.Contains(t, ds, "kubernetes.io/os: linux")
 	assert.Contains(t, ds, "hostNetwork: true")
 	assert.Contains(t, ds, "app: k0smotron-proxy")
 
-	svc := cm.Data["3_kube-service.yaml"]
+	svc := cm.StringData["3_kube-service.yaml"]
 	assert.Contains(t, svc, "app: k0smotron-proxy")
 	assert.Contains(t, svc, "10.96.0.1")
 	assert.Contains(t, svc, "targetPort: 7443")
@@ -305,10 +305,10 @@ func TestGenerateIngressManifestsConfigMap_WindowsDaemonSet(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
 		Spec:       km.ClusterSpec{Ingress: &km.IngressSpec{APIHost: "kube-api.example.com", Port: 443}},
 	}
-	cm, err := scope.generateIngressManifestsConfigMap(kmc, []byte("C"), []byte("K"), []byte("A"))
+	cm, err := scope.generateIngressManifestsSecret(kmc, []byte("C"), []byte("K"), []byte("A"))
 	assert.NoError(t, err)
 
-	ds := cm.Data["2b_proxy-ds-windows.yaml"]
+	ds := cm.StringData["2b_proxy-ds-windows.yaml"]
 	assert.Contains(t, ds, "kubernetes.io/os: windows")
 	assert.Contains(t, ds, "hostProcess: true")
 	assert.Contains(t, ds, `runAsUserName: "NT AUTHORITY\\Local service"`)
@@ -322,7 +322,7 @@ func TestGenerateIngressManifestsConfigMap_WindowsDaemonSet(t *testing.T) {
 	assert.Contains(t, ds, "%CONTAINER_SANDBOX_MOUNT_POINT%")
 	assert.NotContains(t, ds, "$(CONTAINER_SANDBOX_MOUNT_POINT)")
 
-	proxyConfig := cm.Data["1_proxy-config.yaml"]
+	proxyConfig := cm.StringData["1_proxy-config.yaml"]
 	assert.NotContains(t, proxyConfig, "CONTAINER_SANDBOX_MOUNT_POINT")
 	assert.Contains(t, proxyConfig, `C:\ProgramData\k0smotron\traefik\certs\server.crt`)
 }
@@ -341,7 +341,7 @@ func TestUpsertIngressManifestVolumes(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
 			Spec:       km.ClusterSpec{Version: oldVersion},
 		}
-		ingressName := kmc.GetIngressManifestsConfigMapName()
+		ingressName := kmc.GetIngressManifestsConfigName()
 		kmc.Spec.Manifests = []corev1.Volume{
 			{
 				Name: ingressName,
@@ -371,7 +371,7 @@ func TestUpsertIngressManifestVolumes(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
 			Spec:       km.ClusterSpec{Version: nativeVersion},
 		}
-		ingressName := kmc.GetIngressManifestsConfigMapName()
+		ingressName := kmc.GetIngressManifestsConfigName()
 		kmc.Spec.Manifests = []corev1.Volume{
 			{Name: ingressName, VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: ingressName}}},
 			{Name: "konnectivity", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{
@@ -402,7 +402,7 @@ func TestUpsertIngressManifestVolumes(t *testing.T) {
 		vols := volumeNames(kmc)
 		assert.Contains(t, vols, "user-manifest")
 		assert.NotContains(t, vols, "konnectivity")
-		assert.Contains(t, vols, kmc.GetIngressManifestsConfigMapName())
+		assert.Contains(t, vols, kmc.GetIngressManifestsConfigName())
 		assert.Len(t, kmc.Spec.Manifests, 2)
 	})
 

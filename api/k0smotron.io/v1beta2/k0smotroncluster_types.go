@@ -800,8 +800,8 @@ func (kmc *Cluster) GetIngressName() string {
 	return kmc.getObjectName("kmc-%s")
 }
 
-// GetIngressManifestsConfigMapName returns the name of the configmap containing the manifests needed for the ingress
-func (kmc *Cluster) GetIngressManifestsConfigMapName() string {
+// GetIngressManifestsConfigName returns the name of the configmap containing the manifests needed for the ingress
+func (kmc *Cluster) GetIngressManifestsConfigName() string {
 	return kmc.getObjectName("kmc-%s-ingress")
 }
 
