@@ -39,13 +39,17 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 		return nil
 	}
 
+	if err := scope.ensureIngressProxyCerts(ctx, kmc); err != nil {
+		return fmt.Errorf("error generating ingress certificates: %w", err)
+	}
+
 	// Best-effort cleanup of the old ConfigMap-based bundle: prior to
 	// switching the bundle to a Secret, the manifests were delivered via a
 	// ConfigMap of this name. Remove the stale object so upgraded clusters
 	// don't leave it orphaned in the management cluster.
 	staleConfigMap := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmc.GetIngressManifestsConfigMapName(),
+			Name:      kmc.GetIngressManifestsConfigName(),
 			Namespace: kmc.Namespace,
 		},
 	}
@@ -58,14 +62,9 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 		return fmt.Errorf("failed to load ingress cert material: %w", err)
 	}
 
-	configMap, err := scope.generateIngressManifestsConfigMap(kmc, proxyCert, proxyKey, caCert)
+	proxyBundle, err := scope.generateIngressManifestsSecret(kmc, proxyCert, proxyKey, caCert)
 	if err != nil {
-		return fmt.Errorf("failed to generate ingress manifests configmap: %w", err)
-	}
-	proxyBundle := corev1.Secret{
-		TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-		ObjectMeta: configMap.ObjectMeta,
-		StringData: configMap.Data,
+		return fmt.Errorf("failed to generate ingress manifests secret: %w", err)
 	}
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &proxyBundle, scope.client.Scheme(), scope.externalOwner)
 	if err = scope.reconcileResource(ctx, kmc, &proxyBundle); err != nil {
@@ -109,10 +108,10 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 // longer ship.
 func upsertIngressManifestVolumes(kmc *km.Cluster) {
 	ingressVolume := corev1.Volume{
-		Name: kmc.GetIngressManifestsConfigMapName(),
+		Name: kmc.GetIngressManifestsConfigName(),
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
-				SecretName: kmc.GetIngressManifestsConfigMapName(),
+				SecretName: kmc.GetIngressManifestsConfigName(),
 			},
 		},
 	}
@@ -121,7 +120,7 @@ func upsertIngressManifestVolumes(kmc *km.Cluster) {
 		VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{
-					Name: kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
+					Name: kmc.GetIngressManifestsConfigName() + "-konnectivity",
 				},
 			},
 		},
@@ -161,6 +160,12 @@ const (
 )
 
 const traefikProxyImage = "quay.io/k0sproject/traefik:v3.7.4-k0s.0"
+
+// ingressProxyCertPurpose is the secret.Certificate purpose (and the
+// "<cluster>-ingress-proxy" secret suffix) for the node-local proxy's TLS
+// server certificate. Named after the ingress feature, not the proxy
+// implementation.
+const ingressProxyCertPurpose = "ingress-proxy"
 
 // hostSNIRuleAll is Traefik's TCP catch-all SNI matcher. It lives in its own
 // const because the backtick-quoted `*` cannot appear inside a Go raw string
@@ -337,7 +342,7 @@ func (scope *kmcScope) loadIngressCertMaterial(ctx context.Context, kmc *km.Clus
 	var proxySecret corev1.Secret
 	if err := scope.client.Get(ctx, client.ObjectKey{
 		Namespace: kmc.Namespace,
-		Name:      secret.Name(kmc.Name, "ingress-haproxy"),
+		Name:      secret.Name(kmc.Name, ingressProxyCertPurpose),
 	}, &proxySecret); err != nil {
 		return nil, nil, nil, fmt.Errorf("getting ingress proxy cert secret: %w", err)
 	}
@@ -353,19 +358,24 @@ func (scope *kmcScope) loadIngressCertMaterial(ctx context.Context, kmc *km.Clus
 	return proxySecret.Data["tls.crt"], proxySecret.Data["tls.key"], caSecret.Data["tls.crt"], nil
 }
 
-func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster, proxyCert, proxyKey, caCert []byte) (corev1.ConfigMap, error) {
+// generateIngressManifestsSecret builds the node-local proxy manifest bundle
+// delivered into the workload cluster. It is a Secret (not a ConfigMap) because
+// the bundle embeds the proxy's server private key (2_proxy-certs.yaml); the
+// bundle volume name is unchanged so the k0s stack applier keeps pruning the
+// old resources.
+func (scope *kmcScope) generateIngressManifestsSecret(kmc *km.Cluster, proxyCert, proxyKey, caCert []byte) (corev1.Secret, error) {
 	staticCfg, dynamicCfg := generateTraefikConfig(kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
 	dynamicWinCfg := generateTraefikConfigWindows(kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
 
-	configMap := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
+	secret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetIngressManifestsConfigMapName(),
+			Name:        kmc.GetIngressManifestsConfigName(),
 			Namespace:   kmc.Namespace,
 			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
-		Data: map[string]string{
+		StringData: map[string]string{
 			// Dummy Endpoints so a worker profile can be created before the proxy
 			// updates the real kubernetes Endpoints. (unchanged)
 			"0_temp-kubernetes-ep.yaml": `apiVersion: v1
@@ -466,41 +476,6 @@ spec:
             secretName: k0smotron-proxy-certs
 `, traefikProxyImage),
 
-			// 2b_proxy-ds-windows.yaml: Windows HostProcess variant of the
-			// node-local proxy. Modeled on k0s's own node-local-loadbalancer
-			// Traefik static pod (pkg/component/worker/nllb/traefik.go),
-			// which is the only proven-on-Windows precedent for a HostProcess
-			// Traefik container in this codebase: PodSecurityContext with
-			// WindowsOptions{HostProcess: true, RunAsUserName: "NT
-			// AUTHORITY\Local service"} plus HostNetwork: true.
-			//
-			// This must be a SEPARATE DaemonSet object (not the same one as
-			// Linux) because a DaemonSet has a single PodSpec/nodeSelector,
-			// and Linux/Windows nodes need different nodeSelector,
-			// tolerations, securityContext, mount paths, and args. Both
-			// DaemonSets share the pod label app: k0smotron-proxy so the one
-			// "kubernetes" Service (see 3_kube-service.yaml) load-balances
-			// across both OSes; internalTrafficPolicy: Local on that Service
-			// ensures each node's kube-proxy only routes to the local
-			// same-node pod.
-			//
-			// The "setup" initContainer stages the mounted ConfigMap/Secret
-			// (only reachable at runtime under the sandbox mount point) into
-			// the fixed host path C:\ProgramData\k0smotron\traefik that the
-			// main "traefik" container (and generateTraefikConfigWindows's
-			// dynamic-win.yaml) reference directly. The sandbox mount point is
-			// referenced as %CONTAINER_SANDBOX_MOUNT_POINT% so cmd.exe expands
-			// it at runtime: it is injected into the container process by the
-			// runtime, NOT declared in the pod env, so Kubernetes $()-style arg
-			// templating would leave it literal.
-			//
-			// VALIDATE ON A REAL WINDOWS NODE: this remains unverified and
-			// depends on:
-			//   - NT AUTHORITY\Local service being able to create/write
-			//     under C:\ProgramData\k0smotron.
-			//   - The main HostProcess container being able to read that
-			//     fixed host path directly without a volume mount.
-			//   - The traefik image accepting these CLI args on Windows.
 			"2b_proxy-ds-windows.yaml": fmt.Sprintf(`apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -588,7 +563,7 @@ spec:
 		},
 	}
 
-	return configMap, nil
+	return secret, nil
 }
 
 // indentBlock prefixes every line of s with indent (for embedding a YAML
@@ -615,7 +590,7 @@ func (scope *kmcScope) generateKonnectivityIngressConfigMap(kmc *km.Cluster) (co
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
+			Name:        kmc.GetIngressManifestsConfigName() + "-konnectivity",
 			Namespace:   kmc.Namespace,
 			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
