@@ -31,7 +31,7 @@ import (
 )
 
 // DumpSpecResourcesAndCleanup dumps all the resources in the spec namespace and cleans up the spec namespace.
-func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, cluster *clusterv1.Cluster, interval Interval, skipCleanup bool, clusterctlConfigPath string) {
+func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cluster *clusterv1.Cluster, interval Interval, skipCleanup bool, clusterctlConfigPath string) {
 	// Dump all the resources in the spec namespace and the workload cluster.
 	dumpAllResourcesAndLogs(ctx, clusterProxy, artifactFolder, namespace, cluster, clusterctlConfigPath)
 
@@ -50,7 +50,6 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 			Name:    namespace.Name,
 		})
 	}
-	cancelWatches()
 }
 
 // dumpAllResourcesAndLogs dumps all the resources in the spec namespace and the workload cluster.

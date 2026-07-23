@@ -42,9 +42,8 @@ providers:
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-remote-hcp.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-ingress.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-ingress-calico.yaml"
-      - sourcePath: "../data/infrastructure-docker/main/cluster-template-inplace.yaml"
-      - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreate.yaml"
-      - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreatedeletefirst.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/cluster-template-clusterclass.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/clusterclass-basic.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -147,8 +146,9 @@ providers:
 variables:
   KUBERNETES_VERSION_MANAGEMENT: "v1.30.0"
   KUBERNETES_VERSION: "v1.31.0"
-  KUBERNETES_VERSION_FIRST_UPGRADE_TO: "v1.30.2+k0s.0"
-  KUBERNETES_VERSION_SECOND_UPGRADE_TO: "v1.31.2+k0s.0"
+  K0S_VERSION: "v1.35.4+k0s.0"
+  K0S_VERSION_FIRST_UPGRADE_TO: "v1.35.6+k0s.0"
+  K0S_VERSION_SECOND_UPGRADE_TO: "v1.36.2+k0s.0"
   IP_FAMILY: "IPv4"
   KIND_IMAGE_VERSION: "v1.30.0"
   # Enabling the feature flags by setting the env variables.

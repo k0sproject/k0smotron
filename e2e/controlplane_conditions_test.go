@@ -91,7 +91,6 @@ func controlplaneConditionsSpec(t *testing.T) {
 			bootstrapClusterProxy,
 			artifactFolder,
 			testNamespace,
-			testCancelWatches,
 			cluster,
 			e2eutil.GetInterval(e2eConfig, testName, "wait-delete-cluster"),
 			skipCleanup,

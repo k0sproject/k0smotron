@@ -74,8 +74,8 @@ func WaitForControlPlaneToBeReady(ctx context.Context, client crclient.Client, c
 	return nil
 }
 
-// UpgradeControlPlaneAndWaitForUpgradeInput is the input type for UpgradeControlPlaneAndWaitForUpgrade.
-type UpgradeControlPlaneAndWaitForUpgradeInput struct {
+// UpgradeClusterTopologyAndWaitForReadyUpgradeInput is the input type for UpgradeClusterTopologyAndWaitForReadyUpgrade.
+type UpgradeClusterTopologyAndWaitForReadyUpgradeInput struct {
 	GetLister                        capiframework.GetLister
 	ClusterProxy                     capiframework.ClusterProxy
 	Cluster                          *clusterv1.Cluster
@@ -85,26 +85,33 @@ type UpgradeControlPlaneAndWaitForUpgradeInput struct {
 	WaitForControlPlaneReadyInterval Interval
 }
 
-// UpgradeControlPlaneAndWaitForUpgrade upgrades a K0sControlPlane and waits for it to be upgraded.
-func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) error {
+// UpgradeClusterTopologyAndWaitForReadyUpgrade upgrades a Cluster and waits for it to be upgraded.
+func UpgradeClusterTopologyAndWaitForReadyUpgrade(ctx context.Context, input UpgradeClusterTopologyAndWaitForReadyUpgradeInput) error {
 	mgmtClient := input.ClusterProxy.GetClient()
 
-	fmt.Println("Patching the new kubernetes version to KCP")
-	patchHelper, err := patch.NewHelper(input.ControlPlane, mgmtClient)
+	// Update the Cluster with the new version and not the K0sControlPlane or K0sControlPlaneTemplate, as the version is
+	// set in the Cluster.Spec.Topology.Version for ClusterClass based clusters.
+	fmt.Println("Patching the new k0s version in Cluster")
+	patchHelper, err := patch.NewHelper(input.Cluster, mgmtClient)
 	if err != nil {
 		return err
 	}
 
-	input.ControlPlane.Spec.Version = input.KubernetesUpgradeVersion
+	input.Cluster.Spec.Topology.Version = input.KubernetesUpgradeVersion
 
 	err = wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
-		return patchHelper.Patch(ctx, input.ControlPlane) == nil, nil
+		return patchHelper.Patch(ctx, input.Cluster) == nil, nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to patch the new kubernetes version to controlplane %s: %w", klog.KObj(input.ControlPlane), err)
 	}
 
 	err = WaitForControlPlaneToBeReady(ctx, input.ClusterProxy.GetClient(), input.ControlPlane, input.WaitForControlPlaneReadyInterval)
+	if err != nil {
+		return err
+	}
+
+	err = WaitForMachinesToBeDeleted(ctx, input.ClusterProxy.GetClient(), input.Cluster.Namespace, input.Cluster.Name, input.WaitForControlPlaneReadyInterval)
 	if err != nil {
 		return err
 	}
@@ -193,7 +200,7 @@ type WaitForOneK0sControlPlaneMachineToExistInput struct {
 
 // WaitForOneK0sControlPlaneMachineToExist will wait until all control plane machines have node refs.
 func WaitForOneK0sControlPlaneMachineToExist(ctx context.Context, input WaitForOneK0sControlPlaneMachineToExistInput, interval Interval) error {
-	fmt.Println("Waiting for one control plane node to exist")
+	fmt.Printf("Waiting for one control plane from cluster %s/%s node to exist\n", input.Cluster.Namespace, input.Cluster.Name)
 	inClustersNamespaceListOption := crclient.InNamespace(input.Cluster.Namespace)
 	// ControlPlane labels
 	matchClusterListOption := crclient.MatchingLabels{

@@ -47,14 +47,15 @@ import (
 
 // Test suite constants for e2e config variables.
 const (
-	KubernetesVersion                = "KUBERNETES_VERSION"
-	KubernetesVersionManagement      = "KUBERNETES_VERSION_MANAGEMENT"
-	KubernetesVersionFirstUpgradeTo  = "KUBERNETES_VERSION_FIRST_UPGRADE_TO"
-	KubernetesVersionSecondUpgradeTo = "KUBERNETES_VERSION_SECOND_UPGRADE_TO"
-	ControlPlaneMachineCount         = "CONTROL_PLANE_MACHINE_COUNT"
-	IPFamily                         = "IP_FAMILY"
-	SSHPublicKey                     = "SSH_PUBLIC_KEY"
-	SSHKeyName                       = "SSH_KEY_NAME"
+	KubernetesVersion           = "KUBERNETES_VERSION"
+	K0sVersion                  = "K0S_VERSION"
+	KubernetesVersionManagement = "KUBERNETES_VERSION_MANAGEMENT"
+	K0sVersionFirstUpgradeTo    = "K0S_VERSION_FIRST_UPGRADE_TO"
+	K0sVersionSecondUpgradeTo   = "K0S_VERSION_SECOND_UPGRADE_TO"
+	ControlPlaneMachineCount    = "CONTROL_PLANE_MACHINE_COUNT"
+	IPFamily                    = "IP_FAMILY"
+	SSHPublicKey                = "SSH_PUBLIC_KEY"
+	SSHKeyName                  = "SSH_KEY_NAME"
 )
 
 var (
@@ -94,6 +95,9 @@ var (
 
 	// flavor is the workload cluster template variant to be used for a particular test.
 	flavor string
+
+	// nWorkloads is the number of workload clusters to be created for a particular test.
+	nWorkloads int
 )
 
 func init() {
@@ -103,6 +107,7 @@ func init() {
 	flag.StringVar(&artifactFolder, "artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.BoolVar(&useExistingCluster, "use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
 	flag.StringVar(&flavor, "flavor", "", "the workload cluster template variant to be used for a particular test")
+	flag.IntVar(&nWorkloads, "n-workloads", 2, "the number of workload clusters to be created for a particular test")
 
 	// On the k0smotron side we avoid using Gomega for assertions but since we want to use the
 	// cluster-api framework as much as possible, the framework assertions require registering
@@ -125,6 +130,9 @@ func setupAndRun(t *testing.T, test func(t *testing.T)) {
 	// of the test cleanups. Registered FIRST → runs LAST: spec cleanups and the
 	// reconcile-storm assert both still see a live management cluster.
 	t.Cleanup(func() {
+		// Cancel log streaming for controller
+		cancelWatches()
+
 		if !skipCleanup {
 			tearDown(bootstrapClusterProvider, bootstrapClusterProxy)
 		}

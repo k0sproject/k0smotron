@@ -85,7 +85,7 @@ func GetClusterByName(ctx context.Context, input framework.GetClusterByNameInput
 // WaitForClusterToProvision will wait for a cluster to have a phase status of provisioned.
 func WaitForClusterToProvision(ctx context.Context, input framework.WaitForClusterToProvisionInput, interval Interval) (*clusterv1.Cluster, error) {
 	cluster := &clusterv1.Cluster{}
-	fmt.Println("Waiting for cluster to enter the provisioned phase")
+	fmt.Printf("Waiting for cluster %s/%s to enter the provisioned phase\n", input.Cluster.GetNamespace(), input.Cluster.GetName())
 
 	err := wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
 		key := client.ObjectKey{
