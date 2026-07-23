@@ -30,8 +30,9 @@ import (
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// Add RBAC for the authorized diagnostics endpoint.
+// +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
+// +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
 func init() {
 	SchemeBuilder.Register(&K0sWorkerConfig{}, &K0sWorkerConfigList{})

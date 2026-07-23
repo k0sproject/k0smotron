@@ -21,6 +21,10 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
+// Add RBAC for the authorized diagnostics endpoint.
+// +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
+// +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
+
 func init() {
 	SchemeBuilder.Register(&RemoteCluster{}, &RemoteClusterList{})
 }
