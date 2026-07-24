@@ -291,14 +291,6 @@ func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log log
 	}
 	files = append(files, resolvedFiles...)
 
-	if scope.ingressSpec != nil {
-		resolveCertsForIngress, err := r.resolveFilesForIngress(ctx, scope)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, resolveCertsForIngress...)
-	}
-
 	commandsMap := make(map[provisioner.VarName]string)
 	var commands []string
 
@@ -412,8 +404,6 @@ Write-Host "=== Executing k0s to check version ==="
 	inlineCommands := scope.Config.Spec.PreK0sCommands
 	// Download and enable containers and k0s bootstrap script
 	commands := []string{`powershell.exe -NoProfile -NonInteractive -File "C:\bootstrap\k0s_install.ps1"`}
-	// TODO: implement ingress support for Windows
-	//inlineCommands = append(inlineCommands, ingressCommands...)
 
 	installCmdParts := []string{
 		fmt.Sprintf(`%s install worker --token-file %s`, k0sPath, scope.Config.GetJoinTokenPath()),
@@ -457,11 +447,9 @@ func getLinuxCommands(scope *Scope) ([]string, map[provisioner.VarName]string, e
 		`(command -v service > /dev/null 2>&1 && service k0sworker start) || ` + // SysV
 		`(echo "Not a supported init system"; false)`
 
-	ingressCommands := createIngressCommands(scope)
 	commands := scope.Config.Spec.PreK0sCommands
 	commands = append(commands, downloadCommands...)
 	commandsMap[provisioner.VarK0sDownloadCommands] = strings.Join(downloadCommands, " && ")
-	commands = append(commands, ingressCommands...)
 	commands = append(commands, installCmd, startCmd)
 	commandsMap[provisioner.VarK0sInstallCommand] = installCmd
 	commandsMap[provisioner.VarK0sStartCommand] = startCmd
@@ -533,62 +521,6 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		return "", fmt.Errorf("failed to create join token: %w", err)
 	}
 	return joinToken, nil
-}
-
-func createIngressCommands(scope *Scope) []string {
-	if scope.ingressSpec == nil {
-		return []string{}
-	}
-
-	return []string{
-		"mkdir -p /etc/haproxy/certs",
-		"cat /etc/haproxy/certs/server.crt /etc/haproxy/certs/server.key > /etc/haproxy/certs/server.pem",
-		"chmod 666 /etc/haproxy/certs/server.pem",
-	}
-}
-
-func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) ([]provisioner.File, error) {
-	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv2.File{
-		{
-			File: provisioner.File{
-				Path: "/etc/haproxy/certs/ca.crt",
-			},
-			ContentFrom: &bootstrapv2.ContentSource{
-				SecretRef: &bootstrapv2.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
-					Key:  "tls.crt",
-				},
-			},
-		},
-		{
-			File: provisioner.File{
-				Path: "/etc/haproxy/certs/server.crt",
-			},
-			ContentFrom: &bootstrapv2.ContentSource{
-				SecretRef: &bootstrapv2.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
-					Key:  "tls.crt",
-				},
-			},
-		},
-		{
-			File: provisioner.File{
-				Path: "/etc/haproxy/certs/server.key",
-			},
-			ContentFrom: &bootstrapv2.ContentSource{
-				SecretRef: &bootstrapv2.ContentSourceRef{
-					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
-					Key:  "tls.key",
-				},
-			},
-		},
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve files for ingress integration: %w", err)
-	}
-
-	return resolvedFiles, nil
 }
 
 // createBootstrapSecret creates a bootstrap secret for the worker node
