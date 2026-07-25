@@ -481,6 +481,107 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond)
 }
 
+func TestReconcileWorkerConfigVersionFallsBackToMachineVersion(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-version-fallback")
+	require.NoError(t, err)
+
+	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, kcp))
+
+	conditions.Set(cluster, metav1.Condition{
+		Type:   string(clusterv1.ClusterControlPlaneInitializedCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "ControlPlaneReady",
+	})
+	require.NoError(t, testEnv.Status().Update(ctx, cluster))
+
+	machineForWorkerConfig := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%d", "machine-for-worker", 0),
+			Namespace: ns.Name,
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel:             cluster.Name,
+				clusterv1.MachineControlPlaneLabel:     "true",
+				clusterv1.MachineControlPlaneNameLabel: "machineForWorkerConfig",
+			},
+		},
+		Spec: clusterv1.MachineSpec{
+			ClusterName: cluster.Name,
+			// As set by a ClusterClass topology, e.g. `.spec.topology.version`.
+			Version: "v1.30.5",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachine",
+				Name:     "machine-for-controller-infra",
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Name:     "machine-for-controller-bootstrap",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					Kind:     "K0sControllerConfig",
+				},
+			},
+		},
+	}
+	require.NoError(t, testEnv.Create(ctx, machineForWorkerConfig))
+
+	// K0sWorkerConfig deliberately has no Spec.Version set, as is the case when it is
+	// created from a K0sWorkerConfigTemplate referenced by a ClusterClass.
+	k0sWorkerConfig := &bootstrapv1.K0sWorkerConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta2",
+			Kind:       "K0sWorkerConfig",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "worker-config",
+			Namespace: ns.Name,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind:       "Machine",
+					APIVersion: clusterv1.GroupVersion.String(),
+					Name:       machineForWorkerConfig.Name,
+					UID:        "1",
+				},
+			},
+		},
+	}
+	require.NoError(t, testEnv.Create(ctx, k0sWorkerConfig))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(k0sWorkerConfig, cluster, machineForWorkerConfig, kcp, ns)
+
+	workloadClient, _ := fakeremote.NewClusterClient(ctx, "", testEnv, types.NamespacedName{})
+	r := &Controller{
+		Client:                testEnv,
+		workloadClusterClient: workloadClient,
+		SecretCachingClient:   testEnv,
+	}
+
+	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+	require.NoError(t, clusterCerts.Generate())
+	caCert := clusterCerts.GetByPurpose(secret.ClusterCA)
+	caCertSecret := caCert.AsSecret(
+		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
+	)
+	require.NoError(t, testEnv.Create(ctx, caCertSecret))
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
+		assert.NoError(c, err)
+		assert.Equal(c, ctrl.Result{}, result)
+
+		bootstrapSecret := &corev1.Secret{}
+		assert.NoError(c, testEnv.Get(ctx, client.ObjectKey{Namespace: k0sWorkerConfig.Namespace, Name: k0sWorkerConfig.Name}, bootstrapSecret))
+
+		// The K0sWorkerConfig had no version set, so it must fall back to the owning
+		// Machine's spec.version (normalized with the k0s suffix) instead of installing latest.
+		assert.Contains(c, string(bootstrapSecret.Data["value"]), "K0S_VERSION=v1.30.5+k0s.0")
+	}, 20*time.Second, 100*time.Millisecond)
+}
+
 func TestReconcileGenerateBootstrapData(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-generate-bootstrap-data")
 	require.NoError(t, err)
