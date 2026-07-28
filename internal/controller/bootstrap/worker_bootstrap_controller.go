@@ -130,6 +130,12 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	log = log.WithValues("kind", configOwner.GetKind(), "version", configOwner.GetResourceVersion(), "name", configOwner.GetName())
 
+	// If the K0sWorkerConfig does not have a version set, fall back to the owner's
+	// (Machine or MachinePool) Kubernetes version, e.g. as set by a ClusterClass topology.
+	if config.Spec.Version == "" {
+		config.Spec.Version = configOwner.KubernetesVersion()
+	}
+
 	// If the version does not contain the k0s suffix, append it.
 	if config.Spec.Version != "" {
 		// When machine is created by CAPI, for example by using a clusterclass template, the version
