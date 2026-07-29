@@ -33,7 +33,7 @@ import (
 )
 
 type MonitoringSuite struct {
-	common.FootlooseSuite
+	common.BootlooseSuite
 }
 
 func (s *MonitoringSuite) TestK0sGetsUp() {
@@ -50,7 +50,7 @@ func (s *MonitoringSuite) TestK0sGetsUp() {
 	err = s.WaitForNodeReady(s.WorkerNode(0), kc)
 	s.NoError(err)
 
-	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
+	s.Require().NoError(util.ImportK0smotronImages(s.Context(), &s.BootlooseSuite))
 
 	s.T().Log("deploying k0smotron operator")
 	s.Require().NoError(util.InstallK0smotronOperator(s.Context(), kc, rc))
@@ -106,11 +106,11 @@ func (s *MonitoringSuite) TestK0sGetsUp() {
 
 func TestMonitoringSuite(t *testing.T) {
 	s := MonitoringSuite{
-		common.FootlooseSuite{
-			ControllerCount:                 1,
-			WorkerCount:                     1,
-			K0smotronWorkerCount:            1,
-			K0smotronImageBundleMountPoints: []string{"/dist/bundle.tar"},
+		common.BootlooseSuite{
+			ControllerCount:                1,
+			WorkerCount:                    1,
+			K0smotronWorkerCount:           1,
+			K0sExtraImageBundleMountPoints: []string{"/dist/bundle.tar"},
 		},
 	}
 	suite.Run(t, &s)
