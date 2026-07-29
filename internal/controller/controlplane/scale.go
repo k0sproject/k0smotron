@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -374,11 +375,16 @@ func (c *K0sController) reconcileInplaceK0sVersionUpdate(ctx context.Context, sc
 	// longer has anything to wait for. Stop it now instead of leaving it to notice the plan is gone
 	// on its next poll, so it can't race with a new plan created for a subsequent version update.
 	c.stopUpdateMachineVersions(scope.kcp)
-	// Ensure that all machines have the desired version. Update version go routine may have been stopped
+
+	planTargetVersion, err := getPlanTargetVersion(plan)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting plan target version: %w", err)
+	}
+	// Ensure that all machines have the target version. Update version go routine may have been stopped
 	// before all machines were updated, so we need to ensure that all machines are updated to the
 	// desired version. At this point, the autopilot plan is completed, so we can safely update the
 	// machines to the desired version.
-	err = c.ensureMachineVersionsUpdated(ctx, scope)
+	err = c.ensureMachinesWithTargetVersion(ctx, scope.activeMachines, planTargetVersion)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error ensuring machine versions are updated: %w", err)
 	}
@@ -522,13 +528,13 @@ func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.
 	return nil
 }
 
-func (c *K0sController) ensureMachineVersionsUpdated(ctx context.Context, scope *controlplane) error {
-	for _, machine := range scope.activeMachines {
-		if machine.Spec.Version == scope.kcp.Spec.Version {
+func (c *K0sController) ensureMachinesWithTargetVersion(ctx context.Context, activeMachines collections.Machines, targetVersion string) error {
+	for _, machine := range activeMachines {
+		if machine.Spec.Version == targetVersion {
 			continue
 		}
 
-		err := c.updateMachineVersion(ctx, machine, scope.kcp.Spec.Version)
+		err := c.updateMachineVersion(ctx, machine, targetVersion)
 		if err != nil {
 			return fmt.Errorf("error updating machine version for %s: %w", machine.Name, err)
 		}
