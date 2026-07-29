@@ -138,3 +138,17 @@ func isAutopilotPlanCompleted(plan unstructured.Unstructured, desiredVersion str
 
 	return true, nil
 }
+
+func getPlanTargetVersion(plan unstructured.Unstructured) (string, error) {
+	commands, found, err := unstructured.NestedSlice(plan.Object, "spec", "commands")
+	if err != nil || !found || len(commands) == 0 {
+		return "", fmt.Errorf("error getting current autopilot plan's commands: %w", err)
+	}
+
+	version, found, err := unstructured.NestedString(commands[0].(map[string]any), "k0supdate", "version")
+	if err != nil || !found {
+		return "", fmt.Errorf("error getting current autopilot plan's version: %w", err)
+	}
+
+	return version, nil
+}
