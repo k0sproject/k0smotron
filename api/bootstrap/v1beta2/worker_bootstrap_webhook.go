@@ -52,7 +52,7 @@ func (v *K0sWorkerConfigValidator) ValidateCreate(_ context.Context, c *K0sWorke
 		return nil, apierrors.NewBadRequest("expected a K0sWorkerConfig but got nil")
 	}
 
-	return nil, v.validate(c.Spec, c.Name)
+	return v.validate(c.Spec, c.Name)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -61,7 +61,7 @@ func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, _, newConfi
 		return nil, apierrors.NewBadRequest("expected a K0sWorkerConfig but got nil")
 	}
 
-	return nil, v.validate(newConfig.Spec, newConfig.Name)
+	return v.validate(newConfig.Spec, newConfig.Name)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -69,14 +69,14 @@ func (v *K0sWorkerConfigValidator) ValidateDelete(_ context.Context, _ *K0sWorke
 	return nil, nil
 }
 
-func (v *K0sWorkerConfigValidator) validate(c K0sWorkerConfigSpec, name string) error {
-	allErrs := c.Validate(field.NewPath("spec"))
+func (v *K0sWorkerConfigValidator) validate(c K0sWorkerConfigSpec, name string) (admission.Warnings, error) {
+	warnings, allErrs := c.Validate(field.NewPath("spec"))
 
 	if len(allErrs) == 0 {
-		return nil
+		return warnings, nil
 	}
 
-	return apierrors.NewInvalid(GroupVersion.WithKind("K0sWorkerConfig").GroupKind(), name, allErrs)
+	return warnings, apierrors.NewInvalid(GroupVersion.WithKind("K0sWorkerConfig").GroupKind(), name, allErrs)
 }
 
 // SetupK0sWorkerConfigWebhookWithManager registers the webhook for K0sWorkerConfig in the manager.

@@ -344,7 +344,7 @@ metadata:
   name:  docker-test-cluster-docker-test-worker-0
   namespace: default
 spec:
-  version: v1.30.1
+  version: v1.30.1+k0s.0
   clusterName: docker-test-cluster
   bootstrap:
     configRef:
@@ -361,9 +361,7 @@ kind: K0sWorkerConfig
 metadata:
   name: docker-test-worker-0
   namespace: default
-spec:
-  # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.30.1+k0s.0
+spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DevMachine

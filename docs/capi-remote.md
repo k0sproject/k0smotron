@@ -69,6 +69,7 @@ metadata:
   namespace: default
 spec:
   clusterName: remote-test
+  version: v1.27.2+k0s.0
   bootstrap:
     configRef:
       apiGroup: bootstrap.cluster.x-k8s.io
@@ -84,8 +85,7 @@ kind: K0sWorkerConfig
 metadata:
   name: remote-test-0
   namespace: default
-spec:
-  version: v1.27.2+k0s.0
+spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteMachine
@@ -291,7 +291,6 @@ metadata:
   name: machine-test-config
   namespace: default
 spec:
-  version: v1.32.2+k0s.0
   files:
     - path: /custom-cleanup-script.sh
       content: |

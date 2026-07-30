@@ -21,12 +21,10 @@ package bootstrap
 import (
 	"testing"
 
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
-
-	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
-	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 )
 
 func Test_createInstallCmd(t *testing.T) {
@@ -39,7 +37,9 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with default config",
 			scope: &Scope{
-				Config: &bootstrapv1.K0sWorkerConfig{},
+				Config: &k0sWorkerConfig{
+					K0sWorkerConfig: &bootstrapv2.K0sWorkerConfig{},
+				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
 					"metadata": map[string]any{"name": "test"},
 				}}},
@@ -49,9 +49,11 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with args",
 			scope: &Scope{
-				Config: &bootstrapv2.K0sWorkerConfig{
-					Spec: bootstrapv2.K0sWorkerConfigSpec{
-						Args: []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
+				Config: &k0sWorkerConfig{
+					K0sWorkerConfig: &bootstrapv2.K0sWorkerConfig{
+						Spec: bootstrapv2.K0sWorkerConfigSpec{
+							Args: []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
+						},
 					},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
@@ -63,10 +65,12 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with useSystemHostname set",
 			scope: &Scope{
-				Config: &bootstrapv2.K0sWorkerConfig{
-					Spec: bootstrapv2.K0sWorkerConfigSpec{
-						UseSystemHostname: true,
-						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
+				Config: &k0sWorkerConfig{
+					K0sWorkerConfig: &bootstrapv2.K0sWorkerConfig{
+						Spec: bootstrapv2.K0sWorkerConfigSpec{
+							UseSystemHostname: true,
+							Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--hostname-override=test-from-arg"`},
+						},
 					},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
@@ -78,10 +82,12 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with extra args and useSystemHostname not set",
 			scope: &Scope{
-				Config: &bootstrapv2.K0sWorkerConfig{
-					Spec: bootstrapv2.K0sWorkerConfigSpec{
-						UseSystemHostname: false,
-						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
+				Config: &k0sWorkerConfig{
+					K0sWorkerConfig: &bootstrapv2.K0sWorkerConfig{
+						Spec: bootstrapv2.K0sWorkerConfigSpec{
+							UseSystemHostname: false,
+							Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
+						},
 					},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
@@ -93,10 +99,12 @@ func Test_createInstallCmd(t *testing.T) {
 		{
 			name: "with extra args and useSystemHostname set",
 			scope: &Scope{
-				Config: &bootstrapv2.K0sWorkerConfig{
-					Spec: bootstrapv2.K0sWorkerConfigSpec{
-						UseSystemHostname: true,
-						Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
+				Config: &k0sWorkerConfig{
+					K0sWorkerConfig: &bootstrapv2.K0sWorkerConfig{
+						Spec: bootstrapv2.K0sWorkerConfigSpec{
+							UseSystemHostname: true,
+							Args:              []string{"--debug", "--labels=k0sproject.io/foo=bar", `--kubelet-extra-args="--my-arg=value"`},
+						},
 					},
 				},
 				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
@@ -122,10 +130,12 @@ func Test_getWindowsCommands(t *testing.T) {
 		{
 			name: "with default config",
 			scope: &Scope{
-				Config: &bootstrapv2.K0sWorkerConfig{
-					Spec: bootstrapv2.K0sWorkerConfigSpec{
-						Provisioner: bootstrapv2.ProvisionerSpec{
-							Platform: bootstrapv2.PlatformWindows,
+				Config: &k0sWorkerConfig{
+					K0sWorkerConfig: &bootstrapv2.K0sWorkerConfig{
+						Spec: bootstrapv2.K0sWorkerConfigSpec{
+							Provisioner: bootstrapv2.ProvisionerSpec{
+								Platform: bootstrapv2.PlatformWindows,
+							},
 						},
 					},
 				},
@@ -144,4 +154,68 @@ func Test_getWindowsCommands(t *testing.T) {
 		})
 	}
 
+}
+
+func Test_resolveK0sWorkerVersion(t *testing.T) {
+	machineOwner := func(version string) *bsutil.ConfigOwner {
+		obj := map[string]any{"kind": "Machine", "spec": map[string]any{}}
+		if version != "" {
+			obj["spec"] = map[string]any{"version": version}
+		}
+		return &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: obj}}
+	}
+
+	tests := []struct {
+		name          string
+		configVersion string
+		configOwner   *bsutil.ConfigOwner
+		want          string
+	}{
+		{
+			name:        "no version anywhere",
+			configOwner: machineOwner(""),
+			want:        "",
+		},
+		{
+			name:          "config version takes precedence over owner version",
+			configVersion: "v1.30.0+k0s.1",
+			configOwner:   machineOwner("v1.31.0+k0s.0"),
+			want:          "v1.30.0+k0s.1",
+		},
+		{
+			name:          "config version without k0s suffix gets the default suffix",
+			configVersion: "v1.30.0",
+			configOwner:   machineOwner(""),
+			want:          "v1.30.0+k0s.0",
+		},
+		{
+			name:        "falls back to machine version",
+			configOwner: machineOwner("v1.31.0"),
+			want:        "v1.31.0+k0s.0",
+		},
+		{
+			name:        "machine version with '-k0s.' is normalized",
+			configOwner: machineOwner("v1.31.0-k0s.2"),
+			want:        "v1.31.0+k0s.2",
+		},
+		{
+			name: "falls back to machine pool template version",
+			configOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{Object: map[string]any{
+				"kind": "MachinePool",
+				"spec": map[string]any{"template": map[string]any{"spec": map[string]any{"version": "v1.32.1+k0s.0"}}},
+			}}},
+			want: "v1.32.1+k0s.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := &bootstrapv2.K0sWorkerConfig{
+				Spec: bootstrapv2.K0sWorkerConfigSpec{Version: tt.configVersion},
+			}
+			require.Equal(t, tt.want, resolveK0sWorkerVersion(config, tt.configOwner))
+			// The deprecated field must not be mutated, as the config gets patched back to the API.
+			require.Equal(t, tt.configVersion, config.Spec.Version)
+		})
+	}
 }

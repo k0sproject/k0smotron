@@ -73,9 +73,14 @@ type Controller struct {
 	workloadClusterClient client.Client
 }
 
+type k0sWorkerConfig struct {
+	*bootstrapv2.K0sWorkerConfig
+	version string
+}
+
 // Scope contains the information required to generate the bootstrap data for a worker machine.
 type Scope struct {
-	Config              *bootstrapv2.K0sWorkerConfig
+	Config              *k0sWorkerConfig
 	ConfigOwner         *bsutil.ConfigOwner
 	Cluster             *clusterv1.Cluster
 	ingressSpec         *km.IngressSpec
@@ -129,22 +134,6 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}
 
 	log = log.WithValues("kind", configOwner.GetKind(), "version", configOwner.GetResourceVersion(), "name", configOwner.GetName())
-
-	// If the K0sWorkerConfig does not have a version set, fall back to the owner's
-	// (Machine or MachinePool) Kubernetes version, e.g. as set by a ClusterClass topology.
-	if config.Spec.Version == "" {
-		config.Spec.Version = configOwner.KubernetesVersion()
-	}
-
-	// If the version does not contain the k0s suffix, append it.
-	if config.Spec.Version != "" {
-		// When machine is created by CAPI, for example by using a clusterclass template, the version
-		// of the cluster may contain '-k0s.' instead of '+k0s.', so we need to replace it first.
-		config.Spec.Version = strings.Replace(config.Spec.Version, "-k0s.", "+k0s.", 1)
-		if !strings.Contains(config.Spec.Version, "+k0s.") {
-			config.Spec.Version = fmt.Sprintf("%s+%s", config.Spec.Version, defaultK0sSuffix)
-		}
-	}
 
 	// Lookup the cluster the config owner is associated with
 	cluster, err := capiutil.GetClusterByName(ctx, r.Client, configOwner.GetNamespace(), configOwner.ClusterName())
@@ -207,11 +196,31 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}()
 
 	scope := &Scope{
-		Config:      config,
+		Config: &k0sWorkerConfig{
+			K0sWorkerConfig: config,
+			version:         resolveK0sWorkerVersion(config, configOwner),
+		},
 		ConfigOwner: configOwner,
 		Cluster:     cluster,
 		provisioner: getProvisioner(&config.Spec.Provisioner),
 	}
+
+	// The webhook can only validate the deprecated spec.version, so the minimum windows version
+	// is enforced here on the resolved version, which may come from the owner.
+	if config.Spec.Provisioner.Platform == bootstrapv2.PlatformWindows && scope.Config.version != "" {
+		if err := bootstrapv2.ValidateWindowsK0sVersion(scope.Config.version); err != nil {
+			log.Error(err, "Unsupported k0s version for windows worker", "version", scope.Config.version)
+			conditions.Set(config, metav1.Condition{
+				Type:    string(bootstrapv2.DataSecretAvailableCondition),
+				Status:  metav1.ConditionFalse,
+				Reason:  bootstrapv2.DataSecretGenerationFailedReason,
+				Message: err.Error(),
+			})
+			// Requeueing does not help: fixing the version means a new Machine (and config) is rolled out.
+			return ctrl.Result{}, nil
+		}
+	}
+
 	err = r.setClientScope(ctx, cluster, scope)
 	if err != nil {
 		conditions.Set(config, metav1.Condition{
@@ -414,7 +423,7 @@ Invoke-WebRequest -Uri $k0sUrl -OutFile $dest -UseBasicParsing
 
 Write-Host "=== Executing k0s to check version ==="
 & $dest --version
-`, scope.Config.Spec.Version, scope.Config.Spec.Version, k0sPath, scope.Config.Spec.K0sInstallDir)
+`, scope.Config.version, scope.Config.version, k0sPath, scope.Config.Spec.K0sInstallDir)
 
 	inlineCommands := scope.Config.Spec.PreK0sCommands
 	// Download and enable containers and k0s bootstrap script
@@ -453,7 +462,7 @@ Stop-Transcript
 func getLinuxCommands(scope *Scope) ([]string, map[provisioner.VarName]string, error) {
 	commandsMap := make(map[provisioner.VarName]string)
 
-	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
+	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.version, scope.Config.Spec.K0sInstallDir)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error generating download commands: %w", err)
 	}
@@ -696,6 +705,27 @@ func createInstallCmd(scope *Scope) string {
 	}
 	installCmd = append(installCmd, mergeExtraArgs(scope.Config.Spec.Args, scope.ConfigOwner, true, scope.Config.Spec.UseSystemHostname)...)
 	return strings.Join(installCmd, " ")
+}
+
+// resolveK0sWorkerVersion returns the k0s version to install on the worker. The deprecated
+// K0sWorkerConfig.Spec.Version takes precedence if set; otherwise the owner's Kubernetes
+// version is used.
+func resolveK0sWorkerVersion(config *bootstrapv2.K0sWorkerConfig, configOwner *bsutil.ConfigOwner) string {
+	version := config.Spec.Version
+	if version == "" {
+		version = configOwner.KubernetesVersion()
+	}
+	if version == "" {
+		return ""
+	}
+	// When machine is created by CAPI, for example by using a clusterclass template, the version
+	// of the cluster may contain '-k0s.' instead of '+k0s.', so we need to replace it first.
+	version = strings.Replace(version, "-k0s.", "+k0s.", 1)
+	if !strings.Contains(version, "+k0s.") {
+		version = fmt.Sprintf("%s+%s", version, defaultK0sSuffix)
+	}
+
+	return version
 }
 
 // SetupWithManager sets up the controller with the Manager.

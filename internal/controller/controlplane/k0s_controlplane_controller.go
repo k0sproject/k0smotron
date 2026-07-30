@@ -389,7 +389,6 @@ func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, 
 			}},
 		},
 		Spec: bootstrapv2.K0sControllerConfigSpec{
-			Version:       kcp.Spec.Version,
 			K0sConfigSpec: k0sConfigSpec,
 		},
 	}

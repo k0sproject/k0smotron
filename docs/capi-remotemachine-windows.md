@@ -207,7 +207,6 @@ metadata:
   name: win-remote-worker-0
   namespace: default
 spec:
-  version: v1.34.2+k0s.0
   k0sInstallDir: 'C:\k0s'    # must be a Windows path
   provisioner:
     platform: windows
