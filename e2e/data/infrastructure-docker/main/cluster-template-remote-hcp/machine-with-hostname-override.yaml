@@ -4,7 +4,7 @@ metadata:
   name:  ${CLUSTER_NAME}-docker-test-worker-0
   namespace: ${NAMESPACE}
 spec:
-  version: v1.30.1
+  version: v1.30.1+k0s.0
   clusterName: ${CLUSTER_NAME}
   bootstrap:
     configRef:
@@ -22,8 +22,6 @@ metadata:
   name: docker-test-worker-0
   namespace: ${NAMESPACE}
 spec:
-  # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.30.1+k0s.0
   args:
     - --labels=k0sproject.io/foo=bar
     # docker infra provider gets node by name format: <cluster-name>-<container-name>

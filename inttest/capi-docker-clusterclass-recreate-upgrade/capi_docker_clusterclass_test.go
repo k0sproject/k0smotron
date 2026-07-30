@@ -447,8 +447,7 @@ metadata:
   namespace: default
 spec:
   template:
-    spec:
-      version: v1.30.0+k0s.0
+    spec: {}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass

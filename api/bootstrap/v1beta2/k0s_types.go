@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 )
@@ -135,6 +136,7 @@ type K0sWorkerConfigSpec struct {
 	// Make sure the version is compatible with the k0s version running on the control plane.
 	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
 	// +kubebuilder:validation:Optional
+	// Deprecated: Use Machine version instead.
 	Version string `json:"version,omitempty"`
 
 	// UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
@@ -282,6 +284,7 @@ type K0sControllerConfigSpec struct {
 	// Make sure the version is compatible with the k0s version running on the control plane.
 	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
 	// +kubebuilder:validation:Optional
+	// Deprecated: Use Machine version instead.
 	Version string `json:"version,omitempty"`
 
 	*K0sConfigSpec `json:",inline"`
@@ -460,15 +463,17 @@ func (c *K0sWorkerConfig) GetJoinTokenPath() string {
 }
 
 // Validate validates the K0sWorkerConfigSpec.
-func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList {
+func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
 
 	// TODO: validate Ignition
-	allErrs = append(allErrs, cs.validateVersion(pathPrefix)...)
+
+	warnings, versionErrs := cs.validateVersion(pathPrefix)
+	allErrs = append(allErrs, versionErrs...)
 	allErrs = append(allErrs, cs.validateFiles(pathPrefix)...)
 	allErrs = append(allErrs, cs.validateWindows(pathPrefix)...)
 
-	return allErrs
+	return warnings, allErrs
 }
 
 func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.ErrorList {
@@ -548,8 +553,15 @@ func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.Error
 	return allErrs
 }
 
-func (cs *K0sWorkerConfigSpec) validateVersion(pathPrefix *field.Path) field.ErrorList {
+const deprecatedK0sConfigVersionField = "K0sWorkerConfig.spec.version is deprecated and will be removed in a future release. It currently takes precedence over the Machine's version field."
+
+func (cs *K0sWorkerConfigSpec) validateVersion(pathPrefix *field.Path) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
+
+	var warnings admission.Warnings
+	if cs.Version != "" {
+		warnings = append(warnings, deprecatedK0sConfigVersionField)
+	}
 
 	if strings.Contains(cs.Version, "-k0s.") {
 		allErrs = append(
@@ -560,10 +572,10 @@ func (cs *K0sWorkerConfigSpec) validateVersion(pathPrefix *field.Path) field.Err
 				"k0s specific versions must be specified using the '+k0s' suffix",
 			),
 		)
-		return allErrs
+		return warnings, allErrs
 	}
 
-	return allErrs
+	return warnings, allErrs
 }
 
 func (cs *K0sWorkerConfigSpec) validateWindows(pathPrefix *field.Path) field.ErrorList {
