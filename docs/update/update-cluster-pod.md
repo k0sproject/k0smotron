@@ -78,8 +78,8 @@ with the new names to create machines for the target k0smotron version. For exam
      name:  docker-test-1 # new machine
      namespace: default
    spec:
-     version: v1.28.7 # new version
      clusterName: docker-test
+     version: v1.28.7+k0s.0 # new version
      bootstrap:
        configRef:
          apiGroup: bootstrap.cluster.x-k8s.io
@@ -95,8 +95,7 @@ with the new names to create machines for the target k0smotron version. For exam
    metadata:
      name: docker-test-1 # new machine
      namespace: default
-   spec:
-     version: v1.28.7+k0s.0 # new version
+   spec: {}
    ```
 
 5. Update the resources:

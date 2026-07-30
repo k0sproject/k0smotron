@@ -60,7 +60,7 @@ spec:
         cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
         pool: worker-pool-1
     spec:
-      version: ${KUBERNETES_VERSION}
+      version: ${KUBERNETES_VERSION}+k0s.0
       clusterName: ${CLUSTER_NAME}
       bootstrap:
         configRef:
@@ -79,8 +79,7 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   template:
-    spec:
-      version: ${KUBERNETES_VERSION}+k0s.0
+    spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DevMachineTemplate

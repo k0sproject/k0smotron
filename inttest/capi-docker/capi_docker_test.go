@@ -301,7 +301,7 @@ metadata:
   name:  docker-test-0
   namespace: default
 spec:
-  version: v1.31.1
+  version: v1.31.1+k0s.0
   clusterName: docker-test
   bootstrap:
     configRef:
@@ -319,8 +319,6 @@ metadata:
   name: docker-test-0
   namespace: default
 spec:
-  # version is deliberately different to be able to verify we actually pick it up :)
-  version: v1.31.1+k0s.0
   args:
     - --labels=k0sproject.io/foo=bar
   preStartCommands:

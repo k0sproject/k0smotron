@@ -14,47 +14,47 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package capidevmachinechangetemplate
+package capicontolplanedockerdownscaling
 
 import (
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
-	"slices"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	k0stestutil "github.com/k0sproject/k0s/inttest/common"
-	"github.com/k0sproject/k0smotron/v2/inttest/util"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
+	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/k0sproject/k0smotron/v2/inttest/util"
 )
 
-type CAPIDevMachineChangeArgs struct {
+type CAPIControlPlaneDockerDownScalingSuite struct {
 	suite.Suite
-	client                 *kubernetes.Clientset
-	restConfig             *rest.Config
-	clusterYamlsPath       string
-	clusterYamlsUpdatePath string
-	ctx                    context.Context
+	client                       *kubernetes.Clientset
+	restConfig                   *rest.Config
+	clusterYamlsPath             string
+	clusterYamlsUpdatePath       string
+	clusterYamlsSecondUpdatePath string
+	ctx                          context.Context
 }
 
-func TestCAPIDevMachineChangeArgs(t *testing.T) {
-	s := CAPIDevMachineChangeArgs{}
+func TestCAPIControlPlaneDockerDownScalingSuite(t *testing.T) {
+	s := CAPIControlPlaneDockerDownScalingSuite{}
 	suite.Run(t, &s)
 }
 
-func (s *CAPIDevMachineChangeArgs) SetupSuite() {
+func (s *CAPIControlPlaneDockerDownScalingSuite) SetupSuite() {
 	kubeConfigPath := os.Getenv("KUBECONFIG")
 	s.Require().NotEmpty(kubeConfigPath, "KUBECONFIG env var must be set and point to kind cluster")
 	// Get kube client from kubeconfig
@@ -74,11 +74,13 @@ func (s *CAPIDevMachineChangeArgs) SetupSuite() {
 	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
 	s.clusterYamlsUpdatePath = tmpDir + "/update.yaml"
 	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, []byte(controlPlaneUpdate), 0644))
+	s.clusterYamlsSecondUpdatePath = tmpDir + "/update2.yaml"
+	s.Require().NoError(os.WriteFile(s.clusterYamlsSecondUpdatePath, []byte(controlPlaneSecondUpdate), 0644))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
 
-func (s *CAPIDevMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
+func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownScaling() {
 
 	// Apply the child cluster objects
 	s.applyClusterObjects()
@@ -91,19 +93,19 @@ func (s *CAPIDevMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test"))
+		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
 	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-lb")
+		localPort, _ = getLBPort("docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting to see admin kubeconfig secret")
-	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
+	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
 	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
@@ -116,57 +118,23 @@ func (s *CAPIDevMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 	})
 	s.Require().NoError(err)
 
-	var nodeIDs []string
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
-		var err error
-		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
-
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test-cluster-docker-test", "default", s.client)
 		if err != nil {
 			return false, nil
 		}
 
-		return len(nodeIDs) == 3, nil
-	})
-	s.Require().NoError(err)
-
-	nodes, err := util.GetControlPlaneNodesIDs("docker-test-")
-	s.Require().NoError(err)
-
-	for _, node := range nodes {
-		err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
-			output, err := exec.Command("docker", "exec", node, "k0s", "status").Output()
-			if err != nil {
-				return false, nil
-			}
-
-			return strings.Contains(string(output), "Version:"), nil
-		})
-		s.Require().NoError(err)
-	}
-
-	s.T().Log("waiting for node to be ready")
-	s.Require().NoError(k0stestutil.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
-
-	s.T().Log("updating cluster objects")
-	s.updateClusterObjects()
-
-	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
-		var obj unstructured.UnstructuredList
-		err := s.client.RESTClient().
-			Get().
-			AbsPath("/apis/bootstrap.cluster.x-k8s.io/v1beta2/namespaces/default/k0scontrollerconfigs").
-			Do(s.ctx).
-			Into(&obj)
-		if err != nil {
+		if len(machines) != 3 {
 			return false, nil
 		}
 
-		for _, item := range obj.Items {
-			args, _, err := unstructured.NestedStringSlice(item.Object, "spec", "args")
+		for _, m := range machines {
+			output, err := exec.Command("docker", "exec", m.GetName(), "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
-			if !slices.Contains(args, "--debug") {
+
+			if !strings.Contains(string(output), "Version:") {
 				return false, nil
 			}
 		}
@@ -175,26 +143,109 @@ func (s *CAPIDevMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 	})
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
-		b, _ := s.client.RESTClient().
-			Get().
-			AbsPath("/healthz").
-			DoRaw(context.Background())
+	var cnList autopilot.ControlNodeList
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		err = kmcKC.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/controlnodes").Do(ctx).Into(&cnList)
+		if err != nil {
+			return false, nil
+		}
 
-		return string(b) == "ok", nil
+		return len(cnList.Items) == 3, nil
 	})
 	s.Require().NoError(err)
+
+	s.T().Log("waiting for node to be ready")
+	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-cluster-docker-test-worker-0", corev1.ConditionTrue))
+
+	s.T().Log("updating cluster objects")
+	s.updateClusterObjects()
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test-cluster-docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 3 {
+			return false, nil
+		}
+
+		for _, m := range machines {
+			output, err := exec.Command("docker", "exec", m.GetName(), "k0s", "status").Output()
+			if err != nil {
+				return false, nil
+			}
+
+			if !strings.Contains(string(output), "Version: v1.30.2") {
+				return false, nil
+			}
+		}
+
+		return true, nil
+
+	})
+
+	s.Require().NoError(err)
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		var existingPlan unstructured.Unstructured
+		err = kmcKC.RESTClient().Get().AbsPath("/apis/autopilot.k0sproject.io/v1beta2/plans/autopilot").Do(ctx).Into(&existingPlan)
+		if err != nil {
+			return false, nil
+		}
+
+		state, _, err := unstructured.NestedString(existingPlan.Object, "status", "state")
+		if err != nil {
+			return false, nil
+		}
+
+		return state == "Completed", nil
+	})
+	s.Require().NoError(err)
+
+	s.T().Log("updating cluster objects again")
+	s.updateClusterObjectsAgain()
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test-cluster-docker-test", "default", s.client)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(machines) != 3 {
+			return false, nil
+		}
+
+		for _, m := range machines {
+			output, err := exec.Command("docker", "exec", m.GetName(), "k0s", "status").Output()
+			if err != nil {
+				return false, nil
+			}
+
+			if !strings.Contains(string(output), "Version: v1.31") {
+				return false, nil
+			}
+		}
+
+		return true, nil
+	})
+	s.Require().NoError(err)
+
+	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-cluster-docker-test-worker-0", corev1.ConditionTrue))
 }
 
-func (s *CAPIDevMachineChangeArgs) applyClusterObjects() {
+func (s *CAPIControlPlaneDockerDownScalingSuite) applyClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
-func (s *CAPIDevMachineChangeArgs) updateClusterObjects() {
+func (s *CAPIControlPlaneDockerDownScalingSuite) updateClusterObjects() {
 	// Exec via kubectl
 	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
+	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
+}
+
+func (s *CAPIControlPlaneDockerDownScalingSuite) updateClusterObjectsAgain() {
+	// Exec via kubectl
+	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsSecondUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
@@ -217,7 +268,7 @@ var dockerClusterYaml = `
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: docker-test
+  name: docker-test-cluster
   namespace: default
 spec:
   clusterNetwork:
@@ -231,7 +282,7 @@ spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: K0sControlPlane
-    name: docker-test
+    name: docker-test-cluster-docker-test
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: DevCluster
@@ -252,15 +303,14 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
 metadata:
-  name: docker-test
+  name: docker-test-cluster-docker-test
 spec:
   replicas: 3
-  version: v1.31.2+k0s.0
-  updateStrategy: Recreate
+  version: v1.30.1+k0s.0
   k0sConfigSpec:
-    postStartCommands:
-    - sed -i 's/RestartSec=120/RestartSec=1/' /etc/systemd/system/k0scontroller.service
-    - systemctl daemon-reload
+    args:
+      - --enable-worker
+      - --no-taints
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig
@@ -273,11 +323,11 @@ spec:
         telemetry:
           enabled: false
   machineTemplate:
-    spec:
-      infrastructureRef:
-        apiGroup: infrastructure.cluster.x-k8s.io
-        kind: DevMachineTemplate
-        name: docker-test-cp-template
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DevMachineTemplate
+      name: docker-test-cp-template
+      namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DevCluster
@@ -286,19 +336,16 @@ metadata:
   namespace: default
 spec:
   backend:
-    docker:
-      loadBalancer:
-        customHAProxyConfigTemplateRef:
-          name: ha-proxy-config
+    docker: {}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Machine
 metadata:
-  name:  docker-test-worker-0
+  name:  docker-test-cluster-docker-test-worker-0
   namespace: default
 spec:
-  version: v1.31.2+k0s.0
-  clusterName: docker-test
+  version: v1.30.1+k0s.0
+  clusterName: docker-test-cluster
   bootstrap:
     configRef:
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -325,76 +372,20 @@ spec:
   backend:
     docker:
       customImage: kindest/node:v1.31.0
----
-apiVersion: v1
-data:
-  value: |
-    # generated by kind
-    global
-      log /dev/log local0
-      log /dev/log local1 notice
-      daemon
-      # limit memory usage to approximately 18 MB
-      # (see https://github.com/kubernetes-sigs/kind/pull/3115)
-      maxconn 100000
-
-    resolvers docker
-      nameserver dns 127.0.0.11:53
-
-    defaults
-      log global
-      mode tcp
-      option dontlognull
-      # TODO: tune these
-      timeout connect 5000
-      timeout client 50000
-      timeout server 50000
-      # allow to boot despite dns don't resolve backends
-      default-server init-addr none
-
-    frontend stats
-      mode http
-      bind *:8404
-      stats enable
-      stats uri /stats
-      stats refresh 1s
-      stats admin if TRUE
-
-    frontend control-plane
-      bind *:{{ .FrontendControlPlanePort }}
-      {{ if .IPv6 -}}
-      bind :::{{ .FrontendControlPlanePort }};
-      {{- end }}
-      default_backend kube-apiservers
-
-    backend kube-apiservers
-      default-server inter 2s fall 2 rise 3
-      timeout connect 2s
-      timeout server 5s
-      retries 3
-      option redispatch
-      option httpchk GET /healthz
-      {{range $server, $backend := .BackendServers}}
-      server {{ $server }} {{ JoinHostPort $backend.Address $.BackendControlPlanePort }} weight {{ $backend.Weight }} check check-ssl verify none resolvers docker resolve-prefer {{ if $.IPv6 -}} ipv6 {{- else -}} ipv4 {{- end }}
-      {{- end}}
-kind: ConfigMap
-metadata:
-  name: ha-proxy-config
 `
 
 var controlPlaneUpdate = `
----
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
 metadata:
-  name: docker-test
+  name: docker-test-cluster-docker-test
 spec:
   replicas: 3
-  version: v1.31.2+k0s.0
-  updateStrategy: Recreate
+  version: v1.30.2+k0s.0
   k0sConfigSpec:
     args:
-    - --debug
+      - --enable-worker
+      - --no-taints
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig
@@ -407,9 +398,40 @@ spec:
         telemetry:
           enabled: false
   machineTemplate:
-    spec:
-      infrastructureRef:
-        apiGroup: infrastructure.cluster.x-k8s.io
-        kind: DevMachineTemplate
-        name: docker-test-cp-template
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DevMachineTemplate
+      name: docker-test-cp-template
+      namespace: default
+`
+
+var controlPlaneSecondUpdate = `
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: docker-test-cluster-docker-test
+spec:
+  replicas: 3
+  version: v1.31.2+k0s.0
+  k0sConfigSpec:
+    args:
+      - --enable-worker
+      - --no-taints
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+        telemetry:
+          enabled: false
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DevMachineTemplate
+      name: docker-test-cp-template
+      namespace: default
 `

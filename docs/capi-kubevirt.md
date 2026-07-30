@@ -97,6 +97,7 @@ spec:
         cluster.x-k8s.io/cluster-name: kubevirt-test
     spec:
       clusterName: kubevirt-test
+      version: v1.27.4+k0s.0
       bootstrap:
         configRef:
           apiGroup: bootstrap.cluster.x-k8s.io
@@ -145,8 +146,7 @@ metadata:
   name: kubevirt-test-machine-config
 spec:
   template:
-    spec:
-      version: v1.27.4+k0s.0
+    spec: {}
       # More details of the worker configuration can be set here
 ```
 

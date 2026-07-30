@@ -16,6 +16,7 @@ metadata:
   namespace: default
 spec:
   clusterName: cp-test
+  version: v1.27.2+k0s.0
   bootstrap:
     configRef: # This triggers our controller to create cloud-init secret
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
@@ -31,8 +32,7 @@ kind: K0sWorkerConfig
 metadata:
   name: machine-test-config
   namespace: default
-spec:
-  version: v1.27.2+k0s.0
+spec: {}
   # Details of the worker configuration can be set here
 ```
 
@@ -60,7 +60,6 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-config
 spec:
-  version: v1.27.2+k0s.0
   preK0sCommands:
     - "apt-get update && apt-get install -y curl jq"
     - "mkdir -p /etc/k0s/monitoring"
@@ -77,7 +76,6 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-config
 spec:
-  version: v1.27.2+k0s.0
   postK0sCommands:
     - "systemctl enable monitoring-agent"
     - "systemctl start monitoring-agent"
@@ -103,7 +101,6 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-with-monitoring
 spec:
-  version: v1.27.2+k0s.0
   preK0sCommands:
     - "curl -fsSL https://get.docker.com | sh"
     - "systemctl enable docker"
@@ -121,7 +118,6 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-with-config
 spec:
-  version: v1.27.2+k0s.0
   preK0sCommands:
     - "echo 'vm.max_map_count=262144' >> /etc/sysctl.conf"
     - "sysctl -p"
@@ -140,7 +136,6 @@ kind: K0sWorkerConfig
 metadata:
   name: worker-with-health-checks
 spec:
-  version: v1.27.2+k0s.0
   postK0sCommands:
     - "kubectl get nodes --kubeconfig=/var/lib/k0s/pki/admin.conf"
     - "kubectl describe node $(hostname) --kubeconfig=/var/lib/k0s/pki/admin.conf"
@@ -191,6 +186,7 @@ spec:
         cluster.x-k8s.io/cluster-name: cp-test
         pool: worker-pool-1
     spec:
+      version: v1.27.2+k0s.0
       clusterName: cp-test
       bootstrap:
         configRef:
@@ -209,8 +205,7 @@ metadata:
   namespace: default
 spec:
   template:
-    spec:
-      version: v1.27.2+k0s.0
+    spec: {}
       # More details of the worker configuration can be set here
 ```
 

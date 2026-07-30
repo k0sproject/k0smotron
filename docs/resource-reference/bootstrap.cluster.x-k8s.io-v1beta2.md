@@ -191,10 +191,9 @@ By default, k0smotron will use Machine name as a node name. If true, it will pic
         <td><b>version</b></td>
         <td>string</td>
         <td>
-          Version is the version of k0s to use. In case this is not set, k0smotron will use
-a version field of the Machine object. If it's empty, the latest version is used.
-Make sure the version is compatible with the k0s version running on the control plane.
-For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+          Version is ignored: the k0s version is taken from the Machine, which the control plane
+controller sets from the K0sControlPlane version.
+Deprecated: This field is ignored and will be removed in a future release.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1007,7 +1006,8 @@ By default, k0smotron will use Machine name as a node name. If true, it will pic
           Version is the version of k0s to use. In case this is not set, k0smotron will use
 a version field of the Machine object. If it's empty, the latest version is used.
 Make sure the version is compatible with the k0s version running on the control plane.
-For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
+Deprecated: Use Machine version instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1859,7 +1859,8 @@ By default, k0smotron will use Machine name as a node name. If true, it will pic
           Version is the version of k0s to use. In case this is not set, k0smotron will use
 a version field of the Machine object. If it's empty, the latest version is used.
 Make sure the version is compatible with the k0s version running on the control plane.
-For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/<br/>
+For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
+Deprecated: Use Machine version instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>

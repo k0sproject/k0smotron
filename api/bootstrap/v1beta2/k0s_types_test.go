@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func TestK0sConfigSpecWorkerEnabled(t *testing.T) {
@@ -94,8 +96,83 @@ func TestK0sConfigSpecSingleNodeEnabled(t *testing.T) {
 		})
 	}
 }
+func TestK0sWorkerConfigSpec_validateWindows(t *testing.T) {
+	pathPrefix := field.NewPath("spec")
+
+	tests := []struct {
+		name     string
+		platform Platform
+		version  string
+		wantErrs int
+	}{
+		// Version edge cases are covered by TestValidateWindowsK0sVersion.
+		{name: "linux platform ignores version", platform: PlatformLinux, version: "v1.0.0+k0s.0", wantErrs: 0},
+		{name: "windows platform empty version is resolved later from the Machine", platform: PlatformWindows, version: "", wantErrs: 0},
+		{name: "windows platform unsupported version", platform: PlatformWindows, version: "v1.34.1+k0s.0", wantErrs: 1},
+		{name: "windows platform supported version", platform: PlatformWindows, version: "v1.34.2+k0s.0", wantErrs: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cs := K0sWorkerConfigSpec{
+				Provisioner: ProvisionerSpec{Platform: tt.platform},
+				Version:     tt.version,
+			}
+			got := cs.validateWindows(pathPrefix)
+			assert.Len(t, got, tt.wantErrs)
+		})
+	}
+}
 
 func TestK0sConfigSpecSingleNodeEnabledNilSpec(t *testing.T) {
 	var spec *K0sConfigSpec
 	assert.False(t, spec.SingleNodeEnabled())
+
+}
+
+func TestValidateWindowsK0sVersion(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		wantErr bool
+	}{
+		{name: "empty version", version: "", wantErr: true},
+		{name: "invalid version format", version: "not-a-version", wantErr: true},
+		{name: "version below minimum", version: "v1.34.1+k0s.0", wantErr: true},
+		{name: "version equal to minimum", version: "v1.34.2+k0s.0", wantErr: false},
+		{name: "version above minimum", version: "v1.35.0+k0s.0", wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateWindowsK0sVersion(tt.version)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestK0sWorkerConfigSpec_validateVersion(t *testing.T) {
+	pathPrefix := field.NewPath("spec")
+
+	tests := []struct {
+		name         string
+		version      string
+		wantWarnings admission.Warnings
+		wantErrs     int
+	}{
+		{name: "empty version", version: "", wantWarnings: nil, wantErrs: 0},
+		{name: "regular version", version: "v1.30.0", wantWarnings: admission.Warnings{deprecatedK0sConfigVersionField}, wantErrs: 0},
+		{name: "k0s specific version with dash suffix is rejected", version: "v1.30.0-k0s.0", wantWarnings: admission.Warnings{deprecatedK0sConfigVersionField}, wantErrs: 1},
+		{name: "k0s specific version with plus suffix is accepted", version: "v1.30.0+k0s.0", wantWarnings: admission.Warnings{deprecatedK0sConfigVersionField}, wantErrs: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cs := K0sWorkerConfigSpec{Version: tt.version}
+			gotWarnings, gotErrs := cs.validateVersion(pathPrefix)
+			assert.Equal(t, tt.wantWarnings, gotWarnings)
+			assert.Len(t, gotErrs, tt.wantErrs)
+		})
+	}
 }
