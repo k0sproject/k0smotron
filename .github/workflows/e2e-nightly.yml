@@ -71,6 +71,7 @@ jobs:
         run: |
           docker tag quay.io/k0sproject/k0smotron:latest ttl.sh/k0smotron-${{ github.sha }}
           docker push ttl.sh/k0smotron-${{ github.sha }}
+        continue-on-error: true
 
       - name: Upload image bundle
         uses: actions/upload-artifact@v4
