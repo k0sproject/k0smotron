@@ -62,10 +62,11 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default={"type":"ClusterIP","apiPort":30443,"konnectivityPort":30132}
 	Service ServiceSpec `json:"service,omitempty"`
-	// Persistence defines the persistence configuration. If empty k0smotron
-	// will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
+	// Persistence defines the persistence configuration for the k0s data
+	// directory.
+	//
+	// Deprecated: see the v1beta2 field of the same name.
 	//+kubebuilder:validation:Optional
-	//+kubebuilder:default={"type":"emptyDir"}
 	Persistence v2.PersistenceSpec `json:"persistence,omitempty"`
 	// KineDataSourceURL defines the kine datasource URL.
 	//+kubebuilder:validation:Optional

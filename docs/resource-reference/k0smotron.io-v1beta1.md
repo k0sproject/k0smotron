@@ -213,10 +213,10 @@ https://kubernetes.io/docs/concepts/storage/volumes<br/>
         <td><b><a href="#clusterspecpersistence">persistence</a></b></td>
         <td>object</td>
         <td>
-          Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
-          <br/>
-            <i>Default</i>: map[type:emptyDir]<br/>
+          Persistence defines the persistence configuration for the k0s data
+directory.
+
+Deprecated: see the v1beta2 field of the same name.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8628,8 +8628,10 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 
 
-Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
+Persistence defines the persistence configuration for the k0s data
+directory.
+
+Deprecated: see the v1beta2 field of the same name.
 
 <table>
     <thead>
@@ -8642,10 +8644,11 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
     </thead>
     <tbody><tr>
         <td><b>type</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
           <br/>
           <br/>
+            <i>Enum</i>: emptyDir, hostPath, pvc<br/>
             <i>Default</i>: emptyDir<br/>
         </td>
         <td>true</td>
