@@ -18,7 +18,7 @@
         <link rel="prev" href="../update-cluster-pod/">
       
       
-        <link rel="next" href="../hcp-autopilot/">
+        <link rel="next" href="../update-capi-cluster-workers/">
       
       
       <link rel="icon" href="../../img/k0s_social.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Cluster API (VMs) - Documentation</title>
+        <title>Cluster API (VMs) - control plane - Documentation</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#update-control-nodes-in-cluster-api-clusters" class="md-skip">
+        <a href="#update-control-plane-nodes-in-cluster-api-clusters-vms" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Cluster API (VMs)
+              Cluster API (VMs) - control plane
             
           </span>
         </div>
@@ -1530,7 +1530,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
   <span class="md-ellipsis">
-    Cluster API (VMs)
+    Cluster API (VMs) - control plane
     
   </span>
   
@@ -1543,7 +1543,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
   <span class="md-ellipsis">
-    Cluster API (VMs)
+    Cluster API (VMs) - control plane
     
   </span>
   
@@ -1614,6 +1614,21 @@ You are not currently viewing the documentation for the current stable release o
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Update strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-inplace-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use InPlace strategy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1656,6 +1671,29 @@ You are not currently viewing the documentation for the current stable release o
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../update-capi-cluster-workers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Cluster API (VMs) - workers
+    
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -2356,6 +2394,21 @@ You are not currently viewing the documentation for the current stable release o
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Update strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-inplace-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use InPlace strategy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2410,8 +2463,12 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="update-control-nodes-in-cluster-api-clusters">Update control nodes in Cluster API clusters<a class="headerlink" href="#update-control-nodes-in-cluster-api-clusters" title="Permanent link">#</a></h1>
+<h1 id="update-control-plane-nodes-in-cluster-api-clusters-vms">Update control plane nodes in Cluster API clusters (VMs)<a class="headerlink" href="#update-control-plane-nodes-in-cluster-api-clusters-vms" title="Permanent link">#</a></h1>
 <p>This page explains what can trigger a control plane upgrade in k0smotron and how to perform one.</p>
+<div class="admonition info">
+<p class="admonition-title">Worker nodes</p>
+<p>This page only covers control plane machines. See <a href="../update-capi-cluster-workers/">Update worker nodes in Cluster API clusters (VMs)</a> for how (and whether) worker machines are covered by each mechanism described below.</p>
+</div>
 <h2 id="what-triggers-a-control-plane-upgrade">What triggers a control plane upgrade<a class="headerlink" href="#what-triggers-a-control-plane-upgrade" title="Permanent link">#</a></h2>
 <p>k0smotron continuously reconciles each <code>K0sControlPlane</code> resource and detects that an upgrade is needed when any of the following change:</p>
 <h3 id="k0s-version-change">k0s version change<a class="headerlink" href="#k0s-version-change" title="Permanent link">#</a></h3>
@@ -2423,7 +2480,7 @@ You are not currently viewing the documentation for the current stable release o
 <li><strong>Changes to <code>spec.k0sConfigSpec.k0s</code></strong> (the k0s <code>ClusterConfig</code> object) are applied using <a href="https://docs.k0sproject.io/stable/dynamic-configuration/">k0s dynamic configuration</a>. k0smotron patches the <code>ClusterConfig</code> resource directly in the workload cluster without replacing any machines. Note that some fields cannot be changed via dynamic configuration and are ignored. See the <a href="https://docs.k0sproject.io/stable/dynamic-configuration/#cluster-configuration-vs-controller-node-configuration">k0s documentation</a> for the full list.</li>
 </ul>
 <ul>
-<li><strong>Changes to any other field in <code>spec.k0sConfigSpec</code></strong> (such as <code>args</code>, <code>files</code>, <code>preStartCommands</code>, etc.) are detected by comparing a hash of the bootstrap config stored in each machine's annotations against the current spec. Machines whose config no longer matches are marked for replacement, using the Recreate workflow regardless of <code>spec.updateStrategy</code>.</li>
+<li><strong>Changes to any other field in <code>spec.k0sConfigSpec</code></strong> (such as <code>args</code>, <code>files</code>, <code>preStartCommands</code>, etc.) are detected by comparing a hash of the bootstrap config stored in each machine's annotations against the current spec. Machines whose config no longer matches are marked for replacement, using the Recreate workflow regardless of <code>spec.updateStrategy</code>. </li>
 </ul>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -2463,6 +2520,26 @@ You are not currently viewing the documentation for the current stable release o
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The <code>RecreateDeleteFirst</code> strategy requires at least 3 control plane nodes.</p>
+</div>
+<h3 id="use-inplace-strategy">Use InPlace strategy<a class="headerlink" href="#use-inplace-strategy" title="Permanent link">#</a></h3>
+<p>Under the <code>InPlace</code> strategy, control plane nodes are always updated the same way under the hood: k0smotron creates a k0s <a href="https://docs.k0sproject.io/stable/autopilot/">autopilot</a> <code>Plan</code> in the workload cluster, and autopilot rolls the new k0s version onto each control plane node without replacing the machine.</p>
+<p>This in-place mechanism only updates <strong>the k0s version</strong> running on a node. It does not apply configuration or machine template changes, those are always handled by recreating machines regardless of <code>spec.updateStrategy</code>, as described above.</p>
+<h4 id="standalone-default">Standalone (default)<a class="headerlink" href="#standalone-default" title="Permanent link">#</a></h4>
+<p>k0smotron's <code>K0sControlPlane</code> controller manages the autopilot <code>Plan</code> itself, independently of Cluster API's machine lifecycle. No webhook server or extra component is required.</p>
+<h4 id="cluster-api-in-place-updates-experimental">Cluster API in-place updates (experimental)<a class="headerlink" href="#cluster-api-in-place-updates-experimental" title="Permanent link">#</a></h4>
+<p>k0smotron instead delegates the rollout to Cluster API's own <a href="https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240807-in-place-updates.md">in-place updates mechanism</a>: a k0smotron webhook server, installed as a Cluster API runtime extension, receives the <code>UpdateMachine</code> hook calls that Cluster API core sends for each machine and creates the autopilot <code>Plan</code> on its behalf. This path is used automatically once all of the following are satisfied:</p>
+<p>- Cluster API core <strong>v1.12.0 or newer</strong>.</p>
+<p>- The <code>InPlaceUpdates</code> feature gate enabled on Cluster API core (<code>EXP_IN_PLACE_UPDATES=true</code>).</p>
+<p>- The k0smotron in-place version update extension installed in the management cluster:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="o">=</span><span class="nb">true</span><span class="w"> </span>-f<span class="w"> </span>https://docs.k0smotron.io/v2.0.4/install-extension-webhook.yaml
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If any of the requirements above aren't met, k0smotron transparently falls back to the standalone path, no further action is required.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Worker nodes</p>
+<p>Because the standalone path has no controller watching worker <code>Machine</code>/<code>MachineDeployment</code> objects, only the Cluster API in-place updates extension can perform in-place updates of worker nodes — the same webhook server also handles the hook calls Cluster API sends for machines owned by a <code>MachineDeployment</code>/<code>MachineSet</code>. See <a href="../update-capi-cluster-workers/">Update worker nodes in Cluster API clusters (VMs)</a> for details.</p>
 </div>
 <h2 id="monitoring-upgrade-status">Monitoring upgrade status<a class="headerlink" href="#monitoring-upgrade-status" title="Permanent link">#</a></h2>
 <p>The <code>K0sControlPlane</code> status fields give visibility into an in-progress upgrade:</p>

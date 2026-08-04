@@ -12,28 +12,28 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/troubleshooting/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/update/update-capi-cluster-workers/">
       
       
-        <link rel="prev" href="../faq/">
+        <link rel="prev" href="../update-capi-cluster/">
       
       
-        <link rel="next" href="../commercial-support/">
+        <link rel="next" href="../hcp-autopilot/">
       
       
-      <link rel="icon" href="../img/k0s_social.png">
+      <link rel="icon" href="../../img/k0s_social.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
     
     
       
-        <title>Troubleshooting - Documentation</title>
+        <title>Cluster API (VMs) - workers - Documentation</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -52,9 +52,9 @@
       
     
     
-      <link rel="stylesheet" href="../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XY3LK5RVBZ"></script>
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#troubleshooting" class="md-skip">
+        <a href="#update-worker-nodes-in-cluster-api-clusters-vms" class="md-skip">
           Skip to content
         </a>
       
@@ -102,12 +102,12 @@
             <div class="md-banner__inner md-grid md-typeset">
               
 You are not currently viewing the documentation for the current stable release of k0smotron.
-<a href="../..">
+<a href="../../..">
   <strong>Click here to go to the documentation of the current stable release.</strong>
 </a>
 
             </div>
-            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL(".."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
           </aside>
         
       </div>
@@ -119,9 +119,9 @@ You are not currently viewing the documentation for the current stable release o
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href="../.." title="Documentation" class="md-header__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="../img/k0s_social.png" alt="logo">
+  <img src="../../img/k0s_social.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -138,7 +138,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Troubleshooting
+              Cluster API (VMs) - workers
             
           </span>
         </div>
@@ -256,9 +256,9 @@ You are not currently viewing the documentation for the current stable release o
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
+    <a href="../.." title="Documentation" class="md-nav__button md-logo" aria-label="Documentation" data-md-component="logo">
       
-  <img src="../img/k0s_social.png" alt="logo">
+  <img src="../../img/k0s_social.png" alt="logo">
 
     </a>
     Documentation
@@ -285,7 +285,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -307,7 +307,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../status/" class="md-nav__link">
+      <a href="../../status/" class="md-nav__link">
         
   
   
@@ -329,7 +329,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../../install/" class="md-nav__link">
         
   
   
@@ -351,7 +351,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../operator-configuration/" class="md-nav__link">
+      <a href="../../operator-configuration/" class="md-nav__link">
         
   
   
@@ -411,7 +411,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../usage-overview/" class="md-nav__link">
+      <a href="../../usage-overview/" class="md-nav__link">
         
   
   
@@ -472,7 +472,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../cluster/" class="md-nav__link">
+      <a href="../../cluster/" class="md-nav__link">
         
   
   
@@ -495,7 +495,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../join-nodes/" class="md-nav__link">
+      <a href="../../join-nodes/" class="md-nav__link">
         
   
   
@@ -518,7 +518,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -541,7 +541,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../etcd/" class="md-nav__link">
+      <a href="../../etcd/" class="md-nav__link">
         
   
   
@@ -564,7 +564,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../ha/" class="md-nav__link">
+      <a href="../../ha/" class="md-nav__link">
         
   
   
@@ -587,7 +587,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../nats/" class="md-nav__link">
+      <a href="../../nats/" class="md-nav__link">
         
   
   
@@ -610,7 +610,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../hcp-autoscaling/" class="md-nav__link">
+      <a href="../../hcp-autoscaling/" class="md-nav__link">
         
   
   
@@ -679,7 +679,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../cluster-api/" class="md-nav__link">
+      <a href="../../cluster-api/" class="md-nav__link">
         
   
   
@@ -702,7 +702,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-controlplane/" class="md-nav__link">
+      <a href="../../capi-controlplane/" class="md-nav__link">
         
   
   
@@ -725,7 +725,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-controlplane-bootstrap/" class="md-nav__link">
+      <a href="../../capi-controlplane-bootstrap/" class="md-nav__link">
         
   
   
@@ -748,7 +748,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-bootstrap/" class="md-nav__link">
+      <a href="../../capi-bootstrap/" class="md-nav__link">
         
   
   
@@ -771,7 +771,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-remote/" class="md-nav__link">
+      <a href="../../capi-remote/" class="md-nav__link">
         
   
   
@@ -794,7 +794,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../windows-workers/" class="md-nav__link">
+      <a href="../../windows-workers/" class="md-nav__link">
         
   
   
@@ -817,7 +817,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../ingress-support/" class="md-nav__link">
+      <a href="../../ingress-support/" class="md-nav__link">
         
   
   
@@ -840,7 +840,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../ignition-support/" class="md-nav__link">
+      <a href="../../ignition-support/" class="md-nav__link">
         
   
   
@@ -863,7 +863,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-clusterclass/" class="md-nav__link">
+      <a href="../../capi-clusterclass/" class="md-nav__link">
         
   
   
@@ -886,7 +886,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-machine-health-checks/" class="md-nav__link">
+      <a href="../../capi-machine-health-checks/" class="md-nav__link">
         
   
   
@@ -909,7 +909,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../generated-resources/" class="md-nav__link">
+      <a href="../../generated-resources/" class="md-nav__link">
         
   
   
@@ -970,7 +970,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-examples/" class="md-nav__link">
+      <a href="../../capi-examples/" class="md-nav__link">
         
   
   
@@ -993,7 +993,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-adoption/" class="md-nav__link">
+      <a href="../../capi-adoption/" class="md-nav__link">
         
   
   
@@ -1016,7 +1016,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-aws/" class="md-nav__link">
+      <a href="../../capi-aws/" class="md-nav__link">
         
   
   
@@ -1039,7 +1039,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-aws-vm/" class="md-nav__link">
+      <a href="../../capi-aws-vm/" class="md-nav__link">
         
   
   
@@ -1062,7 +1062,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-hetzner/" class="md-nav__link">
+      <a href="../../capi-hetzner/" class="md-nav__link">
         
   
   
@@ -1085,7 +1085,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-openstack/" class="md-nav__link">
+      <a href="../../capi-openstack/" class="md-nav__link">
         
   
   
@@ -1108,7 +1108,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-docker/" class="md-nav__link">
+      <a href="../../capi-docker/" class="md-nav__link">
         
   
   
@@ -1131,7 +1131,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-kubevirt/" class="md-nav__link">
+      <a href="../../capi-kubevirt/" class="md-nav__link">
         
   
   
@@ -1154,7 +1154,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-vsphere/" class="md-nav__link">
+      <a href="../../capi-vsphere/" class="md-nav__link">
         
   
   
@@ -1177,7 +1177,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-remotemachine-teleport/" class="md-nav__link">
+      <a href="../../capi-remotemachine-teleport/" class="md-nav__link">
         
   
   
@@ -1200,7 +1200,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-remotemachine-okta-asa/" class="md-nav__link">
+      <a href="../../capi-remotemachine-okta-asa/" class="md-nav__link">
         
   
   
@@ -1223,7 +1223,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-remotemachine-windows/" class="md-nav__link">
+      <a href="../../capi-remotemachine-windows/" class="md-nav__link">
         
   
   
@@ -1246,7 +1246,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-use-oci-registry/" class="md-nav__link">
+      <a href="../../capi-use-oci-registry/" class="md-nav__link">
         
   
   
@@ -1269,7 +1269,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../capi-examples/cilium-kube-proxy-replacement/" class="md-nav__link">
+      <a href="../../capi-examples/cilium-kube-proxy-replacement/" class="md-nav__link">
         
   
   
@@ -1346,7 +1346,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../advanced/components/" class="md-nav__link">
+      <a href="../../advanced/components/" class="md-nav__link">
         
   
   
@@ -1369,7 +1369,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../advanced/cloud-init/" class="md-nav__link">
+      <a href="../../advanced/cloud-init/" class="md-nav__link">
         
   
   
@@ -1400,7 +1400,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../monitoring/" class="md-nav__link">
+      <a href="../../monitoring/" class="md-nav__link">
         
   
   
@@ -1427,18 +1427,20 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
@@ -1454,7 +1456,7 @@ You are not currently viewing the documentation for the current stable release o
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Update
@@ -1468,7 +1470,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../update/update-standalone/" class="md-nav__link">
+      <a href="../update-standalone/" class="md-nav__link">
         
   
   
@@ -1491,7 +1493,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../update/update-cluster-pod/" class="md-nav__link">
+      <a href="../update-cluster-pod/" class="md-nav__link">
         
   
   
@@ -1514,7 +1516,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../update/update-capi-cluster/" class="md-nav__link">
+      <a href="../update-capi-cluster/" class="md-nav__link">
         
   
   
@@ -1534,10 +1536,32 @@ You are not currently viewing the documentation for the current stable release o
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../update/update-capi-cluster-workers/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Cluster API (VMs) - workers
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1548,6 +1572,53 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-worker-node-coverage-differs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why worker node coverage differs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updating-workers-with-the-cluster-api-in-place-updates-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updating workers with the Cluster API in-place updates extension
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updating-workers-manually-with-k0s-autopilot-standalone" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updating workers manually with k0s autopilot (standalone)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1560,7 +1631,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../update/hcp-autopilot/" class="md-nav__link">
+      <a href="../hcp-autopilot/" class="md-nav__link">
         
   
   
@@ -1590,7 +1661,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../update/migrate-v1beta2-api/" class="md-nav__link">
+      <a href="../migrate-v1beta2-api/" class="md-nav__link">
         
   
   
@@ -1612,7 +1683,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../benchmarks/" class="md-nav__link">
+      <a href="../../benchmarks/" class="md-nav__link">
         
   
   
@@ -1634,7 +1705,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../faq/" class="md-nav__link">
+      <a href="../../faq/" class="md-nav__link">
         
   
   
@@ -1653,32 +1724,10 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Troubleshooting
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1689,86 +1738,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#new-hosted-control-plane-pods-are-in-crashloopbackoff" class="md-nav__link">
-    <span class="md-ellipsis">
-      New hosted control plane pods are in CrashLoopBackOff
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#worker-nodes-cannot-be-joined" class="md-nav__link">
-    <span class="md-ellipsis">
-      Worker nodes cannot be joined
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cloud-controller-manager-fails-to-start-with-cloud-providerexternal-when-using-ingress-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      Cloud Controller Manager fails to start with --cloud-provider=external when using Ingress support
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Cloud Controller Manager fails to start with --cloud-provider=external when using Ingress support">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#root-cause" class="md-nav__link">
-    <span class="md-ellipsis">
-      Root cause
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#solution" class="md-nav__link">
-    <span class="md-ellipsis">
-      Solution
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#machinedeployment-with-docker-provider-does-not-function" class="md-nav__link">
-    <span class="md-ellipsis">
-      MachineDeployment with Docker Provider does not function
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1780,7 +1749,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../commercial-support/" class="md-nav__link">
+      <a href="../../commercial-support/" class="md-nav__link">
         
   
   
@@ -1840,7 +1809,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contributing/contribute-overview/" class="md-nav__link">
+      <a href="../../contributing/contribute-overview/" class="md-nav__link">
         
   
   
@@ -1863,7 +1832,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contributing/dev-environment/" class="md-nav__link">
+      <a href="../../contributing/dev-environment/" class="md-nav__link">
         
   
   
@@ -1886,7 +1855,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contributing/contribute-workflow/" class="md-nav__link">
+      <a href="../../contributing/contribute-workflow/" class="md-nav__link">
         
   
   
@@ -1909,7 +1878,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contributing/contribute-testing/" class="md-nav__link">
+      <a href="../../contributing/contribute-testing/" class="md-nav__link">
         
   
   
@@ -1932,7 +1901,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../contributing/release-process/" class="md-nav__link">
+      <a href="../../contributing/release-process/" class="md-nav__link">
         
   
   
@@ -1962,7 +1931,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../known-limitations/" class="md-nav__link">
+      <a href="../../known-limitations/" class="md-nav__link">
         
   
   
@@ -2060,7 +2029,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../resource-reference/bootstrap.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
+      <a href="../../resource-reference/bootstrap.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
         
   
   
@@ -2083,7 +2052,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../../resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -2106,7 +2075,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
+      <a href="../../resource-reference/controlplane.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
         
   
   
@@ -2129,7 +2098,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../../resource-reference/controlplane.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -2152,7 +2121,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
+      <a href="../../resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -2175,7 +2144,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../resource-reference/infrastructure.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
+      <a href="../../resource-reference/infrastructure.cluster.x-k8s.io-v1beta2/" class="md-nav__link">
         
   
   
@@ -2198,7 +2167,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../resource-reference/k0smotron.io-v1beta2/" class="md-nav__link">
+      <a href="../../resource-reference/k0smotron.io-v1beta2/" class="md-nav__link">
         
   
   
@@ -2221,7 +2190,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
+      <a href="../../resource-reference/k0smotron.io-v1beta1/" class="md-nav__link">
         
   
   
@@ -2252,7 +2221,7 @@ You are not currently viewing the documentation for the current stable release o
   
   
     <li class="md-nav__item">
-      <a href="../terminology/" class="md-nav__link">
+      <a href="../../terminology/" class="md-nav__link">
         
   
   
@@ -2302,60 +2271,27 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#new-hosted-control-plane-pods-are-in-crashloopbackoff" class="md-nav__link">
+  <a href="#why-worker-node-coverage-differs" class="md-nav__link">
     <span class="md-ellipsis">
-      New hosted control plane pods are in CrashLoopBackOff
+      Why worker node coverage differs
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#worker-nodes-cannot-be-joined" class="md-nav__link">
+  <a href="#updating-workers-with-the-cluster-api-in-place-updates-extension" class="md-nav__link">
     <span class="md-ellipsis">
-      Worker nodes cannot be joined
+      Updating workers with the Cluster API in-place updates extension
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#cloud-controller-manager-fails-to-start-with-cloud-providerexternal-when-using-ingress-support" class="md-nav__link">
+  <a href="#updating-workers-manually-with-k0s-autopilot-standalone" class="md-nav__link">
     <span class="md-ellipsis">
-      Cloud Controller Manager fails to start with --cloud-provider=external when using Ingress support
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Cloud Controller Manager fails to start with --cloud-provider=external when using Ingress support">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#root-cause" class="md-nav__link">
-    <span class="md-ellipsis">
-      Root cause
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#solution" class="md-nav__link">
-    <span class="md-ellipsis">
-      Solution
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#machinedeployment-with-docker-provider-does-not-function" class="md-nav__link">
-    <span class="md-ellipsis">
-      MachineDeployment with Docker Provider does not function
+      Updating workers manually with k0s autopilot (standalone)
     </span>
   </a>
   
@@ -2377,83 +2313,118 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h1>
-<h2 id="new-hosted-control-plane-pods-are-in-crashloopbackoff">New hosted control plane pods are in CrashLoopBackOff<a class="headerlink" href="#new-hosted-control-plane-pods-are-in-crashloopbackoff" title="Permanent link">#</a></h2>
-<p>k0s uses inotify to watch for changes in manifest files. If the inotify limits are too low on the nodes of a management cluster, 
-the control plane pods may crash since they cannot set up the cluster configuration. 
-To increase the limit run the following command on your control plane node:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>sysctl<span class="w"> </span>-w<span class="w"> </span>fs.inotify.max_user_watches<span class="o">=</span><span class="m">524288</span>
-$<span class="w"> </span>sysctl<span class="w"> </span>-w<span class="w"> </span>fs.inotify.max_user_instances<span class="o">=</span><span class="m">512</span>
+<h1 id="update-worker-nodes-in-cluster-api-clusters-vms">Update worker nodes in Cluster API clusters (VMs)<a class="headerlink" href="#update-worker-nodes-in-cluster-api-clusters-vms" title="Permanent link">#</a></h1>
+<p>This page explains how k0s gets updated in-place on worker machines of a Cluster API–managed cluster running on VMs, and why coverage depends on which of the two <a href="../update-capi-cluster/#use-inplace-strategy"><code>InPlace</code> mechanisms</a> is active in your management cluster.</p>
+<p>Just like for control plane nodes, both mechanisms described below only update <strong>the k0s version</strong> running on a worker node, they don't touch its configuration or machine template. Changes to those still go through Cluster API's regular machine-replacement lifecycle.</p>
+<h2 id="why-worker-node-coverage-differs">Why worker node coverage differs<a class="headerlink" href="#why-worker-node-coverage-differs" title="Permanent link">#</a></h2>
+<p>For control plane nodes, k0smotron always ends up creating an autopilot <code>Plan</code>, either through its own <code>K0sControlPlane</code> controller (standalone) or through the <a href="../update-capi-cluster/#cluster-api-in-place-updates-experimental">Cluster API in-place updates extension</a>. There is no equivalent k0smotron controller that watches worker <code>Machine</code>/<code>MachineDeployment</code> objects, so worker coverage depends entirely on which path is active:</p>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Worker nodes covered?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Standalone (k0s autopilot driven by <code>K0sControlPlane</code>)</td>
+<td>No. You must create the autopilot <code>Plan</code> yourself.</td>
+</tr>
+<tr>
+<td>Cluster API in-place updates extension</td>
+<td>Yes, automatically. The same webhook server that handles control plane machines also receives the hook calls Cluster API sends for machines owned by a <code>MachineDeployment</code>/<code>MachineSet</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="updating-workers-with-the-cluster-api-in-place-updates-extension">Updating workers with the Cluster API in-place updates extension<a class="headerlink" href="#updating-workers-with-the-cluster-api-in-place-updates-extension" title="Permanent link">#</a></h2>
+<p>This requires the same prerequisites as for control plane nodes. See <a href="../update-capi-cluster/#cluster-api-in-place-updates-experimental">Cluster API in-place updates</a>.</p>
+<p>Once the extension is active, bump <code>spec.template.spec.version</code> on the <code>MachineDeployment</code> (and the referenced <code>K0sWorkerConfigTemplate</code>, if you keep the two in sync) to the target k0s version. Cluster API calls into the extension for each affected <code>Machine</code>, and the extension creates and monitors the autopilot <code>Plan</code> on your behalf, no manual <code>Plan</code> needed.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Set <code>spec.rollout.strategy.rollingUpdate.maxUnavailable</code> to <code>1</code> on the <code>MachineDeployment</code> (it cannot be <code>0</code>) for in-place updates to work correctly.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineDeployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-md</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
+<span class="w">      </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
+<span class="w">  </span><span class="nt">rollout</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">strategy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">rollingUpdate</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">maxSurge</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">maxUnavailable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"> </span><span class="c1"># required for in-place updates, cannot be 0</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RollingUpdate</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
+<span class="w">        </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.3+k0s.0</span><span class="w"> </span><span class="c1"># updated version</span>
+<span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
+<span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">configRef</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io</span>
+<span class="w">          </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-wct</span>
+<span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io</span>
+<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DevMachineTemplate</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-worker-dmt</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sWorkerConfigTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-wct</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.3+k0s.0</span><span class="w"> </span><span class="c1"># updated version</span>
 </code></pre></div>
-<h2 id="worker-nodes-cannot-be-joined">Worker nodes cannot be joined<a class="headerlink" href="#worker-nodes-cannot-be-joined" title="Permanent link">#</a></h2>
-<p>If you are using k0smotron in standalone mode, check whether the join
-token has expired. If this is the case, attempt to create a new one using
-<a href="https://docs.k0smotron.io/stable/join-nodes/#join-tokens">JoinTokenRequest</a>.</p>
-<p>If you are using k0smotron as a Cluster API provider, use the following
-procedure to check the logs of your infrastructure provider controller:</p>
-<ol>
-<li>
-<p>Decode the token:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;&lt;token&gt;&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>gunzip
+<p>Applying this change is enough to trigger the rollout; you can monitor it the same way as <a href="../update-capi-cluster/#monitoring-upgrade-status">control plane upgrades</a>, by inspecting the autopilot <code>Plan</code> in the workload cluster:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>--kubeconfig<span class="w"> </span>&lt;workload-cluster-kubeconfig&gt;<span class="w"> </span>get<span class="w"> </span>plan<span class="w"> </span>autopilot<span class="w"> </span>-o<span class="w"> </span>yaml
 </code></pre></div>
-</li>
-<li>
-<p>Take note of the <code>users.user.token</code> field. For purposes of example, the
-   field will be <code>gb823t.b8ftcytc4ktmvkjz</code>.</p>
-</li>
-<li>
-<p>Run the following command, using the KUBECONFIG of the child cluster, which
-   is the first part of the <code>users.user.token</code> field:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>bootstrap-token-gb823t<span class="w"> </span>--template<span class="o">=</span><span class="s1">&#39;{{.data.expiration}}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d
-<span class="m">2024</span>-03-14T11:08:13Z
+<h2 id="updating-workers-manually-with-k0s-autopilot-standalone">Updating workers manually with k0s autopilot (standalone)<a class="headerlink" href="#updating-workers-manually-with-k0s-autopilot-standalone" title="Permanent link">#</a></h2>
+<p>When the Cluster API in-place updates extension isn't installed, or its requirements aren't met, k0smotron has no controller that manages worker updates. Bumping the version on a <code>MachineDeployment</code> in this mode follows Cluster API's default machine lifecycle instead (replacing machines), not an in-place update.</p>
+<p>To update k0s in-place on worker nodes without replacing the underlying machines, create the autopilot <code>Plan</code> yourself directly in the workload cluster, targeting the worker nodes by name:</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>A manually created <code>Plan</code> only updates k0s on the target nodes — it does not touch the corresponding <code>Machine</code>/<code>MachineDeployment</code> objects. So even though Cluster API's view (<code>Machine.spec.version</code>/<code>status</code>) will keep showing the old version, the node itself is actually running the version applied by the <code>Plan</code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The node name used in <code>discovery.static.nodes</code> must match the <code>Machine</code> name, so make sure <code>AUTOPILOT_HOSTNAME</code> is set as described in <a href="../../capi-adoption/">Bring your own machines with Cluster API</a>.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autopilot.k0sproject.io/v1beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Plan</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autopilot</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">id123</span><span class="w"> </span><span class="c1"># Unique ID for the plan</span>
+<span class="w">  </span><span class="nt">timestamp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">now</span>
+<span class="w">  </span><span class="nt">commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">k0supdate</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.3+k0s.0</span><span class="w"> </span><span class="c1"># Target k0s version</span>
+<span class="w">      </span><span class="nt">platforms</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">linux-amd64</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://get.k0sproject.io/v1.31.3+k0s.0/k0s-v1.31.3+k0s.0-amd64</span>
+<span class="w">        </span><span class="nt">linux-arm64</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://get.k0sproject.io/v1.31.3+k0s.0/k0s-v1.31.3+k0s.0-arm64</span>
+<span class="w">      </span><span class="nt">targets</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">workers</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">discovery</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">static</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">nodes</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-md-0</span><span class="w"> </span><span class="c1"># Machine name of the worker node to update</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test-md-1</span>
 </code></pre></div>
-</li>
-</ol>
-<p>Furthermore, check whether different Kubernetes minor versions were used in the
-initial cluster creation for the control plane and the worker nodes, as k0s
-requires that the controllers and workers were created using the same minor
-version. For more information, refer to the Kubernetes <a href="https://kubernetes.io/releases/version-skew-policy/">Version Skew
-Policy</a>.</p>
-<h2 id="cloud-controller-manager-fails-to-start-with-cloud-providerexternal-when-using-ingress-support">Cloud Controller Manager fails to start with <code>--cloud-provider=external</code> when using Ingress support<a class="headerlink" href="#cloud-controller-manager-fails-to-start-with-cloud-providerexternal-when-using-ingress-support" title="Permanent link">#</a></h2>
-<p>When using <a href="../ingress-support/">Ingress support</a> together with an external
-Cloud Controller Manager (CCM), CCM pods may fail to start with an error like:
-<div class="highlight"><pre><span></span><code>unable to load configmap based request-header-client-ca-file: Get
-&quot;https://10.96.0.1:443/...&quot;: dial tcp 10.96.0.1:443: connect: connection refused
-</code></pre></div></p>
-<h3 id="root-cause">Root cause<a class="headerlink" href="#root-cause" title="Permanent link">#</a></h3>
-<p>The ingress support architecture relies on a local HAProxy sidecar running on
-each worker node to proxy pod-to-API traffic to the ingress controller. As part
-of this, k0smotron reconfigures the <code>kubernetes.default</code> Service in the child cluster to
-point to the HAProxy sidecar.</p>
-<p>With <code>--cloud-provider=external</code>, CCM (and not kubelet) is responsible for reporting the worker
-node's external addresses back to the cluster. Until CCM does this, k0smotron
-cannot fully configure the HAProxy sidecar, so the <code>kubernetes</code> Service is not
-yet reachable. Meanwhile, CCM itself may use in-cluster config to reach the API
-server — which reads <code>KUBERNETES_SERVICE_HOST</code> and <code>KUBERNETES_SERVICE_PORT</code>
-env vars injected by kubelet, pointing at the <code>kubernetes</code> Service ClusterIP
-(<code>10.96.0.1</code> by default). The result is a deadlock:</p>
-<ul>
-<li>CCM cannot reach the API server because the HAProxy sidecar is not yet configured</li>
-<li>The HAProxy sidecar is not configured because CCM has not yet reported node addresses</li>
-</ul>
-<h3 id="solution">Solution<a class="headerlink" href="#solution" title="Permanent link">#</a></h3>
-<p>Override the in-cluster config by explicitly setting <code>KUBERNETES_SERVICE_HOST</code>
-and <code>KUBERNETES_SERVICE_PORT</code> in the CCM pod spec, pointing directly to the
-ingress hostname:
-<div class="highlight"><pre><span></span><code><span class="nt">env</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KUBERNETES_SERVICE_HOST</span>
-<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-cluster-api.example.com&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KUBERNETES_SERVICE_PORT</span>
-<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;443&quot;</span>
-</code></pre></div></p>
-<p>Another option is to set <code>--kubeconfig</code> flag in the CCM deployment to point to a kubeconfig file that uses the API hostname.</p>
-<p>This makes the CCM pod to use the API hostname directly for InCluster config instead of default <code>kubernetes</code> Service address.</p>
-<h2 id="machinedeployment-with-docker-provider-does-not-function">MachineDeployment with Docker Provider does not function<a class="headerlink" href="#machinedeployment-with-docker-provider-does-not-function" title="Permanent link">#</a></h2>
-<p>Docker Provider uses the version field to determine the docker image version
-for the worker nodes. If you are using k0smotron as a Cluster API
-provider, check whether the MachineDeployment <code>spec.template.spec.version</code>
-field is present. If it is present, check that the version is supported by your
-infrastructure provider.</p>
+<p>See <a href="https://docs.k0sproject.io/stable/autopilot/#configuration">k0s autopilot configuration</a> for other discovery options, such as targeting nodes by label with a <code>selector</code>.</p>
 
 
 
@@ -2522,10 +2493,10 @@ infrastructure provider.</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["toc.autohide", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
     
   </body>

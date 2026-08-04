@@ -1519,7 +1519,30 @@ You are not currently viewing the documentation for the current stable release o
   
   
   <span class="md-ellipsis">
-    Cluster API (VMs)
+    Cluster API (VMs) - control plane
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../update/update-capi-cluster-workers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Cluster API (VMs) - workers
     
   </span>
   
@@ -1887,9 +1910,9 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#controlplane-vm-updates" class="md-nav__link">
+  <a href="#worker-vm-in-place-updates-require-the-cluster-api-in-place-updates-extension" class="md-nav__link">
     <span class="md-ellipsis">
-      Controlplane VM updates
+      Worker VM in-place updates require the Cluster API in-place updates extension
     </span>
   </a>
   
@@ -2237,9 +2260,9 @@ You are not currently viewing the documentation for the current stable release o
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#controlplane-vm-updates" class="md-nav__link">
+  <a href="#worker-vm-in-place-updates-require-the-cluster-api-in-place-updates-extension" class="md-nav__link">
     <span class="md-ellipsis">
-      Controlplane VM updates
+      Worker VM in-place updates require the Cluster API in-place updates extension
     </span>
   </a>
   
@@ -2272,10 +2295,9 @@ You are not currently viewing the documentation for the current stable release o
 
 <h1 id="known-limitations">Known Limitations<a class="headerlink" href="#known-limitations" title="Permanent link">#</a></h1>
 <p>This pages lists the known limitations we have in k0smotron.</p>
-<h2 id="controlplane-vm-updates">Controlplane VM updates<a class="headerlink" href="#controlplane-vm-updates" title="Permanent link">#</a></h2>
-<p>When running CAPI managed controlplane in VMs, k0smotron currently supports only <code>InPlace</code> upgrade strategy. This means that k0smotron will actually trigger k0s <a href="https://docs.k0sproject.io/stable/autopilot/">autopilot</a> to update the control plane nodes.</p>
-<p>The reason behind is that the "traditional" CAPI way of re-creating the machines involves etcd cluster tweaking, namely removing and adding peers. This is unfortunately not possible with k0s from external toolin, k0smotron in this case, as k0s configures etcd so that it cannot be accessed externally from the nodes.</p>
-<p>We are working on an approach to allow also <code>ReCreate</code> strategy, to comply with traditional CAPI way and to match with other providers.</p>
+<h2 id="worker-vm-in-place-updates-require-the-cluster-api-in-place-updates-extension">Worker VM in-place updates require the Cluster API in-place updates extension<a class="headerlink" href="#worker-vm-in-place-updates-require-the-cluster-api-in-place-updates-extension" title="Permanent link">#</a></h2>
+<p>When running CAPI managed clusters on VMs, k0smotron can update control plane nodes in-place (via k0s <a href="https://docs.k0sproject.io/stable/autopilot/">autopilot</a>) without any extra components. Worker nodes, however, can only be updated in-place automatically when the <a href="../update/update-capi-cluster/#cluster-api-in-place-updates-experimental">Cluster API in-place updates extension</a> is installed and active. Without it, updating a <code>MachineDeployment</code>'s version follows Cluster API's default machine-replacement lifecycle instead, and an in-place update of workers requires manually creating the autopilot <code>Plan</code>.</p>
+<p>See <a href="../update/update-capi-cluster-workers/">Update worker nodes in Cluster API clusters (VMs)</a> for details.</p>
 <h2 id="infrastructure-controlplane-lbs-need-extra-ports">Infrastructure Controlplane LBs need extra ports<a class="headerlink" href="#infrastructure-controlplane-lbs-need-extra-ports" title="Permanent link">#</a></h2>
 <p>k0s uses 3 ports on controllers: 6443 for Kubernetes API, 8132 for konnectivity and 9443 for k0s internal join API. With CAPI all these three ports needs to be enabled on the control plane LBs. Most of the infrastructure providers support adding extra ports.
 For example with AWS provider you'd need to specify these ports in <a href="https://cluster-api-aws.sigs.k8s.io/crd/#infrastructure.cluster.x-k8s.io/v1beta2.AdditionalListenerSpec"><code>AWSCluster.spec.controlPlaneLoadBalancer.additionalListeners</code></a>.</p>
