@@ -321,7 +321,7 @@ const (
 	// This is needed because k0s images are tagged with -k0s.X suffix.
 	DefaultK0SSuffix = "k0s.0"
 	// DefaultEtcdImage is the default etcd image used by k0smotron if no image is specified in the ClusterSpec.
-	DefaultEtcdImage = "quay.io/k0sproject/etcd:v3.5.13"
+	DefaultEtcdImage = "quay.io/k0sproject/etcd:v3.7.1"
 )
 
 // GetImage returns the full image name with tag for the k0s image to be deployed,
@@ -605,7 +605,7 @@ type StorageSpec struct {
 	//+kubebuilder:validation:Optional
 	Kine KineSpec `json:"kine,omitempty"`
 	// Etcd defines the etcd storage configuration.
-	//+kubebuilder:default={"image":"quay.io/k0sproject/etcd:v3.5.13","persistence":{}}
+	//+kubebuilder:default={"image":"quay.io/k0sproject/etcd:v3.7.1","persistence":{}}
 	Etcd EtcdSpec `json:"etcd,omitempty"`
 	// NATS defines the embedded NATS JetStream storage configuration.
 	// Used when Type is set to nats.
@@ -616,7 +616,7 @@ type StorageSpec struct {
 // EtcdSpec defines the etcd configuration for the k0s control plane.
 type EtcdSpec struct {
 	// Image defines the etcd image to be deployed.
-	//+kubebuilder:default="quay.io/k0sproject/etcd:v3.5.13"
+	//+kubebuilder:default="quay.io/k0sproject/etcd:v3.7.1"
 	Image string `json:"image"`
 	// Args defines the etcd arguments.
 	//+kubebuilder:validation:Optional
