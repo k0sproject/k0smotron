@@ -21,3 +21,4 @@ spec:
             - "--diagnostics-address=:8080"
             - "--leader-elect"
             - "--enable-controller=control-plane"
+            - --feature-gates=${K0SMOTRON_FEATURE_GATES:=""}

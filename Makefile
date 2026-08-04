@@ -177,7 +177,7 @@ generate-e2e-templates-main: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-inplace --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-inplace.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-recreate --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-recreate.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-recreatedeletefirst --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-recreatedeletefirst.yaml
-
+	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-inplacecapi --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-inplacecapi.yaml
 
 AWS_TEMPLATES := e2e/data/infrastructure-aws
 
@@ -275,6 +275,12 @@ release-standalone: manifests-standalone kustomize ## Generate install yaml for 
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/standalone > install-standalone.yaml
 	git checkout config/manager/kustomization.yaml
+
+.PHONY: release-extension-webhook
+release-extension-webhook: docker-build kustomize
+	cd extensions/config/webhook && $(KUSTOMIZE) edit set image extension-webhook=${IMG}
+	$(KUSTOMIZE) build extensions/config/default > install-extension-webhook.yaml
+	git checkout extensions/config/webhook/kustomization.yaml
 
 bootstrap-components.yaml: $(CONTROLLER_GEN) manifests-bootstrap kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}

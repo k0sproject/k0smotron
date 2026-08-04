@@ -1,0 +1,12 @@
+apiVersion: runtime.cluster.x-k8s.io/v1beta2
+kind: ExtensionConfig
+metadata:
+  annotations:
+    runtime.cluster.x-k8s.io/inject-ca-from-secret: k0smotron/extension-webhook-server-cert
+  name: inplace-version-update-extensionconfig
+spec:
+  clientConfig:
+    service:
+      name: extension-webhook-service
+      namespace: k0smotron
+      port: 443

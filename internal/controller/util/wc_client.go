@@ -44,7 +44,9 @@ var (
 	ErrNotReady = fmt.Errorf("waiting for the state")
 )
 
-// GetWorkloadClusterClientset returns a Kubernetes clientset for the given cluster.
+// GetWorkloadClusterClientset returns a Kubernetes clientset for the given cluster. cache may be nil for callers that
+// don't run inside a controller-runtime Manager (e.g. the in-place version update runtime extension webhook server),
+// in which case the rest.Config is built directly from the workload cluster's kubeconfig secret instead of the cache.
 func GetWorkloadClusterClientset(ctx context.Context, hubClient client.Client, cache clustercache.ClusterCache, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
 
 	k0sControlPlane, err := FindK0sControlPlane(ctx, hubClient, cluster)
@@ -121,6 +123,21 @@ func getRESTConfig(ctx context.Context, hubClient client.Client, cache clusterca
 	logger := log.FromContext(ctx)
 
 	if !isTunneledRestConfigPossible(kcp) {
+		if cache == nil {
+			// No ClusterCache available: build the rest.Config directly from the workload cluster's regular kubeconfig secret.
+			restConfig, err := fromKubeconfigSecretToRestConfig(ctx, hubClient, client.ObjectKey{
+				Namespace: cluster.Namespace,
+				Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+			})
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					return nil, fmt.Errorf("%w: %v", ErrNotReady, err)
+				}
+				return nil, fmt.Errorf("error getting rest config for cluster %s: %w", cluster.Name, err)
+			}
+			return restConfig, nil
+		}
+
 		restConfig, err := cache.GetRESTConfig(ctx, cluster)
 		if err != nil {
 			if errors.Is(err, clustercache.ErrClusterNotConnected) {

@@ -37,9 +37,10 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 
 	if !skipCleanup {
 		err := deleteClusterAndWait(ctx, capiframework.DeleteClusterAndWaitInput{
-			ClusterProxy:   clusterProxy,
-			Cluster:        cluster,
-			ArtifactFolder: artifactFolder,
+			ClusterProxy:         clusterProxy,
+			Cluster:              cluster,
+			ArtifactFolder:       artifactFolder,
+			ClusterctlConfigPath: clusterctlConfigPath,
 		}, interval)
 		if err != nil {
 			fmt.Println(err.Error())

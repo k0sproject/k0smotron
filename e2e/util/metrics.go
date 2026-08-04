@@ -85,7 +85,9 @@ func (p PodReconcileCounters) Diff(prev PodReconcileCounters) ReconcileCounters 
 // the manager container exposes its metrics endpoint over plain HTTP without auth. This
 // is for e2e only — production manifests keep auth+TLS. Waits for rollout.
 func EnableInsecureMetricsForNamespace(ctx context.Context, cs kubernetes.Interface, namespace string) error {
-	deps, err := cs.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
+	deps, err := cs.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app!=extension-webhook",
+	})
 	if err != nil {
 		return fmt.Errorf("list deployments in %s: %w", namespace, err)
 	}
@@ -274,7 +276,9 @@ func NewReconcileStormGuardForDeployments(ctx context.Context, cs kubernetes.Int
 // found in the given namespace. Intended for the k0smotron-controller namespace where the
 // only deployments are k0smotron's own controllers.
 func NewReconcileStormGuardForNamespace(ctx context.Context, cs kubernetes.Interface, namespace string) (*ReconcileStormGuard, error) {
-	deps, err := cs.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
+	deps, err := cs.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app!=extension-webhook",
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list deployments in %s: %w", namespace, err)
 	}

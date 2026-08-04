@@ -27,6 +27,7 @@ import (
 
 	"github.com/k0sproject/k0smotron/v2/e2e/util"
 	"github.com/stretchr/testify/require"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	capiutil "sigs.k8s.io/cluster-api/util"
@@ -50,7 +51,7 @@ func TestWorkloadClusterUpgrade(t *testing.T) {
 func workloadClusterUpgradeSpec(t *testing.T) {
 	testName := "workload-inplace-upgrade"
 
-	require.NotEmpty(t, flavor, "a flavor between InPlace, Recreate or RecreateDeleteFirst needs to be specified for this test")
+	require.NotEmpty(t, flavor, "a flavor between InPlace, InPlaceCAPI, Recreate or RecreateDeleteFirst needs to be specified for this test")
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 	namespace, _ := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
@@ -108,9 +109,21 @@ func workloadClusterUpgradeSpec(t *testing.T) {
 	require.NoError(t, err)
 
 	// For Inplace upgrades we need to wait for the controlplane to have all the replicas ready before upgrading it again.
-	if flavor == "InPlace" {
+	if strings.HasPrefix(strings.ToLower(flavor), "inplace") {
 		err = util.WaitForControlPlaneToBeReady(ctx, bootstrapClusterProxy.GetClient(), controlPlane, util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
 		require.NoError(t, err)
+	}
+
+	var md *clusterv1.MachineDeployment
+	if flavor == "InPlaceCAPI" {
+		// Only the InPlaceCAPI flavor supports worker nodes updates.
+		md, err = util.DiscoveryAndWaitForMachineDeploymentReady(ctx, capiframework.DiscoveryAndWaitForMachineDeploymentsInput{
+			Lister:  bootstrapClusterProxy.GetClient(),
+			Cluster: cluster,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, md)
+
 	}
 
 	fmt.Println("Upgrading the Kubernetes control-plane version")
@@ -124,6 +137,19 @@ func workloadClusterUpgradeSpec(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	if flavor == "InPlaceCAPI" {
+		// Only the InPlaceCAPI flavor supports worker nodes updates.
+		fmt.Println("Upgrading the Kubernetes worker version")
+		err = util.UpgradeMachineDeploymentAndWaitForReadyUpgrade(ctx, util.UpgradeMachineDeploymentAndWaitForReadyUpgradeInput{
+			ClusterProxy:                            bootstrapClusterProxy,
+			Cluster:                                 cluster,
+			MachineDeployment:                       md,
+			KubernetesUpgradeVersion:                e2eConfig.MustGetVariable(KubernetesVersionFirstUpgradeTo),
+			WaitForMachineDeploymentUpgradeInterval: util.GetInterval(e2eConfig, testName, "wait-md-upgrade"),
+		})
+		require.NoError(t, err)
+	}
+
 	fmt.Println("Upgrading the Kubernetes control-plane version again")
 	err = util.UpgradeControlPlaneAndWaitForReadyUpgrade(ctx, util.UpgradeControlPlaneAndWaitForUpgradeInput{
 		ClusterProxy:                     bootstrapClusterProxy,
@@ -134,4 +160,17 @@ func workloadClusterUpgradeSpec(t *testing.T) {
 		WaitForControlPlaneReadyInterval: util.GetInterval(e2eConfig, testName, "wait-control-plane"),
 	})
 	require.NoError(t, err)
+
+	if flavor == "InPlaceCAPI" {
+		// Only the InPlaceCAPI flavor supports worker nodes updates.
+		fmt.Println("Upgrading the Kubernetes worker version again")
+		err = util.UpgradeMachineDeploymentAndWaitForReadyUpgrade(ctx, util.UpgradeMachineDeploymentAndWaitForReadyUpgradeInput{
+			ClusterProxy:                            bootstrapClusterProxy,
+			Cluster:                                 cluster,
+			MachineDeployment:                       md,
+			KubernetesUpgradeVersion:                e2eConfig.MustGetVariable(KubernetesVersionSecondUpgradeTo),
+			WaitForMachineDeploymentUpgradeInterval: util.GetInterval(e2eConfig, testName, "wait-md-upgrade"),
+		})
+		require.NoError(t, err)
+	}
 }

@@ -1,0 +1,41 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extension-webhook
+  namespace: k0smotron
+spec:
+  selector:
+    matchLabels:
+      app: extension-webhook
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: extension-webhook
+    spec:
+      containers:
+        - command:
+            - /extension-webhook-server
+          image: extension-webhook
+          name: extension-webhook-server
+          ports:
+            - containerPort: 9443
+              name: server
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsUser: 65532
+            runAsGroup: 65532
+          terminationMessagePolicy: FallbackToLogsOnError
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: extension-webhook
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

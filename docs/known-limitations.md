@@ -2,13 +2,11 @@
 
 This pages lists the known limitations we have in k0smotron.
 
-## Controlplane VM updates
+## Worker VM in-place updates require the Cluster API in-place updates extension
 
-When running CAPI managed controlplane in VMs, k0smotron currently supports only `InPlace` upgrade strategy. This means that k0smotron will actually trigger k0s [autopilot](https://docs.k0sproject.io/stable/autopilot/) to update the control plane nodes.
+When running CAPI managed clusters on VMs, k0smotron can update control plane nodes in-place (via k0s [autopilot](https://docs.k0sproject.io/stable/autopilot/)) without any extra components. Worker nodes, however, can only be updated in-place automatically when the [Cluster API in-place updates extension](update/update-capi-cluster.md#cluster-api-in-place-updates-experimental) is installed and active. Without it, updating a `MachineDeployment`'s version follows Cluster API's default machine-replacement lifecycle instead, and an in-place update of workers requires manually creating the autopilot `Plan`.
 
-The reason behind is that the "traditional" CAPI way of re-creating the machines involves etcd cluster tweaking, namely removing and adding peers. This is unfortunately not possible with k0s from external toolin, k0smotron in this case, as k0s configures etcd so that it cannot be accessed externally from the nodes.
-
-We are working on an approach to allow also `ReCreate` strategy, to comply with traditional CAPI way and to match with other providers.
+See [Update worker nodes in Cluster API clusters (VMs)](update/update-capi-cluster-workers.md) for details.
 
 ## Infrastructure Controlplane LBs need extra ports
 

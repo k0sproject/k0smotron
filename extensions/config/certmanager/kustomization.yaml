@@ -1,0 +1,7 @@
+namespace: k0smotron
+
+resources:
+- certificate.yaml
+
+configurations:
+- kustomizeconfig.yaml
