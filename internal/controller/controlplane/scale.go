@@ -162,14 +162,10 @@ func isNeededScaleDown(scope *controlplane) bool {
 
 // isNeededScaleUp checks if it's needed to scale up the control plane based on the current state of the cluster and the desired number of replicas.
 func isNeededScaleUp(scope *controlplane) bool {
-	if isNeededApplyDeleteFirstStrategy(scope) {
-		return false
-	}
-
-	potentialMachinesCount := scope.activeMachines.Len() + 1
-	maximumAllowedMachines := int(scope.kcp.Spec.Replicas) + 1
+	potentialMachinesCount := scope.activeMachines.Len() + scope.deletedMachines.Len() + 1
+	maxSurge := calculateMaxSurge(scope)
 	// If we already have the maximum allowed machines, we cannot scale up anymore until some machines are deleted.
-	if potentialMachinesCount > maximumAllowedMachines {
+	if potentialMachinesCount > maxSurge {
 		return false
 	}
 
@@ -177,27 +173,15 @@ func isNeededScaleUp(scope *controlplane) bool {
 	return scope.upToDateMachines.Len() < int(scope.kcp.Spec.Replicas)
 }
 
-// isNeededApplyDeleteFirstStrategy checks if it's needed to delete a machine before scaling up the control plane, based on the UpdateStrategy and the current state of the cluster.
-func isNeededApplyDeleteFirstStrategy(scope *controlplane) bool {
-	// Only if the strategy is UpdateRecreateDeleteFirst.
-	if scope.kcp.Spec.UpdateStrategy != cpv1beta2.UpdateRecreateDeleteFirst {
-		return false
+func calculateMaxSurge(scope *controlplane) int {
+	if scope.kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreateDeleteFirst && scope.kcp.Spec.Replicas >= 3 {
+		// We cannot exceed desired replicas when UpdateRecreateDeleteFirst strategy is set. Consider this
+		// strategy when spec replicas >= 3.
+		return int(scope.kcp.Spec.Replicas)
+
 	}
 
-	// Apply UpdateRecreateDeleteFirst strategy when we already have the maximum (desired) number of machines.
-	if scope.activeMachines.Len() < int(scope.kcp.Spec.Replicas) {
-		return false
-	}
-
-	if scope.notUpToDateMachines.Len() == 0 {
-		return false
-	}
-
-	if scope.kcp.Spec.Replicas < 3 {
-		return false
-	}
-
-	return true
+	return int(scope.kcp.Spec.Replicas) + 1
 }
 
 func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error {
