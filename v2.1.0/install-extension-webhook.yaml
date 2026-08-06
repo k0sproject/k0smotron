@@ -1,0 +1,192 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: k0smotron
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: extension-webhook-sa
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: serviceaccount
+    app.kubernetes.io/part-of: k0smotron
+  name: extension-webhook
+  namespace: k0smotron
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: extension-webhook-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - bootstrap.cluster.x-k8s.io
+  resources:
+  - k0scontrollerconfigs
+  - k0scontrollerconfigs/status
+  - k0sworkerconfigs
+  - k0sworkerconfigs/status
+  verbs:
+  - get
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
+  verbs:
+  - get
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - k0scontrolplanes
+  - k0smotroncontrolplanes
+  verbs:
+  - get
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: extension-webhook-rolebinding
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: clusterrolebinding
+    app.kubernetes.io/part-of: k0smotron
+  name: extension-webhook-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: extension-webhook-role
+subjects:
+- kind: ServiceAccount
+  name: extension-webhook
+  namespace: k0smotron
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extension-webhook-service
+  namespace: k0smotron
+spec:
+  ports:
+  - port: 443
+    targetPort: webhook-server
+  selector:
+    app: extension-webhook
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: extension-webhook
+  name: extension-webhook
+  namespace: k0smotron
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: extension-webhook
+  template:
+    metadata:
+      labels:
+        app: extension-webhook
+    spec:
+      containers:
+      - command:
+        - /extension-webhook-server
+        image: quay.io/k0sproject/k0smotron:v2.1.0
+        imagePullPolicy: IfNotPresent
+        name: extension-webhook-server
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          runAsGroup: 65532
+          runAsUser: 65532
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: extension-webhook
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: extension-webhook-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    app.kubernetes.io/component: certificate
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: extension-webhook-cert
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: certificate
+    app.kubernetes.io/part-of: k0smotron
+  name: extension-webhook-cert
+  namespace: k0smotron
+spec:
+  dnsNames:
+  - extension-webhook-service.k0smotron.svc
+  - extension-webhook-service.k0smotron.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: selfsigned-issuer
+  secretName: extension-webhook-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    app.kubernetes.io/component: certificate
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: extension-webhook-cert
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: certificate
+    app.kubernetes.io/part-of: k0smotron
+  name: selfsigned-issuer
+  namespace: k0smotron
+spec:
+  selfSigned: {}
+---
+apiVersion: runtime.cluster.x-k8s.io/v1beta2
+kind: ExtensionConfig
+metadata:
+  annotations:
+    runtime.cluster.x-k8s.io/inject-ca-from-secret: k0smotron/extension-webhook-server-cert
+  name: inplace-version-update-extensionconfig
+spec:
+  clientConfig:
+    service:
+      name: extension-webhook-service
+      namespace: k0smotron
+      port: 443
