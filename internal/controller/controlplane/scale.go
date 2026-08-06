@@ -31,6 +31,7 @@ import (
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -67,6 +68,22 @@ func (c *K0sController) reconcileMachines(ctx context.Context, scope *controlpla
 
 	switch {
 	case isNeededScaleUp(scope):
+		// Authoritative guard before creating a Machine: the informer cache can lag behind the
+		// API server, so a scale-up decision based on the cached scope may undercount Machines
+		// and, because Machines get random names, create duplicates (see issue #1534). Read
+		// directly from the API server and never create a new Machine while it knows Machines
+		// the cache has not observed yet.
+		stale, err := c.isMachineViewStale(ctx, scope)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("error verifying machine view against the API server: %w", err)
+		}
+		if stale {
+			// The cache usually catches up within milliseconds, so requeue quickly instead of
+			// stalling the scale-up. Same duration Cluster API uses for stale-cache requeues.
+			logger.Info("Cached machine view is stale compared to the API server, requeuing before scaling up")
+			return ctrl.Result{RequeueAfter: 100 * time.Millisecond}, nil
+		}
+
 		logger.Info("Scaling up control plane")
 		if err := c.scaleUp(ctx, scope); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error scaling up control plane: %w", err)
@@ -452,4 +469,41 @@ func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.
 	}
 
 	return nil
+}
+
+// isMachineViewStale checks, via an authoritative read against the API server, whether the
+// cache-backed scope is missing Machines that already exist on the API server. The scale-up path
+// must stay idempotent when the controller-runtime informer cache lags behind the API server (see
+// issue #1534): Machines are created with randomly generated names, so a reconciliation acting on
+// a stale cache that has not observed a Machine created by a previous reconciliation would happily
+// create another one. Because this check does not rely on any process-local state, it also covers
+// leader changes, controller restarts, and writes that time out on the client but are committed by
+// the API server.
+func (c *K0sController) isMachineViewStale(ctx context.Context, scope *controlplane) (bool, error) {
+	authoritativeMachines, err := collections.GetFilteredMachinesForCluster(ctx, c.authoritativeReader(), scope.cluster, collections.ControlPlaneMachines(scope.cluster.Name))
+	if err != nil {
+		return false, fmt.Errorf("failed to list control plane machines from the API server: %w", err)
+	}
+
+	for name := range authoritativeMachines {
+		if _, observed := scope.activeMachines[name]; observed {
+			continue
+		}
+		if _, observed := scope.deletedMachines[name]; observed {
+			continue
+		}
+		// The API server knows a Machine that the cache has not observed yet.
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// authoritativeReader returns a reader that reads directly from the API server, falling back to
+// the cached client if no uncached reader is configured.
+func (c *K0sController) authoritativeReader() client.Reader {
+	if c.APIReader != nil {
+		return c.APIReader
+	}
+	return c.Client
 }
