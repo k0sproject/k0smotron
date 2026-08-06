@@ -1,0 +1,10 @@
+metadata:
+  title: "API Reference"
+  weight: 1
+groups:
+  - group: bootstrap.cluster.x-k8s.io
+    version: v1beta1
+    kinds:
+      - name: K0sControllerConfig
+      - name: K0sWorkerConfig
+      - name: K0sWorkerConfigTemplate

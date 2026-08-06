@@ -1,0 +1,12 @@
+metadata:
+  title: "API Reference"
+  weight: 1
+groups:
+  - group: infrastructure.cluster.x-k8s.io
+    version: v1beta2
+    kinds:
+      - name: PooledRemoteMachine
+      - name: RemoteCluster
+      - name: RemoteClusterTemplate
+      - name: RemoteMachine
+      - name: RemoteMachineTemplate

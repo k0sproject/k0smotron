@@ -1,0 +1,9 @@
+metadata:
+  title: "API Reference"
+  weight: 1
+groups:
+  - group: k0smotron.io
+    version: v1beta2
+    kinds:
+      - name: Cluster
+      - name: JoinTokenRequest
