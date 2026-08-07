@@ -73,9 +73,14 @@ type Controller struct {
 	workloadClusterClient client.Client
 }
 
+type k0sWorkerConfig struct {
+	*bootstrapv2.K0sWorkerConfig
+	version string
+}
+
 // Scope contains the information required to generate the bootstrap data for a worker machine.
 type Scope struct {
-	Config              *bootstrapv2.K0sWorkerConfig
+	Config              *k0sWorkerConfig
 	ConfigOwner         *bsutil.ConfigOwner
 	Cluster             *clusterv1.Cluster
 	ingressSpec         *km.IngressSpec
@@ -136,6 +141,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		config.Spec.Version = configOwner.KubernetesVersion()
 	}
 
+	var k0sWorkerVersion string
 	// If the version does not contain the k0s suffix, append it.
 	if config.Spec.Version != "" {
 		// When machine is created by CAPI, for example by using a clusterclass template, the version
@@ -145,6 +151,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 			config.Spec.Version = fmt.Sprintf("%s+%s", config.Spec.Version, defaultK0sSuffix)
 		}
 	}
+	k0sWorkerVersion = config.Spec.Version
 
 	// Lookup the cluster the config owner is associated with
 	cluster, err := capiutil.GetClusterByName(ctx, r.Client, configOwner.GetNamespace(), configOwner.ClusterName())
@@ -206,7 +213,10 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	}()
 
 	scope := &Scope{
-		Config:      config,
+		Config: &k0sWorkerConfig{
+			K0sWorkerConfig: config,
+			version:         k0sWorkerVersion,
+		},
 		ConfigOwner: configOwner,
 		Cluster:     cluster,
 		provisioner: getProvisioner(&config.Spec.Provisioner),
@@ -413,7 +423,7 @@ Invoke-WebRequest -Uri $k0sUrl -OutFile $dest -UseBasicParsing
 
 Write-Host "=== Executing k0s to check version ==="
 & $dest --version
-`, scope.Config.Spec.Version, scope.Config.Spec.Version, k0sPath, scope.Config.Spec.K0sInstallDir)
+`, scope.Config.version, scope.Config.version, k0sPath, scope.Config.Spec.K0sInstallDir)
 
 	inlineCommands := scope.Config.Spec.PreK0sCommands
 	// Download and enable containers and k0s bootstrap script
@@ -452,7 +462,7 @@ Stop-Transcript
 func getLinuxCommands(scope *Scope) ([]string, map[provisioner.VarName]string, error) {
 	commandsMap := make(map[provisioner.VarName]string)
 
-	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
+	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.version, scope.Config.Spec.K0sInstallDir)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error generating download commands: %w", err)
 	}
