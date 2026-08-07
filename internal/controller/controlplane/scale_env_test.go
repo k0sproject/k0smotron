@@ -19,6 +19,7 @@ package controlplane
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -1117,4 +1118,99 @@ func createControlPlaneMachine(t *testing.T, name, namespace string, cluster *cl
 	}
 	require.NoError(t, testEnv.Create(ctx, config))
 	return machine, config
+}
+
+// staleMachineCacheClient simulates a controller-runtime informer cache that lags behind the
+// API server: List calls for MachineList never return any Machines, mimicking a cache that has
+// not observed Machines created in previous reconciliations (read-after-write inconsistency).
+// All other operations (including writes) go directly to the API server.
+type staleMachineCacheClient struct {
+	client.Client
+}
+
+func (c *staleMachineCacheClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	if err := c.Client.List(ctx, list, opts...); err != nil {
+		return err
+	}
+	if machineList, ok := list.(*clusterv1.MachineList); ok {
+		machineList.Items = nil
+	}
+	return nil
+}
+
+// TestReconcileMachinesScaleUpIdempotentWithStaleCache is a regression test for
+// https://github.com/k0sproject/k0smotron/issues/1534: when the cached client does not observe
+// a newly created Machine, subsequent reconciliations must not create duplicate Machines.
+func TestReconcileMachinesScaleUpIdempotentWithStaleCache(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-scale-up-stale-cache")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+
+	kcp.Spec.Replicas = 1
+	require.NoError(t, testEnv.Create(ctx, kcp))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, gmt, cluster, ns)
+
+	clientSet, err := kubernetes.NewForConfig(testEnv.Config)
+	require.NoError(t, err)
+
+	// The controller reads through a client whose Machine lists are permanently stale,
+	// while the authoritative reader reads directly from the API server.
+	r := &K0sController{
+		Client:    &staleMachineCacheClient{Client: testEnv},
+		APIReader: testEnv.GetAPIReader(),
+		ClientSet: clientSet,
+	}
+
+	// Run several reconciliations. Every one of them sees zero active machines through the
+	// stale client, so without the authoritative pre-create check each of them would create a
+	// new Machine.
+	for i := 0; i < 5; i++ {
+		controlplane, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
+		require.NoError(t, err)
+
+		res, err := r.reconcileMachines(ctx, controlplane)
+		require.NoError(t, err)
+		// The desired state can't be reached while the cache is stale, so a requeue is expected.
+		require.False(t, res.IsZero())
+	}
+
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv.GetAPIReader(), cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
+	require.NoError(t, err)
+	require.Len(t, machines, 1, "exactly one Machine must be created despite the stale cache")
+
+	// Simulate a leader change / controller restart: a brand new controller instance holds no
+	// process-local state, but still sees the stale cache. The authoritative pre-create check
+	// reads straight from the API server, so it must prevent duplicate Machines all the same.
+	rebooted := &K0sController{
+		Client:    &staleMachineCacheClient{Client: testEnv},
+		APIReader: testEnv.GetAPIReader(),
+		ClientSet: clientSet,
+	}
+	for i := 0; i < 3; i++ {
+		controlplane, err := rebooted.retrieveControlPlaneState(ctx, cluster, kcp)
+		require.NoError(t, err)
+
+		res, err := rebooted.reconcileMachines(ctx, controlplane)
+		require.NoError(t, err)
+		require.False(t, res.IsZero())
+	}
+
+	machines, err = collections.GetFilteredMachinesForCluster(ctx, testEnv.GetAPIReader(), cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
+	require.NoError(t, err)
+	require.Len(t, machines, 1, "no duplicate Machine must be created across a simulated leader change")
+
+	// Once a non-stale client observes the Machine, the cached view matches the API server and
+	// the staleness guard no longer blocks scaling.
+	freshController := &K0sController{Client: testEnv, APIReader: testEnv.GetAPIReader(), ClientSet: clientSet}
+	freshScope, err := freshController.retrieveControlPlaneState(ctx, cluster, kcp)
+	require.NoError(t, err)
+	stale, err := freshController.isMachineViewStale(ctx, freshScope)
+	require.NoError(t, err)
+	require.False(t, stale, "cached view must not be considered stale once the Machine is observed")
 }

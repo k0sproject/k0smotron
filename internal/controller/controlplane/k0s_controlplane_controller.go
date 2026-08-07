@@ -104,6 +104,10 @@ type controlplane struct {
 // K0sController is responsible for reconciling K0sControlPlane objects.
 type K0sController struct {
 	client.Client
+	// APIReader is an uncached client reader, used for authoritative reads against the
+	// API server when the cached client may lag behind it (e.g. right after a Machine
+	// has been created). If unset, the cached client is used instead.
+	APIReader           client.Reader
 	SecretCachingClient client.Client
 	ClusterCache        clustercache.ClusterCache
 	ClientSet           *kubernetes.Clientset

@@ -346,6 +346,7 @@ func main() {
 
 			if err = (&controlplane.K0sController{
 				Client:              mgr.GetClient(),
+				APIReader:           mgr.GetAPIReader(),
 				SecretCachingClient: secretCachingClient,
 				ClusterCache:        clusterCache,
 				ClientSet:           clientSet,
