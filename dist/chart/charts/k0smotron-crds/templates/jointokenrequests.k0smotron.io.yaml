@@ -1,0 +1,240 @@
+{{- $ctrl := (.Values.global | default dict).controller | default "all" -}}
+{{- if has $ctrl (list "all" "control-plane") }}
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    {{- if (.Values.global | default dict).crdKeep }}
+    "helm.sh/resource-policy": keep
+    {{- end }}
+    cert-manager.io/inject-ca-from: k0smotron-system/serving-cert
+    controller-gen.kubebuilder.io/version: v0.18.0
+  labels:
+    cluster.x-k8s.io/provider: k0sproject-k0smotron
+  name: jointokenrequests.k0smotron.io
+spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: k0smotron-webhook-service
+          namespace: k0smotron-system
+          path: /convert
+      conversionReviewVersions:
+        - v1beta1
+        - v1beta2
+  group: k0smotron.io
+  names:
+    kind: JoinTokenRequest
+    listKind: JoinTokenRequestList
+    plural: jointokenrequests
+    shortNames:
+      - jtr
+    singular: jointokenrequest
+  scope: Namespaced
+  versions:
+    - deprecated: true
+      name: v1beta1
+      schema:
+        openAPIV3Schema:
+          description: JoinTokenRequest is the Schema for the join token request API
+          properties:
+            apiVersion:
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+              type: string
+            kind:
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: JoinTokenRequestSpec defines the desired state of K0smotronJoinTokenRequest
+              properties:
+                clusterRef:
+                  description: ClusterRef is the reference to the cluster for which the join token is requested.
+                  properties:
+                    name:
+                      description: Name of the cluster.
+                      type: string
+                    namespace:
+                      description: Namespace of the cluster.
+                      type: string
+                  required:
+                    - name
+                    - namespace
+                  type: object
+                expiry:
+                  default: 0s
+                  description: Expiration time of the token. Format 1.5h, 2h45m or 300ms.
+                  type: string
+                role:
+                  default: worker
+                  description: Role of the node for which the token is requested (worker or controller).
+                  enum:
+                    - worker
+                    - controller
+                  type: string
+              required:
+                - clusterRef
+              type: object
+            status:
+              description: JoinTokenRequestStatus defines the observed state of K0smotronJoinTokenRequest
+              properties:
+                clusterUID:
+                  description: |-
+                    UID is a type that holds unique ID values, including UUIDs.  Because we
+                    don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                    intent and helps make sure that UIDs and names do not get conflated.
+                  type: string
+                reconciliationStatus:
+                  type: string
+                tokenID:
+                  type: string
+              required:
+                - reconciliationStatus
+              type: object
+          type: object
+      served: true
+      storage: false
+      subresources:
+        status: {}
+    - name: v1beta2
+      schema:
+        openAPIV3Schema:
+          description: JoinTokenRequest is the Schema for the join token request API
+          properties:
+            apiVersion:
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+              type: string
+            kind:
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: JoinTokenRequestSpec defines the desired state of K0smotronJoinTokenRequest
+              properties:
+                clusterName:
+                  description: clusterName is the name of the k0smotron Cluster this object belongs to.
+                  maxLength: 63
+                  minLength: 1
+                  type: string
+                expiry:
+                  default: 0s
+                  description: Expiration time of the token. Format 1.5h, 2h45m or 300ms.
+                  type: string
+                role:
+                  default: worker
+                  description: Role of the node for which the token is requested (worker or controller).
+                  enum:
+                    - worker
+                    - controller
+                  type: string
+              required:
+                - clusterName
+              type: object
+            status:
+              description: JoinTokenRequestStatus defines the observed state of K0smotronJoinTokenRequest
+              properties:
+                conditions:
+                  description: |-
+                    Conditions represents the observations of the k0smotron cluster's state.
+                    Known condition types are Available, Deleting.
+                  items:
+                    description: Condition contains details for one aspect of the current state of this API Resource.
+                    properties:
+                      lastTransitionTime:
+                        description: |-
+                          lastTransitionTime is the last time the condition transitioned from one status to another.
+                          This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                        format: date-time
+                        type: string
+                      message:
+                        description: |-
+                          message is a human readable message indicating details about the transition.
+                          This may be an empty string.
+                        maxLength: 32768
+                        type: string
+                      observedGeneration:
+                        description: |-
+                          observedGeneration represents the .metadata.generation that the condition was set based upon.
+                          For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                          with respect to the current state of the instance.
+                        format: int64
+                        minimum: 0
+                        type: integer
+                      reason:
+                        description: |-
+                          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                          Producers of specific condition types may define expected values and meanings for this field,
+                          and whether the values are considered a guaranteed API.
+                          The value should be a CamelCase string.
+                          This field may not be empty.
+                        maxLength: 1024
+                        minLength: 1
+                        pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                        type: string
+                      status:
+                        description: status of the condition, one of True, False, Unknown.
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                        type: string
+                      type:
+                        description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        maxLength: 316
+                        pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                        type: string
+                    required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                    type: object
+                  type: array
+                deprecated:
+                  description: deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
+                  properties:
+                    v1beta1:
+                      description: v1beta1 groups all the status fields that are deprecated and will be removed when support for v1beta1 will be dropped.
+                      properties:
+                        clusterUID:
+                          description: |-
+                            UID is a type that holds unique ID values, including UUIDs.  Because we
+                            don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                            intent and helps make sure that UIDs and names do not get conflated.
+                          type: string
+                        reconciliationStatus:
+                          type: string
+                      type: object
+                  type: object
+                tokenID:
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+{{- end }}

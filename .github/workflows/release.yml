@@ -221,3 +221,61 @@ jobs:
           asset_path: ./bin/convert-v1beta1-to-v1beta2-windows-amd64.exe
           asset_name: convert-v1beta1-to-v1beta2-windows-amd64.exe
           asset_content_type: application/octet-stream
+
+  release-chart:
+    needs:
+      - release
+    name: Publish Helm chart
+    runs-on: ubuntu-latest
+    if: github.repository == 'k0sproject/k0smotron'
+    steps:
+      - name: Run git checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: '1.26'
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      # `make helm-chart` installs its own pinned tooling (kubebuilder, yq,
+      # kustomize, controller-gen) into bin/ per Makefile.variables.
+      # image_tag is the git tag with '+' sanitised to '-'; chart/app version drop the leading 'v'.
+      - name: Generate chart
+        env:
+          IMAGE_TAG: ${{ needs.release.outputs.image_tag }}
+        run: |
+          VERSION="${IMAGE_TAG#v}"
+          make helm-chart \
+            IMG=quay.io/k0sproject/k0smotron:${IMAGE_TAG} \
+            CHART_VERSION=${VERSION}
+
+      - name: Package chart
+        env:
+          IMAGE_TAG: ${{ needs.release.outputs.image_tag }}
+        run: |
+          VERSION="${IMAGE_TAG#v}"
+          helm package dist/chart --destination .
+          echo "CHART_TGZ=k0smotron-${VERSION}.tgz" >> "$GITHUB_ENV"
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Log in to Quay registry
+        run: echo "${{ secrets.QUAY_PASSWORD }}" | helm registry login quay.io -u ${{ secrets.QUAY_USER }} --password-stdin
+
+      - name: Push chart to ghcr.io and quay.io
+        run: |
+          helm push "${CHART_TGZ}" oci://ghcr.io/k0sproject/charts
+          # We push chart only to GitHub for now
+          # helm push "${CHART_TGZ}" oci://quay.io/k0sproject/charts
+
+      - name: Upload chart to GitHub release
+        uses: shogo82148/actions-upload-release-asset@v1.8.1
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./${{ env.CHART_TGZ }}
+          asset_name: ${{ env.CHART_TGZ }}
+          asset_content_type: application/gzip

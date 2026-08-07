@@ -1,0 +1,87 @@
+{{- if .Values.webhook.enable }}
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: k0smotron-mutating-webhook-configuration
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- if .Values.certmanager.enable }}
+    cert-manager.io/inject-ca-from: "{{ $.Release.Namespace }}/serving-cert"
+    {{- end }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+webhooks:
+  - name: mutate-k0scontrolplane-v1beta2.k0smotron.io
+    clientConfig:
+      service:
+        name: k0smotron-webhook-service
+        namespace: {{ .Release.Namespace }}
+        path: /mutate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane
+    failurePolicy: Fail
+    sideEffects: None
+    admissionReviewVersions:
+      - v1
+    rules:
+      - operations:
+          - CREATE
+          - UPDATE
+        apiGroups:
+          - controlplane.cluster.x-k8s.io
+        apiVersions:
+          - v1beta2
+        resources:
+          - k0scontrolplanes
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: k0smotron-validating-webhook-configuration
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- if .Values.certmanager.enable }}
+    cert-manager.io/inject-ca-from: "{{ $.Release.Namespace }}/serving-cert"
+    {{- end }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+webhooks:
+  - name: validate-k0scontrolplane-v1beta2.k0smotron.io
+    clientConfig:
+      service:
+        name: k0smotron-webhook-service
+        namespace: {{ .Release.Namespace }}
+        path: /validate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane
+    failurePolicy: Fail
+    sideEffects: None
+    admissionReviewVersions:
+      - v1
+    rules:
+      - operations:
+          - CREATE
+          - UPDATE
+        apiGroups:
+          - controlplane.cluster.x-k8s.io
+        apiVersions:
+          - v1beta2
+        resources:
+          - k0scontrolplanes
+  - name: validate-k0smotroncontrolplane-v1beta2.k0smotron.io
+    clientConfig:
+      service:
+        name: k0smotron-webhook-service
+        namespace: {{ .Release.Namespace }}
+        path: /validate-controlplane-cluster-x-k8s-io-v1beta2-k0smotroncontrolplane
+    failurePolicy: Fail
+    sideEffects: None
+    admissionReviewVersions:
+      - v1
+    rules:
+      - operations:
+          - CREATE
+          - UPDATE
+        apiGroups:
+          - controlplane.cluster.x-k8s.io
+        apiVersions:
+          - v1beta2
+        resources:
+          - k0smotroncontrolplanes
+{{- end }}
