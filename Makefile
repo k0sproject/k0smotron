@@ -185,6 +185,8 @@ AWS_TEMPLATES := e2e/data/infrastructure-aws
 generate-aws-e2e-templates: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(AWS_TEMPLATES)/cluster-template-ignition-fedora --load-restrictor LoadRestrictionsNone > $(AWS_TEMPLATES)/cluster-template-ignition-fedora.yaml
 	$(KUSTOMIZE) build $(AWS_TEMPLATES)/cluster-template-ignition-flatcar --load-restrictor LoadRestrictionsNone > $(AWS_TEMPLATES)/cluster-template-ignition-flatcar.yaml
+	$(KUSTOMIZE) build $(AWS_TEMPLATES)/cluster-template-windows --load-restrictor LoadRestrictionsNone > $(AWS_TEMPLATES)/cluster-template-windows.yaml
+	$(KUSTOMIZE) build $(AWS_TEMPLATES)/cluster-template-windows-ingress --load-restrictor LoadRestrictionsNone > $(AWS_TEMPLATES)/cluster-template-windows-ingress.yaml
 
 e2e: generate-e2e-templates-main generate-aws-e2e-templates
 	set +x;
