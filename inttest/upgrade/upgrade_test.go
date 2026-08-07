@@ -18,9 +18,7 @@ package upgrade
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -84,7 +82,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	s.Require().NoError(err)
 
 	// We create state to subsequently validate that it persists between upgrades
-	s.addState(s.Context(), pod.Spec.Containers[0].VolumeMounts[1].MountPath, kc, rc)
+	s.addState(s.Context(), kc, rc)
 
 	s.T().Log("deploying development k0smotron operator")
 	s.Require().NoError(s.ImportK0smotronImages(s.Context()))
@@ -92,7 +90,6 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	s.Require().NoError(util.WaitForRolloutCompleted(s.Context(), kc, "k0smotron-controller-manager", "k0smotron"))
 
 	s.forceControllerRecreation(s.Context(), pod.Name, kc)
-	s.checkStatePersists(s.Context(), pod.Spec.Containers[0].VolumeMounts[1].MountPath, kc, rc)
 
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-kmc-test", "kmc-test"))
 
@@ -134,34 +131,18 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	s.Require().True(conditions.IsTrue(&kmc, km.ClusterAvailableCondition))
 }
 
-func (s *UpgradeSuite) checkStatePersists(ctx context.Context, mountedPath string, kc *kubernetes.Clientset, rc *rest.Config) {
-	successfulOutput := "File exists"
-	output := ""
-	cmd := fmt.Sprintf("test -f %s/manifests/mystack/manifest.yaml && echo \"%s\" || echo \"File does not exist\"", mountedPath, successfulOutput)
-	err := wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
-		output, err = exec.PodExecCmdOutput(ctx, kc, rc, "kmc-kmc-test-0", "kmc-test", cmd)
-		if err != nil {
-			return false, nil
-		}
-
-		return true, nil
-	})
-	s.Require().NoError(err)
-	s.Require().Equal(strings.ReplaceAll(output, "\n", ""), successfulOutput)
-}
-
 func (s *UpgradeSuite) forceControllerRecreation(ctx context.Context, controllerName string, kc *kubernetes.Clientset) {
 	err := kc.CoreV1().Pods("kmc-test").Delete(ctx, controllerName, metav1.DeleteOptions{})
 	s.Require().NoError(err)
 	s.Require().NoError(common.WaitForPod(s.Context(), kc, controllerName, "kmc-test"))
 }
 
-func (s *UpgradeSuite) addState(ctx context.Context, mountedPath string, kc *kubernetes.Clientset, rc *rest.Config) {
-	cmd := fmt.Sprintf("mkdir -p %s/manifests/mystack && k0s kubectl create ns test-ns --dry-run=client -oyaml > %s/manifests/mystack/manifest.yaml", mountedPath, mountedPath)
-	_, err := exec.PodExecCmdOutput(ctx, kc, rc, "kmc-kmc-test-0", "kmc-test", cmd)
-	s.Require().NoError(err)
-
-	_, err = exec.PodExecCmdOutput(ctx, kc, rc, "kmc-kmc-test-0", "kmc-test", "k0s kubectl create cm test-old-cm --from-literal=key1=config1")
+// addState writes state into the child cluster, so that the test can validate
+// it survives the operator upgrade and the control plane pod recreation. The
+// control plane pod itself is stateless: this lands in the storage backend,
+// which is persisted independently of the pod.
+func (s *UpgradeSuite) addState(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) {
+	_, err := exec.PodExecCmdOutput(ctx, kc, rc, "kmc-kmc-test-0", "kmc-test", "k0s kubectl create cm test-old-cm --from-literal=key1=config1")
 	s.Require().NoError(err)
 }
 
@@ -242,23 +223,6 @@ metadata:
 				"requests": {
 					"cpu": "100m",
 					"memory": "100Mi"
-				}
-			},
-			"persistence": {
-				"type": "pvc",
-				"persistentVolumeClaim": {
-					"metadata": {
-						"name": "kmc-volume-test"
-					},
-					"spec": {
-						"accessModes": ["ReadWriteOnce"],
-						"storageClassName": "local-path",
-						"resources": {
-							"requests": {
-								"storage": "200Mi"
-							}
-						}
-					}
 				}
 			},
 			"k0sConfig": {

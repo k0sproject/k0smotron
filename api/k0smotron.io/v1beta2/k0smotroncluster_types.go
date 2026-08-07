@@ -135,8 +135,15 @@ type ClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:default={"type":"ClusterIP","apiPort":30443,"konnectivityPort":30132}
 	Service ServiceSpec `json:"service,omitempty"`
-	// Persistence defines the persistence configuration. If empty k0smotron
-	// will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
+	// Persistence defines the persistence configuration for the k0s data
+	// directory.
+	//
+	// Deprecated: the k0s data directory no longer holds anything that has to
+	// outlive the pod. Cluster data lives in the storage backend, certificates
+	// come from Secrets and manifests should be supplied via spec.manifests
+	// instead of being written into the data directory out of band. Setting
+	// this still mounts the data directory, for clusters that depend on that,
+	// but it will be removed in a future API version.
 	//+kubebuilder:validation:Optional
 	Persistence PersistenceSpec `json:"persistence,omitempty"`
 	// Storage defines the storage backend configuration.
@@ -495,7 +502,7 @@ type ClusterList struct {
 
 // PersistenceSpec defines the persistence configuration for the k0s control plane.
 type PersistenceSpec struct {
-	//+kubebuilder:validation:Enum:emptyDir;hostPath;pvc
+	//+kubebuilder:validation:Enum=emptyDir;hostPath;pvc
 	//+kubebuilder:default=emptyDir
 	Type string `json:"type"`
 	// PersistentVolumeClaim defines the PVC configuration. Will be used as is in case of .spec.persistence.type is pvc.
