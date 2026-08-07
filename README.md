@@ -1,4 +1,6 @@
 # k0smotron
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fk0sproject%2Fk0smotron.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fk0sproject%2Fk0smotron?ref=badge_shield)
+
 
 ## Overview
 
@@ -87,3 +89,6 @@ We invite you to contribute to the growth and enhancement of k0smotron. To learn
 ## License
 
 k0smotron is licensed under the [Apache License 2.0](LICENSE).
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fk0sproject%2Fk0smotron.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fk0sproject%2Fk0smotron?ref=badge_large)
