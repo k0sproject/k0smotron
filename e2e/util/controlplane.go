@@ -83,11 +83,34 @@ type UpgradeControlPlaneAndWaitForUpgradeInput struct {
 	KubernetesUpgradeVersion         string
 	WaitForKubeProxyUpgradeInterval  Interval
 	WaitForControlPlaneReadyInterval Interval
+
+	// DuringUpgradeCheck is an optional strategy-specific check that runs in the
+	// background while the upgrade is in progress. It returns a cleanup function
+	// that is invoked after the upgrade completes; the returned error is checked then.
+	DuringUpgradeCheck func(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) (func() error, error)
+
+	// PostUpgradeCheck is an optional strategy-specific check invoked after the
+	// control plane reports ready but before the helper returns.
+	PostUpgradeCheck func(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) error
 }
 
 // UpgradeControlPlaneAndWaitForUpgrade upgrades a K0sControlPlane and waits for it to be upgraded.
-func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) error {
+func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) (resErr error) {
 	mgmtClient := input.ClusterProxy.GetClient()
+
+	if input.DuringUpgradeCheck != nil {
+		stop, err := input.DuringUpgradeCheck(ctx, input)
+		if err != nil {
+			return fmt.Errorf("failed to start during upgrade check: %w", err)
+		}
+		if stop != nil {
+			defer func() {
+				if err := stop(); err != nil && resErr == nil {
+					resErr = fmt.Errorf("during upgrade check failed: %w", err)
+				}
+			}()
+		}
+	}
 
 	fmt.Println("Patching the new kubernetes version to KCP")
 	patchHelper, err := patch.NewHelper(input.ControlPlane, mgmtClient)
@@ -112,10 +135,20 @@ func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input Upgrad
 	fmt.Println("Waiting for kube-proxy to have the upgraded kubernetes version")
 	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
 	workloadClient := workloadCluster.GetClient()
-	return WaitForKubeProxyUpgrade(ctx, WaitForKubeProxyUpgradeInput{
+	if err := WaitForKubeProxyUpgrade(ctx, WaitForKubeProxyUpgradeInput{
 		Getter:            workloadClient,
 		KubernetesVersion: input.KubernetesUpgradeVersion,
-	}, input.WaitForKubeProxyUpgradeInterval)
+	}, input.WaitForKubeProxyUpgradeInterval); err != nil {
+		return err
+	}
+
+	if input.PostUpgradeCheck != nil {
+		if err := input.PostUpgradeCheck(ctx, input); err != nil {
+			return fmt.Errorf("post upgrade check failed: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func DiscoveryAndWaitForControlPlaneInitialized(ctx context.Context, input capiframework.DiscoveryAndWaitForControlPlaneInitializedInput, interval Interval) (*cpv1beta1.K0sControlPlane, error) {
