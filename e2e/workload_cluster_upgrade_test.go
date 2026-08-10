@@ -323,7 +323,10 @@ func startStandaloneInPlaceCheck(ctx context.Context, input util.UpgradeControlP
 				return false, err
 			}
 			if targetVersion != input.KubernetesUpgradeVersion {
-				return false, fmt.Errorf("standalone in-place upgrade created an autopilot plan for version %s, expected %s", targetVersion, input.KubernetesUpgradeVersion)
+				// A completed plan from the previous upgrade can legitimately
+				// still exist until the next upgrade deletes and recreates it.
+				// Keep polling until the new plan for the target version appears.
+				return false, nil
 			}
 			planSeen = true
 			return true, nil
