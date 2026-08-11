@@ -182,15 +182,15 @@ type K0sControlPlaneStatus struct {
 	// +optional
 	Selector string `json:"selector"`
 
-	// readyReplicas is the total number of fully running and ready control plane machines.
+	// readyReplicas is the number of ready replicas for this K0sControlPlane. A machine is considered ready when Machine's Ready condition is true.
 	// +optional
 	ReadyReplicas *int32 `json:"readyReplicas,omitempty"`
 
-	// availableReplicas is the number of available replicas for this ControlPlane. A machine is considered available when Machine's Available condition is true.
+	// availableReplicas is the number of available replicas for this K0sControlPlane. A machine is considered available when Machine's Available condition is true.
 	// +optional
 	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
 
-	// upToDateReplicas is the number of up-to-date replicas targeted by this ControlPlane. A machine is considered available when Machine's UpToDate condition is true.
+	// upToDateReplicas is the number of up-to-date replicas targeted by this K0sControlPlane. A machine is considered up-to-date when Machine's UpToDate condition is true.
 	// +optional
 	UpToDateReplicas *int32 `json:"upToDateReplicas,omitempty"`
 

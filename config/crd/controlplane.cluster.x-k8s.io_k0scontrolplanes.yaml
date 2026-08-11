@@ -992,8 +992,8 @@ spec:
             properties:
               availableReplicas:
                 description: availableReplicas is the number of available replicas
-                  for this ControlPlane. A machine is considered available when Machine's
-                  Available condition is true.
+                  for this K0sControlPlane. A machine is considered available when
+                  Machine's Available condition is true.
                 format: int32
                 type: integer
               conditions:
@@ -1069,8 +1069,9 @@ spec:
                     type: boolean
                 type: object
               readyReplicas:
-                description: readyReplicas is the total number of fully running and
-                  ready control plane machines.
+                description: readyReplicas is the number of ready replicas for this
+                  K0sControlPlane. A machine is considered ready when Machine's Ready
+                  condition is true.
                 format: int32
                 type: integer
               replicas:
@@ -1089,7 +1090,7 @@ spec:
                 type: string
               upToDateReplicas:
                 description: upToDateReplicas is the number of up-to-date replicas
-                  targeted by this ControlPlane. A machine is considered available
+                  targeted by this K0sControlPlane. A machine is considered up-to-date
                   when Machine's UpToDate condition is true.
                 format: int32
                 type: integer
