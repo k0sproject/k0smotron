@@ -31,7 +31,10 @@ import (
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
@@ -209,6 +212,7 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 
 	r := &K0sController{
 		Client:                    testEnv,
+		APIReader:                 testEnv.GetAPIReader(),
 		ClientSet:                 clientSet,
 		workloadClusterKubeClient: kubernetes.New(restClient),
 	}
@@ -472,6 +476,7 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 
 	r := &K0sController{
 		Client:                    testEnv,
+		APIReader:                 testEnv.GetAPIReader(),
 		ClientSet:                 clientSet,
 		workloadClusterKubeClient: kubernetes.New(restClient),
 	}
@@ -536,6 +541,7 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 
 	r := &K0sController{
 		Client:                    testEnv,
+		APIReader:                 testEnv.GetAPIReader(),
 		workloadClusterKubeClient: kubernetes.New(restClient),
 		ClientSet:                 clientSet,
 	}
@@ -999,7 +1005,7 @@ func TestReconcileMachinesRequeuesWhileNotUpToDate(t *testing.T) {
 		for _, m := range machines {
 			assert.Equal(c, kcp.Spec.Version, m.Spec.Version)
 		}
-	}, 10*time.Hour, 100*time.Millisecond)
+	}, 10*time.Second, 100*time.Millisecond)
 }
 
 // fakeRoundTripperControlNodeNotFound returns 404 for controlnode GET requests so that
@@ -1054,6 +1060,7 @@ func buildTestController(t *testing.T, roundTripFunc func(*http.Request) (*http.
 	require.NoError(t, err)
 	return &K0sController{
 		Client:                    testEnv,
+		APIReader:                 testEnv.GetAPIReader(),
 		ClientSet:                 clientSet,
 		workloadClusterKubeClient: kubernetes.New(restClient),
 	}
@@ -1156,28 +1163,32 @@ func TestReconcileMachinesScaleUpIdempotentWithStaleCache(t *testing.T) {
 		require.NoError(t, testEnv.Cleanup(ctx, do...))
 	}(kcp, gmt, cluster, ns)
 
-	clientSet, err := kubernetes.NewForConfig(testEnv.Config)
-	require.NoError(t, err)
-
-	// The controller reads through a client whose Machine lists are permanently stale,
-	// while the authoritative reader reads directly from the API server.
-	r := &K0sController{
-		Client:    &staleMachineCacheClient{Client: testEnv},
-		APIReader: testEnv.GetAPIReader(),
-		ClientSet: clientSet,
+	// The controller reads through a client whose Machine lists are permanently stale, so any
+	// decision derived from them would keep seeing a control plane without Machines.
+	newControllerWithStaleCache := func() *K0sController {
+		r := buildTestController(t, nil)
+		r.Client = &staleMachineCacheClient{Client: testEnv}
+		r.APIReader = testEnv.GetAPIReader()
+		return r
 	}
 
-	// Run several reconciliations. Every one of them sees zero active machines through the
-	// stale client, so without the authoritative pre-create check each of them would create a
-	// new Machine.
-	for i := 0; i < 5; i++ {
-		controlplane, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
-		require.NoError(t, err)
+	r := newControllerWithStaleCache()
 
-		res, err := r.reconcileMachines(ctx, controlplane)
+	// The first reconciliation creates the single Machine the control plane needs.
+	scope, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
+	require.NoError(t, err)
+	_, err = r.reconcileMachines(ctx, scope)
+	require.NoError(t, err)
+
+	// The state the reconciliation operates on is read from the API server, so that Machine is
+	// observed by all the following reconciliations even though the cached client never reports it.
+	for range 4 {
+		scope, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
 		require.NoError(t, err)
-		// The desired state can't be reached while the cache is stale, so a requeue is expected.
-		require.False(t, res.IsZero())
+		require.Equal(t, 1, scope.activeMachines.Len(), "the Machine created by a previous reconciliation must be observed")
+
+		_, err = r.reconcileMachines(ctx, scope)
+		require.NoError(t, err)
 	}
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv.GetAPIReader(), cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
@@ -1185,32 +1196,91 @@ func TestReconcileMachinesScaleUpIdempotentWithStaleCache(t *testing.T) {
 	require.Len(t, machines, 1, "exactly one Machine must be created despite the stale cache")
 
 	// Simulate a leader change / controller restart: a brand new controller instance holds no
-	// process-local state, but still sees the stale cache. The authoritative pre-create check
-	// reads straight from the API server, so it must prevent duplicate Machines all the same.
-	rebooted := &K0sController{
-		Client:    &staleMachineCacheClient{Client: testEnv},
-		APIReader: testEnv.GetAPIReader(),
-		ClientSet: clientSet,
-	}
-	for i := 0; i < 3; i++ {
-		controlplane, err := rebooted.retrieveControlPlaneState(ctx, cluster, kcp)
+	// process-local state and still reads through the stale cache, so it must not create a
+	// duplicate Machine either.
+	rebooted := newControllerWithStaleCache()
+	for range 3 {
+		scope, err := rebooted.retrieveControlPlaneState(ctx, cluster, kcp)
 		require.NoError(t, err)
 
-		res, err := rebooted.reconcileMachines(ctx, controlplane)
+		_, err = rebooted.reconcileMachines(ctx, scope)
 		require.NoError(t, err)
-		require.False(t, res.IsZero())
 	}
 
 	machines, err = collections.GetFilteredMachinesForCluster(ctx, testEnv.GetAPIReader(), cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	require.NoError(t, err)
 	require.Len(t, machines, 1, "no duplicate Machine must be created across a simulated leader change")
+}
 
-	// Once a non-stale client observes the Machine, the cached view matches the API server and
-	// the staleness guard no longer blocks scaling.
-	freshController := &K0sController{Client: testEnv, APIReader: testEnv.GetAPIReader(), ClientSet: clientSet}
-	freshScope, err := freshController.retrieveControlPlaneState(ctx, cluster, kcp)
+// staleObjectCacheClient simulates an informer cache that has not observed the objects of a given
+// kind yet: Get calls for that kind always report NotFound, while everything else, including the
+// writes, goes to the API server.
+type staleObjectCacheClient struct {
+	client.Client
+	hiddenKind string
+}
+
+func (c *staleObjectCacheClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	if u, ok := obj.(*unstructured.Unstructured); ok && u.GetKind() == c.hiddenKind {
+		return apierrors.NewNotFound(schema.GroupResource{Resource: strings.ToLower(c.hiddenKind)}, key.Name)
+	}
+	return c.Client.Get(ctx, key, obj, opts...)
+}
+
+// TestReconcileMachinesWithStaleInfraMachineCache verifies that a Machine is not treated as out of
+// date just because the cache has not observed its infrastructure machine yet. A Machine reported
+// as out of date makes the controller create another one (see issue #1534) or delete a healthy one.
+func TestReconcileMachinesWithStaleInfraMachineCache(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-stale-infra-machine-cache")
 	require.NoError(t, err)
-	stale, err := freshController.isMachineViewStale(ctx, freshScope)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	kcp.Spec.Replicas = 1
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+	require.NoError(t, testEnv.Create(ctx, kcp))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, gmt, cluster, ns)
+
+	r := buildTestController(t, nil)
+
+	// Let the controller create the single control plane machine it needs, so that its
+	// infrastructure machine is a real clone of the machine template.
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		scope, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
+		require.NoError(t, err)
+
+		res, err := r.reconcileMachines(ctx, scope)
+		assert.NoError(c, err)
+		assert.True(c, res.IsZero(), "expected the desired state to be reached, got %v", res)
+	}, 20*time.Second, 100*time.Millisecond)
+
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv.GetAPIReader(), cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	require.NoError(t, err)
-	require.False(t, stale, "cached view must not be considered stale once the Machine is observed")
+	require.Len(t, machines, 1)
+	machine := machines.Oldest()
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(ctx, machine))
+	}()
+
+	// From now on the cached client does not know the infrastructure machine of the existing
+	// Machine, only the API server does.
+	r.Client = &staleObjectCacheClient{Client: testEnv, hiddenKind: machine.Spec.InfrastructureRef.Kind}
+	r.APIReader = testEnv.GetAPIReader()
+
+	for range 3 {
+		scope, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
+		require.NoError(t, err)
+		require.Equal(t, 1, scope.upToDateMachines.Len(), "the Machine must be up to date, its infrastructure machine does exist")
+
+		res, err := r.reconcileMachines(ctx, scope)
+		require.NoError(t, err)
+		require.True(t, res.IsZero(), "expected zero result, got %v", res)
+	}
+
+	machines, err = collections.GetFilteredMachinesForCluster(ctx, testEnv.GetAPIReader(), cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
+	require.NoError(t, err)
+	require.Len(t, machines, 1, "no Machine must be created or deleted")
 }
