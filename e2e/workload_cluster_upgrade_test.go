@@ -206,7 +206,7 @@ func workloadClusterUpgradeSpec(t *testing.T) {
 // upgradeChecks bundles the strategy-specific checks that are injected into the
 // control plane upgrade helper.
 type upgradeChecks struct {
-	DuringUpgradeCheck func(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) (func() error, error)
+	DuringUpgradeCheck func(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error
 	PostUpgradeCheck   func(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error
 }
 
@@ -215,23 +215,23 @@ type upgradeChecks struct {
 // and that no control plane machine is recreated; recreate flavors verify that
 // the machines are replaced and the desired count is preserved.
 func newControlPlaneUpgradeChecks(preMachines *clusterv1.MachineList) upgradeChecks {
-	return upgradeChecks{
-		DuringUpgradeCheck: func(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) (func() error, error) {
-			switch {
-			case strings.EqualFold(flavor, "InPlace"):
-				return startStandaloneInPlaceCheck(ctx, input), nil
-			case strings.EqualFold(flavor, "InPlaceCAPI"):
-				return startCAPIInPlaceCheck(ctx, input), nil
-			case strings.EqualFold(flavor, "RecreateDeleteFirst"):
-				return startRecreateDeleteFirstMachineCountCheck(ctx, input), nil
-			default:
-				return nil, nil
-			}
-		},
+	checks := upgradeChecks{
 		PostUpgradeCheck: func(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
 			return validateControlPlaneMachineRollout(ctx, input, preMachines)
 		},
 	}
+
+	// Recreate has no invariant to watch while the upgrade runs, so it keeps the check unset.
+	switch flavor {
+	case "InPlace":
+		checks.DuringUpgradeCheck = checkStandaloneInPlace
+	case "InPlaceCAPI":
+		checks.DuringUpgradeCheck = checkCAPIInPlace
+	case "RecreateDeleteFirst":
+		checks.DuringUpgradeCheck = checkRecreateDeleteFirstMachineCount
+	}
+
+	return checks
 }
 
 // validateControlPlaneMachineRollout verifies update-strategy specific machine expectations
@@ -253,8 +253,8 @@ func validateControlPlaneMachineRollout(ctx context.Context, input util.UpgradeC
 
 	fmt.Printf("Control plane machines after upgrade: %d (desired %d)\n", len(postControlPlaneMachines), desiredReplicas)
 
-	switch {
-	case strings.HasPrefix(strings.ToLower(flavor), "inplace"):
+	switch flavor {
+	case "InPlace", "InPlaceCAPI":
 		if len(preControlPlaneMachines) != len(postControlPlaneMachines) {
 			return fmt.Errorf("in-place upgrade recreated control plane machines: expected %d machines, got %d", len(preControlPlaneMachines), len(postControlPlaneMachines))
 		}
@@ -264,7 +264,7 @@ func validateControlPlaneMachineRollout(ctx context.Context, input util.UpgradeC
 			}
 		}
 		fmt.Println("In-place upgrade did not recreate any control plane machine")
-	case strings.EqualFold(flavor, "Recreate"), strings.EqualFold(flavor, "RecreateDeleteFirst"):
+	case "Recreate", "RecreateDeleteFirst":
 		if len(postControlPlaneMachines) != desiredReplicas {
 			return fmt.Errorf("recreate upgrade ended with %d control plane machines, expected %d", len(postControlPlaneMachines), desiredReplicas)
 		}
@@ -287,77 +287,79 @@ func validateControlPlaneMachineRollout(ctx context.Context, input util.UpgradeC
 
 // controlPlaneMachineNamesByUID returns the control plane machine names keyed by
 // their UID for the given machine list.
+//
+// Machines being deleted are left out: when the control plane reports the upgrade as done, a
+// replaced Machine can still exist because its k0s node has to leave etcd before the pre-terminate
+// hook lets the deletion complete. Counting it makes the rollout look like it produced one Machine
+// too many.
 func controlPlaneMachineNamesByUID(machines *clusterv1.MachineList) map[string]string {
 	byUID := make(map[string]string, len(machines.Items))
 	for i := range machines.Items {
 		m := machines.Items[i]
-		if m.Labels[clusterv1.MachineControlPlaneLabel] == "true" {
-			byUID[string(m.GetUID())] = m.Name
+		if m.Labels[clusterv1.MachineControlPlaneLabel] != "true" {
+			continue
 		}
+		if !m.DeletionTimestamp.IsZero() {
+			continue
+		}
+		byUID[string(m.GetUID())] = m.Name
 	}
 	return byUID
 }
 
-// startStandaloneInPlaceCheck verifies that the standalone in-place update path is
-// used: an autopilot Plan must appear in the workload cluster and no control plane
-// Machine may carry the CAPI in-place update annotations while the upgrade runs.
-func startStandaloneInPlaceCheck(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) func() error {
-	checkCtx, cancel := context.WithCancel(ctx)
-	done := make(chan error, 1)
+// checkStandaloneInPlace verifies that the standalone in-place update path is used: an autopilot
+// Plan must appear in the workload cluster and no control plane Machine may carry the CAPI in-place
+// update annotations while the upgrade runs. It returns when the given context is cancelled, which
+// happens once the upgrade is done.
+func checkStandaloneInPlace(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
+	workloadClientSet := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name).GetClientSet()
 	planSeen := false
 
-	workloadClientSet := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name).GetClientSet()
-
-	go func() {
-		done <- wait.PollUntilContextCancel(checkCtx, time.Second, true, func(fctx context.Context) (bool, error) {
-			if err := failOnInPlaceUpdateAnnotations(fctx, input); err != nil {
-				return false, err
-			}
-			plan, err := autopilot.GetPlan(fctx, workloadClientSet)
-			if err != nil {
-				// The plan has not been created yet; keep polling.
-				return false, nil
-			}
-			targetVersion, err := autopilot.GetPlanTargetVersion(plan)
-			if err != nil {
-				return false, err
-			}
-			if targetVersion != input.KubernetesUpgradeVersion {
-				// A completed plan from the previous upgrade can legitimately
-				// still exist until the next upgrade deletes and recreates it.
-				// Keep polling until the new plan for the target version appears.
-				return false, nil
-			}
-			planSeen = true
-			return true, nil
-		})
-	}()
-
-	return func() error {
-		cancel()
-		err := <-done
-		if err == nil {
-			return nil
+	err := wait.PollUntilContextCancel(ctx, time.Second, true, func(fctx context.Context) (bool, error) {
+		machine, err := controlPlaneMachineWithInPlaceUpdateAnnotations(fctx, input)
+		if err != nil {
+			return false, err
 		}
-		if errors.Is(err, context.Canceled) {
-			if planSeen {
-				return nil
-			}
-			return errors.New("standalone in-place upgrade did not create an autopilot plan in the workload cluster")
+		if machine != nil {
+			return false, fmt.Errorf("standalone in-place upgrade unexpectedly used CAPI in-place update annotations on machine %s", machine.Name)
 		}
+
+		plan, err := autopilot.GetPlan(fctx, workloadClientSet)
+		if err != nil {
+			// The plan has not been created yet; keep polling.
+			return false, nil
+		}
+		targetVersion, err := autopilot.GetPlanTargetVersion(plan)
+		if err != nil {
+			return false, err
+		}
+		if targetVersion != input.KubernetesUpgradeVersion {
+			// A completed plan from the previous upgrade can legitimately
+			// still exist until the next upgrade deletes and recreates it.
+			// Keep polling until the new plan for the target version appears.
+			return false, nil
+		}
+		planSeen = true
+		return true, nil
+	})
+	if err != nil && !errors.Is(err, context.Canceled) {
 		return err
 	}
+	if !planSeen {
+		return errors.New("standalone in-place upgrade did not create an autopilot plan in the workload cluster")
+	}
+	return nil
 }
 
-// failOnInPlaceUpdateAnnotations returns an error if any control plane Machine
-// carries the CAPI in-place update annotations.
-func failOnInPlaceUpdateAnnotations(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
+// controlPlaneMachineWithInPlaceUpdateAnnotations returns a control plane Machine of the cluster
+// carrying the CAPI in-place update annotations, or nil if no control plane Machine does.
+func controlPlaneMachineWithInPlaceUpdateAnnotations(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) (*clusterv1.Machine, error) {
 	machines := &clusterv1.MachineList{}
 	if err := input.ClusterProxy.GetClient().List(ctx, machines,
 		client.InNamespace(input.Cluster.Namespace),
 		client.MatchingLabels{clusterv1.ClusterNameLabel: input.Cluster.Name},
 	); err != nil {
-		return err
+		return nil, err
 	}
 	for i := range machines.Items {
 		m := machines.Items[i]
@@ -365,46 +367,28 @@ func failOnInPlaceUpdateAnnotations(ctx context.Context, input util.UpgradeContr
 			continue
 		}
 		if hasInPlaceUpdateAnnotations(m.Annotations) {
-			return fmt.Errorf("standalone in-place upgrade unexpectedly used CAPI in-place update annotations on machine %s", m.Name)
+			return &m, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
-// startCAPIInPlaceCheck verifies that the runtime extension in-place update path is
-// used: at least one control plane Machine must carry the CAPI in-place update
-// annotations while the upgrade runs.
-func startCAPIInPlaceCheck(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) func() error {
-	checkCtx, cancel := context.WithCancel(ctx)
-	done := make(chan error, 1)
-
-	go func() {
-		done <- wait.PollUntilContextCancel(checkCtx, time.Second, true, func(fctx context.Context) (bool, error) {
-			machines := &clusterv1.MachineList{}
-			if err := input.ClusterProxy.GetClient().List(fctx, machines,
-				client.InNamespace(input.Cluster.Namespace),
-				client.MatchingLabels{clusterv1.ClusterNameLabel: input.Cluster.Name},
-			); err != nil {
-				return false, err
-			}
-			for i := range machines.Items {
-				m := machines.Items[i]
-				if m.Labels[clusterv1.MachineControlPlaneLabel] == "true" && hasInPlaceUpdateAnnotations(m.Annotations) {
-					return true, nil
-				}
-			}
-			return false, nil
-		})
-	}()
-
-	return func() error {
-		cancel()
-		err := <-done
-		if errors.Is(err, context.Canceled) {
-			return errors.New("InPlaceCAPI upgrade did not trigger the runtime extension: no control plane machine had CAPI in-place update annotations")
+// checkCAPIInPlace verifies that the runtime extension in-place update path is used: at least one
+// control plane Machine must carry the CAPI in-place update annotations while the upgrade runs. It
+// returns when the annotations have been seen or when the given context is cancelled, which happens
+// once the upgrade is done.
+func checkCAPIInPlace(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
+	err := wait.PollUntilContextCancel(ctx, time.Second, true, func(fctx context.Context) (bool, error) {
+		machine, err := controlPlaneMachineWithInPlaceUpdateAnnotations(fctx, input)
+		if err != nil {
+			return false, err
 		}
-		return err
+		return machine != nil, nil
+	})
+	if errors.Is(err, context.Canceled) {
+		return errors.New("InPlaceCAPI upgrade did not trigger the runtime extension: no control plane machine had CAPI in-place update annotations")
 	}
+	return err
 }
 
 // hasInPlaceUpdateAnnotations reports whether the given Machine annotations
@@ -417,43 +401,33 @@ func hasInPlaceUpdateAnnotations(annotations map[string]string) bool {
 	return ok
 }
 
-// startRecreateDeleteFirstMachineCountCheck starts a background check that makes sure
-// the RecreateDeleteFirst strategy never exceeds the desired number of control plane machines
-// while the upgrade is in progress. The returned stop function waits for the check to finish
-// and returns its error, if any.
-func startRecreateDeleteFirstMachineCountCheck(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) func() error {
-	checkCtx, cancel := context.WithCancel(ctx)
-	done := make(chan error, 1)
+// checkRecreateDeleteFirstMachineCount makes sure the RecreateDeleteFirst strategy never exceeds the
+// desired number of control plane machines. It returns when the given context is cancelled, which
+// happens once the upgrade is done.
+func checkRecreateDeleteFirstMachineCount(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
 	desiredReplicas := int(input.ControlPlane.Spec.Replicas)
 
-	go func() {
-		done <- wait.PollUntilContextCancel(checkCtx, time.Second, true, func(fctx context.Context) (bool, error) {
-			machineList := &clusterv1.MachineList{}
-			if err := input.ClusterProxy.GetClient().List(fctx, machineList,
-				client.InNamespace(input.Cluster.Namespace),
-				client.MatchingLabels{clusterv1.ClusterNameLabel: input.Cluster.Name},
-			); err != nil {
-				return false, err
-			}
-			count := 0
-			for _, m := range machineList.Items {
-				if m.Labels[clusterv1.MachineControlPlaneLabel] == "true" {
-					count++
-				}
-			}
-			if count > desiredReplicas {
-				return false, fmt.Errorf("RecreateDeleteFirst upgrade exceeded desired control plane machine count: got %d, expected max %d", count, desiredReplicas)
-			}
-			return false, nil
-		})
-	}()
-
-	return func() error {
-		cancel()
-		err := <-done
-		if errors.Is(err, context.Canceled) {
-			return nil
+	err := wait.PollUntilContextCancel(ctx, time.Second, true, func(fctx context.Context) (bool, error) {
+		machineList := &clusterv1.MachineList{}
+		if err := input.ClusterProxy.GetClient().List(fctx, machineList,
+			client.InNamespace(input.Cluster.Namespace),
+			client.MatchingLabels{clusterv1.ClusterNameLabel: input.Cluster.Name},
+		); err != nil {
+			return false, err
 		}
-		return err
+		count := 0
+		for _, m := range machineList.Items {
+			if m.Labels[clusterv1.MachineControlPlaneLabel] == "true" {
+				count++
+			}
+		}
+		if count > desiredReplicas {
+			return false, fmt.Errorf("RecreateDeleteFirst upgrade exceeded desired control plane machine count: got %d, expected max %d", count, desiredReplicas)
+		}
+		return false, nil
+	})
+	if errors.Is(err, context.Canceled) {
+		return nil
 	}
+	return err
 }
