@@ -12,8 +12,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: "{go://sigs.k8s.io/cluster-api@v1.11}"
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.11}/core-components.yaml
+      - name: "{go://sigs.k8s.io/cluster-api@v1.12}"
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.12}/core-components.yaml
         type: url
         contract: v1beta1
         files:
@@ -118,6 +118,17 @@ providers:
           - old: "image: k0s/k0smotron:latest"
             new: "image: quay.io/k0sproject/k0smotron:latest"
 
+  - name: k0sproject-k0smotron
+    type: RuntimeExtensionProvider
+    versions:
+      - name: v2.1.99 # potentially next release. Manifest from source files (development) are used.
+        value: ../../extensions/config/default
+        files:
+        - sourcePath: "../../metadata.yaml"
+        replacements:
+          - old: "image: k0s/k0smotron:latest"
+            new: "image: quay.io/k0sproject/k0smotron:latest"
+
 variables:
   KUBERNETES_VERSION_MANAGEMENT: "v1.30.0"
   KUBERNETES_VERSION: "v1.31.0"
@@ -131,6 +142,8 @@ variables:
   # Following feature flags are required to use Ignition as bootstrap data format in CAPA.
   EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
   EXP_BOOTSTRAP_FORMAT_IGNITION: "true"
+  # Following feature flag is required to use the Runtime SDK.
+  EXP_RUNTIME_SDK: "true"
 
 intervals:
   # The array is defined as [timeout, polling interval]
