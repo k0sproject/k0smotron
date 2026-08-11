@@ -27,7 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -37,10 +37,6 @@ import (
 	"github.com/go-logr/logr"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/k0sproject/version"
-)
-
-var (
-	errUnsupportedPlanState = errors.New("unsupported plan state")
 )
 
 func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlplane) (err error) {
@@ -64,36 +60,27 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 
 func computeReplicas(controlplane *controlplane) error {
 	controlplane.kcp.Status.Replicas = new(int32(len(controlplane.activeMachines)))
-	readyReplicas := 0
-	unavailableReplicas := 0
-	// Count the machines in different states
-	for _, machine := range controlplane.activeMachines {
-		switch machine.Status.Phase {
-		case string(clusterv2.MachinePhaseRunning):
+
+	var allReplicas []*clusterv1.Machine
+	allReplicas = append(allReplicas, controlplane.activeMachines.UnsortedList()...)
+	allReplicas = append(allReplicas, controlplane.deletedMachines.UnsortedList()...)
+
+	var readyReplicas, availableReplicas, upToDateReplicas int32
+	for _, machine := range allReplicas {
+		if conditions.IsTrue(machine, clusterv1.MachineReadyCondition) {
 			readyReplicas++
-		case string(clusterv2.MachinePhaseProvisioned):
-			// If we're running without --enable-worker, the machine will never transition
-			// to running state, so we need to count it as ready when it's provisioned
-			if !controlplane.kcp.WorkerEnabled() {
-				readyReplicas++
-			} else {
-				unavailableReplicas++
-			}
-		case string(clusterv2.MachinePhaseDeleting), string(clusterv2.MachinePhaseDeleted):
-			// Do nothing
-		default:
-			unavailableReplicas++
+		}
+		if conditions.IsTrue(machine, clusterv1.MachineAvailableCondition) {
+			availableReplicas++
+		}
+		if conditions.IsTrue(machine, clusterv1.MachineUpToDateCondition) {
+			upToDateReplicas++
 		}
 	}
 
-	// If some machines are missing, count them as unavailable
-	if int(controlplane.kcp.Spec.Replicas) > controlplane.activeMachines.Len() {
-		unavailableReplicas += int(controlplane.kcp.Spec.Replicas) - controlplane.activeMachines.Len()
-	}
-
 	controlplane.kcp.Status.ReadyReplicas = new(int32(readyReplicas))
-	controlplane.kcp.Status.UpToDateReplicas = new(int32(controlplane.upToDateMachines.Len()))
-	controlplane.kcp.Status.AvailableReplicas = new(int32(controlplane.activeMachines.Len() - unavailableReplicas))
+	controlplane.kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
+	controlplane.kcp.Status.AvailableReplicas = new(int32(availableReplicas))
 
 	// Find the lowest version
 	lowestMachineVersion, err := minVersion(controlplane.activeMachines)
@@ -101,7 +88,6 @@ func computeReplicas(controlplane *controlplane) error {
 		log.Log.Error(err, "Failed to get the lowest version")
 		return err
 	}
-
 	controlplane.kcp.Status.Version = lowestMachineVersion
 
 	// If kcp has suffix but machines don't, we need to add it to minVersion
@@ -164,7 +150,7 @@ func setScalingConditions(controlplane *controlplane) {
 }
 
 // versionMatches checks if the machine version matches the kcp version taking the possibly missing suffix into account
-func versionMatches(machine *clusterv2.Machine, ver string) bool {
+func versionMatches(machine *clusterv1.Machine, ver string) bool {
 
 	if machine.Spec.Version == "" {
 		return false

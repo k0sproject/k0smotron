@@ -21,12 +21,13 @@ package controlplane
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/require"
-	clusterv2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
 )
 
@@ -48,39 +49,62 @@ func Test_machineStatusCompute(t *testing.T) {
 		require.NoError(t, err)
 		require.Zero(t, ptr.Deref(kcp.Status.Replicas, 0))
 		require.Empty(t, kcp.Status.Version)
+		require.True(t, *kcp.Status.ExternalManagedControlPlane)
 	})
 
-	t.Run("test all machines are ready", func(t *testing.T) {
+	t.Run("test all machines are ready and available", func(t *testing.T) {
 		kcp := &cpv1beta2.K0sControlPlane{
 			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0",
 				Replicas: 2,
 			},
 		}
-		machines := collections.Machines{
-			"machine1": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
+		activeMachines := collections.Machines{
+			"machine1": &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
 					Version: "v1.31.0",
 				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseRunning),
+				Status: clusterv1.MachineStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   clusterv1.MachineReadyCondition,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   clusterv1.MachineAvailableCondition,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   clusterv1.MachineUpToDateCondition,
+							Status: metav1.ConditionTrue,
+						},
+					},
 				},
 			},
-			"machine2": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
+			"machine2": &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseRunning),
+				Status: clusterv1.MachineStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   clusterv1.MachineReadyCondition,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   clusterv1.MachineAvailableCondition,
+							Status: metav1.ConditionTrue,
+						},
+					},
 				},
 			},
 		}
 
 		scope := &controlplane{
 			kcp:            kcp,
-			activeMachines: machines,
+			activeMachines: activeMachines,
 			upToDateMachines: collections.Machines{
-				"machine1": machines["machine1"],
+				"machine1": activeMachines["machine1"],
 			},
 		}
 		err := computeReplicas(scope)
@@ -90,10 +114,11 @@ func Test_machineStatusCompute(t *testing.T) {
 		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
 		require.Equal(t, int32(2), *kcp.Status.ReadyReplicas)
+		require.True(t, *kcp.Status.ExternalManagedControlPlane)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 	})
 
-	t.Run("test all machines are ready but not using suffix", func(t *testing.T) {
+	t.Run("test all ready and available are ready but not using suffix", func(t *testing.T) {
 		kcp := &cpv1beta2.K0sControlPlane{
 			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0+k0s.0",
@@ -101,20 +126,42 @@ func Test_machineStatusCompute(t *testing.T) {
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
+			"machine1": &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
 					Version: "v1.31.0",
 				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseRunning),
+				Status: clusterv1.MachineStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   clusterv1.MachineReadyCondition,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   clusterv1.MachineAvailableCondition,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   clusterv1.MachineUpToDateCondition,
+							Status: metav1.ConditionTrue,
+						},
+					},
 				},
 			},
-			"machine2": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
+			"machine2": &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseRunning),
+				Status: clusterv1.MachineStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   clusterv1.MachineReadyCondition,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   clusterv1.MachineAvailableCondition,
+							Status: metav1.ConditionTrue,
+						},
+					},
 				},
 			},
 		}
@@ -133,31 +180,53 @@ func Test_machineStatusCompute(t *testing.T) {
 		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
 		require.Equal(t, int32(2), *kcp.Status.ReadyReplicas)
+		require.True(t, *kcp.Status.ExternalManagedControlPlane)
 		require.Equal(t, "v1.30.0+k0s.0", kcp.Status.Version)
 	})
 
-	t.Run("test non existent machines are unavailable", func(t *testing.T) {
+	t.Run("test non existent machines are unavailable and external managed is true", func(t *testing.T) {
 		kcp := &cpv1beta2.K0sControlPlane{
 			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version:  "v1.31.0",
 				Replicas: 3,
+				K0sConfigSpec: bootstrapv2.K0sConfigSpec{
+					Args: []string{"--enable-worker"},
+				},
 			},
 		}
 		machines := collections.Machines{
-			"machine1": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
+			"machine1": &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
 					Version: "v1.31.0",
 				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseRunning),
+				Status: clusterv1.MachineStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   clusterv1.MachineReadyCondition,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   clusterv1.MachineUpToDateCondition,
+							Status: metav1.ConditionTrue,
+						},
+					},
 				},
 			},
-			"machine2": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
+			"machine2": &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
 					Version: "v1.30.0",
 				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseRunning),
+				Status: clusterv1.MachineStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   clusterv1.MachineReadyCondition,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   clusterv1.MachineAvailableCondition,
+							Status: metav1.ConditionTrue,
+						},
+					},
 				},
 			},
 		}
@@ -176,162 +245,14 @@ func Test_machineStatusCompute(t *testing.T) {
 		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
 		require.Equal(t, int32(2), *kcp.Status.ReadyReplicas)
+		require.Nil(t, kcp.Status.ExternalManagedControlPlane)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
-	})
-
-	t.Run("test some machines are not ready", func(t *testing.T) {
-		kcp := &cpv1beta2.K0sControlPlane{
-			Spec: cpv1beta2.K0sControlPlaneSpec{
-				Version:  "v1.31.0",
-				Replicas: 2,
-			},
-		}
-		machines := collections.Machines{
-			"machine1": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
-					Version: "v1.31.0",
-				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseRunning),
-				},
-			},
-			"machine2": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
-					Version: "v1.30.0",
-				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseProvisioning),
-				},
-			},
-			"machine3": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
-					Version: "v1.30.0",
-				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseFailed),
-				},
-			},
-		}
-		scope := &controlplane{
-			kcp:            kcp,
-			activeMachines: machines,
-			upToDateMachines: collections.Machines{
-				"machine1": machines["machine1"],
-			},
-		}
-		err := computeReplicas(scope)
-
-		require.NoError(t, err)
-		require.Equal(t, int32(3), *kcp.Status.Replicas)
-		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
-		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
-		require.Equal(t, int32(1), *kcp.Status.ReadyReplicas)
-		require.Equal(t, "v1.30.0", kcp.Status.Version)
-	})
-
-	t.Run("machines provisioned but kcp not using --enable-worker", func(t *testing.T) {
-		kcp := &cpv1beta2.K0sControlPlane{
-			Spec: cpv1beta2.K0sControlPlaneSpec{
-				Version:  "v1.31.0",
-				Replicas: 2,
-			},
-		}
-		machines := collections.Machines{
-			"machine1": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
-					Version: "v1.31.0",
-				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseProvisioned),
-				},
-			},
-			"machine2": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
-					Version: "v1.30.0",
-				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseProvisioning),
-				},
-			},
-			"machine3": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
-					Version: "v1.30.0",
-				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseFailed),
-				},
-			},
-		}
-
-		scope := &controlplane{
-			kcp:            kcp,
-			activeMachines: machines,
-			upToDateMachines: collections.Machines{
-				"machine1": machines["machine1"],
-			},
-		}
-		err := computeReplicas(scope)
-
-		require.NoError(t, err)
-		require.Equal(t, int32(3), *kcp.Status.Replicas)
-		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
-		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
-		require.Equal(t, int32(1), *kcp.Status.ReadyReplicas)
-		require.Equal(t, "v1.30.0", kcp.Status.Version)
-
-	})
-
-	t.Run("some machines stuck as provisioned but kcp using --enable-worker", func(t *testing.T) {
-		kcp := &cpv1beta2.K0sControlPlane{
-			Spec: cpv1beta2.K0sControlPlaneSpec{
-				Version:  "v1.31.0",
-				Replicas: 2,
-				K0sConfigSpec: bootstrapv2.K0sConfigSpec{
-					Args: []string{"--enable-worker"},
-				},
-			},
-		}
-		machines := collections.Machines{
-			"machine1": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
-					Version: "v1.31.0",
-				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseProvisioned),
-				},
-			},
-			"machine2": &clusterv2.Machine{
-				Spec: clusterv2.MachineSpec{
-					Version: "v1.30.0",
-				},
-				Status: clusterv2.MachineStatus{
-					Phase: string(clusterv2.MachinePhaseRunning),
-				},
-			},
-		}
-
-		scope := &controlplane{
-			kcp:            kcp,
-			activeMachines: machines,
-			upToDateMachines: collections.Machines{
-				"machine1": machines["machine1"],
-			},
-		}
-		err := computeReplicas(scope)
-
-		require.NoError(t, err)
-		require.Equal(t, int32(2), *kcp.Status.Replicas)
-		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
-		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
-		require.Equal(t, int32(1), *kcp.Status.ReadyReplicas)
-		require.Equal(t, "v1.30.0", kcp.Status.Version)
-
 	})
 }
 
 func Test_versionMatches(t *testing.T) {
 	type args struct {
-		machine *clusterv2.Machine
+		machine *clusterv1.Machine
 		ver     string
 	}
 	tests := []struct {
@@ -342,8 +263,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "version matches, both without suffix",
 			args: args{
-				machine: &clusterv2.Machine{
-					Spec: clusterv2.MachineSpec{
+				machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
 						Version: "v1.31.0",
 					},
 				},
@@ -354,8 +275,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "version does not match",
 			args: args{
-				machine: &clusterv2.Machine{
-					Spec: clusterv2.MachineSpec{
+				machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
 						Version: "v1.31.0",
 					},
 				},
@@ -366,8 +287,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "semver version match, machine version is missing the suffix",
 			args: args{
-				machine: &clusterv2.Machine{
-					Spec: clusterv2.MachineSpec{
+				machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
 						Version: "v1.31.0",
 					},
 				},
@@ -378,8 +299,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "semver version match, kcp version is missing the suffix",
 			args: args{
-				machine: &clusterv2.Machine{
-					Spec: clusterv2.MachineSpec{
+				machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
 						Version: "v1.31.0+k0s.0",
 					},
 				},
@@ -390,8 +311,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "versions match, both with the suffix",
 			args: args{
-				machine: &clusterv2.Machine{
-					Spec: clusterv2.MachineSpec{
+				machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
 						Version: "v1.31.0+k0s.0",
 					},
 				},
@@ -402,8 +323,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "versions do not match, machine version is missing",
 			args: args{
-				machine: &clusterv2.Machine{
-					Spec: clusterv2.MachineSpec{
+				machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
 						Version: "",
 					},
 				},
@@ -414,8 +335,8 @@ func Test_versionMatches(t *testing.T) {
 		{
 			name: "versions do not match, machine version is empty",
 			args: args{
-				machine: &clusterv2.Machine{
-					Spec: clusterv2.MachineSpec{
+				machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
 						Version: "",
 					},
 				},
