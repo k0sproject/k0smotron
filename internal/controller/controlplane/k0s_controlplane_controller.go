@@ -104,9 +104,9 @@ type controlplane struct {
 // K0sController is responsible for reconciling K0sControlPlane objects.
 type K0sController struct {
 	client.Client
-	// APIReader is an uncached client reader, used for authoritative reads against the
-	// API server when the cached client may lag behind it (e.g. right after a Machine
-	// has been created). If unset, the cached client is used instead.
+	// APIReader is an uncached client reader used to list the control plane Machines the
+	// reconciliation operates on, so that scaling decisions are never derived from an informer
+	// cache that has not observed Machines created by a previous reconciliation. It must be set.
 	APIReader           client.Reader
 	SecretCachingClient client.Client
 	ClusterCache        clustercache.ClusterCache
@@ -670,7 +670,9 @@ token = ` + frpToken + `
 func (c *K0sController) reconcileDelete(ctx context.Context, controlplane *controlplane) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c, controlplane.cluster)
+	// Read from the API server: an empty list makes the finalizer be removed, which cannot be undone,
+	// so it must not be decided from a cache that may not have observed the Machines yet.
+	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c.APIReader, controlplane.cluster)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get machines: %w", err)
 	}
@@ -749,7 +751,7 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 }
 
 func (c *K0sController) retrieveControlPlaneState(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane) (*controlplane, error) {
-	machines, err := collections.GetFilteredMachinesForCluster(ctx, c, cluster, collections.ControlPlaneMachines(cluster.Name))
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.APIReader, cluster, collections.ControlPlaneMachines(cluster.Name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter machines for control plane: %w", err)
 	}
@@ -809,10 +811,24 @@ func (c *K0sController) retrieveControlPlaneState(ctx context.Context, cluster *
 	return scope, nil
 }
 
+// getReferencedObject reads an object referenced by a Machine through the informer cache and, only
+// when the cache does not know it, retries against the API server. A Machine whose infra machine or
+// bootstrap config looks missing is treated as not up to date, which makes the controller scale up
+// or delete it, so the objects of a just created Machine must not be reported as missing merely
+// because the cache has not observed them yet.
+func (c *K0sController) getReferencedObject(ctx context.Context, ref clusterv1.ContractVersionedObjectReference, namespace string) (*unstructured.Unstructured, error) {
+	obj, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, ref, namespace)
+	if err == nil || !apierrors.IsNotFound(err) {
+		return obj, err
+	}
+
+	return external.GetObjectFromContractVersionedRef(ctx, c.APIReader, ref, namespace)
+}
+
 func (c *K0sController) calculateMachineState(ctx context.Context, kcp *cpv1beta2.K0sControlPlane, m *clusterv1.Machine) (machineState, error) {
 	logger := log.FromContext(ctx, "machine", m.Name)
 
-	uInfraMachine, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, m.Spec.InfrastructureRef, m.Namespace)
+	uInfraMachine, err := c.getReferencedObject(ctx, m.Spec.InfrastructureRef, m.Namespace)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return machineState{}, fmt.Errorf("failed to retrieve infra machine for machine object %s: %w", m.Name, err)
@@ -820,7 +836,7 @@ func (c *K0sController) calculateMachineState(ctx context.Context, kcp *cpv1beta
 		logger.Info("Infrastructure machine not found")
 	}
 
-	uBootstrapConfig, err := external.GetObjectFromContractVersionedRef(ctx, c.Client, m.Spec.Bootstrap.ConfigRef, m.Namespace)
+	uBootstrapConfig, err := c.getReferencedObject(ctx, m.Spec.Bootstrap.ConfigRef, m.Namespace)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return machineState{}, fmt.Errorf("failed to retrieve controller config for machine object %s: %w", m.Name, err)
@@ -848,6 +864,10 @@ func (c *K0sController) calculateMachineState(ctx context.Context, kcp *cpv1beta
 
 // SetupWithManager sets up the controller with the Manager.
 func (c *K0sController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
+	if c.APIReader == nil {
+		return errors.New("APIReader must not be nil")
+	}
+
 	// Check if the cluster.x-k8s.io API is available and if not, don't try to watch for Machine objects
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).

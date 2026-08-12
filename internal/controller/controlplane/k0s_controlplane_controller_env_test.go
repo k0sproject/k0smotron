@@ -81,6 +81,7 @@ func TestReconcileReturnErrorWhenOwnerClusterIsMissing(t *testing.T) {
 
 	r := &K0sController{
 		Client:              testEnv,
+		APIReader:           testEnv.GetAPIReader(),
 		SecretCachingClient: secretCachingClient,
 		ClusterCache:        clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}),
 	}
@@ -107,7 +108,8 @@ func TestReconcileNoK0sControlPlane(t *testing.T) {
 	}(cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:    testEnv,
+		APIReader: testEnv.GetAPIReader(),
 	}
 
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
@@ -132,7 +134,8 @@ func TestReconcilePausedCluster(t *testing.T) {
 	}(kcp, cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:    testEnv,
+		APIReader: testEnv.GetAPIReader(),
 	}
 
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
@@ -157,7 +160,8 @@ func TestReconcilePausedK0sControlPlane(t *testing.T) {
 	}(kcp, cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:    testEnv,
+		APIReader: testEnv.GetAPIReader(),
 	}
 
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
@@ -191,6 +195,7 @@ func TestReconcileTunneling(t *testing.T) {
 
 	r := &K0sController{
 		Client:              testEnv,
+		APIReader:           testEnv.GetAPIReader(),
 		ClientSet:           clientSet,
 		SecretCachingClient: secretCachingClient,
 	}
@@ -236,6 +241,7 @@ func TestReconcileKubeconfigEmptyAPIEndpoints(t *testing.T) {
 
 	r := &K0sController{
 		Client:              testEnv,
+		APIReader:           testEnv.GetAPIReader(),
 		SecretCachingClient: secretCachingClient,
 	}
 	controlplane := controlplane{
@@ -267,6 +273,7 @@ func TestReconcileKubeconfigMissingCACertificate(t *testing.T) {
 
 	r := &K0sController{
 		Client:              testEnv,
+		APIReader:           testEnv.GetAPIReader(),
 		SecretCachingClient: secretCachingClient,
 	}
 
@@ -321,6 +328,7 @@ func TestReconcileKubeconfigTunnelingModeNotEnabled(t *testing.T) {
 
 	r := &K0sController{
 		Client:              testEnv,
+		APIReader:           testEnv.GetAPIReader(),
 		SecretCachingClient: secretCachingClient,
 	}
 
@@ -391,6 +399,7 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 
 	r := &K0sController{
 		Client:              testEnv,
+		APIReader:           testEnv.GetAPIReader(),
 		SecretCachingClient: secretCachingClient,
 	}
 
@@ -488,6 +497,7 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 
 	r := &K0sController{
 		Client:              testEnv,
+		APIReader:           testEnv.GetAPIReader(),
 		SecretCachingClient: secretCachingClient,
 	}
 
@@ -610,6 +620,7 @@ func TestReconcileKubeconfigCertsRotation(t *testing.T) {
 
 		r := &K0sController{
 			Client:              testEnv,
+			APIReader:           testEnv.GetAPIReader(),
 			SecretCachingClient: secretCachingClient,
 		}
 
@@ -656,7 +667,8 @@ func TestReconcileK0sConfigNotProvided(t *testing.T) {
 	}(kcp, cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:    testEnv,
+		APIReader: testEnv.GetAPIReader(),
 	}
 	controlplane := controlplane{
 		cluster: cluster,
@@ -703,7 +715,8 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 	}(kcp, cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:    testEnv,
+		APIReader: testEnv.GetAPIReader(),
 		// We set a ClusterCache with a non-related Cluster accessor to verify to trigger an 'clustercache.ErrClusterNotConnected' error, which should be handled
 		// gracefully by the controller and not cause the reconciliation to fail because it is expected that the workload cluster config reconciliation might not
 		// be complete until the Cluster is fully connected and available.
@@ -769,7 +782,8 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 	}(kcp, cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:    testEnv,
+		APIReader: testEnv.GetAPIReader(),
 		// We set a ClusterCache with a non-related Cluster accessor to verify to trigger an 'clustercache.ErrClusterNotConnected' error, which should be handled
 		// gracefully by the controller and not cause the reconciliation to fail because it is expected that the workload cluster config reconciliation might not
 		// be complete until the Cluster is fully connected and available.
@@ -833,7 +847,8 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 	}(kcp, cluster, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:    testEnv,
+		APIReader: testEnv.GetAPIReader(),
 		// We set a ClusterCache with a non-related Cluster accessor to verify to trigger an 'clustercache.ErrClusterNotConnected' error, which should be handled
 		// gracefully by the controller and not cause the reconciliation to fail because it is expected that the workload cluster config reconciliation might not
 		// be complete until the Cluster is fully connected and available.
@@ -877,7 +892,8 @@ func TestReconcileDeleteControlPlanes(t *testing.T) {
 	}(kcp, cluster, gmt, ns)
 
 	r := &K0sController{
-		Client: testEnv,
+		Client:    testEnv,
+		APIReader: testEnv.GetAPIReader(),
 	}
 
 	controlplane := controlplane{
@@ -998,6 +1014,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 
 	r := &K0sController{
 		Client:                    testEnv,
+		APIReader:                 testEnv.GetAPIReader(),
 		workloadClusterKubeClient: kubernetes.New(restClient),
 		SecretCachingClient:       secretCachingClient,
 		ClusterCache:              clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}),
