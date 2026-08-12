@@ -84,10 +84,10 @@ type UpgradeControlPlaneAndWaitForUpgradeInput struct {
 	WaitForKubeProxyUpgradeInterval  Interval
 	WaitForControlPlaneReadyInterval Interval
 
-	// DuringUpgradeCheck is an optional strategy-specific check that runs in the
-	// background while the upgrade is in progress. It returns a cleanup function
-	// that is invoked after the upgrade completes; the returned error is checked then.
-	DuringUpgradeCheck func(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) (func() error, error)
+	// DuringUpgradeCheck is an optional strategy-specific check that runs in the background while
+	// the upgrade is in progress. Its context is cancelled once the upgrade is done, so the check
+	// is expected to keep running until then and to return its verdict when the context ends.
+	DuringUpgradeCheck func(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) error
 
 	// PostUpgradeCheck is an optional strategy-specific check invoked after the
 	// control plane reports ready but before the helper returns.
@@ -99,17 +99,17 @@ func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input Upgrad
 	mgmtClient := input.ClusterProxy.GetClient()
 
 	if input.DuringUpgradeCheck != nil {
-		stop, err := input.DuringUpgradeCheck(ctx, input)
-		if err != nil {
-			return fmt.Errorf("failed to start during upgrade check: %w", err)
-		}
-		if stop != nil {
-			defer func() {
-				if err := stop(); err != nil && resErr == nil {
-					resErr = fmt.Errorf("during upgrade check failed: %w", err)
-				}
-			}()
-		}
+		checkCtx, stopCheck := context.WithCancel(ctx)
+		checkResult := make(chan error, 1)
+		go func() {
+			checkResult <- input.DuringUpgradeCheck(checkCtx, input)
+		}()
+		defer func() {
+			stopCheck()
+			if err := <-checkResult; err != nil && resErr == nil {
+				resErr = fmt.Errorf("during upgrade check failed: %w", err)
+			}
+		}()
 	}
 
 	fmt.Println("Patching the new kubernetes version to KCP")
