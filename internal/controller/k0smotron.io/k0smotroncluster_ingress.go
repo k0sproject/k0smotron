@@ -49,7 +49,7 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 	// don't leave it orphaned in the management cluster.
 	staleConfigMap := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmc.GetIngressManifestsConfigName(),
+			Name:      kmc.GetIngressManifestsResourceName(),
 			Namespace: kmc.Namespace,
 		},
 	}
@@ -108,10 +108,10 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 // longer ship.
 func upsertIngressManifestVolumes(kmc *km.Cluster) {
 	ingressVolume := corev1.Volume{
-		Name: kmc.GetIngressManifestsConfigName(),
+		Name: kmc.GetIngressManifestsResourceName(),
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
-				SecretName: kmc.GetIngressManifestsConfigName(),
+				SecretName: kmc.GetIngressManifestsResourceName(),
 			},
 		},
 	}
@@ -120,7 +120,7 @@ func upsertIngressManifestVolumes(kmc *km.Cluster) {
 		VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{
-					Name: kmc.GetIngressManifestsConfigName() + "-konnectivity",
+					Name: kmc.GetIngressManifestsResourceName() + "-konnectivity",
 				},
 			},
 		},
@@ -370,7 +370,7 @@ func (scope *kmcScope) generateIngressManifestsSecret(kmc *km.Cluster, proxyCert
 	secret := corev1.Secret{
 		TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetIngressManifestsConfigName(),
+			Name:        kmc.GetIngressManifestsResourceName(),
 			Namespace:   kmc.Namespace,
 			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
@@ -590,7 +590,7 @@ func (scope *kmcScope) generateKonnectivityIngressConfigMap(kmc *km.Cluster) (co
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetIngressManifestsConfigName() + "-konnectivity",
+			Name:        kmc.GetIngressManifestsResourceName() + "-konnectivity",
 			Namespace:   kmc.Namespace,
 			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),

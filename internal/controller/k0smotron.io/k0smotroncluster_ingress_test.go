@@ -341,7 +341,7 @@ func TestUpsertIngressManifestVolumes(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
 			Spec:       km.ClusterSpec{Version: oldVersion},
 		}
-		ingressName := kmc.GetIngressManifestsConfigName()
+		ingressName := kmc.GetIngressManifestsResourceName()
 		kmc.Spec.Manifests = []corev1.Volume{
 			{
 				Name: ingressName,
@@ -371,7 +371,7 @@ func TestUpsertIngressManifestVolumes(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
 			Spec:       km.ClusterSpec{Version: nativeVersion},
 		}
-		ingressName := kmc.GetIngressManifestsConfigName()
+		ingressName := kmc.GetIngressManifestsResourceName()
 		kmc.Spec.Manifests = []corev1.Volume{
 			{Name: ingressName, VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: ingressName}}},
 			{Name: "konnectivity", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{
@@ -402,7 +402,7 @@ func TestUpsertIngressManifestVolumes(t *testing.T) {
 		vols := volumeNames(kmc)
 		assert.Contains(t, vols, "user-manifest")
 		assert.NotContains(t, vols, "konnectivity")
-		assert.Contains(t, vols, kmc.GetIngressManifestsConfigName())
+		assert.Contains(t, vols, kmc.GetIngressManifestsResourceName())
 		assert.Len(t, kmc.Spec.Manifests, 2)
 	})
 
