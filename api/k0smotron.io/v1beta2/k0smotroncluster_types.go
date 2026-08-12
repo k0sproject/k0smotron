@@ -804,8 +804,9 @@ func (kmc *Cluster) GetIngressName() string {
 	return kmc.getObjectName("kmc-%s")
 }
 
-// GetIngressManifestsConfigName returns the name of the configmap containing the manifests needed for the ingress
-func (kmc *Cluster) GetIngressManifestsConfigName() string {
+// GetIngressManifestsResourceName returns the shared name used by the ingress manifests bundle: the Secret holding
+// the manifests, the manifest volume mounted into the control plane, and (suffixed) the konnectivity bundle.
+func (kmc *Cluster) GetIngressManifestsResourceName() string {
 	return kmc.getObjectName("kmc-%s-ingress")
 }
 

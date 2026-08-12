@@ -55,21 +55,21 @@ unable to load configmap based request-header-client-ca-file: Get
 
 ### Root cause
 
-The ingress support architecture relies on a local HAProxy sidecar running on
-each worker node to proxy pod-to-API traffic to the ingress controller. As part
-of this, k0smotron reconfigures the `kubernetes.default` Service in the child cluster to
-point to the HAProxy sidecar.
+The ingress support architecture relies on a node-local proxy DaemonSet running
+on each worker node to proxy pod-to-API traffic to the ingress controller. As
+part of this, k0smotron reconfigures the `kubernetes.default` Service in the child cluster to
+point to the node-local proxy.
 
 With `--cloud-provider=external`, CCM (and not kubelet) is responsible for reporting the worker
 node's external addresses back to the cluster. Until CCM does this, k0smotron
-cannot fully configure the HAProxy sidecar, so the `kubernetes` Service is not
+cannot fully configure the node-local proxy, so the `kubernetes` Service is not
 yet reachable. Meanwhile, CCM itself may use in-cluster config to reach the API
 server — which reads `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT`
 env vars injected by kubelet, pointing at the `kubernetes` Service ClusterIP
 (`10.96.0.1` by default). The result is a deadlock:
 
-- CCM cannot reach the API server because the HAProxy sidecar is not yet configured
-- The HAProxy sidecar is not configured because CCM has not yet reported node addresses
+- CCM cannot reach the API server because the node-local proxy is not yet configured
+- The node-local proxy is not configured because CCM has not yet reported node addresses
 
 ### Solution
 
