@@ -8,7 +8,7 @@ require (
 	github.com/cloudflare/cfssl v1.6.4
 	github.com/coreos/butane v0.24.0
 	github.com/evanphx/json-patch/v5 v5.9.11
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/gobuffalo/flect v1.0.3
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
