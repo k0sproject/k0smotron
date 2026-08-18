@@ -31,6 +31,7 @@ nav:
       - Control Plane Bootstrap: capi-controlplane-bootstrap.md
       - Worker Node Bootstrap: capi-bootstrap.md
       - Remote Machine Provider: capi-remote.md
+      - Pod Machine Provider (experimental): capi-pod-machines.md
       - Windows support: windows-workers.md
       - Ingress support: ingress-support.md
       - Ignition support: ignition-support.md
