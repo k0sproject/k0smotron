@@ -63,6 +63,8 @@ import (
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	kapi "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	kcerts "github.com/k0sproject/k0smotron/v2/internal/certs"
+	"github.com/k0sproject/k0smotron/v2/internal/certs/report"
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/k0smotron/v2/internal/exec"
 	"github.com/k0sproject/version"
@@ -348,6 +350,8 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		}
 	}
 
+	c.reconcileCertificateConditions(ctx, cluster, kcp, scope)
+
 	var err error
 	kcp.Spec.K0sConfig, err = enrichK0sConfigWithClusterData(cluster, kcp.Spec.K0sConfig)
 	if err != nil {
@@ -502,6 +506,91 @@ func ensureCertificates(ctx context.Context, cluster *clusterv1.Cluster, kcp *cp
 	}
 
 	return certificates.LookupOrGenerateCached(ctx, scope.secretCachingClient, scope.client, capiutil.ObjectKey(cluster), owner)
+}
+
+// reconcileCertificateConditions surfaces certificate state on the
+// K0smotronControlPlane. The child k0smotron Cluster is the resource that
+// actually signs and renews the leaves, so its conditions are the truth; this
+// mirrors them upward so an operator watching only the control plane resource
+// still sees an expiring certificate.
+//
+// The child Cluster always lives in the management cluster and is read with
+// c.Client, unlike scope.client, which is swapped to a remote host cluster's
+// client when the control plane replicas run there. The CA-only fallback
+// below, on the other hand, inspects the certificate secrets, which do live
+// wherever scope.client points, since that is where ensureCertificates put
+// them.
+func (c *K0smotronController) reconcileCertificateConditions(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane, scope *kmcScope) {
+	child := &kapi.Cluster{}
+	err := c.Client.Get(ctx, capiutil.ObjectKey(cluster), child)
+	if err == nil {
+		availableCond := conditions.Get(child, kapi.ClusterCertificatesAvailableCondition)
+		expiringCond := conditions.Get(child, kapi.ClusterCertificatesExpiringCondition)
+
+		if availableCond == nil && expiringCond == nil {
+			// The child exists but hasn't run its own certificate
+			// reconciliation yet (the race right after creation, before its
+			// controller's first pass). Report Unknown explicitly rather than
+			// leaving whatever value was set on a previous reconcile in
+			// place - a stale "not expiring" would look like health when we
+			// actually have no data at all yet, the same hazard as an
+			// unreadable child below. A brief Unknown -> True transition once
+			// the child reports is a cheap price for never lying about
+			// certificate state.
+			msg := "Waiting for the hosted control plane to report certificate status"
+			conditions.Set(kcp, metav1.Condition{
+				Type:    kapi.ClusterCertificatesAvailableCondition,
+				Status:  metav1.ConditionUnknown,
+				Reason:  kapi.ClusterCertificatesWaitingForReportReason,
+				Message: msg,
+			})
+			conditions.Set(kcp, metav1.Condition{
+				Type:    kapi.ClusterCertificatesExpiringCondition,
+				Status:  metav1.ConditionUnknown,
+				Reason:  kapi.ClusterCertificatesWaitingForReportReason,
+				Message: msg,
+			})
+			return
+		}
+
+		if availableCond != nil {
+			conditions.Set(kcp, *availableCond)
+		}
+		if expiringCond != nil {
+			conditions.Set(kcp, *expiringCond)
+		}
+		return
+	}
+
+	if !apierrors.IsNotFound(err) {
+		// BOTH conditions must go Unknown here. Setting only Available would
+		// leave Expiring holding whatever it said on the last successful
+		// reconcile - typically False/not-expiring - so an operator watching
+		// Expiring during an RBAC or apiserver failure would see a
+		// reassuring stale value instead of a signal that we have lost
+		// visibility.
+		msg := fmt.Sprintf("Unable to read the hosted control plane: %v", err)
+		conditions.Set(kcp, metav1.Condition{
+			Type:    kapi.ClusterCertificatesAvailableCondition,
+			Status:  metav1.ConditionUnknown,
+			Reason:  kapi.InternalErrorReason,
+			Message: msg,
+		})
+		conditions.Set(kcp, metav1.Condition{
+			Type:    kapi.ClusterCertificatesExpiringCondition,
+			Status:  metav1.ConditionUnknown,
+			Reason:  kapi.InternalErrorReason,
+			Message: msg,
+		})
+		return
+	}
+
+	// The child cluster does not exist yet; report what we can see ourselves.
+	infos, unreadable := inspectClusterCertificates(ctx, scope.client, capiutil.ObjectKey(cluster))
+	status := report.Build(infos, unreadable, kcerts.DefaultRenewBefore, time.Now())
+	conditions.Set(kcp, status.Available)
+	conditions.Set(kcp, status.Expiring)
+	report.Emit(cluster.Namespace, cluster.Name, "K0smotronControlPlane", infos)
 }
 
 // listControlPlanePods returns the control plane pods for the given cluster. The listing is scoped to the
