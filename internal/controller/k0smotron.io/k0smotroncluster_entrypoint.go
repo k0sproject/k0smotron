@@ -41,8 +41,9 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 		"KineDataSourceURLPlaceholder": kineDataSourceURLPlaceholder,
 		"NatsTokenPlaceholder":         natsTokenPlaceholder,
 		"K0sControllerArgs":            getControllerFlags(kmc),
-		"PrivilegedPortIsUsed":         kmc.Spec.Service.APIPort <= 1024,
 		"UniversalSedInplace":          universalSedInplace,
+		"CertsMountPath":               certsMountPath,
+		"HasCertificates":              len(kmc.Spec.CertificateRefs) > 0,
 	})
 	if err != nil {
 		return v1.ConfigMap{}, err
@@ -117,6 +118,19 @@ const (
 # Put the k0s.yaml in place
 mkdir -p /etc/k0s && echo "$K0SMOTRON_K0S_YAML" > /etc/k0s/k0s.yaml
 
+{{if .HasCertificates}}
+# Copy the certificates out of the projected volume, which k0s can't use
+# directly because of its read-only mount and permissions. Runs on every start,
+# so the pki directory doesn't have to survive a container restart. The server
+# certs are dropped so that k0s reissues them for the current external address.
+# Bail out rather than let k0s generate a fresh CA, which would silently break
+# every kubeconfig and every node already joined to this cluster.
+mkdir -p /var/lib/k0s/pki \
+  && rm -rf /var/lib/k0s/pki/server.* \
+  && cp {{ .CertsMountPath }}/*.* /var/lib/k0s/pki/ \
+  || { echo "failed to stage certificates into /var/lib/k0s/pki" >&2; exit 1; }
+{{end}}
+
 # Substitute the kine datasource URL from the env var
 escaped_url=$(printf '%s' "$K0SMOTRON_KINE_DATASOURCE_URL" | sed 's/[&/\]/\\&/g')
 sedi "s|{{ .KineDataSourceURLPlaceholder }}|$escaped_url|g" /etc/k0s/k0s.yaml
@@ -156,11 +170,6 @@ if [ -n "$K0SMOTRON_NATS_TOKEN" ]; then
   escaped_token=$(printf '%s' "$K0SMOTRON_NATS_TOKEN" | sed 's/[&/\]/\\&/g')
   sedi "s|{{ .NatsTokenPlaceholder }}|$escaped_token|g" /etc/k0s/k0s.yaml
 fi
-
-{{if .PrivilegedPortIsUsed}}
-apk add --no-cache libcap
-{ while ! setcap 'cap_net_bind_service=+ep' /var/lib/k0s/bin/kube-apiserver; do sleep 1 ; done ; } &
-{{end}}
 
 # Run the k0s controller
 k0s controller {{ .K0sControllerArgs }}
