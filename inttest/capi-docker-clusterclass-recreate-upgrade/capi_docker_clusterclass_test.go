@@ -45,6 +45,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"k8s.io/utils/ptr"
@@ -201,13 +202,20 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.Require().NoError(err)
 	s.T().Log("control-plane is ready at version v1.30.0+k0s.0")
 
-	// Update the cluster and wait for the reported version to change
+	// Update the cluster and wait for the reported version to change.
+	// The read-modify-write is retried on conflict: the topology controllers
+	// keep writing to this Cluster, so a plain Get/Update races with them and
+	// fails with "the object has been modified".
 	s.T().Log("updating cluster")
-	cluster, err := util.GetCluster(s.ctx, s.client, "docker-test-cluster", "default")
-	s.Require().NoError(err)
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		cluster, err := util.GetCluster(s.ctx, s.client, "docker-test-cluster", "default")
+		if err != nil {
+			return err
+		}
 
-	cluster.Spec.Topology.Version = "v1.30.1"
-	err = util.UpdateCluster(s.ctx, s.client, cluster)
+		cluster.Spec.Topology.Version = "v1.30.1"
+		return util.UpdateCluster(s.ctx, s.client, cluster)
+	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for control-plane nodes to be updated")
