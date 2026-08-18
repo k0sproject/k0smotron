@@ -327,6 +327,7 @@ spec:
       machineDeployments:
       - class: docker-test-default-worker
         name: md
+        # TODO: add worker replicas again once https://github.com/kubernetes-sigs/cluster-api/pull/13973 is merged and released
         replicas: 1
 `
 
