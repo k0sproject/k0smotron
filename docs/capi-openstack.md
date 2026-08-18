@@ -195,7 +195,7 @@ spec:
         apiGroup: infrastructure.cluster.x-k8s.io
         kind: OpenStackMachineTemplate
         name: openstack-hcp-cluster-mt
-      version: v1.32.6
+      version: v1.32.6+k0s.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: OpenStackMachineTemplate
@@ -333,7 +333,6 @@ spec:
       - --enable-cloud-provider
       - --kubelet-extra-args="--cloud-provider=external"
       - --debug=true
-      version: v1.32.6+k0s.0
 ```
 
 ## Deployment and Monitoring

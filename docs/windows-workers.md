@@ -56,7 +56,6 @@ kind: K0sWorkerConfig
 metadata:
   name: windows-worker
 spec:
-  version: v1.34.2+k0s.0
   provisioner:
     platform: windows # Specify Windows platform (default is linux)
     type: powershell # Specify provisioning format 
@@ -218,6 +217,7 @@ spec:
         pool: worker-pool-1
     spec:
       clusterName: aws-test-cluster
+      version: v1.34.2+k0s.0
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -235,7 +235,6 @@ metadata:
 spec:
   template:
     spec:
-      version: v1.34.2+k0s.0
       provisioner:
         platform: windows
         type: powershell-xml

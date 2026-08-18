@@ -101,6 +101,7 @@ spec:
     spec:
       clusterName: hetzner-test
       failureDomain: fsn1
+      version: v1.27.2+k0s.0
       bootstrap:
         configRef: # This triggers our controller to create cloud-init secret
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
@@ -128,8 +129,7 @@ metadata:
   name: hetzner-test-machine-config
 spec:
   template:
-    spec:
-      version: v1.27.2+k0s.0
+    spec: {}
       # More details of the worker configuration can be set here
 ---
 apiVersion: v1

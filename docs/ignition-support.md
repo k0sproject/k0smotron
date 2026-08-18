@@ -167,6 +167,7 @@ spec:
   template:
     spec:
       clusterName: ignition-test-cluster
+      version: v1.30.2+k0s.0
       bootstrap:
         configRef: # This triggers our controller to create cloud-init secret
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
@@ -186,7 +187,6 @@ metadata:
 spec:
   template:
     spec:
-      version: v1.30.2+k0s.0
       # Flatcar, as inmutable OS, needs k0s in /opt/bin. It cannot write k0s binary in the default /usr/local/bin.
       k0sInstallDir: /opt/bin 
       ignition:
