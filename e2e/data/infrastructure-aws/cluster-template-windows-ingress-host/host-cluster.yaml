@@ -1,0 +1,161 @@
+# Hosting cluster for the "windows-ingress" spec (e2e/windows_ingress_test.go).
+#
+# This is a plain, machine-based k0s cluster on AWS whose single node acts as
+# the HOST for the workload cluster's hosted control plane:
+#
+#   * k0smotron deploys the workload cluster's K0smotronControlPlane INTO this
+#     cluster (see remoteHostCluster.kubeconfigRef in the "windows-ingress"
+#     flavor), so the control plane pods run on EC2, not on the machine running
+#     the test process.
+#   * The HAProxy ingress controller is installed here by the test and serves
+#     the ingress front door on NodePort ${INGRESS_PORT}.
+#   * The workload cluster's Windows/Linux workers are created in THIS cluster's
+#     VPC and reach the front door on this node.
+#
+# Why: the previous topology assumed the machine running the test was itself an
+# EC2 instance in the workers' VPC (host IP/VPC/subnet discovered from IMDS).
+# That does not hold for the CI runners, which are not EC2 instances at all, so
+# the AWS side of the topology is now created by this template instead of being
+# discovered from the host.
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        # Deliberately different from the workload cluster's pod CIDR
+        # (192.168.0.0/16) and from the CAPA-created VPC CIDR (10.0.0.0/16):
+        # both clusters' nodes share this VPC.
+        - 172.16.0.0/16
+    serviceDomain: cluster.local
+    services:
+      cidrBlocks:
+        - 10.96.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane
+    name: ${CLUSTER_NAME}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  version: ${KUBERNETES_VERSION}
+  k0sConfigSpec:
+    args:
+      - --single
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        telemetry:
+          enabled: false
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: AWSMachineTemplate
+      name: ${CLUSTER_NAME}-mt-cp
+      namespace: ${NAMESPACE}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-mt-cp
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      # A public IP is required: the workload cluster's workers and the test
+      # process both reach the ingress front door on this node.
+      publicIP: true
+      uncompressedUserData: false
+      ami:
+        # TODO(e2e-env): Ubuntu in eu-west-1, replace if it rotates/expires.
+        id: ami-0de864d6a3bd20ea8
+      # Sized for a k0s control plane plus the workload cluster's hosted
+      # control plane (apiserver, kine, konnectivity) and HAProxy.
+      instanceType: t3.xlarge
+      rootVolume:
+        size: 50
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+      cloudInit:
+        # Makes CAPA use k0s bootstrap cloud-init directly and not via SSM.
+        insecureSkipSecretsManager: true
+      sshKeyName: ${SSH_KEY_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  region: eu-west-1
+  sshKeyName: ${SSH_KEY_NAME}
+  controlPlaneLoadBalancer:
+    healthCheckProtocol: TCP
+  network:
+    vpc:
+      cidrBlock: 10.0.0.0/16
+    # A single PUBLIC subnet, declared explicitly. Left to itself CAPA also
+    # creates a private subnet per AZ, and a private subnet means a NAT gateway,
+    # and a NAT gateway means an Elastic IP -- which is a hard per-region quota
+    # ("AddressLimitExceeded: The maximum number of addresses has been reached"
+    # is how this template first failed to provision). Nothing here wants a
+    # private subnet: the one node runs with publicIP: true, and so do the
+    # workload cluster's workers that land in this same subnet. With no private
+    # subnets CAPA skips NAT gateways altogether (reconcileNatGateways in
+    # pkg/cloud/services/network/natgateways.go), so the whole hosting cluster
+    # consumes no Elastic IP -- instance public IPs are auto-assigned and do not
+    # count against that quota.
+    #
+    # "id" is required by the CRD but is only a name here: for a subnet CAPA
+    # creates, any value not starting with "subnet-" is treated as the subnet's
+    # name and the real identifier lands in the read-only resourceID field.
+    subnets:
+      - id: host-public
+        availabilityZone: eu-west-1a
+        cidrBlock: 10.0.0.0/24
+        isPublic: true
+    additionalControlPlaneIngressRules:
+      - description: "k0s controller join API"
+        protocol: tcp
+        fromPort: 9443
+        toPort: 9443
+      # The k0smotron ingress front door (HAProxy NodePort). Open to the world
+      # because it is consumed both from inside the VPC (the workload cluster's
+      # Windows/Linux workers, whose traffic to this node's PUBLIC IP is seen
+      # as coming from their own public IPs) and from outside it (the test
+      # process talks to the workload cluster's API through this same port).
+      # These clusters exist only for the duration of one e2e run.
+      - description: "k0smotron ingress front door"
+        protocol: tcp
+        fromPort: ${INGRESS_PORT}
+        toPort: ${INGRESS_PORT}
+        cidrBlocks:
+          - 0.0.0.0/0
+    additionalNodeIngressRules:
+      # The workload cluster's workers are attached to THIS cluster's node
+      # security group (an externally managed AWSCluster gets no security groups
+      # of its own), and CAPA's stock node rules only cover NodePorts and the
+      # kubelet API -- it adds no CNI rules unless network.cni is set. Without
+      # this rule the workload cluster's Calico overlay between its Linux and
+      # Windows workers would be dropped. "-1" is all protocols; the ports are
+      # required by the CRD but ignored by AWS for it.
+      - description: "All traffic between nodes (Calico overlay)"
+        protocol: "-1"
+        fromPort: -1
+        toPort: -1
+        sourceSecurityGroupRoles:
+          - node

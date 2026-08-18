@@ -21,30 +21,59 @@ spec:
     kind: AWSCluster
     name: ${CLUSTER_NAME}
 ---
-# Hosted control plane: runs as pods in the kind management cluster, reachable
-# from the AWS workers via the management cluster's HAProxy ingress front door
-# using nip.io hostnames built from the management host's PUBLIC IP.
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+# Hosted control plane. It does NOT run in the kind management cluster: it is
+# deployed into the AWS hosting cluster created by the "windows-ingress-host"
+# flavor (see remoteHostCluster below), and the AWS workers reach it through
+# that cluster's HAProxy ingress front door using nip.io hostnames built from
+# the hosting cluster node's public IPv4.
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: K0smotronControlPlane
 metadata:
   name: ${CLUSTER_NAME}-cp
   namespace: ${NAMESPACE}
 spec:
   version: ${KUBERNETES_VERSION}
+  # Deploy the control plane pods into the AWS hosting cluster instead of the
+  # management cluster. ${HOST_CLUSTER_KUBECONFIG_SECRET} is the CAPI-generated
+  # kubeconfig Secret of that cluster ("<hosting cluster name>-kubeconfig"),
+  # which lives in this same namespace of the management cluster.
+  remoteHostCluster:
+    kubeconfigRef:
+      name: ${HOST_CLUSTER_KUBECONFIG_SECRET}
+      namespace: ${NAMESPACE}
+      key: value
+  # kine/sqlite on an emptyDir keeps the hosting cluster free of any
+  # StorageClass requirement: the default etcd backend would need a PVC, and a
+  # plain k0s cluster on EC2 ships no dynamic provisioner (k0s's
+  # openebs_local_storage extension has been a no-op since k0s 1.31). The
+  # storage backend is irrelevant to what this spec asserts (ingress + Windows
+  # node-local proxy), so the cheapest one that needs no volumes is used.
+  #
+  # dataSourceURL must be set explicitly: k0s only fills in its default kine
+  # DSN when the whole "kine" section is absent, and k0smotron always emits it,
+  # so an empty value would make the control plane fail with "unsupported kine
+  # data source". The value below is exactly k0s's own default, resolved against
+  # the control plane pod's data dir (/var/lib/k0s, the persistence mount).
+  storage:
+    type: kine
+    kine:
+      dataSourceURL: sqlite://file:/var/lib/k0s/db/state.db?mode=rwc&_journal=WAL
+  persistence:
+    type: emptyDir
   service:
-    # NodePort backed by the kind management cluster's extra port mapping for
-    # 30443 (see e2e/setup.go), same trick already used by the docker "ingress"
-    # flavor (e2e/data/infrastructure-docker/main/cluster-template-ingress/cluster-with-ingress.yaml).
     type: NodePort
   ingress:
-    # ${HOST_IP} is the management/kind host's private IPv4, auto-discovered
-    # from EC2 IMDS by e2e/windows_ingress_test.go (detectHostInternalIP). The
-    # same-VPC workers reach the ingress front door over this private address.
+    # ${HOST_IP} is the hosting cluster node's PUBLIC IPv4, read from that
+    # cluster's control plane Machine by e2e/windows_ingress_test.go. The public
+    # address is used (rather than the private one) so that the same hostname
+    # works both for the same-VPC workers and for the test process, which talks
+    # to the workload cluster's API through this very ingress.
     apiHost: kube-api.${HOST_IP}.nip.io
     konnectivityHost: konnectivity.${HOST_IP}.nip.io
-    # ${INGRESS_PORT} matches the HostPort kind is configured with (see
-    # e2e/setup.go ExtraPortMappings, currently 32143); the test also opens
-    # this port on the host security group automatically.
+    # ${INGRESS_PORT} is the NodePort the HAProxy ingress controller is exposed
+    # on in the hosting cluster (see e2e/data/haproxy-ingress.yaml); the
+    # hosting cluster's AWSCluster opens the same port on its control plane
+    # security group.
     port: ${INGRESS_PORT}
     annotations:
       haproxy.org/ssl-passthrough: "true"
@@ -64,8 +93,9 @@ spec:
 ---
 # AWSCluster is annotated as externally managed because there is no
 # CAPA-managed control plane machine (the control plane is hosted, see above).
-# ${AWS_VPC_ID}/${AWS_SUBNET_ID}/${AWS_AVAILABILITY_ZONE} are auto-discovered
-# from IMDS as the host's OWN VPC/subnet/AZ so the workers land in the same VPC.
+# ${AWS_VPC_ID}/${AWS_SUBNET_ID}/${AWS_AVAILABILITY_ZONE} are the hosting
+# cluster's own VPC / public subnet / AZ, read from its AWSCluster by
+# e2e/windows_ingress_test.go, so the workers land next to the hosting node.
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSCluster
 metadata:
@@ -82,6 +112,7 @@ spec:
     subnets:
       - id: ${AWS_SUBNET_ID}
         availabilityZone: ${AWS_AVAILABILITY_ZONE}
+        isPublic: true
 ---
 # Windows worker pool -- this is what exercises the k0smotron-proxy-win
 # HostProcess DaemonSet.
@@ -94,10 +125,18 @@ spec:
   template:
     spec:
       publicIP: true
-      # Pin to the host's own subnet (auto-discovered) so the worker is in the
-      # same VPC/subnet/AZ as the management host and can reach ${HOST_IP}.
+      # Pin to the hosting cluster's public subnet so the worker sits in the
+      # same VPC/AZ as the hosting node and can reach ${HOST_IP}.
       subnet:
         id: ${AWS_SUBNET_ID}
+      # For an externally managed AWSCluster, CAPA does not create security
+      # groups, and additionalSecurityGroups is the ONLY source of security
+      # groups it applies to the instance (see GetCoreSecurityGroups in
+      # pkg/cloud/services/ec2). Reuse the hosting cluster's node security
+      # group: it allows all traffic between nodes carrying it (needed for
+      # Calico between the Linux and Windows workers) and all egress.
+      additionalSecurityGroups:
+        - id: ${AWS_NODE_SECURITY_GROUP_ID}
       ami:
         # TODO(e2e-env): Windows in eu-west-1, replace if it rotates/expires.
         id: ami-0bc74d0ac37f50b4b
@@ -144,7 +183,7 @@ metadata:
 spec:
   template:
     spec:
-      version: ${KUBERNETES_VERSION}
+      version: ${WORKER_K0S_VERSION}
       provisioner:
         platform: windows
         type: powershell-xml
@@ -161,10 +200,18 @@ spec:
   template:
     spec:
       publicIP: true
-      # Pin to the host's own subnet (auto-discovered) so the worker is in the
-      # same VPC/subnet/AZ as the management host and can reach ${HOST_IP}.
+      # Pin to the hosting cluster's public subnet so the worker sits in the
+      # same VPC/AZ as the hosting node and can reach ${HOST_IP}.
       subnet:
         id: ${AWS_SUBNET_ID}
+      # For an externally managed AWSCluster, CAPA does not create security
+      # groups, and additionalSecurityGroups is the ONLY source of security
+      # groups it applies to the instance (see GetCoreSecurityGroups in
+      # pkg/cloud/services/ec2). Reuse the hosting cluster's node security
+      # group: it allows all traffic between nodes carrying it (needed for
+      # Calico between the Linux and Windows workers) and all egress.
+      additionalSecurityGroups:
+        - id: ${AWS_NODE_SECURITY_GROUP_ID}
       ami:
         # TODO(e2e-env): Ubuntu in eu-west-1, replace if it rotates/expires.
         id: ami-0de864d6a3bd20ea8
@@ -211,4 +258,5 @@ metadata:
 spec:
   template:
     spec:
-      version: ${KUBERNETES_VERSION}
+      # See the note on ${WORKER_K0S_VERSION} in the Windows config above.
+      version: ${WORKER_K0S_VERSION}

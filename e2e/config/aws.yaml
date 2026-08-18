@@ -38,6 +38,7 @@ providers:
       - sourcePath: "../data/infrastructure-aws/cluster-template-ignition-fedora.yaml"
       - sourcePath: "../data/infrastructure-aws/cluster-template-windows.yaml"
       - sourcePath: "../data/infrastructure-aws/cluster-template-windows-ingress.yaml"
+      - sourcePath: "../data/infrastructure-aws/cluster-template-windows-ingress-host.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -183,3 +184,7 @@ intervals:
   windows-ingress/wait-cluster: ["10m", "10s"]
   windows-ingress/wait-controllers: ["10m", "10s"]
   windows-ingress/wait-machines: ["15m", "10s"]
+  # The spec brings up the AWS hosting cluster first, then the workload cluster.
+  windows-ingress/wait-control-plane: ["20m", "10s"]
+  # Two AWS clusters (and one VPC) to tear down.
+  windows-ingress/wait-delete-cluster: ["20m", "10s"]
