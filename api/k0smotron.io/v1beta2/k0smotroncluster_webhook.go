@@ -41,6 +41,10 @@ func (c ClusterValidator) ValidateCreate(_ context.Context, kmc *Cluster) (warni
 		return nil, fmt.Errorf("expected a Cluster object but got nil")
 	}
 
+	if err := kmc.validateCertificates(); err != nil {
+		return nil, err
+	}
+
 	return c.ValidateClusterSpec(&kmc.Spec)
 }
 
@@ -132,6 +136,10 @@ func imageVersion(image string) (*version.Version, error) {
 func (c ClusterValidator) ValidateClusterSpec(kcs *ClusterSpec) (warnings admission.Warnings, err error) {
 	warnings = c.validateVersionSuffix(kcs.Version)
 
+	if err := validateCertificates(kcs); err != nil {
+		return warnings, err
+	}
+
 	if kcs.Ingress != nil {
 		warn, err := kcs.Ingress.Validate(kcs.Version)
 		warnings = append(warnings, warn...)
@@ -162,6 +170,41 @@ func (c ClusterValidator) validatePatches(patches []ComponentPatch) error {
 		}
 	}
 	return nil
+}
+
+// validateCertificates validates the Certificates spec.
+//
+// It takes a *ClusterSpec rather than a *Cluster so that it can be shared by
+// every resource carrying a ClusterSpec. A K0smotronControlPlane's spec is
+// copied verbatim into the child k0smotron Cluster, so a value this function
+// rejects must be rejected at admission on BOTH resources. Validating only the
+// Cluster would let an invalid K0smotronControlPlane be admitted and then have
+// its child Cluster Create rejected by this same rule inside the controller,
+// leaving the hosted control plane permanently unprovisioned with the reason
+// visible only in controller logs.
+func validateCertificates(kcs *ClusterSpec) error {
+	if kcs.Certificates == nil {
+		return nil
+	}
+
+	if kcs.Certificates.Duration != nil && kcs.Certificates.Duration.Duration <= 0 {
+		return fmt.Errorf("spec.certificates.duration must be positive")
+	}
+
+	if kcs.Certificates.Duration == nil || kcs.Certificates.RenewBefore == nil {
+		return nil
+	}
+
+	if kcs.Certificates.RenewBefore.Duration >= kcs.Certificates.Duration.Duration {
+		return fmt.Errorf("spec.certificates.renewBefore must be less than duration")
+	}
+
+	return nil
+}
+
+// validateCertificates delegates to the shared ClusterSpec validation.
+func (c *Cluster) validateCertificates() error {
+	return validateCertificates(&c.Spec)
 }
 
 // validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
