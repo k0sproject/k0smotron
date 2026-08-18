@@ -99,6 +99,38 @@ const (
 
 	// NotFoundReason surfaces when a resource is not found.
 	NotFoundReason = "NotFound"
+
+	// ClusterCertificatesExpiringCondition surfaces certificates that are within
+	// their renewal window or already expired. It has negative polarity: True
+	// means attention is needed.
+	ClusterCertificatesExpiringCondition = "CertificatesExpiring"
+
+	// ClusterCertificatesValidReason surfaces that every managed certificate is
+	// comfortably within its validity period.
+	ClusterCertificatesValidReason = "Valid"
+
+	// ClusterCertificatesRenewalDueReason surfaces that at least one managed
+	// certificate is within its renewal window.
+	ClusterCertificatesRenewalDueReason = "RenewalDue"
+
+	// ClusterCertificatesExpiredReason surfaces that at least one managed
+	// certificate has already expired.
+	ClusterCertificatesExpiredReason = "CertificatesExpired"
+
+	// ClusterCertificatesWaitingForReportReason surfaces that the child
+	// k0smotron Cluster exists but has not yet run its own certificate
+	// reconciliation, so there are no certificate conditions to mirror. It
+	// lives here, with every sibling reason for the same conditions, because
+	// operators and tooling match on Reason: it is part of the API contract.
+	ClusterCertificatesWaitingForReportReason = "WaitingForCertificateReport"
+)
+
+const (
+	// RenewCertificatesAnnotation forces immediate renewal of every leaf
+	// certificate k0smotron signs for this cluster, regardless of the renewal
+	// threshold. The controller removes the annotation once renewal completes,
+	// so its value is irrelevant.
+	RenewCertificatesAnnotation = "k0smotron.io/renew-certificates"
 )
 
 // ClusterSpec defines the desired state of K0smotronCluster
@@ -191,6 +223,9 @@ type ClusterSpec struct {
 	// For the full list of generated resources and their component labels, see https://docs.k0smotron.io/stable/generated-resources/.
 	// +kubebuilder:validation:Optional
 	Patches []ComponentPatch `json:"patches,omitempty"`
+	// Certificates configures certificate lifetime and renewal.
+	//+kubebuilder:validation:Optional
+	Certificates *CertificatesSpec `json:"certificates,omitempty"`
 }
 
 // RemoteHostClusterSpec defines the configuration for deploying the k0s control plane in a remote hosting cluster.
@@ -491,6 +526,23 @@ type ClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Cluster `json:"items"`
+}
+
+// CertificatesSpec configures the lifetime and renewal of the certificates
+// k0smotron signs for this cluster.
+type CertificatesSpec struct {
+	// Duration is the requested validity period for certificates k0smotron
+	// signs. Leaf certificates are additionally clamped so that they never
+	// outlive the CA that issued them.
+	//+kubebuilder:default="8760h"
+	//+kubebuilder:validation:Optional
+	Duration *metav1.Duration `json:"duration,omitempty"`
+
+	// RenewBefore is how long before expiry a certificate is renewed. It must
+	// be shorter than Duration.
+	//+kubebuilder:default="720h"
+	//+kubebuilder:validation:Optional
+	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
 }
 
 // PersistenceSpec defines the persistence configuration for the k0s control plane.

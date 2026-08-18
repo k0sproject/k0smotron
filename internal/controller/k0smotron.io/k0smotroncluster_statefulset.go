@@ -51,7 +51,69 @@ var entrypointDefaultMode = int32(0744)
 const (
 	clusterLabel          = "k0smotron.io/cluster"
 	statefulSetAnnotation = "k0smotron.io/statefulset-hash"
+
+	// certificateFingerprintAnnotation is stamped on a pod template so that
+	// re-signing a certificate the pods mount changes the template and triggers
+	// the StatefulSet's own ordered, readiness-gated rolling update.
+	certificateFingerprintAnnotation = "k0smotron.io/certificate-fingerprint"
 )
+
+// certificateAnnotations returns the pod-template annotations that carry the
+// certificate fingerprint. An empty fingerprint yields nil so that clusters
+// upgrading to this version do not roll their pods for no reason.
+func certificateAnnotations(fingerprint string) map[string]string {
+	if fingerprint == "" {
+		return nil
+	}
+	return map[string]string{certificateFingerprintAnnotation: fingerprint}
+}
+
+// effectiveCertFingerprint decides whether the certificate fingerprint should be
+// stamped on a pod template at all.
+func effectiveCertFingerprint(existing *apps.StatefulSet, fingerprint string, renewed bool) string {
+	if existing == nil || existing.GetName() == "" {
+		return fingerprint
+	}
+
+	// Already present: keep it current so renewals still roll. It must never flap off once stamped.
+	if existing.Spec.Template.Annotations[certificateFingerprintAnnotation] != "" {
+		return fingerprint
+	}
+
+	if renewed {
+		return fingerprint
+	}
+
+	// Adopt silently: no certificate changed, so there is nothing to roll for.
+	return ""
+}
+
+// effectiveCertFingerprintFromLookup wraps effectiveCertFingerprint with the
+// outcome of looking up the existing StatefulSet, distinguishing "genuinely
+// does not exist" from "cannot tell right now".
+//
+// A NotFound error is passed through as existing == nil, i.e. a brand-new
+// cluster: effectiveCertFingerprint stamps it. Any other error - an API
+// timeout, a cache not yet warm right after the manager starts (exactly when
+// an operator upgrade is most likely to hit this), a transient RBAC problem -
+// means the current state is unknown, and forces the result to "" without
+// even consulting effectiveCertFingerprint.
+//
+// The asymmetry is deliberate: stamping is the disruptive action, so when we
+// cannot determine whether the StatefulSet - and therefore its annotation -
+// already exists, the safe default is to leave the pod template alone. A
+// missed stamp costs nothing: the next successful reconcile stamps it if a
+// renewal warrants one. A wrong stamp restarts a running control plane.
+func effectiveCertFingerprintFromLookup(existing *apps.StatefulSet, getErr error, fingerprint string, renewed bool) string {
+	switch {
+	case getErr == nil:
+		return effectiveCertFingerprint(existing, fingerprint, renewed)
+	case apierrors.IsNotFound(getErr):
+		return effectiveCertFingerprint(nil, fingerprint, renewed)
+	default:
+		return ""
+	}
+}
 
 var versionRegex = regexp.MustCompile(`v\d+.\d+.\d+-k0s.\d+`)
 var invalidVolumeNameCharsRegex = regexp.MustCompile(`[^a-z0-9-]+`)
@@ -400,6 +462,37 @@ data:
 		MountPath: "/var/lib/k0s/manifests/k0s-telemetry",
 		ReadOnly:  true,
 	})
+
+	// Stamp the certificate fingerprint on the pod template so that renewing a
+	// certificate the control plane mounts triggers a rolling update - but only
+	// when a roll is actually warranted (see effectiveCertFingerprint). The
+	// existing StatefulSet is not otherwise available at this point in
+	// reconcileStatefulSet (it is fetched only after generateStatefulSet
+	// returns, once the dry-run preview and its hash have already been
+	// computed), so it is looked up here directly with the caching client.
+	// See effectiveCertFingerprintFromLookup for how NotFound (genuinely no
+	// StatefulSet yet) is distinguished from any other lookup error (cannot
+	// tell, so do not stamp).
+	existingControlPlaneSts := &apps.StatefulSet{}
+	getErr := scope.client.Get(ctx, types.NamespacedName{
+		Namespace: kmc.Namespace,
+		Name:      kmc.GetStatefulSetName(),
+	}, existingControlPlaneSts)
+	if getErr != nil && !apierrors.IsNotFound(getErr) {
+		log.FromContext(ctx).Info("Could not look up existing control plane StatefulSet, not stamping certificate fingerprint this reconcile",
+			"error", getErr.Error())
+	}
+	effectiveFingerprint := effectiveCertFingerprintFromLookup(existingControlPlaneSts, getErr, scope.certFingerprints["controlplane"], scope.currentReconcileState.certificatesRenewed)
+
+	// Template.Annotations may alias kmc.Annotations (see
+	// util.AnnotationsForK0smotronCluster, which returns the Cluster's own
+	// annotations map rather than a copy). Merging into a fresh map instead of
+	// mutating in place keeps the fingerprint on the pod template only, so it
+	// is never persisted back onto the Cluster object itself.
+	templateAnnotations := make(map[string]string, len(statefulSet.Spec.Template.Annotations)+1)
+	maps.Copy(templateAnnotations, statefulSet.Spec.Template.Annotations)
+	maps.Copy(templateAnnotations, certificateAnnotations(effectiveFingerprint))
+	statefulSet.Spec.Template.Annotations = templateAnnotations
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
