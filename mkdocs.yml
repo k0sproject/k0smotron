@@ -15,6 +15,7 @@ nav:
   - Project status: status.md
   - Installation: install.md
   - Operator Configuration: operator-configuration.md
+  - Certificates: certificates.md
   - Usage:
     - Overview: usage-overview.md
     - Standalone:

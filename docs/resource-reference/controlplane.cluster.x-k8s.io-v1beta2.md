@@ -2170,6 +2170,13 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespeccertificates">certificates</a></b></td>
+        <td>object</td>
+        <td>
+          Certificates configures certificate lifetime and renewal.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>controlPlaneFlags</b></td>
         <td>[]string</td>
         <td>
@@ -2370,6 +2377,47 @@ CertificateRef defines a reference to a certificate that should be included in t
         <td>string</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.certificates
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespec)</sup></sup>
+
+
+
+Certificates configures certificate lifetime and renewal.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>duration</b></td>
+        <td>string</td>
+        <td>
+          Duration is the requested validity period for certificates k0smotron
+signs. Leaf certificates are additionally clamped so that they never
+outlive the CA that issued them.<br/>
+          <br/>
+            <i>Default</i>: 8760h<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>renewBefore</b></td>
+        <td>string</td>
+        <td>
+          RenewBefore is how long before expiry a certificate is renewed. It must
+be shorter than Duration.<br/>
+          <br/>
+            <i>Default</i>: 720h<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12546,6 +12594,13 @@ ClusterSpec defines the desired state of K0smotronCluster
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespeccertificates">certificates</a></b></td>
+        <td>object</td>
+        <td>
+          Certificates configures certificate lifetime and renewal.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>controlPlaneFlags</b></td>
         <td>[]string</td>
         <td>
@@ -12746,6 +12801,47 @@ CertificateRef defines a reference to a certificate that should be included in t
         <td>string</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.certificates
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespec)</sup></sup>
+
+
+
+Certificates configures certificate lifetime and renewal.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>duration</b></td>
+        <td>string</td>
+        <td>
+          Duration is the requested validity period for certificates k0smotron
+signs. Leaf certificates are additionally clamped so that they never
+outlive the CA that issued them.<br/>
+          <br/>
+            <i>Default</i>: 8760h<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>renewBefore</b></td>
+        <td>string</td>
+        <td>
+          RenewBefore is how long before expiry a certificate is renewed. It must
+be shorter than Duration.<br/>
+          <br/>
+            <i>Default</i>: 720h<br/>
         </td>
         <td>false</td>
       </tr></tbody>
