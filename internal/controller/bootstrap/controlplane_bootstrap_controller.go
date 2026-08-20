@@ -173,12 +173,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		installArgs:       append([]string{}, config.Spec.Args...),
 	}
 
-	for _, arg := range config.Spec.Args {
-		if arg == "--enable-worker" || arg == "--enable-worker=true" || arg == "--single" {
-			scope.WorkerEnabled = true
-			break
-		}
-	}
+	scope.WorkerEnabled = config.Spec.WorkerEnabled()
 
 	if scope.Config.Status.Initialization.DataSecretCreated != nil && *scope.Config.Status.Initialization.DataSecretCreated {
 		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
