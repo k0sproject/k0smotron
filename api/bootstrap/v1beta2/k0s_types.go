@@ -18,7 +18,6 @@ package v1beta2
 import (
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/k0sproject/version"
@@ -263,7 +262,7 @@ func (c *K0sControllerConfig) SetConditions(conditions []metav1.Condition) {
 
 // WorkerEnabled returns true if the control plane is configured to also run worker nodes.
 func (c *K0sControllerConfig) WorkerEnabled() bool {
-	return slices.Contains(c.Spec.K0sConfigSpec.Args, "--enable-worker")
+	return c.Spec.K0sConfigSpec.WorkerEnabled()
 }
 
 // +kubebuilder:object:root=true
@@ -441,6 +440,20 @@ func (kcs *K0sConfigSpec) GetJoinTokenPath() string {
 		return "/etc/k0s.token"
 	}
 	return filepath.Join(kcs.WorkingDir, "k0s.token")
+}
+
+// WorkerEnabled returns true if the k0s configuration is configured to also run worker nodes.
+func (kcs *K0sConfigSpec) WorkerEnabled() bool {
+	if kcs == nil {
+		return false
+	}
+	for _, arg := range kcs.Args {
+		switch arg {
+		case "--enable-worker", "--enable-worker=true", "--single":
+			return true
+		}
+	}
+	return false
 }
 
 // GetK0sConfigPath returns the full path to the k0s.yaml file in the working directory.
