@@ -1,6 +1,5 @@
 /*
 
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,6 +17,7 @@ package v1beta2
 
 import (
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -459,6 +459,54 @@ func (c *K0sWorkerConfig) GetJoinTokenPath() string {
 	return filepath.Join(c.Spec.WorkingDir, "k0s.token")
 }
 
+// appliesOwner reports whether the selected provisioner writes file ownership.
+func (p ProvisionerSpec) appliesOwner() bool {
+	if p.Platform == PlatformWindows {
+		return false
+	}
+
+	return p.Type != provisioner.PowershellProvisioningFormat &&
+		p.Type != provisioner.PowershellXMLProvisioningFormat
+}
+
+// ownerRegex matches a user name and an optional group name, built from
+// characters portable across useradd implementations.
+var ownerRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+(:[a-zA-Z0-9._-]+)?$`)
+
+// ValidateFileOwners rejects a file owner that the chosen format cannot apply,
+// or one whose shape could be mistaken for an argument by the chown it feeds.
+func ValidateFileOwners(files []File, spec ProvisionerSpec, pathPrefix *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	for i, file := range files {
+		if file.Owner == "" {
+			continue
+		}
+
+		// Nothing applies an owner on windows, whichever of the two fields
+		// selected it.
+		msg := ownerFormatMsg
+		if spec.appliesOwner() {
+			if ownerRegex.MatchString(file.Owner) {
+				continue
+			}
+		} else {
+			msg = ownerOnPowerShellMsg
+		}
+
+		allErrs = append(
+			allErrs,
+			field.Invalid(
+				pathPrefix.Child("files").Index(i).Child("owner"),
+				file.Owner,
+				msg,
+			),
+		)
+	}
+
+	return allErrs
+}
+
 // Validate validates the K0sWorkerConfigSpec.
 func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
@@ -544,6 +592,8 @@ func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.Error
 		}
 		knownPaths[file.Path] = struct{}{}
 	}
+
+	allErrs = append(allErrs, ValidateFileOwners(cs.Files, cs.Provisioner, pathPrefix)...)
 
 	return allErrs
 }

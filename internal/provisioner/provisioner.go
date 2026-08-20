@@ -16,6 +16,12 @@ limitations under the License.
 
 package provisioner
 
+import (
+	"encoding/base64"
+	"fmt"
+	"strings"
+)
+
 // ProvisioningFormat represents the format used for provisioning.
 type ProvisioningFormat string
 
@@ -38,11 +44,63 @@ type InputProvisionData struct {
 	Vars           map[VarName]string `yaml:"-"`
 }
 
+// Encoding specifies the encoding of a file's content.
+// +kubebuilder:validation:Enum=base64
+type Encoding string
+
+const (
+	// Base64 implies the contents of the file are base64 encoded.
+	Base64 Encoding = "base64"
+)
+
 // File represents a file to be created on the target system.
 type File struct {
 	Path        string `yaml:"path" json:"path,omitempty"`
 	Content     string `yaml:"content" json:"content,omitempty"`
 	Permissions string `yaml:"permissions" json:"permissions,omitempty"`
+	// Owner sets file ownership as a user name and an optional group name
+	// separated by a colon. Empty means the file is owned by root.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxLength=256
+	Owner string `yaml:"owner,omitempty" json:"owner,omitempty"`
+	// Encoding specifies how Content is encoded. When empty Content is used
+	// verbatim. Use it to carry bytes that a plain string cannot hold.
+	// +kubebuilder:validation:Optional
+	Encoding Encoding `yaml:"encoding,omitempty" json:"encoding,omitempty"`
+	// Append specifies whether Content is appended to an existing file rather
+	// than replacing it. If the file does not exist it is created either way.
+	// +kubebuilder:validation:Optional
+	Append bool `yaml:"append,omitempty" json:"append,omitempty"`
+}
+
+// OwnerUserAndGroup splits Owner into user and group parts. Group is empty
+// when Owner has no colon separator.
+func (f File) OwnerUserAndGroup() (user, group string) {
+	user, group, _ = strings.Cut(f.Owner, ":")
+	return user, group
+}
+
+func decodeBase64(content, path string) ([]byte, error) {
+	// Tolerate whitespace that survives a round trip through YAML block
+	// scalars and Secret data.
+	b, err := base64.StdEncoding.DecodeString(strings.Join(strings.Fields(content), ""))
+	if err != nil {
+		return nil, fmt.Errorf("failed to base64 decode content of file %s: %w", path, err)
+	}
+	return b, nil
+}
+
+// DecodedContent returns Content with Encoding reversed. Provisioners whose
+// format has no encoding concept must use this instead of reading Content.
+func (f File) DecodedContent() ([]byte, error) {
+	switch f.Encoding {
+	case "":
+		return []byte(f.Content), nil
+	case Base64:
+		return decodeBase64(f.Content, f.Path)
+	default:
+		return nil, fmt.Errorf("unsupported encoding %q for file %s", f.Encoding, f.Path)
+	}
 }
 
 // Provisioner is the interface that wraps the method for converting input data

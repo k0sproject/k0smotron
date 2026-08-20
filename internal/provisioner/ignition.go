@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"text/template"
 
+	butaneutil "github.com/coreos/butane/base/util"
 	"github.com/coreos/butane/config"
 	bcommon "github.com/coreos/butane/config/common"
 	"gopkg.in/yaml.v3"
@@ -58,11 +59,47 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 		if err != nil {
 			return nil, err
 		}
-		files = append(files, map[string]any{
-			"path":     f.Path,
-			"contents": map[string]string{"inline": f.Content},
-			"mode":     int(mi),
-		})
+
+		// Ignition has no notion of a content encoding, so decode here rather
+		// than passing it along the way cloud init does.
+		content, err := f.DecodedContent()
+		if err != nil {
+			return nil, err
+		}
+
+		file := map[string]any{
+			"path": f.Path,
+			"mode": int(mi),
+		}
+
+		// An Ignition file entry carries either contents or append, never both.
+		// Append is new, so it can use a data URL, which holds any byte.
+		if f.Append {
+			uri, compression, err := butaneutil.MakeDataURL(content, nil, false)
+			if err != nil {
+				return nil, fmt.Errorf("error encoding contents of file %s: %w", f.Path, err)
+			}
+
+			body := map[string]string{"source": uri}
+			if compression != nil {
+				body["compression"] = *compression
+			}
+
+			file["append"] = []map[string]string{body}
+		} else {
+			file["contents"] = map[string]string{"inline": string(content)}
+		}
+
+		if user, group := f.OwnerUserAndGroup(); user != "" || group != "" {
+			if user != "" {
+				file["user"] = map[string]string{"name": user}
+			}
+			if group != "" {
+				file["group"] = map[string]string{"name": group}
+			}
+		}
+
+		files = append(files, file)
 	}
 
 	units := []map[string]any{}

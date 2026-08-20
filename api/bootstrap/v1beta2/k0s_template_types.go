@@ -25,6 +25,8 @@ var (
 	conflictingContentFromMsg = "only one of contentFrom.secretKeyRef or contentFrom.configMapKeyRef may be specified for a single file"
 	pathConflictMsg           = "path property must be unique among all files"
 	noContentMsg              = "either content or contentFrom must be specified for a file"
+	ownerFormatMsg            = "owner must be of the form user[:group], using only alphanumerics, '.', '_' or '-'"
+	ownerOnPowerShellMsg      = "owner is not supported by the powershell provisioner formats or on the windows platform"
 )
 
 func init() {

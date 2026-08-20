@@ -26,6 +26,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -44,6 +45,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+)
+
+// The bootstrap config declares one file exercising the fields k0smotron has to
+// apply itself on this path rather than hand to cloud init.
+const (
+	testFilePath        = "/etc/k0smotron-file-test.conf"
+	testFileContent     = "owner and encoding work\n"
+	testFileOwner       = "test:test"
+	testFilePermissions = "0640"
 )
 
 type RemoteMachineSuite struct {
@@ -173,6 +183,8 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	})
 	s.Require().NoError(err)
 
+	s.verifyUploadedFile()
+
 	s.T().Log("deleting node from cluster")
 	s.Require().NoError(s.deleteRemoteMachine("remote-test-0", "default"))
 
@@ -230,13 +242,21 @@ func (s *RemoteMachineSuite) createCluster() {
 	var clusterYamlBuf bytes.Buffer
 
 	err = t.Execute(&clusterYamlBuf, struct {
-		Address    string
-		SSHKey     string
-		K0SVersion string
+		Address         string
+		SSHKey          string
+		K0SVersion      string
+		FilePath        string
+		FileContent     string
+		FileOwner       string
+		FilePermissions string
 	}{
-		Address:    workerIP,
-		SSHKey:     base64.StdEncoding.EncodeToString(s.privateKey),
-		K0SVersion: k0sVersion,
+		Address:         workerIP,
+		SSHKey:          base64.StdEncoding.EncodeToString(s.privateKey),
+		K0SVersion:      k0sVersion,
+		FilePath:        testFilePath,
+		FileContent:     base64.StdEncoding.EncodeToString([]byte(testFileContent)),
+		FileOwner:       testFileOwner,
+		FilePermissions: testFilePermissions,
 	})
 	s.Require().NoError(err)
 	bytes := clusterYamlBuf.Bytes()
@@ -254,14 +274,38 @@ func (s *RemoteMachineSuite) createCluster() {
 }
 
 func (s *RemoteMachineSuite) getWorkerIP() string {
+	return s.execOnWorker("hostname -i")
+}
+
+func (s *RemoteMachineSuite) execOnWorker(cmd string) string {
 	nodeName := s.K0smotronNode(0)
 	ssh, err := s.SSH(s.Context(), nodeName)
 	s.Require().NoError(err)
 	defer ssh.Disconnect()
 
-	ipAddress, err := ssh.ExecWithOutput(s.Context(), "hostname -i")
+	out, err := ssh.ExecWithOutput(s.Context(), cmd)
 	s.Require().NoError(err)
-	return ipAddress
+	return out
+}
+
+// verifyUploadedFile checks the attributes k0smotron applies over ssh itself.
+// The unit tests only assert the command it builds, not the result on disk.
+func (s *RemoteMachineSuite) verifyUploadedFile() {
+	s.T().Log("verifying the uploaded file was decoded and given the declared owner")
+
+	// Compare an encoded form, since ExecWithOutput trims. Fold it too, because
+	// base64 line wraps differently between implementations.
+	encoded := s.execOnWorker("sudo base64 " + testFilePath)
+	s.Require().Equal(
+		base64.StdEncoding.EncodeToString([]byte(testFileContent)),
+		strings.Join(strings.Fields(encoded), ""),
+		"content must be base64 decoded before it is written, byte for byte")
+
+	ownership := s.execOnWorker("sudo stat -c '%U:%G' " + testFilePath)
+	s.Require().Equal(testFileOwner, ownership, "owner must be applied by chown")
+
+	mode := s.execOnWorker("sudo stat -c '%a' " + testFilePath)
+	s.Require().Equal("640", mode, "permissions must be applied")
 }
 
 var clusterYaml = `apiVersion: cluster.x-k8s.io/v1beta1
@@ -330,6 +374,12 @@ metadata:
   namespace: default
 spec:
   version: {{ .K0SVersion }}+k0s.0
+  files:
+  - path: {{ .FilePath }}
+    permissions: "{{ .FilePermissions }}"
+    owner: {{ .FileOwner }}
+    encoding: base64
+    content: {{ .FileContent }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteMachine

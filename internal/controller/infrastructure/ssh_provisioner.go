@@ -1,6 +1,5 @@
 /*
 
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -20,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -118,7 +116,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	// Write files first
 	for _, file := range p.cloudInit.Files {
 		p.log.Info("Uploading file", "path", file.Path, "permissions", file.Permissions)
-		if err := p.uploadFile(fsys, file); err != nil {
+		if err := p.uploadFile(connection, execOpts, fsys, file); err != nil {
 			return fmt.Errorf("failed to upload file: %w", err)
 		}
 		p.log.Info("Uploaded file", "path", file.Path, "permissions", file.Permissions)
@@ -255,7 +253,19 @@ func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) erro
 	return nil
 }
 
-func (p *SSHProvisioner) uploadFile(fsys rigfs.Fsys, file provisioner.File) error {
+// commandRunner runs a command on the remote machine. rig.Connection satisfies
+// it, and a test can substitute a recorder.
+type commandRunner interface {
+	ExecOutput(cmd string, opts ...exec.Option) (string, error)
+}
+
+// shellQuote wraps s in single quotes so it survives a POSIX shell as one
+// literal argument, rather than being interpolated into a remote command.
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
+func (p *SSHProvisioner) uploadFile(runner commandRunner, execOpts []exec.Option, fsys rigfs.Fsys, file provisioner.File) error {
 	// Ensure base dir exists for target. Change Windows-style slashes to Unix-style. Windows is ok with forward slashes, but filepath.Dir is not.
 	dir := filepath.Dir(strings.Replace(file.Path, `\`, `/`, -1))
 	perms, err := file.PermissionsAsInt()
@@ -263,21 +273,44 @@ func (p *SSHProvisioner) uploadFile(fsys rigfs.Fsys, file provisioner.File) erro
 		return fmt.Errorf("failed to parse permissions: %w", err)
 	}
 
+	// Provision uploads every file again whenever it is retried, so appending
+	// here would duplicate the content on each attempt.
+	if file.Append {
+		return fmt.Errorf("file %s uses append, which is not supported when provisioning over ssh", file.Path)
+	}
+
+	// Nothing on the remote host understands a content encoding, so decode here.
+	content, err := file.DecodedContent()
+	if err != nil {
+		return err
+	}
+
+	// The file mode is deliberately not reused for the directory. A mode such as
+	// 0600 would leave the directory untraversable for the file owner.
 	if _, err := fsys.Stat(dir); errors.Is(err, fs.ErrNotExist) {
-		if err := fsys.MkDirAll(dir, fs.FileMode(perms)); err != nil {
+		if err := fsys.MkDirAll(dir, 0o755); err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 	}
 
-	destFile, err := fsys.OpenFile(file.Path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fs.FileMode(perms))
+	destFile, err := fsys.OpenFile(file.Path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.FileMode(perms))
 	if err != nil {
 		return fmt.Errorf("failed to open remote file for writing: %w", err)
 	}
 	defer destFile.Close()
-	if _, err := io.WriteString(destFile, file.Content); err != nil {
+	if _, err := destFile.Write(content); err != nil {
 		return fmt.Errorf("failed to write to remote file: %w", err)
 	}
 
-	p.log.Info("uploaded file", "path", file.Path, "permissions", perms)
+	// rigfs.Fsys cannot change ownership, so shell out for it. Done after the
+	// write, which already created the file with its restrictive mode.
+	if file.Owner != "" {
+		cmd := fmt.Sprintf("chown -- %s %s", shellQuote(file.Owner), shellQuote(file.Path))
+		if output, err := runner.ExecOutput(cmd, execOpts...); err != nil {
+			return fmt.Errorf("failed to set owner %q on %s: %w (output: %s)", file.Owner, file.Path, err, output)
+		}
+	}
+
+	p.log.Info("uploaded file", "path", file.Path, "permissions", perms, "owner", file.Owner)
 	return nil
 }

@@ -290,6 +290,14 @@ File defines a file to be passed to user_data upon creation.
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>append</b></td>
+        <td>boolean</td>
+        <td>
+          Append specifies whether Content is appended to an existing file rather
+than replacing it. If the file does not exist it is created either way.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>content</b></td>
         <td>string</td>
         <td>
@@ -301,6 +309,24 @@ File defines a file to be passed to user_data upon creation.
         <td>object</td>
         <td>
           ContentFrom specifies the source of the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>encoding</b></td>
+        <td>enum</td>
+        <td>
+          Encoding specifies how Content is encoded. When empty Content is used
+verbatim. Use it to carry bytes that a plain string cannot hold.<br/>
+          <br/>
+            <i>Enum</i>: base64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>owner</b></td>
+        <td>string</td>
+        <td>
+          Owner sets file ownership as a user name and an optional group name
+separated by a colon. Empty means the file is owned by root.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1494,6 +1520,14 @@ File defines a file to be passed to user_data upon creation.
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>append</b></td>
+        <td>boolean</td>
+        <td>
+          Append specifies whether Content is appended to an existing file rather
+than replacing it. If the file does not exist it is created either way.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>content</b></td>
         <td>string</td>
         <td>
@@ -1505,6 +1539,24 @@ File defines a file to be passed to user_data upon creation.
         <td>object</td>
         <td>
           ContentFrom specifies the source of the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>encoding</b></td>
+        <td>enum</td>
+        <td>
+          Encoding specifies how Content is encoded. When empty Content is used
+verbatim. Use it to carry bytes that a plain string cannot hold.<br/>
+          <br/>
+            <i>Enum</i>: base64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>owner</b></td>
+        <td>string</td>
+        <td>
+          Owner sets file ownership as a user name and an optional group name
+separated by a colon. Empty means the file is owned by root.<br/>
         </td>
         <td>false</td>
       </tr><tr>

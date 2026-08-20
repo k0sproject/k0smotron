@@ -22,6 +22,7 @@ import (
 
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -225,6 +226,85 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 			}
 			require.Empty(t, warnings)
 
+		})
+	}
+}
+
+func TestValidateFileOwnerChecksEveryFile(t *testing.T) {
+	spec := &K0sWorkerConfigSpec{
+		Files: []File{
+			{File: provisioner.File{Path: "/a", Content: "x", Owner: "etcd:etcd"}},
+			{File: provisioner.File{Path: "/b", Content: "x", Owner: "root; rm -rf /"}},
+		},
+	}
+
+	errs := spec.validateFiles(field.NewPath("spec"))
+
+	require.Len(t, errs, 1)
+	require.Equal(t, "spec.files[1].owner", errs[0].Field, "the index must follow the offending file")
+}
+
+func TestValidateFileOwner(t *testing.T) {
+	tests := []struct {
+		name     string
+		format   provisioner.ProvisioningFormat
+		platform Platform
+		owner    string
+		wantErr  string
+	}{
+		{name: "empty owner is allowed", owner: ""},
+		{name: "user only", owner: "root"},
+		{name: "user and group", owner: "etcd:etcd"},
+		{name: "dots, dashes and underscores", owner: "sys_user.1:sys-group"},
+		{name: "shell metacharacters are rejected", owner: "root; rm -rf /", wantErr: ownerFormatMsg},
+		{name: "command substitution is rejected", owner: "$(id -u)", wantErr: ownerFormatMsg},
+		{name: "spaces are rejected", owner: "root root", wantErr: ownerFormatMsg},
+		{name: "trailing separator is rejected", owner: "root:", wantErr: ownerFormatMsg},
+		{name: "more than one separator is rejected", owner: "a:b:c", wantErr: ownerFormatMsg},
+		{
+			name:    "owner is rejected for the powershell format",
+			format:  provisioner.PowershellProvisioningFormat,
+			owner:   "root:root",
+			wantErr: ownerOnPowerShellMsg,
+		},
+		{
+			name:    "owner is rejected for the powershell xml format",
+			format:  provisioner.PowershellXMLProvisioningFormat,
+			owner:   "root:root",
+			wantErr: ownerOnPowerShellMsg,
+		},
+		{
+			name:   "owner is allowed for the ignition format",
+			format: provisioner.IgnitionProvisioningFormat,
+			owner:  "etcd:etcd",
+		},
+		{
+			name:     "owner is rejected on the windows platform",
+			platform: PlatformWindows,
+			owner:    "root:root",
+			wantErr:  ownerOnPowerShellMsg,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spec := &K0sWorkerConfigSpec{
+				Provisioner: ProvisionerSpec{Type: tt.format, Platform: tt.platform},
+				Files: []File{
+					{File: provisioner.File{Path: "/etc/thing", Content: "x", Owner: tt.owner}},
+				},
+			}
+
+			errs := spec.validateFiles(field.NewPath("spec"))
+
+			if tt.wantErr == "" {
+				require.Empty(t, errs)
+				return
+			}
+
+			require.Len(t, errs, 1)
+			require.Equal(t, "spec.files[0].owner", errs[0].Field)
+			require.Contains(t, errs[0].Detail, tt.wantErr)
 		})
 	}
 }

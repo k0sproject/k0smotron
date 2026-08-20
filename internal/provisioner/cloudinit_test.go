@@ -17,9 +17,11 @@ limitations under the License.
 package provisioner
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/k0sproject/k0smotron/v2/internal/featuregate"
 )
@@ -98,7 +100,7 @@ runcmd:
 }
 
 func TestCustomCloudInitWithVars(t *testing.T) {
-	featuregate.Configure("CloudInitVars=true", "")
+	withCloudInitVars(t, true)
 
 	input := &InputProvisionData{
 		Files: []File{
@@ -151,4 +153,91 @@ func TestPermissions(t *testing.T) {
 	perm, err := f.PermissionsAsInt()
 	assert.NoError(t, err)
 	assert.Equal(t, int64(420), perm)
+}
+
+// withCloudInitVars sets the gate for one test and puts it back afterwards.
+func withCloudInitVars(t *testing.T, enabled bool) {
+	t.Helper()
+
+	before := featuregate.IsEnabled(featuregate.CloudInitVars)
+	t.Cleanup(func() {
+		_ = featuregate.Configure(fmt.Sprintf("CloudInitVars=%t", before), "")
+	})
+
+	require.NoError(t, featuregate.Configure(fmt.Sprintf("CloudInitVars=%t", enabled), ""))
+}
+
+func TestCloudInitPassesFileOwnerEncodingAndAppendThrough(t *testing.T) {
+	// cloud init decodes and applies these itself, so they must reach
+	// write_files verbatim rather than being interpreted here.
+	withCloudInitVars(t, false)
+
+	input := &InputProvisionData{
+		Files: []File{
+			{
+				Path:        "/etc/hosts",
+				Content:     "Zm9vYmFy",
+				Permissions: "0600",
+				Owner:       "root:root",
+				Encoding:    Base64,
+				Append:      true,
+			},
+		},
+	}
+
+	b, err := (&CloudInitProvisioner{}).ToProvisionData(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, `## template: jinja
+#cloud-config
+write_files:
+  - path: /etc/hosts
+    content: Zm9vYmFy
+    permissions: "0600"
+    owner: root:root
+    encoding: base64
+    append: true
+runcmd: []
+`, string(b))
+}
+
+func TestCloudInitVarsOmitsUnsetFileFields(t *testing.T) {
+	withCloudInitVars(t, true)
+
+	input := &InputProvisionData{
+		Files: []File{
+			// Multi line content guards against the body being escaped twice,
+			// which would reach the host as a literal backslash n.
+			{Path: "/a", Content: "line1\nline2\n", Permissions: "0644"},
+			{Path: "/b", Content: "Zm9v", Permissions: "0600", Owner: "etcd:etcd", Encoding: Base64, Append: true},
+		},
+		Vars: map[VarName]string{"v": "1"},
+	}
+
+	b, err := (&CloudInitProvisioner{}).ToProvisionData(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, `## template: jinja
+#cloud-config
+{% set v = '1' %}
+{% set k0smotron_files = [
+  {
+    "path": "/a",
+    "content": "line1\nline2\n",
+    "permissions": "0644"
+  },
+  {
+    "path": "/b",
+    "content": "Zm9v",
+    "permissions": "0600",
+    "owner": "etcd:etcd",
+    "encoding": "base64",
+    "append": true
+  }
+] %}
+`, string(b))
 }

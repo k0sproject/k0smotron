@@ -18,9 +18,11 @@ package provisioner
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 )
 
 // PowerShellProvisioner implements the Provisioner interface for cloud-init.
@@ -32,7 +34,9 @@ func (c *PowerShellProvisioner) ToProvisionData(input *InputProvisionData) ([]by
 
 	// ---- write_files ----
 	for _, f := range input.Files {
-		renderWriteFile(&b, f)
+		if err := renderWriteFile(&b, f); err != nil {
+			return nil, err
+		}
 	}
 
 	// ---- runcmd ----
@@ -61,18 +65,46 @@ func (c *PowerShellProvisioner) GetFormat() ProvisioningFormat {
 	return PowershellProvisioningFormat
 }
 
-func renderWriteFile(buf *bytes.Buffer, f File) {
+func renderWriteFile(buf *bytes.Buffer, f File) error {
 	dir := filepath.Dir(strings.Replace(f.Path, `\`, `/`, -1))
 
 	buf.WriteString("\n# --- write_file ---\n")
 
 	// Ensure directory exists
-	buf.WriteString(fmt.Sprintf(
+	fmt.Fprintf(buf,
 		"New-Item -ItemType Directory -Force -Path \"%s\" | Out-Null\n",
 		escapePS(dir),
-	))
+	)
 
-	content := normalizeNewlines(f.Content)
+	// PowerShell has no notion of a content encoding, so decode here.
+	decoded, err := f.DecodedContent()
+	if err != nil {
+		return err
+	}
+
+	// A here string cannot hold bytes outside UTF8, and it drops the newline
+	// before its terminator, so those two cases go through base64 instead.
+	if f.Append || !utf8.Valid(decoded) {
+		fmt.Fprintf(buf, "$bytes = [System.Convert]::FromBase64String(\"%s\")\n",
+			base64.StdEncoding.EncodeToString(decoded))
+
+		if f.Append {
+			fmt.Fprintf(buf, `$stream = [System.IO.File]::Open(
+  "%s",
+  [System.IO.FileMode]::Append
+)
+$stream.Write($bytes, 0, $bytes.Length)
+$stream.Close()`+"\n", escapePS(f.Path))
+
+			return nil
+		}
+
+		fmt.Fprintf(buf, "[System.IO.File]::WriteAllBytes(\"%s\", $bytes)\n", escapePS(f.Path))
+
+		return nil
+	}
+
+	content := normalizeNewlines(string(decoded))
 
 	// Here-string write
 	buf.WriteString("$file = @'\n")
@@ -81,11 +113,13 @@ func renderWriteFile(buf *bytes.Buffer, f File) {
 		buf.WriteString("\n")
 	}
 	buf.WriteString("'@\n")
-	buf.WriteString(fmt.Sprintf(`[System.IO.File]::WriteAllText(
+	fmt.Fprintf(buf, `[System.IO.File]::WriteAllText(
   "%s",
   $file.Trim(),
   [System.Text.Encoding]::ASCII
-)`+"\n", escapePS(f.Path)))
+)`+"\n", escapePS(f.Path))
+
+	return nil
 }
 
 func escapePS(s string) string {
