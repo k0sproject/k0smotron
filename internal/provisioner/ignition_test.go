@@ -17,10 +17,13 @@ package provisioner
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/vincent-petithory/dataurl"
 )
 
 func normalizeJSON(t *testing.T, in []byte) []byte {
@@ -313,4 +316,172 @@ systemd: [invalid_yaml_here`,
 			}
 		})
 	}
+}
+
+// decodeFirstMergeSource returns the inner Ignition config embedded as the
+// first merge source, so assertions can read as JSON rather than base64.
+func decodeFirstMergeSource(t *testing.T, out []byte) []byte {
+	t.Helper()
+
+	var outer struct {
+		Ignition struct {
+			Config struct {
+				Merge []struct {
+					Source string `json:"source"`
+				} `json:"merge"`
+			} `json:"config"`
+		} `json:"ignition"`
+	}
+	require.NoError(t, json.Unmarshal(out, &outer))
+	require.NotEmpty(t, outer.Ignition.Config.Merge)
+
+	const prefix = "data:application/json;base64,"
+	src := outer.Ignition.Config.Merge[0].Source
+	require.True(t, strings.HasPrefix(src, prefix), "unexpected merge source %q", src)
+
+	raw, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(src, prefix))
+	require.NoError(t, err)
+	return raw
+}
+
+// fileEntry pulls a single storage.files entry out of the config that
+// ToProvisionData embeds as its first merge source.
+func fileEntry(t *testing.T, out []byte) map[string]any {
+	t.Helper()
+
+	var inner struct {
+		Storage struct {
+			Files []map[string]any `json:"files"`
+		} `json:"storage"`
+	}
+	require.NoError(t, json.Unmarshal(decodeFirstMergeSource(t, out), &inner))
+	require.Len(t, inner.Storage.Files, 1)
+	return inner.Storage.Files[0]
+}
+
+// bodyBytes decodes the data URL that carries a file body, so a test can assert
+// on the bytes the node would actually write.
+func bodyBytes(t *testing.T, resource map[string]any) []byte {
+	t.Helper()
+
+	src, ok := resource["source"].(string)
+	require.True(t, ok, "resource has no source: %v", resource)
+
+	decoded, err := dataurl.DecodeString(src)
+	require.NoError(t, err)
+	return decoded.Data
+}
+
+func TestIgnitionFileOwnerAndAppend(t *testing.T) {
+	t.Run("owner becomes user and group", func(t *testing.T) {
+		out, err := (&IgnitionProvisioner{Variant: "fcos", Version: "1.5.0"}).ToProvisionData(
+			&InputProvisionData{Files: []File{{Path: "/a", Content: "x", Permissions: "0600", Owner: "etcd:etcd"}}})
+		require.NoError(t, err)
+
+		entry := fileEntry(t, out)
+		require.Equal(t, map[string]any{"name": "etcd"}, entry["user"])
+		require.Equal(t, map[string]any{"name": "etcd"}, entry["group"])
+	})
+
+	t.Run("owner without a group sets only user", func(t *testing.T) {
+		out, err := (&IgnitionProvisioner{Variant: "fcos", Version: "1.5.0"}).ToProvisionData(
+			&InputProvisionData{Files: []File{{Path: "/a", Content: "x", Permissions: "0644", Owner: "nobody"}}})
+		require.NoError(t, err)
+
+		entry := fileEntry(t, out)
+		require.Equal(t, map[string]any{"name": "nobody"}, entry["user"])
+		require.NotContains(t, entry, "group")
+	})
+
+	t.Run("append populates the append list and leaves contents unset", func(t *testing.T) {
+		out, err := (&IgnitionProvisioner{Variant: "fcos", Version: "1.5.0"}).ToProvisionData(
+			&InputProvisionData{Files: []File{{Path: "/a", Content: "tail\n", Permissions: "0644", Append: true}}})
+		require.NoError(t, err)
+
+		entry := fileEntry(t, out)
+		require.NotContains(t, entry, "contents")
+
+		list, ok := entry["append"].([]any)
+		require.True(t, ok, "append is not a list: %v", entry["append"])
+		require.Len(t, list, 1)
+		require.Equal(t, "tail\n", string(bodyBytes(t, list[0].(map[string]any))))
+	})
+}
+
+// TestIgnitionAppendContentRoundTrip guards the append path, which is new and
+// carries a data URL, so any byte sequence survives.
+func TestIgnitionAppendContentRoundTrip(t *testing.T) {
+	bodies := map[string]string{
+		"plain":                  "hello world",
+		"trailing newline":       "tail\n",
+		"leading newline":        "\nfoo\n",
+		"only a newline":         "\n",
+		"several newlines":       "\n\n\n",
+		"leading space":          " foo\n",
+		"leading tab":            "\thi\n",
+		"indented yaml fragment": "  extraArgs:\n    foo: bar\n",
+		"systemd drop in":        "\n[Service]\nEnvironment=FOO=bar\n",
+		"hosts comment block":    "\n# added by k0smotron\n10.0.0.1 api\n",
+		"non ascii":              "café München\n",
+		"carriage return":        "a\r\nb\n",
+		"nul and high bytes":     "\x00\xff\x1b",
+	}
+
+	for _, version := range []string{"1.0.0", "1.5.0"} {
+		for name, body := range bodies {
+			t.Run(version+" "+name, func(t *testing.T) {
+				out, err := (&IgnitionProvisioner{Variant: "fcos", Version: version}).ToProvisionData(
+					&InputProvisionData{Files: []File{{Path: "/a", Content: body, Permissions: "0644", Append: true}}})
+				require.NoError(t, err)
+
+				entry := fileEntry(t, out)
+				require.NotContains(t, entry, "contents")
+
+				list, ok := entry["append"].([]any)
+				require.True(t, ok, "append is not a list")
+				require.Len(t, list, 1)
+				require.Equal(t, body, string(bodyBytes(t, list[0].(map[string]any))))
+			})
+		}
+	}
+}
+
+// TestIgnitionReplaceUsesInline pins the existing shape. Butane mangles content
+// whose first line starts with whitespace, which is tracked separately.
+func TestIgnitionReplaceUsesInline(t *testing.T) {
+	out, err := (&IgnitionProvisioner{Variant: "fcos", Version: "1.5.0"}).ToProvisionData(
+		&InputProvisionData{Files: []File{{Path: "/a", Content: "hello world", Permissions: "0644"}}})
+	require.NoError(t, err)
+
+	entry := fileEntry(t, out)
+	require.NotContains(t, entry, "append")
+
+	contents, ok := entry["contents"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "", contents["compression"], "butane sets an empty compression for inline bodies")
+	require.Equal(t, "hello world", string(bodyBytes(t, contents)))
+}
+
+func TestIgnitionEncodedContentIsDecodedOnce(t *testing.T) {
+	plain := "  indented: true\n"
+
+	for name, f := range map[string]File{
+		"base64": {Path: "/a", Permissions: "0644", Encoding: Base64, Content: base64.StdEncoding.EncodeToString([]byte(plain))},
+	} {
+		t.Run(name, func(t *testing.T) {
+			out, err := (&IgnitionProvisioner{Variant: "fcos", Version: "1.5.0"}).ToProvisionData(&InputProvisionData{Files: []File{f}})
+			require.NoError(t, err)
+
+			entry := fileEntry(t, out)
+			require.Equal(t, plain, string(bodyBytes(t, entry["contents"].(map[string]any))))
+		})
+	}
+}
+
+func TestIgnitionRejectsUndecodableContent(t *testing.T) {
+	p := &IgnitionProvisioner{Variant: "fcos", Version: "1.0.0"}
+	_, err := p.ToProvisionData(&InputProvisionData{
+		Files: []File{{Path: "/a", Content: "!!!", Permissions: "0644", Encoding: Base64}},
+	})
+	require.ErrorContains(t, err, "failed to base64 decode")
 }
