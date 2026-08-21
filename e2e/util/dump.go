@@ -33,10 +33,10 @@ import (
 // DumpSpecResourcesAndCleanup dumps all the resources in the spec namespace and cleans up the spec namespace.
 func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cancelWatches context.CancelFunc, cluster *clusterv1.Cluster, interval Interval, skipCleanup bool, clusterctlConfigPath string) {
 	// Dump all the resources in the spec namespace and the workload cluster.
-	dumpAllResourcesAndLogs(ctx, clusterProxy, artifactFolder, namespace, cluster, clusterctlConfigPath)
+	DumpAllResourcesAndLogs(ctx, clusterProxy, artifactFolder, namespace, cluster, clusterctlConfigPath)
 
 	if !skipCleanup {
-		err := deleteClusterAndWait(ctx, capiframework.DeleteClusterAndWaitInput{
+		err := DeleteClusterAndWait(ctx, capiframework.DeleteClusterAndWaitInput{
 			ClusterProxy:         clusterProxy,
 			Cluster:              cluster,
 			ArtifactFolder:       artifactFolder,
@@ -54,8 +54,8 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 	cancelWatches()
 }
 
-// dumpAllResourcesAndLogs dumps all the resources in the spec namespace and the workload cluster.
-func dumpAllResourcesAndLogs(ctx context.Context, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cluster *clusterv1.Cluster, clusterctlConfigPath string) {
+// DumpAllResourcesAndLogs dumps all the resources in the spec namespace and the workload cluster.
+func DumpAllResourcesAndLogs(ctx context.Context, clusterProxy capiframework.ClusterProxy, artifactFolder string, namespace *corev1.Namespace, cluster *clusterv1.Cluster, clusterctlConfigPath string) {
 	// Dump all the logs from the workload cluster.
 	clusterProxy.CollectWorkloadClusterLogs(ctx, cluster.Namespace, cluster.Name, filepath.Join(artifactFolder, "clusters", cluster.Name))
 

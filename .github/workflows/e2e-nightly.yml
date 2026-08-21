@@ -78,7 +78,7 @@ jobs:
           if [ -n "$TEST_NAME" ]; then
             suites="$(jq -cn --arg t "$TEST_NAME" '[$t]')"
           else
-            suites='["TestIgnitionProvisioning","TestWindowsProvisioning"]'
+            suites='["TestIgnitionProvisioning","TestWindowsProvisioning","TestWindowsIngressProvisioning"]'
           fi
           echo "suites=$suites" >> "$GITHUB_OUTPUT"
           echo "Suites to run: $suites"

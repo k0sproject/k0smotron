@@ -89,11 +89,8 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 
 	labels := controlPlaneCommonLabelsForCluster(kcp, cluster.Name)
 
-	for _, arg := range kcp.Spec.K0sConfigSpec.Args {
-		if arg == "--enable-worker" || arg == "--enable-worker=true" {
-			labels["k0smotron.io/control-plane-worker-enabled"] = "true"
-			break
-		}
+	if kcp.WorkerEnabled() {
+		labels["k0smotron.io/control-plane-worker-enabled"] = "true"
 	}
 
 	annotations := map[string]string{

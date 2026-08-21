@@ -14,6 +14,11 @@ k0smotron supports Windows worker nodes as an experimental feature, allowing you
 - Control plane must run on Linux
 - Requires Linux worker for cluster DNS services
 
+!!! note "Ingress support"
+    Windows workers can join clusters that use [Ingress support](ingress-support.md). k0smotron deploys a
+    Windows-specific node-local proxy DaemonSet (`k0smotron-proxy-win`, a HostProcess pod) alongside the Linux one, so
+    pods on Windows nodes reach the API server through the ingress the same way Linux pods do.
+
 ## Architecture
 
 The control plane runs on Linux nodes only. Both Linux and Windows worker nodes can join the same cluster:
