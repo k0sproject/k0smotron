@@ -93,3 +93,30 @@ func TestRewriteKubeconfigNames(t *testing.T) {
 		t.Fatalf("kubeconfig mismatch:\nGot:\n%s\nWant:\n%s", string(gotBytes), string(wantBytes))
 	}
 }
+
+func TestRewriteKubeconfigValuesIngressIPv6HostIsBracketed(t *testing.T) {
+	kmc := &v1beta2.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "wl1", Namespace: "default"},
+		Spec: v1beta2.ClusterSpec{
+			Ingress: &v1beta2.IngressSpec{
+				APIHost: "2001:db8:11:1103::3",
+				Port:    443,
+			},
+		},
+	}
+
+	out, err := rewriteKubeconfigValues(sampleKubeconfig, kmc)
+	if err != nil {
+		t.Fatalf("rewriteKubeconfigValues returned error: %v", err)
+	}
+
+	gotCfg, err := clientcmd.Load([]byte(out))
+	if err != nil {
+		t.Fatalf("failed to load processed kubeconfig: %v", err)
+	}
+	for _, cluster := range gotCfg.Clusters {
+		if cluster.Server != "https://[2001:db8:11:1103::3]:443" {
+			t.Fatalf("unexpected server value: %s", cluster.Server)
+		}
+	}
+}
