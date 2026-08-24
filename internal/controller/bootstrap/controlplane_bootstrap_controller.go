@@ -862,7 +862,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 	if found && k0sAPIPort > 0 {
 		port = strconv.Itoa(int(k0sAPIPort))
 	}
-	host := fmt.Sprintf("https://%s:%s", scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
+	host := apiServerURL(scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
 
 	_, err = httpClient.Get(fmt.Sprintf("%s/v1beta1/ca", host))
 	if err == nil {
@@ -874,7 +874,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		return "", fmt.Errorf("failed to get first controller IP: %w", err)
 	}
 
-	return fmt.Sprintf("https://%s:%s", firstControllerIP, port), nil
+	return apiServerURL(firstControllerIP, port), nil
 }
 
 func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, scope *ControllerScope) (string, error) {
