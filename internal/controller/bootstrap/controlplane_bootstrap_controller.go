@@ -729,7 +729,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 				break
 			}
 			if ip.Is6() {
-				intAddr = fmt.Sprintf("[%s]", ip.WithZone("").String())
+				intAddr = ip.WithZone("").String()
 			}
 		}
 	}
@@ -764,7 +764,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firs
 						break
 					}
 					if ip.Is6() {
-						intAddr = fmt.Sprintf("[%s]", ip.WithZone("").String())
+						intAddr = ip.WithZone("").String()
 					}
 				}
 			}
