@@ -24,8 +24,6 @@ import (
 	"fmt"
 	"io"
 	"maps"
-	"net"
-	"strconv"
 	"strings"
 	"time"
 
@@ -319,7 +317,7 @@ func updateJoinTokenURL(token string, kmc km.Cluster) (string, error) {
 	}
 
 	for _, cluster := range cfg.Clusters {
-		cluster.Server = "https://" + net.JoinHostPort(kmc.Spec.Ingress.APIHost, strconv.FormatInt(kmc.Spec.Ingress.Port, 10))
+		cluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
 	}
 
 	updatedData, err := clientcmd.Write(*cfg)

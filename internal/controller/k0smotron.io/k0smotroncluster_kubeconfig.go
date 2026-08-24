@@ -19,8 +19,6 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
-	"net"
-	"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -140,7 +138,7 @@ func rewriteKubeconfigValues(kubeconfigYAML string, kmc *km.Cluster) (string, er
 		return "", fmt.Errorf("cluster server is empty")
 	}
 	if kmc.Spec.Ingress != nil {
-		srcCluster.Server = "https://" + net.JoinHostPort(kmc.Spec.Ingress.APIHost, strconv.FormatInt(kmc.Spec.Ingress.Port, 10))
+		srcCluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
 	}
 	if len(srcUser.ClientCertificateData) == 0 || len(srcUser.ClientKeyData) == 0 {
 		return "", fmt.Errorf("client certificate/key data not found in kubeconfig")
