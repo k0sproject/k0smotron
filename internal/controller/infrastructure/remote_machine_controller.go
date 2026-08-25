@@ -333,6 +333,22 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
+// mergedMap copies src over dst and allocates dst when it is nil, since copying
+// into a nil map panics.
+func mergedMap(dst, src map[string]string) map[string]string {
+	if len(src) == 0 {
+		return dst
+	}
+
+	if dst == nil {
+		dst = make(map[string]string, len(src))
+	}
+
+	maps.Copy(dst, src)
+
+	return dst
+}
+
 // reservePooledMachineAndPopulateRemoteMachine finds a free machine from the pool specified in the RemoteMachine spec, reserves it, and populates
 // the RemoteMachine spec with the details of the reserved machine.
 func (r *RemoteMachineController) reservePooledMachineAndPopulateRemoteMachine(ctx context.Context, rm *infrastructure.RemoteMachine) error {
@@ -381,8 +397,8 @@ func (r *RemoteMachineController) reservePooledMachineAndPopulateRemoteMachine(c
 		}
 	}
 
-	maps.Copy(rm.Labels, foundPooledMachine.Labels)
-	maps.Copy(rm.Annotations, foundPooledMachine.Annotations)
+	rm.Labels = mergedMap(rm.Labels, foundPooledMachine.Labels)
+	rm.Annotations = mergedMap(rm.Annotations, foundPooledMachine.Annotations)
 	rm.Spec.Address = foundPooledMachine.Spec.Machine.Address
 	rm.Spec.Port = foundPooledMachine.Spec.Machine.Port
 	rm.Spec.User = foundPooledMachine.Spec.Machine.User
