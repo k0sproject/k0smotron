@@ -25,6 +25,13 @@ import (
 // +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
+const (
+	// RemoteClusterReadyCondition is the condition type that indicates whether the RemoteCluster is ready.
+	RemoteClusterReadyCondition = "Ready"
+	// RemoteClusterReadyReason is the reason used when the RemoteCluster is ready.
+	RemoteClusterReadyReason = "Ready"
+)
+
 func init() {
 	SchemeBuilder.Register(&RemoteCluster{}, &RemoteClusterList{})
 }
