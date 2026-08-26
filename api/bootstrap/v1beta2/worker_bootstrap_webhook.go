@@ -19,6 +19,7 @@ package v1beta2
 import (
 	"context"
 	"fmt"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -56,7 +57,7 @@ func (v *K0sWorkerConfigValidator) ValidateCreate(_ context.Context, obj runtime
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a K0sWorkerConfig but got a %T", obj))
 	}
 
-	return nil, v.validate(c.Spec, c.Name)
+	return v.validate(c.Spec, c.Name)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -66,7 +67,7 @@ func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, _, newObj r
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a K0sWorkerConfig but got a %T", newObj))
 	}
 
-	return nil, v.validate(newC.Spec, newC.Name)
+	return v.validate(newC.Spec, newC.Name)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -74,14 +75,14 @@ func (v *K0sWorkerConfigValidator) ValidateDelete(_ context.Context, _ runtime.O
 	return nil, nil
 }
 
-func (v *K0sWorkerConfigValidator) validate(c K0sWorkerConfigSpec, name string) error {
-	allErrs := c.Validate(field.NewPath("spec"))
+func (v *K0sWorkerConfigValidator) validate(c K0sWorkerConfigSpec, name string) (admission.Warnings, error) {
+	warnings, allErrs := c.Validate(field.NewPath("spec"))
 
 	if len(allErrs) == 0 {
-		return nil
+		return warnings, nil
 	}
 
-	return apierrors.NewInvalid(GroupVersion.WithKind("K0sWorkerConfig").GroupKind(), name, allErrs)
+	return warnings, apierrors.NewInvalid(GroupVersion.WithKind("K0sWorkerConfig").GroupKind(), name, allErrs)
 }
 
 // SetupK0sWorkerConfigWebhookWithManager registers the webhook for K0sWorkerConfig in the manager.

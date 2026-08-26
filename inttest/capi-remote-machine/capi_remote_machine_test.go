@@ -313,6 +313,7 @@ metadata:
   namespace: default
 spec:
   clusterName: remote-test
+  version: {{ .K0SVersion }}+k0s.0
   bootstrap:
     configRef:
       apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -328,8 +329,7 @@ kind: K0sWorkerConfig
 metadata:
   name: remote-test-0
   namespace: default
-spec:
-  version: {{ .K0SVersion }}+k0s.0
+spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteMachine
