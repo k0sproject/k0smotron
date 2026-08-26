@@ -19,8 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
-	"net/http"
 	"slices"
 	"time"
 
@@ -30,7 +28,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/transport"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -39,9 +36,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// workloadClusterTimeout bounds requests to a workload cluster, including the
+// discovery a fresh client does before the caller's context is ever consulted.
+const workloadClusterTimeout = 10 * time.Second
+
 var (
 	// ErrNotReady is used to indicate that the control plane is not ready yet.
 	ErrNotReady = fmt.Errorf("waiting for the state")
+	// ErrClusterCacheNotConnected reports that the cluster cache has no connection
+	// yet. Kept apart from ErrNotReady, which a tunneled control plane also returns.
+	ErrClusterCacheNotConnected = fmt.Errorf("%w: cluster cache is not connected", ErrNotReady)
 )
 
 // GetWorkloadClusterClientset returns a Kubernetes clientset for the given cluster. cache may be nil for callers that
@@ -59,32 +63,15 @@ func GetWorkloadClusterClientset(ctx context.Context, hubClient client.Client, c
 		return nil, fmt.Errorf("failed to get rest config for cluster %s: %w", cluster.Name, err)
 	}
 
-	tCfg, err := restConfig.TransportConfig()
-	if err != nil {
-		return nil, fmt.Errorf("error generating %s transport config: %w", cluster.Name, err)
-	}
-	tlsCfg, err := transport.TLSConfigFor(tCfg)
-	if err != nil {
-		return nil, fmt.Errorf("error generating %s tls config: %w", cluster.Name, err)
+	// The tunneling switch below has no default, so an unset mode yields no config
+	// and no error. Dereferencing that would panic rather than report.
+	if restConfig == nil {
+		return nil, fmt.Errorf("no rest config resolved for cluster %s", cluster.Name)
 	}
 
-	// Disable keep-alive to avoid hanging connections
-	cl := http.DefaultClient
-	cl.Transport = &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout:   3 * time.Second,
-			KeepAlive: -1,
-		}).DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          10,
-		IdleConnTimeout:       5 * time.Second,
-		TLSHandshakeTimeout:   5 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		ResponseHeaderTimeout: 15 * time.Second,
-		TLSClientConfig:       tlsCfg,
-	}
-
-	return kubernetes.NewForConfigAndClient(restConfig, cl)
+	// Left to build its own client, like the sibling above. Handing one over drops
+	// the proxy a tunneled kubeconfig carries and every auth method but a cert.
+	return kubernetes.NewForConfig(restConfig)
 }
 
 // GetControllerRuntimeClient returns a controller-runtime client for the given cluster. It takes into account the possibility of the cluster accessing API server through a
@@ -95,6 +82,14 @@ func GetControllerRuntimeClient(ctx context.Context, hubClient client.Client, cl
 		return nil, err
 	}
 
+	// The tunneling switch below has no default, so an unset mode yields no config
+	// and no error. Letting that reach client.New would report nothing useful.
+	if restConfig == nil {
+		return nil, fmt.Errorf("no rest config resolved for cluster %s", cluster.Name)
+	}
+
+	// Left to build its own client on purpose. Handing one over drops the proxy a
+	// tunneled kubeconfig carries, along with every auth method that is not a cert.
 	return client.New(restConfig, client.Options{Scheme: hubClient.Scheme()})
 }
 
@@ -142,7 +137,7 @@ func getRESTConfig(ctx context.Context, hubClient client.Client, cache clusterca
 		if err != nil {
 			if errors.Is(err, clustercache.ErrClusterNotConnected) {
 				logger.Info("Connection to workload cluster is not established yet")
-				return nil, ErrNotReady
+				return nil, ErrClusterCacheNotConnected
 			}
 			return nil, err
 		}
@@ -182,6 +177,7 @@ func getRESTConfig(ctx context.Context, hubClient client.Client, cache clusterca
 
 // isTunneledRestConfigPossible checks if it's possible to use a tunneled rest.Config to access the workload cluster API server based on the control plane configuration.
 // If tunneling is not enabled or if worker mode is not enabled on the control-plane node, it returns false, indicating that a regular rest.Config should be used instead.
+// A nil control plane is safe to pass and reports false.
 func isTunneledRestConfigPossible(cp *cpv1beta2.K0sControlPlane) bool {
 	if cp == nil || !cp.Spec.K0sConfigSpec.Tunneling.Enabled {
 		// If control plane is nil means that the control plane is not K0sControlPlane, but K0smotronControlPlane, which does not support tunneling and will
@@ -216,6 +212,10 @@ func fromKubeconfigSecretToRestConfig(ctx context.Context, managementClusterClie
 	if err != nil {
 		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
 	}
+
+	// A kubeconfig carries no timeout, and the API discovery a client does on first
+	// use ignores the caller's context, so without this a dead peer parks a worker.
+	restConfig.Timeout = workloadClusterTimeout
 
 	return restConfig, nil
 }

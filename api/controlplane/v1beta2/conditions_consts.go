@@ -23,6 +23,12 @@ import (
 const (
 	// ControlPlaneAvailableReason documents the fact that the control plane is reachable.
 	ControlPlaneAvailableReason = "Available"
+	// ControlPlaneNotAvailableReason surfaces when the workload cluster API did
+	// not answer.
+	ControlPlaneNotAvailableReason = clusterv1.NotAvailableReason
+	// ControlPlaneConnectionDownReason surfaces while reads of the workload cluster
+	// API are failing but have not failed for long enough to report an outage.
+	ControlPlaneConnectionDownReason = clusterv1.ConnectionDownReason
 	// K0sControlPlaneScalingUpCondition is true if actual replicas < desired replicas.
 	// Note: In case a K0sControlPlane preflight check is preventing scale up, this will surface in the condition message.
 	K0sControlPlaneScalingUpCondition = clusterv1.ScalingUpCondition

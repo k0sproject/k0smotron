@@ -20,6 +20,7 @@ package controlplane
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -42,6 +43,7 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -1283,4 +1285,80 @@ func TestReconcileMachinesWithStaleInfraMachineCache(t *testing.T) {
 	machines, err = collections.GetFilteredMachinesForCluster(ctx, testEnv.GetAPIReader(), cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 	require.NoError(t, err)
 	require.Len(t, machines, 1, "no Machine must be created or deleted")
+}
+
+// TestReconcileMachinesInPlaceUpdateUnreachableClusterDoesNotScale covers an in
+// place update pending while the workload cluster cannot be reached.
+func TestReconcileMachinesInPlaceUpdateUnreachableClusterDoesNotScale(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-machines-inplace-unreachable")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	kcp.Spec.Replicas = 3
+	kcp.Spec.UpdateStrategy = cpv1beta2.UpdateInPlace
+	// A control plane that also runs as a worker is judged ready through the
+	// Machine condition, so the preflight check does not reach the workload API.
+	kcp.Spec.K0sConfigSpec.Args = []string{"--enable-worker"}
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+	require.NoError(t, testEnv.Create(ctx, kcp))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, gmt, cluster, ns)
+
+	m0, cfg0 := createControlPlaneMachine(t, fmt.Sprintf("%s-%d", kcp.Name, 0), ns.Name, cluster, kcp, gmt, "v1.29.0")
+	m1, cfg1 := createControlPlaneMachine(t, fmt.Sprintf("%s-%d", kcp.Name, 1), ns.Name, cluster, kcp, gmt, "v1.29.0")
+	m2, cfg2 := createControlPlaneMachine(t, fmt.Sprintf("%s-%d", kcp.Name, 2), ns.Name, cluster, kcp, gmt, kcp.Spec.Version)
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(ctx, m0, cfg0, m1, cfg1, m2, cfg2))
+	}()
+
+	// The preflight check only trusts the Machine condition when the controller
+	// config says the machine also runs as a worker.
+	for _, cfg := range []*bootstrapv2.K0sControllerConfig{cfg0, cfg1, cfg2} {
+		cfg.Spec.Args = []string{"--enable-worker"}
+		require.NoError(t, testEnv.Update(ctx, cfg))
+	}
+
+	// The newest machine has to look available or the preflight check requeues on
+	// its own and the scaling logic is never reached.
+	for _, m := range []*clusterv1.Machine{m0, m1, m2} {
+		conditions.Set(m, metav1.Condition{
+			Type:               clusterv1.MachineAvailableCondition,
+			Status:             metav1.ConditionTrue,
+			Reason:             clusterv1.AvailableUnknownReason,
+			LastTransitionTime: metav1.Now(),
+		})
+		require.NoError(t, testEnv.Status().Update(ctx, m))
+	}
+
+	// Every workload cluster call fails, which is what an unreachable control
+	// plane looks like from here.
+	r := buildTestController(t, func(*http.Request) (*http.Response, error) {
+		return nil, errors.New("workload cluster is unreachable")
+	})
+
+	// Reconcile repeatedly, because a single pass could miss a surge that only
+	// happens once the scaling logic sees the previous machine settle.
+	for range 3 {
+		controlplane, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
+		require.NoError(t, err)
+		require.False(t, conditions.IsTrue(controlplane.kcp, cpv1beta2.ControlPlaneAvailableCondition),
+			"the fixture must leave the control plane unavailable or this proves nothing")
+		require.True(t, controlplane.hasMachinesWithOnlyVersionOutdated,
+			"the fixture must have an in place update pending or this proves nothing")
+
+		res, err := r.reconcileMachines(ctx, controlplane)
+		require.NoError(t, err)
+		require.False(t, res.IsZero(), "an unreachable control plane must requeue instead of scaling")
+
+		// Read uncached, so a lagging informer cannot hide a machine that was
+		// just created.
+		machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv.GetAPIReader(), cluster,
+			collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
+		require.NoError(t, err)
+		require.Len(t, machines, 3,
+			"no machine may be created or deleted while an in place update cannot reach the cluster")
+	}
 }

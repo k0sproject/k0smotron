@@ -20,6 +20,7 @@ package controlplane
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -56,10 +57,14 @@ import (
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
@@ -138,6 +143,17 @@ func TestReconcilePausedCluster(t *testing.T) {
 		APIReader: testEnv.GetAPIReader(),
 	}
 
+	// The owner lookup goes through the cached client and errors outright when it
+	// misses, so the cluster has to be visible there before reconciling.
+	require.Eventually(t, func() bool {
+		seen := &clusterv1.Cluster{}
+		if err := testEnv.Get(ctx, util.ObjectKey(cluster), seen); err != nil {
+			return false
+		}
+
+		return ptr.Deref(seen.Spec.Paused, false)
+	}, 10*time.Second, 100*time.Millisecond)
+
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
 	require.NoError(t, err)
 	require.Equal(t, ctrl.Result{}, result)
@@ -163,6 +179,12 @@ func TestReconcilePausedK0sControlPlane(t *testing.T) {
 		Client:    testEnv,
 		APIReader: testEnv.GetAPIReader(),
 	}
+
+	// The annotation is written with the object so it cannot be stale, but the owner
+	// lookup goes through the cached client and errors outright when it misses.
+	require.Eventually(t, func() bool {
+		return testEnv.Get(ctx, util.ObjectKey(cluster), &clusterv1.Cluster{}) == nil
+	}, 10*time.Second, 100*time.Millisecond)
 
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
 	require.NoError(t, err)
@@ -421,7 +443,7 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
 
 		kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
-		if kubeconfigProxiedSecretCrt == nil {
+		if !assert.NotNil(c, kubeconfigProxiedSecretCrt) {
 			return
 		}
 		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
@@ -518,6 +540,9 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
 
 		kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
+		if !assert.NotNil(c, kubeconfigProxiedSecretCrt) {
+			return
+		}
 		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
 			assert.Equal(c, "https://test.com:9999", v.Server)
 		}
@@ -1331,4 +1356,211 @@ func normalizeUnstructured(obj *unstructured.Unstructured) *unstructured.Unstruc
 	}
 
 	return normalized
+}
+
+// recordingClusterCache notes the controller asking for a cluster source and
+// hands back a real one, so the builder still gets something usable.
+type recordingClusterCache struct {
+	clustercache.ClusterCache
+
+	controllerNames []string
+	mapFuncs        []func(context.Context, client.Object) []ctrl.Request
+}
+
+func (r *recordingClusterCache) GetClusterSource(controllerName string, mapFunc func(context.Context, client.Object) []ctrl.Request, opts ...clustercache.GetClusterSourceOption) source.Source {
+	r.controllerNames = append(r.controllerNames, controllerName)
+	r.mapFuncs = append(r.mapFuncs, mapFunc)
+
+	return clustercache.NewFakeEmptyClusterCache().GetClusterSource(controllerName, mapFunc, opts...)
+}
+
+// TestSetupWithManagerWatchesTheClusterCache pins the watch. Without it nothing
+// reconciles while the control plane still reports itself available.
+func TestSetupWithManagerWatchesTheClusterCache(t *testing.T) {
+	newManager := func(t *testing.T) ctrl.Manager {
+		mgr, err := ctrl.NewManager(testEnv.GetConfig(), ctrl.Options{
+			Scheme: testEnv.GetScheme(),
+			Metrics: metricsserver.Options{
+				BindAddress: "0",
+			},
+		})
+		require.NoError(t, err)
+
+		return mgr
+	}
+
+	t.Run("the cluster cache is watched", func(t *testing.T) {
+		cache := &recordingClusterCache{}
+		c := &K0sController{Client: testEnv, APIReader: testEnv.GetAPIReader(), ClusterCache: cache}
+
+		require.NoError(t, c.SetupWithManager(newManager(t), controller.Options{SkipNameValidation: new(true)}))
+		require.Equal(t, []string{"k0scontrolplane"}, cache.controllerNames,
+			"a cluster whose connection drops has to enqueue its control plane")
+
+		// Recording the call is not enough, the wired mapper has to be the one
+		// that turns a cluster into its own control plane.
+		require.Len(t, cache.mapFuncs, 1)
+		cluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "ns"},
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{Kind: "K0sControlPlane", Name: "cp"},
+			},
+		}
+		require.Equal(t,
+			[]ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: "ns", Name: "cp"}}},
+			cache.mapFuncs[0](ctx, cluster))
+	})
+
+	t.Run("no cluster cache is still a valid setup", func(t *testing.T) {
+		c := &K0sController{Client: testEnv, APIReader: testEnv.GetAPIReader()}
+
+		require.NoError(t, c.SetupWithManager(newManager(t), controller.Options{SkipNameValidation: new(true)}))
+	})
+}
+
+// TestHostedSetupWithManagerWatchesTheClusterCache covers the hosted flavour getting
+// the same wake up, since nothing else notices it going away either.
+func TestHostedSetupWithManagerWatchesTheClusterCache(t *testing.T) {
+	mgr, err := ctrl.NewManager(testEnv.GetConfig(), ctrl.Options{
+		Scheme:  testEnv.GetScheme(),
+		Metrics: metricsserver.Options{BindAddress: "0"},
+	})
+	require.NoError(t, err)
+
+	cache := &recordingClusterCache{}
+	c := &K0smotronController{Client: testEnv, ClusterCache: cache}
+
+	require.NoError(t, c.SetupWithManager(mgr, controller.Options{SkipNameValidation: new(true)}))
+	require.Equal(t, []string{"k0smotroncontrolplane"}, cache.controllerNames)
+
+	require.Len(t, cache.mapFuncs, 1)
+	cluster := &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "ns"},
+		Spec: clusterv1.ClusterSpec{
+			ControlPlaneRef: clusterv1.ContractVersionedObjectReference{Kind: "K0smotronControlPlane", Name: "cp"},
+		},
+	}
+	require.Equal(t,
+		[]ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: "ns", Name: "cp"}}},
+		cache.mapFuncs[0](ctx, cluster))
+
+	// A cluster running the other flavour must not be enqueued here.
+	cluster.Spec.ControlPlaneRef.Kind = "K0sControlPlane"
+	require.Nil(t, cache.mapFuncs[0](ctx, cluster))
+}
+
+// TestReconcileArmsTheAvailabilityRequeue covers requeueAfter reaching the caller
+// through the deferred block. Which interval it picks is covered by TestRequeueAfter.
+func TestReconcileArmsTheAvailabilityRequeue(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-requeues-settled")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	// No machines wanted, so reconcileMachines cannot return an interval of its own
+	// and shadow the availability one.
+	kcp.Spec.Replicas = 0
+
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, kcp))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, gmt, cluster, ns)
+
+	r := &K0sController{
+		Client:              testEnv,
+		APIReader:           testEnv.GetAPIReader(),
+		SecretCachingClient: secretCachingClient,
+		ClusterCache: clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(),
+			client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}),
+	}
+
+	// The owner lookup goes through the cached client and errors outright when it
+	// misses, which would take the reconcile down a path that proves nothing.
+	require.Eventually(t, func() bool {
+		return testEnv.Get(ctx, util.ObjectKey(cluster), &clusterv1.Cluster{}) == nil
+	}, 10*time.Second, 100*time.Millisecond)
+
+	var res ctrl.Result
+	require.Eventually(t, func() bool {
+		res, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
+
+		return err == nil
+	}, 20*time.Second, 200*time.Millisecond, "the reconcile never got far enough to arm a requeue")
+
+	// Not available here, since nothing serves the workload API, so this is the
+	// unsettled interval. The point is that an interval is armed at all.
+	require.Equal(t, availabilityRetryInterval, res.RequeueAfter,
+		"the deferred block has to pass the interval out, or nothing notices an outage")
+}
+
+// TestAvailabilityAnchorSurvivesAPatch covers the timestamp the grace period is
+// measured from surviving a real status patch, which no in memory test can show.
+func TestAvailabilityAnchorSurvivesAPatch(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-availability-anchor")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, kcp))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, gmt, cluster, ns)
+
+	readBack := func() *metav1.Condition {
+		got := &cpv1beta2.K0sControlPlane{}
+		require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(kcp), got))
+
+		return conditions.Get(got, string(cpv1beta2.ControlPlaneAvailableCondition))
+	}
+
+	// A read that has only just started failing, aged so the assertion below cannot
+	// pass by both timestamps happening to be now.
+	anchor := metav1.NewTime(time.Now().Add(-time.Minute).Truncate(time.Second))
+	helper, err := patch.NewHelper(kcp, testEnv)
+	require.NoError(t, err)
+	conditions.Set(kcp, metav1.Condition{
+		Type:               string(cpv1beta2.ControlPlaneAvailableCondition),
+		Status:             metav1.ConditionUnknown,
+		Reason:             cpv1beta2.ControlPlaneConnectionDownReason,
+		Message:            "reading the workload cluster API has been failing",
+		LastTransitionTime: anchor,
+	})
+	require.NoError(t, helper.Patch(ctx, kcp))
+
+	persisted := readBack()
+	require.NotNil(t, persisted, "the condition has to reach the API server at all")
+	require.Equal(t, metav1.ConditionUnknown, persisted.Status)
+	require.Equal(t, cpv1beta2.ControlPlaneConnectionDownReason, persisted.Reason)
+	require.True(t, anchor.Equal(&persisted.LastTransitionTime),
+		"the grace period is measured from this, so it has to round trip exactly")
+
+	// A later failing read refreshes the message only. If the patch moved the
+	// timestamp the grace period could never elapse and no outage would be reported.
+	helper, err = patch.NewHelper(kcp, testEnv)
+	require.NoError(t, err)
+	conditions.Set(kcp, availabilityCondition(persisted, time.Now(), persisted.LastTransitionTime.Time,
+		availabilityGracePeriod, availabilityFailureFloor, "etcdserver request timed out"))
+	require.NoError(t, helper.Patch(ctx, kcp))
+
+	retried := readBack()
+	require.NotNil(t, retried)
+	require.Equal(t, metav1.ConditionUnknown, retried.Status, "still inside the grace period")
+	require.True(t, anchor.Equal(&retried.LastTransitionTime),
+		"a retry must not restart the clock through a patch either")
+	require.Equal(t, cpv1beta2.ControlPlaneConnectionDownReason, retried.Reason)
+
+	// Once the anchor is old enough the outage is reported, decided purely from what
+	// the API server holds.
+	helper, err = patch.NewHelper(kcp, testEnv)
+	require.NoError(t, err)
+	conditions.Set(kcp, availabilityCondition(retried, retried.LastTransitionTime.Add(availabilityGracePeriod),
+		retried.LastTransitionTime.Time, availabilityGracePeriod, availabilityFailureFloor,
+		"etcdserver request timed out"))
+	require.NoError(t, helper.Patch(ctx, kcp))
+
+	require.Equal(t, metav1.ConditionFalse, readBack().Status)
 }
