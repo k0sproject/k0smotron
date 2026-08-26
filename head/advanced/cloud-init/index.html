@@ -2843,8 +2843,16 @@ The variables include:</p>
 <li><code>{{ k0smotron_k0sDownloadCommands }}</code> — shell line with all download steps chained by &amp;&amp;.</li>
 <li><code>{{ k0smotron_k0sInstallCommand }}</code> — the k0s install command (controller/worker specific).</li>
 <li><code>{{ k0smotron_k0sStartCommand }}</code> — the command that starts k0s.</li>
-<li><code>{{ k0smotron_files }}</code> — a list of file objects with fields: path, content, permissions.</li>
+<li><code>{{ k0smotron_files }}</code> — a list of file objects with fields: path, content, permissions, and owner, encoding or append when set.</li>
 </ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>append</code> is rejected when the machine is provisioned by the RemoteMachine provider, over SSH or through a job. Those paths re-run from the start on every retry, so appending would duplicate the content.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>In this mode k0smotron does not write the files, so your template must honour <code>owner</code>, <code>encoding</code> and <code>append</code> itself. Ignoring <code>encoding</code> leaves <code>base64</code> content encoded, and ignoring <code>append</code> replaces the file instead. The optional keys are only present when set, so read them with <code>f.get(...)</code>.</p>
+</div>
 <p>Example customUserData using variables:</p>
 <div class="highlight"><pre><span></span><code><span class="x">runcmd:</span>
 <span class="x">  - </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sDownloadCommands</span> <span class="cp">}}</span>
@@ -2852,17 +2860,27 @@ The variables include:</p>
 <span class="x">  - </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sStartCommand</span> <span class="cp">}}</span>
 
 <span class="x">write_files:</span>
-<span class="x">  </span><span class="cp">{%</span> <span class="k">for</span> <span class="nv">f</span> <span class="k">in</span> <span class="nv">k0smotron_files</span> <span class="cp">%}</span>
+<span class="cp">{%</span> <span class="k">for</span> <span class="nv">f</span> <span class="k">in</span> <span class="nv">k0smotron_files</span> <span class="cp">%}</span>
 <span class="x">  - path: </span><span class="cp">{{</span> <span class="nv">f.path</span> <span class="cp">}}</span>
 <span class="x">    permissions: &quot;</span><span class="cp">{{</span> <span class="nv">f.permissions</span> <span class="cp">}}</span><span class="x">&quot;</span>
-<span class="x">    content: |</span>
-<span class="x">      </span><span class="cp">{{</span> <span class="nv">f.content</span> <span class="o">|</span> <span class="nf">indent</span><span class="o">(</span><span class="m">6</span><span class="o">)</span> <span class="cp">}}</span>
-<span class="x">  </span><span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
+<span class="cp">{%</span> <span class="k">if</span> <span class="nv">f.get</span><span class="o">(</span><span class="s1">&#39;owner&#39;</span><span class="o">)</span> <span class="cp">%}</span>
+<span class="x">    owner: &quot;</span><span class="cp">{{</span> <span class="nv">f.owner</span> <span class="cp">}}</span><span class="x">&quot;</span>
+<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
+<span class="cp">{%</span> <span class="k">if</span> <span class="nv">f.get</span><span class="o">(</span><span class="s1">&#39;encoding&#39;</span><span class="o">)</span> <span class="cp">%}</span>
+<span class="x">    encoding: &quot;</span><span class="cp">{{</span> <span class="nv">f.encoding</span> <span class="cp">}}</span><span class="x">&quot;</span>
+<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
+<span class="cp">{%</span> <span class="k">if</span> <span class="nv">f.get</span><span class="o">(</span><span class="s1">&#39;append&#39;</span><span class="o">)</span> <span class="cp">%}</span>
+<span class="x">    append: true</span>
+<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
+<span class="x">    content: </span><span class="cp">{{</span> <span class="nv">f.content</span> <span class="o">|</span> <span class="nf">tojson</span> <span class="cp">}}</span>
+<span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
 <span class="x">  - path: /my/custom/file.txt</span>
 <span class="x">    permissions: &quot;0644&quot;</span>
 <span class="x">    content: |</span>
 <span class="x">      Welcome from custom cloud-init with variables</span>
 </code></pre></div>
+<p>Keep the block tags at column zero. cloud-init enables <code>trim_blocks</code> but not <code>lstrip_blocks</code>, so indented tags emit whitespace that breaks the list.</p>
+<p>Use <code>tojson</code> for <code>content</code> instead of a block scalar, which would take its indentation from the first line.</p>
 <p>Another approach is to use the variables in a completely custom script:</p>
 <div class="highlight"><pre><span></span><code><span class="x">runcmd:</span>
 <span class="x">  - echo -n &quot;custom&quot; &gt; /root/custom</span>
@@ -2870,6 +2888,7 @@ The variables include:</p>
 
 <span class="x">write_files:</span>
 <span class="x">  - path: /root/cloud-init.sh</span>
+<span class="x">    permissions: &quot;0755&quot;</span>
 <span class="x">    content: |</span>
 <span class="x">      #!/usr/bin/bash</span>
 <span class="x">      set -euo pipefail</span>
@@ -2877,13 +2896,11 @@ The variables include:</p>
 <span class="x">      </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sDownloadCommands</span> <span class="cp">}}</span>
 <span class="x">      </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sInstallCommand</span> <span class="cp">}}</span>
 <span class="x">      </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sStartCommand</span> <span class="cp">}}</span>
-<span class="x">    permissions: &quot;0755&quot;</span>
-<span class="x">  </span><span class="cp">{%</span> <span class="k">for</span> <span class="nv">f</span> <span class="k">in</span> <span class="nv">k0smotron_files</span> <span class="cp">%}</span>
+<span class="cp">{%</span> <span class="k">for</span> <span class="nv">f</span> <span class="k">in</span> <span class="nv">k0smotron_files</span> <span class="cp">%}</span>
 <span class="x">  - path: </span><span class="cp">{{</span> <span class="nv">f.path</span> <span class="cp">}}</span>
-<span class="x">    content: |</span>
-<span class="x">      </span><span class="cp">{{</span> <span class="nv">f.content</span> <span class="o">|</span> <span class="nf">indent</span><span class="o">(</span><span class="m">6</span><span class="o">)</span> <span class="cp">}}</span>
 <span class="x">    permissions: &quot;</span><span class="cp">{{</span> <span class="nv">f.permissions</span> <span class="cp">}}</span><span class="x">&quot;</span>
-<span class="x">  </span><span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
+<span class="x">    content: </span><span class="cp">{{</span> <span class="nv">f.content</span> <span class="o">|</span> <span class="nf">tojson</span> <span class="cp">}}</span>
+<span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
 <span class="x">  - path: /root/my-extra-file</span>
 <span class="x">    content: test</span>
 <span class="x">    permissions: &quot;0600&quot;</span>
