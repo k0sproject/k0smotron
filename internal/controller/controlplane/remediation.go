@@ -105,13 +105,15 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 		}
 
 		// The cluster MUST have no machines with a deletion timestamp. This rule prevents KCP taking actions while the cluster is in a transitional state.
-		if len(scope.activeMachines.Filter(collections.HasDeletionTimestamp)) > 0 {
+		// activeMachines is built with collections.ActiveMachines, the exact negation
+		// of this filter, so asking it for deleting machines never matched.
+		if scope.deletedMachines.Len() > 0 {
 			log.Info("A control plane machine needs remediation, but there are other control-plane machines being deleted. Skipping remediation")
 			conditions.Set(machineToBeRemediated, metav1.Condition{
 				Type:    string(clusterv1.MachineOwnerRemediatedCondition),
 				Status:  metav1.ConditionFalse,
 				Reason:  clusterv1.MachineOwnerRemediatedWaitingForRemediationReason,
-				Message: "KCP waiting for control plane machine provisioning to complete before triggering remediation",
+				Message: "KCP waiting for control plane machine deletion to complete before triggering remediation",
 			})
 			return nil
 		}

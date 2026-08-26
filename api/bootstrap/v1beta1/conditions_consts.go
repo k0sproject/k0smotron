@@ -42,7 +42,7 @@ const (
 	// waiting for the infrastructure to be initialized.
 	//
 	// NOTE: This is a pre-condition for starting to create controller machines.
-	WaitingForInfrastructureInitializationReason = "WaitingForControlPlaneInitialization"
+	WaitingForInfrastructureInitializationReason = "WaitingForInfrastructureInitialization"
 
 	// InternalErrorReason documents a BootstrapConfig controller detecting
 	// an internal error while processing the BootstrapConfig.

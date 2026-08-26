@@ -60,9 +60,9 @@ func (r *ClusterController) Reconcile(ctx context.Context, req ctrl.Request) (re
 	if c.ObjectMeta.DeletionTimestamp.IsZero() {
 		c.Status.Initialization.Provisioned = new(true)
 		conditions.Set(c, metav1.Condition{
-			Type:   "Ready",
+			Type:   infrastructure.RemoteClusterReadyCondition,
 			Status: metav1.ConditionTrue,
-			Reason: "Ready",
+			Reason: infrastructure.RemoteClusterReadyReason,
 		})
 		if err := r.Status().Update(ctx, c); err != nil {
 			log.Error(err, "Failed to update RemoteCluster status")

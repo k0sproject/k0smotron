@@ -31,6 +31,7 @@ import (
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/failuredomains"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -186,6 +187,16 @@ func calculateMaxSurge(scope *controlplane) int {
 	return int(scope.kcp.Spec.Replicas) + 1
 }
 
+// nextFailureDomain picks the failure domain for a new control plane machine.
+// A deleting machine still occupies one, so it counts toward the total.
+func nextFailureDomain(ctx context.Context, scope *controlplane) string {
+	allMachines := collections.FromMachines(append(scope.activeMachines.UnsortedList(), scope.deletedMachines.UnsortedList()...)...)
+
+	// The last argument is the priority signal, which upstream fills with the up
+	// to date machines so a rollout spreads them evenly.
+	return failuredomains.PickFewest(ctx, filterControlPlaneFailureDomains(*scope.cluster), allMachines, scope.upToDateMachines)
+}
+
 func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error {
 	logger := log.FromContext(ctx)
 	newMachineName := names.SimpleNameGenerator.GenerateName(fmt.Sprintf("%s-", scope.kcp.Name))
@@ -201,7 +212,7 @@ func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error 
 		APIGroup: clusterv1.GroupVersionInfrastructure.Group,
 	}
 
-	selectedFailureDomain := failuredomains.PickFewest(ctx, filterControlPlaneFailureDomains(*scope.cluster), scope.activeMachines, scope.deletedMachines)
+	selectedFailureDomain := nextFailureDomain(ctx, scope)
 
 	logger.Info("Creating new control plane machine", "name", newMachineName, "failureDomain", selectedFailureDomain)
 
