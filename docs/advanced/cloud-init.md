@@ -111,7 +111,15 @@ The variables include:
 - `{{ k0smotron_k0sDownloadCommands }}` — shell line with all download steps chained by &&.
 - `{{ k0smotron_k0sInstallCommand }}` — the k0s install command (controller/worker specific).
 - `{{ k0smotron_k0sStartCommand }}` — the command that starts k0s.
-- `{{ k0smotron_files }}` — a list of file objects with fields: path, content, permissions.
+- `{{ k0smotron_files }}` — a list of file objects with fields: path, content, permissions, and owner, encoding or append when set.
+
+!!! note
+
+    `append` is rejected when the machine is provisioned by the RemoteMachine provider, over SSH or through a job. Those paths re-run from the start on every retry, so appending would duplicate the content.
+
+!!! warning
+
+    In this mode k0smotron does not write the files, so your template must honour `owner`, `encoding` and `append` itself. Ignoring `encoding` leaves `base64` content encoded, and ignoring `append` replaces the file instead. The optional keys are only present when set, so read them with `f.get(...)`.
 
 Example customUserData using variables:
 
@@ -122,17 +130,29 @@ runcmd:
   - {{ k0smotron_k0sStartCommand }}
   
 write_files:
-  {% for f in k0smotron_files %}
+{% for f in k0smotron_files %}
   - path: {{ f.path }}
     permissions: "{{ f.permissions }}"
-    content: |
-      {{ f.content | indent(6) }}
-  {% endfor %}
+{% if f.get('owner') %}
+    owner: "{{ f.owner }}"
+{% endif %}
+{% if f.get('encoding') %}
+    encoding: "{{ f.encoding }}"
+{% endif %}
+{% if f.get('append') %}
+    append: true
+{% endif %}
+    content: {{ f.content | tojson }}
+{% endfor %}
   - path: /my/custom/file.txt
     permissions: "0644"
     content: |
       Welcome from custom cloud-init with variables
 ```
+
+Keep the block tags at column zero. cloud-init enables `trim_blocks` but not `lstrip_blocks`, so indented tags emit whitespace that breaks the list.
+
+Use `tojson` for `content` instead of a block scalar, which would take its indentation from the first line.
 
 Another approach is to use the variables in a completely custom script:
 
@@ -143,20 +163,19 @@ runcmd:
   
 write_files:
   - path: /root/cloud-init.sh
+    permissions: "0755"
     content: |
       #!/usr/bin/bash
       set -euo pipefail
-  
+
       {{ k0smotron_k0sDownloadCommands }}
       {{ k0smotron_k0sInstallCommand }}
       {{ k0smotron_k0sStartCommand }}
-    permissions: "0755"
-  {% for f in k0smotron_files %}
+{% for f in k0smotron_files %}
   - path: {{ f.path }}
-    content: |
-      {{ f.content | indent(6) }}
     permissions: "{{ f.permissions }}"
-  {% endfor %}
+    content: {{ f.content | tojson }}
+{% endfor %}
   - path: /root/my-extra-file
     content: test
     permissions: "0600"

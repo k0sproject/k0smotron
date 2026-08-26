@@ -99,7 +99,10 @@ func (p *JobProvisioner) Provision(ctx context.Context) error {
 		},
 	}
 
-	volume, volumeMounts, secretData := p.extractCloudInit(p.cloudInit)
+	volume, volumeMounts, secretData, err := p.extractCloudInit(p.cloudInit)
+	if err != nil {
+		return err
+	}
 	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, volume)
 	job.Spec.Template.Spec.Containers[0].VolumeMounts = append(job.Spec.Template.Spec.Containers[0].VolumeMounts, volumeMounts...)
 	volume.Secret.SecretName = secret.Name
@@ -140,7 +143,7 @@ func (p *JobProvisioner) Provision(ctx context.Context) error {
 	return nil
 }
 
-func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionData) (volume v1.Volume, volumeMounts []v1.VolumeMount, secretData map[string][]byte) {
+func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionData) (volume v1.Volume, volumeMounts []v1.VolumeMount, secretData map[string][]byte, err error) {
 	machineDSN := p.machineDSN()
 
 	var sshCommand, scpCommand string
@@ -161,14 +164,30 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 		},
 	}
 
+	var sudoPrefix string
+	if p.remoteMachine.Spec.UseSudo {
+		sudoPrefix = "sudo "
+	}
+
 	var buf bytes.Buffer
 	buf.WriteString("#!/bin/sh\n")
 
 	secretData = make(map[string][]byte)
 
 	for _, file := range cloudInit.Files {
+		// The file is placed by scp, which always replaces the target.
+		if file.Append {
+			return volume, volumeMounts, secretData, fmt.Errorf("file %s uses append, which is not supported when provisioning through a job", file.Path)
+		}
+
+		// The remote host receives the file as is, so decode before staging it.
+		content, err := file.DecodedContent()
+		if err != nil {
+			return volume, volumeMounts, secretData, err
+		}
+
 		fileName := genFileName(file.Path)
-		secretData[fileName] = []byte(file.Content)
+		secretData[fileName] = content
 
 		volume.VolumeSource.Secret.Items = append(volume.VolumeSource.Secret.Items, v1.KeyToPath{
 			Key:  fileName,
@@ -176,7 +195,12 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 		})
 
 		buf.WriteString(fmt.Sprintf("%s /var/lib/bootstrap-data/%s %s:%s\n", scpCommand, fileName, machineDSN, file.Path))
-		buf.WriteString(fmt.Sprintf("%s chmod %s %s\n", sshCommand, file.Permissions, file.Path))
+		// These run through the entrypoint shell inside the job, so quote them.
+		// Giving a file away also needs the same privilege the commands use.
+		buf.WriteString(fmt.Sprintf("%s %schmod %s %s\n", sshCommand, sudoPrefix, shellQuote(file.Permissions), shellQuote(file.Path)))
+		if file.Owner != "" {
+			buf.WriteString(fmt.Sprintf("%s %schown -- %s %s\n", sshCommand, sudoPrefix, shellQuote(file.Owner), shellQuote(file.Path)))
+		}
 	}
 	volumeMounts = append(volumeMounts, v1.VolumeMount{
 		Name:      "bootstrap-data",
@@ -197,7 +221,7 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 		Mode: new(int32(0755)),
 	})
 
-	return volume, volumeMounts, secretData
+	return volume, volumeMounts, secretData, nil
 }
 
 func (p *JobProvisioner) machineDSN() (dsn string) {

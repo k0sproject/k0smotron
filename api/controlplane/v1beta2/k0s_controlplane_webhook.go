@@ -26,6 +26,7 @@ import (
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/k0sproject/version"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -124,6 +125,16 @@ func validateK0sControlPlane(kcp *K0sControlPlane) error {
 	// nolint:revive
 	if err := denyRecreateOnSingleClusters(kcp); err != nil {
 		return err
+	}
+
+	// K0sControllerConfig has no webhook of its own, so validate the files here
+	// where they are still part of the control plane spec.
+	if errs := bootstrapv1.ValidateFileOwners(
+		kcp.Spec.K0sConfigSpec.Files,
+		kcp.Spec.K0sConfigSpec.Provisioner,
+		field.NewPath("spec", "k0sConfigSpec"),
+	); len(errs) > 0 {
+		return errs.ToAggregate()
 	}
 
 	return nil

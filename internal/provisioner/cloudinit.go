@@ -109,10 +109,31 @@ func writeFilesVars(b *bytes.Buffer, files []File) {
 	}
 	b.WriteString("{% set k0smotron_files = [\n")
 	for i, f := range files {
+		// The optional keys are omitted when unset, so a file using none of
+		// them renders exactly as it did before they existed.
+		entries := [][2]string{
+			{"path", strconv.Quote(f.Path)},
+			{"content", strconv.Quote(f.Content)},
+			{"permissions", strconv.Quote(f.Permissions)},
+		}
+		if f.Owner != "" {
+			entries = append(entries, [2]string{"owner", strconv.Quote(f.Owner)})
+		}
+		if f.Encoding != "" {
+			entries = append(entries, [2]string{"encoding", strconv.Quote(string(f.Encoding))})
+		}
+		if f.Append {
+			entries = append(entries, [2]string{"append", strconv.FormatBool(f.Append)})
+		}
+
 		b.WriteString("  {\n")
-		b.WriteString(fmt.Sprintf("    \"path\": \"%s\",\n", f.Path))
-		b.WriteString(fmt.Sprintf("    \"content\": \"%s\",\n", escapeNewlines(f.Content)))
-		b.WriteString(fmt.Sprintf("    \"permissions\": \"%s\"\n", f.Permissions))
+		for j, e := range entries {
+			sep := ","
+			if j == len(entries)-1 {
+				sep = ""
+			}
+			fmt.Fprintf(b, "    %q: %s%s\n", e[0], e[1], sep)
+		}
 		if i < len(files)-1 {
 			b.WriteString("  },\n")
 		} else {
@@ -120,8 +141,4 @@ func writeFilesVars(b *bytes.Buffer, files []File) {
 		}
 	}
 	b.WriteString("] %}\n")
-}
-
-func escapeNewlines(s string) string {
-	return fmt.Sprintf("%q", s)[1 : len(fmt.Sprintf("%q", s))-1]
 }

@@ -150,6 +150,11 @@ spec:
                       description: File defines a file to be passed to user_data upon
                         creation.
                       properties:
+                        append:
+                          description: |-
+                            Append specifies whether Content is appended to an existing file rather
+                            than replacing it. If the file does not exist it is created either way.
+                          type: boolean
                         content:
                           type: string
                         contentFrom:
@@ -186,6 +191,19 @@ spec:
                               - name
                               type: object
                           type: object
+                        encoding:
+                          description: |-
+                            Encoding specifies how Content is encoded. When empty Content is used
+                            verbatim. Use it to carry bytes that a plain string cannot hold.
+                          enum:
+                          - base64
+                          type: string
+                        owner:
+                          description: |-
+                            Owner sets file ownership as a user name and an optional group name
+                            separated by a colon. Empty means the file is owned by root.
+                          maxLength: 256
+                          type: string
                         path:
                           type: string
                         permissions:
@@ -644,6 +662,11 @@ spec:
                       description: File defines a file to be passed to user_data upon
                         creation.
                       properties:
+                        append:
+                          description: |-
+                            Append specifies whether Content is appended to an existing file rather
+                            than replacing it. If the file does not exist it is created either way.
+                          type: boolean
                         content:
                           type: string
                         contentFrom:
@@ -680,6 +703,19 @@ spec:
                               - name
                               type: object
                           type: object
+                        encoding:
+                          description: |-
+                            Encoding specifies how Content is encoded. When empty Content is used
+                            verbatim. Use it to carry bytes that a plain string cannot hold.
+                          enum:
+                          - base64
+                          type: string
+                        owner:
+                          description: |-
+                            Owner sets file ownership as a user name and an optional group name
+                            separated by a colon. Empty means the file is owned by root.
+                          maxLength: 256
+                          type: string
                         path:
                           type: string
                         permissions:
