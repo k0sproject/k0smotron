@@ -404,6 +404,67 @@ func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *clust
 }
 
 // GetK0sControlPlane retrieves a K0sControlPlane object from the cluster API server
+// WaitForMachineDeploymentsUpToDate mirrors the webhook rule that refuses a version
+// bump, where a MachineDeployment upgrades until it and its Machines match.
+func WaitForMachineDeploymentsUpToDate(ctx context.Context, kc *kubernetes.Clientset, clusterName, namespace string) error {
+	return wait.PollUntilContextCancel(ctx, time.Second, true, func(_ context.Context) (bool, error) {
+		// Read the reference from the cluster rather than taking it as an argument,
+		// so this cannot drift from whatever the manifest under test declares.
+		cluster, err := GetCluster(ctx, kc, clusterName, namespace)
+		if err != nil || cluster.Spec.Topology.Version == "" {
+			return false, nil
+		}
+
+		version := cluster.Spec.Topology.Version
+
+		mds := &clusterv1.MachineDeploymentList{}
+
+		err = kc.RESTClient().
+			Get().
+			AbsPath(fmt.Sprintf("apis/cluster.x-k8s.io/v1beta2/namespaces/%s/machinedeployments", namespace)).
+			Param("labelSelector", fmt.Sprintf("cluster.x-k8s.io/cluster-name=%s", clusterName)).
+			Do(ctx).
+			Into(mds)
+		if err != nil {
+			return false, nil
+		}
+
+		if len(mds.Items) == 0 {
+			return false, nil
+		}
+
+		machines := &clusterv1.MachineList{}
+
+		err = kc.RESTClient().
+			Get().
+			AbsPath(fmt.Sprintf("apis/cluster.x-k8s.io/v1beta2/namespaces/%s/machines", namespace)).
+			Param("labelSelector", fmt.Sprintf("cluster.x-k8s.io/cluster-name=%s", clusterName)).
+			Do(ctx).
+			Into(machines)
+		if err != nil {
+			return false, nil
+		}
+
+		for _, md := range mds.Items {
+			if md.Spec.Template.Spec.Version != version {
+				return false, nil
+			}
+
+			for _, machine := range machines.Items {
+				if machine.Labels[clusterv1.MachineDeploymentNameLabel] != md.Name {
+					continue
+				}
+
+				if machine.Spec.Version != md.Spec.Template.Spec.Version {
+					return false, nil
+				}
+			}
+		}
+
+		return true, nil
+	})
+}
+
 func GetK0sControlPlane(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*cpv1beta2.K0sControlPlane, error) {
 
 	url := fmt.Sprintf("apis/controlplane.cluster.x-k8s.io/v1beta2/namespaces/%s/k0scontrolplanes/%s", namespace, name)
