@@ -258,7 +258,7 @@ jobs:
         run: |
           VERSION="${IMAGE_TAG#v}"
           helm package dist/chart --destination .
-          echo "CHART_TGZ=k0smotron-${VERSION}.tgz" >> "$GITHUB_ENV"
+          echo "CHART_TGZ=k0smotron-chart-${VERSION}.tgz" >> "$GITHUB_ENV"
 
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -266,11 +266,13 @@ jobs:
       - name: Log in to Quay registry
         run: echo "${{ secrets.QUAY_PASSWORD }}" | helm registry login quay.io -u ${{ secrets.QUAY_USER }} --password-stdin
 
+      # `helm push` appends the Chart.yaml name, so these land as
+      # ghcr.io/k0sproject/k0smotron-chart and quay.io/k0sproject/k0smotron-chart
+      # (the "-chart" suffix keeps them off the image repos of the same name).
       - name: Push chart to ghcr.io and quay.io
         run: |
-          helm push "${CHART_TGZ}" oci://ghcr.io/k0sproject/charts
-          # We push chart only to GitHub for now
-          # helm push "${CHART_TGZ}" oci://quay.io/k0sproject/charts
+          helm push "${CHART_TGZ}" oci://ghcr.io/k0sproject
+          helm push "${CHART_TGZ}" oci://quay.io/k0sproject
 
       - name: Upload chart to GitHub release
         uses: shogo82148/actions-upload-release-asset@v1.8.1

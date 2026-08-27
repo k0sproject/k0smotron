@@ -310,7 +310,14 @@ CRD_NAMESPACE ?= k0smotron-system
 
 .PHONY: helm-chart
 helm-chart: manifests-capi-integration kustomize $(YQ) $(KUBEBUILDER) ## Generate the Helm chart (kubebuilder scaffold + conversion-complete CRDs)
+	# Only Chart.yaml and values.yaml are committed; everything else under
+	# dist/chart is generated here. manager.yaml is in the plugin's
+	# "preserved unless --force" tier, so drop it first to get a pristine
+	# scaffold, then re-apply our edits from the patch. _helpers.tpl is handled
+	# the same way (see dist/patches/helpers.patch).
+	rm -f dist/chart/templates/manager/manager.yaml dist/chart/templates/_helpers.tpl
 	$(KUBEBUILDER) edit --plugins=helm/v1-alpha
+	git apply dist/patches/manager.patch dist/patches/helpers.patch
 	KUSTOMIZE=$(KUSTOMIZE) YQ=$(YQ) CHART_VERSION=$(CHART_VERSION) CRD_NAMESPACE=$(CRD_NAMESPACE) ./hack/helm-crds.sh
 	# Stamp the manager image (split IMG on its last colon to keep registry ports
 	# intact). Map the floating "latest" default to an empty tag so the chart
