@@ -112,6 +112,7 @@ jobs:
           docker load -i k0smotron-image-bundle.tar
           docker tag quay.io/k0sproject/k0smotron:latest ttl.sh/k0smotron-${{ github.sha }}:24h
           docker push ttl.sh/k0smotron-${{ github.sha }}:24h
+          echo "Docker image: ttl.sh/k0smotron-${{ github.sha }}:24h" >>$GITHUB_STEP_SUMMARY
 
   unittest:
     name: Unit tests
