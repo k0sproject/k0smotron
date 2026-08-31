@@ -45,6 +45,10 @@ jobs:
       changed: ${{ steps.check.outputs.changed }}
       suites: ${{ steps.suites.outputs.suites }}
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -65,10 +69,25 @@ jobs:
           if git log origin/main --since="24 hours ago" --oneline | grep .; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected in the last 24 hours on main branch."
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No changes detected in the last 24 hours on main branch. Skipping nightly tests execution."
+            exit 0
           fi
+
+          last_conclusion=$(gh run list \
+            --workflow "${{ github.workflow }}" \
+            --branch main \
+            --status completed \
+            --limit 1 \
+            --json conclusion \
+            --jq '.[0].conclusion')
+          
+          if [ "$last_conclusion" != "success" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Last nightly run did not succeed. Running tests again."
+            exit 0
+          fi
+
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+          echo "No changes detected in the last 24 hours on main branch and last nightly run succeeded. Skipping tests."
 
       - name: Resolve e2e suites
         id: suites
@@ -117,13 +136,6 @@ jobs:
           # Build Docker image and create image bundle
           make k0smotron-image-bundle.tar
 
-      - name: Publish the previously built imageto ttl.sh with the commit sha
-        run: |
-          sha="$(git rev-parse HEAD)"
-          docker tag quay.io/k0sproject/k0smotron:latest "ttl.sh/k0smotron-${sha}"
-          docker push "ttl.sh/k0smotron-${sha}"
-        continue-on-error: true
-
       - name: Upload image bundle
         uses: actions/upload-artifact@v4
         with:
@@ -161,6 +173,24 @@ jobs:
         with:
           name: install-yaml
           path: install.yaml
+
+  publish-ttl:
+    name: Publish to ttl.sh (best effort)
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Download image bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: k0smotron-image-bundle
+
+      - name: Load and publish image
+        run: |
+          docker load -i k0smotron-image-bundle.tar
+          docker tag quay.io/k0sproject/k0smotron:latest ttl.sh/k0smotron-${{ github.sha }}:24h
+          docker push ttl.sh/k0smotron-${{ github.sha }}:24h
+          echo "Docker image: ttl.sh/k0smotron-${{ github.sha }}:24h" >>$GITHUB_STEP_SUMMARY
 
   e2e:
     name: E2E test
