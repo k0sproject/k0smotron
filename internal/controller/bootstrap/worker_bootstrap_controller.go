@@ -21,7 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -529,9 +531,9 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	}
 
 	var joinToken string
-	joinURL := fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port)
+	joinURL := controlPlaneJoinURL(scope.Cluster.Spec.ControlPlaneEndpoint.Host, int64(scope.Cluster.Spec.ControlPlaneEndpoint.Port))
 	if scope.ingressSpec != nil {
-		joinURL = fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port)
+		joinURL = controlPlaneJoinURL(scope.ingressSpec.APIHost, scope.ingressSpec.Port)
 	}
 
 	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, joinURL, "kubelet-bootstrap")
@@ -539,6 +541,12 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		return "", fmt.Errorf("failed to create join token: %w", err)
 	}
 	return joinToken, nil
+}
+
+// controlPlaneJoinURL builds the k0s join URL for the given host and port.
+// It uses net.JoinHostPort so that IPv6 literals are bracketed correctly.
+func controlPlaneJoinURL(host string, port int64) string {
+	return "https://" + net.JoinHostPort(host, strconv.FormatInt(port, 10))
 }
 
 func createIngressCommands(scope *Scope) []string {

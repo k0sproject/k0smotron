@@ -164,3 +164,22 @@ func TestController_genK0sCommands(t *testing.T) {
 		})
 	}
 }
+
+func Test_joinHostPortURL(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		port string
+		want string
+	}{
+		{"hostname", "cp.example.com", "9443", "https://cp.example.com:9443"},
+		{"ipv4", "10.0.0.1", "9443", "https://10.0.0.1:9443"},
+		{"ipv6", "2001:db8::1", "9443", "https://[2001:db8::1]:9443"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, joinHostPortURL(tt.host, tt.port))
+		})
+	}
+}

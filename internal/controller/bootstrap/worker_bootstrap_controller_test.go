@@ -145,3 +145,22 @@ func Test_getWindowsCommands(t *testing.T) {
 	}
 
 }
+
+func Test_controlPlaneJoinURL(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		port int64
+		want string
+	}{
+		{"hostname", "cp.example.com", 443, "https://cp.example.com:443"},
+		{"ipv4", "10.0.0.1", 6443, "https://10.0.0.1:6443"},
+		{"ipv6", "2001:db8::1", 443, "https://[2001:db8::1]:443"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, controlPlaneJoinURL(tt.host, tt.port))
+		})
+	}
+}
