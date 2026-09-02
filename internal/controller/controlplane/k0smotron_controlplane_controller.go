@@ -204,9 +204,9 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 					res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
 				} else {
 					log.Error(derr, "Failed to update K0smotronControlPlane status")
-					err = derr
-
-					return
+					// Recorded without returning, since the availability computed above is
+					// only ever persisted by the patches below.
+					err = kerrors.NewAggregate([]error{err, derr})
 				}
 			}
 		}
@@ -219,7 +219,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		derr = clusterPatchHelper.Patch(ctx, cluster)
 		if derr != nil {
-			log.Error(err, "Failed to update Cluster endpoint")
+			log.Error(derr, "Failed to update Cluster endpoint")
 			err = kerrors.NewAggregate([]error{err, derr})
 		}
 
@@ -554,7 +554,9 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		return err
 	}
 
-	kcp.Status.Replicas = new(int32(len(contolPlanePods.Items)))
+	// Held back until every counter below is known, so an error on the way there
+	// cannot persist one of them against stale values for the rest.
+	replicas := int32(len(contolPlanePods.Items))
 
 	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
 
@@ -606,9 +608,10 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		}
 	}
 
+	kcp.Status.Replicas = new(replicas)
 	kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
 	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
-	kcp.Status.AvailableReplicas = new(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
+	kcp.Status.AvailableReplicas = new(replicas - int32(unavailableReplicas))
 
 	if ptr.Deref(kcp.Status.ReadyReplicas, 0) > 0 {
 		kcp.Status.Version = minimumVersion.String()
@@ -658,18 +661,30 @@ func alignToSpecVersionFormat(specVersion, currentVersion *version.Version) (*ve
 // and checking if the control plane is initialized
 func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane) {
 	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
+
+	// Assumed unavailable up front for the same reasons as in the K0sControlPlane
+	// flavour, including the read below being what latches initialization.
+	everReached := initialized(kcp.Status.Initialization.ControlPlaneInitialized)
+	if !everReached {
+		conditions.Set(kcp, metav1.Condition{
+			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  cpv1beta2.ControlPlaneAvailableUnknownReason,
+			Message: "the workload cluster API has not been reached yet",
+		})
+	}
+
 	// Check if the control plane is ready by connecting to the API server
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
 
-	// Get the CAPI cluster accessor
-	client, err := c.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(cluster))
+	// Uncached, since the cache answers a read from its own store and would call a
+	// control plane that cannot serve one available.
+	client, err := c.ClusterCache.GetUncachedClient(ctx, client.ObjectKeyFromObject(cluster))
 	if err != nil {
 		logger.Info("Failed to get cluster client", "error", err)
 
-		// While coming up the contract fallback says this better than any internal
-		// error would, and the condition defaults to Unknown at the epoch here.
-		if !initialized(kcp.Status.Initialization.ControlPlaneInitialized) {
+		if !everReached {
 			return
 		}
 
@@ -691,7 +706,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	if err != nil {
 		logger.Info("Failed to get workload cluster namespace", "error", err)
 
-		if !initialized(kcp.Status.Initialization.ControlPlaneInitialized) {
+		if !everReached {
 			return
 		}
 

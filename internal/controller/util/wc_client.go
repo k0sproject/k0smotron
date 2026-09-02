@@ -177,7 +177,6 @@ func getRESTConfig(ctx context.Context, hubClient client.Client, cache clusterca
 
 // isTunneledRestConfigPossible checks if it's possible to use a tunneled rest.Config to access the workload cluster API server based on the control plane configuration.
 // If tunneling is not enabled or if worker mode is not enabled on the control-plane node, it returns false, indicating that a regular rest.Config should be used instead.
-// A nil control plane is safe to pass and reports false.
 func isTunneledRestConfigPossible(cp *cpv1beta2.K0sControlPlane) bool {
 	if cp == nil || !cp.Spec.K0sConfigSpec.Tunneling.Enabled {
 		// If control plane is nil means that the control plane is not K0sControlPlane, but K0smotronControlPlane, which does not support tunneling and will

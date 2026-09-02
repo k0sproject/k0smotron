@@ -1449,8 +1449,8 @@ func TestHostedSetupWithManagerWatchesTheClusterCache(t *testing.T) {
 	require.Nil(t, cache.mapFuncs[0](ctx, cluster))
 }
 
-// TestReconcileArmsTheAvailabilityRequeue covers requeueAfter reaching the caller
-// through the deferred block. Which interval it picks is covered by TestRequeueAfter.
+// TestReconcileArmsTheAvailabilityRequeue covers availabilityRequeueAfter reaching the
+// caller through the deferred block. Which interval it picks is covered by its own test.
 func TestReconcileArmsTheAvailabilityRequeue(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-requeues-settled")
 	require.NoError(t, err)
@@ -1543,7 +1543,7 @@ func TestAvailabilityAnchorSurvivesAPatch(t *testing.T) {
 	helper, err = patch.NewHelper(kcp, testEnv)
 	require.NoError(t, err)
 	conditions.Set(kcp, availabilityCondition(persisted, time.Now(), persisted.LastTransitionTime.Time,
-		availabilityGracePeriod, availabilityFailureFloor, "etcdserver request timed out"))
+		availabilityGracePeriod, availabilityFailureThreshold, "etcdserver request timed out"))
 	require.NoError(t, helper.Patch(ctx, kcp))
 
 	retried := readBack()
@@ -1558,7 +1558,7 @@ func TestAvailabilityAnchorSurvivesAPatch(t *testing.T) {
 	helper, err = patch.NewHelper(kcp, testEnv)
 	require.NoError(t, err)
 	conditions.Set(kcp, availabilityCondition(retried, retried.LastTransitionTime.Add(availabilityGracePeriod),
-		retried.LastTransitionTime.Time, availabilityGracePeriod, availabilityFailureFloor,
+		retried.LastTransitionTime.Time, availabilityGracePeriod, availabilityFailureThreshold,
 		"etcdserver request timed out"))
 	require.NoError(t, helper.Patch(ctx, kcp))
 

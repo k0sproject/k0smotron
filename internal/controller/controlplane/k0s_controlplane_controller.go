@@ -147,8 +147,6 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 
 	if err := c.Get(ctx, req.NamespacedName, kcp); err != nil {
 		if apierrors.IsNotFound(err) {
-			// The count cannot be dropped here, since the key is the UID and this
-			// object was never read. reconcileDelete covers the ordinary path.
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "Failed to get K0sControlPlane")

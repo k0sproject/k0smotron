@@ -191,8 +191,8 @@ func initialized(latch *bool) bool {
 	return ptr.Deref(latch, false)
 }
 
-// The cache's own worst case before it drops a connection, being 5 probes of 10s
-// with a 5s timeout each. Upstream pads this, which is not needed here.
+// How much failure the cache has to have seen before its word is taken for it. The
+// count means probes once connected and connect attempts before that.
 const (
 	clusterCacheFailureThreshold      = 5
 	clusterCacheConnectionGracePeriod = 75 * time.Second
@@ -209,18 +209,24 @@ func (c *K0sController) clusterCacheConnectionDown(ctx context.Context, controlp
 
 	state := c.ClusterCache.GetHealthCheckingState(ctx, client.ObjectKeyFromObject(controlplane.cluster))
 
-	// A cluster the cache never reached has no accessor, and the zero value that
+	// The cache has given up on its own, which is as definitive as it gets. Waiting the
+	// grace period out from a stale success only adds to a verdict already reached.
+	if state.ConsecutiveFailures >= clusterCacheFailureThreshold {
+		return true
+	}
+
+	// A cluster the cache never reached has no probe to go by, and the zero value that
 	// comes back means unknown rather than healthy.
-	if state.LastProbeSuccessTime.IsZero() && state.ConsecutiveFailures < clusterCacheFailureThreshold {
+	if state.LastProbeSuccessTime.IsZero() {
 		return false
 	}
 
 	return time.Since(state.LastProbeSuccessTime) > clusterCacheConnectionGracePeriod
 }
 
-// availabilityFailureFloor is how many failed reads have to be seen by this process
+// availabilityFailureThreshold is how many failed reads have to be seen by this process
 // before an outage is reported, whatever the persisted anchor says about the time.
-const availabilityFailureFloor = 2
+const availabilityFailureThreshold = 2
 
 // availabilityGracePeriod is how long reads have to keep failing before an outage
 // is reported. A duration, since this reconcile does not own how often it runs.
@@ -248,7 +254,7 @@ func availabilityCondition(existing *metav1.Condition, now, failingSince time.Ti
 
 	// The anchor says how long, and the count says that this process watched it
 	// happen. Age alone cannot tell a continued outage from a look that was missed.
-	if failures >= availabilityFailureFloor && !now.Before(failingSince.Add(gracePeriod)) {
+	if failures >= availabilityFailureThreshold && !now.Before(failingSince.Add(gracePeriod)) {
 		return down
 	}
 
@@ -286,9 +292,11 @@ func setUnavailableAfterGracePeriod(failures *sync.Map, cp availabilityReporter,
 	switch previous, ok := failures.Load(key); {
 	case ok:
 		state = availabilityFailures{since: previous.(availabilityFailures).since, seen: previous.(availabilityFailures).seen + 1}
-	case existing != nil && existing.Status == metav1.ConditionUnknown && existing.LastTransitionTime.Time.After(created):
-		// First failure here, so carry on from what was persisted. An anchor older
-		// than the object is not evidence, and hosted defaults it to the epoch.
+	case existing != nil && existing.Status == metav1.ConditionUnknown &&
+		existing.Reason == cpv1beta2.ControlPlaneConnectionDownReason &&
+		existing.LastTransitionTime.Time.After(created):
+		// First failure here, so carry on from the window that was persisted. Only an
+		// outage of its own is one, and an anchor older than the object is not evidence.
 		state.since = existing.LastTransitionTime.Time
 	}
 
@@ -317,6 +325,21 @@ func clearAvailabilityFailures(failures *sync.Map, cp client.Object) {
 
 func (c *K0sController) computeAvailability(ctx context.Context, controlplane *controlplane, logger logr.Logger) {
 	logger.Info("Computed status", "status", controlplane.kcp.Status)
+
+	// Assumed unavailable while nothing has reached this control plane yet, so the
+	// condition says so rather than leaving CAPI to infer it from the contract field.
+	everReached := initialized(controlplane.kcp.Status.Initialization.ControlPlaneInitialized)
+	if !everReached {
+		conditions.Set(controlplane.kcp, metav1.Condition{
+			Type:   string(cpv1beta2.ControlPlaneAvailableCondition),
+			Status: metav1.ConditionUnknown,
+			Reason: cpv1beta2.ControlPlaneAvailableUnknownReason,
+			// Written before the read below, which is the only thing that can say
+			// otherwise and is also what latches initialization.
+			Message: "the workload cluster API has not been reached yet",
+		})
+	}
+
 	// Check if the control plane is ready by connecting to the API server
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
@@ -325,9 +348,7 @@ func (c *K0sController) computeAvailability(ctx context.Context, controlplane *c
 	if err != nil {
 		logger.Info("Failed to get cluster client", "error", err)
 
-		// While coming up the contract fallback says this better than any
-		// internal error would.
-		if !initialized(controlplane.kcp.Status.Initialization.ControlPlaneInitialized) {
+		if !everReached {
 			return
 		}
 
@@ -358,9 +379,7 @@ func (c *K0sController) computeAvailability(ctx context.Context, controlplane *c
 	if err != nil {
 		logger.Info("Failed to ping the workload cluster API", "error", err)
 
-		// While coming up the contract fallback says this better than any
-		// internal error would.
-		if !initialized(controlplane.kcp.Status.Initialization.ControlPlaneInitialized) {
+		if !everReached {
 			return
 		}
 
@@ -404,16 +423,18 @@ func requeueResult(err error, res ctrl.Result, controlplane *controlplane) ctrl.
 		return ctrl.Result{}
 	}
 
+	// The scale and in place logic ask for their own shorter intervals, so nothing
+	// below has to reason about replicas.
 	if !res.IsZero() {
 		return res
 	}
 
-	return ctrl.Result{RequeueAfter: requeueAfter(controlplane)}
+	return ctrl.Result{RequeueAfter: availabilityRequeueAfter(controlplane)}
 }
 
-// requeueAfter reports how long to wait before looking again, or zero to wait for an
-// event. Availability is only observed here, so even a settled control plane polls.
-func requeueAfter(controlplane *controlplane) time.Duration {
+// availabilityRequeueAfter reports how long to wait before looking again, or zero to wait
+// for an event. Availability is only observed here, so even a settled control plane polls.
+func availabilityRequeueAfter(controlplane *controlplane) time.Duration {
 	kcp := controlplane.kcp
 
 	// A deleting control plane drives its own requeue, and its status fields were
@@ -427,10 +448,6 @@ func requeueAfter(controlplane *controlplane) time.Duration {
 	}
 
 	if !conditions.IsTrue(kcp, string(cpv1beta2.ControlPlaneAvailableCondition)) {
-		return availabilityRetryInterval
-	}
-
-	if ptr.Deref(kcp.Status.UpToDateReplicas, 0) != kcp.Spec.Replicas {
 		return availabilityRetryInterval
 	}
 
