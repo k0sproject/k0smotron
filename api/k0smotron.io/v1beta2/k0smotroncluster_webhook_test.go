@@ -58,3 +58,64 @@ func TestClusterValidator_validateVersionSuffix(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateEtcdVersionUpgrade(t *testing.T) {
+	tests := []struct {
+		name      string
+		oldImage  string
+		newImage  string
+		wantError bool
+	}{
+		{
+			name:     "same version",
+			oldImage: "quay.io/k0sproject/etcd:v3.5.13",
+			newImage: "quay.io/k0sproject/etcd:v3.5.13",
+		},
+		{
+			name:     "one minor version upgrade",
+			oldImage: "quay.io/k0sproject/etcd:v3.5.13",
+			newImage: "quay.io/k0sproject/etcd:v3.6.0",
+		},
+		{
+			name:     "patch version upgrade",
+			oldImage: "quay.io/k0sproject/etcd:v3.5.13",
+			newImage: "quay.io/k0sproject/etcd:v3.5.14",
+		},
+		{
+			name:     "downgrade is not blocked by this check",
+			oldImage: "quay.io/k0sproject/etcd:v3.6.0",
+			newImage: "quay.io/k0sproject/etcd:v3.5.13",
+		},
+		{
+			name:      "skipping a minor version is rejected",
+			oldImage:  "quay.io/k0sproject/etcd:v3.5.13",
+			newImage:  "quay.io/k0sproject/etcd:v3.7.1",
+			wantError: true,
+		},
+		{
+			name:     "unparsable old tag skips the check",
+			oldImage: "quay.io/k0sproject/etcd:latest",
+			newImage: "quay.io/k0sproject/etcd:v3.7.1",
+		},
+		{
+			name:     "unparsable new tag skips the check",
+			oldImage: "quay.io/k0sproject/etcd:v3.5.13",
+			newImage: "quay.io/k0sproject/etcd:latest",
+		},
+		{
+			name:     "custom image without a tag skips the check",
+			oldImage: "myregistry.example.com:5000/etcd",
+			newImage: "myregistry.example.com:5000/etcd",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateEtcdVersionUpgrade(tt.oldImage, tt.newImage)
+			if tt.wantError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

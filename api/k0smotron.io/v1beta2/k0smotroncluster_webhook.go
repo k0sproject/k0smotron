@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/k0sproject/version"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -76,7 +77,57 @@ func (c ClusterValidator) ValidateClusterSpecUpdate(oldKCS, kcs *ClusterSpec) (w
 			kcs.Replicas)
 	}
 
+	if (kcs.Storage.Type == "" || kcs.Storage.Type == StorageTypeEtcd) &&
+		oldKCS.Storage.Etcd.Image != kcs.Storage.Etcd.Image {
+		if err := validateEtcdVersionUpgrade(oldKCS.Storage.Etcd.Image, kcs.Storage.Etcd.Image); err != nil {
+			return warnings, err
+		}
+	}
+
 	return c.ValidateClusterSpec(kcs)
+}
+
+// validateEtcdVersionUpgrade rejects etcd upgrades that skip a minor version. etcd only
+// supports upgrading one minor version at a time; skipping one is likely to leave etcd
+// unable to start on its existing data (see https://etcd.io/docs/v3.6/upgrades/upgrading-etcd/).
+// If either image's tag cannot be parsed as a version (e.g. a custom image or a non-semver
+// tag), the check is skipped rather than blocking the update.
+func validateEtcdVersionUpgrade(oldImage, newImage string) error {
+	oldV, err := etcdImageVersion(oldImage)
+	if err != nil {
+		return nil
+	}
+	newV, err := etcdImageVersion(newImage)
+	if err != nil {
+		return nil
+	}
+
+	if newV.LessThanOrEqual(oldV) {
+		return nil
+	}
+
+	if newV.Core().Segments()[1]-oldV.Core().Segments()[1] > 1 {
+		return fmt.Errorf("upgrading etcd image from %q to %q is not allowed: etcd does not support skipping a minor "+
+			"version when upgrading, please upgrade to an intermediate version first", oldImage, newImage)
+	}
+
+	return nil
+}
+
+// etcdImageVersion extracts the version from an etcd container image reference, e.g.
+// "quay.io/k0sproject/etcd:v3.7.1" returns the version "v3.7.1".
+func etcdImageVersion(image string) (*version.Version, error) {
+	ref := image
+	if idx := strings.LastIndex(ref, "/"); idx != -1 {
+		ref = ref[idx+1:]
+	}
+
+	_, tag, found := strings.Cut(ref, ":")
+	if !found {
+		return nil, fmt.Errorf("no tag found in image %q", image)
+	}
+
+	return version.NewVersion(tag)
 }
 
 // ValidateClusterSpec validates the ClusterSpec and returns any warnings or errors.
