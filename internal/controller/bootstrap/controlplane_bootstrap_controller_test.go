@@ -19,14 +19,29 @@ limitations under the License.
 package bootstrap
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+	"sigs.k8s.io/cluster-api/util/certs"
+	"sigs.k8s.io/cluster-api/util/secret"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 )
@@ -163,4 +178,96 @@ func TestController_genK0sCommands(t *testing.T) {
 			require.Equal(t, tt.want, commands)
 		})
 	}
+}
+
+func TestControlPlaneController_detectJoinHost(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+	port, err := strconv.ParseInt(serverURL.Port(), 10, 64)
+	require.NoError(t, err)
+
+	trustedCACert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw})
+	untrustedCACert := selfSignedCertPEM(t)
+
+	scope := &ControllerScope{
+		Cluster: &clusterv1.Cluster{
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneEndpoint: clusterv1.APIEndpoint{Host: serverURL.Hostname()},
+			},
+		},
+		Config: &bootstrapv2.K0sControllerConfig{
+			Spec: bootstrapv2.K0sControllerConfigSpec{
+				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+					K0s: &unstructured.Unstructured{Object: map[string]any{
+						"spec": map[string]any{
+							"api": map[string]any{
+								"k0sApiPort": port,
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+
+	firstControllerMachine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{Name: "first-controller"},
+		Status: clusterv1.MachineStatus{
+			Addresses: clusterv1.MachineAddresses{
+				{Type: clusterv1.MachineExternalIP, Address: "203.0.113.10"},
+			},
+		},
+	}
+
+	c := &ControlPlaneController{}
+
+	t.Run("trusted CA reaches the control plane endpoint", func(t *testing.T) {
+		ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: trustedCACert}}
+
+		host, err := c.detectJoinHost(context.Background(), scope, firstControllerMachine, ca)
+
+		require.NoError(t, err)
+		require.Equal(t, server.URL, host)
+	})
+
+	t.Run("CA that did not sign the endpoint falls back to the first controller", func(t *testing.T) {
+		ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: untrustedCACert}}
+
+		host, err := c.detectJoinHost(context.Background(), scope, firstControllerMachine, ca)
+
+		require.NoError(t, err)
+		require.Equal(t, "https://203.0.113.10:"+serverURL.Port(), host)
+	})
+
+	t.Run("missing CA is an error", func(t *testing.T) {
+		_, err := c.detectJoinHost(context.Background(), scope, firstControllerMachine, nil)
+
+		require.Error(t, err)
+	})
+}
+
+func selfSignedCertPEM(t *testing.T) []byte {
+	t.Helper()
+
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "untrusted-test-ca"},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(time.Hour),
+		IsCA:         true,
+		KeyUsage:     x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+	}
+
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	require.NoError(t, err)
+
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
 }
