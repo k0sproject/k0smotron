@@ -19,6 +19,7 @@ package bootstrap
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net/http"
@@ -464,7 +465,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		return nil, err
 	}
 
-	host, err := c.detectJoinHost(ctx, scope, firstControllerMachine)
+	host, err := c.detectJoinHost(ctx, scope, firstControllerMachine, ca)
 	if err != nil {
 		log.Error(err, "Failed to detect join controller host")
 		return nil, err
@@ -671,11 +672,17 @@ func mergeControllerExtraArgs(scope *ControllerScope) []string {
 	return mergeExtraArgs(scope.installArgs, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
 }
 
-func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv1.Machine) (string, error) {
+func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv1.Machine, ca *secret.Certificate) (string, error) {
+	caCertPool := x509.NewCertPool()
+	if ca == nil || ca.KeyPair == nil || !caCertPool.AppendCertsFromPEM(ca.KeyPair.Cert) {
+		return "", errors.New("failed to load cluster CA certificate for join host detection")
+	}
+
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.TLSClientConfig = &tls.Config{
-		// Since we are using self-signed certificates, we need to skip the verification
-		InsecureSkipVerify: true,
+		// The join API serves a certificate signed by the cluster CA, so we
+		// trust it explicitly instead of skipping verification.
+		RootCAs: caCertPool,
 	}
 	httpClient := &http.Client{
 		Transport: transport,
