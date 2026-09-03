@@ -132,6 +132,24 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	err = yaml.Unmarshal(result, &kmc)
 	s.Require().NoError(err)
 	s.Require().True(conditions.IsTrue(&kmc, km.ClusterAvailableCondition))
+
+	// Check controlplane and etcd pods are running as expected
+	nEtcdReplicas, err := kc.AppsV1().StatefulSets("kmc-test").GetScale(s.Context(), "kmc-kmc-test-etcd", metav1.GetOptions{})
+	s.Require().NoError(err)
+	for i := 0; i < int(nEtcdReplicas.Spec.Replicas); i++ {
+		pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), fmt.Sprintf("kmc-kmc-test-etcd-%d", i), metav1.GetOptions{})
+		s.Require().NoError(err)
+		s.Require().Equal(corev1.PodRunning, pod.Status.Phase)
+	}
+
+	nControlPlaneReplicas, err := kc.AppsV1().StatefulSets("kmc-test").GetScale(s.Context(), "kmc-kmc-test", metav1.GetOptions{})
+	s.Require().NoError(err)
+	for i := 0; i < int(nControlPlaneReplicas.Spec.Replicas); i++ {
+		pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), fmt.Sprintf("kmc-kmc-test-%d", i), metav1.GetOptions{})
+		s.Require().NoError(err)
+		s.Require().Equal(corev1.PodRunning, pod.Status.Phase)
+	}
+
 }
 
 func (s *UpgradeSuite) checkStatePersists(ctx context.Context, mountedPath string, kc *kubernetes.Clientset, rc *rest.Config) {
@@ -216,6 +234,7 @@ metadata:
 			"service":{
 				"type": "NodePort"
 			},
+			"replicas": 3,
 			"etcd": {
 				"defragJob": {
 					"enabled": true,
