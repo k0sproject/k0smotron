@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/k0sproject/version"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -76,7 +77,61 @@ func (c ClusterValidator) ValidateClusterSpecUpdate(oldKCS, kcs *ClusterSpec) (w
 			kcs.Replicas)
 	}
 
-	return c.ValidateClusterSpec(kcs)
+	if (kcs.Storage.Type == "" || kcs.Storage.Type == StorageTypeEtcd) &&
+		oldKCS.Storage.Etcd.Image != kcs.Storage.Etcd.Image {
+		warn, err := validateEtcdVersionUpgrade(oldKCS.Storage.Etcd.Image, kcs.Storage.Etcd.Image)
+		warnings = append(warnings, warn...)
+		if err != nil {
+			return warnings, err
+		}
+	}
+
+	specWarnings, err := c.ValidateClusterSpec(kcs)
+	warnings = append(warnings, specWarnings...)
+	return warnings, err
+}
+
+// validateEtcdVersionUpgrade rejects etcd upgrades that skip a minor version. etcd only
+// supports upgrading one minor version at a time; skipping one is likely to leave etcd
+// unable to start on its existing data (see https://etcd.io/docs/v3.6/upgrades/upgrading-etcd/).
+// If either image's tag cannot be parsed as a version (e.g. a custom image or a non-semver
+// tag), the check is skipped and a warning is returned instead of blocking the update.
+func validateEtcdVersionUpgrade(oldImage, newImage string) (admission.Warnings, error) {
+	oldV, err := imageVersion(oldImage)
+	if err != nil {
+		return admission.Warnings{fmt.Sprintf("could not determine etcd version from image %q, skipping etcd upgrade path validation", oldImage)}, nil
+	}
+	newV, err := imageVersion(newImage)
+	if err != nil {
+		return admission.Warnings{fmt.Sprintf("could not determine etcd version from image %q, skipping etcd upgrade path validation", newImage)}, nil
+	}
+
+	if newV.LessThanOrEqual(oldV) {
+		return nil, nil
+	}
+
+	if newV.Core().Segments()[1]-oldV.Core().Segments()[1] > 1 {
+		return nil, fmt.Errorf("upgrading etcd image from %q to %q is not allowed: etcd does not support skipping a minor "+
+			"version when upgrading, please upgrade to an intermediate version first", oldImage, newImage)
+	}
+
+	return nil, nil
+}
+
+// imageVersion extracts the version from a container image reference, e.g.
+// "quay.io/k0sproject/etcd:v3.7.1" returns the version "v3.7.1".
+func imageVersion(image string) (*version.Version, error) {
+	ref := image
+	if idx := strings.LastIndex(ref, "/"); idx != -1 {
+		ref = ref[idx+1:]
+	}
+
+	_, tag, found := strings.Cut(ref, ":")
+	if !found {
+		return nil, fmt.Errorf("no tag found in image %q", image)
+	}
+
+	return version.NewVersion(tag)
 }
 
 // ValidateClusterSpec validates the ClusterSpec and returns any warnings or errors.
