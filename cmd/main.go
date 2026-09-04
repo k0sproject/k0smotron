@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/md5"
 	"crypto/tls"
 	"flag"
@@ -28,7 +29,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
@@ -240,31 +240,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	secretCachingClient, err := client.New(mgr.GetConfig(), client.Options{
-		HTTPClient: mgr.GetHTTPClient(),
-		Scheme:     mgr.GetScheme(),
-		Cache: &client.CacheOptions{
-			Reader: mgr.GetCache(),
-		},
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to create secret caching client")
-		os.Exit(1)
-	}
+	ctx := ctrl.SetupSignalHandler()
 
-	// Absent CAPI Machine kind means we are not running in a CAPI environment, so we don't need to run CAPI controllers.
-	var runCAPIControllers bool
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(mgr.GetConfig())
 	if err != nil {
 		setupLog.Error(err, "unable to create discovery client")
 		os.Exit(1)
 	}
 
-	resources, err := discoveryClient.ServerResourcesForGroupVersion(schema.GroupVersion{Group: "cluster.x-k8s.io", Version: "v1beta1"}.String())
-	if err == nil && len(resources.APIResources) > 0 {
-		runCAPIControllers = true
-	} else {
-		mgr.GetLogger().Info("Cluster API v1beta1 not installed, skipping cluster-api controllers setup")
+	isCAPICoreProviderInstalled, err := isCAPIControllerEnabled(discoveryClient)
+	if err != nil {
+		setupLog.Error(err, "unable to determine if CAPI core provider is installed")
+		os.Exit(1)
 	}
 
 	//+kubebuilder:scaffold:builder
@@ -272,149 +259,8 @@ func main() {
 		MaxConcurrentReconciles: concurrency,
 	}
 
-	ctx := ctrl.SetupSignalHandler()
-
-	var clusterCache clustercache.ClusterCache
-	if runCAPIControllers {
-		clusterCache, err = clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
-			SecretClient: secretCachingClient,
-			Cache:        clustercache.CacheOptions{},
-			Client: clustercache.ClientOptions{
-				UserAgent: "k0smotron",
-				Cache: clustercache.ClientCacheOptions{
-					DisableFor: []client.Object{
-						// Don't cache ConfigMaps & Secrets.
-						&corev1.ConfigMap{},
-						&corev1.Secret{},
-					},
-				},
-			},
-		}, ctrlOptions)
-		if err != nil {
-			setupLog.Error(err, "Unable to create ClusterCache")
-			os.Exit(1)
-		}
-	}
-
-	if isControllerEnabled(bootstrapController) && runCAPIControllers {
-
-		if err = (&bootstrap.Controller{
-			Client:              mgr.GetClient(),
-			SecretCachingClient: secretCachingClient,
-			ClusterCache:        clusterCache,
-			Scheme:              mgr.GetScheme(),
-			ClientSet:           clientSet,
-			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
-			os.Exit(1)
-		}
-		if err = (&bootstrap.ControlPlaneController{
-			Client:              mgr.GetClient(),
-			SecretCachingClient: secretCachingClient,
-			ClusterCache:        clusterCache,
-			Scheme:              mgr.GetScheme(),
-			ClientSet:           clientSet,
-			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
-			os.Exit(1)
-		}
-
-		if err = bootstrapv1beta2.SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sWorkerConfigValidator")
-			os.Exit(1)
-		}
-	}
-
-	if isControllerEnabled(controlPlaneController) {
-		// If 'control-plane' CAPI controller is explicitly enabled, it means also standalone controllers must be enabled
-		setStandaloneControllers(mgr, clientSet, restConfig, ctrlOptions)
-
-		if runCAPIControllers {
-			if err = (&controlplane.K0smotronController{
-				Client:              mgr.GetClient(),
-				SecretCachingClient: secretCachingClient,
-				ClusterCache:        clusterCache,
-				Scheme:              mgr.GetScheme(),
-				ClientSet:           clientSet,
-				RESTConfig:          restConfig,
-			}).SetupWithManager(mgr, ctrlOptions); err != nil {
-				setupLog.Error(err, "unable to create controller", "controller", "K0smotronControlPlane")
-				os.Exit(1)
-			}
-
-			if err = (&controlplane.K0sController{
-				Client:              mgr.GetClient(),
-				APIReader:           mgr.GetAPIReader(),
-				SecretCachingClient: secretCachingClient,
-				ClusterCache:        clusterCache,
-				ClientSet:           clientSet,
-				RESTConfig:          restConfig,
-			}).SetupWithManager(mgr, ctrlOptions); err != nil {
-				setupLog.Error(err, "unable to create controller", "controller", "K0sController")
-				os.Exit(1)
-			}
-
-			if err = cpv1beta2.SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
-				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
-				os.Exit(1)
-			}
-
-			if err = (&cpv1beta2.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
-				setupLog.Error(err, "unable to create validation webhook", "webhook", "K0smotronControlPlaneValidator")
-				os.Exit(1)
-			}
-		}
-	} else if isControllerEnabled(standaloneController) {
-		// If 'standalone' controller is explicitly enabled, run only standalone controllers.
-		setStandaloneControllers(mgr, clientSet, restConfig, ctrlOptions)
-	}
-
-	if isControllerEnabled(infrastructureController) && runCAPIControllers {
-		if err = (&infrastructure.RemoteMachineController{
-			Client:              mgr.GetClient(),
-			SecretCachingClient: secretCachingClient,
-			Scheme:              mgr.GetScheme(),
-			ClientSet:           clientSet,
-			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "RemoteMachine")
-			os.Exit(1)
-		}
-
-		if err = (&infrastructure.ClusterController{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
-			os.Exit(1)
-		}
-
-		if err = infrastructurev1beta2.SetupRemoteMachineWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook for RemoteMachine", "webhook", "RemoteMachine")
-			os.Exit(1)
-		}
-
-		if err = infrastructurev1beta2.SetupPooledRemoteMachineWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook for PooledRemoteMachine", "webhook", "PooledRemoteMachine")
-			os.Exit(1)
-		}
-	}
-
-	// ProviderID controller needs to run if either bootstrap or infrastructure controllers are running
-	// as both of them create/update Machines.
-	if runCAPIControllers && (isControllerEnabled(infrastructureController) || isControllerEnabled(bootstrapController)) {
-		if err = (&bootstrap.ProviderIDController{
-			Client:       mgr.GetClient(),
-			Scheme:       mgr.GetScheme(),
-			ClientSet:    clientSet,
-			ClusterCache: clusterCache,
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "ProviderID")
-			os.Exit(1)
-		}
-	}
+	// setup controllers based on the enabled controllers and whether the CAPI core provider is installed
+	setupControllersOrDie(ctx, isCAPICoreProviderInstalled, mgr, clientSet, restConfig, ctrlOptions)
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -465,7 +311,45 @@ func isControllerEnabled(controllerName string) bool {
 	return enabledControllers[controllerName]
 }
 
-func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, opts capictrl.Options) {
+// isCAPIControllerEnabled checks if the Cluster API core provider is installed in the cluster by using the discovery client
+// which checks if the "cluster.x-k8s.io" API group is present, considering it as an indication that the CAPI core provider
+// is installed.
+func isCAPIControllerEnabled(dc *discovery.DiscoveryClient) (bool, error) {
+	apiGroups, err := dc.ServerGroups()
+	if err != nil {
+		return false, fmt.Errorf("failed to get server groups: %w", err)
+	}
+
+	for _, group := range apiGroups.Groups {
+		if group.Name == "cluster.x-k8s.io" {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func setupControllersOrDie(ctx context.Context, isCAPICoreProviderInstalled bool, mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, opts capictrl.Options) {
+	switch {
+	// CAPI might be installed, but the standalone controller is explicitly enabled, which means the
+	// CAPI controllers should not be started.
+	case isCAPICoreProviderInstalled && !isControllerEnabled(standaloneController):
+		// This setup can include the following controllers depending on the k0smotron deployment 'enable-controller' flag:
+		// - bootstrap controller
+		// - control-plane controller (includes standalone controllers)
+		// - infrastructure controller
+		// CAPI integration definition: https://docs.k0smotron.io/stable/usage-overview/#cluster-api-integration
+		setupLog.Info("Setting up controllers for k0smotron Cluster API integration")
+		setupCAPIControllersOrDie(ctx, mgr, clientSet, restConfig, opts)
+	default:
+		// This setup includes only the standalone controllers.
+		// Standalone definition: https://docs.k0smotron.io/stable/usage-overview/#standalone
+		setupLog.Info("Setting up k0smotron standalone controllers")
+		setStandaloneControllersOrDie(mgr, clientSet, restConfig, opts)
+	}
+}
+
+func setStandaloneControllersOrDie(mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, opts capictrl.Options) {
 	_ = mgr.AddReadyzCheck("webhook-check", mgr.GetWebhookServer().StartedChecker())
 	if err := (&controller.ClusterReconciler{
 		Client:     mgr.GetClient(),
@@ -491,5 +375,162 @@ func setStandaloneControllers(mgr manager.Manager, clientSet *kubernetes.Clients
 	}).SetupWithManager(mgr, opts); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "JoinTokenRequest")
 		os.Exit(1)
+	}
+}
+
+func setupCAPIControllersOrDie(ctx context.Context, mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, ctrlOptions capictrl.Options) {
+	secretCachingClient, err := client.New(mgr.GetConfig(), client.Options{
+		HTTPClient: mgr.GetHTTPClient(),
+		Scheme:     mgr.GetScheme(),
+		Cache: &client.CacheOptions{
+			Reader: mgr.GetCache(),
+		},
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to create secret caching client")
+		os.Exit(1)
+	}
+
+	clusterCache, err := clustercache.SetupWithManager(ctx, mgr, clustercache.Options{
+		SecretClient: secretCachingClient,
+		Cache:        clustercache.CacheOptions{},
+		Client: clustercache.ClientOptions{
+			UserAgent: "k0smotron",
+			Cache: clustercache.ClientCacheOptions{
+				DisableFor: []client.Object{
+					// Don't cache ConfigMaps & Secrets.
+					&corev1.ConfigMap{},
+					&corev1.Secret{},
+				},
+			},
+		},
+	}, ctrlOptions)
+	if err != nil {
+		setupLog.Error(err, "Unable to create ClusterCache")
+		os.Exit(1)
+	}
+
+	// ProviderID controller needs to run if either bootstrap or infrastructure controllers are running
+	// as both of them create/update Machines.
+	enableProviderIDController := false
+
+	if isControllerEnabled(bootstrapController) {
+		setupLog.Info("Setting up bootstrap controllers")
+		if err = (&bootstrap.Controller{
+			Client:              mgr.GetClient(),
+			SecretCachingClient: secretCachingClient,
+			ClusterCache:        clusterCache,
+			Scheme:              mgr.GetScheme(),
+			ClientSet:           clientSet,
+			RESTConfig:          restConfig,
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
+			os.Exit(1)
+		}
+		if err = (&bootstrap.ControlPlaneController{
+			Client:              mgr.GetClient(),
+			SecretCachingClient: secretCachingClient,
+			ClusterCache:        clusterCache,
+			Scheme:              mgr.GetScheme(),
+			ClientSet:           clientSet,
+			RESTConfig:          restConfig,
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
+			os.Exit(1)
+		}
+
+		if err = bootstrapv1beta2.SetupK0sWorkerConfigWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sWorkerConfigValidator")
+			os.Exit(1)
+		}
+
+		enableProviderIDController = true
+	}
+
+	if isControllerEnabled(controlPlaneController) {
+		setupLog.Info("Setting up control plane controllers")
+		// If 'control-plane' CAPI controller is explicitly enabled, it means also standalone controllers must be enabled
+		setStandaloneControllersOrDie(mgr, clientSet, restConfig, ctrlOptions)
+
+		if err = (&controlplane.K0smotronController{
+			Client:              mgr.GetClient(),
+			SecretCachingClient: secretCachingClient,
+			ClusterCache:        clusterCache,
+			Scheme:              mgr.GetScheme(),
+			ClientSet:           clientSet,
+			RESTConfig:          restConfig,
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "K0smotronControlPlane")
+			os.Exit(1)
+		}
+
+		if err = (&controlplane.K0sController{
+			Client:              mgr.GetClient(),
+			APIReader:           mgr.GetAPIReader(),
+			SecretCachingClient: secretCachingClient,
+			ClusterCache:        clusterCache,
+			ClientSet:           clientSet,
+			RESTConfig:          restConfig,
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "K0sController")
+			os.Exit(1)
+		}
+
+		if err = cpv1beta2.SetupK0sControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControlPlaneValidator")
+			os.Exit(1)
+		}
+
+		if err = (&cpv1beta2.K0smotronControlPlaneValidator{}).SetupK0smotronControlPlaneWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0smotronControlPlaneValidator")
+			os.Exit(1)
+		}
+	}
+
+	if isControllerEnabled(infrastructureController) {
+		setupLog.Info("Setting up infrastructure controllers")
+		if err = (&infrastructure.RemoteMachineController{
+			Client:              mgr.GetClient(),
+			SecretCachingClient: secretCachingClient,
+			Scheme:              mgr.GetScheme(),
+			ClientSet:           clientSet,
+			RESTConfig:          restConfig,
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "RemoteMachine")
+			os.Exit(1)
+		}
+
+		if err = (&infrastructure.ClusterController{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
+			os.Exit(1)
+		}
+
+		if err = infrastructurev1beta2.SetupRemoteMachineWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook for RemoteMachine", "webhook", "RemoteMachine")
+			os.Exit(1)
+		}
+
+		if err = infrastructurev1beta2.SetupPooledRemoteMachineWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook for PooledRemoteMachine", "webhook", "PooledRemoteMachine")
+			os.Exit(1)
+		}
+
+		enableProviderIDController = true
+	}
+
+	if enableProviderIDController {
+		setupLog.Info("Setting up ProviderID controller")
+		if err = (&bootstrap.ProviderIDController{
+			Client:       mgr.GetClient(),
+			Scheme:       mgr.GetScheme(),
+			ClientSet:    clientSet,
+			ClusterCache: clusterCache,
+		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "ProviderID")
+			os.Exit(1)
+		}
 	}
 }
