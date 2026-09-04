@@ -679,7 +679,9 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 
 		fmt.Println(updatedK0sWorkerConfig.Status)
 		assert.NotNil(c, updatedK0sWorkerConfig.Status.Initialization.DataSecretCreated)
-		assert.True(c, *updatedK0sWorkerConfig.Status.Initialization.DataSecretCreated)
+		if updatedK0sWorkerConfig.Status.Initialization.DataSecretCreated != nil {
+			assert.True(c, *updatedK0sWorkerConfig.Status.Initialization.DataSecretCreated)
+		}
 		assert.NotNil(c, updatedK0sWorkerConfig.Status.DataSecretName)
 		if updatedK0sWorkerConfig.Status.DataSecretName != nil {
 			assert.Equal(c, *updatedK0sWorkerConfig.Status.DataSecretName, updatedK0sWorkerConfig.Name)

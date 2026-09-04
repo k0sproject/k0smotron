@@ -24,6 +24,7 @@ import (
 	"hash/fnv"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/imdario/mergo"
@@ -54,11 +55,13 @@ import (
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
@@ -90,6 +93,9 @@ type K0smotronController struct {
 	Scheme              *runtime.Scheme
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
+	// availabilityFailures counts failed reads in a row. Its own map, since the key
+	// carries no kind and would collide with a K0sControlPlane of the same name.
+	availabilityFailures sync.Map
 }
 
 // Scope defines the basic context for the reconciliation of a K0smotronControlPlane object.
@@ -189,18 +195,23 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	defer func() {
-		derr := c.computeStatus(ctx, cluster, kcp, kmcScope)
-		if derr != nil {
-			if errors.Is(derr, util.ErrNotReady) {
-				res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
-			} else {
-				log.Error(derr, "Failed to update K0smotronControlPlane status")
-				err = derr
-				return
+		// Status is not recomputed while deleting, but the patches below still run,
+		// since removing the finalizer is only ever persisted by them.
+		if kcp.DeletionTimestamp.IsZero() {
+			derr := c.computeStatus(ctx, cluster, kcp, kmcScope)
+			if derr != nil {
+				if errors.Is(derr, util.ErrNotReady) {
+					res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
+				} else {
+					log.Error(derr, "Failed to update K0smotronControlPlane status")
+					// Recorded without returning, since the availability computed above is
+					// only ever persisted by the patches below.
+					err = kerrors.NewAggregate([]error{err, derr})
+				}
 			}
 		}
 
-		derr = kcpPatchHelper.Patch(ctx, kcp)
+		derr := kcpPatchHelper.Patch(ctx, kcp)
 		if derr != nil {
 			log.Error(derr, "Failed to patch K0smotronControlPlane")
 			err = kerrors.NewAggregate([]error{err, derr})
@@ -208,7 +219,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		derr = clusterPatchHelper.Patch(ctx, cluster)
 		if derr != nil {
-			log.Error(err, "Failed to update Cluster endpoint")
+			log.Error(derr, "Failed to update Cluster endpoint")
 			err = kerrors.NewAggregate([]error{err, derr})
 		}
 
@@ -523,6 +534,10 @@ func listControlPlanePods(ctx context.Context, cl client.Client, cluster *cluste
 }
 
 func (c *K0smotronController) computeStatus(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane, scope *kmcScope) error {
+	// First, so the early returns below cannot leave a control plane that went away
+	// still reporting the last good state.
+	c.computeAvailability(ctx, cluster, kcp)
+
 	var kmc kapi.Cluster
 	err := c.Client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &kmc)
 	if err != nil {
@@ -539,7 +554,9 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		return err
 	}
 
-	kcp.Status.Replicas = new(int32(len(contolPlanePods.Items)))
+	// Held back until every counter below is known, so an error on the way there
+	// cannot persist one of them against stale values for the rest.
+	replicas := int32(len(contolPlanePods.Items))
 
 	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
 
@@ -591,15 +608,14 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		}
 	}
 
+	kcp.Status.Replicas = new(replicas)
 	kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
 	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
-	kcp.Status.AvailableReplicas = new(ptr.Deref(kcp.Status.Replicas, 0) - int32(unavailableReplicas))
+	kcp.Status.AvailableReplicas = new(replicas - int32(unavailableReplicas))
 
 	if ptr.Deref(kcp.Status.ReadyReplicas, 0) > 0 {
 		kcp.Status.Version = minimumVersion.String()
 	}
-
-	c.computeAvailability(ctx, cluster, kcp)
 
 	// if no replicas are yet available or the desired version is not in the current state of the
 	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
@@ -645,20 +661,35 @@ func alignToSpecVersionFormat(specVersion, currentVersion *version.Version) (*ve
 // and checking if the control plane is initialized
 func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0smotronControlPlane) {
 	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
+
+	// Assumed unavailable up front for the same reasons as in the K0sControlPlane
+	// flavour, including the read below being what latches initialization.
+	everReached := initialized(kcp.Status.Initialization.ControlPlaneInitialized)
+	if !everReached {
+		conditions.Set(kcp, metav1.Condition{
+			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  cpv1beta2.ControlPlaneAvailableUnknownReason,
+			Message: "the workload cluster API has not been reached yet",
+		})
+	}
+
 	// Check if the control plane is ready by connecting to the API server
 	// and checking if the control plane is initialized
 	logger.Info("Pinging the workload cluster API")
 
-	// Get the CAPI cluster accessor
-	client, err := c.ClusterCache.GetClient(ctx, client.ObjectKeyFromObject(cluster))
+	// Uncached, since the cache answers a read from its own store and would call a
+	// control plane that cannot serve one available.
+	client, err := c.ClusterCache.GetUncachedClient(ctx, client.ObjectKeyFromObject(cluster))
 	if err != nil {
 		logger.Info("Failed to get cluster client", "error", err)
-		conditions.Set(kcp, metav1.Condition{
-			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  "ClusterClientCreationFailed",
-			Message: err.Error(),
-		})
+
+		if !everReached {
+			return
+		}
+
+		setUnavailableAfterGracePeriod(&c.availabilityFailures, kcp, err.Error())
+
 		return
 	}
 
@@ -674,16 +705,19 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	err = client.Get(pingCtx, nsKey, ns)
 	if err != nil {
 		logger.Info("Failed to get workload cluster namespace", "error", err)
-		conditions.Set(kcp, metav1.Condition{
-			Type:    string(cpv1beta2.ControlPlaneAvailableCondition),
-			Status:  metav1.ConditionFalse,
-			Reason:  "KubeSystemNamespaceNotAccessible",
-			Message: err.Error(),
-		})
+
+		if !everReached {
+			return
+		}
+
+		setUnavailableAfterGracePeriod(&c.availabilityFailures, kcp, err.Error())
+
 		return
 	}
 
 	logger.Info("Successfully verified workload cluster API availability")
+
+	clearAvailabilityFailures(&c.availabilityFailures, kcp)
 
 	// Set condition for successful API access
 	conditions.Set(kcp, metav1.Condition{
@@ -807,6 +841,7 @@ func (c *K0smotronController) infraContractVersion(ctx context.Context, gk schem
 
 // reconcileDelete handles the deletion of the K0smotronControlPlane object when the controlplane replicas runs in a different cluster.
 func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.NamespacedName, kcp *cpv1beta2.K0smotronControlPlane) (res ctrl.Result, err error) {
+	clearAvailabilityFailures(&c.availabilityFailures, kcp)
 
 	defer func() {
 		if err != nil && apierrors.IsNotFound(err) {
@@ -875,9 +910,44 @@ func generateClusterSpecHashWithoutExternalAddress(spec kapi.ClusterSpec) string
 
 // SetupWithManager sets up the controller with the Manager.
 func (c *K0smotronController) SetupWithManager(mgr ctrl.Manager, opts crcontroller.Options) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	ctrlBuilder := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&cpv1beta2.K0smotronControlPlane{}).
-		Owns(&kapi.Cluster{}, builder.MatchEveryOwner).
-		Complete(c)
+		Owns(&kapi.Cluster{}, builder.MatchEveryOwner)
+
+	// Reconcile returns before the requeue is armed while paused, so unpausing the
+	// owning Cluster leaves nothing to bring this control plane back.
+	ctrlBuilder = ctrlBuilder.Watches(
+		&clusterv1.Cluster{},
+		handler.EnqueueRequestsFromMapFunc(clusterToK0smotronControlPlane),
+		builder.WithPredicates(predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(
+			mgr.GetScheme(), mgr.GetLogger().WithValues("controller", "k0smotroncontrolplane"))),
+	)
+
+	// Nothing schedules a reconcile while this control plane reports available, so
+	// without the cache events a dropped connection is only noticed by chance.
+	if c.ClusterCache != nil {
+		ctrlBuilder = ctrlBuilder.WatchesRawSource(
+			c.ClusterCache.GetClusterSource("k0smotroncontrolplane", clusterToK0smotronControlPlane))
+	}
+
+	return ctrlBuilder.Complete(c)
+}
+
+// clusterToK0smotronControlPlane maps a Cluster event onto the control plane it points
+// at, and ignores clusters running any other kind of control plane.
+func clusterToK0smotronControlPlane(_ context.Context, o client.Object) []ctrl.Request {
+	cluster, ok := o.(*clusterv1.Cluster)
+	if !ok {
+		return nil
+	}
+
+	ref := cluster.Spec.ControlPlaneRef
+	if ref.Kind != "K0smotronControlPlane" || ref.Name == "" {
+		return nil
+	}
+
+	return []ctrl.Request{{
+		NamespacedName: client.ObjectKey{Namespace: cluster.Namespace, Name: ref.Name},
+	}}
 }

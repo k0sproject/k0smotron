@@ -201,6 +201,12 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.Require().NoError(err)
 	s.T().Log("control-plane is ready at version v1.30.0+k0s.0")
 
+	// The control plane being ready says nothing about the workers, and the topology
+	// webhook refuses a version change while any MachineDeployment is still rolling.
+	s.T().Log("waiting for worker machines to finish rolling out")
+	s.Require().NoError(util.WaitForMachineDeploymentsUpToDate(s.ctx, s.client,
+		"docker-test-cluster", "default"))
+
 	// Update the cluster and wait for the reported version to change
 	s.T().Log("updating cluster")
 	cluster, err := util.GetCluster(s.ctx, s.client, "docker-test-cluster", "default")

@@ -24,7 +24,9 @@ import (
 	"sync"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	"github.com/google/uuid"
 	autopilot "github.com/k0sproject/k0s/pkg/apis/autopilot/v1beta2"
@@ -51,6 +53,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -99,6 +102,9 @@ type controlplane struct {
 	controllerConfigs                  map[string]*bootstrapv2.K0sControllerConfig
 	infraMachines                      map[string]*unstructured.Unstructured
 	hasMachinesWithOnlyVersionOutdated bool
+	// availabilityUndecided records that availability was left as it was, so the
+	// reconcile has to come back instead of waiting for an unrelated event.
+	availabilityUndecided bool
 }
 
 // K0sController is responsible for reconciling K0sControlPlane objects.
@@ -117,6 +123,9 @@ type K0sController struct {
 	// autopilotUpdateCancels holds the cancel function for the running updateMachineVersions
 	// goroutine of each control plane, keyed by its NamespacedName.
 	autopilotUpdateCancels sync.Map
+	// availabilityFailures counts failed availability reads in a row per control
+	// plane. A restart starts the count again, reporting an outage late not early.
+	availabilityFailures sync.Map
 }
 
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=k0scontrolplanes/status,verbs=get;list;watch;create;update;patch;delete
@@ -220,11 +229,9 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			}
 		}
 
-		if needsRequeue(controlplane.kcp) {
-			if res.IsZero() {
-				res = ctrl.Result{RequeueAfter: 20 * time.Second, Requeue: true}
-			}
-		}
+		// A settled control plane gets no events of its own, so this is what brings
+		// the reconcile back to look at availability again.
+		res = requeueResult(err, res, controlplane)
 	}()
 
 	if !controlplane.kcp.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -670,6 +677,8 @@ token = ` + frpToken + `
 func (c *K0sController) reconcileDelete(ctx context.Context, controlplane *controlplane) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
+	clearAvailabilityFailures(&c.availabilityFailures, controlplane.kcp)
+
 	// Read from the API server: an empty list makes the finalizer be removed, which cannot be undone,
 	// so it must not be decided from a cache that may not have observed the Machines yet.
 	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c.APIReader, controlplane.cluster)
@@ -862,16 +871,53 @@ func (c *K0sController) calculateMachineState(ctx context.Context, kcp *cpv1beta
 	return ms, nil
 }
 
+// clusterToK0sControlPlane maps a Cluster event onto the control plane it points
+// at, and ignores clusters running any other kind of control plane.
+func clusterToK0sControlPlane(_ context.Context, o client.Object) []ctrl.Request {
+	cluster, ok := o.(*clusterv1.Cluster)
+	if !ok {
+		return nil
+	}
+
+	ref := cluster.Spec.ControlPlaneRef
+	if ref.Kind != "K0sControlPlane" || ref.Name == "" {
+		return nil
+	}
+
+	return []ctrl.Request{{
+		NamespacedName: client.ObjectKey{Namespace: cluster.Namespace, Name: ref.Name},
+	}}
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (c *K0sController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	if c.APIReader == nil {
 		return errors.New("APIReader must not be nil")
 	}
 
+	log := mgr.GetLogger().WithValues("controller", "k0scontrolplane")
+
 	// Check if the cluster.x-k8s.io API is available and if not, don't try to watch for Machine objects
-	return ctrl.NewControllerManagedBy(mgr).
+	ctrlBuilder := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&cpv1beta2.K0sControlPlane{}).
 		Owns(&clusterv1.Machine{}).
-		Complete(c)
+		// Reconcile returns before the requeue is armed while paused, so unpausing the
+		// owning Cluster leaves nothing to bring this control plane back.
+		Watches(
+			&clusterv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(clusterToK0sControlPlane),
+			builder.WithPredicates(predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), log)),
+		)
+
+	// Nothing schedules a reconcile while the control plane reports available, so
+	// without this a cluster whose connection drops is only noticed by chance.
+
+	// Connect and disconnect events need no option. WatchForProbeFailure keys off the
+	// cache's own probe, which says nothing about one read through a tunnel.
+	if c.ClusterCache != nil {
+		ctrlBuilder = ctrlBuilder.WatchesRawSource(c.ClusterCache.GetClusterSource("k0scontrolplane", clusterToK0sControlPlane))
+	}
+
+	return ctrlBuilder.Complete(c)
 }
