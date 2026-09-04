@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-logr/logr"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -253,19 +254,13 @@ func main() {
 	}
 
 	// Absent CAPI Machine kind means we are not running in a CAPI environment, so we don't need to run CAPI controllers.
-	var runCAPIControllers bool
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
 	if err != nil {
 		setupLog.Error(err, "unable to create discovery client")
 		os.Exit(1)
 	}
 
-	resources, err := discoveryClient.ServerResourcesForGroupVersion(schema.GroupVersion{Group: "cluster.x-k8s.io", Version: "v1beta1"}.String())
-	if err == nil && len(resources.APIResources) > 0 {
-		runCAPIControllers = true
-	} else {
-		mgr.GetLogger().Info("Cluster API v1beta1 not installed, skipping cluster-api controllers setup")
-	}
+	runCAPIControllers := shouldRunCAPIControllers(discoveryClient, mgr.GetLogger())
 
 	//+kubebuilder:scaffold:builder
 	ctrlOptions := capictrl.Options{
@@ -430,6 +425,19 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+// shouldRunCAPIControllers reports whether the Cluster API core CRDs (the version
+// this manager's scheme and clustercache watch, v1beta2) are installed and served
+// by the API server. CAPI controllers must stay disabled otherwise, since watching
+// a Cluster API version the server doesn't serve makes the cache never sync.
+func shouldRunCAPIControllers(discoveryClient discovery.DiscoveryInterface, log logr.Logger) bool {
+	resources, err := discoveryClient.ServerResourcesForGroupVersion(schema.GroupVersion{Group: "cluster.x-k8s.io", Version: "v1beta2"}.String())
+	if err == nil && len(resources.APIResources) > 0 {
+		return true
+	}
+	log.Info("Cluster API v1beta2 not installed, skipping cluster-api controllers setup")
+	return false
 }
 
 func newCacheOptions(namespace, watchFilter string) (cache.Options, error) {
