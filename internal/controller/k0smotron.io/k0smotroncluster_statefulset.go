@@ -49,8 +49,8 @@ import (
 var entrypointDefaultMode = int32(0744)
 
 const (
-	clusterLabel          = "k0smotron.io/cluster"
-	statefulSetAnnotation = "k0smotron.io/statefulset-hash"
+	clusterLabel              = "k0smotron.io/cluster"
+	statefulSetHashAnnotation = "k0smotron.io/statefulset-hash"
 )
 
 var versionRegex = regexp.MustCompile(`v\d+.\d+.\d+-k0s.\d+`)
@@ -69,6 +69,9 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	maps.Copy(labels, selectorLabels)
 	labels[util.ComponentLabel] = util.ComponentControlPlane
 	annotations := util.AnnotationsForK0smotronCluster(kmc)
+	// Remove the cluster spec hash annotation from the statefulset annotations, as it can contain data not related to the
+	// controlplane statefulset and can trigger unnecessary rollouts of it.
+	delete(annotations, km.AnnotationKeyClusterSpecHash)
 
 	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
@@ -434,10 +437,10 @@ data:
 	annotationHash := controller.ComputeHash(&previewSts.Spec.Template, previewSts.Status.CollisionCount)
 
 	statefulSet.Annotations = map[string]string{
-		statefulSetAnnotation: annotationHash,
+		statefulSetHashAnnotation: annotationHash,
 	}
 	previewSts.Annotations = map[string]string{
-		statefulSetAnnotation: annotationHash,
+		statefulSetHashAnnotation: annotationHash,
 	}
 	maps.Copy(statefulSet.Annotations, annotations)
 	maps.Copy(previewSts.Annotations, annotations)
@@ -738,7 +741,7 @@ func detectAndSetCurrentClusterVersion(foundStatefulSet *apps.StatefulSet, kmc *
 }
 
 func isStatefulSetsEqual(newSts, oldSts *apps.StatefulSet) bool {
-	if newSts.Annotations[statefulSetAnnotation] != oldSts.Annotations[statefulSetAnnotation] {
+	if newSts.Annotations[statefulSetHashAnnotation] != oldSts.Annotations[statefulSetHashAnnotation] {
 		return false
 	}
 

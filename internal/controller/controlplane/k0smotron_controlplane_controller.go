@@ -74,10 +74,6 @@ const (
 
 	// AnnotationValueManagedByK0smotron is the value for the managed-by annotation
 	AnnotationValueManagedByK0smotron = "k0smotron"
-
-	// AnnotationKeyClusterSpecHash is the annotation key used to store the hash of the desired cluster specification. This
-	// is used to detect changes in the specification.
-	AnnotationKeyClusterSpecHash = "k0smotron.io/cluster-spec-hash"
 )
 
 var currentSpec kapi.ClusterSpec
@@ -366,7 +362,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 				clusterv1.ClusterNameLabel: cluster.Name,
 			},
 			Annotations: map[string]string{
-				AnnotationKeyClusterSpecHash: generateClusterSpecHashWithoutExternalAddress(kcp.Spec),
+				kapi.AnnotationKeyClusterSpecHash: generateClusterSpecHashWithoutExternalAddress(kcp.Spec),
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -410,7 +406,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		if foundCluster.Annotations == nil {
 			foundCluster.Annotations = make(map[string]string)
 		}
-		foundCluster.Annotations[AnnotationKeyClusterSpecHash] = kcpSpecHash
+		foundCluster.Annotations[kapi.AnnotationKeyClusterSpecHash] = kcpSpecHash
 
 		// Modidy current Cluster specification with the desired one.
 		foundCluster.Spec = kcp.Spec
@@ -427,7 +423,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 func isClusterSpecSynced(kmc kapi.Cluster, kcpSpec kapi.ClusterSpec) (isSynced bool, kcpSpecHash string, err error) {
 	kcpSpecHash = generateClusterSpecHashWithoutExternalAddress(kcpSpec)
 	// Use the hash annotation if present, as it is the most reliable way to detect spec changes.
-	if clusterSpecHash, ok := kmc.GetAnnotations()[AnnotationKeyClusterSpecHash]; ok {
+	if clusterSpecHash, ok := kmc.GetAnnotations()[kapi.AnnotationKeyClusterSpecHash]; ok {
 		// Compare separately at the ExternalAddress because it is a field that is expected to be updated by the controller after the creation of the Cluster, so it is not
 		// included in the spec hash.
 		if kmc.Spec.ExternalAddress == kcpSpec.ExternalAddress {
