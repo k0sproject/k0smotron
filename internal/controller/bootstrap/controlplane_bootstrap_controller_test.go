@@ -46,6 +46,50 @@ import (
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 )
 
+func Test_findFirstControllerIP(t *testing.T) {
+	tests := []struct {
+		name      string
+		addresses clusterv1.MachineAddresses
+		want      string
+		wantURL   string
+	}{
+		{
+			name: "internal IPv6 address is returned unbracketed, apiServerURL brackets it once",
+			addresses: clusterv1.MachineAddresses{
+				{Type: clusterv1.MachineInternalIP, Address: "2001:db8::1"},
+			},
+			want:    "2001:db8::1",
+			wantURL: "https://[2001:db8::1]:6443",
+		},
+		{
+			name: "internal IPv4 address",
+			addresses: clusterv1.MachineAddresses{
+				{Type: clusterv1.MachineInternalIP, Address: "10.0.0.1"},
+			},
+			want:    "10.0.0.1",
+			wantURL: "https://10.0.0.1:6443",
+		},
+		{
+			name: "external address takes precedence",
+			addresses: clusterv1.MachineAddresses{
+				{Type: clusterv1.MachineExternalIP, Address: "2001:db8::2"},
+			},
+			want:    "2001:db8::2",
+			wantURL: "https://[2001:db8::2]:6443",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &ControlPlaneController{}
+			machine := &clusterv1.Machine{Status: clusterv1.MachineStatus{Addresses: tt.addresses}}
+			got, err := c.findFirstControllerIP(context.Background(), machine)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.wantURL, apiServerURL(got, "6443"))
+		})
+	}
+}
+
 func Test_createCPInstallCmd(t *testing.T) {
 	base := "k0s install controller --force --enable-dynamic-config "
 	tests := []struct {

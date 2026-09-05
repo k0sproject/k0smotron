@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -529,7 +530,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	}
 
 	var joinToken string
-	joinURL := fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port)
+	joinURL := apiServerURL(scope.Cluster.Spec.ControlPlaneEndpoint.Host, strconv.Itoa(int(scope.Cluster.Spec.ControlPlaneEndpoint.Port)))
 	if scope.ingressSpec != nil {
 		joinURL = fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port)
 	}
