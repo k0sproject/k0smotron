@@ -45,13 +45,21 @@ import (
 )
 
 func (c *K0sController) reconcileInplaceK0sVersionUpdate(ctx context.Context, scope *controlplane) (ctrl.Result, error) {
+	controlplaneRequiresUpdate := scope.hasMachinesWithOnlyVersionOutdated && scope.kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace
+
 	if !conditions.IsTrue(scope.kcp, cpv1beta2.ControlPlaneAvailableCondition) {
 		// If the control plane is not available, we cannot proceed with the in-place update, as access to the
 		// workload cluster is required to manage the autopilot plan.
+
+		// Falling through would replace machines an in place update should upgrade
+		// where they are. Only the rollout is held, never a count that does not match.
+		countMatches := scope.activeMachines.Len() == int(scope.kcp.Spec.Replicas)
+		if controlplaneRequiresUpdate && countMatches {
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+
 		return ctrl.Result{}, nil
 	}
-
-	controlplaneRequiresUpdate := scope.hasMachinesWithOnlyVersionOutdated && scope.kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace
 
 	logger := log.FromContext(ctx).WithValues("version", scope.kcp.Spec.Version)
 

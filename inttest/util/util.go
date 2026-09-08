@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -45,6 +46,7 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/ptr"
 
 	kexec "github.com/k0sproject/k0smotron/v2/internal/exec"
 
@@ -401,6 +403,145 @@ func UpdateCluster(ctx context.Context, kc *kubernetes.Clientset, cluster *clust
 		Do(ctx).
 		Into(cluster)
 
+}
+
+// machineRolloutTimeout bounds the wait below, so a rollout that never finishes fails
+// against the call that waited for it rather than against the whole suite.
+const machineRolloutTimeout = 10 * time.Minute
+
+// WaitForMachineDeploymentsUpToDate waits until the topology webhook would accept a
+// version bump, as far as MachineDeployments go. MachinePools are not covered here.
+func WaitForMachineDeploymentsUpToDate(ctx context.Context, kc *kubernetes.Clientset, clusterName, namespace string) error {
+	// The webhook selects on both, so a MachineDeployment the topology does not own
+	// must not gate a version bump.
+	selector := fmt.Sprintf("%s=%s,%s", clusterv1.ClusterNameLabel, clusterName, clusterv1.ClusterTopologyOwnedLabel)
+
+	// What the most recent tick that reached a verdict had to say, since a reason from
+	// ten minutes ago misdirects whoever reads the failure.
+	var lastState, lastRead error
+
+	// noteState records a rollout that has not settled, which means every read succeeded
+	// on this tick, so a read failure remembered from an earlier one no longer applies.
+	noteState := func(err error) {
+		lastState, lastRead = err, nil
+	}
+
+	// noteRead records a read that failed. One cut off by the deadline says nothing, so
+	// it leaves the previous verdict alone rather than replacing it with the clock.
+	noteRead := func(ctx context.Context, err error) {
+		if ctx.Err() != nil {
+			return
+		}
+
+		lastState, lastRead = nil, err
+	}
+
+	// Every read below goes through the callback's context, so the budget above bounds
+	// a hung request rather than only the interval between them.
+	err := wait.PollUntilContextTimeout(ctx, time.Second, machineRolloutTimeout, true, func(ctx context.Context) (bool, error) {
+		// Read the reference from the cluster rather than taking it as an argument,
+		// so this cannot drift from whatever the manifest under test declares.
+		cluster, err := GetCluster(ctx, kc, clusterName, namespace)
+		if err != nil {
+			noteRead(ctx, fmt.Errorf("getting cluster %s/%s: %w", namespace, clusterName, err))
+
+			return false, nil
+		}
+
+		if cluster.Spec.Topology.Version == "" {
+			noteState(fmt.Errorf("cluster %s/%s declares no topology version", namespace, clusterName))
+
+			return false, nil
+		}
+
+		version := cluster.Spec.Topology.Version
+
+		mds := &clusterv1.MachineDeploymentList{}
+
+		err = kc.RESTClient().
+			Get().
+			AbsPath(fmt.Sprintf("apis/cluster.x-k8s.io/v1beta2/namespaces/%s/machinedeployments", namespace)).
+			Param("labelSelector", selector).
+			Do(ctx).
+			Into(mds)
+		if err != nil {
+			noteRead(ctx, fmt.Errorf("listing machine deployments in %s: %w", namespace, err))
+
+			return false, nil
+		}
+
+		// This runs before the webhook rather than inside it, so none created yet is a
+		// race to wait out rather than the nothing to roll out the webhook allows.
+		if len(mds.Items) == 0 {
+			noteState(fmt.Errorf("no topology owned machine deployments in %s for cluster %s yet",
+				namespace, clusterName))
+
+			return false, nil
+		}
+
+		machines := &clusterv1.MachineList{}
+
+		err = kc.RESTClient().
+			Get().
+			AbsPath(fmt.Sprintf("apis/cluster.x-k8s.io/v1beta2/namespaces/%s/machines", namespace)).
+			Param("labelSelector", fmt.Sprintf("%s=%s", clusterv1.ClusterNameLabel, clusterName)).
+			Do(ctx).
+			Into(machines)
+		if err != nil {
+			noteRead(ctx, fmt.Errorf("listing machines in %s: %w", namespace, err))
+
+			return false, nil
+		}
+
+		for _, md := range mds.Items {
+			if md.Spec.Template.Spec.Version != version {
+				noteState(fmt.Errorf("machine deployment %s is at %s, want %s",
+					md.Name, md.Spec.Template.Spec.Version, version))
+
+				return false, nil
+			}
+
+			var matched int32
+
+			for _, machine := range machines.Items {
+				if machine.Labels[clusterv1.MachineDeploymentNameLabel] != md.Name {
+					continue
+				}
+
+				// Terminating ones included, since the webhook counts them too and
+				// refuses the bump while any machine is still off version.
+				if machine.Spec.Version != md.Spec.Template.Spec.Version {
+					noteState(fmt.Errorf("machine %s is at %s, want %s",
+						machine.Name, machine.Spec.Version, md.Spec.Template.Spec.Version))
+
+					return false, nil
+				}
+
+				// Counted while live only, so one on its way out cannot stand in for a
+				// replacement that is not up yet.
+				if machine.DeletionTimestamp.IsZero() {
+					matched++
+				}
+			}
+
+			// Counted at all, since a MachineDeployment whose Machines are not created
+			// yet has nothing to disagree with and would otherwise look finished.
+			if want := ptr.Deref(md.Spec.Replicas, 0); matched < want {
+				noteState(fmt.Errorf("machine deployment %s has %d machines at %s, want %d",
+					md.Name, matched, version, want))
+
+				return false, nil
+			}
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("waiting for machine deployments to be up to date: %w",
+			errors.Join(err, lastState, lastRead))
+	}
+
+	return nil
 }
 
 // GetK0sControlPlane retrieves a K0sControlPlane object from the cluster API server

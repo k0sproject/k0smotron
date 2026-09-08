@@ -19,11 +19,15 @@ limitations under the License.
 package controlplane
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	bootstrapv1beta2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
@@ -118,6 +122,45 @@ func TestK0sConfigEnrichment(t *testing.T) {
 			actual, err := enrichK0sConfigWithClusterData(tc.cluster, tc.kcp.Spec.K0sConfigSpec.K0s)
 			require.NoError(t, err)
 			require.Equal(t, tc.want, actual)
+		})
+	}
+}
+
+func TestClusterToK0sControlPlane(t *testing.T) {
+	newCluster := func(kind, name string) *clusterv1.Cluster {
+		return &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "ns"},
+			Spec: clusterv1.ClusterSpec{
+				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{Kind: kind, Name: name},
+			},
+		}
+	}
+
+	for _, tc := range []struct {
+		name string
+		obj  client.Object
+		want []ctrl.Request
+	}{
+		{
+			name: "a k0s control plane is enqueued in the cluster namespace",
+			obj:  newCluster("K0sControlPlane", "cp"),
+			want: []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: "ns", Name: "cp"}}},
+		},
+		{
+			name: "the hosted control plane flavor is left to its own controller",
+			obj:  newCluster("K0smotronControlPlane", "cp"),
+		},
+		{
+			name: "a cluster with no control plane reference is skipped",
+			obj:  newCluster("K0sControlPlane", ""),
+		},
+		{
+			name: "anything that is not a cluster is skipped",
+			obj:  &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "m", Namespace: "ns"}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, clusterToK0sControlPlane(context.Background(), tc.obj))
 		})
 	}
 }
