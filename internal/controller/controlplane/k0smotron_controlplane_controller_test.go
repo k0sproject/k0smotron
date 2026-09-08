@@ -94,7 +94,7 @@ func TestIsClusterSpecSynced(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{
 			Name: "test",
 			Annotations: map[string]string{
-				AnnotationKeyClusterSpecHash: "86c6b5f8df",
+				kapi.AnnotationKeyClusterSpecHash: "86c6b5f8df",
 			},
 		},
 	}
@@ -318,7 +318,7 @@ func TestIsClusterSpecSynced(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				if mode == withoutAnnotation {
-					delete(kmc.GetAnnotations(), AnnotationKeyClusterSpecHash)
+					delete(kmc.GetAnnotations(), kapi.AnnotationKeyClusterSpecHash)
 				}
 				tc.name = fmt.Sprintf("%s - %s", tc.name, mode)
 				kmc.Spec = tc.kmcSpec
@@ -326,7 +326,7 @@ func TestIsClusterSpecSynced(t *testing.T) {
 				require.NoError(t, err)
 				require.EqualValues(t, tc.expected, result)
 				if mode == withAnnotation {
-					require.EqualValues(t, tc.expected, kcpSpecHash == kmc.GetAnnotations()[AnnotationKeyClusterSpecHash])
+					require.EqualValues(t, tc.expected, kcpSpecHash == kmc.GetAnnotations()[kapi.AnnotationKeyClusterSpecHash])
 				}
 			})
 		}

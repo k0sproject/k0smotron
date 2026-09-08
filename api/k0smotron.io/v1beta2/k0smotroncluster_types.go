@@ -99,6 +99,10 @@ const (
 
 	// NotFoundReason surfaces when a resource is not found.
 	NotFoundReason = "NotFound"
+
+	// AnnotationKeyClusterSpecHash is the annotation key used to store the hash of the desired cluster specification. This
+	// is used to detect changes in the specification.
+	AnnotationKeyClusterSpecHash = "k0smotron.io/cluster-spec-hash"
 )
 
 // ClusterSpec defines the desired state of K0smotronCluster
