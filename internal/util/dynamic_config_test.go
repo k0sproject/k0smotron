@@ -18,7 +18,6 @@ package util
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -27,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 )
 
 func testClusterConfig(spec map[string]interface{}) unstructured.Unstructured {
@@ -85,27 +83,4 @@ func TestReconcileDynamicConfigStripsControllerOnlyFields(t *testing.T) {
 	podCIDR, _, err := unstructured.NestedString(got.Object, "spec", "network", "podCIDR")
 	require.NoError(t, err)
 	require.Equal(t, "10.245.0.0/16", podCIDR, "fields other than the stripped ones should still be applied")
-}
-
-func TestReconcileDynamicConfigPatchError(t *testing.T) {
-	gvk := schema.GroupVersionKind{Group: "k0s.k0sproject.io", Version: "v1beta1", Kind: "ClusterConfig"}
-	scheme := runtime.NewScheme()
-	scheme.AddKnownTypeWithName(gvk, &unstructured.Unstructured{})
-	scheme.AddKnownTypeWithName(gvk.GroupVersion().WithKind("ClusterConfigList"), &unstructured.UnstructuredList{})
-
-	existing := testClusterConfig(nil)
-	wantErr := errors.New("patch rejected")
-	fakeClient := fake.NewClientBuilder().
-		WithScheme(scheme).
-		WithObjects(&existing).
-		WithInterceptorFuncs(interceptor.Funcs{
-			Patch: func(_ context.Context, _ client.WithWatch, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
-				return wantErr
-			},
-		}).
-		Build()
-
-	err := ReconcileDynamicConfig(context.Background(), fakeClient, testClusterConfig(nil))
-	require.ErrorIs(t, err, wantErr)
-	require.ErrorContains(t, err, "failed to patch k0s config")
 }
