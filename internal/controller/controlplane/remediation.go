@@ -125,7 +125,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 		conditions.Set(machineToBeRemediated, metav1.Condition{
 			Type:    string(clusterv1.MachineOwnerRemediatedCondition),
 			Status:  metav1.ConditionFalse,
-			Reason:  "RemediationFailed",
+			Reason:  cpv1beta2.K0sControlPlaneMachineRemediationFailedReason,
 			Message: err.Error(),
 		})
 		return errors.Wrapf(err, "failed to delete unhealthy machine %s", machineToBeRemediated.Name)
