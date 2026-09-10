@@ -263,7 +263,7 @@ spec:
 
 K0smotron supports two tunneling modes: `tunnel` and `proxy`. You can set the tunneling mode using `spec.k0sConfigSpec.tunneling.mode` field. The default mode is `tunnel`.
 
-K0smotron will create a kubeconfig file for the tunneling client in the `K0sControlPlane` object's namespace. You can find the kubeconfig file in the `<cluster-name>-<mode>-kubeconfig` secret.
+K0smotron will create a kubeconfig file for the tunneling client in the `K0sControlPlane` object's namespace. You can find the kubeconfig file in the `<cluster-name>-tunneled-kubeconfig` secret (`tunnel` mode) or `<cluster-name>-proxied-kubeconfig` (`proxy` mode).
 You can use this kubeconfig file to access the control plane nodes from a remote location.
 
 **Note:** Parent cluster's worker nodes must be accessible from the child cluster's nodes. You can use `spec.k0sConfigSpec.tunneling.serverAddress` to set the address of the parent cluster's node or load balancer. If you don't set this field, k0smotron will use the random worker node's address as the default address.
