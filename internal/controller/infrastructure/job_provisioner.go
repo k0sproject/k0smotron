@@ -194,10 +194,17 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 			Path: fileName,
 		})
 
+		// Permissions is optional and nothing defaults it, so parse through the helper
+		// that falls back rather than emitting a chmod with an empty mode.
+		mode, err := file.PermissionsAsInt()
+		if err != nil {
+			return volume, volumeMounts, secretData, fmt.Errorf("failed to parse permissions of file %s: %w", file.Path, err)
+		}
+
 		buf.WriteString(fmt.Sprintf("%s /var/lib/bootstrap-data/%s %s:%s\n", scpCommand, fileName, machineDSN, file.Path))
 		// These run through the entrypoint shell inside the job, so quote them.
 		// Giving a file away also needs the same privilege the commands use.
-		buf.WriteString(fmt.Sprintf("%s %schmod %s %s\n", sshCommand, sudoPrefix, shellQuote(file.Permissions), shellQuote(file.Path)))
+		buf.WriteString(fmt.Sprintf("%s %schmod %04o %s\n", sshCommand, sudoPrefix, mode, shellQuote(file.Path)))
 		if file.Owner != "" {
 			buf.WriteString(fmt.Sprintf("%s %schown -- %s %s\n", sshCommand, sudoPrefix, shellQuote(file.Owner), shellQuote(file.Path)))
 		}
