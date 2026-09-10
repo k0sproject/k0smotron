@@ -325,9 +325,49 @@ func TestExtractCloudInitDecodesAndChowns(t *testing.T) {
 	require.Equal(t, "decoded body", staged, "content must be decoded before it is staged")
 
 	script := string(secretData["k0smotron-entrypoint.sh"])
-	// The job entrypoint is a shell script, so both must be quoted.
+	// The job entrypoint is a shell script, so the path and the owner must be quoted.
 	require.Contains(t, script, "chown -- 'etcd:etcd' '/etc/thing'")
-	require.Contains(t, script, "chmod '0640' '/etc/thing'")
+	require.Contains(t, script, "chmod 0640 '/etc/thing'")
+}
+
+func TestExtractCloudInitFileMode(t *testing.T) {
+	newProvisioner := func() *JobProvisioner {
+		return &JobProvisioner{
+			remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
+			provisionJob: &api.ProvisionJob{
+				SSHCommand:  "ssh",
+				SCPCommand:  "scp",
+				JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+			},
+		}
+	}
+
+	t.Run("an unset mode falls back instead of emitting an empty one", func(t *testing.T) {
+		_, _, secretData, err := newProvisioner().extractCloudInit(&provisioner.InputProvisionData{
+			Files: []provisioner.File{{Path: "/etc/thing", Content: "body"}},
+		})
+		require.NoError(t, err)
+
+		script := string(secretData["k0smotron-entrypoint.sh"])
+		require.Contains(t, script, "chmod 0644 '/etc/thing'")
+		require.NotContains(t, script, "chmod ''")
+	})
+
+	t.Run("a mode with no leading zero still renders as octal", func(t *testing.T) {
+		_, _, secretData, err := newProvisioner().extractCloudInit(&provisioner.InputProvisionData{
+			Files: []provisioner.File{{Path: "/etc/thing", Content: "body", Permissions: "755"}},
+		})
+		require.NoError(t, err)
+
+		require.Contains(t, string(secretData["k0smotron-entrypoint.sh"]), "chmod 0755 '/etc/thing'")
+	})
+
+	t.Run("an unparseable mode is reported against the file", func(t *testing.T) {
+		_, _, _, err := newProvisioner().extractCloudInit(&provisioner.InputProvisionData{
+			Files: []provisioner.File{{Path: "/etc/thing", Content: "body", Permissions: "rw-r--r--"}},
+		})
+		require.ErrorContains(t, err, "failed to parse permissions of file /etc/thing")
+	})
 }
 
 func TestExtractCloudInitQuotesOwnerAgainstInjection(t *testing.T) {
@@ -371,7 +411,7 @@ func TestExtractCloudInitUsesSudoWhenRequested(t *testing.T) {
 		script := string(secretData["k0smotron-entrypoint.sh"])
 		if useSudo {
 			require.Contains(t, script, "ssh root@host sudo chown -- 'etcd:etcd'")
-			require.Contains(t, script, "ssh root@host sudo chmod '0640'")
+			require.Contains(t, script, "ssh root@host sudo chmod 0640")
 		} else {
 			require.Contains(t, script, "ssh root@host chown -- 'etcd:etcd'")
 			require.NotContains(t, script, "sudo chown")
