@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
@@ -189,7 +188,7 @@ func isTunneledRestConfigPossible(cp *cpv1beta2.K0sControlPlane) bool {
 	// 2: FRPClient cannot run without a worker machine. It cannot be deployed on controller nodes if `--enable-worker` is not configured.
 	// 3. Infra provider needs to see `controlplane.spec.initialized == true` in order to create a worker machine where FRPClient will run.
 	// 4. BACK TO 1!
-	if !slices.Contains(cp.Spec.K0sConfigSpec.Args, "--enable-worker") {
+	if !cp.WorkerEnabled() {
 		return false
 	}
 

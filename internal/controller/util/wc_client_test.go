@@ -74,6 +74,16 @@ func Test_isTunneledRestConfigPossible(t *testing.T) {
 			cp:   kcp(true, "--single", "--enable-worker", "--debug"),
 			want: true,
 		},
+		{
+			name: "the explicit spelling of the worker flag",
+			cp:   kcp(true, "--enable-worker=true"),
+			want: true,
+		},
+		{
+			name: "a single node controller runs a worker",
+			cp:   kcp(true, "--single"),
+			want: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			require.Equal(t, tc.want, isTunneledRestConfigPossible(tc.cp))
