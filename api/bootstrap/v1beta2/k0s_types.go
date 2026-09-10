@@ -363,7 +363,7 @@ type K0sConfigSpec struct {
 	// If 'oci' schema is used and the OCI registry requires authentication, make sure to set up the authentication beforehand
 	// by adding a file to the Files section that contains the necessary config for ORAS. See: https://oras.land/docs/how_to_guides/authentication/
 	// The file must be placed at `/root` directory (HOME for cloud-init execution time) and named `config.json`.
-	// NOTE: use `.preStartCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.
+	// NOTE: use `.preK0sCommands` to set DOCKER_CONFIG environment variable in order to let ORAS pick up your custom config file.
 	// When no value is specified, k0smotron will use the default URL: https://get.k0s.sh
 	// +kubebuilder:validation:Optional
 	DownloadURL string `json:"downloadURL,omitempty"`
