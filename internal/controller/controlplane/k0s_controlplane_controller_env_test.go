@@ -122,6 +122,19 @@ func TestReconcileNoK0sControlPlane(t *testing.T) {
 	require.Equal(t, ctrl.Result{}, result)
 }
 
+// requirePausedCondition reads the control plane back and checks the condition the
+// contract asks providers to surface.
+func requirePausedCondition(t *testing.T, kcp *cpv1beta2.K0sControlPlane, want metav1.ConditionStatus) {
+	t.Helper()
+
+	seen := &cpv1beta2.K0sControlPlane{}
+	require.NoError(t, testEnv.Get(ctx, util.ObjectKey(kcp), seen))
+
+	cond := conditions.Get(seen, clusterv1.PausedCondition)
+	require.NotNil(t, cond, "the paused condition is declared, so it has to be set")
+	require.Equal(t, want, cond.Status)
+}
+
 func TestReconcilePausedCluster(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-paused-cluster")
 	require.NoError(t, err)
@@ -157,6 +170,7 @@ func TestReconcilePausedCluster(t *testing.T) {
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
 	require.NoError(t, err)
 	require.Equal(t, ctrl.Result{}, result)
+	requirePausedCondition(t, kcp, metav1.ConditionTrue)
 }
 
 func TestReconcilePausedK0sControlPlane(t *testing.T) {
@@ -189,6 +203,28 @@ func TestReconcilePausedK0sControlPlane(t *testing.T) {
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
 	require.NoError(t, err)
 	require.Equal(t, ctrl.Result{}, result)
+	requirePausedCondition(t, kcp, metav1.ConditionTrue)
+
+	// Unpausing has to clear it, or the object stays paused in status forever.
+	require.NoError(t, testEnv.Get(ctx, util.ObjectKey(kcp), kcp))
+	kcp.Annotations = nil
+	require.NoError(t, testEnv.Update(ctx, kcp))
+
+	require.Eventually(t, func() bool {
+		seen := &cpv1beta2.K0sControlPlane{}
+		if err := testEnv.Get(ctx, util.ObjectKey(kcp), seen); err != nil {
+			return false
+		}
+
+		return len(seen.Annotations) == 0
+	}, 10*time.Second, 100*time.Millisecond)
+
+	// The helper patches the flip and asks to be called again, so this reconcile
+	// stops right after clearing the condition rather than going on.
+	result, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
+	require.NoError(t, err)
+	require.Equal(t, ctrl.Result{}, result)
+	requirePausedCondition(t, kcp, metav1.ConditionFalse)
 }
 
 func TestReconcileTunneling(t *testing.T) {
@@ -1045,6 +1081,11 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 		ClusterCache:              clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}),
 	}
 
+	// The first pass records the paused condition and asks to be called again, which
+	// a watch on the object does for a controller that is actually running.
+	_, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
+	require.NoError(t, err)
+
 	_, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
 	require.NoError(t, err)
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, client.ObjectKey{Name: kcp.Name, Namespace: kcp.Namespace}, kcp))
@@ -1486,7 +1527,9 @@ func TestReconcileArmsTheAvailabilityRequeue(t *testing.T) {
 	require.Eventually(t, func() bool {
 		res, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
 
-		return err == nil
+		// The pass that records the paused condition returns early with a zero
+		// result, so wait for one that reached the deferred block.
+		return err == nil && !res.IsZero()
 	}, 20*time.Second, 200*time.Millisecond, "the reconcile never got far enough to arm a requeue")
 
 	// Not available here, since nothing serves the workload API, so this is the
