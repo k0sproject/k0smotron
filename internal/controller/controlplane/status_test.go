@@ -143,6 +143,43 @@ func Test_machineStatusCompute(t *testing.T) {
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 	})
 
+	t.Run("test a deleting machine counts in the total as well as the counters", func(t *testing.T) {
+		// The counters run over active and deleted machines together, so the total has
+		// to as well. Otherwise the v1beta1 conversion publishes a negative
+		// unavailableReplicas, computed as replicas minus availableReplicas.
+		ready := []metav1.Condition{
+			{Type: clusterv1.MachineReadyCondition, Status: metav1.ConditionTrue},
+			{Type: clusterv1.MachineAvailableCondition, Status: metav1.ConditionTrue},
+			{Type: clusterv1.MachineUpToDateCondition, Status: metav1.ConditionTrue},
+		}
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{Version: "v1.31.0", Replicas: 3},
+		}
+
+		scope := &controlplane{
+			kcp: kcp,
+			activeMachines: collections.Machines{
+				"machine1": &clusterv1.Machine{
+					Spec:   clusterv1.MachineSpec{Version: "v1.31.0"},
+					Status: clusterv1.MachineStatus{Conditions: ready},
+				},
+			},
+			deletedMachines: collections.Machines{
+				"machine2": &clusterv1.Machine{
+					Spec:   clusterv1.MachineSpec{Version: "v1.31.0"},
+					Status: clusterv1.MachineStatus{Conditions: ready},
+				},
+			},
+		}
+		err := computeReplicas(scope)
+
+		require.NoError(t, err)
+		require.Equal(t, int32(2), *kcp.Status.Replicas)
+		require.Equal(t, int32(2), *kcp.Status.ReadyReplicas)
+		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
+		require.Equal(t, int32(2), *kcp.Status.UpToDateReplicas)
+	})
+
 	t.Run("test all ready and available are ready but not using suffix", func(t *testing.T) {
 		kcp := &cpv1beta2.K0sControlPlane{
 			Spec: cpv1beta2.K0sControlPlaneSpec{

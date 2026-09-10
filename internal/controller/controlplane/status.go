@@ -62,8 +62,6 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 }
 
 func computeReplicas(controlplane *controlplane) error {
-	controlplane.kcp.Status.Replicas = new(int32(len(controlplane.activeMachines)))
-
 	var allReplicas []*clusterv1.Machine
 	allReplicas = append(allReplicas, controlplane.activeMachines.UnsortedList()...)
 	allReplicas = append(allReplicas, controlplane.deletedMachines.UnsortedList()...)
@@ -81,6 +79,9 @@ func computeReplicas(controlplane *controlplane) error {
 		}
 	}
 
+	// One collection feeds all four, so a machine that is deleting but still ready
+	// cannot be counted by one of them and left out of the total.
+	controlplane.kcp.Status.Replicas = new(int32(len(allReplicas)))
 	controlplane.kcp.Status.ReadyReplicas = new(int32(readyReplicas))
 	controlplane.kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
 	controlplane.kcp.Status.AvailableReplicas = new(int32(availableReplicas))
