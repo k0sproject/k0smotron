@@ -33,6 +33,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
@@ -41,6 +42,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/util/certs"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/secret"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
@@ -270,4 +272,39 @@ func selfSignedCertPEM(t *testing.T) []byte {
 	require.NoError(t, err)
 
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+}
+
+// TestGenerateBootstrapDataForControllerWaitsWithAnError covers the join path finding no
+// running controller to point at. A nil error there would read as success.
+func TestGenerateBootstrapDataForControllerWaitsWithAnError(t *testing.T) {
+	machine := func(name string, age time.Duration, phase clusterv1.MachinePhase) *clusterv1.Machine {
+		return &clusterv1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              name,
+				CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
+			},
+			Status: clusterv1.MachineStatus{Phase: string(phase)},
+		}
+	}
+
+	// The oldest machine is not the one being bootstrapped, so this takes the join
+	// path, and it is still Pending, so there is no join target yet.
+	scope := &ControllerScope{
+		Config: &bootstrapv2.K0sControllerConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "cp-1"},
+			Spec: bootstrapv2.K0sControllerConfigSpec{
+				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+			},
+		},
+		machines: collections.FromMachines(
+			machine("cp-0", time.Hour, clusterv1.MachinePhasePending),
+			machine("cp-1", time.Minute, clusterv1.MachinePhaseProvisioning),
+		),
+	}
+
+	c := &ControlPlaneController{}
+	data, err := c.generateBootstrapDataForController(context.TODO(), logr.Discard(), scope)
+
+	require.ErrorIs(t, err, errInitialControllerMachineNotInitialize)
+	require.Nil(t, data)
 }

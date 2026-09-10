@@ -365,7 +365,9 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		oldest := getFirstRunningMachineExcludingMachineToBootstrap(scope)
 		if oldest == nil {
 			log.Info("wait for initial control plane provisioning")
-			return nil, err
+			// A nil error here would be read as success, and the caller would publish a
+			// bootstrap secret with a null value that is never regenerated.
+			return nil, errInitialControllerMachineNotInitialize
 		}
 		files, err = c.genControlPlaneJoinFiles(ctx, scope, files, oldest)
 		if err != nil {
