@@ -390,6 +390,26 @@ func TestExtractCloudInitQuotesOwnerAgainstInjection(t *testing.T) {
 	require.NotContains(t, script, "chown -- root; rm")
 }
 
+func TestExtractCloudInitQuotesScpDestination(t *testing.T) {
+	p := &JobProvisioner{
+		remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
+		provisionJob: &api.ProvisionJob{
+			SSHCommand:  "ssh",
+			SCPCommand:  "scp",
+			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+		},
+	}
+
+	_, _, secretData, err := p.extractCloudInit(&provisioner.InputProvisionData{
+		Files: []provisioner.File{{Path: "/etc/a b; touch /tmp/pwned", Content: "body"}},
+	})
+	require.NoError(t, err)
+
+	script := string(secretData["k0smotron-entrypoint.sh"])
+	require.Contains(t, script, " "+shellQuote("root@host:/etc/a b; touch /tmp/pwned")+"\n")
+	require.NotContains(t, script, " root@host:", "an unquoted destination lets the path split the scp command")
+}
+
 func TestExtractCloudInitUsesSudoWhenRequested(t *testing.T) {
 	// Giving a file to another user needs privilege, the same way the commands
 	// in the same script get it.

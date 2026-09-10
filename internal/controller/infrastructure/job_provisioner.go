@@ -201,7 +201,11 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 			return volume, volumeMounts, secretData, fmt.Errorf("failed to parse permissions of file %s: %w", file.Path, err)
 		}
 
-		buf.WriteString(fmt.Sprintf("%s /var/lib/bootstrap-data/%s %s:%s\n", scpCommand, fileName, machineDSN, file.Path))
+		// Both are one word for the shell that runs this script, so a path holding a
+		// space or a semicolon must not be able to split them.
+		buf.WriteString(fmt.Sprintf("%s %s %s\n", scpCommand,
+			shellQuote("/var/lib/bootstrap-data/"+fileName),
+			shellQuote(machineDSN+":"+file.Path)))
 		// These run through the entrypoint shell inside the job, so quote them.
 		// Giving a file away also needs the same privilege the commands use.
 		buf.WriteString(fmt.Sprintf("%s %schmod %04o %s\n", sshCommand, sudoPrefix, mode, shellQuote(file.Path)))
