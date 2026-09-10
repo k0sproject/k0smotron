@@ -24,12 +24,19 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/require"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	runtimev1 "sigs.k8s.io/cluster-api/api/runtime/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 )
 
 // TestReconcileInplaceK0sVersionUpdateWhenUnavailable covers the gate that runs
@@ -147,4 +154,63 @@ func TestReconcileInplaceK0sVersionUpdateHoldsOnlyTheRollout(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, res.IsZero(), "an operator has to be able to remove a machine")
 	})
+}
+
+// TestTriggerCAPIInplaceVersionUpdateOrdering pins the order the contract requires, so a
+// pending hook is never observed against objects that do not yet know about the update.
+func TestTriggerCAPIInplaceVersionUpdateOrdering(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, bootstrapv2.AddToScheme(scheme))
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{Name: "cp-0", Namespace: "default"},
+		Spec:       clusterv1.MachineSpec{Version: "v1.31.0+k0s.0", ClusterName: "c"},
+	}
+	bootstrapConfig := &bootstrapv2.K0sControllerConfig{
+		ObjectMeta: metav1.ObjectMeta{Name: "cp-0", Namespace: "default"},
+	}
+	infraMachine := &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta2",
+		"kind":       "RemoteMachine",
+		"metadata":   map[string]any{"name": "cp-0", "namespace": "default"},
+	}}
+
+	// Never delegates, because the fake client panics applying a merge patch to a
+	// K0sControllerConfig, whose spec embeds a pointer.
+	var patched []string
+	cl := fake.NewClientBuilder().WithScheme(scheme).
+		WithInterceptorFuncs(interceptor.Funcs{
+			Patch: func(_ context.Context, _ client.WithWatch, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				var label string
+				switch obj.(type) {
+				case *unstructured.Unstructured:
+					label = "infraMachine"
+				case *bootstrapv2.K0sControllerConfig:
+					label = "bootstrapConfig"
+				case *clusterv1.Machine:
+					label = "machine"
+				default:
+					return fmt.Errorf("unexpected patch on %T", obj)
+				}
+				// Recorded per patch, so the hook cannot hide on an earlier one.
+				if _, ok := obj.GetAnnotations()[runtimev1.PendingHooksAnnotation]; ok {
+					label += "+hook"
+				}
+				patched = append(patched, label)
+
+				return nil
+			},
+		}).Build()
+
+	require.NoError(t, triggerCAPIInplaceVersionUpdate(
+		context.Background(), cl, "v1.32.0+k0s.0", machine, infraMachine, bootstrapConfig))
+
+	require.Equal(t, []string{"infraMachine", "bootstrapConfig", "machine+hook"}, patched)
+
+	require.Contains(t, machine.Annotations, runtimev1.PendingHooksAnnotation)
+	require.Contains(t, machine.Annotations, clusterv1.UpdateInProgressAnnotation)
+	require.Contains(t, infraMachine.GetAnnotations(), clusterv1.UpdateInProgressAnnotation)
+	require.Contains(t, bootstrapConfig.Annotations, clusterv1.UpdateInProgressAnnotation)
+	require.Equal(t, "v1.32.0+k0s.0", machine.Spec.Version)
 }
