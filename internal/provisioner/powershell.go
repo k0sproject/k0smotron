@@ -72,8 +72,8 @@ func renderWriteFile(buf *bytes.Buffer, f File) error {
 
 	// Ensure directory exists
 	fmt.Fprintf(buf,
-		"New-Item -ItemType Directory -Force -Path \"%s\" | Out-Null\n",
-		escapePS(dir),
+		"New-Item -ItemType Directory -Force -Path %s | Out-Null\n",
+		quotePS(dir),
 	)
 
 	// PowerShell has no notion of a content encoding, so decode here.
@@ -90,16 +90,16 @@ func renderWriteFile(buf *bytes.Buffer, f File) error {
 
 		if f.Append {
 			fmt.Fprintf(buf, `$stream = [System.IO.File]::Open(
-  "%s",
+  %s,
   [System.IO.FileMode]::Append
 )
 $stream.Write($bytes, 0, $bytes.Length)
-$stream.Close()`+"\n", escapePS(f.Path))
+$stream.Close()`+"\n", quotePS(f.Path))
 
 			return nil
 		}
 
-		fmt.Fprintf(buf, "[System.IO.File]::WriteAllBytes(\"%s\", $bytes)\n", escapePS(f.Path))
+		fmt.Fprintf(buf, "[System.IO.File]::WriteAllBytes(%s, $bytes)\n", quotePS(f.Path))
 
 		return nil
 	}
@@ -114,17 +114,18 @@ $stream.Close()`+"\n", escapePS(f.Path))
 	}
 	buf.WriteString("'@\n")
 	fmt.Fprintf(buf, `[System.IO.File]::WriteAllText(
-  "%s",
+  %s,
   $file.Trim(),
   [System.Text.Encoding]::ASCII
-)`+"\n", escapePS(f.Path))
+)`+"\n", quotePS(f.Path))
 
 	return nil
 }
 
-func escapePS(s string) string {
-	// PowerShell double-quoted string escaping
-	return strings.ReplaceAll(s, `"`, `""`)
+// quotePS renders s as a PowerShell single quoted string, which is literal, so a
+// path cannot expand a variable or run a subexpression.
+func quotePS(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }
 
 func normalizeNewlines(s string) string {

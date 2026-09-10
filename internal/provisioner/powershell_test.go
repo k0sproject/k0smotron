@@ -102,3 +102,60 @@ func TestPowerShellRejectsUndecodableContent(t *testing.T) {
 	require.ErrorContains(t, err, "failed to base64 decode")
 	require.ErrorContains(t, err, `C:\k\x`)
 }
+
+// TestPowerShellQuotesPathsLiterally covers a path reaching the target as data rather
+// than as script. Single quoted PowerShell strings expand nothing.
+func TestPowerShellQuotesPathsLiterally(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "a subexpression stays inert",
+			path: `C:\k\$(ni PWNED).conf`,
+			want: `'C:\k\$(ni PWNED).conf'`,
+		},
+		{
+			name: "a variable is not expanded",
+			path: `C:\k\$env:TEMP.conf`,
+			want: `'C:\k\$env:TEMP.conf'`,
+		},
+		{
+			name: "an embedded quote is doubled",
+			path: `C:\k\a'b.conf`,
+			want: `'C:\k\a''b.conf'`,
+		},
+		{
+			name: "a double quote needs no escaping now",
+			path: `C:\k\a"b.conf`,
+			want: `'C:\k\a"b.conf'`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := render(t, File{Path: tc.path, Content: "body", Permissions: "0644"})
+
+			require.Contains(t, s, "WriteAllText(\n  "+tc.want+",")
+			// the old form put the path in a double quoted string, which expands
+			require.NotContains(t, s, `WriteAllText(`+"\n"+`  "`)
+		})
+	}
+}
+
+// TestPowerShellQuotesPathsOnEveryWriteForm covers the three other places a path is
+// emitted, since each one used to build its own double quoted string.
+func TestPowerShellQuotesPathsOnEveryWriteForm(t *testing.T) {
+	path := `C:\k\$(ni PWNED)\a.conf`
+
+	// New-Item takes the directory, so it is quoted on every render
+	require.Contains(t, render(t, File{Path: path, Content: "body"}),
+		`-Path 'C:/k/$(ni PWNED)' | Out-Null`)
+
+	// append routes through Open
+	require.Contains(t, render(t, File{Path: path, Content: "body", Append: true}),
+		"Open(\n  '"+path+"',")
+
+	// content that a here string cannot hold routes through WriteAllBytes
+	require.Contains(t, render(t, File{Path: path, Content: "\xff\xfe"}),
+		`WriteAllBytes('`+path+`', $bytes)`)
+}
