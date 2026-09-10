@@ -252,7 +252,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		log.Error(err, "Failed to patch bootstrap secret")
 		conditions.Set(config, metav1.Condition{
 			Type:    string(bootstrapv2.DataSecretAvailableCondition),
-			Status:  metav1.ConditionTrue,
+			Status:  metav1.ConditionFalse,
 			Reason:  bootstrapv2.InternalErrorReason,
 			Message: err.Error(),
 		})
