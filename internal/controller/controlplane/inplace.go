@@ -345,21 +345,9 @@ func (c *K0sController) updateMachineVersion(ctx context.Context, machine *clust
 	return nil
 }
 
+// triggerCAPIInplaceVersionUpdate marks a Machine and the objects it points at as being
+// updated in place. The pending hook has to come after the other two are marked.
 func triggerCAPIInplaceVersionUpdate(ctx context.Context, c client.Client, desiredVersion string, desiredMachine *clusterv1.Machine, desiredInfraMachine *unstructured.Unstructured, desiredBootstrapConfig *bootstrapv2.K0sControllerConfig) error {
-	if _, ok := desiredMachine.Annotations[clusterv1.UpdateInProgressAnnotation]; !ok {
-		orig := desiredMachine.DeepCopy()
-		desiredMachine.Spec.Version = desiredVersion
-		if desiredMachine.Annotations == nil {
-			desiredMachine.Annotations = map[string]string{}
-		}
-		desiredMachine.Annotations[clusterv1.UpdateInProgressAnnotation] = ""
-		desiredMachine.Annotations[runtimev1.PendingHooksAnnotation] = runtimecatalog.HookName(runtimehooksv1.UpdateMachine)
-		if err := c.Patch(ctx, desiredMachine, client.MergeFrom(orig)); err != nil {
-			return fmt.Errorf("failed to trigger in-place update for Machine %s by setting the %s annotation: %w",
-				klog.KObj(desiredMachine), clusterv1.UpdateInProgressAnnotation, err)
-		}
-	}
-
 	if _, ok := desiredInfraMachine.GetAnnotations()[clusterv1.UpdateInProgressAnnotation]; !ok {
 		origInfra := desiredInfraMachine.DeepCopy()
 		infraMachineAnnotations := desiredInfraMachine.GetAnnotations()
@@ -383,6 +371,22 @@ func triggerCAPIInplaceVersionUpdate(ctx context.Context, c client.Client, desir
 		if err := c.Patch(ctx, desiredBootstrapConfig, client.MergeFrom(origBootstrap)); err != nil {
 			return fmt.Errorf("failed to trigger in-place update for BootstrapConfig %s by setting the %s annotation: %w",
 				klog.KObj(desiredBootstrapConfig), clusterv1.UpdateInProgressAnnotation, err)
+		}
+	}
+
+	// Last, so the pending hook becomes visible only once the two objects above are
+	// marked. Both annotations go in one MergeFrom patch, which is atomic.
+	if _, ok := desiredMachine.Annotations[clusterv1.UpdateInProgressAnnotation]; !ok {
+		orig := desiredMachine.DeepCopy()
+		desiredMachine.Spec.Version = desiredVersion
+		if desiredMachine.Annotations == nil {
+			desiredMachine.Annotations = map[string]string{}
+		}
+		desiredMachine.Annotations[clusterv1.UpdateInProgressAnnotation] = ""
+		desiredMachine.Annotations[runtimev1.PendingHooksAnnotation] = runtimecatalog.HookName(runtimehooksv1.UpdateMachine)
+		if err := c.Patch(ctx, desiredMachine, client.MergeFrom(orig)); err != nil {
+			return fmt.Errorf("failed to trigger in-place update for Machine %s by setting the %s annotation: %w",
+				klog.KObj(desiredMachine), clusterv1.UpdateInProgressAnnotation, err)
 		}
 	}
 
