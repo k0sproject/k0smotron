@@ -557,7 +557,8 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv2.File{
 		{
 			File: provisioner.File{
-				Path: "/etc/haproxy/certs/ca.crt",
+				Path:        "/etc/haproxy/certs/ca.crt",
+				Permissions: "0644",
 			},
 			ContentFrom: &bootstrapv2.ContentSource{
 				SecretRef: &bootstrapv2.ContentSourceRef{
@@ -568,7 +569,8 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 		},
 		{
 			File: provisioner.File{
-				Path: "/etc/haproxy/certs/server.crt",
+				Path:        "/etc/haproxy/certs/server.crt",
+				Permissions: "0644",
 			},
 			ContentFrom: &bootstrapv2.ContentSource{
 				SecretRef: &bootstrapv2.ContentSourceRef{
@@ -580,6 +582,8 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 		{
 			File: provisioner.File{
 				Path: "/etc/haproxy/certs/server.key",
+				// A private key, so not the 0644 every renderer falls back to.
+				Permissions: "0600",
 			},
 			ContentFrom: &bootstrapv2.ContentSource{
 				SecretRef: &bootstrapv2.ContentSourceRef{
