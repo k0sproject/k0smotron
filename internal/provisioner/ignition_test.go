@@ -485,3 +485,23 @@ func TestIgnitionRejectsUndecodableContent(t *testing.T) {
 	})
 	require.ErrorContains(t, err, "failed to base64 decode")
 }
+
+// TestIgnitionDefaultsEmptyPermissions covers files with no permissions set. k0smotron
+// generates three such files itself for a worker that has ingress enabled.
+func TestIgnitionDefaultsEmptyPermissions(t *testing.T) {
+	out, err := (&IgnitionProvisioner{Variant: "fcos", Version: "1.5.0"}).ToProvisionData(
+		&InputProvisionData{Files: []File{{Path: "/etc/haproxy/certs/ca.crt", Content: "cert"}}})
+	require.NoError(t, err)
+
+	entry := fileEntry(t, out)
+	require.Equal(t, float64(0o644), entry["mode"])
+	require.Equal(t, "cert", string(bodyBytes(t, entry["contents"].(map[string]any))))
+}
+
+// TestIgnitionRejectsUnparseablePermissions keeps the fallback from swallowing a value
+// the user did set and got wrong.
+func TestIgnitionRejectsUnparseablePermissions(t *testing.T) {
+	_, err := (&IgnitionProvisioner{Variant: "fcos", Version: "1.5.0"}).ToProvisionData(
+		&InputProvisionData{Files: []File{{Path: "/a", Content: "x", Permissions: "not-a-mode"}}})
+	require.ErrorContains(t, err, "failed to parse permissions of file /a")
+}
