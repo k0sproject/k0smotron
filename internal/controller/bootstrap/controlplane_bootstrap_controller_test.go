@@ -33,7 +33,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
@@ -217,21 +216,21 @@ func TestControlPlaneController_detectJoinHost(t *testing.T) {
 		},
 	}
 
-	firstControllerMachine := &clusterv1.Machine{
+	scope.machines = collections.FromMachines(&clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{Name: "first-controller"},
 		Status: clusterv1.MachineStatus{
 			Addresses: clusterv1.MachineAddresses{
 				{Type: clusterv1.MachineExternalIP, Address: "203.0.113.10"},
 			},
 		},
-	}
+	})
 
 	c := &ControlPlaneController{}
 
 	t.Run("trusted CA reaches the control plane endpoint", func(t *testing.T) {
 		ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: trustedCACert}}
 
-		host, err := c.detectJoinHost(context.Background(), scope, firstControllerMachine, ca)
+		host, err := c.detectJoinHost(context.Background(), scope, ca)
 
 		require.NoError(t, err)
 		require.Equal(t, server.URL, host)
@@ -240,14 +239,14 @@ func TestControlPlaneController_detectJoinHost(t *testing.T) {
 	t.Run("CA that did not sign the endpoint falls back to the first controller", func(t *testing.T) {
 		ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: untrustedCACert}}
 
-		host, err := c.detectJoinHost(context.Background(), scope, firstControllerMachine, ca)
+		host, err := c.detectJoinHost(context.Background(), scope, ca)
 
 		require.NoError(t, err)
 		require.Equal(t, "https://203.0.113.10:"+serverURL.Port(), host)
 	})
 
 	t.Run("missing CA is an error", func(t *testing.T) {
-		_, err := c.detectJoinHost(context.Background(), scope, firstControllerMachine, nil)
+		_, err := c.detectJoinHost(context.Background(), scope, nil)
 
 		require.Error(t, err)
 	})
@@ -274,9 +273,9 @@ func selfSignedCertPEM(t *testing.T) []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
 }
 
-// TestGenerateBootstrapDataForControllerWaitsWithAnError covers the join path finding no
-// running controller to point at. A nil error there would read as success.
-func TestGenerateBootstrapDataForControllerWaitsWithAnError(t *testing.T) {
+// TestFindFirstControllerIPWaitsWithAnError covers finding no running controller to
+// point at. A nil error there would read as success further up.
+func TestFindFirstControllerIPWaitsWithAnError(t *testing.T) {
 	machine := func(name string, age time.Duration, phase clusterv1.MachinePhase) *clusterv1.Machine {
 		return &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
@@ -287,8 +286,7 @@ func TestGenerateBootstrapDataForControllerWaitsWithAnError(t *testing.T) {
 		}
 	}
 
-	// The oldest machine is not the one being bootstrapped, so this takes the join
-	// path, and it is still Pending, so there is no join target yet.
+	// The only other machine is still Pending, so there is no join target yet.
 	scope := &ControllerScope{
 		Config: &bootstrapv2.K0sControllerConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "cp-1"},
@@ -303,8 +301,8 @@ func TestGenerateBootstrapDataForControllerWaitsWithAnError(t *testing.T) {
 	}
 
 	c := &ControlPlaneController{}
-	data, err := c.generateBootstrapDataForController(context.TODO(), logr.Discard(), scope)
+	host, err := c.findFirstControllerIP(context.TODO(), scope)
 
 	require.ErrorIs(t, err, errInitialControllerMachineNotInitialize)
-	require.Nil(t, data)
+	require.Empty(t, host)
 }
