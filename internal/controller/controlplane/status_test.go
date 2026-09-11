@@ -1846,14 +1846,14 @@ func scalingScope(desired int32, active, deleting, upToDate int) *controlplane {
 		deletedMachines:  collections.New(),
 		upToDateMachines: collections.New(),
 	}
-	for i := 0; i < active; i++ {
+	for i := range active {
 		m := machineWithConditions(fmt.Sprintf("active%d", i), false)
 		scope.activeMachines.Insert(m)
 		if i < upToDate {
 			scope.upToDateMachines.Insert(m)
 		}
 	}
-	for i := 0; i < deleting; i++ {
+	for i := range deleting {
 		scope.deletedMachines.Insert(machineWithConditions(fmt.Sprintf("deleting%d", i), true))
 	}
 	scope.notUpToDateMachines = scope.activeMachines.Difference(scope.upToDateMachines)
@@ -1906,6 +1906,48 @@ func TestSetScalingConditionsCountsMachines(t *testing.T) {
 		require.Equal(t, metav1.ConditionFalse, up.Status)
 		require.Equal(t, metav1.ConditionTrue, down.Status)
 		require.Contains(t, down.Message, "4/3")
+	})
+}
+
+// TestSetRollingOutCondition covers the signal the scaling conditions no longer
+// carry, so rollout progress is still visible somewhere.
+func TestSetRollingOutCondition(t *testing.T) {
+	rollingOut := func(scope *controlplane) *metav1.Condition {
+		setRollingOutCondition(scope)
+
+		return conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneRollingOutCondition))
+	}
+
+	t.Run("every machine up to date", func(t *testing.T) {
+		cond := rollingOut(scalingScope(3, 3, 0, 3))
+
+		require.NotNil(t, cond)
+		require.Equal(t, metav1.ConditionFalse, cond.Status)
+		require.Equal(t, cpv1beta2.K0sControlPlaneNotRollingOutReason, cond.Reason)
+	})
+
+	t.Run("a machine left to replace", func(t *testing.T) {
+		cond := rollingOut(scalingScope(3, 3, 0, 1))
+
+		require.NotNil(t, cond)
+		require.Equal(t, metav1.ConditionTrue, cond.Status)
+		require.Equal(t, cpv1beta2.K0sControlPlaneRollingOutReason, cond.Reason)
+		require.Contains(t, cond.Message, "2 not up-to-date")
+	})
+
+	t.Run("no machines at all", func(t *testing.T) {
+		cond := rollingOut(scalingScope(3, 0, 0, 0))
+
+		require.NotNil(t, cond)
+		require.Equal(t, metav1.ConditionFalse, cond.Status)
+	})
+
+	t.Run("the status path sets it", func(t *testing.T) {
+		scope := scalingScope(3, 3, 0, 1)
+		require.NoError(t, computeReplicas(scope))
+
+		require.NotNil(t, conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneRollingOutCondition)),
+			"the condition has to come from the status path, not only from its own function")
 	})
 }
 

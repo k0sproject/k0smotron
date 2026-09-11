@@ -113,8 +113,32 @@ func computeReplicas(controlplane *controlplane) error {
 	}
 
 	setScalingConditions(controlplane)
+	setRollingOutCondition(controlplane)
 
 	return nil
+}
+
+// setRollingOutCondition reports whether a machine still has to be replaced or
+// updated, which is the progress the scaling conditions must not carry.
+func setRollingOutCondition(controlplane *controlplane) {
+	rollingOutReplicas := controlplane.notUpToDateMachines.Len()
+
+	if rollingOutReplicas == 0 {
+		conditions.Set(controlplane.kcp, metav1.Condition{
+			Type:   string(cpv1beta2.K0sControlPlaneRollingOutCondition),
+			Status: metav1.ConditionFalse,
+			Reason: cpv1beta2.K0sControlPlaneNotRollingOutReason,
+		})
+
+		return
+	}
+
+	conditions.Set(controlplane.kcp, metav1.Condition{
+		Type:    string(cpv1beta2.K0sControlPlaneRollingOutCondition),
+		Status:  metav1.ConditionTrue,
+		Reason:  cpv1beta2.K0sControlPlaneRollingOutReason,
+		Message: fmt.Sprintf("Rolling out %d not up-to-date replicas", rollingOutReplicas),
+	})
 }
 
 func setScalingConditions(controlplane *controlplane) {

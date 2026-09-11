@@ -51,4 +51,14 @@ const (
 
 	// K0sControlPlaneNotScalingDownReason surfaces when actual replicas <= desired replicas.
 	K0sControlPlaneNotScalingDownReason = clusterv1.NotScalingDownReason
+
+	// K0sControlPlaneRollingOutCondition is true while a machine still has to be
+	// replaced or updated to match the spec, which scaling does not report.
+	K0sControlPlaneRollingOutCondition = clusterv1.RollingOutCondition
+
+	// K0sControlPlaneRollingOutReason surfaces when at least one machine is not up to date.
+	K0sControlPlaneRollingOutReason = clusterv1.RollingOutReason
+
+	// K0sControlPlaneNotRollingOutReason surfaces when every machine is up to date.
+	K0sControlPlaneNotRollingOutReason = clusterv1.NotRollingOutReason
 )
