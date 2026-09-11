@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"unicode/utf8"
 )
 
 // PowerShellProvisioner implements the Provisioner interface for cloud-init.
@@ -72,8 +71,8 @@ func renderWriteFile(buf *bytes.Buffer, f File) error {
 
 	// Ensure directory exists
 	fmt.Fprintf(buf,
-		"New-Item -ItemType Directory -Force -Path \"%s\" | Out-Null\n",
-		escapePS(dir),
+		"New-Item -ItemType Directory -Force -Path %s | Out-Null\n",
+		quotePS(dir),
 	)
 
 	// PowerShell has no notion of a content encoding, so decode here.
@@ -82,53 +81,29 @@ func renderWriteFile(buf *bytes.Buffer, f File) error {
 		return err
 	}
 
-	// A here string cannot hold bytes outside UTF8, and it drops the newline
-	// before its terminator, so those two cases go through base64 instead.
-	if f.Append || !utf8.Valid(decoded) {
-		fmt.Fprintf(buf, "$bytes = [System.Convert]::FromBase64String(\"%s\")\n",
-			base64.StdEncoding.EncodeToString(decoded))
+	// Content goes out as base64 rather than as a here string. A here string is
+	// script text, so a line holding its terminator escapes into the script.
+	fmt.Fprintf(buf, "$bytes = [System.Convert]::FromBase64String(%s)\n",
+		quotePS(base64.StdEncoding.EncodeToString(decoded)))
 
-		if f.Append {
-			fmt.Fprintf(buf, `$stream = [System.IO.File]::Open(
-  "%s",
+	if f.Append {
+		fmt.Fprintf(buf, `$stream = [System.IO.File]::Open(
+  %s,
   [System.IO.FileMode]::Append
 )
 $stream.Write($bytes, 0, $bytes.Length)
-$stream.Close()`+"\n", escapePS(f.Path))
-
-			return nil
-		}
-
-		fmt.Fprintf(buf, "[System.IO.File]::WriteAllBytes(\"%s\", $bytes)\n", escapePS(f.Path))
+$stream.Close()`+"\n", quotePS(f.Path))
 
 		return nil
 	}
 
-	content := normalizeNewlines(string(decoded))
-
-	// Here-string write
-	buf.WriteString("$file = @'\n")
-	buf.WriteString(content)
-	if !strings.HasSuffix(content, "\n") {
-		buf.WriteString("\n")
-	}
-	buf.WriteString("'@\n")
-	fmt.Fprintf(buf, `[System.IO.File]::WriteAllText(
-  "%s",
-  $file.Trim(),
-  [System.Text.Encoding]::ASCII
-)`+"\n", escapePS(f.Path))
+	fmt.Fprintf(buf, "[System.IO.File]::WriteAllBytes(%s, $bytes)\n", quotePS(f.Path))
 
 	return nil
 }
 
-func escapePS(s string) string {
-	// PowerShell double-quoted string escaping
-	return strings.ReplaceAll(s, `"`, `""`)
-}
-
-func normalizeNewlines(s string) string {
-	s = strings.ReplaceAll(s, "\r\n", "\n")
-	s = strings.ReplaceAll(s, "\r", "\n")
-	return s
+// quotePS renders s as a PowerShell single quoted string, which is literal, so a
+// path cannot expand a variable or run a subexpression.
+func quotePS(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }

@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var psBytesRe = regexp.MustCompile(`FromBase64String\("([^"]*)"\)`)
+var psBytesRe = regexp.MustCompile(`FromBase64String\('([^']*)'\)`)
 
 // psBody decodes the payload of a script that took the byte path.
 func psBody(t *testing.T, script string) []byte {
@@ -46,15 +46,15 @@ func render(t *testing.T, f File) string {
 	return string(out)
 }
 
-// TestPowerShellKeepsHereStringForPlainContent pins the existing output, so a
-// config that worked before this change renders exactly as it did.
-func TestPowerShellKeepsHereStringForPlainContent(t *testing.T) {
+// TestPowerShellSendsPlainContentAsBytes covers ordinary content taking the byte path
+// too, so no file body is ever emitted as script text.
+func TestPowerShellSendsPlainContentAsBytes(t *testing.T) {
 	s := render(t, File{Path: `C:\k\a.conf`, Content: "body", Permissions: "0644"})
 
-	require.Contains(t, s, "$file = @'\nbody\n'@")
-	require.Contains(t, s, "$file.Trim()")
-	require.Contains(t, s, "[System.Text.Encoding]::ASCII")
-	require.NotContains(t, s, "FromBase64String")
+	require.Equal(t, "body", string(psBody(t, s)))
+	require.Contains(t, s, "[System.IO.File]::WriteAllBytes(")
+	require.NotContains(t, s, "@'")
+	require.NotContains(t, s, "$file.Trim()")
 }
 
 func TestPowerShellDecodesBeforeRendering(t *testing.T) {
@@ -64,12 +64,12 @@ func TestPowerShellDecodesBeforeRendering(t *testing.T) {
 		Encoding: Base64,
 	})
 
-	require.Contains(t, s, "$file = @'\ndecoded body\n'@")
+	require.Equal(t, "decoded body", string(psBody(t, s)))
 }
 
-// TestPowerShellUsesBytesWhereAHereStringCannot covers the two cases a here
-// string cannot represent, neither of which an existing config can reach.
-func TestPowerShellUsesBytesWhereAHereStringCannot(t *testing.T) {
+// TestPowerShellPreservesContentExactly covers bodies that the old here string
+// mangled or could not represent at all.
+func TestPowerShellPreservesContentExactly(t *testing.T) {
 	t.Run("content outside UTF8", func(t *testing.T) {
 		raw := []byte{0x00, 0xff, 0x1b}
 
@@ -101,4 +101,75 @@ func TestPowerShellRejectsUndecodableContent(t *testing.T) {
 	})
 	require.ErrorContains(t, err, "failed to base64 decode")
 	require.ErrorContains(t, err, `C:\k\x`)
+}
+
+// TestPowerShellQuotesPathsLiterally covers a path reaching the target as data rather
+// than as script. Single quoted PowerShell strings expand nothing.
+func TestPowerShellQuotesPathsLiterally(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "a subexpression stays inert",
+			path: `C:\k\$(ni PWNED).conf`,
+			want: `'C:\k\$(ni PWNED).conf'`,
+		},
+		{
+			name: "a variable is not expanded",
+			path: `C:\k\$env:TEMP.conf`,
+			want: `'C:\k\$env:TEMP.conf'`,
+		},
+		{
+			name: "an embedded quote is doubled",
+			path: `C:\k\a'b.conf`,
+			want: `'C:\k\a''b.conf'`,
+		},
+		{
+			name: "a double quote needs no escaping now",
+			path: `C:\k\a"b.conf`,
+			want: `'C:\k\a"b.conf'`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := render(t, File{Path: tc.path, Content: "body", Permissions: "0644"})
+
+			require.Contains(t, s, "WriteAllBytes("+tc.want+", $bytes)")
+			// the old form put the path in a double quoted string, which expands
+			require.NotContains(t, s, `WriteAllBytes("`)
+		})
+	}
+}
+
+// TestPowerShellQuotesPathsOnEveryWriteForm covers the three other places a path is
+// emitted, since each one used to build its own double quoted string.
+func TestPowerShellQuotesPathsOnEveryWriteForm(t *testing.T) {
+	path := `C:\k\$(ni PWNED)\a.conf`
+
+	// New-Item takes the directory, so it is quoted on every render
+	require.Contains(t, render(t, File{Path: path, Content: "body"}),
+		`-Path 'C:/k/$(ni PWNED)' | Out-Null`)
+
+	// append routes through Open
+	require.Contains(t, render(t, File{Path: path, Content: "body", Append: true}),
+		"Open(\n  '"+path+"',")
+
+	// the plain write form
+	require.Contains(t, render(t, File{Path: path, Content: "body"}),
+		`WriteAllBytes('`+path+`', $bytes)`)
+}
+
+// TestPowerShellContentCannotEscapeIntoScript covers a file body that used to close the
+// here string that carried it, putting everything after the terminator into the script.
+func TestPowerShellContentCannotEscapeIntoScript(t *testing.T) {
+	body := "foo\n'@\nWrite-Host PWNED\n"
+
+	s := render(t, File{Path: `C:\k\a.conf`, Content: body, Permissions: "0644"})
+
+	// the body survives whole rather than being truncated at the terminator
+	require.Equal(t, body, string(psBody(t, s)))
+	// and none of it reaches the script as text
+	require.NotContains(t, s, "Write-Host PWNED")
+	require.NotContains(t, s, "@'")
 }

@@ -47,15 +47,9 @@ func TestPowerShellAWS(t *testing.T) {
 	assert.Equal(t, `<powershell>
 
 # --- write_file ---
-New-Item -ItemType Directory -Force -Path "/etc" | Out-Null
-$file = @'
-foobar
-'@
-[System.IO.File]::WriteAllText(
-  "/etc/hosts",
-  $file.Trim(),
-  [System.Text.Encoding]::ASCII
-)
+New-Item -ItemType Directory -Force -Path '/etc' | Out-Null
+$bytes = [System.Convert]::FromBase64String('Zm9vYmFy')
+[System.IO.File]::WriteAllBytes('/etc/hosts', $bytes)
 
 # --- runcmd ---
 echo 'hello world'
@@ -90,15 +84,9 @@ func TestCustomPowerShellAWS(t *testing.T) {
 	assert.Equal(t, `<powershell>
 
 # --- write_file ---
-New-Item -ItemType Directory -Force -Path "/etc" | Out-Null
-$file = @'
-foobar
-'@
-[System.IO.File]::WriteAllText(
-  "/etc/hosts",
-  $file.Trim(),
-  [System.Text.Encoding]::ASCII
-)
+New-Item -ItemType Directory -Force -Path '/etc' | Out-Null
+$bytes = [System.Convert]::FromBase64String('Zm9vYmFy')
+[System.IO.File]::WriteAllBytes('/etc/hosts', $bytes)
 
 # --- runcmd ---
 echo 'hello world'
