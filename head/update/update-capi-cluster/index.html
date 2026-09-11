@@ -2934,7 +2934,7 @@ You are not currently viewing the documentation for the current stable release o
 <li><strong>Changes to <code>spec.k0sConfigSpec.k0s</code></strong> (the k0s <code>ClusterConfig</code> object) are applied using <a href="https://docs.k0sproject.io/stable/dynamic-configuration/">k0s dynamic configuration</a>. k0smotron patches the <code>ClusterConfig</code> resource directly in the workload cluster without replacing any machines. Note that some fields cannot be changed via dynamic configuration and are ignored. See the <a href="https://docs.k0sproject.io/stable/dynamic-configuration/#cluster-configuration-vs-controller-node-configuration">k0s documentation</a> for the full list.</li>
 </ul>
 <ul>
-<li><strong>Changes to any other field in <code>spec.k0sConfigSpec</code></strong> (such as <code>args</code>, <code>files</code>, <code>preStartCommands</code>, etc.) are detected by comparing a hash of the bootstrap config stored in each machine's annotations against the current spec. Machines whose config no longer matches are marked for replacement, using the Recreate workflow regardless of <code>spec.updateStrategy</code>. </li>
+<li><strong>Changes to any other field in <code>spec.k0sConfigSpec</code></strong> (such as <code>args</code>, <code>files</code>, <code>preK0sCommands</code>, etc.) are detected by comparing a hash of the bootstrap config stored in each machine's annotations against the current spec. Machines whose config no longer matches are marked for replacement, using the Recreate workflow regardless of <code>spec.updateStrategy</code>. </li>
 </ul>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
