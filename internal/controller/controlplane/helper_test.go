@@ -19,6 +19,7 @@ limitations under the License.
 package controlplane
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -29,7 +30,9 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestHasControllerConfigChanged(t *testing.T) {
@@ -435,4 +438,62 @@ func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
 	require.NoError(t, legacyConfig.ConvertTo(convertedLegacyConfig))
 	// bootstrapConfigs is only used by the deprecated fallback path; the annotation path is taken here.
 	require.True(t, isBootstrapConfigUpToDate(convertedLegacyConfig, kcp, machine))
+}
+
+// TestGenerateMachineCopiesDeletionTimeouts covers the timeouts reaching the Machine,
+// which is the only place the machine controller reads them from.
+func TestGenerateMachineCopiesDeletionTimeouts(t *testing.T) {
+	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+
+	newKCP := func(deletion cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec) *cpv1beta2.K0sControlPlane {
+		return &cpv1beta2.K0sControlPlane{
+			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+			Spec: cpv1beta2.K0sControlPlaneSpec{
+				Version: "v1.31.0",
+				MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
+					Spec: cpv1beta2.K0sControlPlaneMachineTemplateSpec{Deletion: deletion},
+				},
+			},
+		}
+	}
+
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(machineScheme(t)).Build()}
+
+	t.Run("set timeouts are carried over", func(t *testing.T) {
+		kcp := newKCP(cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec{
+			NodeDrainTimeoutSeconds:        new(int32(60)),
+			NodeVolumeDetachTimeoutSeconds: new(int32(120)),
+			NodeDeletionTimeoutSeconds:     new(int32(30)),
+		})
+
+		machine, err := c.generateMachine(context.Background(), "test-0", cluster, kcp,
+			clusterv1.ContractVersionedObjectReference{}, "")
+		require.NoError(t, err)
+
+		require.Equal(t, int32(60), *machine.Spec.Deletion.NodeDrainTimeoutSeconds)
+		require.Equal(t, int32(120), *machine.Spec.Deletion.NodeVolumeDetachTimeoutSeconds)
+		require.Equal(t, int32(30), *machine.Spec.Deletion.NodeDeletionTimeoutSeconds)
+	})
+
+	t.Run("unset timeouts stay unset rather than becoming zero", func(t *testing.T) {
+		machine, err := c.generateMachine(context.Background(), "test-0", cluster,
+			newKCP(cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec{}),
+			clusterv1.ContractVersionedObjectReference{}, "")
+		require.NoError(t, err)
+
+		require.Nil(t, machine.Spec.Deletion.NodeDrainTimeoutSeconds)
+		require.Nil(t, machine.Spec.Deletion.NodeVolumeDetachTimeoutSeconds)
+		require.Nil(t, machine.Spec.Deletion.NodeDeletionTimeoutSeconds)
+	})
+}
+
+// machineScheme is the minimum needed for the owner reference generateMachine sets.
+func machineScheme(t *testing.T) *runtime.Scheme {
+	t.Helper()
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+
+	return scheme
 }
