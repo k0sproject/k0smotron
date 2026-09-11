@@ -54,7 +54,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/go-logr/logr"
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
@@ -253,7 +252,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	scope.machines = machines
 
-	bootstrapData, err := c.generateBootstrapDataForController(ctx, log, scope)
+	bootstrapData, err := c.generateBootstrapDataForController(ctx, scope)
 	if err != nil {
 		// if the bootstrap data generation corresponds to a controller that is not the initial one, it is common to try to obtain
 		// the IP of the first controller when has not yet been surfaced. This is required to create a join token. It is needed to
@@ -334,7 +333,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.Context, log logr.Logger, scope *ControllerScope) ([]byte, error) {
+func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.Context, scope *ControllerScope) ([]byte, error) {
 	var (
 		files      []provisioner.File
 		installCmd string
@@ -362,12 +361,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		}
 		installCmd = createCPInstallCmd(scope)
 	} else {
-		oldest := getFirstRunningMachineExcludingMachineToBootstrap(scope)
-		if oldest == nil {
-			log.Info("wait for initial control plane provisioning")
-			return nil, err
-		}
-		files, err = c.genControlPlaneJoinFiles(ctx, scope, files, oldest)
+		files, err = c.genControlPlaneJoinFiles(ctx, scope, files)
 		if err != nil {
 			return nil, err
 		}
@@ -433,7 +427,7 @@ func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context
 	return files, nil
 }
 
-func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File, firstControllerMachine *clusterv1.Machine) ([]provisioner.File, error) {
+func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File) ([]provisioner.File, error) {
 	log := log.FromContext(ctx).WithValues("K0sControllerConfig cluster", scope.Cluster.Name)
 
 	_, ca, err := c.getCerts(ctx, scope)
@@ -465,7 +459,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		return nil, err
 	}
 
-	host, err := c.detectJoinHost(ctx, scope, firstControllerMachine, ca)
+	host, err := c.detectJoinHost(ctx, scope, ca)
 	if err != nil {
 		log.Error(err, "Failed to detect join controller host")
 		return nil, err
@@ -672,7 +666,7 @@ func mergeControllerExtraArgs(scope *ControllerScope) []string {
 	return mergeExtraArgs(scope.installArgs, scope.ConfigOwner, scope.WorkerEnabled, scope.Config.Spec.UseSystemHostname)
 }
 
-func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, firstControllerMachine *clusterv1.Machine, ca *secret.Certificate) (string, error) {
+func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *ControllerScope, ca *secret.Certificate) (string, error) {
 	caCertPool := x509.NewCertPool()
 	if ca == nil || ca.KeyPair == nil || !caCertPool.AppendCertsFromPEM(ca.KeyPair.Cert) {
 		return "", errors.New("failed to load cluster CA certificate for join host detection")
@@ -704,7 +698,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		return host, nil
 	}
 
-	firstControllerIP, err := c.findFirstControllerIP(ctx, firstControllerMachine)
+	firstControllerIP, err := c.findFirstControllerIP(ctx, scope)
 	if err != nil {
 		return "", fmt.Errorf("failed to get first controller IP: %w", err)
 	}
@@ -712,7 +706,12 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 	return fmt.Sprintf("https://%s:%s", firstControllerIP, port), nil
 }
 
-func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, firstControllerMachine *clusterv1.Machine) (string, error) {
+func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, scope *ControllerScope) (string, error) {
+	firstControllerMachine := getFirstRunningMachineExcludingMachineToBootstrap(scope)
+	if firstControllerMachine == nil {
+		return "", fmt.Errorf("no running controller machine to join: %w", errInitialControllerMachineNotInitialize)
+	}
+
 	extAddr, intIPv4Addr, intAddr := "", "", ""
 	for _, addr := range firstControllerMachine.Status.Addresses {
 		if addr.Type == clusterv1.MachineExternalIP {

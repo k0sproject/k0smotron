@@ -41,6 +41,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/util/certs"
+	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/secret"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
@@ -215,21 +216,21 @@ func TestControlPlaneController_detectJoinHost(t *testing.T) {
 		},
 	}
 
-	firstControllerMachine := &clusterv1.Machine{
+	scope.machines = collections.FromMachines(&clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{Name: "first-controller"},
 		Status: clusterv1.MachineStatus{
 			Addresses: clusterv1.MachineAddresses{
 				{Type: clusterv1.MachineExternalIP, Address: "203.0.113.10"},
 			},
 		},
-	}
+	})
 
 	c := &ControlPlaneController{}
 
 	t.Run("trusted CA reaches the control plane endpoint", func(t *testing.T) {
 		ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: trustedCACert}}
 
-		host, err := c.detectJoinHost(context.Background(), scope, firstControllerMachine, ca)
+		host, err := c.detectJoinHost(context.Background(), scope, ca)
 
 		require.NoError(t, err)
 		require.Equal(t, server.URL, host)
@@ -238,14 +239,14 @@ func TestControlPlaneController_detectJoinHost(t *testing.T) {
 	t.Run("CA that did not sign the endpoint falls back to the first controller", func(t *testing.T) {
 		ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: untrustedCACert}}
 
-		host, err := c.detectJoinHost(context.Background(), scope, firstControllerMachine, ca)
+		host, err := c.detectJoinHost(context.Background(), scope, ca)
 
 		require.NoError(t, err)
 		require.Equal(t, "https://203.0.113.10:"+serverURL.Port(), host)
 	})
 
 	t.Run("missing CA is an error", func(t *testing.T) {
-		_, err := c.detectJoinHost(context.Background(), scope, firstControllerMachine, nil)
+		_, err := c.detectJoinHost(context.Background(), scope, nil)
 
 		require.Error(t, err)
 	})
@@ -270,4 +271,38 @@ func selfSignedCertPEM(t *testing.T) []byte {
 	require.NoError(t, err)
 
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+}
+
+// TestFindFirstControllerIPWaitsWithAnError covers finding no running controller to
+// point at. A nil error there would read as success further up.
+func TestFindFirstControllerIPWaitsWithAnError(t *testing.T) {
+	machine := func(name string, age time.Duration, phase clusterv1.MachinePhase) *clusterv1.Machine {
+		return &clusterv1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              name,
+				CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
+			},
+			Status: clusterv1.MachineStatus{Phase: string(phase)},
+		}
+	}
+
+	// The only other machine is still Pending, so there is no join target yet.
+	scope := &ControllerScope{
+		Config: &bootstrapv2.K0sControllerConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "cp-1"},
+			Spec: bootstrapv2.K0sControllerConfigSpec{
+				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+			},
+		},
+		machines: collections.FromMachines(
+			machine("cp-0", time.Hour, clusterv1.MachinePhasePending),
+			machine("cp-1", time.Minute, clusterv1.MachinePhaseProvisioning),
+		),
+	}
+
+	c := &ControlPlaneController{}
+	host, err := c.findFirstControllerIP(context.TODO(), scope)
+
+	require.ErrorIs(t, err, errInitialControllerMachineNotInitialize)
+	require.Empty(t, host)
 }
