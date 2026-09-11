@@ -18,6 +18,7 @@ package v1beta2
 import (
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/k0sproject/version"
@@ -448,8 +449,17 @@ func (kcs *K0sConfigSpec) WorkerEnabled() bool {
 		return false
 	}
 	for _, arg := range kcs.Args {
-		switch arg {
-		case "--enable-worker", "--enable-worker=true", "--single":
+		name, value, hasValue := strings.Cut(arg, "=")
+		if name != "--enable-worker" && name != "--single" {
+			continue
+		}
+
+		// Both are pflag bools, so a bare flag means true and a value is anything
+		// ParseBool accepts rather than only the word true.
+		if !hasValue {
+			return true
+		}
+		if enabled, err := strconv.ParseBool(value); err == nil && enabled {
 			return true
 		}
 	}

@@ -37,6 +37,19 @@ func TestK0sConfigSpecWorkerEnabled(t *testing.T) {
 		{name: "single", args: []string{"--single"}, want: true},
 		{name: "single among others", args: []string{"--no-taints", "--single"}, want: true},
 		{name: "unrelated flag with worker substring", args: []string{"--enable-worker-foo"}, want: false},
+		// pflag parses a bool value with ParseBool, so every one of these is
+		// accepted by k0s and has to mean the same thing here.
+		{name: "enable-worker=1", args: []string{"--enable-worker=1"}, want: true},
+		{name: "enable-worker=t", args: []string{"--enable-worker=t"}, want: true},
+		{name: "enable-worker=TRUE", args: []string{"--enable-worker=TRUE"}, want: true},
+		{name: "single=true", args: []string{"--single=true"}, want: true},
+		{name: "enable-worker=false", args: []string{"--enable-worker=false"}, want: false},
+		{name: "enable-worker=0", args: []string{"--enable-worker=0"}, want: false},
+		{name: "single=False", args: []string{"--single=False"}, want: false},
+		// k0s itself refuses to start on these, so worker mode is unreachable.
+		{name: "value pflag rejects", args: []string{"--enable-worker=yes"}, want: false},
+		{name: "empty value", args: []string{"--enable-worker="}, want: false},
+		{name: "a false value does not mask a later true one", args: []string{"--enable-worker=false", "--single"}, want: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			spec := &K0sConfigSpec{Args: tc.args}
