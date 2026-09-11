@@ -1,10 +1,11 @@
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
+    cert-manager.io/inject-ca-from: k0smotron/k0smotron-serving-cert
     controller-gen.kubebuilder.io/version: v0.18.0
   labels:
+    cluster.x-k8s.io/provider: k0sproject-k0smotron
     cluster.x-k8s.io/v1beta1: v1beta1
     cluster.x-k8s.io/v1beta2: v1beta2
   name: k0smotroncontrolplanetemplates.controlplane.cluster.x-k8s.io
