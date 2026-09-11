@@ -25,10 +25,8 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/k0sproject/version"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -44,14 +42,13 @@ type K0sControlPlaneValidator struct{}
 // K0sControlPlaneDefaulter struct is responsible for setting default values for the K0sControlPlane resource when it is created or updated.
 type K0sControlPlaneDefaulter struct{}
 
-var _ webhook.CustomValidator = &K0sControlPlaneValidator{}
-var _ webhook.CustomDefaulter = &K0sControlPlaneDefaulter{}
+var _ admission.Validator[*K0sControlPlane] = &K0sControlPlaneValidator{}
+var _ admission.Defaulter[*K0sControlPlane] = &K0sControlPlaneDefaulter{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type K0sControlPlane.
-func (d *K0sControlPlaneDefaulter) Default(_ context.Context, obj runtime.Object) error {
-	_, ok := obj.(*K0sControlPlane)
-	if !ok {
-		return fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
+func (d *K0sControlPlaneDefaulter) Default(_ context.Context, obj *K0sControlPlane) error {
+	if obj == nil {
+		return fmt.Errorf("expected a K0sControlPlane object but got nil")
 	}
 
 	return nil
@@ -67,10 +64,9 @@ func (v *K0sControlPlaneValidator) validateVersionSuffix(version string) admissi
 }
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	kcp, ok := obj.(*K0sControlPlane)
-	if !ok {
-		return nil, fmt.Errorf("expected a K0sControlPlane object but got %T", obj)
+func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, kcp *K0sControlPlane) (admission.Warnings, error) {
+	if kcp == nil {
+		return nil, fmt.Errorf("expected a K0sControlPlane object but got nil")
 	}
 
 	warnings := v.validateVersionSuffix(kcp.Spec.Version)
@@ -78,15 +74,9 @@ func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, obj runtime
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	newKCP, ok := newObj.(*K0sControlPlane)
-	if !ok {
-		return nil, fmt.Errorf("expected a new K0sControlPlane object but got %T", newObj)
-	}
-	oldKCP, ok := oldObj.(*K0sControlPlane)
-	if !ok {
-		return nil, fmt.Errorf("expected a old K0sControlPlane object but got %T", oldObj)
-	}
+func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, newObj *K0sControlPlane) (admission.Warnings, error) {
+	newKCP := newObj
+	oldKCP := oldObj
 
 	warnings := v.validateVersionSuffix(newKCP.Spec.Version)
 	if oldKCP.Spec.Version != newKCP.Spec.Version {
@@ -109,7 +99,7 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldObj, new
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
-func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ *K0sControlPlane) (admission.Warnings, error) {
 	return nil, nil
 }
 
@@ -182,8 +172,7 @@ func denyRecreateOnSingleClusters(kcp *K0sControlPlane) error {
 
 // SetupK0sControlPlaneWebhookWithManager registers the webhook for K0sControlPlane in the manager.
 func SetupK0sControlPlaneWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&K0sControlPlane{}).
+	return ctrl.NewWebhookManagedBy(mgr, &K0sControlPlane{}).
 		WithValidator(&K0sControlPlaneValidator{}).
 		WithDefaulter(&K0sControlPlaneDefaulter{}).
 		Complete()
