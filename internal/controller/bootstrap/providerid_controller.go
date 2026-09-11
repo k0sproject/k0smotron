@@ -39,6 +39,10 @@ import (
 	k0smoutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 )
 
+// nodeListPageSize bounds one node list request. The client carries a request
+// timeout, which a whole large cluster in a single response can outlast.
+const nodeListPageSize = 500
+
 // ProviderIDController is responsible for reconciling the ProviderID field of the Machine resource.
 type ProviderIDController struct {
 	client.Client
@@ -89,39 +93,12 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, fmt.Errorf("can't get kube client for cluster %s/%s: %w. may not be created yet", machine.Namespace, machine.Spec.ClusterName, err)
 	}
 
-	nodes, err := childClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	node, providerIDSet, err := nodeForMachine(ctx, childClient.CoreV1().Nodes().List, machine)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to list nodes in cluster %s/%s: %w", cluster.Namespace, cluster.Name, err)
 	}
-
-	var node *corev1.Node
-	for _, n := range nodes.Items {
-		if n.Spec.ProviderID == machine.Spec.ProviderID {
-			// ProviderID is already set on the node
-			return ctrl.Result{}, nil
-		}
-
-		// If node name matches machine name, we have found our node
-		if n.Name == machine.GetName() {
-			node = &n
-			break
-		}
-
-		// Check k0smotron.io/machine-name node label
-		if val, ok := n.Labels[machineNameNodeLabel]; ok && val == machine.GetName() {
-			node = &n
-			break
-		}
-
-		// Check node addresses against machine addresses
-		for _, addr := range machine.Status.Addresses {
-			for _, nodeAddr := range n.Status.Addresses {
-				if addr.Address == nodeAddr.Address && !net.ParseIP(nodeAddr.Address).IsLoopback() {
-					node = &n
-					break
-				}
-			}
-		}
+	if providerIDSet {
+		return ctrl.Result{}, nil
 	}
 
 	if node == nil {
@@ -145,6 +122,56 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// listNodes is the node list call, which a test can stand in for.
+type listNodes func(ctx context.Context, opts metav1.ListOptions) (*corev1.NodeList, error)
+
+// nodeForMachine finds the node the machine's providerID belongs on, a page at a
+// time. The bool reports the providerID already being on a node.
+func nodeForMachine(ctx context.Context, list listNodes, machine *clusterv1.Machine) (*corev1.Node, bool, error) {
+	opts := metav1.ListOptions{Limit: nodeListPageSize}
+
+	for {
+		nodes, err := list(ctx, opts)
+		if err != nil {
+			return nil, false, err
+		}
+
+		for i := range nodes.Items {
+			n := &nodes.Items[i]
+
+			if n.Spec.ProviderID == machine.Spec.ProviderID {
+				// ProviderID is already set on the node
+				return nil, true, nil
+			}
+
+			// If node name matches machine name, we have found our node
+			if n.Name == machine.GetName() {
+				return n, false, nil
+			}
+
+			// Check k0smotron.io/machine-name node label
+			if val, ok := n.Labels[machineNameNodeLabel]; ok && val == machine.GetName() {
+				return n, false, nil
+			}
+
+			// Check node addresses against machine addresses
+			for _, addr := range machine.Status.Addresses {
+				for _, nodeAddr := range n.Status.Addresses {
+					if addr.Address == nodeAddr.Address && !net.ParseIP(nodeAddr.Address).IsLoopback() {
+						return n, false, nil
+					}
+				}
+			}
+		}
+
+		if nodes.Continue == "" {
+			return nil, false, nil
+		}
+
+		opts.Continue = nodes.Continue
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
