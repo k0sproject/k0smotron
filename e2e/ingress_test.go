@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	e2eutil "github.com/k0sproject/k0smotron/v2/e2e/util"
@@ -182,18 +183,32 @@ func ingressSupportSpec(flavor string) func(t *testing.T) {
 		out, err := podexec.PodExecCmdOutput(ctx, bootstrapClusterProxy.GetClientSet(), bootstrapClusterProxy.GetRESTConfig(), podList.Items[0].Name, testNamespace.Name, "k0s kc logs -n kube-system ds/konnectivity-agent")
 		require.NoError(t, err)
 		t.Logf("Konnectivity agent logs:\n%s", out)
+		// The konnectivity agent is deployed by k0s and reaches the konnectivity
+		// server through the ingress (konnectivityHost:ingressPort). This log line
+		// proves the tunnel to the server was established.
 		require.Contains(t, out, "successfully connected to new proxy server")
+
+		caSecret := &corev1.Secret{}
+		require.NoError(t, bootstrapClusterProxy.GetClient().Get(ctx, client.ObjectKey{
+			Namespace: workloadClusterNamespace,
+			Name:      secret.Name(workloadClusterName, secret.ClusterCA),
+		}, caSecret), "Should get cluster CA secret")
+		caPEM := caSecret.Data["tls.crt"]
+		require.NotEmpty(t, caPEM, "cluster CA certificate should not be empty")
 
 		for _, m := range machineList.Items {
 			var (
 				stdout bytes.Buffer
 				stderr bytes.Buffer
 			)
-			cmd := exec.Command("docker", "exec", m.Name, "curl", "https://10.128.0.1/healthz", "--cacert", "/etc/haproxy/certs/ca.crt")
+			// Write the cluster CA into the node
+			cmd := exec.Command("docker", "exec", "-i", m.Name, "sh", "-c",
+				"cat > /tmp/cluster-ca.crt && curl -sS --cacert /tmp/cluster-ca.crt https://10.128.0.1/healthz")
+			cmd.Stdin = bytes.NewReader(caPEM)
 			cmd.Stdout = &stdout
 			cmd.Stderr = &stderr
 			err = cmd.Run()
-			require.NoError(t, err, stderr.String())
+			require.NoError(t, err, "healthz through proxy on %s failed: %s", m.Name, stderr.String())
 			require.Equal(t, "ok", stdout.String(), "Expected to get 'ok' from the healthz endpoint")
 		}
 		fmt.Println("All good")

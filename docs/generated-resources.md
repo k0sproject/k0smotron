@@ -84,16 +84,17 @@ The following resources are created and managed by the K0smotron Cluster in the 
 - **Condition**: Only created when `spec.monitoring.enabled` is `true`
 - **Example**: `kmc-docker-test-prometheus-config` and `kmc-docker-test-prometheus-config-nginx`
 
-##### Ingress Manifests ConfigMaps (when ingress is enabled)
+##### Ingress Manifests ConfigMap (when ingress is enabled)
 
-- **API Ingress ConfigMap**: `kmc-<cluster-name>-ingress`
-  - **Component**: `ingress`
-  - **Purpose**: Contains HAProxy manifests for API server ingress
 - **Konnectivity Ingress ConfigMap**: `kmc-<cluster-name>-ingress-konnectivity`
   - **Component**: `ingress`
   - **Purpose**: Contains Konnectivity agent manifests
-- **Condition**: Only created when `spec.ingress` is specified
-- **Example**: `kmc-docker-test-ingress` and `kmc-docker-test-ingress-konnectivity`
+  - **Condition**: Only created when `spec.ingress` is specified **and** the k0s version does not deploy the ingress
+    Konnectivity agent natively (k0s older than v1.34.1+k0s.0)
+- **Example**: `kmc-docker-test-ingress-konnectivity`
+
+The API server ingress manifests are shipped in a Secret, not a ConfigMap. See
+[Ingress Manifests Secret](#ingress-manifests-secret-when-ingress-is-enabled).
 
 ### Services
 
@@ -166,8 +167,9 @@ The certificate secrets follow the pattern: `<cluster-name>-<certificate-type>`
 - **etcd Peer**: `<cluster-name>-etcd-peer`
   - **Type**: `etcd-peer`
   - **Condition**: Created when etcd is used
-- **Ingress HAProxy** (when ingress is enabled): `<cluster-name>-ingress-haproxy`
-  - **Type**: `ingress-haproxy`
+- **Ingress Proxy** (when ingress is enabled): `<cluster-name>-ingress-proxy`
+  - **Type**: `ingress-proxy`
+  - **Purpose**: TLS server certificate used by the node-local proxy in the workload cluster
   - **Condition**: Created when `spec.ingress` is specified
 
 **Example**: For cluster `docker-test`, the certificate secrets are:
@@ -179,6 +181,17 @@ The certificate secrets follow the pattern: `<cluster-name>-<certificate-type>`
 - `docker-test-apiserver-etcd-client` (if etcd is used)
 - `docker-test-etcd-server` (if etcd is used)
 - `docker-test-etcd-peer` (if etcd is used)
+- `docker-test-ingress-proxy` (if ingress is enabled)
+
+#### Ingress Manifests Secret (when ingress is enabled)
+
+- **Name**: `kmc-<cluster-name>-ingress`
+- **Component**: `ingress`
+- **Purpose**: Contains the node-local proxy manifests for API server ingress (proxy config, proxy TLS material,
+  Linux and Windows proxy DaemonSets, the `kubernetes` Service and its temporary Endpoints). It is a Secret rather
+  than a ConfigMap because the bundle embeds the proxy's server private key.
+- **Condition**: Created when `spec.ingress` is specified
+- **Example**: `kmc-docker-test-ingress`
 
 ### etcd Resources
 
@@ -221,34 +234,51 @@ When `spec.kubeconfigRef` is specified for a K0smotron Cluster, resources are cr
 
 ## Resources Created in the Workload Cluster
 
-When `spec.ingress` is enabled for a K0smotron Cluster, manifests are deployed into the workload cluster (the cluster being managed). These resources are created via ConfigMaps mounted as manifests.
+When `spec.ingress` is enabled for a K0smotron Cluster, manifests are deployed into the workload cluster (the cluster being managed). These resources are created via a Secret (and, on older k0s versions, a ConfigMap) mounted as manifests.
 
 ### Ingress-Related Resources (from manifests)
 
 The following resources are created in the **workload cluster** (not the management cluster) when ingress is enabled:
 
-#### HAProxy DaemonSet
+#### Proxy DaemonSet (Linux)
 
-- **Name**: `k0smotron-haproxy`
+- **Name**: `k0smotron-proxy`
 - **Namespace**: `default`
-- **Purpose**: Local HAProxy proxy for API server access
-- **Source**: Defined in `kmc-<cluster-name>-ingress` ConfigMap
+- **Purpose**: Node-local Traefik proxy for API server access from pods on Linux nodes
+- **Node selector**: `kubernetes.io/os: linux`
+- **Source**: Defined in `kmc-<cluster-name>-ingress` Secret
 
-#### HAProxy ConfigMap
+#### Proxy DaemonSet (Windows)
 
-- **Name**: `k0smotron-haproxy-config`
+- **Name**: `k0smotron-proxy-win`
+- **Namespace**: `default`
+- **Purpose**: Node-local Traefik proxy for API server access from pods on Windows nodes; runs as a HostProcess pod
+- **Node selector**: `kubernetes.io/os: windows`
+- **Source**: Defined in `kmc-<cluster-name>-ingress` Secret
+
+#### Proxy ConfigMap
+
+- **Name**: `k0smotron-proxy-config`
 - **Namespace**: `default`
 - **Location**: Workload cluster
-- **Purpose**: HAProxy configuration
-- **Source**: Defined in `kmc-<cluster-name>-ingress` ConfigMap
+- **Purpose**: Traefik static and dynamic configuration (`config.yaml`, `dynamic.yaml`, `dynamic-win.yaml`)
+- **Source**: Defined in `kmc-<cluster-name>-ingress` Secret
+
+#### Proxy Certificates Secret
+
+- **Name**: `k0smotron-proxy-certs`
+- **Namespace**: `default`
+- **Location**: Workload cluster
+- **Purpose**: Proxy TLS server certificate/key and the cluster CA used to verify the ingress backend
+- **Source**: Defined in `kmc-<cluster-name>-ingress` Secret
 
 #### Kubernetes Service
 
 - **Name**: `kubernetes`
 - **Namespace**: `default`
 - **Location**: Workload cluster
-- **Purpose**: Service pointing to HAProxy for API server access
-- **Source**: Defined in `kmc-<cluster-name>-ingress` ConfigMap
+- **Purpose**: Service pointing to the node-local proxy for API server access
+- **Source**: Defined in `kmc-<cluster-name>-ingress` Secret
 
 #### Temporary Endpoints / EndpointSlice
 
@@ -256,7 +286,7 @@ The following resources are created in the **workload cluster** (not the managem
 - **Namespace**: `default`
 - **Location**: Workload cluster
 - **Purpose**: Temporary Service endpoint representation for worker profile creation
-- **Source**: Defined in `kmc-<cluster-name>-ingress` ConfigMap
+- **Source**: Defined in `kmc-<cluster-name>-ingress` Secret
 
 #### Konnectivity Agent Resources
 
@@ -265,6 +295,8 @@ The following resources are created in the **workload cluster** (not the managem
 - **ServiceAccount**: `konnectivity-agent` (namespace: `kube-system`)
 - **ClusterRoleBinding**: `system:konnectivity-server`
 - **Source**: Defined in `kmc-<cluster-name>-ingress-konnectivity` ConfigMap
+- **Condition**: Only shipped by k0smotron on k0s versions that do not deploy the ingress Konnectivity agent
+  natively (k0s older than v1.34.1+k0s.0)
 
 ## Example: Complete Resource List
 
