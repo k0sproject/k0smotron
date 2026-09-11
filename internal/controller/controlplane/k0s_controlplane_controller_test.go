@@ -23,11 +23,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	bootstrapv1beta2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
@@ -163,4 +167,74 @@ func TestClusterToK0sControlPlane(t *testing.T) {
 			require.Equal(t, tc.want, clusterToK0sControlPlane(context.Background(), tc.obj))
 		})
 	}
+}
+
+// certScheme is the minimum needed to store certificate secrets.
+func certScheme(t *testing.T) *runtime.Scheme {
+	t.Helper()
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+
+	return scheme
+}
+
+func certScope(initialized bool) *controlplane {
+	return &controlplane{
+		cluster: &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}},
+		kcp: &cpv1beta2.K0sControlPlane{
+			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default", UID: "kcp-uid"},
+			Status: cpv1beta2.K0sControlPlaneStatus{
+				Initialization: cpv1beta2.Initialization{
+					ControlPlaneInitialized: new(initialized),
+				},
+			},
+		},
+	}
+}
+
+// TestEnsureCertificatesDoesNotRegenerateAfterInit covers a deleted certificate
+// authority being reported rather than quietly replaced with a new one.
+func TestEnsureCertificatesDoesNotRegenerateAfterInit(t *testing.T) {
+	cl := fake.NewClientBuilder().WithScheme(certScheme(t)).Build()
+	c := &K0sController{Client: cl, SecretCachingClient: cl}
+
+	// Generated on the way up, which is the path that has to keep working.
+	require.NoError(t, c.ensureCertificates(context.Background(), certScope(false)))
+
+	stored := &corev1.SecretList{}
+	require.NoError(t, cl.List(context.Background(), stored))
+	require.Len(t, stored.Items, 4, "all four authorities are internal, so all four are minted")
+
+	// Up now, so the same call must not mint anything.
+	require.NoError(t, c.ensureCertificates(context.Background(), certScope(true)))
+
+	ca := &corev1.Secret{}
+	caKey := client.ObjectKey{Namespace: "default", Name: "test-ca"}
+	require.NoError(t, cl.Get(context.Background(), caKey, ca))
+	require.NoError(t, cl.Delete(context.Background(), ca))
+
+	err := c.ensureCertificates(context.Background(), certScope(true))
+	require.ErrorContains(t, err, "are missing and are not regenerated")
+	require.ErrorContains(t, err, "certificates ca are missing", "the error has to name the purpose that is gone")
+
+	require.True(t, apierrors.IsNotFound(cl.Get(context.Background(), caKey, &corev1.Secret{})),
+		"a new authority here would invalidate every node certificate in the cluster")
+}
+
+// TestEnsureCertificatesGeneratesBeforeInit covers the pre init path still filling a
+// gap, since nothing is using the certificates yet.
+func TestEnsureCertificatesGeneratesBeforeInit(t *testing.T) {
+	cl := fake.NewClientBuilder().WithScheme(certScheme(t)).Build()
+	c := &K0sController{Client: cl, SecretCachingClient: cl}
+
+	require.NoError(t, c.ensureCertificates(context.Background(), certScope(false)))
+
+	ca := &corev1.Secret{}
+	caKey := client.ObjectKey{Namespace: "default", Name: "test-ca"}
+	require.NoError(t, cl.Get(context.Background(), caKey, ca))
+	require.NoError(t, cl.Delete(context.Background(), ca))
+
+	require.NoError(t, c.ensureCertificates(context.Background(), certScope(false)))
+	require.NoError(t, cl.Get(context.Background(), caKey, ca), "an unused authority is still generated")
 }
