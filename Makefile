@@ -73,7 +73,7 @@ manifests-bootstrap: $(CONTROLLER_GEN) ## Generate CRDs for bootstrap.cluster.x-
 	  output:webhook:dir=config/clusterapi/bootstrap/webhook
 
 manifests-controlplane: $(CONTROLLER_GEN) ## Generate CRDs for controlplane.cluster.x-k8s.io.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
+	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true \
 	  paths="./api/controlplane/..." \
 	  paths=./internal/controller/controlplane/... \
 	  output:crd:artifacts:config=config/clusterapi/controlplane/crd/bases
@@ -118,10 +118,10 @@ manifests-capi-integration-without-crd: $(CONTROLLER_GEN) # Generate RBAC and we
 	  output:rbac:dir=config/clusterapi/all/rbac \
 	  output:webhook:dir=config/clusterapi/all/webhook
 
-### config/crd carries every CRD as it is installed, conversion webhooks included, so
-### it comes from the kustomize build rather than straight from controller-gen.
+### config/crd, config/rbac and config/webhook carry the CRDs, the role and the webhook
+### configurations as installed. The docs point at them, so they come from the build.
 .PHONY: manifests-crd
-manifests-crd: manifests manifests-capi-integration-without-crd $(KUSTOMIZE) ## Generate the installable CRDs into config/crd
+manifests-crd: manifests manifests-capi-integration-without-crd $(KUSTOMIZE) ## Generate the installable CRDs, role and webhooks
 	rm -f config/crd/*.cluster.x-k8s.io_*.yaml config/crd/k0smotron.io_*.yaml
 	tmp=$$(mktemp -d) \
 	  && $(KUSTOMIZE) build config/clusterapi/all -o $$tmp \
@@ -130,6 +130,8 @@ manifests-crd: manifests manifests-capi-integration-without-crd $(KUSTOMIZE) ## 
 	       n=$${n#apiextensions.k8s.io_v1_customresourcedefinition_}; \
 	       cp $$f config/crd/$${n#*.}_$${n%%.*}.yaml; \
 	     done \
+	  && cp $$tmp/rbac.authorization.k8s.io_v1_clusterrole_*manager-role.yaml config/rbac/role.yaml \
+	  && cat $$tmp/admissionregistration.k8s.io_v1_*webhookconfiguration_*.yaml > config/webhook/manifests.yaml \
 	  && rm -rf $$tmp
 
 .PHONY: manifests
