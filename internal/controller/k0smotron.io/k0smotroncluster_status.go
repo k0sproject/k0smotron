@@ -23,6 +23,7 @@ import (
 
 	"github.com/cloudflare/cfssl/log"
 	k0smotroniov1beta2 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/certs/report"
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -42,7 +43,7 @@ func (r *ClusterReconciler) updateStatus(ctx context.Context, kmc *k0smotroniov1
 	setControlPlaneExposedCondition(kmc, scope.controlplane.svc)
 	setControlPlaneKubeconfigAvailableCondition(kmc, scope.controlplane)
 	setControlPlaneFunctionalCondition(ctx, r.Client, kmc, scope.controlplane.sts)
-	setCertificatesAvailableCondition(kmc)
+	setCertificatesConditions(kmc, scope)
 	setDeletingCondition(kmc, scope.reason, scope.message)
 	setAvailableCondition(kmc)
 }
@@ -85,7 +86,16 @@ func setAvailableCondition(kmc *k0smotroniov1beta2.Cluster) {
 
 }
 
-func setCertificatesAvailableCondition(kmc *k0smotroniov1beta2.Cluster) {
+func setCertificatesConditions(kmc *k0smotroniov1beta2.Cluster, state currentReconcileState) {
+	if !state.certificatesReconciled {
+		// Reconcile returned early (e.g. a transient error in an unrelated
+		// step) before it got far enough to inspect certificates this pass.
+		// Leave whatever the previous reconcile established: a stale-but-true
+		// warning is strictly better than overwriting it with a fresh lie
+		// ("no certificates found" / "not expiring").
+		return
+	}
+
 	if len(kmc.Spec.CertificateRefs) == 0 {
 		conditions.Set(kmc, metav1.Condition{
 			Type:    k0smotroniov1beta2.ClusterCertificatesAvailableCondition,
@@ -93,14 +103,47 @@ func setCertificatesAvailableCondition(kmc *k0smotroniov1beta2.Cluster) {
 			Reason:  k0smotroniov1beta2.NotFoundReason,
 			Message: "Check controller logs for more details",
 		})
+		// No certificate refs means we know nothing about any certificate, so
+		// we have no basis for claiming "not expiring". Reporting False/Valid
+		// here would be a reassuring value backed by zero data.
+		conditions.Set(kmc, metav1.Condition{
+			Type:    k0smotroniov1beta2.ClusterCertificatesExpiringCondition,
+			Status:  metav1.ConditionUnknown,
+			Reason:  k0smotroniov1beta2.NotFoundReason,
+			Message: "Check controller logs for more details",
+		})
 		return
 	}
 
-	conditions.Set(kmc, metav1.Condition{
-		Type:   k0smotroniov1beta2.ClusterCertificatesAvailableCondition,
-		Status: metav1.ConditionTrue,
-		Reason: k0smotroniov1beta2.CreatedReason,
-	})
+	// An empty leaf set is not a failure here. ensureCertificates always
+	// populates the four CA refs, but k0smotron only signs leaf certificates
+	// for some configurations: with storage.type kine and no ingress it signs
+	// none at all, so state.certificates is legitimately empty. report.Build
+	// would map that to False/NotFound ("No certificates found for this
+	// cluster") forever - correct for the control plane controllers, where an
+	// empty set means the CA secrets are genuinely absent, but a permanent
+	// false alarm here. False must mean a proven failure.
+	if len(state.certificates) == 0 && len(state.certificatesUnparseable) == 0 {
+		conditions.Set(kmc, metav1.Condition{
+			Type:   k0smotroniov1beta2.ClusterCertificatesAvailableCondition,
+			Status: metav1.ConditionTrue,
+			Reason: k0smotroniov1beta2.CreatedReason,
+		})
+		conditions.Set(kmc, metav1.Condition{
+			Type:   k0smotroniov1beta2.ClusterCertificatesExpiringCondition,
+			Status: metav1.ConditionFalse,
+			Reason: k0smotroniov1beta2.ClusterCertificatesValidReason,
+		})
+		return
+	}
+
+	_, renewBefore := certificateSettings(kmc)
+	status := report.Build(state.certificates, state.certificatesUnparseable, renewBefore, time.Now())
+
+	conditions.Set(kmc, status.Available)
+	conditions.Set(kmc, status.Expiring)
+
+	report.Emit(kmc.Namespace, kmc.Name, "Cluster", state.certificates)
 }
 
 func setControlPlaneKubeconfigAvailableCondition(kmc *k0smotroniov1beta2.Cluster, controlPlaneState controlplaneState) {
