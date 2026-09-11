@@ -2266,8 +2266,15 @@ For the full list of generated resources and their component labels, see https:/
         <td><b><a href="#k0smotroncontrolplanespecpersistence">persistence</a></b></td>
         <td>object</td>
         <td>
-          Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
+          Persistence defines the persistence configuration for the k0s data
+directory.
+
+Deprecated: the k0s data directory no longer holds anything that has to
+outlive the pod. Cluster data lives in the storage backend, certificates
+come from Secrets and manifests should be supplied via spec.manifests
+instead of being written into the data directory out of band. Setting
+this still mounts the data directory, for clusters that depend on that,
+but it will be removed in a future API version.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10505,8 +10512,15 @@ Target selects which generated resource to patch.
 
 
 
-Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
+Persistence defines the persistence configuration for the k0s data
+directory.
+
+Deprecated: the k0s data directory no longer holds anything that has to
+outlive the pod. Cluster data lives in the storage backend, certificates
+come from Secrets and manifests should be supplied via spec.manifests
+instead of being written into the data directory out of band. Setting
+this still mounts the data directory, for clusters that depend on that,
+but it will be removed in a future API version.
 
 <table>
     <thead>
@@ -10519,10 +10533,11 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
     </thead>
     <tbody><tr>
         <td><b>type</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
           <br/>
           <br/>
+            <i>Enum</i>: emptyDir, hostPath, pvc<br/>
             <i>Default</i>: emptyDir<br/>
         </td>
         <td>true</td>
@@ -12642,8 +12657,15 @@ For the full list of generated resources and their component labels, see https:/
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpersistence">persistence</a></b></td>
         <td>object</td>
         <td>
-          Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence<br/>
+          Persistence defines the persistence configuration for the k0s data
+directory.
+
+Deprecated: the k0s data directory no longer holds anything that has to
+outlive the pod. Cluster data lives in the storage backend, certificates
+come from Secrets and manifests should be supplied via spec.manifests
+instead of being written into the data directory out of band. Setting
+this still mounts the data directory, for clusters that depend on that,
+but it will be removed in a future API version.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -20881,8 +20903,15 @@ Target selects which generated resource to patch.
 
 
 
-Persistence defines the persistence configuration. If empty k0smotron
-will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
+Persistence defines the persistence configuration for the k0s data
+directory.
+
+Deprecated: the k0s data directory no longer holds anything that has to
+outlive the pod. Cluster data lives in the storage backend, certificates
+come from Secrets and manifests should be supplied via spec.manifests
+instead of being written into the data directory out of band. Setting
+this still mounts the data directory, for clusters that depend on that,
+but it will be removed in a future API version.
 
 <table>
     <thead>
@@ -20895,10 +20924,11 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
     </thead>
     <tbody><tr>
         <td><b>type</b></td>
-        <td>string</td>
+        <td>enum</td>
         <td>
           <br/>
           <br/>
+            <i>Enum</i>: emptyDir, hostPath, pvc<br/>
             <i>Default</i>: emptyDir<br/>
         </td>
         <td>true</td>

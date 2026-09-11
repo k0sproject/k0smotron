@@ -31,8 +31,6 @@ metadata:
   name: cp-test
 spec:
   version: v1.27.2-k0s.0
-  persistence:
-    type: emptyDir
   service:
     type: LoadBalancer
     apiPort: 6443

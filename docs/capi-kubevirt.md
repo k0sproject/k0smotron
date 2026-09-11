@@ -65,8 +65,6 @@ metadata:
   name: k0s-test-cp
 spec:
   version: v1.27.4-k0s.0
-  persistence:
-    type: emptyDir
   service:
     type: LoadBalancer
 ---

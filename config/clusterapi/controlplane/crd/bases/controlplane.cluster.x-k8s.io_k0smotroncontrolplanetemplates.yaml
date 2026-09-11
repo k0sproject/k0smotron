@@ -4207,11 +4207,11 @@ spec:
                           type: object
                         type: array
                       persistence:
-                        default:
-                          type: emptyDir
                         description: |-
-                          Persistence defines the persistence configuration. If empty k0smotron
-                          will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
+                          Persistence defines the persistence configuration for the k0s data
+                          directory.
+
+                          Deprecated: see the v1beta2 field of the same name.
                         properties:
                           autoDeletePVCs:
                             default: false
@@ -4670,6 +4670,10 @@ spec:
                             type: object
                           type:
                             default: emptyDir
+                            enum:
+                            - emptyDir
+                            - hostPath
+                            - pvc
                             type: string
                         required:
                         - type
@@ -9070,8 +9074,15 @@ spec:
                         type: array
                       persistence:
                         description: |-
-                          Persistence defines the persistence configuration. If empty k0smotron
-                          will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuration/#persistence
+                          Persistence defines the persistence configuration for the k0s data
+                          directory.
+
+                          Deprecated: the k0s data directory no longer holds anything that has to
+                          outlive the pod. Cluster data lives in the storage backend, certificates
+                          come from Secrets and manifests should be supplied via spec.manifests
+                          instead of being written into the data directory out of band. Setting
+                          this still mounts the data directory, for clusters that depend on that,
+                          but it will be removed in a future API version.
                         properties:
                           autoDeletePVCs:
                             default: false
@@ -9530,6 +9541,10 @@ spec:
                             type: object
                           type:
                             default: emptyDir
+                            enum:
+                            - emptyDir
+                            - hostPath
+                            - pvc
                             type: string
                         required:
                         - type
