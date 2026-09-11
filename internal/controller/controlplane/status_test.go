@@ -1860,9 +1860,14 @@ func TestHostedReconcileKeepsBothErrors(t *testing.T) {
 		ClusterCache: stubClusterCache{err: errors.New("connection refused")},
 	}
 
-	_, err := c.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"},
-	})
+	req := ctrl.Request{NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"}}
+
+	// The first pass records the paused condition and asks to be called again, so the
+	// body it is meant to reach runs on the second one.
+	_, err := c.Reconcile(context.Background(), req)
+	require.NoError(t, err)
+
+	_, err = c.Reconcile(context.Background(), req)
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "body boom",
@@ -1884,11 +1889,15 @@ func TestHostedReconcilePersistsAvailabilityOnAStatusError(t *testing.T) {
 		ClusterCache: stubClusterCache{err: errors.New("connection refused")},
 	}
 
+	req := ctrl.Request{NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"}}
+
+	// The first pass records the paused condition and asks to be called again.
+	_, err := c.Reconcile(context.Background(), req)
+	require.NoError(t, err)
+
 	// The status computation fails here, which is the point. What matters is what the
 	// deferred block persisted on the way out.
-	res, err := c.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"},
-	})
+	res, err := c.Reconcile(context.Background(), req)
 
 	// Handed back, or nothing brings the control plane round again and the grace
 	// period never advances, so the outage is never reported.
@@ -1941,11 +1950,16 @@ func TestHostedReconcileDeletePersistsFinalizerRemoval(t *testing.T) {
 	// map that was empty all along.
 	c.availabilityFailures.Store(availabilityKey(kcp), availabilityFailures{since: time.Now(), seen: 1})
 
+	req := ctrl.Request{NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"}}
+
+	// The first pass records the paused condition and asks to be called again, which
+	// happens for a deleting object too.
+	_, err := c.Reconcile(context.Background(), req)
+	require.NoError(t, err)
+
 	// The infrastructure patch at the end of the defer has nothing to patch here and
 	// errors, which is fine. What matters is that the patch before it ran.
-	_, _ = c.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"},
-	})
+	_, _ = c.Reconcile(context.Background(), req)
 
 	_, ok := c.availabilityFailures.Load(availabilityKey(kcp))
 	require.False(t, ok,
@@ -1953,7 +1967,7 @@ func TestHostedReconcileDeletePersistsFinalizerRemoval(t *testing.T) {
 
 	// Gone entirely once the last finalizer is dropped, which is the whole point.
 	persisted := &cpv1beta2.K0smotronControlPlane{}
-	err := c.Get(context.Background(), client.ObjectKey{Namespace: "default", Name: "test"}, persisted)
+	err = c.Get(context.Background(), client.ObjectKey{Namespace: "default", Name: "test"}, persisted)
 	if err == nil {
 		require.NotContains(t, persisted.Finalizers, cpv1beta2.K0smotronControlPlaneFinalizer,
 			"the finalizer removal has to be persisted, or the object never goes away")

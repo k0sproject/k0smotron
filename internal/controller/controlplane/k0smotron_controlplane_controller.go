@@ -55,6 +55,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/cluster-api/util/paused"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -162,9 +163,10 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	if annotations.IsPaused(cluster, kcp) {
-		log.Info("Reconciliation is paused for this object")
-		return ctrl.Result{}, nil
+	// The contract asks for the paused state to be surfaced and not only obeyed, so
+	// the helper patches the condition before reporting whether to stop.
+	if isPaused, requeue, err := paused.EnsurePausedCondition(ctx, c.Client, cluster, kcp); err != nil || isPaused || requeue {
+		return ctrl.Result{}, err
 	}
 
 	kmcScope, err := c.getKmcScope(ctx, kcp)
