@@ -72,22 +72,23 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 			"mode": int(mi),
 		}
 
-		// An Ignition file entry carries either contents or append, never both.
-		// Append is new, so it can use a data URL, which holds any byte.
+		// A data URL is opaque to the YAML emitter, which cannot carry a leading
+		// newline in a block scalar and emits a tab that Butane then fails to parse.
+		uri, compression, err := butaneutil.MakeDataURL(content, nil, false)
+		if err != nil {
+			return nil, fmt.Errorf("error encoding contents of file %s: %w", f.Path, err)
+		}
+
+		body := map[string]string{"source": uri}
+		if compression != nil {
+			body["compression"] = *compression
+		}
+
+		// An entry carries either contents or append, never both.
 		if f.Append {
-			uri, compression, err := butaneutil.MakeDataURL(content, nil, false)
-			if err != nil {
-				return nil, fmt.Errorf("error encoding contents of file %s: %w", f.Path, err)
-			}
-
-			body := map[string]string{"source": uri}
-			if compression != nil {
-				body["compression"] = *compression
-			}
-
 			file["append"] = []map[string]string{body}
 		} else {
-			file["contents"] = map[string]string{"inline": string(content)}
+			file["contents"] = body
 		}
 
 		if user, group := f.OwnerUserAndGroup(); user != "" || group != "" {
@@ -135,8 +136,7 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 	initIgn, _, err := config.TranslateBytes(
 		butaneYaml,
 		bcommon.TranslateBytesOptions{
-			TranslateOptions: bcommon.TranslateOptions{NoResourceAutoCompression: true},
-			Pretty:           true,
+			Pretty: true,
 		},
 	)
 	if err != nil {
@@ -165,6 +165,8 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 
 	if i.AdditionalConfig != "" {
 		// translate additional Butane YAML to Ignition JSON
+		// User supplied Butane can still use inline contents, so auto compression has
+		// to stay off here or their file bodies come out gzipped.
 		addIgn, _, err := config.TranslateBytes(
 			[]byte(i.AdditionalConfig),
 			bcommon.TranslateBytesOptions{
