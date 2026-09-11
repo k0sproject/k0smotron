@@ -73,11 +73,11 @@ manifests-bootstrap: $(CONTROLLER_GEN) ## Generate CRDs for bootstrap.cluster.x-
 	  output:webhook:dir=config/clusterapi/bootstrap/webhook
 
 manifests-controlplane: $(CONTROLLER_GEN) ## Generate CRDs for controlplane.cluster.x-k8s.io.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
+	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true \
 	  paths="./api/controlplane/..." \
 	  paths=./internal/controller/controlplane/... \
 	  output:crd:artifacts:config=config/clusterapi/controlplane/crd/bases
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:generateEmbeddedObjectMeta=true webhook \
+	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook \
 	  paths="./api/controlplane/..." \
 	  paths="./api/k0smotron.io/..." \
 	  paths=./internal/controller/controlplane/... \
@@ -118,6 +118,22 @@ manifests-capi-integration-without-crd: $(CONTROLLER_GEN) # Generate RBAC and we
 	  output:rbac:dir=config/clusterapi/all/rbac \
 	  output:webhook:dir=config/clusterapi/all/webhook
 
+### config/crd, config/rbac and config/webhook carry the CRDs, the role and the webhook
+### configurations as installed. The docs point at them, so they come from the build.
+.PHONY: manifests-crd
+manifests-crd: manifests manifests-capi-integration-without-crd $(KUSTOMIZE) ## Generate the installable CRDs, role and webhooks
+	rm -f config/crd/*.cluster.x-k8s.io_*.yaml config/crd/k0smotron.io_*.yaml
+	tmp=$$(mktemp -d) \
+	  && $(KUSTOMIZE) build config/clusterapi/all -o $$tmp \
+	  && for f in $$tmp/apiextensions.k8s.io_v1_customresourcedefinition_*.yaml; do \
+	       n=$$(basename $$f .yaml); \
+	       n=$${n#apiextensions.k8s.io_v1_customresourcedefinition_}; \
+	       cp $$f config/crd/$${n#*.}_$${n%%.*}.yaml; \
+	     done \
+	  && cp $$tmp/rbac.authorization.k8s.io_v1_clusterrole_*manager-role.yaml config/rbac/role.yaml \
+	  && cat $$tmp/admissionregistration.k8s.io_v1_*webhookconfiguration_*.yaml > config/webhook/manifests.yaml \
+	  && rm -rf $$tmp
+
 .PHONY: manifests
 manifests: manifests-bootstrap manifests-controlplane manifests-infrastructure manifests-standalone ## Generate all CRD YAMLs per group
 
@@ -134,7 +150,7 @@ generate_targets += api/infrastructure/v1beta2/zz_generated.deepcopy.go
 $(generate_targets): $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-generate: $(generate_targets) manifests ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: $(generate_targets) manifests manifests-crd ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 
 .PHONY: headers-go
 headers-go: ## Add boilerplate.go.txt headers to Go files missing them.

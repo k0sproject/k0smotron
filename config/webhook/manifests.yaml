@@ -1,15 +1,38 @@
----
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: mutating-webhook-configuration
+  annotations:
+    cert-manager.io/inject-ca-from: k0smotron/k0smotron-serving-cert
+  labels:
+    cluster.x-k8s.io/provider: k0sproject-k0smotron
+  name: k0smotron-mutating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
     service:
-      name: webhook-service
-      namespace: system
+      name: k0smotron-webhook-service
+      namespace: k0smotron
+      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta2-k0sworkerconfig
+  failurePolicy: Fail
+  name: mutate-k0sworkerconfig-v1beta2.k0smotron.io
+  rules:
+  - apiGroups:
+    - bootstrap.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - k0sworkerconfigs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: k0smotron-webhook-service
+      namespace: k0smotron
       path: /mutate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane
   failurePolicy: Fail
   name: mutate-k0scontrolplane-v1beta2.k0smotron.io
@@ -24,18 +47,67 @@ webhooks:
     resources:
     - k0scontrolplanes
   sideEffects: None
----
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: k0smotron-webhook-service
+      namespace: k0smotron
+      path: /mutate-k0smotron-io-v1beta2-cluster
+  failurePolicy: Fail
+  name: mutate-k0smotron-cluster-v1beta2.k0smotron.io
+  rules:
+  - apiGroups:
+    - k0smotron.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clusters
+  sideEffects: None
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: validating-webhook-configuration
+  annotations:
+    cert-manager.io/inject-ca-from: k0smotron/k0smotron-serving-cert
+  labels:
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/created-by: k0smotron
+    app.kubernetes.io/instance: validating-webhook-configuration
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: validatingwebhookconfiguration
+    app.kubernetes.io/part-of: k0smotron
+    cluster.x-k8s.io/provider: k0sproject-k0smotron
+  name: k0smotron-validating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
     service:
-      name: webhook-service
-      namespace: system
+      name: k0smotron-webhook-service
+      namespace: k0smotron
+      path: /validate-bootstrap-cluster-x-k8s-io-v1beta2-k0sworkerconfig
+  failurePolicy: Fail
+  name: validate-k0sworkerconfig-v1beta2.k0smotron.io
+  rules:
+  - apiGroups:
+    - bootstrap.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - k0sworkerconfigs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: k0smotron-webhook-service
+      namespace: k0smotron
       path: /validate-controlplane-cluster-x-k8s-io-v1beta2-k0scontrolplane
   failurePolicy: Fail
   name: validate-k0scontrolplane-v1beta2.k0smotron.io
@@ -54,8 +126,8 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: webhook-service
-      namespace: system
+      name: k0smotron-webhook-service
+      namespace: k0smotron
       path: /validate-controlplane-cluster-x-k8s-io-v1beta2-k0smotroncontrolplane
   failurePolicy: Fail
   name: validate-k0smotroncontrolplane-v1beta2.k0smotron.io
@@ -69,4 +141,24 @@ webhooks:
     - UPDATE
     resources:
     - k0smotroncontrolplanes
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: k0smotron-webhook-service
+      namespace: k0smotron
+      path: /validate-k0smotron-io-v1beta2-cluster
+  failurePolicy: Fail
+  name: validate-k0smotron-cluster-v1beta2.k0smotron.io
+  rules:
+  - apiGroups:
+    - k0smotron.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clusters
   sideEffects: None
