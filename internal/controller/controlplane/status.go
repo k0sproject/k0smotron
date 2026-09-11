@@ -118,15 +118,17 @@ func computeReplicas(controlplane *controlplane) error {
 }
 
 func setScalingConditions(controlplane *controlplane) {
-	upToDateReplicas := controlplane.upToDateMachines.Len()
+	// Scaling is about how many machines exist, not how many are up to date. Deleting
+	// machines count too, so a scale down stays true until they are gone.
+	replicas := controlplane.activeMachines.Len() + controlplane.deletedMachines.Len()
 
-	if upToDateReplicas < int(controlplane.kcp.Spec.Replicas) {
+	if replicas < int(controlplane.kcp.Spec.Replicas) {
 		conditions.Set(controlplane.kcp, metav1.Condition{
 			Type:   string(cpv1beta2.K0sControlPlaneScalingUpCondition),
 			Status: metav1.ConditionTrue,
 			Reason: cpv1beta2.K0sControlPlaneScalingUpReason,
 			Message: fmt.Sprintf("Control plane is scaling up: %d/%d",
-				upToDateReplicas, controlplane.kcp.Spec.Replicas),
+				replicas, controlplane.kcp.Spec.Replicas),
 		})
 	} else {
 		conditions.Set(controlplane.kcp, metav1.Condition{
@@ -136,13 +138,13 @@ func setScalingConditions(controlplane *controlplane) {
 		})
 	}
 
-	if upToDateReplicas > int(controlplane.kcp.Spec.Replicas) {
+	if replicas > int(controlplane.kcp.Spec.Replicas) {
 		conditions.Set(controlplane.kcp, metav1.Condition{
 			Type:   string(cpv1beta2.K0sControlPlaneScalingDownCondition),
 			Status: metav1.ConditionTrue,
 			Reason: cpv1beta2.K0sControlPlaneScalingDownReason,
 			Message: fmt.Sprintf("Control plane is scaling down: %d/%d",
-				upToDateReplicas, controlplane.kcp.Spec.Replicas),
+				replicas, controlplane.kcp.Spec.Replicas),
 		})
 	} else {
 		conditions.Set(controlplane.kcp, metav1.Condition{
