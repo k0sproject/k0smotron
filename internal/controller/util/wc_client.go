@@ -51,7 +51,6 @@ var (
 // don't run inside a controller-runtime Manager (e.g. the in-place version update runtime extension webhook server),
 // in which case the rest.Config is built directly from the workload cluster's kubeconfig secret instead of the cache.
 func GetWorkloadClusterClientset(ctx context.Context, hubClient client.Client, cache clustercache.ClusterCache, cluster *clusterv1.Cluster) (*kubernetes.Clientset, error) {
-
 	k0sControlPlane, err := FindK0sControlPlane(ctx, hubClient, cluster)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find K0sControlPlane: %w", err)
@@ -95,14 +94,15 @@ func GetControllerRuntimeClient(ctx context.Context, hubClient client.Client, cl
 // FindK0sControlPlane finds the K0sControlPlane resource associated with the given cluster. If the control plane is not a K0sControlPlane,
 // it returns nil without error.
 func FindK0sControlPlane(ctx context.Context, c client.Client, cluster *clusterv1.Cluster) (*cpv1beta2.K0sControlPlane, error) {
-	uControlPlane, err := external.GetObjectFromContractVersionedRef(ctx, c, cluster.Spec.ControlPlaneRef, cluster.Namespace)
-	if err != nil {
-		return nil, err
-	}
-
-	if uControlPlane.GetKind() != "K0sControlPlane" {
+	cpRef := cluster.Spec.ControlPlaneRef
+	if cpRef.Kind != "K0sControlPlane" {
 		// Cases where the control plane resource is K0smotronControlPlane.
 		return nil, nil
+	}
+
+	uControlPlane, err := external.GetObjectFromContractVersionedRef(ctx, c, cpRef, cluster.Namespace)
+	if err != nil {
+		return nil, err
 	}
 
 	kcp := &cpv1beta2.K0sControlPlane{}
