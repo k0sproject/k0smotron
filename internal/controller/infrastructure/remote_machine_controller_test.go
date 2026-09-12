@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrastructure "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
@@ -118,4 +119,74 @@ func TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
 	require.Equal(t, "10.0.0.1", rm.Spec.Address)
 	require.Equal(t, map[string]string{"pool": "a"}, rm.Labels)
 	require.Equal(t, map[string]string{"note": "from the pool"}, rm.Annotations)
+}
+
+// TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine covers a hand
+// authored RemoteMachine, which carries no labels or annotations to copy into.
+func TestReservePooledMachineThatLostItsStatus(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, infrastructure.AddToScheme(scheme))
+
+	pooled1 := &infrastructure.PooledRemoteMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "pooled1",
+			Namespace:   "default",
+			Labels:      map[string]string{"pool": "a"},
+			Annotations: map[string]string{"note": "from the pool"},
+		},
+		Spec: infrastructure.PooledRemoteMachineSpec{
+			Pool: "a",
+			Machine: infrastructure.PooledMachineSpec{
+				Address: "10.0.0.1",
+				Port:    22,
+				User:    "root",
+			},
+		},
+	}
+	pooled2 := &infrastructure.PooledRemoteMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "pooled2",
+			Namespace:   "default",
+			Labels:      map[string]string{"pool": "a"},
+			Annotations: map[string]string{"note": "from the pool"},
+		},
+		Spec: infrastructure.PooledRemoteMachineSpec{
+			Pool: "a",
+			Machine: infrastructure.PooledMachineSpec{
+				Address: "10.0.0.2",
+				Port:    22,
+				User:    "root",
+			},
+		},
+	}
+
+	// A RemoteMachine created by hand rather than by CAPI, so both metadata maps
+	// are nil.
+	rm := &infrastructure.RemoteMachine{
+		ObjectMeta: metav1.ObjectMeta{Name: "rm", Namespace: "default"},
+		Spec: infrastructure.RemoteMachineSpec{
+			Pool:    "a",
+			Address: "10.0.0.2",
+		},
+	}
+	require.Nil(t, rm.Labels, "the fixture must have no labels or this proves nothing")
+	require.Nil(t, rm.Annotations, "the fixture must have no annotations or this proves nothing")
+
+	cl := fake.NewClientBuilder().WithScheme(scheme).
+		WithObjects(pooled1, pooled2, rm).WithStatusSubresource(pooled1, pooled2).Build()
+	c := &RemoteMachineController{
+		Client: cl,
+	}
+
+	require.NoError(t, c.reservePooledMachineAndPopulateRemoteMachine(context.Background(), rm))
+
+	require.Equal(t, "10.0.0.2", rm.Spec.Address)
+	require.Equal(t, "root", rm.Spec.User)
+	require.Equal(t, map[string]string{"pool": "a"}, rm.Labels)
+	require.Equal(t, map[string]string{"note": "from the pool"}, rm.Annotations)
+
+	prm := &infrastructure.PooledRemoteMachine{}
+	require.NoError(t, cl.Get(t.Context(), client.ObjectKeyFromObject(pooled2), prm))
+	require.Equal(t, rm.Name, prm.Status.MachineRef.Name)
+	require.Equal(t, rm.Namespace, prm.Status.MachineRef.Namespace)
 }
