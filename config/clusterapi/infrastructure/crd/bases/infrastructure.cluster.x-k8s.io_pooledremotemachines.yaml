@@ -137,6 +137,11 @@ spec:
             - reserved
             type: object
         type: object
+        x-kubernetes-validations:
+        - fieldPath: .spec
+          message: spec cannot be changed while the PooledRemoteMachine is reserved
+          rule: '!has(oldSelf.status) || !oldSelf.status.reserved || self.spec ==
+            oldSelf.spec'
     served: true
     storage: false
     subresources:
@@ -260,6 +265,11 @@ spec:
             - reserved
             type: object
         type: object
+        x-kubernetes-validations:
+        - fieldPath: .spec
+          message: spec cannot be changed while the PooledRemoteMachine is reserved
+          rule: '!has(oldSelf.status) || !oldSelf.status.reserved || self.spec ==
+            oldSelf.spec'
     served: true
     storage: true
     subresources:
