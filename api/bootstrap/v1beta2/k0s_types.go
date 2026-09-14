@@ -536,18 +536,20 @@ func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList 
 
 	// TODO: validate Ignition
 	allErrs = append(allErrs, cs.validateVersion(pathPrefix)...)
-	allErrs = append(allErrs, cs.validateFiles(pathPrefix)...)
+	allErrs = append(allErrs, ValidateFiles(cs.Files, cs.Provisioner, pathPrefix)...)
 	allErrs = append(allErrs, cs.validateWindows(pathPrefix)...)
 
 	return allErrs
 }
 
-func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.ErrorList {
+// ValidateFiles rejects a files list that cannot be resolved or applied, covering
+// the content source, the paths and the owners.
+func ValidateFiles(files []File, spec ProvisionerSpec, pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	knownPaths := map[string]struct{}{}
 
-	for i, file := range cs.Files {
+	for i, file := range files {
 		if file.Content != "" && file.ContentFrom != nil {
 			allErrs = append(
 				allErrs,
@@ -616,7 +618,7 @@ func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.Error
 		knownPaths[file.Path] = struct{}{}
 	}
 
-	allErrs = append(allErrs, ValidateFileOwners(cs.Files, cs.Provisioner, pathPrefix)...)
+	allErrs = append(allErrs, ValidateFileOwners(files, spec, pathPrefix)...)
 
 	return allErrs
 }

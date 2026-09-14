@@ -238,7 +238,7 @@ func TestValidateFileOwnerChecksEveryFile(t *testing.T) {
 		},
 	}
 
-	errs := spec.validateFiles(field.NewPath("spec"))
+	errs := ValidateFiles(spec.Files, spec.Provisioner, field.NewPath("spec"))
 
 	require.Len(t, errs, 1)
 	require.Equal(t, "spec.files[1].owner", errs[0].Field, "the index must follow the offending file")
@@ -295,7 +295,7 @@ func TestValidateFileOwner(t *testing.T) {
 				},
 			}
 
-			errs := spec.validateFiles(field.NewPath("spec"))
+			errs := ValidateFiles(spec.Files, spec.Provisioner, field.NewPath("spec"))
 
 			if tt.wantErr == "" {
 				require.Empty(t, errs)
