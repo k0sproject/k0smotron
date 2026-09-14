@@ -74,10 +74,38 @@ func TestValidateK0sControlPlaneChecksFileContents(t *testing.T) {
 		return bootstrapv1.File{File: provisioner.File{Path: path, Content: content}}
 	}
 
+	appendTo := func(path, content string) bootstrapv1.File {
+		f := file(path, content)
+		f.Append = true
+
+		return f
+	}
+
 	t.Run("two files on one path are rejected", func(t *testing.T) {
 		err := validateK0sControlPlane(kcp(file("/etc/thing", "a"), file("/etc/thing", "b")))
 
 		require.ErrorContains(t, err, "spec.k0sConfigSpec.files[1].path")
+	})
+
+	t.Run("appending to a path another file writes is accepted", func(t *testing.T) {
+		require.NoError(t, validateK0sControlPlane(kcp(file("/etc/thing", "a"), appendTo("/etc/thing", "b"))))
+	})
+
+	t.Run("several appends to one path are accepted", func(t *testing.T) {
+		require.NoError(t, validateK0sControlPlane(kcp(appendTo("/etc/thing", "a"), appendTo("/etc/thing", "b"))))
+	})
+
+	t.Run("an append after an append still leaves the path free to write", func(t *testing.T) {
+		require.NoError(t, validateK0sControlPlane(kcp(appendTo("/etc/thing", "a"), file("/etc/thing", "b"))))
+	})
+
+	t.Run("ignition cannot append to a path another file writes", func(t *testing.T) {
+		ign := kcp(file("/etc/thing", "a"), appendTo("/etc/thing", "b"))
+		ign.Spec.K0sConfigSpec.Provisioner.Type = provisioner.IgnitionProvisioningFormat
+
+		err := validateK0sControlPlane(ign)
+
+		require.ErrorContains(t, err, "one entry per file")
 	})
 
 	t.Run("content and contentFrom together are rejected", func(t *testing.T) {
