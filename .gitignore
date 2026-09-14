@@ -5,6 +5,8 @@ install-extension-webhook.yaml
 bootstrap-components.yaml
 control-plane-components.yaml
 infrastructure-components.yaml
+docs/resource-reference/*.md
+!docs/resource-reference/README.md
 
 # Binaries for programs and plugins
 *.exe

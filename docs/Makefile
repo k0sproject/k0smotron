@@ -16,8 +16,11 @@ TARGET_VERSION ?= latest
 # mkdocs.yml refuses to live in the docs-directory, this is why "cd .." is needed
 # gives: "Error: The 'docs_dir' should not be the parent directory of the config file."
 # even if docs_dir is "."
-docs: .require-mkdocs validate-examples
+docs: .require-mkdocs validate-examples docs-generate-reference
 	cd .. && mkdocs build --strict
+
+docs-generate-reference:
+	$(MAKE) -C .. docs-generate-reference
 
 # The jinja examples are a contract with users of the CloudInitVars gate, so
 # render them the way cloud init would and check the result parses.
