@@ -76,6 +76,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-bootstrap-cluster-x-k8s-io-v1beta2-k0scontrollerconfig
+  failurePolicy: Fail
+  name: validate-k0scontrollerconfig-v1beta2.k0smotron.io
+  rules:
+  - apiGroups:
+    - bootstrap.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - k0scontrollerconfigs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-bootstrap-cluster-x-k8s-io-v1beta2-k0sworkerconfig
   failurePolicy: Fail
   name: validate-k0sworkerconfig-v1beta2.k0smotron.io

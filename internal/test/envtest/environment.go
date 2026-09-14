@@ -196,6 +196,12 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 		panic(errors.Wrapf(err, "unable to create validation webhook"))
 	}
 
+	// The installed configurations fail closed, so every webhook the manifests declare
+	// has to be served here or the objects it guards cannot be created at all.
+	if err = bootstrapv1beta2.SetupK0sControllerConfigWebhookWithManager(mgr); err != nil {
+		panic(errors.Wrapf(err, "unable to create validation webhook for K0sControllerConfig"))
+	}
+
 	if err = infrastructurev1beta2.SetupRemoteMachineWebhookWithManager(mgr); err != nil {
 		panic(errors.Wrapf(err, "unable to create setup webhook for RemoteMachine"))
 	}

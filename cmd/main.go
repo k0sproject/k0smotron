@@ -444,6 +444,11 @@ func setupCAPIControllersOrDie(ctx context.Context, mgr manager.Manager, clientS
 			os.Exit(1)
 		}
 
+		if err = bootstrapv1beta2.SetupK0sControllerConfigWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create validation webhook", "webhook", "K0sControllerConfigValidator")
+			os.Exit(1)
+		}
+
 		enableProviderIDController = true
 	}
 
