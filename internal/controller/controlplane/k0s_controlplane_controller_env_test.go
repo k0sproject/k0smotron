@@ -156,15 +156,18 @@ func TestReconcilePausedCluster(t *testing.T) {
 		APIReader: testEnv.GetAPIReader(),
 	}
 
-	// The owner lookup goes through the cached client and errors outright when it
-	// misses, so the cluster has to be visible there before reconciling.
+	// Both reads go through the cached client, and a reconcile that misses either one
+	// returns without doing anything, which reads as a failed assertion rather than a wait.
 	require.Eventually(t, func() bool {
 		seen := &clusterv1.Cluster{}
 		if err := testEnv.Get(ctx, util.ObjectKey(cluster), seen); err != nil {
 			return false
 		}
+		if !ptr.Deref(seen.Spec.Paused, false) {
+			return false
+		}
 
-		return ptr.Deref(seen.Spec.Paused, false)
+		return testEnv.Get(ctx, util.ObjectKey(kcp), &cpv1beta2.K0sControlPlane{}) == nil
 	}, 10*time.Second, 100*time.Millisecond)
 
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
@@ -194,9 +197,13 @@ func TestReconcilePausedK0sControlPlane(t *testing.T) {
 		APIReader: testEnv.GetAPIReader(),
 	}
 
-	// The annotation is written with the object so it cannot be stale, but the owner
-	// lookup goes through the cached client and errors outright when it misses.
+	// The control plane is read first and the owner after it, both through the cached
+	// client, so a reconcile before either lands returns having done nothing.
 	require.Eventually(t, func() bool {
+		if err := testEnv.Get(ctx, util.ObjectKey(kcp), &cpv1beta2.K0sControlPlane{}); err != nil {
+			return false
+		}
+
 		return testEnv.Get(ctx, util.ObjectKey(cluster), &clusterv1.Cluster{}) == nil
 	}, 10*time.Second, 100*time.Millisecond)
 
