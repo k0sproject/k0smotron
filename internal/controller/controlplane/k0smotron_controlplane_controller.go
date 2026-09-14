@@ -615,6 +615,8 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 		kcp.Status.Version = minimumVersion.String()
 	}
 
+	setHostedScalingConditions(kcp, replicas, int32(upToDateReplicas))
+
 	// if no replicas are yet available or the desired version is not in the current state of the
 	// control plane, the reconciliation is requeued waiting for the desired replicas to become available.
 	// Additionally, if the ControlPlaneReadyCondition is false (e.g., due to DNS resolution failures),
@@ -626,6 +628,48 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	}
 
 	return nil
+}
+
+// setHostedScalingConditions reports scaling from the pod total and a rollout from how
+// many of those pods are behind, which are separate questions.
+func setHostedScalingConditions(kcp *cpv1beta2.K0smotronControlPlane, replicas, upToDateReplicas int32) {
+	desired := kcp.Spec.Replicas
+
+	scalingUp := metav1.Condition{
+		Type:   clusterv1.ScalingUpCondition,
+		Status: metav1.ConditionFalse,
+		Reason: clusterv1.NotScalingUpReason,
+	}
+	if replicas < desired {
+		scalingUp.Status = metav1.ConditionTrue
+		scalingUp.Reason = clusterv1.ScalingUpReason
+		scalingUp.Message = fmt.Sprintf("Control plane is scaling up: %d/%d", replicas, desired)
+	}
+	conditions.Set(kcp, scalingUp)
+
+	scalingDown := metav1.Condition{
+		Type:   clusterv1.ScalingDownCondition,
+		Status: metav1.ConditionFalse,
+		Reason: clusterv1.NotScalingDownReason,
+	}
+	if replicas > desired {
+		scalingDown.Status = metav1.ConditionTrue
+		scalingDown.Reason = clusterv1.ScalingDownReason
+		scalingDown.Message = fmt.Sprintf("Control plane is scaling down: %d/%d", replicas, desired)
+	}
+	conditions.Set(kcp, scalingDown)
+
+	rollingOut := metav1.Condition{
+		Type:   clusterv1.RollingOutCondition,
+		Status: metav1.ConditionFalse,
+		Reason: clusterv1.NotRollingOutReason,
+	}
+	if behind := replicas - upToDateReplicas; behind > 0 {
+		rollingOut.Status = metav1.ConditionTrue
+		rollingOut.Reason = clusterv1.RollingOutReason
+		rollingOut.Message = fmt.Sprintf("Rolling out %d not up-to-date replicas", behind)
+	}
+	conditions.Set(kcp, rollingOut)
 }
 
 // alignToSpecVersionFormat ensures that the currentVersion format matches the desiredVersion format.
