@@ -128,7 +128,9 @@ func requirePausedCondition(t *testing.T, kcp *cpv1beta2.K0sControlPlane, want m
 	t.Helper()
 
 	seen := &cpv1beta2.K0sControlPlane{}
-	require.NoError(t, testEnv.Get(ctx, util.ObjectKey(kcp), seen))
+	require.Eventually(t, func() bool {
+		return testEnv.Get(ctx, util.ObjectKey(kcp), seen) == nil
+	}, 10*time.Second, 100*time.Millisecond)
 
 	cond := conditions.Get(seen, clusterv1.PausedCondition)
 	require.NotNil(t, cond, "the paused condition is declared, so it has to be set")

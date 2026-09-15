@@ -28,12 +28,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	k0smotroniov1beta2 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	kutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 )
@@ -149,7 +152,7 @@ func (scope *kmcScope) reconcileResource(ctx context.Context, kmc *km.Cluster, o
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
-func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, retErr error) {
 	logger := log.FromContext(ctx)
 
 	kmc := &km.Cluster{}
@@ -209,9 +212,17 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	defer func() {
 		r.updateStatus(ctx, kmc, kmcScope.currentReconcileState)
 
-		err = patchHelper.Patch(ctx, kmc)
-		if err != nil {
-			logger.Error(err, "Unable to update k0smotron Cluster")
+		derr := patchHelper.Patch(ctx, kmc)
+		if derr != nil {
+			logger.Error(derr, "Unable to update k0smotron Cluster")
+			retErr = kerrors.NewAggregate([]error{retErr, derr})
+		}
+
+		if res.IsZero() && kmc.DeletionTimestamp.IsZero() {
+			if !conditions.IsTrue(kmc, k0smotroniov1beta2.ClusterControlPlaneFunctionalCondition) ||
+				!conditions.IsTrue(kmc, k0smotroniov1beta2.ClusterAvailableCondition) {
+				res = ctrl.Result{RequeueAfter: 20 * time.Second}
+			}
 		}
 	}()
 
