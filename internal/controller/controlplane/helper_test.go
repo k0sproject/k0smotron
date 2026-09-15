@@ -436,3 +436,47 @@ func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
 	// bootstrapConfigs is only used by the deprecated fallback path; the annotation path is taken here.
 	require.True(t, isBootstrapConfigUpToDate(convertedLegacyConfig, kcp, machine))
 }
+
+func TestDeprecatedIsK0sConfigChangedWithNoK0sConfig(t *testing.T) {
+	machine := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "machine-0"}}
+
+	t.Run("neither side sets a k0s config", func(t *testing.T) {
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
+				Version:       "v1.33.0+k0s.0",
+				K0sConfigSpec: bootstrapv2.K0sConfigSpec{},
+			},
+		}
+		bootstrapConfig := &bootstrapv2.K0sControllerConfig{
+			Spec: bootstrapv2.K0sControllerConfigSpec{
+				Version:       "v1.33.0+k0s.0",
+				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+			},
+		}
+
+		require.False(t, deprecatedIsK0sConfigChanged(bootstrapConfig, kcp, machine))
+	})
+
+	t.Run("only the control plane sets one", func(t *testing.T) {
+		kcp := &cpv1beta2.K0sControlPlane{
+			Spec: cpv1beta2.K0sControlPlaneSpec{
+				Version: "v1.33.0+k0s.0",
+				K0sConfigSpec: bootstrapv2.K0sConfigSpec{
+					K0s: &unstructured.Unstructured{Object: map[string]any{
+						"spec": map[string]any{
+							"storage": map[string]any{"type": "etcd"},
+						},
+					}},
+				},
+			},
+		}
+		bootstrapConfig := &bootstrapv2.K0sControllerConfig{
+			Spec: bootstrapv2.K0sControllerConfigSpec{
+				Version:       "v1.33.0+k0s.0",
+				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+			},
+		}
+
+		require.True(t, deprecatedIsK0sConfigChanged(bootstrapConfig, kcp, machine))
+	})
+}
