@@ -1,10 +1,16 @@
-# Generated files
+# Generated release artifacts
 install.yaml
 install-standalone.yaml
 install-extension-webhook.yaml
 bootstrap-components.yaml
 control-plane-components.yaml
 infrastructure-components.yaml
+# Generated CRDs for k0smotron CAPI providers
+config/clusterapi/bootstrap/crd/bases/*
+config/clusterapi/controlplane/crd/bases/*
+config/clusterapi/infrastructure/crd/bases/*
+# Generated CRDs for k0smotron standalone
+config/standalone/crd/bases/*
 
 # Binaries for programs and plugins
 *.exe
