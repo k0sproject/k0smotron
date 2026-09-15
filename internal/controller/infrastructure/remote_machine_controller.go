@@ -18,6 +18,7 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"sort"
@@ -182,10 +183,14 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	if rm.Spec.Pool != "" {
-		err := r.reservePooledMachineAndPopulateRemoteMachine(ctx, rm)
-		if err != nil && rm.ObjectMeta.DeletionTimestamp.IsZero() {
-			log.Error(err, "Error reserving PooledMachine")
-			return ctrl.Result{Requeue: true}, err
+		err := r.reconcileFromPool(ctx, rm)
+		if err != nil {
+			log.Error(err, "Error reconciling PooledMachine")
+			// If the pool entry is already gone during deletion, use the values
+			// persisted on the RemoteMachine so its cleanup can still run.
+			if rm.ObjectMeta.DeletionTimestamp.IsZero() || !errors.Is(err, ErrPooledMachineNotFound) {
+				return ctrl.Result{Requeue: true}, err
+			}
 		}
 	}
 
@@ -364,9 +369,9 @@ func mergedMap(dst, src map[string]string) map[string]string {
 	return dst
 }
 
-// reservePooledMachineAndPopulateRemoteMachine finds a free machine from the pool specified in the RemoteMachine spec, reserves it, and populates
-// the RemoteMachine spec with the details of the reserved machine.
-func (r *RemoteMachineController) reservePooledMachineAndPopulateRemoteMachine(ctx context.Context, rm *infrastructure.RemoteMachine) error {
+// reconcileFromPool reserves a machine from the pool specified in the
+// RemoteMachine spec and synchronizes the claimed machine with its pool entry.
+func (r *RemoteMachineController) reconcileFromPool(ctx context.Context, rm *infrastructure.RemoteMachine) error {
 	pooledMachineList := &infrastructure.PooledRemoteMachineList{}
 	if err := r.Client.List(ctx, pooledMachineList, client.InNamespace(rm.Namespace)); err != nil {
 		return fmt.Errorf("failed to list pooled machines: %w", err)

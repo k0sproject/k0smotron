@@ -77,9 +77,9 @@ func TestMergedMap(t *testing.T) {
 	})
 }
 
-// TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine covers a hand
+// TestReconcileFromPoolCopiesMetadataOntoBareRemoteMachine covers a hand
 // authored RemoteMachine, which carries no labels or annotations to copy into.
-func TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
+func TestReconcileFromPoolCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, infrastructure.AddToScheme(scheme))
 
@@ -118,7 +118,7 @@ func TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
 			WithObjects(pooled, rm).WithStatusSubresource(pooled).Build(),
 	}
 
-	require.NoError(t, c.reservePooledMachineAndPopulateRemoteMachine(context.Background(), rm))
+	require.NoError(t, c.reconcileFromPool(context.Background(), rm))
 
 	require.Equal(t, "10.0.0.1", rm.Spec.Address)
 	require.Equal(t, map[string]string{"pool": "a"}, rm.Labels)
