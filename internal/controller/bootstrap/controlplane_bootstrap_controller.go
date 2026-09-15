@@ -453,12 +453,6 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		return nil, err
 	}
 
-	err = chCS.Create(ctx, tokenKubeSecret)
-	if err != nil {
-		log.Error(err, "Failed to create token secret in the child cluster")
-		return nil, err
-	}
-
 	host, err := c.detectJoinHost(ctx, scope, ca)
 	if err != nil {
 		log.Error(err, "Failed to detect join controller host")
@@ -466,6 +460,17 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 	}
 
 	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, host, "controller-bootstrap")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create join token: %w", err)
+	}
+
+	// The credential is created last so that a retry of anything above it does not
+	// leave another usable controller join token behind in the workload cluster.
+	err = chCS.Create(ctx, tokenKubeSecret)
+	if err != nil {
+		log.Error(err, "Failed to create token secret in the child cluster")
+		return nil, err
+	}
 
 	files = append(files, provisioner.File{
 		Path:        scope.Config.Spec.GetJoinTokenPath(),
@@ -473,7 +478,7 @@ func (c *ControlPlaneController) genControlPlaneJoinFiles(ctx context.Context, s
 		Content:     joinToken,
 	})
 
-	return files, err
+	return files, nil
 }
 
 func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *ControllerScope) ([]provisioner.File, error) {
