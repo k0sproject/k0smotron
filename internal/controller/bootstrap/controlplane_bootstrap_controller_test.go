@@ -250,6 +250,24 @@ func TestControlPlaneController_detectJoinHost(t *testing.T) {
 
 		require.Error(t, err)
 	})
+
+	t.Run("a config that carries no k0s config joins on the default port", func(t *testing.T) {
+		bare := &ControllerScope{
+			Cluster: scope.Cluster,
+			Config: &bootstrapv2.K0sControllerConfig{
+				Spec: bootstrapv2.K0sControllerConfigSpec{
+					K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
+				},
+			},
+			machines: scope.machines,
+		}
+		ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: trustedCACert}}
+
+		host, err := c.detectJoinHost(context.Background(), bare, ca)
+
+		require.NoError(t, err)
+		require.Equal(t, "https://203.0.113.10:9443", host)
+	})
 }
 
 func selfSignedCertPEM(t *testing.T) []byte {
