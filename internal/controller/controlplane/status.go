@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	clog "sigs.k8s.io/cluster-api/util/log"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -58,7 +60,77 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 
 	controlplane.kcp.Status.Selector = collections.ControlPlaneSelectorForCluster(controlplane.cluster.Name).String()
 
+	// Ahead of computeReplicas, which gives up on an unparseable machine version, so remediation
+	// stays reported for the cluster most likely to be undergoing it.
+	setRemediatingCondition(ctx, controlplane)
+
 	return computeReplicas(controlplane)
+}
+
+// setRemediatingCondition reports the machines the control plane is replacing, and when it is
+// replacing none, names the unhealthy machines it is leaving alone.
+func setRemediatingCondition(ctx context.Context, controlplane *controlplane) {
+	// Deleting machines count, since a machine stays under remediation from the moment it is
+	// marked until it is gone, and deleting it is how the control plane remediates.
+	var all []*clusterv1.Machine
+	all = append(all, controlplane.activeMachines.UnsortedList()...)
+	all = append(all, controlplane.deletedMachines.UnsortedList()...)
+	machines := collections.FromMachines(all...)
+
+	toBeRemediated := machines.Filter(collections.IsUnhealthyAndOwnerRemediated)
+	if toBeRemediated.Len() == 0 {
+		conditions.Set(controlplane.kcp, metav1.Condition{
+			Type:    string(cpv1beta2.K0sControlPlaneRemediatingCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  cpv1beta2.K0sControlPlaneNotRemediatingReason,
+			Message: unremediatedMachinesMessage(machines.Filter(collections.IsUnhealthy)),
+		})
+
+		return
+	}
+
+	// The per machine condition carries why each remediation is where it is, including the
+	// preflight refusals, so aggregating it is what makes those visible on the control plane.
+	aggregated, err := conditions.NewAggregateCondition(
+		toBeRemediated.UnsortedList(), clusterv1.MachineOwnerRemediatedCondition,
+		conditions.TargetConditionType(cpv1beta2.K0sControlPlaneRemediatingCondition),
+	)
+	if err != nil {
+		ctrl.LoggerFrom(ctx).Error(err, "Failed to aggregate the machine conditions for the Remediating condition")
+		conditions.Set(controlplane.kcp, metav1.Condition{
+			Type:    string(cpv1beta2.K0sControlPlaneRemediatingCondition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  cpv1beta2.K0sControlPlaneRemediatingInternalErrorReason,
+			Message: "Please check controller logs for errors",
+		})
+
+		return
+	}
+
+	conditions.Set(controlplane.kcp, metav1.Condition{
+		Type:    aggregated.Type,
+		Status:  metav1.ConditionTrue,
+		Reason:  cpv1beta2.K0sControlPlaneRemediatingReason,
+		Message: aggregated.Message,
+	})
+}
+
+// unremediatedMachinesMessage names the machines known to be unhealthy that the control plane is
+// not replacing, since a bare Remediating=False reads as nothing being wrong with any of them.
+func unremediatedMachinesMessage(machines collections.Machines) string {
+	names := machines.Names()
+	if len(names) == 0 {
+		return ""
+	}
+	sort.Strings(names)
+
+	subject, verb := "Machine", "is"
+	if len(names) > 1 {
+		subject, verb = "Machines", "are"
+	}
+
+	return fmt.Sprintf("%s %s %s not healthy and not being remediated by the K0sControlPlane",
+		subject, clog.ListToString(names, func(s string) string { return s }, 3), verb)
 }
 
 func computeReplicas(controlplane *controlplane) error {

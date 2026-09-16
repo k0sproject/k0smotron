@@ -51,4 +51,18 @@ const (
 
 	// K0sControlPlaneNotScalingDownReason surfaces when actual replicas <= desired replicas.
 	K0sControlPlaneNotScalingDownReason = clusterv1.NotScalingDownReason
+
+	// K0sControlPlaneRemediatingCondition is true while the control plane is replacing machines
+	// that a MachineHealthCheck has marked unhealthy.
+	K0sControlPlaneRemediatingCondition = clusterv1.RemediatingCondition
+
+	// K0sControlPlaneRemediatingReason surfaces when at least one machine is being remediated.
+	K0sControlPlaneRemediatingReason = clusterv1.RemediatingReason
+
+	// K0sControlPlaneNotRemediatingReason surfaces when no machine is being remediated, which
+	// includes unhealthy machines the control plane has decided not to replace.
+	K0sControlPlaneNotRemediatingReason = clusterv1.NotRemediatingReason
+
+	// K0sControlPlaneRemediatingInternalErrorReason surfaces a failure to compute the condition.
+	K0sControlPlaneRemediatingInternalErrorReason = clusterv1.InternalErrorReason
 )
