@@ -48,10 +48,13 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/paused"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
@@ -73,6 +76,8 @@ type ControlPlaneController struct {
 	TokenTTL time.Duration
 	// workloadClusterClient is used during testing to inject a fake client
 	workloadClusterClient client.Client
+	// WatchFilterValue is the label value used to filter events prior to reconciliation.
+	WatchFilterValue string
 }
 
 var minVersionForETCDMemberCRD = version.MustParse("v1.31.6")
@@ -714,16 +719,82 @@ func createTokenSecret(tokenID, tokenSecret string, ttl time.Duration) *corev1.S
 	}
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (c *ControlPlaneController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
+// machineToControllerBootstrapMapFunc is a handler.ToRequestsFunc to be used to enqueue
+// request for reconciliation of K0sControllerConfig.
+func machineToControllerBootstrapMapFunc(_ context.Context, o client.Object) []ctrl.Request {
+	m, ok := o.(*clusterv1.Machine)
+	if !ok {
+		panic(fmt.Sprintf("Expected a Machine but got a %T", o))
+	}
+
+	result := []ctrl.Request{}
+	if m.Spec.Bootstrap.ConfigRef.IsDefined() && m.Spec.Bootstrap.ConfigRef.GroupKind() == bootstrapv2.GroupVersion.WithKind("K0sControllerConfig").GroupKind() {
+		name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.Bootstrap.ConfigRef.Name}
+		result = append(result, ctrl.Request{NamespacedName: name})
+	}
+	return result
+}
+
+// clusterToControllerBootstrapMapFunc maps a Cluster object to the corresponding K0sControllerConfig requests.
+func (c *ControlPlaneController) clusterToControllerBootstrapMapFunc(ctx context.Context, o client.Object) []ctrl.Request {
+	cluster, ok := o.(*clusterv1.Cluster)
+	if !ok {
+		panic(fmt.Sprintf("Expected a Cluster but got a %T", o))
+	}
+
+	selectors := []client.ListOption{
+		client.InNamespace(cluster.Namespace),
+		client.MatchingLabels{
+			clusterv1.ClusterNameLabel: cluster.Name,
+		},
+	}
+	result := []ctrl.Request{}
+
+	machineList := &clusterv1.MachineList{}
+	if err := c.Client.List(ctx, machineList, selectors...); err != nil {
+		ctrl.LoggerFrom(ctx).Error(err, "Failed to list Machines for Cluster, skipping K0sControllerConfig enqueue", "cluster", client.ObjectKeyFromObject(cluster))
+		return nil
+	}
+
+	for _, m := range machineList.Items {
+		if m.Spec.Bootstrap.ConfigRef.IsDefined() &&
+			m.Spec.Bootstrap.ConfigRef.GroupKind() == bootstrapv2.GroupVersion.WithKind("K0sControllerConfig").GroupKind() {
+			name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.Bootstrap.ConfigRef.Name}
+			result = append(result, ctrl.Request{NamespacedName: name})
+		}
+	}
+
+	return result
+}
+
+// SetupWithManager sets up the K0sControllerConfig controller with the Manager.
+func (c *ControlPlaneController) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opts controller.Options) error {
 	if c.TokenTTL <= 0 {
 		c.TokenTTL = DefaultTokenTTL
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	predicateLog := ctrl.LoggerFrom(ctx).WithValues("controller", "k0scontrollerconfig")
+
+	b := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&bootstrapv2.K0sControllerConfig{}).
-		Complete(c)
+		Watches(
+			&clusterv1.Machine{},
+			handler.EnqueueRequestsFromMapFunc(machineToControllerBootstrapMapFunc),
+		).
+		Watches(
+			&clusterv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(c.clusterToControllerBootstrapMapFunc),
+			builder.WithPredicates(
+				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), predicateLog),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), predicateLog, c.WatchFilterValue),
+			),
+		)
+	if c.ClusterCache != nil {
+		b.WatchesRawSource(c.ClusterCache.GetClusterSource("k0scontrollerconfig", c.clusterToControllerBootstrapMapFunc))
+	}
+
+	return b.Complete(c)
 }
 
 func createCPInstallCmd(scope *ControllerScope) string {
