@@ -32,6 +32,11 @@ const (
 	// ControlPlaneAvailableUnknownReason surfaces while the workload cluster API has
 	// not been reached even once, so nothing can be said about its availability.
 	ControlPlaneAvailableUnknownReason = clusterv1.AvailableUnknownReason
+
+	// K0sControlPlaneMachineRemediationFailedReason surfaces on a Machine whose
+	// remediation failed. A local string, since upstream only has a v1beta1 one.
+	K0sControlPlaneMachineRemediationFailedReason = "RemediationFailed"
+
 	// K0sControlPlaneScalingUpCondition is true if actual replicas < desired replicas.
 	// Note: In case a K0sControlPlane preflight check is preventing scale up, this will surface in the condition message.
 	K0sControlPlaneScalingUpCondition = clusterv1.ScalingUpCondition
