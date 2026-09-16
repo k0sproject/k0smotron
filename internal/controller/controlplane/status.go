@@ -58,7 +58,60 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 
 	controlplane.kcp.Status.Selector = collections.ControlPlaneSelectorForCluster(controlplane.cluster.Name).String()
 
+	// Ahead of computeReplicas, which gives up on an unparseable machine version, so the machines
+	// stay reported for the control plane most likely to have something wrong with them.
+	setMachinesReadyCondition(ctx, controlplane)
+
 	return computeReplicas(controlplane)
+}
+
+// setMachinesReadyCondition aggregates the machines' own Ready conditions, which is what carries
+// the reason a control plane is not ready down to the machine it is wrong on.
+func setMachinesReadyCondition(ctx context.Context, controlplane *controlplane) {
+	// Deleting machines are included, matching the replica counters, since a machine on its way
+	// out is still one the control plane is answering for.
+	var all []*clusterv1.Machine
+	all = append(all, controlplane.activeMachines.UnsortedList()...)
+	all = append(all, controlplane.deletedMachines.UnsortedList()...)
+
+	if len(all) == 0 {
+		conditions.Set(controlplane.kcp, metav1.Condition{
+			Type:   string(cpv1beta2.K0sControlPlaneMachinesReadyCondition),
+			Status: metav1.ConditionTrue,
+			Reason: cpv1beta2.K0sControlPlaneMachinesReadyNoReplicasReason,
+		})
+
+		return
+	}
+
+	readyCondition, err := conditions.NewAggregateCondition(
+		all, clusterv1.MachineReadyCondition,
+		conditions.TargetConditionType(cpv1beta2.K0sControlPlaneMachinesReadyCondition),
+		// The merge reasons default to generic ones like IssuesReported, so they are overridden
+		// with the ready wording a reader of this condition expects.
+		conditions.CustomMergeStrategy{
+			MergeStrategy: conditions.DefaultMergeStrategy(
+				conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
+					cpv1beta2.K0sControlPlaneMachinesNotReadyReason,
+					cpv1beta2.K0sControlPlaneMachinesReadyUnknownReason,
+					cpv1beta2.K0sControlPlaneMachinesReadyReason,
+				)),
+			),
+		},
+	)
+	if err != nil {
+		ctrl.LoggerFrom(ctx).Error(err, "Failed to aggregate the machine conditions for the MachinesReady condition")
+		conditions.Set(controlplane.kcp, metav1.Condition{
+			Type:    string(cpv1beta2.K0sControlPlaneMachinesReadyCondition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  cpv1beta2.K0sControlPlaneMachinesReadyInternalErrorReason,
+			Message: "Please check controller logs for errors",
+		})
+
+		return
+	}
+
+	conditions.Set(controlplane.kcp, *readyCondition)
 }
 
 func computeReplicas(controlplane *controlplane) error {
