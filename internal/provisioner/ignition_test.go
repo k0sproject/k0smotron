@@ -485,6 +485,39 @@ func TestIgnitionOpenshiftVariantCannotRender(t *testing.T) {
 		&InputProvisionData{Files: []File{{Path: "/a", Content: "x", Permissions: "0644"}}})
 
 	require.ErrorContains(t, err, "error translating butane config")
+	// Butane says only that the config is invalid, so the fields it refused have to come
+	// from the report or every render failure reads the same.
+	require.ErrorContains(t, err, "$.metadata.name")
+	require.ErrorContains(t, err, "machineconfiguration.openshift.io/role label is required")
+}
+
+// TestIgnitionSurfacesWhatButaneRefused covers the two failures the report is the only
+// source for, a unit body over the length limit and one carrying a newline.
+func TestIgnitionSurfacesWhatButaneRefused(t *testing.T) {
+	render := func(command string) error {
+		_, err := (&IgnitionProvisioner{Variant: "fcos", Version: "1.4.0"}).ToProvisionData(
+			&InputProvisionData{Commands: []string{command}})
+
+		return err
+	}
+
+	t.Run("a unit body over the limit names the limit", func(t *testing.T) {
+		err := render("echo " + strings.Repeat("x", 2100))
+
+		require.ErrorContains(t, err, "$.systemd.units.0.contents")
+		require.ErrorContains(t, err, "line too long")
+	})
+
+	t.Run("a newline in a command names the parse that failed", func(t *testing.T) {
+		err := render("echo a\nb")
+
+		require.ErrorContains(t, err, "$.systemd.units.0.contents")
+		require.ErrorContains(t, err, "unexpected newline")
+	})
+
+	t.Run("a config that renders reports nothing extra", func(t *testing.T) {
+		require.NoError(t, render("echo fine"))
+	})
 }
 
 func TestIgnitionRejectsUndecodableContent(t *testing.T) {

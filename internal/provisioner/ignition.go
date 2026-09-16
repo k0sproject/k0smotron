@@ -22,11 +22,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"text/template"
 
 	butaneutil "github.com/coreos/butane/base/util"
 	"github.com/coreos/butane/config"
 	bcommon "github.com/coreos/butane/config/common"
+	"github.com/coreos/vcontext/report"
 	"gopkg.in/yaml.v3"
 )
 
@@ -49,6 +51,22 @@ type IgnitionProvisioner struct {
 	Variant          string
 	Version          string
 	AdditionalConfig string
+}
+
+// butaneRejections names the fields Butane refused, since its error is the same sentence
+// whatever the cause and the report is where the field and the limit are.
+func butaneRejections(rep report.Report) string {
+	rejections := []string{}
+	for _, entry := range rep.Entries {
+		if entry.Kind.IsFatal() {
+			rejections = append(rejections, entry.String())
+		}
+	}
+	if len(rejections) == 0 {
+		return ""
+	}
+
+	return ", " + strings.Join(rejections, ", ")
 }
 
 // ToProvisionData converts the input data to Ignition user data.
@@ -133,14 +151,14 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling butane config: %w", err)
 	}
-	initIgn, _, err := config.TranslateBytes(
+	initIgn, initReport, err := config.TranslateBytes(
 		butaneYaml,
 		bcommon.TranslateBytesOptions{
 			Pretty: true,
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error translating butane config: %w", err)
+		return nil, fmt.Errorf("error translating butane config: %w%s", err, butaneRejections(initReport))
 	}
 
 	// Get ignition spec version from initial config
@@ -167,7 +185,7 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 		// translate additional Butane YAML to Ignition JSON
 		// User supplied Butane can still use inline contents, so auto compression has
 		// to stay off here or their file bodies come out gzipped.
-		addIgn, _, err := config.TranslateBytes(
+		addIgn, addReport, err := config.TranslateBytes(
 			[]byte(i.AdditionalConfig),
 			bcommon.TranslateBytesOptions{
 				TranslateOptions: bcommon.TranslateOptions{NoResourceAutoCompression: true},
@@ -175,7 +193,7 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 			},
 		)
 		if err != nil {
-			return nil, fmt.Errorf("error translating additional config: %w", err)
+			return nil, fmt.Errorf("error translating additional config: %w%s", err, butaneRejections(addReport))
 		}
 
 		additionalIgnEncoded := base64.StdEncoding.EncodeToString(addIgn)
