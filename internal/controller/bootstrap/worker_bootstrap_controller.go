@@ -39,10 +39,13 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/paused"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
@@ -71,6 +74,8 @@ type Controller struct {
 	RESTConfig          *rest.Config
 	// workloadClusterClient is used during testing to inject a fake client
 	workloadClusterClient client.Client
+	// WatchFilterValue is the label value used to filter events prior to reconciliation.
+	WatchFilterValue string
 }
 
 // Scope contains the information required to generate the bootstrap data for a worker machine.
@@ -698,10 +703,75 @@ func createInstallCmd(scope *Scope) string {
 	return strings.Join(installCmd, " ")
 }
 
+// machineToBootstrapMapFunc is a handler.ToRequestsFunc to be used to enqueue
+// request for reconciliation of K0sWorkerConfig.
+func machineToWorkerBootstrapMapFunc(_ context.Context, o client.Object) []ctrl.Request {
+	m, ok := o.(*clusterv1.Machine)
+	if !ok {
+		panic(fmt.Sprintf("Expected a Machine but got a %T", o))
+	}
+
+	result := []ctrl.Request{}
+	if m.Spec.Bootstrap.ConfigRef.IsDefined() && m.Spec.Bootstrap.ConfigRef.GroupKind() == bootstrapv2.GroupVersion.WithKind("K0sWorkerConfig").GroupKind() {
+		name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.Bootstrap.ConfigRef.Name}
+		result = append(result, ctrl.Request{NamespacedName: name})
+	}
+	return result
+}
+
+// clusterToBootstrapMapFunc maps a Cluster object to the corresponding K0sWorkerConfig requests.
+func (r *Controller) clusterToWorkerBootstrapMapFunc(ctx context.Context, o client.Object) []ctrl.Request {
+	c, ok := o.(*clusterv1.Cluster)
+	if !ok {
+		panic(fmt.Sprintf("Expected a Cluster but got a %T", o))
+	}
+
+	selectors := []client.ListOption{
+		client.InNamespace(c.Namespace),
+		client.MatchingLabels{
+			clusterv1.ClusterNameLabel: c.Name,
+		},
+	}
+	result := []ctrl.Request{}
+
+	machineList := &clusterv1.MachineList{}
+	if err := r.Client.List(ctx, machineList, selectors...); err != nil {
+		return nil
+	}
+
+	for _, m := range machineList.Items {
+		if m.Spec.Bootstrap.ConfigRef.IsDefined() &&
+			m.Spec.Bootstrap.ConfigRef.GroupKind() == bootstrapv2.GroupVersion.WithKind("K0sWorkerConfig").GroupKind() {
+			name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.Bootstrap.ConfigRef.Name}
+			result = append(result, ctrl.Request{NamespacedName: name})
+		}
+	}
+
+	return result
+}
+
 // SetupWithManager sets up the controller with the Manager.
-func (r *Controller) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
-	return ctrl.NewControllerManagedBy(mgr).
+func (r *Controller) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opts controller.Options) error {
+	predicateLog := ctrl.LoggerFrom(ctx).WithValues("controller", "k0sworkerconfig")
+
+	b := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&bootstrapv2.K0sWorkerConfig{}).
-		Complete(r)
+		Watches(
+			&clusterv1.Machine{},
+			handler.EnqueueRequestsFromMapFunc(machineToWorkerBootstrapMapFunc),
+		).
+		Watches(
+			&clusterv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(r.clusterToWorkerBootstrapMapFunc),
+			builder.WithPredicates(
+				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), predicateLog),
+				predicates.ResourceHasFilterLabel(mgr.GetScheme(), predicateLog, r.WatchFilterValue),
+			),
+		)
+	if r.ClusterCache != nil {
+		b.WatchesRawSource(r.ClusterCache.GetClusterSource("k0sworkerconfig", r.clusterToWorkerBootstrapMapFunc))
+	}
+
+	return b.Complete(r)
 }
