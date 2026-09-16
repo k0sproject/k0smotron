@@ -51,4 +51,26 @@ const (
 
 	// K0sControlPlaneNotScalingDownReason surfaces when actual replicas <= desired replicas.
 	K0sControlPlaneNotScalingDownReason = clusterv1.NotScalingDownReason
+
+	// K0sControlPlaneMachinesUpToDateCondition aggregates the UpToDate condition of the machines
+	// the control plane owns, so what is outdated about them is readable from the control plane.
+	K0sControlPlaneMachinesUpToDateCondition = clusterv1.MachinesUpToDateCondition
+
+	// K0sControlPlaneMachinesUpToDateReason surfaces when every machine reports up to date.
+	K0sControlPlaneMachinesUpToDateReason = clusterv1.UpToDateReason
+
+	// K0sControlPlaneMachinesNotUpToDateReason surfaces when at least one machine reports not
+	// being up to date.
+	K0sControlPlaneMachinesNotUpToDateReason = clusterv1.NotUpToDateReason
+
+	// K0sControlPlaneMachinesUpToDateUnknownReason surfaces when at least one machine says nothing
+	// about being up to date and none reports being outdated.
+	K0sControlPlaneMachinesUpToDateUnknownReason = clusterv1.UpToDateUnknownReason
+
+	// K0sControlPlaneMachinesUpToDateNoReplicasReason surfaces when there is no machine old enough
+	// to be asked about.
+	K0sControlPlaneMachinesUpToDateNoReplicasReason = clusterv1.NoReplicasReason
+
+	// K0sControlPlaneMachinesUpToDateInternalErrorReason surfaces a failure to compute the condition.
+	K0sControlPlaneMachinesUpToDateInternalErrorReason = clusterv1.InternalErrorReason
 )
