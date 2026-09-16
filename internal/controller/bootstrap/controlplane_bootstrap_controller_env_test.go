@@ -24,6 +24,7 @@ import (
 	"time"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -602,4 +603,58 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 		}
 		assert.True(c, conditions.IsTrue(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
 	}, 20*time.Second, 100*time.Millisecond)
+}
+
+// The spec is inlined through a pointer, so an object carrying only a version would leave it
+// nil and panic every promoted read below. Defaults on fields inside the block are what keep
+// the API server materialising it, so the last one going is what brings the panics back.
+func TestK0sControllerConfigAlwaysCarriesAnInlinedSpec(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-controllerconfig-inlined-spec")
+	require.NoError(t, err)
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(ns)
+
+	// The reads the bootstrap controller performs while building its scope, which is where
+	// a nil embedded spec would surface.
+	promotedReads := func(t *testing.T, config *bootstrapv2.K0sControllerConfig) {
+		t.Helper()
+
+		require.NotNil(t, config.Spec.K0sConfigSpec,
+			"a nil inlined spec panics every promoted read, see the doc comment above")
+
+		_ = config.Spec.Provisioner
+		_ = config.Spec.Args
+		_ = config.Spec.UseSystemHostname
+		_ = config.Spec.GetJoinTokenPath()
+	}
+
+	t.Run("created as v1beta2 with nothing but a version", func(t *testing.T) {
+		created := &bootstrapv2.K0sControllerConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "only-a-version-v2", Namespace: ns.Name},
+			Spec:       bootstrapv2.K0sControllerConfigSpec{Version: "v1.31.1+k0s.0"},
+		}
+		require.NoError(t, testEnv.Create(ctx, created))
+
+		got := &bootstrapv2.K0sControllerConfig{}
+		require.NoError(t, testEnv.GetAPIReader().Get(ctx, client.ObjectKeyFromObject(created), got))
+
+		promotedReads(t, got)
+	})
+
+	// Conversion propagates a nil spec rather than filling it in, so the stored object is
+	// what has to be non nil here too.
+	t.Run("created as v1beta1 and read back as v1beta2", func(t *testing.T) {
+		created := &bootstrapv1.K0sControllerConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "only-a-version-v1", Namespace: ns.Name},
+			Spec:       bootstrapv1.K0sControllerConfigSpec{Version: "v1.31.1+k0s.0"},
+		}
+		require.NoError(t, testEnv.Create(ctx, created))
+
+		got := &bootstrapv2.K0sControllerConfig{}
+		require.NoError(t, testEnv.GetAPIReader().Get(ctx, client.ObjectKeyFromObject(created), got))
+
+		promotedReads(t, got)
+	})
 }
