@@ -247,9 +247,13 @@ func TestReconcilePausedCluster(t *testing.T) {
 		Client: testEnv,
 	}
 
+	requireCached(t, cluster, machineForWorkerConfig, k0sWorkerConfig)
+
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 	require.NoError(t, err)
 	require.Equal(t, ctrl.Result{}, result)
+
+	requirePausedReported(t, k0sWorkerConfig)
 }
 
 func TestReconcilePausedK0sWorkerConfig(t *testing.T) {
@@ -315,9 +319,13 @@ func TestReconcilePausedK0sWorkerConfig(t *testing.T) {
 		Client: testEnv,
 	}
 
+	requireCached(t, cluster, machineForWorkerConfig, k0sWorkerConfig)
+
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 	require.NoError(t, err)
 	require.Equal(t, ctrl.Result{}, result)
+
+	requirePausedReported(t, k0sWorkerConfig)
 }
 
 func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
@@ -770,4 +778,39 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		},
 	}
 	return cluster, kcp, genericMachineTemplate
+}
+
+// pausedObject is both an object to re-read and a condition holder to inspect.
+type pausedObject interface {
+	client.Object
+	conditions.Getter
+}
+
+// requireCached waits for the objects the reconcile reads through the cached client to be visible
+// there, since a miss on any of them returns early and so reports nothing at all.
+func requireCached(t *testing.T, objs ...client.Object) {
+	t.Helper()
+
+	require.Eventually(t, func() bool {
+		for _, obj := range objs {
+			into := obj.DeepCopyObject().(client.Object)
+			if err := testEnv.Get(ctx, client.ObjectKeyFromObject(obj), into); err != nil {
+				return false
+			}
+		}
+
+		return true
+	}, 10*time.Second, 100*time.Millisecond)
+}
+
+// requirePausedReported reads the object uncached, since the condition is patched during the
+// reconcile and a cached read can still be showing the object from before that patch.
+func requirePausedReported(t *testing.T, obj pausedObject) {
+	t.Helper()
+
+	require.NoError(t, testEnv.GetAPIReader().Get(ctx, client.ObjectKeyFromObject(obj), obj))
+
+	got := conditions.Get(obj, clusterv1.PausedCondition)
+	require.NotNil(t, got, "a paused object has to say so, not only stop reconciling")
+	require.Equal(t, metav1.ConditionTrue, got.Status)
 }
