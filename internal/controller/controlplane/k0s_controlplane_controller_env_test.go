@@ -1222,6 +1222,9 @@ func generateKubeconfigRequiringRotation(clusterName string) ([]byte, error) {
 
 type fakeRoundTripper struct {
 	plan *autopilot.Plan
+	// etcdMembers is what the workload cluster answers the member list with. Left empty
+	// the list is a 404, which is how every test that does not care about it behaves.
+	etcdMembers []etcdMember
 }
 
 func (f *fakeRoundTripper) run(req *http.Request) (*http.Response, error) {
@@ -1230,6 +1233,13 @@ func (f *fakeRoundTripper) run(req *http.Request) (*http.Response, error) {
 
 	switch req.Method {
 	case "GET":
+		if req.URL.Path == etcdMembersAPIPath && f.etcdMembers != nil {
+			res, err := json.Marshal(etcdMemberList{Items: f.etcdMembers})
+			if err != nil {
+				return nil, err
+			}
+			return &http.Response{StatusCode: http.StatusOK, Header: header, Body: io.NopCloser(bytes.NewReader(res))}, nil
+		}
 		if strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/controlnodes/") {
 			res, err := json.Marshal(autopilot.ControlNode{})
 			if err != nil {
