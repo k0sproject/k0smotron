@@ -270,30 +270,32 @@ func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error 
 }
 
 func (c *K0sController) scaleDown(ctx context.Context, scope *controlplane) error {
-	logger := log.FromContext(ctx)
-
-	// An operator naming a machine outranks every other signal, which is the whole
-	// point of the annotation.
-	machineToDelete := annotatedForDeletion(scope).Oldest()
-	reason := "annotated"
-
-	if machineToDelete == nil {
-		machineToDelete = oldestInFullestFailureDomain(ctx, scope, scope.notUpToDateMachines)
-		reason = "outdated"
-	}
-	if machineToDelete == nil {
-		// If we need to scale down but there are no machines elegible for deletion, it means that all the machines are up to date but we
-		// still have more machines than desired. In this case, we can delete the oldest machine, even if it's up to date.
-		machineToDelete = oldestInFullestFailureDomain(ctx, scope, scope.upToDateMachines)
-		reason = "excess"
-	}
+	machineToDelete, reason := selectMachineToDelete(ctx, scope)
 	if machineToDelete == nil {
 		return fmt.Errorf("no machine found to delete")
 	}
 
-	logger.Info("Deleting control plane machine", "machine", machineToDelete.Name, "reason", reason)
+	log.FromContext(ctx).Info("Deleting control plane machine", "machine", machineToDelete.Name, "reason", reason)
 
 	return c.deleteMachine(ctx, machineToDelete.Name, scope.kcp)
+}
+
+// selectMachineToDelete returns the machine to remove and why, in the order upstream
+// uses, an operator's choice first, then an outdated machine, then any excess one.
+func selectMachineToDelete(ctx context.Context, scope *controlplane) (*clusterv1.Machine, string) {
+	// An operator naming a machine outranks every other signal, which is the whole
+	// point of the annotation.
+	if machine := annotatedForDeletion(scope).Oldest(); machine != nil {
+		return machine, "annotated"
+	}
+
+	if machine := oldestInFullestFailureDomain(ctx, scope, scope.notUpToDateMachines); machine != nil {
+		return machine, "outdated"
+	}
+
+	// Nothing is outdated and there are still more machines than desired, so an up to
+	// date one comes off instead.
+	return oldestInFullestFailureDomain(ctx, scope, scope.upToDateMachines), "excess"
 }
 
 // preflightChecks performs necessary checks before updating the control plane, ensuring that the cluster is in a healthy state and ready

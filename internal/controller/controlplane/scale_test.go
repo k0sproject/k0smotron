@@ -321,3 +321,75 @@ func TestOldestInFullestFailureDomain(t *testing.T) {
 		require.Nil(t, oldestInFullestFailureDomain(context.Background(), scope, collections.Machines{}))
 	})
 }
+
+// TestSelectMachineToDelete covers the whole priority order, which the reason string
+// makes observable.
+func TestSelectMachineToDelete(t *testing.T) {
+	machine := func(name string, age time.Duration, annotated bool) *clusterv1.Machine {
+		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+			Name: name, CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
+		}}
+		if annotated {
+			m.Annotations = map[string]string{clusterv1.DeleteMachineAnnotation: ""}
+		}
+
+		return m
+	}
+
+	picked := machine("picked", time.Minute, true)
+	outdated := machine("outdated", 30*time.Minute, false)
+	upToDate := machine("up-to-date", time.Hour, false)
+
+	scope := func(active, notUpToDate, upToDateSet collections.Machines) *controlplane {
+		return &controlplane{
+			cluster:             &clusterv1.Cluster{},
+			activeMachines:      active,
+			deletedMachines:     collections.Machines{},
+			notUpToDateMachines: notUpToDate,
+			upToDateMachines:    upToDateSet,
+		}
+	}
+
+	t.Run("the annotated machine comes first", func(t *testing.T) {
+		got, reason := selectMachineToDelete(context.Background(), scope(
+			collections.FromMachines(picked, outdated, upToDate),
+			collections.FromMachines(outdated),
+			collections.FromMachines(picked, upToDate),
+		))
+
+		require.Equal(t, "picked", got.Name)
+		require.Equal(t, "annotated", reason)
+	})
+
+	t.Run("then an outdated machine", func(t *testing.T) {
+		got, reason := selectMachineToDelete(context.Background(), scope(
+			collections.FromMachines(outdated, upToDate),
+			collections.FromMachines(outdated),
+			collections.FromMachines(upToDate),
+		))
+
+		require.Equal(t, "outdated", got.Name)
+		require.Equal(t, "outdated", reason)
+	})
+
+	t.Run("then the excess, oldest first", func(t *testing.T) {
+		newer := machine("newer", time.Minute, false)
+
+		got, reason := selectMachineToDelete(context.Background(), scope(
+			collections.FromMachines(newer, upToDate),
+			collections.Machines{},
+			collections.FromMachines(newer, upToDate),
+		))
+
+		require.Equal(t, "up-to-date", got.Name)
+		require.Equal(t, "excess", reason)
+	})
+
+	t.Run("nothing to pick from", func(t *testing.T) {
+		got, _ := selectMachineToDelete(context.Background(), scope(
+			collections.Machines{}, collections.Machines{}, collections.Machines{},
+		))
+
+		require.Nil(t, got)
+	})
+}
