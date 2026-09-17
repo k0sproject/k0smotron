@@ -203,10 +203,10 @@ func oldestInFullestFailureDomain(ctx context.Context, scope *controlplane, cand
 	return candidates.Oldest()
 }
 
-// annotatedForDeletion returns the active machines an operator has marked for removal
-// with the upstream delete-machine annotation.
-func annotatedForDeletion(scope *controlplane) collections.Machines {
-	return scope.activeMachines.Filter(func(m *clusterv1.Machine) bool {
+// annotatedForDeletion returns the machines an operator has marked for removal with the
+// upstream delete-machine annotation.
+func annotatedForDeletion(machines collections.Machines) collections.Machines {
+	return machines.Filter(func(m *clusterv1.Machine) bool {
 		_, ok := m.Annotations[clusterv1.DeleteMachineAnnotation]
 
 		return ok
@@ -280,22 +280,30 @@ func (c *K0sController) scaleDown(ctx context.Context, scope *controlplane) erro
 	return c.deleteMachine(ctx, machineToDelete.Name, scope.kcp)
 }
 
-// selectMachineToDelete returns the machine to remove and why, in the order upstream
-// uses, an operator's choice first, then an outdated machine, then any excess one.
+// selectMachineToDelete returns the machine to remove and why, in the two phases upstream
+// uses. An eligible subset is chosen first, then one machine out of the fullest domain.
 func selectMachineToDelete(ctx context.Context, scope *controlplane) (*clusterv1.Machine, string) {
-	// An operator naming a machine outranks every other signal, which is the whole
-	// point of the annotation.
-	if machine := annotatedForDeletion(scope).Oldest(); machine != nil {
-		return machine, "annotated"
+	var (
+		eligible collections.Machines
+		reason   string
+	)
+
+	switch {
+	// An operator naming a machine outranks every other signal, and an outdated one
+	// among those named outranks the rest, so the rollout gets the same delete.
+	case annotatedForDeletion(scope.notUpToDateMachines).Len() > 0:
+		eligible, reason = annotatedForDeletion(scope.notUpToDateMachines), "annotated and outdated"
+	case annotatedForDeletion(scope.activeMachines).Len() > 0:
+		eligible, reason = annotatedForDeletion(scope.activeMachines), "annotated"
+	// Upstream has a tier between these two for outdated machines whose control plane
+	// components are unhealthy, which needs per machine conditions k0smotron never sets.
+	case scope.notUpToDateMachines.Len() > 0:
+		eligible, reason = scope.notUpToDateMachines, "outdated"
+	default:
+		eligible, reason = scope.activeMachines, "excess"
 	}
 
-	if machine := oldestInFullestFailureDomain(ctx, scope, scope.notUpToDateMachines); machine != nil {
-		return machine, "outdated"
-	}
-
-	// Nothing is outdated and there are still more machines than desired, so an up to
-	// date one comes off instead.
-	return oldestInFullestFailureDomain(ctx, scope, scope.upToDateMachines), "excess"
+	return oldestInFullestFailureDomain(ctx, scope, eligible), reason
 }
 
 // preflightChecks performs necessary checks before updating the control plane, ensuring that the cluster is in a healthy state and ready
