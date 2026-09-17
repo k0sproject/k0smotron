@@ -157,11 +157,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 
 	kmc := &km.Cluster{}
 	if err := r.Get(ctx, req.NamespacedName, kmc); err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Info("Cluster not found")
+			return ctrl.Result{}, nil
+		}
 		logger.Error(err, "unable to fetch Cluster")
-		// we'll ignore not-found errors, since they can't be fixed by an immediate
-		// requeue (we'll need to wait for a new notification), and we can get them
-		// on deleted requests.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, err
 	}
 	logger.Info("Reconciling")
 

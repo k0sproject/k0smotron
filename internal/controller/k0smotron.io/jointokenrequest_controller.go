@@ -28,6 +28,7 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -71,11 +72,12 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	var jtr km.JoinTokenRequest
 	if err := r.Get(ctx, req.NamespacedName, &jtr); err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Info("JoinTokenRequest not found")
+			return ctrl.Result{}, nil
+		}
 		logger.Error(err, "unable to fetch JoinTokenRequest")
-		// we'll ignore not-found errors, since they can't be fixed by an immediate
-		// requeue (we'll need to wait for a new notification), and we can get them
-		// on deleted requests.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, err
 	}
 
 	if finalizerAdded, err := util.EnsureFinalizer(ctx, r.Client, &jtr, joinTokenRequestFinalizer); err != nil || finalizerAdded {
