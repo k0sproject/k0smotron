@@ -21,12 +21,18 @@ package controlplane
 import (
 	"context"
 	"testing"
+	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/require"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func failureDomainMachine(name, domain string) *clusterv1.Machine {
@@ -156,4 +162,93 @@ func TestNextFailureDomain(t *testing.T) {
 
 		require.Equal(t, "fd-b", nextFailureDomain(context.Background(), scope))
 	})
+}
+
+// TestAnnotatedForDeletion covers the upstream delete-machine annotation being read at
+// all, since scale down used to pick by age alone.
+func TestAnnotatedForDeletion(t *testing.T) {
+	machine := func(name string, annotated bool) *clusterv1.Machine {
+		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: name}}
+		if annotated {
+			m.Annotations = map[string]string{clusterv1.DeleteMachineAnnotation: ""}
+		}
+
+		return m
+	}
+
+	t.Run("only the annotated machines come back", func(t *testing.T) {
+		scope := &controlplane{
+			activeMachines: collections.FromMachines(
+				machine("plain", false), machine("picked", true), machine("other", false),
+			),
+		}
+
+		got := annotatedForDeletion(scope)
+
+		require.Equal(t, 1, got.Len())
+		require.Equal(t, "picked", got.Oldest().Name)
+	})
+
+	t.Run("no annotation means no candidate", func(t *testing.T) {
+		scope := &controlplane{
+			activeMachines: collections.FromMachines(machine("a", false), machine("b", false)),
+		}
+
+		require.Nil(t, annotatedForDeletion(scope).Oldest())
+	})
+
+	t.Run("a machine already deleting is not a candidate", func(t *testing.T) {
+		scope := &controlplane{
+			activeMachines:  collections.Machines{},
+			deletedMachines: collections.FromMachines(machine("going", true)),
+		}
+
+		require.Nil(t, annotatedForDeletion(scope).Oldest())
+	})
+}
+
+// TestScaleDownPrefersTheAnnotatedMachine covers the election order, since the
+// annotation has to outrank both the outdated and the oldest machine.
+func TestScaleDownPrefersTheAnnotatedMachine(t *testing.T) {
+	kcp := &cpv1beta2.K0sControlPlane{
+		ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"},
+	}
+	machine := func(name string, age time.Duration, annotated bool) *clusterv1.Machine {
+		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+			Name: name, Namespace: "default",
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
+		}}
+		if annotated {
+			m.Annotations = map[string]string{clusterv1.DeleteMachineAnnotation: ""}
+		}
+
+		return m
+	}
+
+	// The annotated machine is neither the oldest nor the outdated one, so picking it
+	// can only come from the annotation.
+	oldest := machine("oldest", time.Hour, false)
+	outdated := machine("outdated", 30*time.Minute, false)
+	picked := machine("picked", time.Minute, true)
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(oldest, outdated, picked).Build()
+
+	c := &K0sController{Client: cl}
+	scope := &controlplane{
+		kcp:                 kcp,
+		activeMachines:      collections.FromMachines(oldest, outdated, picked),
+		notUpToDateMachines: collections.FromMachines(outdated),
+		upToDateMachines:    collections.FromMachines(oldest, picked),
+	}
+
+	require.NoError(t, c.scaleDown(context.Background(), scope))
+
+	gone := &clusterv1.Machine{}
+	require.True(t, apierrors.IsNotFound(
+		cl.Get(context.Background(), client.ObjectKey{Namespace: "default", Name: "picked"}, gone)),
+		"the annotated machine is the one that goes")
+	require.NoError(t, cl.Get(context.Background(), client.ObjectKey{Namespace: "default", Name: "outdated"}, gone))
+	require.NoError(t, cl.Get(context.Background(), client.ObjectKey{Namespace: "default", Name: "oldest"}, gone))
 }
