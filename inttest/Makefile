@@ -49,6 +49,7 @@ check-pvc: TIMEOUT=15m
 check-pvc: LOCAL_STORAGE_INSTALL_YAML=$(realpath ./footloose-alpine/seaweedfs.yaml)
 check-capi-controlplane-docker-tunneling: TIMEOUT=10m
 check-capi-controlplane-docker-downscaling: TIMEOUT=15m
+check-capi-controlplane-docker-etcd-health: TIMEOUT=25m
 check-capi-remote-machine: TIMEOUT=12m
 check-capi-remote-machine-template: TIMEOUT=12m
 check-capi-remote-machine-template-update: TIMEOUT=10m
