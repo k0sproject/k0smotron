@@ -189,6 +189,16 @@ func calculateMaxSurge(scope *controlplane) int {
 
 // nextFailureDomain picks the failure domain for a new control plane machine.
 // A deleting machine still occupies one, so it counts toward the total.
+// annotatedForDeletion returns the active machines an operator has marked for removal
+// with the upstream delete-machine annotation.
+func annotatedForDeletion(scope *controlplane) collections.Machines {
+	return scope.activeMachines.Filter(func(m *clusterv1.Machine) bool {
+		_, ok := m.Annotations[clusterv1.DeleteMachineAnnotation]
+
+		return ok
+	})
+}
+
 func nextFailureDomain(ctx context.Context, scope *controlplane) string {
 	allMachines := collections.FromMachines(append(scope.activeMachines.UnsortedList(), scope.deletedMachines.UnsortedList()...)...)
 
@@ -247,9 +257,16 @@ func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error 
 
 func (c *K0sController) scaleDown(ctx context.Context, scope *controlplane) error {
 	logger := log.FromContext(ctx)
-	machineToDelete := scope.notUpToDateMachines.Oldest()
-	reason := "outdated"
 
+	// An operator naming a machine outranks every other signal, which is the whole
+	// point of the annotation.
+	machineToDelete := annotatedForDeletion(scope).Oldest()
+	reason := "annotated"
+
+	if machineToDelete == nil {
+		machineToDelete = scope.notUpToDateMachines.Oldest()
+		reason = "outdated"
+	}
 	if machineToDelete == nil {
 		// If we need to scale down but there are no machines elegible for deletion, it means that all the machines are up to date but we
 		// still have more machines than desired. In this case, we can delete the oldest machine, even if it's up to date.
