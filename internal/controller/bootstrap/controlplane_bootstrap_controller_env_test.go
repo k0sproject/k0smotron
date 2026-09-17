@@ -24,16 +24,19 @@ import (
 	"time"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta1"
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -602,4 +605,144 @@ func TestReconcileControllerConfigGenerateBootstrapData(t *testing.T) {
 		}
 		assert.True(c, conditions.IsTrue(updatedK0sControllerConfig, bootstrapv1.DataSecretAvailableCondition))
 	}, 20*time.Second, 100*time.Millisecond)
+}
+
+func TestGenControlPlaneJoinFilesLeavesNoTokenWhenTheJoinHostIsUnknown(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-join-token-not-leaked")
+	require.NoError(t, err)
+
+	kcpName := fmt.Sprintf("kcp-join-token-%s", util.RandomString(6))
+	cluster := newCluster(ns.Name)
+	cluster.Spec.ControlPlaneRef = clusterv1.ContractVersionedObjectReference{
+		Kind:     "K0sControlPlane",
+		Name:     kcpName,
+		APIGroup: cpv1beta2.GroupVersion.Group,
+	}
+	require.NoError(t, testEnv.Create(ctx, cluster))
+
+	kcp := &cpv1beta2.K0sControlPlane{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: cpv1beta2.GroupVersion.String(),
+			Kind:       "K0sControlPlane",
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: kcpName, Namespace: ns.Name, UID: "1"},
+		Spec: cpv1beta2.K0sControlPlaneSpec{
+			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
+				InfrastructureRef: corev1.ObjectReference{
+					Kind:       "GenericInfrastructureMachineTemplate",
+					Namespace:  ns.Name,
+					Name:       "infra-join-token",
+					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+				},
+			},
+			Replicas: int32(1),
+			Version:  "v1.30.0",
+		},
+	}
+	require.NoError(t, testEnv.Create(ctx, kcp))
+
+	// The workload cluster is this same test env, so the token secret would really be
+	// created and is really observable.
+	kubeconfigSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+			Namespace: cluster.Namespace,
+			Labels:    map[string]string{clusterv1.ClusterNameLabel: cluster.Name},
+		},
+		Data: map[string][]byte{
+			secret.KubeconfigDataName: kubeconfig.FromEnvTestConfig(testEnv.Config, cluster),
+		},
+	}
+	require.NoError(t, testEnv.Create(ctx, kubeconfigSecret))
+
+	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+	require.NoError(t, clusterCerts.Generate())
+	caCertSecret := clusterCerts.GetByPurpose(secret.ClusterCA).AsSecret(
+		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
+	)
+	require.NoError(t, testEnv.Create(ctx, caCertSecret))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(caCertSecret, kubeconfigSecret, kcp, cluster, ns)
+
+	before := countBootstrapTokens(t)
+
+	c := &ControlPlaneController{
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
+	}
+	scope := &ControllerScope{
+		Cluster: cluster,
+		Config: &bootstrapv2.K0sControllerConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "joining-controller", Namespace: ns.Name},
+			Spec: bootstrapv2.K0sControllerConfigSpec{
+				Version: "v1.30.0+k0s.0",
+				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+					K0s: &unstructured.Unstructured{Object: map[string]any{}},
+				},
+			},
+		},
+	}
+
+	// No machine carries an address, so the join host cannot be resolved and the
+	// generation fails after the point the credential used to be created.
+	_, err = c.genControlPlaneJoinFiles(ctx, scope, nil)
+	require.Error(t, err)
+
+	require.Equal(t, before, countBootstrapTokens(t),
+		"a failed join file generation left a usable join token behind in the workload cluster")
+}
+
+func countBootstrapTokens(t *testing.T) int {
+	t.Helper()
+
+	secrets := &corev1.SecretList{}
+	require.NoError(t, testEnv.List(ctx, secrets, client.InNamespace("kube-system")))
+
+	n := 0
+	for _, s := range secrets.Items {
+		if s.Type == corev1.SecretTypeBootstrapToken {
+			n++
+		}
+	}
+
+	return n
+}
+
+func TestGetK0sTokenLeavesNoTokenWhenTheClusterCAIsMissing(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-worker-join-token-not-leaked")
+	require.NoError(t, err)
+
+	cluster := newCluster(ns.Name)
+	require.NoError(t, testEnv.Create(ctx, cluster))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(cluster, ns)
+
+	before := countBootstrapTokens(t)
+
+	r := &Controller{
+		Client:                testEnv,
+		SecretCachingClient:   secretCachingClient,
+		workloadClusterClient: testEnv,
+	}
+	scope := &Scope{
+		Cluster:             cluster,
+		client:              testEnv,
+		secretCachingClient: secretCachingClient,
+		Config: &bootstrapv2.K0sWorkerConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "joining-worker", Namespace: ns.Name},
+		},
+	}
+
+	// The cluster has no certificate secrets, so the token cannot be signed and the
+	// lookup fails after the point the credential used to be created.
+	_, err = r.getK0sToken(ctx, scope)
+	require.Error(t, err)
+
+	require.Equal(t, before, countBootstrapTokens(t),
+		"a failed token generation left a usable join token behind in the workload cluster")
 }
