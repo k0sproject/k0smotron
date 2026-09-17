@@ -183,7 +183,7 @@ func TestAnnotatedForDeletion(t *testing.T) {
 			),
 		}
 
-		got := annotatedForDeletion(scope)
+		got := annotatedForDeletion(scope.activeMachines)
 
 		require.Equal(t, 1, got.Len())
 		require.Equal(t, "picked", got.Oldest().Name)
@@ -194,7 +194,7 @@ func TestAnnotatedForDeletion(t *testing.T) {
 			activeMachines: collections.FromMachines(machine("a", false), machine("b", false)),
 		}
 
-		require.Nil(t, annotatedForDeletion(scope).Oldest())
+		require.Nil(t, annotatedForDeletion(scope.activeMachines).Oldest())
 	})
 
 	t.Run("a machine already deleting is not a candidate", func(t *testing.T) {
@@ -203,7 +203,7 @@ func TestAnnotatedForDeletion(t *testing.T) {
 			deletedMachines: collections.FromMachines(machine("going", true)),
 		}
 
-		require.Nil(t, annotatedForDeletion(scope).Oldest())
+		require.Nil(t, annotatedForDeletion(scope.activeMachines).Oldest())
 	})
 }
 
@@ -238,6 +238,7 @@ func TestScaleDownPrefersTheAnnotatedMachine(t *testing.T) {
 	c := &K0sController{Client: cl}
 	scope := &controlplane{
 		kcp:                 kcp,
+		cluster:             &clusterv1.Cluster{},
 		activeMachines:      collections.FromMachines(oldest, outdated, picked),
 		notUpToDateMachines: collections.FromMachines(outdated),
 		upToDateMachines:    collections.FromMachines(oldest, picked),
@@ -359,6 +360,19 @@ func TestSelectMachineToDelete(t *testing.T) {
 
 		require.Equal(t, "picked", got.Name)
 		require.Equal(t, "annotated", reason)
+	})
+
+	t.Run("an annotated outdated machine outranks an annotated up to date one", func(t *testing.T) {
+		annotatedOutdated := machine("annotated-outdated", 10*time.Minute, true)
+
+		got, reason := selectMachineToDelete(context.Background(), scope(
+			collections.FromMachines(picked, annotatedOutdated, upToDate),
+			collections.FromMachines(annotatedOutdated),
+			collections.FromMachines(picked, upToDate),
+		))
+
+		require.Equal(t, "annotated-outdated", got.Name)
+		require.Equal(t, "annotated and outdated", reason)
 	})
 
 	t.Run("then an outdated machine", func(t *testing.T) {
