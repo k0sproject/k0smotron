@@ -348,6 +348,7 @@ func TestSelectMachineToDelete(t *testing.T) {
 			deletedMachines:     collections.Machines{},
 			notUpToDateMachines: notUpToDate,
 			upToDateMachines:    upToDateSet,
+			etcdMemberHealth:    map[string]metav1.ConditionStatus{},
 		}
 	}
 
@@ -373,6 +374,52 @@ func TestSelectMachineToDelete(t *testing.T) {
 
 		require.Equal(t, "annotated-outdated", got.Name)
 		require.Equal(t, "annotated and outdated", reason)
+	})
+
+	t.Run("an outdated machine with an unhealthy etcd member goes before a healthy outdated one", func(t *testing.T) {
+		broken := machine("broken", 5*time.Minute, false)
+
+		sc := scope(
+			collections.FromMachines(broken, outdated, upToDate),
+			collections.FromMachines(broken, outdated),
+			collections.FromMachines(upToDate),
+		)
+		sc.etcdMemberHealth = map[string]metav1.ConditionStatus{"broken": metav1.ConditionFalse}
+
+		got, reason := selectMachineToDelete(context.Background(), sc)
+
+		require.Equal(t, "broken", got.Name)
+		require.Equal(t, "outdated with an unhealthy etcd member", reason)
+	})
+
+	// The tier is for a rollout, so an up to date machine does not jump the queue just
+	// because its member is unhealthy. Remediation is what handles that one.
+	t.Run("an unhealthy but up to date machine does not jump the queue", func(t *testing.T) {
+		sc := scope(
+			collections.FromMachines(outdated, upToDate),
+			collections.FromMachines(outdated),
+			collections.FromMachines(upToDate),
+		)
+		sc.etcdMemberHealth = map[string]metav1.ConditionStatus{"up-to-date": metav1.ConditionFalse}
+
+		got, reason := selectMachineToDelete(context.Background(), sc)
+
+		require.Equal(t, "outdated", got.Name)
+		require.Equal(t, "outdated", reason)
+	})
+
+	t.Run("an annotated machine still outranks an unhealthy etcd member", func(t *testing.T) {
+		sc := scope(
+			collections.FromMachines(picked, outdated, upToDate),
+			collections.FromMachines(outdated),
+			collections.FromMachines(picked, upToDate),
+		)
+		sc.etcdMemberHealth = map[string]metav1.ConditionStatus{"outdated": metav1.ConditionFalse}
+
+		got, reason := selectMachineToDelete(context.Background(), sc)
+
+		require.Equal(t, "picked", got.Name)
+		require.Equal(t, "annotated", reason)
 	})
 
 	t.Run("then an outdated machine", func(t *testing.T) {

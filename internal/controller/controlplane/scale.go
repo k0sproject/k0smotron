@@ -288,6 +288,10 @@ func selectMachineToDelete(ctx context.Context, scope *controlplane) (*clusterv1
 		reason   string
 	)
 
+	outdatedWithUnhealthyEtcd := scope.notUpToDateMachines.Filter(func(m *clusterv1.Machine) bool {
+		return scope.etcdMemberHealth[m.Name] == metav1.ConditionFalse
+	})
+
 	switch {
 	// An operator naming a machine outranks every other signal, and an outdated one
 	// among those named outranks the rest, so the rollout gets the same delete.
@@ -295,8 +299,10 @@ func selectMachineToDelete(ctx context.Context, scope *controlplane) (*clusterv1
 		eligible, reason = annotatedForDeletion(scope.notUpToDateMachines), "annotated and outdated"
 	case annotatedForDeletion(scope.activeMachines).Len() > 0:
 		eligible, reason = annotatedForDeletion(scope.activeMachines), "annotated"
-	// Upstream has a tier between these two for outdated machines whose control plane
-	// components are unhealthy, which needs per machine conditions k0smotron never sets.
+	// Upstream weighs every control plane component here. k0s supervises the API server,
+	// the scheduler and the controller manager as processes, so only etcd is observable.
+	case outdatedWithUnhealthyEtcd.Len() > 0:
+		eligible, reason = outdatedWithUnhealthyEtcd, "outdated with an unhealthy etcd member"
 	case scope.notUpToDateMachines.Len() > 0:
 		eligible, reason = scope.notUpToDateMachines, "outdated"
 	default:
@@ -433,6 +439,7 @@ func removeMachineFromScope(scope *controlplane, machineName string) {
 	delete(scope.infraMachines, machineName)
 	delete(scope.controllerConfigs, machineName)
 	delete(scope.deletedMachines, machineName)
+	delete(scope.etcdMemberHealth, machineName)
 }
 
 func (c *K0sController) deleteK0sNodeResources(ctx context.Context, scope *controlplane, machine *clusterv1.Machine) error {

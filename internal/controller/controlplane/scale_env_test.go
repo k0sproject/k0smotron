@@ -1362,3 +1362,142 @@ func TestReconcileMachinesInPlaceUpdateUnreachableClusterDoesNotScale(t *testing
 			"no machine may be created or deleted while an in place update cannot reach the cluster")
 	}
 }
+
+// TestReconcileMachinesElectsTheUnhealthyEtcdMember drives the real path, state retrieval
+// then reconcile, rather than calling the election directly as the unit tests do.
+func TestReconcileMachinesElectsTheUnhealthyEtcdMember(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-machines-etcd-election")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+
+	// Two wanted out of three present, so a scale down is due and a scale up is not.
+	kcp.Spec.Replicas = 2
+	require.NoError(t, testEnv.Create(ctx, kcp))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, gmt, cluster, ns)
+
+	kcpOwnerRef := *metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane"))
+
+	// The annotation records a config the control plane no longer asks for, so every
+	// machine is outdated and the rollout tiers are the ones in play.
+	outdated := kcp.DeepCopy()
+	outdated.Spec.K0sConfigSpec.Args = []string{"--an-argument-since-removed"}
+
+	machine := func(name string) *clusterv1.Machine {
+		annotation, err := generateK0sConfigAnnotationValueForMachine(outdated, name)
+		require.NoError(t, err)
+
+		m := &clusterv1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel:             cluster.Name,
+					clusterv1.MachineControlPlaneLabel:     "true",
+					clusterv1.MachineControlPlaneNameLabel: kcp.GetName(),
+				},
+				Annotations:     map[string]string{cpv1beta2.MachineK0sConfigAnnotation: annotation},
+				OwnerReferences: []metav1.OwnerReference{kcpOwnerRef},
+				Finalizers:      []string{clusterv1.MachineFinalizer},
+			},
+			Spec: clusterv1.MachineSpec{
+				ClusterName: cluster.Name,
+				Version:     "v1.30.0",
+				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+					Kind:     "GenericInfrastructureMachineTemplate",
+					Name:     gmt.GetName(),
+					APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+				},
+				Bootstrap: clusterv1.Bootstrap{
+					ConfigRef: clusterv1.ContractVersionedObjectReference{
+						Name:     name,
+						APIGroup: clusterv1.GroupVersionBootstrap.Group,
+						Kind:     "K0sControllerConfig",
+					},
+				},
+			},
+		}
+		require.NoError(t, testEnv.Create(ctx, m))
+
+		config := &bootstrapv2.K0sControllerConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns.Name,
+				Labels:    controlPlaneCommonLabelsForCluster(kcp, cluster.Name),
+			},
+			Spec: bootstrapv2.K0sControllerConfigSpec{
+				Version:       kcp.Spec.Version,
+				K0sConfigSpec: &outdated.Spec.K0sConfigSpec,
+			},
+		}
+		require.NoError(t, testEnv.Create(ctx, config))
+
+		return m
+	}
+
+	// The broken member is neither the oldest nor the newest, so electing it can only come
+	// from the member list. The gaps are real because the API server stamps the timestamp.
+	oldest := machine("cp-oldest")
+	time.Sleep(1100 * time.Millisecond)
+	broken := machine("cp-broken")
+	time.Sleep(1100 * time.Millisecond)
+	newest := machine("cp-newest")
+
+	member := func(name, joined string) etcdMember {
+		return etcdMember{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Status: etcdMemberStatus{Conditions: []etcdMemberCondition{
+				{Type: etcdMemberConditionTypeJoined, Status: joined},
+			}},
+		}
+	}
+	frt := &fakeRoundTripper{etcdMembers: []etcdMember{
+		member("cp-oldest", "True"), member("cp-broken", "False"), member("cp-newest", "True"),
+	}}
+	restClient, err := rest.RESTClientFor(&rest.Config{
+		ContentConfig: rest.ContentConfig{
+			NegotiatedSerializer: scheme.Codecs,
+			GroupVersion:         &metav1.SchemeGroupVersion,
+		},
+	})
+	require.NoError(t, err)
+	restClient.Client = restfake.CreateHTTPClient(frt.run)
+
+	clientSet, err := kubernetes.NewForConfig(testEnv.Config)
+	require.NoError(t, err)
+
+	r := &K0sController{
+		Client:                    testEnv,
+		APIReader:                 testEnv.GetAPIReader(),
+		ClientSet:                 clientSet,
+		workloadClusterKubeClient: kubernetes.New(restClient),
+	}
+
+	scope, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
+	require.NoError(t, err)
+	require.Equal(t, metav1.ConditionFalse, scope.etcdMemberHealth["cp-broken"],
+		"the member list has to reach the scope for the election to mean anything")
+	require.Equal(t, 3, scope.notUpToDateMachines.Len(), "every machine has to be outdated")
+	require.Equal(t, oldest.Name, scope.notUpToDateMachines.Oldest().Name,
+		"without the tier the oldest is elected, so it has to be a different machine")
+
+	_, err = r.reconcileMachines(ctx, scope)
+	require.NoError(t, err)
+
+	terminating := []string{}
+	for _, name := range []string{oldest.Name, broken.Name, newest.Name} {
+		m := &clusterv1.Machine{}
+		require.NoError(t, testEnv.Get(ctx, client.ObjectKey{Namespace: ns.Name, Name: name}, m))
+		if m.DeletionTimestamp != nil {
+			terminating = append(terminating, name)
+		}
+	}
+
+	require.Equal(t, []string{broken.Name}, terminating,
+		"the machine whose etcd member left has to be the one elected")
+}
