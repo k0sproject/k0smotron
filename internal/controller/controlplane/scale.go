@@ -189,6 +189,20 @@ func calculateMaxSurge(scope *controlplane) int {
 
 // nextFailureDomain picks the failure domain for a new control plane machine.
 // A deleting machine still occupies one, so it counts toward the total.
+// oldestInFullestFailureDomain picks the oldest candidate from the failure domain
+// holding the most machines, so a scale down does not unbalance the spread.
+func oldestInFullestFailureDomain(ctx context.Context, scope *controlplane, candidates collections.Machines) *clusterv1.Machine {
+	allMachines := collections.FromMachines(append(scope.activeMachines.UnsortedList(), scope.deletedMachines.UnsortedList()...)...)
+
+	if fd := failuredomains.PickMost(ctx, filterControlPlaneFailureDomains(*scope.cluster), allMachines, candidates); fd != "" {
+		if inDomain := candidates.Filter(collections.InFailureDomains(fd)); inDomain.Len() > 0 {
+			return inDomain.Oldest()
+		}
+	}
+
+	return candidates.Oldest()
+}
+
 // annotatedForDeletion returns the active machines an operator has marked for removal
 // with the upstream delete-machine annotation.
 func annotatedForDeletion(scope *controlplane) collections.Machines {
@@ -264,13 +278,13 @@ func (c *K0sController) scaleDown(ctx context.Context, scope *controlplane) erro
 	reason := "annotated"
 
 	if machineToDelete == nil {
-		machineToDelete = scope.notUpToDateMachines.Oldest()
+		machineToDelete = oldestInFullestFailureDomain(ctx, scope, scope.notUpToDateMachines)
 		reason = "outdated"
 	}
 	if machineToDelete == nil {
 		// If we need to scale down but there are no machines elegible for deletion, it means that all the machines are up to date but we
 		// still have more machines than desired. In this case, we can delete the oldest machine, even if it's up to date.
-		machineToDelete = scope.upToDateMachines.Oldest()
+		machineToDelete = oldestInFullestFailureDomain(ctx, scope, scope.upToDateMachines)
 		reason = "excess"
 	}
 	if machineToDelete == nil {
