@@ -2688,7 +2688,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -2733,8 +2733,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3201,6 +3200,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -3282,6 +3292,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3422,6 +3443,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexdownwardapiitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -3482,6 +3514,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3589,6 +3632,22 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 The default is "" which means to use the node's default medium.
 Must be an empty string (default) or Memory.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode specifies the permission bits for the emptyDir directory, in numeric
+notation (e.g., 0755, 01777). Must be a value between 0000 and 01777.
+If not specified, defaults to 0777.
+This might be in conflict with other options that affect the file
+mode, like fsGroup. If fsGroup is specified, the fsGroup permissions
+will override the mode specified here.
+This field has no effect on Windows.
+This field is alpha and requires EmptyDirVolumeMode featuregate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3772,8 +3831,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
         </td>
         <td>false</td>
@@ -3802,7 +3861,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
         </td>
         <td>false</td>
@@ -3811,7 +3869,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -3877,8 +3935,8 @@ dataSource field can be used to specify either:
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.
 
 <table>
@@ -3943,7 +4001,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
 
 <table>
@@ -3997,7 +4054,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -4584,7 +4641,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -4897,8 +4954,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -4965,6 +5021,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5160,6 +5227,17 @@ Mutually-exclusive with name.  The contents of all selected
 ClusterTrustBundles will be unified and deduplicated.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -5349,6 +5427,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -5430,6 +5519,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5644,6 +5744,36 @@ longer than 24 hours.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -5748,6 +5878,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -5796,6 +5937,17 @@ plugin will proactively rotate the service account token. The kubelet will
 start trying to rotate the token if the token is older than 80 percent of
 its time to live or if the token is older than 24 hours.Defaults to 1 hour
 and must be at least 10 minutes.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -6177,6 +6329,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmanifestsindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -6253,6 +6416,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6666,7 +6840,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -6711,8 +6885,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7186,6 +7359,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -7267,6 +7451,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7407,6 +7602,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexdownwardapiitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -7467,6 +7673,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7574,6 +7791,22 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 The default is "" which means to use the node's default medium.
 Must be an empty string (default) or Memory.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode specifies the permission bits for the emptyDir directory, in numeric
+notation (e.g., 0755, 01777). Must be a value between 0000 and 01777.
+If not specified, defaults to 0777.
+This might be in conflict with other options that affect the file
+mode, like fsGroup. If fsGroup is specified, the fsGroup permissions
+will override the mode specified here.
+This field has no effect on Windows.
+This field is alpha and requires EmptyDirVolumeMode featuregate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7757,8 +7990,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
         </td>
         <td>false</td>
@@ -7787,7 +8020,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
         </td>
         <td>false</td>
@@ -7796,7 +8028,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -7862,8 +8094,8 @@ dataSource field can be used to specify either:
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.
 
 <table>
@@ -7928,7 +8160,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
 
 <table>
@@ -7982,7 +8213,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -8569,7 +8800,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -8882,8 +9113,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -8950,6 +9180,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9145,6 +9386,17 @@ Mutually-exclusive with name.  The contents of all selected
 ClusterTrustBundles will be unified and deduplicated.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -9334,6 +9586,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -9415,6 +9678,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9629,6 +9903,36 @@ longer than 24 hours.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -9733,6 +10037,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -9781,6 +10096,17 @@ plugin will proactively rotate the service account token. The kubelet will
 start trying to rotate the token if the token is older than 80 percent of
 its time to live or if the token is older than 24 hours.Defaults to 1 hour
 and must be at least 10 minutes.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -10162,6 +10488,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanespecmountsindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -10238,6 +10575,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10709,8 +11057,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
         </td>
         <td>false</td>
@@ -10739,7 +11087,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
         </td>
         <td>false</td>
@@ -10748,7 +11095,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -10814,8 +11161,8 @@ dataSource field can be used to specify either:
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.
 
 <table>
@@ -10880,7 +11227,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
 
 <table>
@@ -10934,7 +11280,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -11114,9 +11460,7 @@ When this field is not set, it means that no resize operation is in progress for
 A controller that receives PVC update with previously unknown resourceName or ClaimResourceStatus
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
-resources associated with PVC.
-
-This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+resources associated with PVC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11142,9 +11486,7 @@ is equal or lower than the requested capacity.
 A controller that receives PVC update with previously unknown resourceName
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
-resources associated with PVC.
-
-This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+resources associated with PVC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11168,6 +11510,14 @@ resized then the Condition will be set to 'Resizing'.<br/>
         <td>
           currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
 When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatushealthstatus">healthStatus</a></b></td>
+        <td>object</td>
+        <td>
+          healthStatus contains the latest controller-reported health information
+for the volume bound to this claim.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11254,6 +11604,93 @@ More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storag
           reason is a unique, this should be a short, machine understandable string that gives the reason
 for condition's last transition. If it reports "Resizing" that means the underlying
 persistent volume is being resized.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.status.healthStatus
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatus)</sup></sup>
+
+
+
+healthStatus contains the latest controller-reported health information
+for the volume bound to this claim.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatushealthstatushealthconditionsindex">healthConditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          conditions is the set of adverse conditions reported by
+the CSI controller plugin. An empty list means no adverse condition.
+At most 16 conditions may be reported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is when the current set of conditions first appeared.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlane.spec.persistence.persistentVolumeClaim.status.healthStatus.healthConditions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanespecpersistencepersistentvolumeclaimstatushealthstatus)</sup></sup>
+
+
+
+VolumeHealthCondition represents an adverse health condition reported for a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason is a brief CamelCase machine-parseable reason.
+Together with status it forms the unique identity of a condition entry.
+Maximum permitted length of a reason is 256 bytes.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status is the machine-parseable health category.
+Possible values:
+- "Inaccessible": the volume cannot be accessed.
+- "DataLoss": data loss has been detected on the volume.
+- "Degraded": the volume is functioning with reduced capability.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is a human-readable description.
+Maximum permitted length of a message is 1024 bytes.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13064,7 +13501,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -13109,8 +13546,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13577,6 +14013,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -13658,6 +14105,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13798,6 +14256,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexdownwardapiitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -13858,6 +14327,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13965,6 +14445,22 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 The default is "" which means to use the node's default medium.
 Must be an empty string (default) or Memory.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode specifies the permission bits for the emptyDir directory, in numeric
+notation (e.g., 0755, 01777). Must be a value between 0000 and 01777.
+If not specified, defaults to 0777.
+This might be in conflict with other options that affect the file
+mode, like fsGroup. If fsGroup is specified, the fsGroup permissions
+will override the mode specified here.
+This field has no effect on Windows.
+This field is alpha and requires EmptyDirVolumeMode featuregate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -14148,8 +14644,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
         </td>
         <td>false</td>
@@ -14178,7 +14674,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
         </td>
         <td>false</td>
@@ -14187,7 +14682,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -14253,8 +14748,8 @@ dataSource field can be used to specify either:
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.
 
 <table>
@@ -14319,7 +14814,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
 
 <table>
@@ -14373,7 +14867,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -14960,7 +15454,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -15273,8 +15767,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -15341,6 +15834,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15536,6 +16040,17 @@ Mutually-exclusive with name.  The contents of all selected
 ClusterTrustBundles will be unified and deduplicated.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -15725,6 +16240,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -15806,6 +16332,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -16020,6 +16557,36 @@ longer than 24 hours.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -16124,6 +16691,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -16172,6 +16750,17 @@ plugin will proactively rotate the service account token. The kubelet will
 start trying to rotate the token if the token is older than 80 percent of
 its time to live or if the token is older than 24 hours.Defaults to 1 hour
 and must be at least 10 minutes.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -16553,6 +17142,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmanifestsindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -16629,6 +17229,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17042,7 +17653,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -17087,8 +17698,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17562,6 +18172,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -17643,6 +18264,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17783,6 +18415,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexdownwardapiitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -17843,6 +18486,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17950,6 +18604,22 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 The default is "" which means to use the node's default medium.
 Must be an empty string (default) or Memory.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode specifies the permission bits for the emptyDir directory, in numeric
+notation (e.g., 0755, 01777). Must be a value between 0000 and 01777.
+If not specified, defaults to 0777.
+This might be in conflict with other options that affect the file
+mode, like fsGroup. If fsGroup is specified, the fsGroup permissions
+will override the mode specified here.
+This field has no effect on Windows.
+This field is alpha and requires EmptyDirVolumeMode featuregate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18133,8 +18803,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
         </td>
         <td>false</td>
@@ -18163,7 +18833,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
         </td>
         <td>false</td>
@@ -18172,7 +18841,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -18238,8 +18907,8 @@ dataSource field can be used to specify either:
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.
 
 <table>
@@ -18304,7 +18973,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
 
 <table>
@@ -18358,7 +19026,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -18945,7 +19613,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -19258,8 +19926,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -19326,6 +19993,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19521,6 +20199,17 @@ Mutually-exclusive with name.  The contents of all selected
 ClusterTrustBundles will be unified and deduplicated.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -19710,6 +20399,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -19791,6 +20491,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -20005,6 +20716,36 @@ longer than 24 hours.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -20109,6 +20850,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -20157,6 +20909,17 @@ plugin will proactively rotate the service account token. The kubelet will
 start trying to rotate the token if the token is older than 80 percent of
 its time to live or if the token is older than 24 hours.Defaults to 1 hour
 and must be at least 10 minutes.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -20538,6 +21301,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecmountsindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -20614,6 +21388,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -21085,8 +21870,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
         </td>
         <td>false</td>
@@ -21115,7 +21900,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
         </td>
         <td>false</td>
@@ -21124,7 +21908,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -21190,8 +21974,8 @@ dataSource field can be used to specify either:
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.
 
 <table>
@@ -21256,7 +22040,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
 
 <table>
@@ -21310,7 +22093,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -21490,9 +22273,7 @@ When this field is not set, it means that no resize operation is in progress for
 A controller that receives PVC update with previously unknown resourceName or ClaimResourceStatus
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
-resources associated with PVC.
-
-This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+resources associated with PVC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21518,9 +22299,7 @@ is equal or lower than the requested capacity.
 A controller that receives PVC update with previously unknown resourceName
 should ignore the update for the purpose it was designed. For example - a controller that
 only is responsible for resizing capacity of the volume, should ignore PVC updates that change other valid
-resources associated with PVC.
-
-This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.<br/>
+resources associated with PVC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21544,6 +22323,14 @@ resized then the Condition will be set to 'Resizing'.<br/>
         <td>
           currentVolumeAttributesClassName is the current name of the VolumeAttributesClass the PVC is using.
 When unset, there is no VolumeAttributeClass applied to this PersistentVolumeClaim<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimstatushealthstatus">healthStatus</a></b></td>
+        <td>object</td>
+        <td>
+          healthStatus contains the latest controller-reported health information
+for the volume bound to this claim.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21630,6 +22417,93 @@ More info: https://kubernetes.io/docs/reference/kubernetes-api/config-and-storag
           reason is a unique, this should be a short, machine understandable string that gives the reason
 for condition's last transition. If it reports "Resizing" that means the underlying
 persistent volume is being resized.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.persistence.persistentVolumeClaim.status.healthStatus
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimstatus)</sup></sup>
+
+
+
+healthStatus contains the latest controller-reported health information
+for the volume bound to this claim.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimstatushealthstatushealthconditionsindex">healthConditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          conditions is the set of adverse conditions reported by
+the CSI controller plugin. An empty list means no adverse condition.
+At most 16 conditions may be reported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is when the current set of conditions first appeared.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0smotronControlPlaneTemplate.spec.template.spec.persistence.persistentVolumeClaim.status.healthStatus.healthConditions[index]
+<sup><sup>[↩ Parent](#k0smotroncontrolplanetemplatespectemplatespecpersistencepersistentvolumeclaimstatushealthstatus)</sup></sup>
+
+
+
+VolumeHealthCondition represents an adverse health condition reported for a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason is a brief CamelCase machine-parseable reason.
+Together with status it forms the unique identity of a condition entry.
+Maximum permitted length of a reason is 256 bytes.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          status is the machine-parseable health category.
+Possible values:
+- "Inaccessible": the volume cannot be accessed.
+- "DataLoss": data loss has been detected on the volume.
+- "Degraded": the volume is functioning with reduced capability.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is a human-readable description.
+Maximum permitted length of a message is 1024 bytes.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

@@ -1110,10 +1110,7 @@ The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
 all characters before the first "/" must be a valid subdomain as defined
 by RFC 1123. All characters trailing the first "/" must be valid HTTP Path
 characters as defined by RFC 3986. The value cannot exceed 63 characters.
-This field is immutable.
-
-This field is beta-level. The job controller accepts setting the field
-when the feature gate JobManagedBy is enabled (enabled by default).<br/>
+This field is immutable.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1187,6 +1184,20 @@ Possible values are:
 
 When using podFailurePolicy, Failed is the the only allowed value.
 TerminatingOrFailed and Failed are allowed values when podFailurePolicy is not in use.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespecscheduling">scheduling</a></b></td>
+        <td>object</td>
+        <td>
+          scheduling defines the Workload-aware Scheduling configuration for this Job.
+When set, it specifies the scheduling policy (basic or gang), topology
+constraints, disruption mode, and shared resource claims.
+When omitted, the Job defaults to the basic scheduling policy, which behaves
+as standard pod-by-pod scheduling.
+This field is alpha-level and requires the WorkloadWithJob feature gate.
+This field is immutable, including whether it is set at all, only
+policy.gang.minCount may be changed after creation.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1428,6 +1439,27 @@ ephemeral container to an existing pod, use the pod's ephemeralcontainers subres
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecevictionrespondersindex">evictionResponders</a></b></td>
+        <td>[]object</td>
+        <td>
+          evictionResponders reference responders that react to Evictions based on EvictionRequests.
+Responders should observe and communicate through the Eviction Resource API to help with
+the graceful termination of a pod. The responders are selected sequentially, according to
+their specified priority.
+
+Responders should periodically report on an eviction progress by updating the
+.status.responders[].heartbeatTime field of the Eviction object. If this field is not updated
+within the heartbeat deadline defined by the Eviction API (currently 20 minutes), the eviction
+is passed over to the next responder with a lower priority. If there is no other responder,
+the last default imperative-eviction.k8s.io/evictor responder with a priority of 100 will
+evict the pod using the imperative Eviction API (pods/<name>/eviction subresource).
+
+The maximum length of the responders list is 10.
+Responders are not supported when the pod is part of a PodGroup (.spec.schedulingGroup is set).
+This field can only be set on creation and is immutable afterwards.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespechostaliasesindex">hostAliases</a></b></td>
         <td>[]object</td>
         <td>
@@ -1473,8 +1505,7 @@ for when the pod needs a feature only available to the host user namespace, such
 loading a kernel module with CAP_SYS_MODULE.
 When set to false, a new userns is created for the pod. Setting false is useful for
 mitigating container breakout vulnerabilities even allowing users to run their
-containers as root without actually having root privileges on the host.
-This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.<br/>
+containers as root without actually having root privileges on the host.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1497,8 +1528,7 @@ When this field is set to a non-empty string:
 - `setHostnameAsFQDN` must be nil or set to false.
 - `hostNetwork` must be set to false.
 
-This field must be a valid DNS subdomain as defined in RFC 1123 and contain at most 64 characters.
-Requires the HostnameOverride feature gate to be enabled.<br/>
+This field must be a valid DNS subdomain as defined in RFC 1123 and contain at most 64 characters.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1606,6 +1636,8 @@ More info: https://git.k8s.io/enhancements/keps/sig-node/688-pod-overhead/README
         <td>
           PreemptionPolicy is the Policy for preempting pods with lower priority.
 One of Never, PreemptLowerPriority.
+When Priority Admission Controller is enabled, it prevents users from setting
+this field. The admission controller populates this field from PriorityClassName.
 Defaults to PreemptLowerPriority if unset.<br/>
         </td>
         <td>false</td>
@@ -1653,8 +1685,8 @@ and reserved before the Pod is allowed to start. The resources
 will be made available to those containers which consume them
 by name.
 
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
+This is a stable field but requires that the
+DynamicResourceAllocation feature gate is enabled.
 
 This field is immutable.<br/>
         </td>
@@ -1712,6 +1744,24 @@ If schedulingGates is not empty, the pod will stay in the SchedulingGated state 
 scheduler will not attempt to schedule the pod.
 
 SchedulingGates can only be set at pod creation time, and be removed only afterwards.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecschedulinggroup">schedulingGroup</a></b></td>
+        <td>object</td>
+        <td>
+          SchedulingGroup provides a reference to the immediate scheduling runtime
+grouping object that this Pod belongs to.
+This field is used by the scheduler to identify the group and apply the
+correct group scheduling policies. The association with a group also
+impacts other lifecycle aspects of a Pod that are relevant in a wider context
+of scheduling like preemption, resource attachment, etc. If not specified,
+the Pod is treated as a single unit in all of these aspects.
+The group object referenced by this field may not exist at the time the
+Pod is created.
+This field is immutable, but a group object with the same name may be
+recreated with different policies. Doing this during pod scheduling
+may result in the placement not conforming to the expected policies.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1951,7 +2001,8 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespeccontainersindexresizepolicyindex">resizePolicy</a></b></td>
         <td>[]object</td>
         <td>
-          Resources resize policy for the container.<br/>
+          Resources resize policy for the container.
+This field cannot be set on ephemeral containers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2236,7 +2287,8 @@ Selects a key of a ConfigMap.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          The key to select.<br/>
+          The key to select from the ConfigMap's Data field.
+Keys in the BinaryData field are not currently propagated to container env vars.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -2756,6 +2808,14 @@ Name must be an IANA_SVC_NAME.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>scheme</b></td>
         <td>string</td>
         <td>
@@ -3003,6 +3063,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3296,6 +3364,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -3356,6 +3434,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3686,6 +3772,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -3746,6 +3842,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4100,7 +4204,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -4601,6 +4704,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -4661,6 +4774,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4800,8 +4921,7 @@ VolumeMount describes a mounting of a Volume within a container.
         <td><b>mountPath</b></td>
         <td>string</td>
         <td>
-          Path within the container at which the volume should be mounted.  Must
-not contain ':'.<br/>
+          Path within the container at which the volume should be mounted.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -4811,6 +4931,18 @@ not contain ':'.<br/>
           This must match the Name of a Volume.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>bindMountOptions</b></td>
+        <td>[]string</td>
+        <td>
+          bindMountOptions is the list of additional bind mount options to apply when
+mounting this volume into the container. Allowed values are noexec,
+nodev, and nosuid. These are Linux mount options and have no effect on
+Windows nodes.
+This field is not supported with image volumes.
+This is an alpha field and requires enabling the VolumeBindMountOptions feature gate.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b>mountPropagation</b></td>
         <td>string</td>
@@ -6980,7 +7112,8 @@ Selects a key of a ConfigMap.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          The key to select.<br/>
+          The key to select from the ConfigMap's Data field.
+Keys in the BinaryData field are not currently propagated to container env vars.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -7499,6 +7632,14 @@ Name must be an IANA_SVC_NAME.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>scheme</b></td>
         <td>string</td>
         <td>
@@ -7746,6 +7887,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8036,6 +8185,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -8096,6 +8255,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8423,6 +8590,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -8483,6 +8660,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8835,7 +9020,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -9330,6 +9514,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -9390,6 +9584,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9529,8 +9731,7 @@ VolumeMount describes a mounting of a Volume within a container.
         <td><b>mountPath</b></td>
         <td>string</td>
         <td>
-          Path within the container at which the volume should be mounted.  Must
-not contain ':'.<br/>
+          Path within the container at which the volume should be mounted.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -9540,6 +9741,18 @@ not contain ':'.<br/>
           This must match the Name of a Volume.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>bindMountOptions</b></td>
+        <td>[]string</td>
+        <td>
+          bindMountOptions is the list of additional bind mount options to apply when
+mounting this volume into the container. Allowed values are noexec,
+nodev, and nosuid. These are Linux mount options and have no effect on
+Windows nodes.
+This field is not supported with image volumes.
+This is an alpha field and requires enabling the VolumeBindMountOptions feature gate.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b>mountPropagation</b></td>
         <td>string</td>
@@ -9600,6 +9813,60 @@ Defaults to "" (volume's root).
 SubPathExpr and SubPath are mutually exclusive.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.evictionResponders[index]
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
+
+
+
+EvictionResponder allows you to specify the responder reacting to an Eviction.
+Responders should observe and communicate through the Eviction Resource API to help with
+the graceful eviction of a target (e.g. termination of a pod).
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          name allows you to identify the responder responding to the Eviction.
+
+It must be a valid domain-prefixed key (such as "acme.io/foo").
+Domain names *.k8s.io and *.kubernetes.io are reserved.
+This field must be unique for each responder.
+This field is required.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>priority</b></td>
+        <td>integer</td>
+        <td>
+          priority for this responder. Higher priorities are selected first by the evictionrequest-controller.
+If there are responders with the same priority, the responder whose domain name comes first in the
+alphabetical higher domain order, will be picked. This means that the top domain labels are compared
+alphabetically first, followed by the lower domain labels. The key is compared last.
+
+The responder that is the managing controller of the pod should set the value of
+this field to 10000 to allow both for preemption or fallback registration by other
+responders.
+
+The minimum value is 0 and the maximum value is 100000.
+The interval 0-999 is reserved for responders with *.k8s.io suffix.
+This field is required.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -9812,7 +10079,8 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexresizepolicyindex">resizePolicy</a></b></td>
         <td>[]object</td>
         <td>
-          Resources resize policy for the container.<br/>
+          Resources resize policy for the container.
+This field cannot be set on ephemeral containers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10097,7 +10365,8 @@ Selects a key of a ConfigMap.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          The key to select.<br/>
+          The key to select from the ConfigMap's Data field.
+Keys in the BinaryData field are not currently propagated to container env vars.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -10617,6 +10886,14 @@ Name must be an IANA_SVC_NAME.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>scheme</b></td>
         <td>string</td>
         <td>
@@ -10864,6 +11141,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11157,6 +11442,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -11217,6 +11512,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11547,6 +11850,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -11607,6 +11920,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11961,7 +12282,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -12462,6 +12782,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -12522,6 +12852,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12661,8 +12999,7 @@ VolumeMount describes a mounting of a Volume within a container.
         <td><b>mountPath</b></td>
         <td>string</td>
         <td>
-          Path within the container at which the volume should be mounted.  Must
-not contain ':'.<br/>
+          Path within the container at which the volume should be mounted.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -12672,6 +13009,18 @@ not contain ':'.<br/>
           This must match the Name of a Volume.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>bindMountOptions</b></td>
+        <td>[]string</td>
+        <td>
+          bindMountOptions is the list of additional bind mount options to apply when
+mounting this volume into the container. Allowed values are noexec,
+nodev, and nosuid. These are Linux mount options and have no effect on
+Windows nodes.
+This field is not supported with image volumes.
+This is an alpha field and requires enabling the VolumeBindMountOptions feature gate.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b>mountPropagation</b></td>
         <td>string</td>
@@ -12836,6 +13185,14 @@ for the pod.
 It adds a name to it that uniquely identifies the ResourceClaim inside the Pod.
 Containers that need access to the ResourceClaim reference it with this name.
 
+When the DRAWorkloadResourceClaims feature gate is enabled and this Pod
+belongs to a PodGroup, a PodResourceClaim is matched to a
+PodGroupResourceClaim if all of their fields are equal (Name,
+ResourceClaimName, and ResourceClaimTemplateName). A matched claim references
+a single ResourceClaim shared across all Pods in the PodGroup, reserved for
+the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual
+Pods.
+
 <table>
     <thead>
         <tr>
@@ -12876,6 +13233,16 @@ be bound to this pod. When this pod is deleted, the ResourceClaim
 will also be deleted. The pod name and resource name, along with a
 generated component, will be used to form a unique name for the
 ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+
+When the DRAWorkloadResourceClaims feature gate is enabled and the pod
+belongs to a PodGroup that defines a PodGroupResourceClaim with the same
+Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the
+ResourceClaim generated for the PodGroup. All pods in the group that
+define an equivalent PodResourceClaim matching the
+PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same
+generated ResourceClaim. ResourceClaims generated for a PodGroup are
+owned by the PodGroup and their lifecycles are tied to the PodGroup
+instead of any individual pod.
 
 This field is immutable and no changes will be made to the
 corresponding ResourceClaim by the control plane after creating the
@@ -13014,6 +13381,46 @@ Each scheduling gate must have a unique name field.<br/>
 </table>
 
 
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.schedulingGroup
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
+
+
+
+SchedulingGroup provides a reference to the immediate scheduling runtime
+grouping object that this Pod belongs to.
+This field is used by the scheduler to identify the group and apply the
+correct group scheduling policies. The association with a group also
+impacts other lifecycle aspects of a Pod that are relevant in a wider context
+of scheduling like preemption, resource attachment, etc. If not specified,
+the Pod is treated as a single unit in all of these aspects.
+The group object referenced by this field may not exist at the time the
+Pod is created.
+This field is immutable, but a group object with the same name may be
+recreated with different policies. Doing this during pod scheduling
+may result in the placement not conforming to the expected policies.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>podGroupName</b></td>
+        <td>string</td>
+        <td>
+          PodGroupName specifies the name of the standalone PodGroup object
+that represents the runtime instance of this group.
+Must be a DNS subdomain.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.securityContext
 <sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
 
@@ -13127,11 +13534,8 @@ It is not possible to share the same volume among privileged and unprivileged Po
 Eligible volumes are in-tree FibreChannel and iSCSI volumes, and all CSI volumes
 whose CSI driver announces SELinux support by setting spec.seLinuxMount: true in their
 CSIDriver instance. Other volumes are always re-labelled recursively.
-"MountOption" value is allowed only when SELinuxMount feature gate is enabled.
 
-If not specified and SELinuxMount feature gate is enabled, "MountOption" is used.
-If not specified and SELinuxMount feature gate is disabled, "MountOption" is used for ReadWriteOncePod volumes
-and "Recursive" for all other volumes.
+If not specified, "MountOption" is used.
 
 This field affects only Pods that have SELinux label set, either in PodSecurityContext or in SecurityContext of all containers.
 
@@ -13477,9 +13881,10 @@ If the key is empty, operator must be Exists; this combination means to match al
         <td>string</td>
         <td>
           Operator represents a key's relationship to the value.
-Valid operators are Exists and Equal. Defaults to Equal.
+Valid operators are Exists, Equal, Lt, and Gt. Defaults to Equal.
 Exists is equivalent to wildcard for value, so that a pod can
-tolerate all taints of a particular category.<br/>
+tolerate all taints of a particular category.
+Lt and Gt perform numeric comparisons (requires feature gate TaintTolerationComparisonOperators).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13962,7 +14367,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -14007,8 +14412,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -14475,6 +14879,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -14556,6 +14971,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -14696,6 +15122,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexdownwardapiitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -14756,6 +15193,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -14863,6 +15311,22 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 The default is "" which means to use the node's default medium.
 Must be an empty string (default) or Memory.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode specifies the permission bits for the emptyDir directory, in numeric
+notation (e.g., 0755, 01777). Must be a value between 0000 and 01777.
+If not specified, defaults to 0777.
+This might be in conflict with other options that affect the file
+mode, like fsGroup. If fsGroup is specified, the fsGroup permissions
+will override the mode specified here.
+This field has no effect on Windows.
+This field is alpha and requires EmptyDirVolumeMode featuregate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15046,8 +15510,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
         </td>
         <td>false</td>
@@ -15076,7 +15540,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
         </td>
         <td>false</td>
@@ -15085,7 +15548,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -15151,8 +15614,8 @@ dataSource field can be used to specify either:
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.
 
 <table>
@@ -15217,7 +15680,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
 
 <table>
@@ -15271,7 +15733,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -15858,7 +16320,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -16171,8 +16633,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -16239,6 +16700,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16434,6 +16906,17 @@ Mutually-exclusive with name.  The contents of all selected
 ClusterTrustBundles will be unified and deduplicated.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -16623,6 +17106,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -16704,6 +17198,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -16918,6 +17423,36 @@ longer than 24 hours.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -17022,6 +17557,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -17070,6 +17616,17 @@ plugin will proactively rotate the service account token. The kubelet will
 start trying to rotate the token if the token is older than 80 percent of
 its time to live or if the token is older than 24 hours.Defaults to 1 hour
 and must be at least 10 minutes.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -17451,6 +18008,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecvolumesindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -17527,6 +18095,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17855,15 +18434,6 @@ an actual pod condition type.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>status</b></td>
-        <td>string</td>
-        <td>
-          Specifies the required Pod condition status. To match a pod condition
-it is required that the specified status equals the pod condition status.
-Defaults to True.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
         <td>
@@ -17871,6 +18441,307 @@ Defaults to True.<br/>
 it is required that specified type equals the pod condition type.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Specifies the required Pod condition status. To match a pod condition
+it is required that the specified status equals the pod condition status.
+Defaults to True.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.scheduling
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespec)</sup></sup>
+
+
+
+scheduling defines the Workload-aware Scheduling configuration for this Job.
+When set, it specifies the scheduling policy (basic or gang), topology
+constraints, disruption mode, and shared resource claims.
+When omitted, the Job defaults to the basic scheduling policy, which behaves
+as standard pod-by-pod scheduling.
+This field is alpha-level and requires the WorkloadWithJob feature gate.
+This field is immutable, including whether it is set at all, only
+policy.gang.minCount may be changed after creation.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespecschedulingdisruptionmode">disruptionMode</a></b></td>
+        <td>object</td>
+        <td>
+          DisruptionMode defines the mode in which the Job's pods can be disrupted.
+One of Single, All.
+This field is immutable after creation: it may not be added or removed,
+and the selected mode may not be changed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespecschedulingresourceclaimsindex">resourceClaims</a></b></td>
+        <td>[]object</td>
+        <td>
+          ResourceClaims defines which ResourceClaims may be shared among Pods in
+the Job. Pods consume the devices allocated to a PodGroup's claim by
+defining a claim in its own Spec.ResourceClaims that matches the
+PodGroup's claim exactly. The claim must have the same name and refer to
+the same ResourceClaim or ResourceClaimTemplate.
+At most 4 claims may be set, matching the limit on the resulting PodGroup.
+This list is immutable after creation: entries may neither be added,
+removed, nor modified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespecschedulingschedulingconstraints">schedulingConstraints</a></b></td>
+        <td>object</td>
+        <td>
+          SchedulingConstraints defines scheduling constraints (e.g. topology)
+for the Job's pods.
+This field is immutable after creation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespecschedulingschedulingpolicy">schedulingPolicy</a></b></td>
+        <td>object</td>
+        <td>
+          SchedulingPolicy defines the scheduling policy for this Job.
+Exactly one of Basic or Gang must be set.
+This field is immutable after creation: the policy may not be added or
+removed. The policy variant (basic/gang) is frozen by hand-written
+validation; only schedulingPolicy.gang.minCount may be changed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.scheduling.disruptionMode
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespecscheduling)</sup></sup>
+
+
+
+DisruptionMode defines the mode in which the Job's pods can be disrupted.
+One of Single, All.
+This field is immutable after creation: it may not be added or removed,
+and the selected mode may not be changed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>all</b></td>
+        <td>object</td>
+        <td>
+          all specifies that all pods in the group must be disrupted together.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>single</b></td>
+        <td>object</td>
+        <td>
+          single specifies that pods can be disrupted independently from each other.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.scheduling.resourceClaims[index]
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespecscheduling)</sup></sup>
+
+
+
+WorkloadPodGroupResourceClaim references a dynamic resource claim
+that is shared across pods in the group.
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          name uniquely identifies this resource claim inside the group.
+This field is required. It must be a DNS_LABEL.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>resourceClaimName</b></td>
+        <td>string</td>
+        <td>
+          resourceClaimName is the name of a ResourceClaim object in the same
+namespace.
+This field is optional. If it is not specified, no resource claim
+is used. If set, it must be a DNS subdomain.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>resourceClaimTemplateName</b></td>
+        <td>string</td>
+        <td>
+          resourceClaimTemplateName is the name of a ResourceClaimTemplate
+object in the same namespace.
+This field is optional. If it is not specified, no resource claim
+template is used. If set, it must be a DNS subdomain.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.scheduling.schedulingConstraints
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespecscheduling)</sup></sup>
+
+
+
+SchedulingConstraints defines scheduling constraints (e.g. topology)
+for the Job's pods.
+This field is immutable after creation.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespecschedulingschedulingconstraintstopologyindex">topology</a></b></td>
+        <td>[]object</td>
+        <td>
+          topology specifies desired topological placements for all pods
+within the pod group.
+If unset, no topology placement is requested.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.scheduling.schedulingConstraints.topology[index]
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespecschedulingschedulingconstraints)</sup></sup>
+
+
+
+TopologyConstraint defines a topology constraint for a PodGroup.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key specifies the key of the node label representing the topology domain.
+All pods within the PodGroup must be colocated within the same domain instance.
+Different PodGroups can land on different domain instances even if they derive from the same PodGroupTemplate.
+Examples: "topology.kubernetes.io/rack"<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.scheduling.schedulingPolicy
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespecscheduling)</sup></sup>
+
+
+
+SchedulingPolicy defines the scheduling policy for this Job.
+Exactly one of Basic or Gang must be set.
+This field is immutable after creation: the policy may not be added or
+removed. The policy variant (basic/gang) is frozen by hand-written
+validation; only schedulingPolicy.gang.minCount may be changed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>basic</b></td>
+        <td>object</td>
+        <td>
+          basic specifies that standard, pod-by-pod Kubernetes scheduling
+behavior should be used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespecschedulingschedulingpolicygang">gang</a></b></td>
+        <td>object</td>
+        <td>
+          gang specifies all-or-nothing scheduling semantics.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.scheduling.schedulingPolicy.gang
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespecschedulingschedulingpolicy)</sup></sup>
+
+
+
+gang specifies all-or-nothing scheduling semantics.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>minCount</b></td>
+        <td>integer</td>
+        <td>
+          minCount is the minimum number of pods that must be scheduled
+at the same time for the scheduler to admit the entire group.
+This field is optional. If it is not specified, the controller
+should inject a context-specific sane default (e.g.,
+parallelism for a Job).
+If set, it must be a positive integer.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -18614,10 +19485,7 @@ The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
 all characters before the first "/" must be a valid subdomain as defined
 by RFC 1123. All characters trailing the first "/" must be valid HTTP Path
 characters as defined by RFC 3986. The value cannot exceed 63 characters.
-This field is immutable.
-
-This field is beta-level. The job controller accepts setting the field
-when the feature gate JobManagedBy is enabled (enabled by default).<br/>
+This field is immutable.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18691,6 +19559,20 @@ Possible values are:
 
 When using podFailurePolicy, Failed is the the only allowed value.
 TerminatingOrFailed and Failed are allowed values when podFailurePolicy is not in use.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecscheduling">scheduling</a></b></td>
+        <td>object</td>
+        <td>
+          scheduling defines the Workload-aware Scheduling configuration for this Job.
+When set, it specifies the scheduling policy (basic or gang), topology
+constraints, disruption mode, and shared resource claims.
+When omitted, the Job defaults to the basic scheduling policy, which behaves
+as standard pod-by-pod scheduling.
+This field is alpha-level and requires the WorkloadWithJob feature gate.
+This field is immutable, including whether it is set at all, only
+policy.gang.minCount may be changed after creation.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18932,6 +19814,27 @@ ephemeral container to an existing pod, use the pod's ephemeralcontainers subres
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespecevictionrespondersindex">evictionResponders</a></b></td>
+        <td>[]object</td>
+        <td>
+          evictionResponders reference responders that react to Evictions based on EvictionRequests.
+Responders should observe and communicate through the Eviction Resource API to help with
+the graceful termination of a pod. The responders are selected sequentially, according to
+their specified priority.
+
+Responders should periodically report on an eviction progress by updating the
+.status.responders[].heartbeatTime field of the Eviction object. If this field is not updated
+within the heartbeat deadline defined by the Eviction API (currently 20 minutes), the eviction
+is passed over to the next responder with a lower priority. If there is no other responder,
+the last default imperative-eviction.k8s.io/evictor responder with a priority of 100 will
+evict the pod using the imperative Eviction API (pods/<name>/eviction subresource).
+
+The maximum length of the responders list is 10.
+Responders are not supported when the pod is part of a PodGroup (.spec.schedulingGroup is set).
+This field can only be set on creation and is immutable afterwards.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespechostaliasesindex">hostAliases</a></b></td>
         <td>[]object</td>
         <td>
@@ -18977,8 +19880,7 @@ for when the pod needs a feature only available to the host user namespace, such
 loading a kernel module with CAP_SYS_MODULE.
 When set to false, a new userns is created for the pod. Setting false is useful for
 mitigating container breakout vulnerabilities even allowing users to run their
-containers as root without actually having root privileges on the host.
-This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.<br/>
+containers as root without actually having root privileges on the host.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19001,8 +19903,7 @@ When this field is set to a non-empty string:
 - `setHostnameAsFQDN` must be nil or set to false.
 - `hostNetwork` must be set to false.
 
-This field must be a valid DNS subdomain as defined in RFC 1123 and contain at most 64 characters.
-Requires the HostnameOverride feature gate to be enabled.<br/>
+This field must be a valid DNS subdomain as defined in RFC 1123 and contain at most 64 characters.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19110,6 +20011,8 @@ More info: https://git.k8s.io/enhancements/keps/sig-node/688-pod-overhead/README
         <td>
           PreemptionPolicy is the Policy for preempting pods with lower priority.
 One of Never, PreemptLowerPriority.
+When Priority Admission Controller is enabled, it prevents users from setting
+this field. The admission controller populates this field from PriorityClassName.
 Defaults to PreemptLowerPriority if unset.<br/>
         </td>
         <td>false</td>
@@ -19157,8 +20060,8 @@ and reserved before the Pod is allowed to start. The resources
 will be made available to those containers which consume them
 by name.
 
-This is an alpha field and requires enabling the
-DynamicResourceAllocation feature gate.
+This is a stable field but requires that the
+DynamicResourceAllocation feature gate is enabled.
 
 This field is immutable.<br/>
         </td>
@@ -19216,6 +20119,24 @@ If schedulingGates is not empty, the pod will stay in the SchedulingGated state 
 scheduler will not attempt to schedule the pod.
 
 SchedulingGates can only be set at pod creation time, and be removed only afterwards.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespecschedulinggroup">schedulingGroup</a></b></td>
+        <td>object</td>
+        <td>
+          SchedulingGroup provides a reference to the immediate scheduling runtime
+grouping object that this Pod belongs to.
+This field is used by the scheduler to identify the group and apply the
+correct group scheduling policies. The association with a group also
+impacts other lifecycle aspects of a Pod that are relevant in a wider context
+of scheduling like preemption, resource attachment, etc. If not specified,
+the Pod is treated as a single unit in all of these aspects.
+The group object referenced by this field may not exist at the time the
+Pod is created.
+This field is immutable, but a group object with the same name may be
+recreated with different policies. Doing this during pod scheduling
+may result in the placement not conforming to the expected policies.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19455,7 +20376,8 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
         <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespeccontainersindexresizepolicyindex">resizePolicy</a></b></td>
         <td>[]object</td>
         <td>
-          Resources resize policy for the container.<br/>
+          Resources resize policy for the container.
+This field cannot be set on ephemeral containers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19740,7 +20662,8 @@ Selects a key of a ConfigMap.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          The key to select.<br/>
+          The key to select from the ConfigMap's Data field.
+Keys in the BinaryData field are not currently propagated to container env vars.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -20260,6 +21183,14 @@ Name must be an IANA_SVC_NAME.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>scheme</b></td>
         <td>string</td>
         <td>
@@ -20507,6 +21438,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -20800,6 +21739,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -20860,6 +21809,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21190,6 +22147,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -21250,6 +22217,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -21604,7 +22579,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -22105,6 +23079,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -22165,6 +23149,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -22304,8 +23296,7 @@ VolumeMount describes a mounting of a Volume within a container.
         <td><b>mountPath</b></td>
         <td>string</td>
         <td>
-          Path within the container at which the volume should be mounted.  Must
-not contain ':'.<br/>
+          Path within the container at which the volume should be mounted.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -22315,6 +23306,18 @@ not contain ':'.<br/>
           This must match the Name of a Volume.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>bindMountOptions</b></td>
+        <td>[]string</td>
+        <td>
+          bindMountOptions is the list of additional bind mount options to apply when
+mounting this volume into the container. Allowed values are noexec,
+nodev, and nosuid. These are Linux mount options and have no effect on
+Windows nodes.
+This field is not supported with image volumes.
+This is an alpha field and requires enabling the VolumeBindMountOptions feature gate.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b>mountPropagation</b></td>
         <td>string</td>
@@ -24484,7 +25487,8 @@ Selects a key of a ConfigMap.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          The key to select.<br/>
+          The key to select from the ConfigMap's Data field.
+Keys in the BinaryData field are not currently propagated to container env vars.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -25003,6 +26007,14 @@ Name must be an IANA_SVC_NAME.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>scheme</b></td>
         <td>string</td>
         <td>
@@ -25250,6 +26262,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -25540,6 +26560,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -25600,6 +26630,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -25927,6 +26965,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -25987,6 +27035,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -26339,7 +27395,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -26834,6 +27889,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -26894,6 +27959,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -27033,8 +28106,7 @@ VolumeMount describes a mounting of a Volume within a container.
         <td><b>mountPath</b></td>
         <td>string</td>
         <td>
-          Path within the container at which the volume should be mounted.  Must
-not contain ':'.<br/>
+          Path within the container at which the volume should be mounted.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -27044,6 +28116,18 @@ not contain ':'.<br/>
           This must match the Name of a Volume.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>bindMountOptions</b></td>
+        <td>[]string</td>
+        <td>
+          bindMountOptions is the list of additional bind mount options to apply when
+mounting this volume into the container. Allowed values are noexec,
+nodev, and nosuid. These are Linux mount options and have no effect on
+Windows nodes.
+This field is not supported with image volumes.
+This is an alpha field and requires enabling the VolumeBindMountOptions feature gate.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b>mountPropagation</b></td>
         <td>string</td>
@@ -27104,6 +28188,60 @@ Defaults to "" (volume's root).
 SubPathExpr and SubPath are mutually exclusive.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.template.spec.evictionResponders[index]
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
+
+
+
+EvictionResponder allows you to specify the responder reacting to an Eviction.
+Responders should observe and communicate through the Eviction Resource API to help with
+the graceful eviction of a target (e.g. termination of a pod).
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          name allows you to identify the responder responding to the Eviction.
+
+It must be a valid domain-prefixed key (such as "acme.io/foo").
+Domain names *.k8s.io and *.kubernetes.io are reserved.
+This field must be unique for each responder.
+This field is required.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>priority</b></td>
+        <td>integer</td>
+        <td>
+          priority for this responder. Higher priorities are selected first by the evictionrequest-controller.
+If there are responders with the same priority, the responder whose domain name comes first in the
+alphabetical higher domain order, will be picked. This means that the top domain labels are compared
+alphabetically first, followed by the lower domain labels. The key is compared last.
+
+The responder that is the managing controller of the pod should set the value of
+this field to 10000 to allow both for preemption or fallback registration by other
+responders.
+
+The minimum value is 0 and the maximum value is 100000.
+The interval 0-999 is reserved for responders with *.k8s.io suffix.
+This field is required.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -27316,7 +28454,8 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
         <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespecinitcontainersindexresizepolicyindex">resizePolicy</a></b></td>
         <td>[]object</td>
         <td>
-          Resources resize policy for the container.<br/>
+          Resources resize policy for the container.
+This field cannot be set on ephemeral containers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -27601,7 +28740,8 @@ Selects a key of a ConfigMap.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          The key to select.<br/>
+          The key to select from the ConfigMap's Data field.
+Keys in the BinaryData field are not currently propagated to container env vars.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -28121,6 +29261,14 @@ Name must be an IANA_SVC_NAME.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>scheme</b></td>
         <td>string</td>
         <td>
@@ -28368,6 +29516,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -28661,6 +29817,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -28721,6 +29887,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -29051,6 +30225,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -29111,6 +30295,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -29465,7 +30657,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -29966,6 +31157,16 @@ GRPC specifies a GRPC HealthCheckRequest.
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          mode specifies the connection mode for the gRPC health probe.
+Set to "TLS" to use TLS without certificate verification.
+Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+If not specified, the probe uses a plaintext (insecure) connection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>service</b></td>
         <td>string</td>
         <td>
@@ -30026,6 +31227,14 @@ Name must be an IANA_SVC_NAME.<br/>
         <td>string</td>
         <td>
           Path to access on the HTTP server.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>protocol</b></td>
+        <td>string</td>
+        <td>
+          Protocol selects the wire protocol for the probe connection.
+Nil defaults to HTTP/1.1.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -30165,8 +31374,7 @@ VolumeMount describes a mounting of a Volume within a container.
         <td><b>mountPath</b></td>
         <td>string</td>
         <td>
-          Path within the container at which the volume should be mounted.  Must
-not contain ':'.<br/>
+          Path within the container at which the volume should be mounted.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -30176,6 +31384,18 @@ not contain ':'.<br/>
           This must match the Name of a Volume.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>bindMountOptions</b></td>
+        <td>[]string</td>
+        <td>
+          bindMountOptions is the list of additional bind mount options to apply when
+mounting this volume into the container. Allowed values are noexec,
+nodev, and nosuid. These are Linux mount options and have no effect on
+Windows nodes.
+This field is not supported with image volumes.
+This is an alpha field and requires enabling the VolumeBindMountOptions feature gate.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b>mountPropagation</b></td>
         <td>string</td>
@@ -30340,6 +31560,14 @@ for the pod.
 It adds a name to it that uniquely identifies the ResourceClaim inside the Pod.
 Containers that need access to the ResourceClaim reference it with this name.
 
+When the DRAWorkloadResourceClaims feature gate is enabled and this Pod
+belongs to a PodGroup, a PodResourceClaim is matched to a
+PodGroupResourceClaim if all of their fields are equal (Name,
+ResourceClaimName, and ResourceClaimTemplateName). A matched claim references
+a single ResourceClaim shared across all Pods in the PodGroup, reserved for
+the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual
+Pods.
+
 <table>
     <thead>
         <tr>
@@ -30380,6 +31608,16 @@ be bound to this pod. When this pod is deleted, the ResourceClaim
 will also be deleted. The pod name and resource name, along with a
 generated component, will be used to form a unique name for the
 ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+
+When the DRAWorkloadResourceClaims feature gate is enabled and the pod
+belongs to a PodGroup that defines a PodGroupResourceClaim with the same
+Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the
+ResourceClaim generated for the PodGroup. All pods in the group that
+define an equivalent PodResourceClaim matching the
+PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same
+generated ResourceClaim. ResourceClaims generated for a PodGroup are
+owned by the PodGroup and their lifecycles are tied to the PodGroup
+instead of any individual pod.
 
 This field is immutable and no changes will be made to the
 corresponding ResourceClaim by the control plane after creating the
@@ -30518,6 +31756,46 @@ Each scheduling gate must have a unique name field.<br/>
 </table>
 
 
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.template.spec.schedulingGroup
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
+
+
+
+SchedulingGroup provides a reference to the immediate scheduling runtime
+grouping object that this Pod belongs to.
+This field is used by the scheduler to identify the group and apply the
+correct group scheduling policies. The association with a group also
+impacts other lifecycle aspects of a Pod that are relevant in a wider context
+of scheduling like preemption, resource attachment, etc. If not specified,
+the Pod is treated as a single unit in all of these aspects.
+The group object referenced by this field may not exist at the time the
+Pod is created.
+This field is immutable, but a group object with the same name may be
+recreated with different policies. Doing this during pod scheduling
+may result in the placement not conforming to the expected policies.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>podGroupName</b></td>
+        <td>string</td>
+        <td>
+          PodGroupName specifies the name of the standalone PodGroup object
+that represents the runtime instance of this group.
+Must be a DNS subdomain.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.template.spec.securityContext
 <sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
 
@@ -30631,11 +31909,8 @@ It is not possible to share the same volume among privileged and unprivileged Po
 Eligible volumes are in-tree FibreChannel and iSCSI volumes, and all CSI volumes
 whose CSI driver announces SELinux support by setting spec.seLinuxMount: true in their
 CSIDriver instance. Other volumes are always re-labelled recursively.
-"MountOption" value is allowed only when SELinuxMount feature gate is enabled.
 
-If not specified and SELinuxMount feature gate is enabled, "MountOption" is used.
-If not specified and SELinuxMount feature gate is disabled, "MountOption" is used for ReadWriteOncePod volumes
-and "Recursive" for all other volumes.
+If not specified, "MountOption" is used.
 
 This field affects only Pods that have SELinux label set, either in PodSecurityContext or in SecurityContext of all containers.
 
@@ -30981,9 +32256,10 @@ If the key is empty, operator must be Exists; this combination means to match al
         <td>string</td>
         <td>
           Operator represents a key's relationship to the value.
-Valid operators are Exists and Equal. Defaults to Equal.
+Valid operators are Exists, Equal, Lt, and Gt. Defaults to Equal.
 Exists is equivalent to wildcard for value, so that a pod can
-tolerate all taints of a particular category.<br/>
+tolerate all taints of a particular category.
+Lt and Gt perform numeric comparisons (requires feature gate TaintTolerationComparisonOperators).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -31466,7 +32742,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -31511,8 +32787,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -31979,6 +33254,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespecvolumesindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -32060,6 +33346,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -32200,6 +33497,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespecvolumesindexdownwardapiitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -32260,6 +33568,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -32367,6 +33686,22 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 The default is "" which means to use the node's default medium.
 Must be an empty string (default) or Memory.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>
+          mode specifies the permission bits for the emptyDir directory, in numeric
+notation (e.g., 0755, 01777). Must be a value between 0000 and 01777.
+If not specified, defaults to 0777.
+This might be in conflict with other options that affect the file
+mode, like fsGroup. If fsGroup is specified, the fsGroup permissions
+will override the mode specified here.
+This field has no effect on Windows.
+This field is alpha and requires EmptyDirVolumeMode featuregate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -32550,8 +33885,8 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.<br/>
         </td>
         <td>false</td>
@@ -32580,7 +33915,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.<br/>
         </td>
         <td>false</td>
@@ -32589,7 +33923,7 @@ There are three important differences between dataSource and dataSourceRef:
         <td>object</td>
         <td>
           resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources<br/>
@@ -32655,8 +33989,8 @@ dataSource field can be used to specify either:
 * An existing PVC (PersistentVolumeClaim)
 If the provisioner or an external controller can support the specified data source,
 it will create a new volume based on the contents of the specified data source.
-When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+copied to dataSource when dataSourceRef.namespace is not specified.
 If the namespace is specified, then dataSourceRef will not be copied to dataSource.
 
 <table>
@@ -32721,7 +34055,6 @@ There are three important differences between dataSource and dataSourceRef:
   specified.
 * While dataSource only allows local objects, dataSourceRef allows objects
   in any namespaces.
-(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
 
 <table>
@@ -32775,7 +34108,7 @@ Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGr
 
 
 resources represents the minimum resources the volume should have.
-If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
+Users are allowed to specify resource requirements
 that are lower than previous value but must still be higher than capacity recorded in the
 status field of the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
@@ -33362,7 +34695,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -33675,8 +35008,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -33743,6 +35075,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -33938,6 +35281,17 @@ Mutually-exclusive with name.  The contents of all selected
 ClusterTrustBundles will be unified and deduplicated.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -34127,6 +35481,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -34208,6 +35573,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td>
           Selects a resource of the container: only resources limits and requests
 (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -34422,6 +35798,36 @@ longer than 24 hours.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>userAnnotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          userAnnotations allow pod authors to pass additional information to
+the signer implementation.  Kubernetes does not restrict or validate this
+metadata in any way.
+
+These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of
+the PodCertificateRequest objects that Kubelet creates.
+
+Entries are subject to the same validation as object metadata annotations,
+with the addition that all keys must be domain-prefixed. No restrictions
+are placed on values, except an overall size limitation on the entire field.
+
+Signers should document the keys and values they support. Signers should
+deny requests that contain keys they do not recognize.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -34526,6 +35932,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
             <i>Format</i>: int32<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -34574,6 +35991,17 @@ plugin will proactively rotate the service account token. The kubelet will
 start trying to rotate the token if the token is older than 80 percent of
 its time to live or if the token is older than 24 hours.Defaults to 1 hour
 and must be at least 10 minutes.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -34955,6 +36383,17 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>defaultUser</b></td>
+        <td>integer</td>
+        <td>
+          defaultUser is Optional: The owner UID of the created files by default.
+The defaultUser field is only used as a fallback when the item-level user field is unset.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespecvolumesindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
@@ -35031,6 +36470,17 @@ This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.<br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>user</b></td>
+        <td>integer</td>
+        <td>
+          user is Optional: The owner UID of the created file.
+If specified, the item-level user field takes precedence over defaultUser.
+(Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -35359,15 +36809,6 @@ an actual pod condition type.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>status</b></td>
-        <td>string</td>
-        <td>
-          Specifies the required Pod condition status. To match a pod condition
-it is required that the specified status equals the pod condition status.
-Defaults to True.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
         <td>
@@ -35375,6 +36816,307 @@ Defaults to True.<br/>
 it is required that specified type equals the pod condition type.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Specifies the required Pod condition status. To match a pod condition
+it is required that the specified status equals the pod condition status.
+Defaults to True.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.scheduling
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespec)</sup></sup>
+
+
+
+scheduling defines the Workload-aware Scheduling configuration for this Job.
+When set, it specifies the scheduling policy (basic or gang), topology
+constraints, disruption mode, and shared resource claims.
+When omitted, the Job defaults to the basic scheduling policy, which behaves
+as standard pod-by-pod scheduling.
+This field is alpha-level and requires the WorkloadWithJob feature gate.
+This field is immutable, including whether it is set at all, only
+policy.gang.minCount may be changed after creation.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecschedulingdisruptionmode">disruptionMode</a></b></td>
+        <td>object</td>
+        <td>
+          DisruptionMode defines the mode in which the Job's pods can be disrupted.
+One of Single, All.
+This field is immutable after creation: it may not be added or removed,
+and the selected mode may not be changed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecschedulingresourceclaimsindex">resourceClaims</a></b></td>
+        <td>[]object</td>
+        <td>
+          ResourceClaims defines which ResourceClaims may be shared among Pods in
+the Job. Pods consume the devices allocated to a PodGroup's claim by
+defining a claim in its own Spec.ResourceClaims that matches the
+PodGroup's claim exactly. The claim must have the same name and refer to
+the same ResourceClaim or ResourceClaimTemplate.
+At most 4 claims may be set, matching the limit on the resulting PodGroup.
+This list is immutable after creation: entries may neither be added,
+removed, nor modified.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecschedulingschedulingconstraints">schedulingConstraints</a></b></td>
+        <td>object</td>
+        <td>
+          SchedulingConstraints defines scheduling constraints (e.g. topology)
+for the Job's pods.
+This field is immutable after creation.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecschedulingschedulingpolicy">schedulingPolicy</a></b></td>
+        <td>object</td>
+        <td>
+          SchedulingPolicy defines the scheduling policy for this Job.
+Exactly one of Basic or Gang must be set.
+This field is immutable after creation: the policy may not be added or
+removed. The policy variant (basic/gang) is frozen by hand-written
+validation; only schedulingPolicy.gang.minCount may be changed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.scheduling.disruptionMode
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecscheduling)</sup></sup>
+
+
+
+DisruptionMode defines the mode in which the Job's pods can be disrupted.
+One of Single, All.
+This field is immutable after creation: it may not be added or removed,
+and the selected mode may not be changed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>all</b></td>
+        <td>object</td>
+        <td>
+          all specifies that all pods in the group must be disrupted together.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>single</b></td>
+        <td>object</td>
+        <td>
+          single specifies that pods can be disrupted independently from each other.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.scheduling.resourceClaims[index]
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecscheduling)</sup></sup>
+
+
+
+WorkloadPodGroupResourceClaim references a dynamic resource claim
+that is shared across pods in the group.
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          name uniquely identifies this resource claim inside the group.
+This field is required. It must be a DNS_LABEL.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>resourceClaimName</b></td>
+        <td>string</td>
+        <td>
+          resourceClaimName is the name of a ResourceClaim object in the same
+namespace.
+This field is optional. If it is not specified, no resource claim
+is used. If set, it must be a DNS subdomain.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>resourceClaimTemplateName</b></td>
+        <td>string</td>
+        <td>
+          resourceClaimTemplateName is the name of a ResourceClaimTemplate
+object in the same namespace.
+This field is optional. If it is not specified, no resource claim
+template is used. If set, it must be a DNS subdomain.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.scheduling.schedulingConstraints
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecscheduling)</sup></sup>
+
+
+
+SchedulingConstraints defines scheduling constraints (e.g. topology)
+for the Job's pods.
+This field is immutable after creation.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecschedulingschedulingconstraintstopologyindex">topology</a></b></td>
+        <td>[]object</td>
+        <td>
+          topology specifies desired topological placements for all pods
+within the pod group.
+If unset, no topology placement is requested.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.scheduling.schedulingConstraints.topology[index]
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecschedulingschedulingconstraints)</sup></sup>
+
+
+
+TopologyConstraint defines a topology constraint for a PodGroup.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key specifies the key of the node label representing the topology domain.
+All pods within the PodGroup must be colocated within the same domain instance.
+Different PodGroups can land on different domain instances even if they derive from the same PodGroupTemplate.
+Examples: "topology.kubernetes.io/rack"<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.scheduling.schedulingPolicy
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecscheduling)</sup></sup>
+
+
+
+SchedulingPolicy defines the scheduling policy for this Job.
+Exactly one of Basic or Gang must be set.
+This field is immutable after creation: the policy may not be added or
+removed. The policy variant (basic/gang) is frozen by hand-written
+validation; only schedulingPolicy.gang.minCount may be changed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>basic</b></td>
+        <td>object</td>
+        <td>
+          basic specifies that standard, pod-by-pod Kubernetes scheduling
+behavior should be used.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecschedulingschedulingpolicygang">gang</a></b></td>
+        <td>object</td>
+        <td>
+          gang specifies all-or-nothing scheduling semantics.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.scheduling.schedulingPolicy.gang
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespecschedulingschedulingpolicy)</sup></sup>
+
+
+
+gang specifies all-or-nothing scheduling semantics.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>minCount</b></td>
+        <td>integer</td>
+        <td>
+          minCount is the minimum number of pods that must be scheduled
+at the same time for the scheduler to admit the entire group.
+This field is optional. If it is not specified, the controller
+should inject a context-specific sane default (e.g.,
+parallelism for a Job).
+If set, it must be a positive integer.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
