@@ -252,3 +252,72 @@ func TestScaleDownPrefersTheAnnotatedMachine(t *testing.T) {
 	require.NoError(t, cl.Get(context.Background(), client.ObjectKey{Namespace: "default", Name: "outdated"}, gone))
 	require.NoError(t, cl.Get(context.Background(), client.ObjectKey{Namespace: "default", Name: "oldest"}, gone))
 }
+
+// TestOldestInFullestFailureDomain covers scale down taking the spread into account,
+// since it used to pick by age alone and could empty a domain.
+func TestOldestInFullestFailureDomain(t *testing.T) {
+	machine := func(name, fd string, age time.Duration) *clusterv1.Machine {
+		return &clusterv1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              name,
+				CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
+			},
+			Spec: clusterv1.MachineSpec{FailureDomain: fd},
+		}
+	}
+	cluster := func(names ...string) *clusterv1.Cluster {
+		c := &clusterv1.Cluster{}
+		for _, n := range names {
+			c.Status.FailureDomains = append(c.Status.FailureDomains,
+				clusterv1.FailureDomain{Name: n, ControlPlane: new(true)})
+		}
+
+		return c
+	}
+
+	t.Run("the fullest domain gives up a machine, not the oldest overall", func(t *testing.T) {
+		// fd-a holds one and it is the oldest, fd-b holds two, so fd-b has to shrink.
+		oldestOverall := machine("a-0", "fd-a", time.Hour)
+		bOlder := machine("b-0", "fd-b", 30*time.Minute)
+		bNewer := machine("b-1", "fd-b", time.Minute)
+
+		scope := &controlplane{
+			cluster:         cluster("fd-a", "fd-b"),
+			activeMachines:  collections.FromMachines(oldestOverall, bOlder, bNewer),
+			deletedMachines: collections.Machines{},
+		}
+		candidates := collections.FromMachines(oldestOverall, bOlder, bNewer)
+
+		got := oldestInFullestFailureDomain(context.Background(), scope, candidates)
+
+		require.NotNil(t, got)
+		require.Equal(t, "b-0", got.Name, "the oldest of the fullest domain")
+	})
+
+	t.Run("no failure domains falls back to the oldest", func(t *testing.T) {
+		oldest := machine("m-0", "", time.Hour)
+		newest := machine("m-1", "", time.Minute)
+
+		scope := &controlplane{
+			cluster:         &clusterv1.Cluster{},
+			activeMachines:  collections.FromMachines(oldest, newest),
+			deletedMachines: collections.Machines{},
+		}
+
+		got := oldestInFullestFailureDomain(context.Background(), scope,
+			collections.FromMachines(oldest, newest))
+
+		require.NotNil(t, got)
+		require.Equal(t, "m-0", got.Name)
+	})
+
+	t.Run("no candidates means nothing to delete", func(t *testing.T) {
+		scope := &controlplane{
+			cluster:         cluster("fd-a"),
+			activeMachines:  collections.Machines{},
+			deletedMachines: collections.Machines{},
+		}
+
+		require.Nil(t, oldestInFullestFailureDomain(context.Background(), scope, collections.Machines{}))
+	})
+}
