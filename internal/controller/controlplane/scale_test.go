@@ -24,6 +24,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/require"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
@@ -156,4 +157,60 @@ func TestNextFailureDomain(t *testing.T) {
 
 		require.Equal(t, "fd-b", nextFailureDomain(context.Background(), scope))
 	})
+}
+
+// TestCarryRemediationLineage covers what a replacement records about the machine it replaced.
+func TestCarryRemediationLineage(t *testing.T) {
+	const marker = `{"machine":"cp-0","timestamp":"2023-11-14T22:13:20Z","retryCount":1}`
+
+	tests := []struct {
+		name    string
+		kcp     map[string]string
+		machine map[string]string
+		want    string
+	}{
+		{
+			// A scale up that is not a remediation leaves the machine unmarked, so the lineage
+			// cannot be mistaken for one later.
+			name: "no remediation in progress",
+			kcp:  map[string]string{"other": "x"},
+		},
+		{
+			name: "the marker moves onto a machine with no annotations",
+			kcp:  map[string]string{cpv1beta2.RemediationInProgressAnnotation: marker},
+			want: marker,
+		},
+		{
+			// An upgrade with a remediation in flight finds this. Copying it would leave the
+			// replacement carrying an annotation no reader can use, for the rest of its life.
+			name: "a marker no reader can make sense of is not copied",
+			kcp:  map[string]string{cpv1beta2.RemediationInProgressAnnotation: "true"},
+		},
+		{
+			name:    "the marker moves onto a machine that already has annotations",
+			kcp:     map[string]string{cpv1beta2.RemediationInProgressAnnotation: marker},
+			machine: map[string]string{cpv1beta2.MachineK0sConfigAnnotation: "{}"},
+			want:    marker,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Annotations: tt.kcp}}
+			machine := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-1", Annotations: tt.machine}}
+
+			carryRemediationLineage(kcp, machine)
+
+			if tt.want == "" {
+				require.NotContains(t, machine.Annotations, cpv1beta2.RemediationForAnnotation)
+
+				return
+			}
+
+			require.Equal(t, tt.want, machine.Annotations[cpv1beta2.RemediationForAnnotation])
+			for k, v := range tt.machine {
+				require.Equal(t, v, machine.Annotations[k], "an existing annotation must survive")
+			}
+		})
+	}
 }

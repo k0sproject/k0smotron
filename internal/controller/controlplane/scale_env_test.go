@@ -1362,3 +1362,69 @@ func TestReconcileMachinesInPlaceUpdateUnreachableClusterDoesNotScale(t *testing
 			"no machine may be created or deleted while an in place update cannot reach the cluster")
 	}
 }
+
+// TestReconcileMachinesScaleUpCarriesRemediationLineage covers that the lineage reaches the stored
+// machine, which is the only thing showing the annotation was set before the apply and not after.
+func TestReconcileMachinesScaleUpCarriesRemediationLineage(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-scale-up-remediation-lineage")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+
+	// A remediation deleted the unhealthy machine and left this behind for its replacement.
+	marker := remediationData{
+		Machine:    "cp-unhealthy",
+		Timestamp:  metav1.NewTime(time.Now()),
+		RetryCount: 2,
+	}.marshal()
+
+	kcp.Spec.Replicas = 1
+	kcp.Annotations = map[string]string{cpv1beta2.RemediationInProgressAnnotation: marker}
+	require.NoError(t, testEnv.Create(ctx, kcp))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, gmt, cluster, ns)
+
+	frt := &fakeRoundTripper{}
+	fakeClient := &restfake.RESTClient{Client: restfake.CreateHTTPClient(frt.run)}
+	restClient, _ := rest.RESTClientFor(&rest.Config{
+		ContentConfig: rest.ContentConfig{
+			NegotiatedSerializer: scheme.Codecs,
+			GroupVersion:         &metav1.SchemeGroupVersion,
+		},
+	})
+	restClient.Client = fakeClient.Client
+
+	clientSet, err := kubernetes.NewForConfig(testEnv.Config)
+	require.NoError(t, err)
+
+	r := &K0sController{
+		Client:                    testEnv,
+		APIReader:                 testEnv.GetAPIReader(),
+		ClientSet:                 clientSet,
+		workloadClusterKubeClient: kubernetes.New(restClient),
+	}
+
+	require.Eventually(t, func() bool {
+		controlplane, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
+		require.NoError(t, err)
+
+		_, err = r.reconcileMachines(ctx, controlplane)
+
+		return err == nil
+	}, 5*time.Second, 100*time.Millisecond)
+
+	machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv.GetAPIReader(), cluster,
+		collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
+	require.NoError(t, err)
+	require.Len(t, machines, 1)
+
+	created := machines.Oldest()
+	stored, ok := remediationDataFrom(created.Annotations, cpv1beta2.RemediationForAnnotation)
+	require.True(t, ok, "the replacement has to record the machine it replaced")
+	require.Equal(t, "cp-unhealthy", stored.Machine)
+	require.Equal(t, int32(2), stored.RetryCount)
+}

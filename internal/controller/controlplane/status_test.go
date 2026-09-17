@@ -1975,3 +1975,126 @@ func TestHostedReconcileDeletePersistsFinalizerRemoval(t *testing.T) {
 		require.True(t, apierrors.IsNotFound(err))
 	}
 }
+
+// TestSetLastRemediation covers where the reported history comes from, which is the in progress
+// marker while a remediation is running and the machines once that marker is cleared.
+func TestSetLastRemediation(t *testing.T) {
+	marker := func(machine string, at time.Time, retries int32) string {
+		value := remediationData{
+			Machine:    machine,
+			Timestamp:  metav1.NewTime(at),
+			RetryCount: retries,
+		}.marshal()
+
+		return value
+	}
+	replacement := func(name, value string, deleting bool) *clusterv1.Machine {
+		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: map[string]string{cpv1beta2.RemediationForAnnotation: value},
+		}}
+		if deleting {
+			m.DeletionTimestamp = new(metav1.NewTime(time.Unix(1, 0)))
+			m.Finalizers = []string{"test"}
+		}
+
+		return m
+	}
+
+	older, newer := time.Unix(1700000000, 0).UTC(), time.Unix(1700009999, 0).UTC()
+
+	tests := []struct {
+		name        string
+		kcp         map[string]string
+		active      []*clusterv1.Machine
+		deleted     []*clusterv1.Machine
+		wantMachine string
+		wantRetries int32
+	}{
+		{name: "nothing has ever been remediated"},
+		{
+			name: "the marker wins while a remediation is in progress",
+			kcp:  map[string]string{cpv1beta2.RemediationInProgressAnnotation: marker("cp-now", newer, 3)},
+			// Even though a machine records an older one.
+			active:      []*clusterv1.Machine{replacement("cp-1", marker("cp-then", older, 0), false)},
+			wantMachine: "cp-now",
+			wantRetries: 3,
+		},
+		{
+			// The newer lineage sits on the alphabetically first machine, so iteration reaches it
+			// first and only the timestamp comparison can keep it.
+			name:        "with no marker the newest machine is reported",
+			active:      []*clusterv1.Machine{replacement("cp-1", marker("cp-new", newer, 1), false), replacement("cp-2", marker("cp-old", older, 0), false)},
+			wantMachine: "cp-new",
+			wantRetries: 1,
+		},
+		{
+			// The replaced machine can still be going away while its replacement exists.
+			name:        "a deleting machine counts",
+			deleted:     []*clusterv1.Machine{replacement("cp-1", marker("cp-gone", newer, 2), true)},
+			wantMachine: "cp-gone",
+			wantRetries: 2,
+		},
+		{
+			name:   "the legacy marker reports nothing rather than failing",
+			kcp:    map[string]string{cpv1beta2.RemediationInProgressAnnotation: "true"},
+			active: []*clusterv1.Machine{{ObjectMeta: metav1.ObjectMeta{Name: "cp-1"}}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Annotations: tt.kcp}}
+
+			setLastRemediation(&controlplane{
+				kcp:             kcp,
+				activeMachines:  collections.FromMachines(tt.active...),
+				deletedMachines: collections.FromMachines(tt.deleted...),
+			})
+
+			if tt.wantMachine == "" {
+				require.Empty(t, kcp.Status.LastRemediation.Machine, "nothing to report leaves the field alone")
+				require.Nil(t, kcp.Status.LastRemediation.RetryCount)
+
+				return
+			}
+
+			require.Equal(t, tt.wantMachine, kcp.Status.LastRemediation.Machine)
+			require.NotNil(t, kcp.Status.LastRemediation.RetryCount)
+			require.Equal(t, tt.wantRetries, *kcp.Status.LastRemediation.RetryCount)
+			require.False(t, kcp.Status.LastRemediation.Time.IsZero())
+		})
+	}
+}
+
+// TestUpdateStatusReportsLastRemediation covers that the report is wired into updateStatus, since
+// setLastRemediation being correct says nothing about anything calling it.
+func TestUpdateStatusReportsLastRemediation(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+
+	marker := remediationData{
+		Machine:    "cp-unhealthy",
+		Timestamp:  metav1.NewTime(time.Now()),
+		RetryCount: 1,
+	}.marshal()
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{
+		Name: "kcp", Namespace: "default",
+		Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: marker},
+	}}
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
+
+	require.NoError(t, c.updateStatus(t.Context(), &controlplane{
+		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		kcp:              kcp,
+		activeMachines:   collections.Machines{},
+		deletedMachines:  collections.Machines{},
+		upToDateMachines: collections.Machines{},
+	}))
+
+	require.Equal(t, "cp-unhealthy", kcp.Status.LastRemediation.Machine)
+	require.NotNil(t, kcp.Status.LastRemediation.RetryCount)
+	require.Equal(t, int32(1), *kcp.Status.LastRemediation.RetryCount)
+}

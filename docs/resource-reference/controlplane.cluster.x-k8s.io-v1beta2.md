@@ -1003,6 +1003,13 @@ NOTE: Fields in this struct are part of the Cluster API contract and are used to
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrolplanestatuslastremediation">lastRemediation</a></b></td>
+        <td>object</td>
+        <td>
+          lastRemediation stores info about the last remediation performed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>readyReplicas</b></td>
         <td>integer</td>
         <td>
@@ -1154,6 +1161,53 @@ NOTE: Fields in this struct are part of the Cluster API contract and are used to
           controlPlaneInitialized indicates whether the control plane is initialized<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.status.lastRemediation
+<sup><sup>[↩ Parent](#k0scontrolplanestatus)</sup></sup>
+
+
+
+lastRemediation stores info about the last remediation performed.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>machine</b></td>
+        <td>string</td>
+        <td>
+          machine is the machine name of the latest machine being remediated.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>retryCount</b></td>
+        <td>integer</td>
+        <td>
+          retryCount tracks the remediation retries for the last remediated machine. A retry happens
+when a machine created to replace an unhealthy machine also fails.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>time</b></td>
+        <td>string</td>
+        <td>
+          time is when the last remediation happened. It is represented in RFC3339 form and is in UTC.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
