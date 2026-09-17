@@ -306,3 +306,57 @@ func TestFindFirstControllerIPWaitsWithAnError(t *testing.T) {
 	require.ErrorIs(t, err, errInitialControllerMachineNotInitialize)
 	require.Empty(t, host)
 }
+
+// TestGetFirstRunningMachineIsDeterministic covers the join target being picked by a real
+// ordering rather than by the iteration order of the map the candidates come from.
+func TestGetFirstRunningMachineIsDeterministic(t *testing.T) {
+	// One base instant, so an age of 0 really is the same timestamp on both sides.
+	base := time.Now()
+	machine := func(name string, age time.Duration) *clusterv1.Machine {
+		return &clusterv1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              name,
+				CreationTimestamp: metav1.NewTime(base.Add(-age)),
+			},
+			Status: clusterv1.MachineStatus{Phase: string(clusterv1.MachinePhaseRunning)},
+		}
+	}
+
+	for _, tc := range []struct {
+		name     string
+		machines []*clusterv1.Machine
+		want     string
+	}{
+		{
+			name: "the oldest candidate wins",
+			machines: []*clusterv1.Machine{
+				machine("cp-young", time.Minute),
+				machine("cp-old", time.Hour),
+				machine("cp-middle", 30*time.Minute),
+			},
+			want: "cp-old",
+		},
+		{
+			name: "an identical age falls back to the name",
+			machines: []*clusterv1.Machine{
+				machine("cp-b", 0),
+				machine("cp-a", 0),
+			},
+			want: "cp-a",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			scope := &ControllerScope{
+				Config:   &bootstrapv2.K0sControllerConfig{ObjectMeta: metav1.ObjectMeta{Name: "bootstrapping"}},
+				machines: collections.FromMachines(tc.machines...),
+			}
+
+			// Repeated because the input is a map and one pass can agree by luck.
+			for range 32 {
+				got := getFirstRunningMachineExcludingMachineToBootstrap(scope)
+				require.NotNil(t, got)
+				require.Equal(t, tc.want, got.Name)
+			}
+		})
+	}
+}

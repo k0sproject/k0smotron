@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"net/netip"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -961,20 +960,12 @@ exit 0`,
 }
 
 func getFirstRunningMachineExcludingMachineToBootstrap(scope *ControllerScope) *clusterv1.Machine {
-	res := make(machinesByVersionAndCreationTimestamp, 0, len(scope.machines))
-	// Assuming configs and machines have the same name
-	machineNameToBootstrap := scope.Config.Name
-	for _, value := range scope.machines {
-		if value.Status.Phase == string(clusterv1.MachinePhasePending) || machineNameToBootstrap == value.Name {
-			continue
-		}
-		res = append(res, value)
-	}
-	if len(res) == 0 {
-		return nil
-	}
-	sort.Sort(res)
-	return res[0]
+	// Oldest sorts by creation timestamp then name, so the pick is stable even though
+	// the candidates come out of a map. Any non pending controller is a valid target.
+	return scope.machines.Filter(func(m *clusterv1.Machine) bool {
+		// Assuming configs and machines have the same name
+		return m.Name != scope.Config.Name && m.Status.Phase != string(clusterv1.MachinePhasePending)
+	}).Oldest()
 }
 
 func getShutdownFilesDir(configuredWorkingDir string) string {
@@ -983,17 +974,4 @@ func getShutdownFilesDir(configuredWorkingDir string) string {
 		return "/etc/k0s"
 	}
 	return configuredWorkingDir
-}
-
-// machinesByCreationTimestamp sorts a list of Machine by creation timestamp, using their names as a tie breaker.
-type machinesByVersionAndCreationTimestamp []*clusterv1.Machine
-
-func (o machinesByVersionAndCreationTimestamp) Len() int      { return len(o) }
-func (o machinesByVersionAndCreationTimestamp) Swap(i, j int) { o[i], o[j] = o[j], o[i] }
-func (o machinesByVersionAndCreationTimestamp) Less(i, j int) bool {
-
-	if o[i].CreationTimestamp.Equal(&o[j].CreationTimestamp) {
-		return o[i].Name < o[j].Name
-	}
-	return o[i].Spec.Version < o[j].Spec.Version && o[i].CreationTimestamp.Before(&o[j].CreationTimestamp)
 }
