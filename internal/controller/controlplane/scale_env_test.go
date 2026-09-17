@@ -1363,6 +1363,136 @@ func TestReconcileMachinesInPlaceUpdateUnreachableClusterDoesNotScale(t *testing
 	}
 }
 
+func TestSetEtcdMemberHealthyCondition(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-etcd-member-condition")
+	require.NoError(t, err)
+
+	cluster := &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "etcd-health", Namespace: ns.Name},
+		Spec:       clusterv1.ClusterSpec{ControlPlaneEndpoint: clusterv1.APIEndpoint{Host: "host", Port: 6443}},
+	}
+	require.NoError(t, testEnv.Create(ctx, cluster))
+
+	machine := func(name string) *clusterv1.Machine {
+		m := &clusterv1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel:         cluster.Name,
+					clusterv1.MachineControlPlaneLabel: "true",
+				},
+			},
+			Spec: clusterv1.MachineSpec{
+				ClusterName: cluster.Name,
+				Version:     "v1.30.0",
+				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+					Kind:     "GenericInfrastructureMachine",
+					Name:     name + "-infra",
+					APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+				},
+				Bootstrap: clusterv1.Bootstrap{
+					ConfigRef: clusterv1.ContractVersionedObjectReference{
+						Kind:     "K0sControllerConfig",
+						Name:     name + "-config",
+						APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					},
+				},
+			},
+		}
+		require.NoError(t, testEnv.Create(ctx, m))
+
+		return m
+	}
+
+	joined, left, joining := machine("cp-joined"), machine("cp-left"), machine("cp-joining")
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(joined, left, joining, cluster, ns)
+
+	c := &K0sController{Client: testEnv}
+	scope := &controlplane{
+		cluster:        cluster,
+		activeMachines: collections.FromMachines(joined, left, joining),
+		etcdManaged:    true,
+		etcdMemberHealth: map[string]metav1.ConditionStatus{
+			"cp-joined": metav1.ConditionTrue,
+			"cp-left":   metav1.ConditionFalse,
+		},
+	}
+
+	require.NoError(t, c.setEtcdMemberHealthyCondition(ctx, scope))
+
+	seen := func(name string) *metav1.Condition {
+		m := &clusterv1.Machine{}
+		require.NoError(t, testEnv.Get(ctx, client.ObjectKey{Namespace: ns.Name, Name: name}, m))
+
+		return conditions.Get(m, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition)
+	}
+
+	for _, tc := range []struct {
+		machine string
+		status  metav1.ConditionStatus
+		reason  string
+	}{
+		{machine: "cp-joined", status: metav1.ConditionTrue, reason: cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyReason},
+		{machine: "cp-left", status: metav1.ConditionFalse, reason: cpv1beta2.K0sControlPlaneMachineEtcdMemberNotHealthyReason},
+		// Absent from the health map, so nothing is claimed either way.
+		{machine: "cp-joining", status: metav1.ConditionUnknown, reason: cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyUnknownReason},
+	} {
+		t.Run(tc.machine, func(t *testing.T) {
+			got := seen(tc.machine)
+
+			require.NotNil(t, got, "the condition has to be persisted, not only set in memory")
+			require.Equal(t, tc.status, got.Status)
+			require.Equal(t, tc.reason, got.Reason)
+		})
+	}
+
+	t.Run("a machine that drops out of the map stops claiming to be healthy", func(t *testing.T) {
+		// The machine reported healthy a moment ago, then the cluster became unreadable.
+		require.NoError(t, c.setEtcdMemberHealthyCondition(ctx, &controlplane{
+			cluster:          cluster,
+			activeMachines:   collections.FromMachines(joined),
+			etcdManaged:      true,
+			etcdMemberHealth: nil,
+		}))
+
+		got := seen("cp-joined")
+
+		require.NotNil(t, got)
+		require.Equal(t, metav1.ConditionUnknown, got.Status)
+	})
+
+	t.Run("a cluster with no etcd members says so rather than leaving a stale reading", func(t *testing.T) {
+		kine := machine("cp-kine")
+		defer func() { require.NoError(t, testEnv.Cleanup(ctx, kine)) }()
+
+		// Published while the cluster still kept etcd members.
+		require.NoError(t, c.setEtcdMemberHealthyCondition(ctx, &controlplane{
+			cluster:          cluster,
+			activeMachines:   collections.FromMachines(kine),
+			etcdManaged:      true,
+			etcdMemberHealth: map[string]metav1.ConditionStatus{"cp-kine": metav1.ConditionTrue},
+		}))
+		require.NotNil(t, seen("cp-kine"))
+
+		require.NoError(t, c.setEtcdMemberHealthyCondition(ctx, &controlplane{
+			cluster:        cluster,
+			activeMachines: collections.FromMachines(kine),
+			etcdManaged:    false,
+		}))
+
+		got := seen("cp-kine")
+
+		require.NotNil(t, got)
+		require.Equal(t, metav1.ConditionUnknown, got.Status)
+		require.Equal(t, cpv1beta2.K0sControlPlaneMachineNoEtcdMembersReason, got.Reason,
+			"a reading taken while the cluster had members must not survive it losing them")
+	})
+}
+
 // TestReconcileMachinesElectsTheUnhealthyEtcdMember drives the real path, state retrieval
 // then reconcile, rather than calling the election directly as the unit tests do.
 func TestReconcileMachinesElectsTheUnhealthyEtcdMember(t *testing.T) {

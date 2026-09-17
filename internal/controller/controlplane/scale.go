@@ -48,6 +48,9 @@ func (c *K0sController) reconcileMachines(ctx context.Context, scope *controlpla
 		if err := c.setUpToDateMachineCondition(ctx, scope); err != nil {
 			logger.Error(err, "Failed to set up-to-date machine condition")
 		}
+		if err := c.setEtcdMemberHealthyCondition(ctx, scope); err != nil {
+			logger.Error(err, "Failed to set etcd member healthy machine condition")
+		}
 	}()
 
 	if res, err := c.preflightChecks(ctx, scope); err != nil || !res.IsZero() {
@@ -122,6 +125,43 @@ func (c *K0sController) setUpToDateMachineCondition(ctx context.Context, scope *
 				Reason: clusterv1.MachineNotUpToDateReason,
 			})
 		}
+
+		errs = append(errs, patchHelper.Patch(ctx, machine))
+	}
+
+	return kerrors.NewAggregate(errs)
+}
+
+// setEtcdMemberHealthyCondition reports each machine's etcd member on the machine itself,
+// including when there are no members to report, so a stale reading cannot sit there.
+func (c *K0sController) setEtcdMemberHealthyCondition(ctx context.Context, scope *controlplane) error {
+	errs := make([]error, 0, len(scope.activeMachines))
+	for _, machine := range scope.activeMachines {
+		patchHelper, err := patch.NewHelper(machine, c.Client)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		condition := metav1.Condition{
+			Type:   cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
+			Status: metav1.ConditionUnknown,
+			Reason: cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyUnknownReason,
+		}
+		// Reported even when the cluster keeps no members, so a condition set while it
+		// did cannot sit there afterwards still claiming the member is fine.
+		switch {
+		case !scope.etcdManaged:
+			condition.Reason = cpv1beta2.K0sControlPlaneMachineNoEtcdMembersReason
+		case scope.etcdMemberHealth[machine.Name] == metav1.ConditionTrue:
+			condition.Status = metav1.ConditionTrue
+			condition.Reason = cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyReason
+		case scope.etcdMemberHealth[machine.Name] == metav1.ConditionFalse:
+			condition.Status = metav1.ConditionFalse
+			condition.Reason = cpv1beta2.K0sControlPlaneMachineEtcdMemberNotHealthyReason
+		}
+
+		conditions.Set(machine, condition)
 
 		errs = append(errs, patchHelper.Patch(ctx, machine))
 	}
