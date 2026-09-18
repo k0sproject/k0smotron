@@ -87,7 +87,10 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, new
 		}
 
 		// According to the Kubernetes skew policy, we can't upgrade more than one minor version at a time.
-		if newV.Core().Segments()[1]-oldV.Core().Segments()[1] > 1 {
+		// Comparing minors alone reads a major bump as a large downgrade, so the major has to be
+		// part of the comparison the way upstream's ceiling is.
+		oldCore, newCore := oldV.Core().Segments(), newV.Core().Segments()
+		if newCore[0] > oldCore[0] || (newCore[0] == oldCore[0] && newCore[1]-oldCore[1] > 1) {
 			return warnings, fmt.Errorf("upgrading more than one minor version at a time is not allowed by the Kubernetes skew policy")
 		}
 	}
