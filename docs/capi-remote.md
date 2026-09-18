@@ -106,6 +106,9 @@ spec:
 Objects like `K0sControlPlane` or `MachineDeployment` use `machineTemplate` to define the template for the `Machine` objects they create.
 Since k0smotron remote machine provider can't create machines on its own, it works with a pool of pre-created machines.
 
+!!! warning
+    Changes to a claimed `PooledRemoteMachine` are propagated to its `RemoteMachine`. Avoid changing the machine address, port, user, SSH key, or other connection settings while the machine is in use, because those values are also used when cleaning up the machine.
+
 ```yaml
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -205,7 +208,7 @@ spec:
 … # other objects omitted for brevity
 ```
 
-When CAPI controller creates a `RemoteMachine` from template object for the `K0sControlPlane`, k0smotron will pick one of the `PooledRemoteMachine` objects and use it's values for the `RemoteMachine` object.
+When the CAPI controller creates a `RemoteMachine` from a template for the `K0sControlPlane`, k0smotron picks one of the `PooledRemoteMachine` objects and uses its values for the `RemoteMachine`.
 
 ### Using Sudo for Commands
 

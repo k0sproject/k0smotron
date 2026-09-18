@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrastructure "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
@@ -76,9 +77,9 @@ func TestMergedMap(t *testing.T) {
 	})
 }
 
-// TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine covers a hand
+// TestReconcileFromPoolCopiesMetadataOntoBareRemoteMachine covers a hand
 // authored RemoteMachine, which carries no labels or annotations to copy into.
-func TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
+func TestReconcileFromPoolCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, infrastructure.AddToScheme(scheme))
 
@@ -95,6 +96,10 @@ func TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
 				Address: "10.0.0.1",
 				Port:    22,
 				User:    "root",
+				CleanUpCommands: []string{
+					"kubeadm reset -f",
+					"rm -rf /etc/kubernetes",
+				},
 			},
 		},
 	}
@@ -113,9 +118,49 @@ func TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
 			WithObjects(pooled, rm).WithStatusSubresource(pooled).Build(),
 	}
 
-	require.NoError(t, c.reservePooledMachineAndPopulateRemoteMachine(context.Background(), rm))
+	require.NoError(t, c.reconcileFromPool(context.Background(), rm))
 
 	require.Equal(t, "10.0.0.1", rm.Spec.Address)
 	require.Equal(t, map[string]string{"pool": "a"}, rm.Labels)
 	require.Equal(t, map[string]string{"note": "from the pool"}, rm.Annotations)
+	require.Equal(t, pooled.Spec.Machine.CleanUpCommands, rm.Spec.CleanUpCommands)
+}
+
+func TestPooledRemoteMachineToRemoteMachine(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		pooled infrastructure.PooledRemoteMachine
+		want   []types.NamespacedName
+	}{
+		{
+			name: "reserved machine",
+			pooled: infrastructure.PooledRemoteMachine{
+				Status: infrastructure.PooledRemoteMachineStatus{
+					Reserved: true,
+					MachineRef: infrastructure.RemoteMachineRef{
+						Name: "claimed", Namespace: "workload",
+					},
+				},
+			},
+			want: []types.NamespacedName{{Name: "claimed", Namespace: "workload"}},
+		},
+		{
+			name: "unreserved machine",
+			pooled: infrastructure.PooledRemoteMachine{
+				Status: infrastructure.PooledRemoteMachineStatus{
+					MachineRef: infrastructure.RemoteMachineRef{Name: "stale", Namespace: "workload"},
+				},
+			},
+			want: []types.NamespacedName{},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requests := pooledRemoteMachineToRemoteMachine(t.Context(), &tc.pooled)
+			got := make([]types.NamespacedName, 0, len(requests))
+			for _, request := range requests {
+				got = append(got, request.NamespacedName)
+			}
+			require.Equal(t, tc.want, got)
+		})
+	}
 }

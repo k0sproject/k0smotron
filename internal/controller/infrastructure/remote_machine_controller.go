@@ -18,6 +18,7 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"sort"
@@ -26,6 +27,7 @@ import (
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
@@ -44,7 +46,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // ErrPooledMachineNotFound is returned when a RemoteMachine references a pool
@@ -178,11 +182,15 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, fmt.Errorf("failed to parse bootstrap data: %w", err)
 	}
 
-	if rm.Spec.Pool != "" && rm.ObjectMeta.DeletionTimestamp.IsZero() {
-		err := r.reservePooledMachineAndPopulateRemoteMachine(ctx, rm)
+	if rm.Spec.Pool != "" {
+		err := r.reconcileFromPool(ctx, rm)
 		if err != nil {
-			log.Error(err, "Error reserving PooledMachine")
-			return ctrl.Result{Requeue: true}, err
+			log.Error(err, "Error reconciling PooledMachine")
+			// If the pool entry is already gone during deletion, use the values
+			// persisted on the RemoteMachine so its cleanup can still run.
+			if rm.ObjectMeta.DeletionTimestamp.IsZero() || !errors.Is(err, ErrPooledMachineNotFound) {
+				return ctrl.Result{Requeue: true}, err
+			}
 		}
 	}
 
@@ -333,6 +341,18 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
+func pooledRemoteMachineToRemoteMachine(_ context.Context, obj client.Object) []reconcile.Request {
+	pooledMachine, ok := obj.(*infrastructure.PooledRemoteMachine)
+	if !ok || !pooledMachine.Status.Reserved || pooledMachine.Status.MachineRef.Name == "" {
+		return nil
+	}
+
+	return []reconcile.Request{{NamespacedName: types.NamespacedName{
+		Name:      pooledMachine.Status.MachineRef.Name,
+		Namespace: pooledMachine.Status.MachineRef.Namespace,
+	}}}
+}
+
 // mergedMap copies src over dst and allocates dst when it is nil, since copying
 // into a nil map panics.
 func mergedMap(dst, src map[string]string) map[string]string {
@@ -349,9 +369,9 @@ func mergedMap(dst, src map[string]string) map[string]string {
 	return dst
 }
 
-// reservePooledMachineAndPopulateRemoteMachine finds a free machine from the pool specified in the RemoteMachine spec, reserves it, and populates
-// the RemoteMachine spec with the details of the reserved machine.
-func (r *RemoteMachineController) reservePooledMachineAndPopulateRemoteMachine(ctx context.Context, rm *infrastructure.RemoteMachine) error {
+// reconcileFromPool reserves a machine from the pool specified in the
+// RemoteMachine spec and synchronizes the claimed machine with its pool entry.
+func (r *RemoteMachineController) reconcileFromPool(ctx context.Context, rm *infrastructure.RemoteMachine) error {
 	pooledMachineList := &infrastructure.PooledRemoteMachineList{}
 	if err := r.Client.List(ctx, pooledMachineList, client.InNamespace(rm.Namespace)); err != nil {
 		return fmt.Errorf("failed to list pooled machines: %w", err)
@@ -525,5 +545,6 @@ func (r *RemoteMachineController) SetupWithManager(mgr ctrl.Manager, opts contro
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&infrastructure.RemoteMachine{}).
+		Watches(&infrastructure.PooledRemoteMachine{}, handler.EnqueueRequestsFromMapFunc(pooledRemoteMachineToRemoteMachine)).
 		Complete(r)
 }
