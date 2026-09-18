@@ -25,6 +25,8 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
+	uberzap "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -142,6 +144,9 @@ func main() {
 	pflag.CommandLine.StringVar(&namespace, "namespace", "", "Namespace that the controller watches to reconcile cluster-api objects. If unspecified, all namespaces are watched.")
 	opts := zap.Options{
 		Development: true,
+		// Only Panic/Fatal get an automatic stack trace; Error logs stay clean.
+		StacktraceLevel: zapcore.PanicLevel,
+		ZapOpts:         []uberzap.Option{uberzap.AddCaller()},
 	}
 	opts.BindFlags(flag.CommandLine)
 	flags.AddManagerOptions(pflag.CommandLine, &managerOptions)
