@@ -34,8 +34,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	"github.com/go-logr/logr"
 	k0smoutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 )
 
@@ -65,17 +68,6 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 		log.Error(err, "Failed to get machine")
 		return ctrl.Result{}, err
-	}
-
-	// Skip non-k0smotron managed machines
-	if machine.Spec.Bootstrap.ConfigRef.Kind != "K0sControllerConfig" && machine.Spec.Bootstrap.ConfigRef.Kind != "K0sWorkerConfig" &&
-		machine.Spec.InfrastructureRef.Kind != "RemoteMachine" {
-		return ctrl.Result{}, nil
-	}
-
-	// Skip the control plane machines that don't have worker enabled
-	if machine.Spec.Bootstrap.ConfigRef.Kind == "K0sControllerConfig" && machine.ObjectMeta.Labels["k0smotron.io/control-plane-worker-enabled"] != "true" {
-		return ctrl.Result{}, nil
 	}
 
 	if machine.Spec.ProviderID == "" {
@@ -188,5 +180,43 @@ func (p *ProviderIDController) SetupWithManager(mgr ctrl.Manager, opts controlle
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&clusterv1.Machine{}).
+		WithEventFilter(resourceBelongsToK0sWorkerNode()).
 		Complete(p)
+}
+
+// resourceBelongsToK0sWorkerNode returns a predicate that filters resources to only include those that belong to k0s worker nodes.
+func resourceBelongsToK0sWorkerNode() predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return processIfResourceBelongsToK0sWorkerNode(log.Log.WithValues("predicate", "ResourceBelongsToK0sWorkerNode", "eventType", "update"), e.ObjectNew)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return processIfResourceBelongsToK0sWorkerNode(log.Log.WithValues("predicate", "ResourceBelongsToK0sWorkerNode", "eventType", "create"), e.Object)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return processIfResourceBelongsToK0sWorkerNode(log.Log.WithValues("predicate", "ResourceBelongsToK0sWorkerNode", "eventType", "delete"), e.Object)
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return processIfResourceBelongsToK0sWorkerNode(log.Log.WithValues("predicate", "ResourceBelongsToK0sWorkerNode", "eventType", "generic"), e.Object)
+		},
+	}
+}
+
+func processIfResourceBelongsToK0sWorkerNode(logger logr.Logger, obj client.Object) bool {
+	machine := obj.(*clusterv1.Machine)
+
+	// Skip non-k0smotron managed machines
+	if machine.Spec.Bootstrap.ConfigRef.Kind != "K0sControllerConfig" && machine.Spec.Bootstrap.ConfigRef.Kind != "K0sWorkerConfig" &&
+		machine.Spec.InfrastructureRef.Kind != "RemoteMachine" {
+		logger.V(1).Info("Machine is not managed by k0smotron. Skipping processing.")
+		return false
+	}
+
+	// Skip the control plane machines that don't have worker enabled
+	if machine.Spec.Bootstrap.ConfigRef.Kind == "K0sControllerConfig" && machine.ObjectMeta.Labels["k0smotron.io/control-plane-worker-enabled"] != "true" {
+		logger.V(1).Info("Control plane machine without worker role enabled. Skipping processing.")
+		return false
+	}
+
+	return true
 }
