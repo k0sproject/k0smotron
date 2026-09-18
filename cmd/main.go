@@ -41,6 +41,8 @@ import (
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/util/flags"
+	uberzap "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -142,6 +144,9 @@ func main() {
 	pflag.CommandLine.StringVar(&namespace, "namespace", "", "Namespace that the controller watches to reconcile cluster-api objects. If unspecified, all namespaces are watched.")
 	opts := zap.Options{
 		Development: true,
+		// Only Panic/Fatal get an automatic stack trace; Error logs stay clean.
+		StacktraceLevel: zapcore.PanicLevel,
+		ZapOpts:         []uberzap.Option{uberzap.AddCaller()},
 	}
 	opts.BindFlags(flag.CommandLine)
 	flags.AddManagerOptions(pflag.CommandLine, &managerOptions)
