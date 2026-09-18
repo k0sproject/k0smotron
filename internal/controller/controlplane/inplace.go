@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -29,6 +30,7 @@ import (
 	"github.com/k0sproject/k0smotron/v2/internal/featuregate"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -46,6 +48,16 @@ import (
 
 func (c *K0sController) reconcileInplaceK0sVersionUpdate(ctx context.Context, scope *controlplane) (ctrl.Result, error) {
 	controlplaneRequiresUpdate := scope.hasMachinesWithOnlyVersionOutdated && scope.kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace
+
+	// Ahead of every gate below, since a Machine whose trigger stopped short of the hook is not
+	// outdated in any way those gates look at, so they would return before reaching it.
+	letInterruptedToComplete, err := c.completeInterruptedTriggers(ctx, scope, log.FromContext(ctx))
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if letInterruptedToComplete {
+		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+	}
 
 	if !conditions.IsTrue(scope.kcp, cpv1beta2.ControlPlaneAvailableCondition) {
 		// If the control plane is not available, we cannot proceed with the in-place update, as access to the
@@ -345,15 +357,52 @@ func (c *K0sController) updateMachineVersion(ctx context.Context, machine *clust
 	return nil
 }
 
+// updateMachineHook names the hook in the form the machine controller reads it from the list.
+func updateMachineHook() string {
+	return runtimecatalog.HookName(runtimehooksv1.UpdateMachine)
+}
+
+// pendingHooks reads the hooks tracked on the object. Upstream keeps them as one comma separated
+// annotation, sorted and deduplicated, and it is the reader, so the format is not ours to choose.
+func pendingHooks(obj client.Object) sets.Set[string] {
+	hooks := sets.New(strings.Split(obj.GetAnnotations()[runtimev1.PendingHooksAnnotation], ",")...)
+
+	// Splitting an absent or empty annotation yields one empty entry rather than none.
+	hooks.Delete("")
+
+	return hooks
+}
+
+// hasPendingHook reports whether the object already tracks the hook.
+func hasPendingHook(obj client.Object, hook string) bool {
+	return pendingHooks(obj).Has(hook)
+}
+
+// markHookPending adds the hook to whatever the object already tracks, rather than replacing it,
+// so a hook some other controller is waiting on does not disappear when this one is set.
+func markHookPending(obj client.Object, hook string) {
+	hooks := pendingHooks(obj)
+	hooks.Insert(hook)
+
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	annotations[runtimev1.PendingHooksAnnotation] = strings.Join(sets.List(hooks), ",")
+	obj.SetAnnotations(annotations)
+}
+
+// triggerCAPIInplaceVersionUpdate marks a Machine and the objects it points at as being updated in
+// place. The latch goes on first and the pending hook last, which is the order upstream uses.
 func triggerCAPIInplaceVersionUpdate(ctx context.Context, c client.Client, desiredVersion string, desiredMachine *clusterv1.Machine, desiredInfraMachine *unstructured.Unstructured, desiredBootstrapConfig *bootstrapv2.K0sControllerConfig) error {
+	// First, so a trigger that stops part way leaves the Machine carrying something to be found
+	// by. Everything below is re-runnable, which is what machinesToCompleteTrigger relies on.
 	if _, ok := desiredMachine.Annotations[clusterv1.UpdateInProgressAnnotation]; !ok {
 		orig := desiredMachine.DeepCopy()
-		desiredMachine.Spec.Version = desiredVersion
 		if desiredMachine.Annotations == nil {
 			desiredMachine.Annotations = map[string]string{}
 		}
 		desiredMachine.Annotations[clusterv1.UpdateInProgressAnnotation] = ""
-		desiredMachine.Annotations[runtimev1.PendingHooksAnnotation] = runtimecatalog.HookName(runtimehooksv1.UpdateMachine)
 		if err := c.Patch(ctx, desiredMachine, client.MergeFrom(orig)); err != nil {
 			return fmt.Errorf("failed to trigger in-place update for Machine %s by setting the %s annotation: %w",
 				klog.KObj(desiredMachine), clusterv1.UpdateInProgressAnnotation, err)
@@ -386,5 +435,66 @@ func triggerCAPIInplaceVersionUpdate(ctx context.Context, c client.Client, desir
 		}
 	}
 
+	// Last, since the machine controller starts the update the moment it sees the hook, and by
+	// then the two objects above have to be marked. The version rides along in the same patch.
+	if !hasPendingHook(desiredMachine, updateMachineHook()) {
+		orig := desiredMachine.DeepCopy()
+		desiredMachine.Spec.Version = desiredVersion
+		markHookPending(desiredMachine, updateMachineHook())
+		if err := c.Patch(ctx, desiredMachine, client.MergeFrom(orig)); err != nil {
+			return fmt.Errorf("failed to trigger in-place update for Machine %s by setting the %s annotation: %w",
+				klog.KObj(desiredMachine), runtimev1.PendingHooksAnnotation, err)
+		}
+	}
+
 	return nil
+}
+
+// machinesToCompleteTrigger finds Machines whose trigger stopped between the latch and the hook.
+// Completion clears the latch before the hook, so this cannot match a Machine that is finishing.
+func machinesToCompleteTrigger(scope *controlplane) collections.Machines {
+	return scope.activeMachines.Filter(func(m *clusterv1.Machine) bool {
+		_, latched := m.Annotations[clusterv1.UpdateInProgressAnnotation]
+
+		return latched && !hasPendingHook(m, updateMachineHook())
+	})
+}
+
+// completeInterruptedTriggers finishes any trigger that did not get as far as the hook, before a
+// new machine is picked. Without it such a Machine waits on a hook that was never marked pending.
+func (c *K0sController) completeInterruptedTriggers(ctx context.Context, scope *controlplane, logger logr.Logger) (bool, error) {
+	if !featuregate.IsEnabled(featuregate.InPlaceUpdates) {
+		return false, nil
+	}
+
+	interrupted := machinesToCompleteTrigger(scope)
+	if interrupted.Len() == 0 {
+		return false, nil
+	}
+
+	deployed, err := isK0smotronExtensionForInplaceUpdateDeployed(ctx, c.Client)
+	if err != nil {
+		return false, fmt.Errorf("error checking if k0smotron extension for in-place updates is deployed: %w", err)
+	}
+	if !deployed {
+		return false, nil
+	}
+
+	for _, machine := range interrupted.SortedByCreationTimestamp() {
+		infraMachine, ok := scope.infraMachines[machine.Name]
+		if !ok {
+			return false, fmt.Errorf("infrastructure machine not found for machine %s", machine.Name)
+		}
+		controllerConfig, ok := scope.controllerConfigs[machine.Name]
+		if !ok {
+			return false, fmt.Errorf("controller config not found for machine %s", machine.Name)
+		}
+
+		logger.Info("Completing an in-place update trigger that did not finish", "machine", machine.Name)
+		if err := triggerCAPIInplaceVersionUpdate(ctx, c.Client, scope.kcp.Spec.Version, machine, infraMachine, controllerConfig); err != nil {
+			return false, fmt.Errorf("error completing in-place update trigger for machine %s: %w", machine.Name, err)
+		}
+	}
+
+	return true, nil
 }
