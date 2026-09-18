@@ -317,7 +317,7 @@ docs:
 
 .PHONY: docs-serve-dev
 docs-serve-dev: DOCS_DEV_PORT ?= 8000
-docs-serve-dev:
+docs-serve-dev: docs-generate-reference
 	$(MAKE) -C docs .docker-image.serve-dev.stamp
 	docker run --rm \
 	  -v "$(CURDIR):/k0s:ro" \
@@ -346,7 +346,7 @@ docs-generate-k0smotron: $(CRDOC) ## Generate docs for k0smotron CRDs
 	$(CRDOC) --resources config/standalone/crd/bases --output docs/resource-reference/k0smotron.io-v1beta2.md --toc docs/resource-reference/k0smotron.io-v1beta2-toc.yaml
 
 # Generate docs for all CRDs apis
-docs-generate-reference: docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron ## Generate docs for all CRDs apis
+docs-generate-reference: manifests docs-generate-bootstrap docs-generate-controlplane docs-generate-infrastructure docs-generate-k0smotron ## Generate docs for all CRDs apis
 
 ## Generate all code, manifests, documentation, and release artifacts
 .PHONY: generate-all
