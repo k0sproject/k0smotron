@@ -43,10 +43,10 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	capiutil "sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/cluster-api/util/paused"
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -152,9 +152,10 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, err
 	}
 
-	if annotations.IsPaused(cluster, config) {
-		log.Info("Reconciliation is paused for this object")
-		return ctrl.Result{}, nil
+	// The contract asks for the paused state to be surfaced and not only obeyed, so the
+	// helper patches the condition before reporting whether to stop.
+	if isPaused, requeue, err := paused.EnsurePausedCondition(ctx, c.Client, cluster, config); err != nil || isPaused || requeue {
+		return ctrl.Result{}, err
 	}
 
 	currentKCPVersion, err := version.NewVersion(config.Spec.Version)

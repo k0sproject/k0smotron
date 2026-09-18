@@ -253,9 +253,13 @@ func TestReconcileControllerConfigPausedCluster(t *testing.T) {
 		Client: testEnv,
 	}
 
+	requireCached(t, cluster, machineForControllerConfig, k0sControllerConfig)
+
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sControllerConfig)})
 	require.NoError(t, err)
 	require.Equal(t, ctrl.Result{}, result)
+
+	requirePausedReported(t, k0sControllerConfig)
 }
 
 func TestReconcilePausedK0sControllerConfig(t *testing.T) {
@@ -324,9 +328,13 @@ func TestReconcilePausedK0sControllerConfig(t *testing.T) {
 		Client: testEnv,
 	}
 
+	requireCached(t, cluster, machineForControllerConfig, k0sControllerConfig)
+
 	result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sControllerConfig)})
 	require.NoError(t, err)
 	require.Equal(t, ctrl.Result{}, result)
+
+	requirePausedReported(t, k0sControllerConfig)
 }
 
 func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
