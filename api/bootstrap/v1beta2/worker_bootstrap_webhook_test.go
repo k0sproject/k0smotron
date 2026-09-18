@@ -22,6 +22,7 @@ import (
 
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -307,4 +308,48 @@ func TestValidateFileOwner(t *testing.T) {
 			require.Contains(t, errs[0].Detail, tt.wantErr)
 		})
 	}
+}
+
+// TestProvisionerWarningsForIgnition covers the hint for a config carried over from
+// another provisioner, which is a warning rather than a rejection.
+func TestProvisionerWarningsForIgnition(t *testing.T) {
+	ref := &ContentSource{SecretRef: &ContentSourceRef{Name: "extra", Key: "userdata"}}
+
+	t.Run("ignition with a custom user data ref warns", func(t *testing.T) {
+		warnings := ProvisionerWarnings(ProvisionerSpec{
+			Type:              provisioner.IgnitionProvisioningFormat,
+			CustomUserDataRef: ref,
+		}, field.NewPath("spec"))
+
+		require.Len(t, warnings, 1)
+		require.Contains(t, warnings[0], "spec.provisioner.customUserDataRef is ignored by the ignition provisioner")
+	})
+
+	t.Run("cloud-init with the same ref is silent", func(t *testing.T) {
+		require.Empty(t, ProvisionerWarnings(ProvisionerSpec{CustomUserDataRef: ref}, field.NewPath("spec")))
+	})
+
+	t.Run("ignition without the ref is silent", func(t *testing.T) {
+		require.Empty(t, ProvisionerWarnings(ProvisionerSpec{
+			Type: provisioner.IgnitionProvisioningFormat,
+		}, field.NewPath("spec")))
+	})
+
+	t.Run("the worker webhook surfaces it and still admits", func(t *testing.T) {
+		cfg := &K0sWorkerConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "w"},
+			Spec: K0sWorkerConfigSpec{
+				Version: "v1.30.0+k0s.0",
+				Provisioner: ProvisionerSpec{
+					Type:              provisioner.IgnitionProvisioningFormat,
+					CustomUserDataRef: ref,
+				},
+			},
+		}
+
+		warnings, err := (&K0sWorkerConfigValidator{}).ValidateCreate(context.Background(), cfg)
+
+		require.NoError(t, err, "the config is still accepted")
+		require.Len(t, warnings, 1)
+	})
 }
