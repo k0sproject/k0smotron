@@ -440,9 +440,9 @@ func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
 	require.True(t, isBootstrapConfigUpToDate(convertedLegacyConfig, kcp, machine))
 }
 
-// TestGenerateMachineCopiesDeletionTimeouts covers the timeouts reaching the Machine,
-// which is the only place the machine controller reads them from.
-func TestGenerateMachineCopiesDeletionTimeouts(t *testing.T) {
+// TestGenerateMachineCopiesMachineTemplateSpec covers the template spec reaching the
+// Machine, which is the only place the machine controller reads any of it from.
+func TestGenerateMachineCopiesMachineTemplateSpec(t *testing.T) {
 	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
 
 	newKCP := func(deletion cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec) *cpv1beta2.K0sControlPlane {
@@ -473,6 +473,29 @@ func TestGenerateMachineCopiesDeletionTimeouts(t *testing.T) {
 		require.Equal(t, int32(60), *machine.Spec.Deletion.NodeDrainTimeoutSeconds)
 		require.Equal(t, int32(120), *machine.Spec.Deletion.NodeVolumeDetachTimeoutSeconds)
 		require.Equal(t, int32(30), *machine.Spec.Deletion.NodeDeletionTimeoutSeconds)
+	})
+
+	t.Run("readiness gates are carried over", func(t *testing.T) {
+		kcp := newKCP(cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec{})
+		kcp.Spec.MachineTemplate.Spec.ReadinessGates = []clusterv1.MachineReadinessGate{
+			{ConditionType: "MyExternalThingReady"},
+			{ConditionType: "MyExternalThingStuck", Polarity: clusterv1.NegativePolarityCondition},
+		}
+
+		machine, err := c.generateMachine(context.Background(), "test-0", cluster, kcp,
+			clusterv1.ContractVersionedObjectReference{}, "")
+		require.NoError(t, err)
+
+		require.Equal(t, kcp.Spec.MachineTemplate.Spec.ReadinessGates, machine.Spec.ReadinessGates)
+	})
+
+	t.Run("no readiness gates leaves the Machine list unset", func(t *testing.T) {
+		machine, err := c.generateMachine(context.Background(), "test-0", cluster,
+			newKCP(cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec{}),
+			clusterv1.ContractVersionedObjectReference{}, "")
+		require.NoError(t, err)
+
+		require.Nil(t, machine.Spec.ReadinessGates)
 	})
 
 	t.Run("unset timeouts stay unset rather than becoming zero", func(t *testing.T) {
