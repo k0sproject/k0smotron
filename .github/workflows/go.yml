@@ -272,6 +272,7 @@ jobs:
           - check-capi-docker-machine-template-update-recreate-kine
           - check-capi-remote-machine-job-provision
           - check-capi-multi-instance-watch-selector
+          - check-capi-controlplane-kubeadm-remote-machine
 
     uses: ./.github/workflows/capi-smoke-tests.yml
     with:
