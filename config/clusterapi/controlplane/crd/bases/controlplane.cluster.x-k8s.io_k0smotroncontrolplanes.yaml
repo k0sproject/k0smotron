@@ -5155,6 +5155,23 @@ spec:
                   - type
                   type: object
                 type: array
+              certificates:
+                description: Certificates configures certificate lifetime and renewal.
+                properties:
+                  duration:
+                    default: 8760h
+                    description: |-
+                      Duration is the requested validity period for certificates k0smotron
+                      signs. Leaf certificates are additionally clamped so that they never
+                      outlive the CA that issued them.
+                    type: string
+                  renewBefore:
+                    default: 720h
+                    description: |-
+                      RenewBefore is how long before expiry a certificate is renewed. It must
+                      be shorter than Duration.
+                    type: string
+                type: object
               controlPlaneFlags:
                 description: |-
                   ControlPlaneFlags allows to configure additional flags for k0s

@@ -46,7 +46,7 @@ func init() {
 	etcdEntrypointScriptTmpl = template.Must(template.New("entrypoint.sh").Parse(etcdEntrypointScriptTemplate))
 }
 
-func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster) (ctrl.Result, error) {
+func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster, certFingerprint string) (ctrl.Result, error) {
 	if kmc.Spec.Storage.Type != km.StorageTypeEtcd {
 		return ctrl.Result{}, nil
 	}
@@ -56,7 +56,7 @@ func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster) (ctrl
 	}
 
 	// We can continue reconciling etcd if we need to requeue for statefulset, but if there is an error we should return immediately
-	result, err := scope.reconcileEtcdStatefulSet(ctx, kmc)
+	result, err := scope.reconcileEtcdStatefulSet(ctx, kmc, certFingerprint)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error reconciling etcd statefulset: %w", err)
 	}
@@ -198,7 +198,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 	return scope.reconcileResource(ctx, kmc, &cronJob)
 }
 
-func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster) (ctrl.Result, error) {
+func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster, certFingerprint string) (ctrl.Result, error) {
 	foundStatefulSet, err := scope.clienSet.AppsV1().StatefulSets(kmc.Namespace).Get(ctx, kmc.GetEtcdStatefulSetName(), metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -222,14 +222,16 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 		}
 	}
 
-	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas)
+	effectiveFingerprint := effectiveCertFingerprint(foundStatefulSet, certFingerprint, scope.currentReconcileState.certificatesRenewed)
+
+	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas, effectiveFingerprint)
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
 	return ctrl.Result{}, scope.reconcileResource(ctx, kmc, &statefulSet)
 }
 
-func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32) apps.StatefulSet {
+func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32, certFingerprint string) apps.StatefulSet {
 	// StatefulSet selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
 	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
@@ -285,7 +287,8 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 			PodManagementPolicy: apps.ParallelPodManagement,
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+					Labels:      labels,
+					Annotations: certificateAnnotations(certFingerprint),
 				},
 				Spec: v1.PodSpec{
 					AutomountServiceAccountToken: new(false),
