@@ -20,6 +20,7 @@ package controlplane
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 )
 
 func remediationMachine(name string, healthy bool, deleting bool) *clusterv1.Machine {
@@ -150,4 +152,80 @@ func TestReconcileUnhealthyMachinesRemediatesWhenNothingIsDeleting(t *testing.T)
 
 	err := c.Get(context.Background(), client.ObjectKeyFromObject(unhealthy), &clusterv1.Machine{})
 	require.True(t, apierrors.IsNotFound(err), "the unhealthy machine should have been deleted")
+}
+
+// TestReconcileUnhealthyMachinesReportsAFailedConditionPatch covers the deferred patch being the
+// only way the machine's condition reaches a user, so losing it quietly leaves them nothing to read.
+func TestReconcileUnhealthyMachinesReportsAFailedConditionPatch(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+
+	unhealthy := remediationMachine("cp-0", false, false)
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
+
+	c := &K0sController{
+		Client: fake.NewClientBuilder().WithScheme(scheme).
+			WithObjects(unhealthy, kcp).
+			WithStatusSubresource(unhealthy, kcp).
+			WithInterceptorFuncs(interceptor.Funcs{
+				SubResourcePatch: func(context.Context, client.Client, string, client.Object, client.Patch, ...client.SubResourcePatchOption) error {
+					return errors.New("conflict on the machine")
+				},
+			}).Build(),
+	}
+
+	// A single replica is one of the preflight refusals, so the condition carrying the reason is
+	// all this reconcile produces and the patch is what delivers it.
+	err := c.reconcileUnhealthyMachines(context.Background(), &controlplane{
+		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		kcp:             kcp,
+		activeMachines:  collections.FromMachines(unhealthy),
+		deletedMachines: collections.Machines{},
+	})
+
+	require.Error(t, err, "a condition nobody can read is not a successful reconcile")
+	require.Contains(t, err.Error(), "failed to patch control plane Machine")
+	require.Contains(t, err.Error(), "conflict on the machine", "the cause has to survive the wrap")
+}
+
+// TestReconcileUnhealthyMachinesToleratesTheRemediatedMachineBeingGone covers the other half. The
+// remediated machine is deleted before the patch runs, so a missing machine is the success case.
+func TestReconcileUnhealthyMachinesToleratesTheRemediatedMachineBeingGone(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+
+	unhealthy := remediationMachine("cp-0", false, false)
+	healthy := remediationMachine("cp-1", true, false)
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
+
+	patched := 0
+	c := &K0sController{
+		Client: fake.NewClientBuilder().WithScheme(scheme).
+			WithObjects(unhealthy, healthy, kcp).
+			WithStatusSubresource(unhealthy, healthy, kcp).
+			WithInterceptorFuncs(interceptor.Funcs{
+				SubResourcePatch: func(ctx context.Context, cl client.Client, _ string, obj client.Object, p client.Patch, opts ...client.SubResourcePatchOption) error {
+					patched++
+
+					return cl.Status().Patch(ctx, obj, p, opts...)
+				},
+			}).Build(),
+	}
+
+	require.NoError(t, c.reconcileUnhealthyMachines(context.Background(), &controlplane{
+		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		kcp:             kcp,
+		activeMachines:  collections.FromMachines(unhealthy, healthy),
+		deletedMachines: collections.Machines{},
+	}), "remediating a machine deletes it, so the patch that follows finding nothing is the happy path")
+
+	require.Positive(t, patched, "the patch has to have been attempted, or this proves nothing")
+	require.Contains(t, kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation,
+		"the remediation still has to have happened")
 }
