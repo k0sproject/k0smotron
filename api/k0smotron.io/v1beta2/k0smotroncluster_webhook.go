@@ -22,9 +22,7 @@ import (
 
 	"github.com/k0sproject/version"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -38,32 +36,28 @@ type ClusterDefaulter struct{}
 type ClusterValidator struct{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
-func (c ClusterValidator) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	kmc, ok := obj.(*Cluster)
-	if !ok {
-		return nil, fmt.Errorf("expected a Cluster object but got %T", obj)
+func (c ClusterValidator) ValidateCreate(_ context.Context, kmc *Cluster) (warnings admission.Warnings, err error) {
+	if kmc == nil {
+		return nil, fmt.Errorf("expected a Cluster object but got nil")
 	}
 
 	return c.ValidateClusterSpec(&kmc.Spec)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
-func (c ClusterValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	oldKmc, ok := oldObj.(*Cluster)
-	if !ok {
-		return nil, fmt.Errorf("expected a Cluster object but got %T", oldObj)
+func (c ClusterValidator) ValidateUpdate(_ context.Context, oldKmc, newKmc *Cluster) (warnings admission.Warnings, err error) {
+	if oldKmc == nil {
+		return nil, fmt.Errorf("expected an old Cluster object but got nil")
+	}
+	if newKmc == nil {
+		return nil, fmt.Errorf("expected a new Cluster object but got nil")
 	}
 
-	kmc, ok := newObj.(*Cluster)
-	if !ok {
-		return nil, fmt.Errorf("expected a Cluster object but got %T", newObj)
-	}
-
-	return c.ValidateClusterSpecUpdate(&oldKmc.Spec, &kmc.Spec)
+	return c.ValidateClusterSpecUpdate(&oldKmc.Spec, &newKmc.Spec)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
-func (c ClusterValidator) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
+func (c ClusterValidator) ValidateDelete(_ context.Context, _ *Cluster) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
 
@@ -182,10 +176,9 @@ func (c ClusterValidator) validateVersionSuffix(version string) admission.Warnin
 }
 
 // Default sets default values for the Cluster resource.
-func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error {
-	kmc, ok := obj.(*Cluster)
-	if !ok {
-		return fmt.Errorf("expected a Cluster object but got %T", obj)
+func (c *ClusterDefaulter) Default(_ context.Context, kmc *Cluster) error {
+	if kmc == nil {
+		return fmt.Errorf("expected a Cluster object but got nil")
 	}
 
 	if kmc.Spec.Replicas == 0 {
@@ -215,13 +208,12 @@ func (c *ClusterDefaulter) Default(_ context.Context, obj runtime.Object) error 
 	return nil
 }
 
-var _ webhook.CustomDefaulter = &ClusterDefaulter{}
-var _ webhook.CustomValidator = &ClusterValidator{}
+var _ admission.Defaulter[*Cluster] = &ClusterDefaulter{}
+var _ admission.Validator[*Cluster] = &ClusterValidator{}
 
 // SetupK0smotronClusterWebhookWithManager sets up the webhook with the manager.
 func SetupK0smotronClusterWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&Cluster{}).
+	return ctrl.NewWebhookManagedBy(mgr, &Cluster{}).
 		WithDefaulter(&ClusterDefaulter{}).
 		WithValidator(&ClusterValidator{}).
 		Complete()
