@@ -353,3 +353,24 @@ func TestProvisionerWarningsForIgnition(t *testing.T) {
 		require.Len(t, warnings, 1)
 	})
 }
+
+// TestProvisionerWarningsOnWorkerUpdate covers the update entry point, which is a separate
+// method on the validator and so a separate place the warning can go missing.
+func TestProvisionerWarningsOnWorkerUpdate(t *testing.T) {
+	cfg := &K0sWorkerConfig{
+		ObjectMeta: metav1.ObjectMeta{Name: "w"},
+		Spec: K0sWorkerConfigSpec{
+			Version: "v1.30.0+k0s.0",
+			Provisioner: ProvisionerSpec{
+				Type:              provisioner.IgnitionProvisioningFormat,
+				CustomUserDataRef: &ContentSource{SecretRef: &ContentSourceRef{Name: "extra", Key: "userdata"}},
+			},
+		},
+	}
+
+	warnings, err := (&K0sWorkerConfigValidator{}).ValidateUpdate(t.Context(), cfg, cfg)
+
+	require.NoError(t, err, "the config is still accepted")
+	require.Len(t, warnings, 1)
+	require.Contains(t, warnings[0], "spec.provisioner.customUserDataRef is ignored by the ignition provisioner")
+}
