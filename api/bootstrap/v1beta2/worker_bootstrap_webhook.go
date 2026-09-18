@@ -52,7 +52,7 @@ func (v *K0sWorkerConfigValidator) ValidateCreate(_ context.Context, c *K0sWorke
 		return nil, apierrors.NewBadRequest("expected a K0sWorkerConfig but got nil")
 	}
 
-	return nil, v.validate(c.Spec, c.Name)
+	return ProvisionerWarnings(c.Spec.Provisioner, field.NewPath("spec")), v.validate(c.Spec, c.Name)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -61,7 +61,7 @@ func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, _, newConfi
 		return nil, apierrors.NewBadRequest("expected a K0sWorkerConfig but got nil")
 	}
 
-	return nil, v.validate(newConfig.Spec, newConfig.Name)
+	return ProvisionerWarnings(newConfig.Spec.Provisioner, field.NewPath("spec")), v.validate(newConfig.Spec, newConfig.Name)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
