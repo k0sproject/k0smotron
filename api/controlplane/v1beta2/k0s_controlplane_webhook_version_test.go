@@ -62,3 +62,43 @@ func TestValidateUpdateHonoursTheVersionSkewPolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateAcceptsAnUnsetVersion(t *testing.T) {
+	kcp := func(v string) *K0sControlPlane {
+		return &K0sControlPlane{
+			Spec: K0sControlPlaneSpec{
+				Version:         v,
+				K0sConfigSpec:   bootstrapv1.K0sConfigSpec{},
+				MachineTemplate: &K0sControlPlaneMachineTemplate{},
+			},
+		}
+	}
+	v := &K0sControlPlaneValidator{}
+
+	t.Run("the field is optional, so create has to accept it empty", func(t *testing.T) {
+		warnings, err := v.ValidateCreate(context.Background(), kcp(""))
+
+		require.NoError(t, err)
+		require.Empty(t, warnings, "an empty version is not a missing suffix")
+	})
+
+	// The controller defaults the version after it snapshots the object, so the patch it
+	// writes is an update away from empty and admission has to let it through.
+	t.Run("the controller can persist the version it defaults", func(t *testing.T) {
+		_, err := v.ValidateUpdate(context.Background(), kcp(""), kcp("v1.27.9+k0s.0"))
+
+		require.NoError(t, err)
+	})
+
+	t.Run("clearing it back is allowed, the controller fills it in again", func(t *testing.T) {
+		_, err := v.ValidateUpdate(context.Background(), kcp("v1.31.2+k0s.0"), kcp(""))
+
+		require.NoError(t, err)
+	})
+
+	t.Run("a version that is set is still checked", func(t *testing.T) {
+		_, err := v.ValidateCreate(context.Background(), kcp("v1.31.1+k0s.0"))
+
+		require.ErrorContains(t, err, "not compatible with K0sControlPlane")
+	})
+}
