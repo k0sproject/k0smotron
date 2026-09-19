@@ -107,7 +107,7 @@ Objects like `K0sControlPlane` or `MachineDeployment` use `machineTemplate` to d
 Since k0smotron remote machine provider can't create machines on its own, it works with a pool of pre-created machines.
 
 !!! warning
-    Changes to a claimed `PooledRemoteMachine` are propagated to its `RemoteMachine`. Avoid changing the machine address, port, user, SSH key, or other connection settings while the machine is in use, because those values are also used when cleaning up the machine.
+    A `PooledRemoteMachine` is copied into the `RemoteMachine` when it is claimed. Its `spec` must not be changed while it is reserved. Configure the address, port, user, SSH key, and cleanup commands before the pool entry is claimed.
 
 ```yaml
 ---
