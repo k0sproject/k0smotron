@@ -56,4 +56,24 @@ const (
 
 	// K0sControlPlaneNotScalingDownReason surfaces when actual replicas <= desired replicas.
 	K0sControlPlaneNotScalingDownReason = clusterv1.NotScalingDownReason
+
+	// K0sControlPlaneMachinesReadyCondition aggregates the Ready condition of the machines the
+	// control plane owns, so what is wrong with them is readable from the control plane.
+	K0sControlPlaneMachinesReadyCondition = clusterv1.MachinesReadyCondition
+
+	// K0sControlPlaneMachinesReadyReason surfaces when every machine reports Ready.
+	K0sControlPlaneMachinesReadyReason = clusterv1.ReadyReason
+
+	// K0sControlPlaneMachinesNotReadyReason surfaces when at least one machine reports not Ready.
+	K0sControlPlaneMachinesNotReadyReason = clusterv1.NotReadyReason
+
+	// K0sControlPlaneMachinesReadyUnknownReason surfaces when at least one machine says nothing
+	// about being ready and none reports not Ready.
+	K0sControlPlaneMachinesReadyUnknownReason = clusterv1.ReadyUnknownReason
+
+	// K0sControlPlaneMachinesReadyNoReplicasReason surfaces when the control plane owns no machine.
+	K0sControlPlaneMachinesReadyNoReplicasReason = clusterv1.NoReplicasReason
+
+	// K0sControlPlaneMachinesReadyInternalErrorReason surfaces a failure to compute the condition.
+	K0sControlPlaneMachinesReadyInternalErrorReason = clusterv1.InternalErrorReason
 )

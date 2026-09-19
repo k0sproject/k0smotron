@@ -1975,3 +1975,118 @@ func TestHostedReconcileDeletePersistsFinalizerRemoval(t *testing.T) {
 		require.True(t, apierrors.IsNotFound(err))
 	}
 }
+
+// readyMachine builds a machine reporting the given Ready state, or reporting nothing about it
+// when the status is empty, which is how a machine looks before the machine controller gets to it.
+func readyMachine(name string, status metav1.ConditionStatus, reason, message string) *clusterv1.Machine {
+	m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"}}
+	if status != "" {
+		conditions.Set(m, metav1.Condition{
+			Type:    clusterv1.MachineReadyCondition,
+			Status:  status,
+			Reason:  reason,
+			Message: message,
+		})
+	}
+
+	return m
+}
+
+func TestSetMachinesReadyCondition(t *testing.T) {
+	ready := func(name string) *clusterv1.Machine {
+		return readyMachine(name, metav1.ConditionTrue, clusterv1.MachineReadyReason, "")
+	}
+
+	tests := []struct {
+		name        string
+		active      []*clusterv1.Machine
+		deleted     []*clusterv1.Machine
+		wantStatus  metav1.ConditionStatus
+		wantReason  string
+		wantMessage string
+	}{
+		{
+			name:       "the control plane owns no machine",
+			wantStatus: metav1.ConditionTrue,
+			wantReason: cpv1beta2.K0sControlPlaneMachinesReadyNoReplicasReason,
+		},
+		{
+			name:       "every machine is ready",
+			active:     []*clusterv1.Machine{ready("cp-0"), ready("cp-1")},
+			wantStatus: metav1.ConditionTrue,
+			wantReason: cpv1beta2.K0sControlPlaneMachinesReadyReason,
+		},
+		{
+			name:        "one machine is not ready",
+			active:      []*clusterv1.Machine{readyMachine("cp-0", metav1.ConditionFalse, "NodeNotReady", "Node cp-0 is not ready"), ready("cp-1")},
+			wantStatus:  metav1.ConditionFalse,
+			wantReason:  cpv1beta2.K0sControlPlaneMachinesNotReadyReason,
+			wantMessage: "* Machine cp-0: Node cp-0 is not ready",
+		},
+		{
+			name:        "one machine says nothing about being ready",
+			active:      []*clusterv1.Machine{readyMachine("cp-0", "", "", ""), ready("cp-1")},
+			wantStatus:  metav1.ConditionUnknown,
+			wantReason:  cpv1beta2.K0sControlPlaneMachinesReadyUnknownReason,
+			wantMessage: "* Machine cp-0: Condition Ready not yet reported",
+		},
+		{
+			// A machine on its way out is still one the control plane is answering for, and it
+			// leaves activeMachines as soon as it is marked for deletion.
+			name:        "the machine that is not ready is already deleting",
+			active:      []*clusterv1.Machine{ready("cp-1")},
+			deleted:     []*clusterv1.Machine{readyMachine("cp-0", metav1.ConditionFalse, "NodeNotReady", "Node cp-0 is not ready")},
+			wantStatus:  metav1.ConditionFalse,
+			wantReason:  cpv1beta2.K0sControlPlaneMachinesNotReadyReason,
+			wantMessage: "* Machine cp-0: Node cp-0 is not ready",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+
+			setMachinesReadyCondition(t.Context(), &controlplane{
+				kcp:             kcp,
+				activeMachines:  collections.FromMachines(tt.active...),
+				deletedMachines: collections.FromMachines(tt.deleted...),
+			})
+
+			got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneMachinesReadyCondition)
+			require.NotNil(t, got, "the condition has to be reported either way")
+			require.Equal(t, tt.wantStatus, got.Status)
+			require.Equal(t, tt.wantReason, got.Reason)
+			require.Equal(t, tt.wantMessage, got.Message)
+		})
+	}
+}
+
+// TestUpdateStatusReportsMachinesReadyWhenReplicasFail covers where the call sits. The replica
+// computation gives up on an unparseable machine version, taking the scaling conditions with it.
+func TestUpdateStatusReportsMachinesReadyWhenReplicasFail(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+
+	broken := readyMachine("cp-0", metav1.ConditionFalse, "NodeNotReady", "Node cp-0 is not ready")
+	broken.Spec.Version = "not-a-version"
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
+
+	err := c.updateStatus(t.Context(), &controlplane{
+		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		kcp:              kcp,
+		activeMachines:   collections.FromMachines(broken),
+		deletedMachines:  collections.Machines{},
+		upToDateMachines: collections.Machines{},
+	})
+	require.Error(t, err, "the replica computation has to fail for this test to say anything")
+
+	got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneMachinesReadyCondition)
+	require.NotNil(t, got, "the machines stay reported through a failure further down")
+	require.Equal(t, metav1.ConditionFalse, got.Status)
+
+	require.Nil(t, conditions.Get(kcp, cpv1beta2.K0sControlPlaneScalingUpCondition),
+		"the scaling conditions are what the failure costs, which is what the ordering avoids")
+}
