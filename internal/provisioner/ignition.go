@@ -22,11 +22,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"text/template"
 
 	butaneutil "github.com/coreos/butane/base/util"
 	"github.com/coreos/butane/config"
 	bcommon "github.com/coreos/butane/config/common"
+	"github.com/coreos/vcontext/report"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,6 +53,22 @@ type IgnitionProvisioner struct {
 	AdditionalConfig string
 }
 
+// butaneRejections names the fields Butane refused, since its error is the same sentence
+// whatever the cause and the report is where the field and the limit are.
+func butaneRejections(rep report.Report) string {
+	rejections := []string{}
+	for _, entry := range rep.Entries {
+		if entry.Kind.IsFatal() {
+			rejections = append(rejections, entry.String())
+		}
+	}
+	if len(rejections) == 0 {
+		return ""
+	}
+
+	return ", " + strings.Join(rejections, ", ")
+}
+
 // ToProvisionData converts the input data to Ignition user data.
 func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte, error) {
 	files := []map[string]any{}
@@ -72,22 +90,23 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 			"mode": int(mi),
 		}
 
-		// An Ignition file entry carries either contents or append, never both.
-		// Append is new, so it can use a data URL, which holds any byte.
+		// A data URL is opaque to the YAML emitter, which cannot carry a leading
+		// newline in a block scalar and emits a tab that Butane then fails to parse.
+		uri, compression, err := butaneutil.MakeDataURL(content, nil, false)
+		if err != nil {
+			return nil, fmt.Errorf("error encoding contents of file %s: %w", f.Path, err)
+		}
+
+		body := map[string]string{"source": uri}
+		if compression != nil {
+			body["compression"] = *compression
+		}
+
+		// An entry carries either contents or append, never both.
 		if f.Append {
-			uri, compression, err := butaneutil.MakeDataURL(content, nil, false)
-			if err != nil {
-				return nil, fmt.Errorf("error encoding contents of file %s: %w", f.Path, err)
-			}
-
-			body := map[string]string{"source": uri}
-			if compression != nil {
-				body["compression"] = *compression
-			}
-
 			file["append"] = []map[string]string{body}
 		} else {
-			file["contents"] = map[string]string{"inline": string(content)}
+			file["contents"] = body
 		}
 
 		if user, group := f.OwnerUserAndGroup(); user != "" || group != "" {
@@ -132,15 +151,14 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling butane config: %w", err)
 	}
-	initIgn, _, err := config.TranslateBytes(
+	initIgn, initReport, err := config.TranslateBytes(
 		butaneYaml,
 		bcommon.TranslateBytesOptions{
-			TranslateOptions: bcommon.TranslateOptions{NoResourceAutoCompression: true},
-			Pretty:           true,
+			Pretty: true,
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error translating butane config: %w", err)
+		return nil, fmt.Errorf("error translating butane config: %w%s", err, butaneRejections(initReport))
 	}
 
 	// Get ignition spec version from initial config
@@ -165,7 +183,9 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 
 	if i.AdditionalConfig != "" {
 		// translate additional Butane YAML to Ignition JSON
-		addIgn, _, err := config.TranslateBytes(
+		// User supplied Butane can still use inline contents, so auto compression has
+		// to stay off here or their file bodies come out gzipped.
+		addIgn, addReport, err := config.TranslateBytes(
 			[]byte(i.AdditionalConfig),
 			bcommon.TranslateBytesOptions{
 				TranslateOptions: bcommon.TranslateOptions{NoResourceAutoCompression: true},
@@ -173,7 +193,7 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 			},
 		)
 		if err != nil {
-			return nil, fmt.Errorf("error translating additional config: %w", err)
+			return nil, fmt.Errorf("error translating additional config: %w%s", err, butaneRejections(addReport))
 		}
 
 		additionalIgnEncoded := base64.StdEncoding.EncodeToString(addIgn)
