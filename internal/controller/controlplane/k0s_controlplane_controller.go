@@ -432,7 +432,31 @@ func (c *K0sController) ensureCertificates(ctx context.Context, controlplane *co
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
-	return certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(controlplane.cluster), *metav1.NewControllerRef(controlplane.kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")))
+
+	// Before the control plane is up the certificates are ours to mint. Once it is up
+	// they are in use, and a fresh authority would invalidate every node and kubeconfig.
+	if !ptr.Deref(controlplane.kcp.Status.Initialization.ControlPlaneInitialized, false) {
+		return certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(controlplane.cluster), *metav1.NewControllerRef(controlplane.kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")))
+	}
+
+	if err := certificates.LookupCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(controlplane.cluster)); err != nil {
+		return fmt.Errorf("error looking up cluster certificates: %w", err)
+	}
+
+	// A missing internal certificate is skipped there rather than reported, so the
+	// gap has to be found here.
+	var missing []string
+	for _, certificate := range certificates {
+		if certificate.Secret == nil {
+			missing = append(missing, string(certificate.Purpose))
+		}
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("cluster certificates %s are missing and are not regenerated for a control plane that is already up, restore the secrets from a backup", strings.Join(missing, ", "))
+	}
+
+	return nil
 }
 
 func (c *K0sController) reconcileConfig(ctx context.Context, controlplane *controlplane) error {
