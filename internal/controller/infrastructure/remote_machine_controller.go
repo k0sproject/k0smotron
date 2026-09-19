@@ -367,15 +367,29 @@ func (r *RemoteMachineController) reservePooledMachineAndPopulateRemoteMachine(c
 		foundPooledMachine     *infrastructure.PooledRemoteMachine
 	)
 	for _, pm := range pooledMachineList.Items {
-		if pm.Spec.Pool == rm.Spec.Pool {
-			if pm.Status.Reserved && pm.Status.MachineRef.Name == rm.GetName() {
-				foundPooledMachine = &pm
-				break
-			}
+		if pm.Status.Reserved && pm.Status.MachineRef.Name == rm.GetName() {
+			foundPooledMachine = &pm
+			break
+		}
 
-			if !pm.Status.Reserved && firstFreePooledMachine == nil {
-				firstFreePooledMachine = &pm
-			}
+		if pm.Status.Reserved || pm.Spec.Pool != rm.Spec.Pool {
+			continue
+		}
+
+		// assume, that if we have unreserved pooled machine
+		// that has the same adress as remote machine
+		// reown this machine
+		if rm.Spec.Address != "" && rm.Spec.Address == pm.Spec.Machine.Address {
+			firstFreePooledMachine = &pm
+			break
+		}
+
+		// if we don't have adrees yet assume
+		// that we didn't provision machine yet
+		if rm.Spec.Address == "" && firstFreePooledMachine == nil {
+			firstFreePooledMachine = &pm
+			// but do not exit early to find pm, that can be owned
+			// by this rm
 		}
 	}
 
@@ -460,7 +474,6 @@ func (r *RemoteMachineController) getSSHKey(ctx context.Context, rm *infrastruct
 	}
 
 	return secret.Data["value"], nil
-
 }
 
 func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine *clusterv1.Machine) ([]byte, error) {
