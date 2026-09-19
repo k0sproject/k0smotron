@@ -23,6 +23,7 @@ import (
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -66,15 +67,17 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 		return nil
 	}
 	log = log.WithValues("Machine", machineToBeRemediated)
-	// Always patch the machine to be remediated conditions in order to inform about remediation state.
+	// The condition is all a reader gets, so a patch that fails is reported rather than logged. A
+	// machine already gone is the successful outcome of remediating it, not a failure.
 	defer func() {
 		derr := c.Status().Patch(ctx, machineToBeRemediated, client.Merge)
-		if derr != nil {
-			log.Error(derr, "Failed to patch control plane Machine", "Machine", machineToBeRemediated.Name)
-			if retErr == nil {
-				retErr = errors.Wrapf(err, "failed to patch control plane Machine %s", machineToBeRemediated.Name)
-			}
+		if derr == nil || apierrors.IsNotFound(derr) {
 			return
+		}
+
+		log.Error(derr, "Failed to patch control plane Machine", "Machine", machineToBeRemediated.Name)
+		if retErr == nil {
+			retErr = errors.Wrapf(derr, "failed to patch control plane Machine %s", machineToBeRemediated.Name)
 		}
 	}()
 	// Ensure that the cluster remains available during and after the remediation process. The remediation must not
