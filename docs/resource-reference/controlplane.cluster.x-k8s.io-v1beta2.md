@@ -793,6 +793,13 @@ offered by an infrastructure provider.<br/>
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          spec defines the spec for Machines in a K0sControlPlane object.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -913,6 +920,140 @@ More info: http://kubernetes.io/docs/user-guide/annotations<br/>
 (scope and select) objects. May match selectors of replication controllers
 and services.
 More info: http://kubernetes.io/docs/user-guide/labels<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.spec
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate)</sup></sup>
+
+
+
+spec defines the spec for Machines in a K0sControlPlane object.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatespecdeletion">deletion</a></b></td>
+        <td>object</td>
+        <td>
+          deletion contains configuration options for Machine deletion.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatespecreadinessgatesindex">readinessGates</a></b></td>
+        <td>[]object</td>
+        <td>
+          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+
+This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.spec.deletion
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplatespec)</sup></sup>
+
+
+
+deletion contains configuration options for Machine deletion.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>nodeDeletionTimeoutSeconds</b></td>
+        <td>integer</td>
+        <td>
+          nodeDeletionTimeoutSeconds defines how long the machine controller will attempt to delete the Node that the Machine
+hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+If no value is provided, the default value for this property of the Machine resource will be used.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeDrainTimeoutSeconds</b></td>
+        <td>integer</td>
+        <td>
+          nodeDrainTimeoutSeconds is the total amount of time that the controller will spend on draining a controlplane node
+The default value is 0, meaning that the node can be drained without any time limitations.
+NOTE: nodeDrainTimeoutSeconds is different from `kubectl drain --timeout`<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodeVolumeDetachTimeoutSeconds</b></td>
+        <td>integer</td>
+        <td>
+          nodeVolumeDetachTimeoutSeconds is the total amount of time that the controller will spend on waiting for all volumes
+to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.spec.readinessGates[index]
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplatespec)</sup></sup>
+
+
+
+MachineReadinessGate contains the type of a Machine condition to be used as a readiness gate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>conditionType</b></td>
+        <td>string</td>
+        <td>
+          conditionType refers to a condition with matching type in the Machine's condition list.
+If the conditions doesn't exist, it will be treated as unknown.
+Note: Both Cluster API conditions or conditions added by 3rd party controllers can be used as readiness gates.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>polarity</b></td>
+        <td>enum</td>
+        <td>
+          polarity of the conditionType specified in this readinessGate.
+Valid values are Positive, Negative and omitted.
+When omitted, the default behaviour will be Positive.
+A positive polarity means that the condition should report a true status under normal conditions.
+A negative polarity means that the condition should report a false status under normal conditions.<br/>
+          <br/>
+            <i>Enum</i>: Positive, Negative<br/>
         </td>
         <td>false</td>
       </tr></tbody>

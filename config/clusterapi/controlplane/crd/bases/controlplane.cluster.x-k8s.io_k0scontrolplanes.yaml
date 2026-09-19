@@ -408,6 +408,79 @@ spec:
                           More info: http://kubernetes.io/docs/user-guide/labels
                         type: object
                     type: object
+                  spec:
+                    description: spec defines the spec for Machines in a K0sControlPlane
+                      object.
+                    properties:
+                      deletion:
+                        description: deletion contains configuration options for Machine
+                          deletion.
+                        minProperties: 1
+                        properties:
+                          nodeDeletionTimeoutSeconds:
+                            description: |-
+                              nodeDeletionTimeoutSeconds defines how long the machine controller will attempt to delete the Node that the Machine
+                              hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+                              If no value is provided, the default value for this property of the Machine resource will be used.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          nodeDrainTimeoutSeconds:
+                            description: |-
+                              nodeDrainTimeoutSeconds is the total amount of time that the controller will spend on draining a controlplane node
+                              The default value is 0, meaning that the node can be drained without any time limitations.
+                              NOTE: nodeDrainTimeoutSeconds is different from `kubectl drain --timeout`
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          nodeVolumeDetachTimeoutSeconds:
+                            description: |-
+                              nodeVolumeDetachTimeoutSeconds is the total amount of time that the controller will spend on waiting for all volumes
+                              to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                        type: object
+                      readinessGates:
+                        description: |-
+                          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+
+                          This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+                          computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.
+                        items:
+                          description: MachineReadinessGate contains the type of a
+                            Machine condition to be used as a readiness gate.
+                          properties:
+                            conditionType:
+                              description: |-
+                                conditionType refers to a condition with matching type in the Machine's condition list.
+                                If the conditions doesn't exist, it will be treated as unknown.
+                                Note: Both Cluster API conditions or conditions added by 3rd party controllers can be used as readiness gates.
+                              maxLength: 316
+                              minLength: 1
+                              pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                              type: string
+                            polarity:
+                              description: |-
+                                polarity of the conditionType specified in this readinessGate.
+                                Valid values are Positive, Negative and omitted.
+                                When omitted, the default behaviour will be Positive.
+                                A positive polarity means that the condition should report a true status under normal conditions.
+                                A negative polarity means that the condition should report a false status under normal conditions.
+                              enum:
+                              - Positive
+                              - Negative
+                              type: string
+                          required:
+                          - conditionType
+                          type: object
+                        maxItems: 32
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - conditionType
+                        x-kubernetes-list-type: map
+                    type: object
                 required:
                 - infrastructureRef
                 type: object
@@ -993,6 +1066,79 @@ spec:
                           and services.
                           More info: http://kubernetes.io/docs/user-guide/labels
                         type: object
+                    type: object
+                  spec:
+                    description: spec defines the spec for Machines in a K0sControlPlane
+                      object.
+                    properties:
+                      deletion:
+                        description: deletion contains configuration options for Machine
+                          deletion.
+                        minProperties: 1
+                        properties:
+                          nodeDeletionTimeoutSeconds:
+                            description: |-
+                              nodeDeletionTimeoutSeconds defines how long the machine controller will attempt to delete the Node that the Machine
+                              hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+                              If no value is provided, the default value for this property of the Machine resource will be used.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          nodeDrainTimeoutSeconds:
+                            description: |-
+                              nodeDrainTimeoutSeconds is the total amount of time that the controller will spend on draining a controlplane node
+                              The default value is 0, meaning that the node can be drained without any time limitations.
+                              NOTE: nodeDrainTimeoutSeconds is different from `kubectl drain --timeout`
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          nodeVolumeDetachTimeoutSeconds:
+                            description: |-
+                              nodeVolumeDetachTimeoutSeconds is the total amount of time that the controller will spend on waiting for all volumes
+                              to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                        type: object
+                      readinessGates:
+                        description: |-
+                          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+
+                          This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+                          computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.
+                        items:
+                          description: MachineReadinessGate contains the type of a
+                            Machine condition to be used as a readiness gate.
+                          properties:
+                            conditionType:
+                              description: |-
+                                conditionType refers to a condition with matching type in the Machine's condition list.
+                                If the conditions doesn't exist, it will be treated as unknown.
+                                Note: Both Cluster API conditions or conditions added by 3rd party controllers can be used as readiness gates.
+                              maxLength: 316
+                              minLength: 1
+                              pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                              type: string
+                            polarity:
+                              description: |-
+                                polarity of the conditionType specified in this readinessGate.
+                                Valid values are Positive, Negative and omitted.
+                                When omitted, the default behaviour will be Positive.
+                                A positive polarity means that the condition should report a true status under normal conditions.
+                                A negative polarity means that the condition should report a false status under normal conditions.
+                              enum:
+                              - Positive
+                              - Negative
+                              type: string
+                          required:
+                          - conditionType
+                          type: object
+                        maxItems: 32
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - conditionType
+                        x-kubernetes-list-type: map
                     type: object
                 required:
                 - infrastructureRef
