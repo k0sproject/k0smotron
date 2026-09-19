@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -58,7 +59,43 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 
 	controlplane.kcp.Status.Selector = collections.ControlPlaneSelectorForCluster(controlplane.cluster.Name).String()
 
+	setLastRemediation(controlplane)
+
 	return computeReplicas(controlplane)
+}
+
+// setLastRemediation reports the most recent remediation, taken from the in progress marker while
+// one is set and otherwise from the newest machine recording what it replaced.
+func setLastRemediation(controlplane *controlplane) {
+	last, ok := remediationDataFrom(controlplane.kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+	if !ok {
+		// Deleting machines count, since the replacement carries the annotation from the moment it
+		// is created and the machine it replaced may still be going away.
+		var all []*clusterv1.Machine
+		all = append(all, controlplane.activeMachines.UnsortedList()...)
+		all = append(all, controlplane.deletedMachines.UnsortedList()...)
+
+		// Named order, because the annotation records whole seconds and two machines remediated
+		// inside one second would otherwise report whichever the map yielded first.
+		sort.Slice(all, func(i, j int) bool { return all[i].Name < all[j].Name })
+
+		for _, machine := range all {
+			data, found := remediationDataFrom(machine.Annotations, cpv1beta2.RemediationForAnnotation)
+			if found && (!ok || last.Timestamp.Before(&data.Timestamp)) {
+				last, ok = data, true
+			}
+		}
+	}
+
+	if !ok {
+		return
+	}
+
+	controlplane.kcp.Status.LastRemediation = cpv1beta2.LastRemediationStatus{
+		Machine:    last.Machine,
+		Time:       last.Timestamp,
+		RetryCount: new(int32(last.RetryCount)),
+	}
 }
 
 func computeReplicas(controlplane *controlplane) error {

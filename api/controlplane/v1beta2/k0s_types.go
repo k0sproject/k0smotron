@@ -45,10 +45,13 @@ const (
 	// ControlPlaneAvailableCondition denotes that the control plane is available
 	ControlPlaneAvailableCondition = "Available"
 
-	// RemediationInProgressAnnotation is used to keep track that a remediation is in progress,
-	// and more specifically it tracks that the system is in between having deleted an unhealthy machine
-	// and recreating its replacement.
+	// RemediationInProgressAnnotation tracks that a replacement is owed for a machine that was
+	// deleted, and its value records which machine, when, and how many attempts in.
 	RemediationInProgressAnnotation = "controlplane.cluster.x-k8s.io/remediation-in-progress"
+
+	// RemediationForAnnotation links a machine to the unhealthy machine it replaced, so a retry
+	// sequence can be reconstructed once the in progress marker above is gone.
+	RemediationForAnnotation = "controlplane.cluster.x-k8s.io/remediation-for"
 
 	// ControlPlanePausedCondition documents the reconciliation of the control plane is paused.
 	ControlPlanePausedCondition clusterv1.ConditionType = "Paused"
@@ -195,4 +198,28 @@ type K0sControlPlaneStatus struct {
 	// Conditions defines current service state of the K0sControlPlane.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// lastRemediation stores info about the last remediation performed.
+	// +optional
+	LastRemediation LastRemediationStatus `json:"lastRemediation,omitempty,omitzero"`
+}
+
+// LastRemediationStatus records the most recent remediation, reconstructed from the machine that
+// replaced the unhealthy one. Nothing acts on retryCount yet, it is reported only.
+type LastRemediationStatus struct {
+	// machine is the machine name of the latest machine being remediated.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	Machine string `json:"machine,omitempty"`
+
+	// time is when the last remediation happened. It is represented in RFC3339 form and is in UTC.
+	// +required
+	Time metav1.Time `json:"time,omitempty,omitzero"`
+
+	// retryCount tracks the remediation retries for the last remediated machine. A retry happens
+	// when a machine created to replace an unhealthy machine also fails.
+	// +required
+	// +kubebuilder:validation:Minimum=0
+	RetryCount *int32 `json:"retryCount,omitempty"`
 }

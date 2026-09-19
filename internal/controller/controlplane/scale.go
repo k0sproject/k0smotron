@@ -221,6 +221,10 @@ func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error 
 		return fmt.Errorf("error generating machine: %w", err)
 	}
 
+	// Before the machine is created below, so the sequence survives the marker being cleared and a
+	// later failure reads as a retry.
+	carryRemediationLineage(scope.kcp, machine)
+
 	machineK0sConfig, err := getMachineK0sConfig(machine)
 	if err != nil {
 		return fmt.Errorf("error getting machine k0s config: %w", err)
@@ -243,6 +247,20 @@ func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error 
 	delete(scope.kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
 
 	return nil
+}
+
+// carryRemediationLineage records on a replacement machine which machine it replaced. Going
+// through the payload drops a marker no reader could use and bounds what reaches the machine.
+func carryRemediationLineage(kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) {
+	data, ok := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+	if !ok {
+		return
+	}
+
+	if machine.Annotations == nil {
+		machine.Annotations = map[string]string{}
+	}
+	machine.Annotations[cpv1beta2.RemediationForAnnotation] = data.marshal()
 }
 
 func (c *K0sController) scaleDown(ctx context.Context, scope *controlplane) error {
