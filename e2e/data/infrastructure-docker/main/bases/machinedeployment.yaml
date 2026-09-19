@@ -28,8 +28,6 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   version: ${KUBERNETES_VERSION}
-  persistence:
-    type: emptyDir
   service:
     type: NodePort
 ---

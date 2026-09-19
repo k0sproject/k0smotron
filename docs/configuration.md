@@ -15,19 +15,22 @@ spec:
     type: NodePort
     apiPort: 30443
     konnectivityPort: 30132
-  persistence:
-    type: emptyDir
 ```
 
 For full reference of the fields check out the [reference docs](resource-reference/k0smotron.io-v1beta2.md#cluster).
 
 ## Persistence
 
-K0smotron persists data related to each Cluster. Specifically, it persists the `/var/lib/k0s` directory of the k0s controller which is the default data directory used by k0s.
+Control plane pods are stateless. The `/var/lib/k0s` data directory of the k0s controller is rebuilt on every container start and nothing in it has to outlive the pod:
 
-The `/var/lib/k0s` directory contains essential data for the operation of the k0s controller, but its growth over time is primarily driven by the addition of small [manifest](https://docs.k0sproject.io/stable/manifests/) files. Since these manifests are lightweight and in text format, the directory tends to grow gradually and not excessively. Typically, 250 MB of space is sufficient to handle its growth, as the main additions are these small manifests, keeping the overall size manageable.
+- Cluster data lives in the storage backend, which is persisted independently of the control plane pod: the etcd StatefulSet's own volume, an external kine datasource, or the NATS JetStream volume.
+- Certificates are stored in Secrets and copied into the data directory on start.
+- Control plane binaries ship in the k0s image.
+- [Manifests](https://docs.k0sproject.io/stable/manifests/) are mounted from ConfigMaps and Secrets via `spec.manifests`.
 
-The type of persistence used for this can be configurable via `spec.persistence`. For more information, check out the [reference docs](resource-reference/k0smotron.io-v1beta2.md#clusterspecpersistence) on Cluster persistence.
+!!! warning "Deprecated"
+
+    `spec.persistence` is deprecated and will be removed in a future API version. Setting it still mounts a volume over the whole `/var/lib/k0s` directory, for clusters that rely on files written into it out of band, but there is no longer a reason to configure it. To ship extra manifests to the control plane, use `spec.manifests` rather than writing files into the data directory.
 
 ## K0s configuration
 
