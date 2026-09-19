@@ -483,6 +483,12 @@ func (c *K0sWorkerConfig) GetJoinTokenPath() string {
 }
 
 // appliesOwner reports whether the selected provisioner writes file ownership.
+// appliesAppend reports whether the format can add to a file another entry in the
+// same list already writes. Ignition cannot, it emits one entry per file.
+func (p ProvisionerSpec) appliesAppend() bool {
+	return p.Type != provisioner.IgnitionProvisioningFormat
+}
+
 func (p ProvisionerSpec) appliesOwner() bool {
 	if p.Platform == PlatformWindows {
 		return false
@@ -536,18 +542,20 @@ func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList 
 
 	// TODO: validate Ignition
 	allErrs = append(allErrs, cs.validateVersion(pathPrefix)...)
-	allErrs = append(allErrs, cs.validateFiles(pathPrefix)...)
+	allErrs = append(allErrs, ValidateFiles(cs.Files, cs.Provisioner, pathPrefix)...)
 	allErrs = append(allErrs, cs.validateWindows(pathPrefix)...)
 
 	return allErrs
 }
 
-func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.ErrorList {
+// ValidateFiles rejects a files list that cannot be resolved or applied, covering
+// the content source, the paths and the owners.
+func ValidateFiles(files []File, spec ProvisionerSpec, pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	knownPaths := map[string]struct{}{}
 
-	for i, file := range cs.Files {
+	for i, file := range files {
 		if file.Content != "" && file.ContentFrom != nil {
 			allErrs = append(
 				allErrs,
@@ -602,21 +610,32 @@ func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.Error
 				)
 			}
 		}
-		_, conflict := knownPaths[file.Path]
-		if conflict {
+		// An append adds to what an earlier entry wrote, so it neither conflicts nor
+		// claims the path, unless the format cannot append at all.
+		claimsPath := !file.Append || !spec.appliesAppend()
+
+		if _, conflict := knownPaths[file.Path]; conflict && claimsPath {
+			msg := pathConflictMsg
+			if file.Append {
+				msg = appendUnsupportedMsg
+			}
+
 			allErrs = append(
 				allErrs,
 				field.Invalid(
 					pathPrefix.Child("files").Index(i).Child("path"),
 					file,
-					pathConflictMsg,
+					msg,
 				),
 			)
 		}
-		knownPaths[file.Path] = struct{}{}
+
+		if claimsPath {
+			knownPaths[file.Path] = struct{}{}
+		}
 	}
 
-	allErrs = append(allErrs, ValidateFileOwners(cs.Files, cs.Provisioner, pathPrefix)...)
+	allErrs = append(allErrs, ValidateFileOwners(files, spec, pathPrefix)...)
 
 	return allErrs
 }

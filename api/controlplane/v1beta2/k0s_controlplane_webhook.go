@@ -116,7 +116,7 @@ func validateK0sControlPlane(kcp *K0sControlPlane) error {
 
 	// K0sControllerConfig has no webhook of its own, so validate the files here
 	// where they are still part of the control plane spec.
-	if errs := bootstrapv1.ValidateFileOwners(
+	if errs := bootstrapv1.ValidateFiles(
 		kcp.Spec.K0sConfigSpec.Files,
 		kcp.Spec.K0sConfigSpec.Provisioner,
 		field.NewPath("spec", "k0sConfigSpec"),
