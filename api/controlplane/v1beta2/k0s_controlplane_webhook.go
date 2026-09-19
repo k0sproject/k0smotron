@@ -70,12 +70,18 @@ func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, kcp *K0sCon
 	}
 
 	warnings := v.validateVersionSuffix(kcp.Spec.Version)
+	warnings = append(warnings, bootstrapv1.ProvisionerWarnings(
+		kcp.Spec.K0sConfigSpec.Provisioner, field.NewPath("spec", "k0sConfigSpec"))...)
+
 	return warnings, validateK0sControlPlane(kcp)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
 func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, newKcp *K0sControlPlane) (admission.Warnings, error) {
 	warnings := v.validateVersionSuffix(newKcp.Spec.Version)
+	warnings = append(warnings, bootstrapv1.ProvisionerWarnings(
+		newKcp.Spec.K0sConfigSpec.Provisioner, field.NewPath("spec", "k0sConfigSpec"))...)
+
 	if oldKcp.Spec.Version != newKcp.Spec.Version {
 		oldV, err := version.NewVersion(oldKcp.Spec.Version)
 		if err != nil {

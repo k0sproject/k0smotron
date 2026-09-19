@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -56,5 +57,64 @@ func TestValidateK0sControlPlaneChecksFileOwners(t *testing.T) {
 
 	t.Run("command substitution is rejected", func(t *testing.T) {
 		require.Error(t, validateK0sControlPlane(kcp("$(id -u)")))
+	})
+}
+
+// TestValidateK0sControlPlaneWarnsOnIgnoredProvisionerFields covers the hint reaching
+// the control plane path as well, where the field is set far from the provisioner.
+func TestValidateK0sControlPlaneWarnsOnIgnoredProvisionerFields(t *testing.T) {
+	kcp := &K0sControlPlane{
+		Spec: K0sControlPlaneSpec{
+			Version: "v1.30.0+k0s.0",
+			K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+				Provisioner: bootstrapv1.ProvisionerSpec{
+					Type: provisioner.IgnitionProvisioningFormat,
+					CustomUserDataRef: &bootstrapv1.ContentSource{
+						SecretRef: &bootstrapv1.ContentSourceRef{Name: "extra", Key: "userdata"},
+					},
+				},
+			},
+		},
+	}
+
+	warnings, err := (&K0sControlPlaneValidator{}).ValidateCreate(context.Background(), kcp)
+
+	require.NoError(t, err, "the control plane is still accepted")
+	require.Contains(t, warnings, "spec.k0sConfigSpec.provisioner.customUserDataRef is ignored by the ignition provisioner, use provisioner.ignition.additionalConfig instead")
+}
+
+// TestValidateK0sControlPlaneWarnsOnUpdate covers the update path, where the warning has to
+// survive being returned next to an error rather than instead of one.
+func TestValidateK0sControlPlaneWarnsOnUpdate(t *testing.T) {
+	const warning = "spec.k0sConfigSpec.provisioner.customUserDataRef is ignored by the ignition provisioner, use provisioner.ignition.additionalConfig instead"
+
+	kcp := func(version string) *K0sControlPlane {
+		return &K0sControlPlane{
+			Spec: K0sControlPlaneSpec{
+				Version: version,
+				K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+					Provisioner: bootstrapv1.ProvisionerSpec{
+						Type: provisioner.IgnitionProvisioningFormat,
+						CustomUserDataRef: &bootstrapv1.ContentSource{
+							SecretRef: &bootstrapv1.ContentSourceRef{Name: "extra", Key: "userdata"},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("an accepted update still warns", func(t *testing.T) {
+		warnings, err := (&K0sControlPlaneValidator{}).ValidateUpdate(t.Context(), kcp("v1.30.0+k0s.0"), kcp("v1.30.1+k0s.0"))
+
+		require.NoError(t, err, "the control plane is still accepted")
+		require.Contains(t, warnings, warning)
+	})
+
+	t.Run("a rejected version skew keeps the warning", func(t *testing.T) {
+		warnings, err := (&K0sControlPlaneValidator{}).ValidateUpdate(t.Context(), kcp("v1.28.0+k0s.0"), kcp("v1.30.0+k0s.0"))
+
+		require.ErrorContains(t, err, "more than one minor version at a time")
+		require.Contains(t, warnings, warning, "warnings are reported alongside the rejection")
 	})
 }
