@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// deleteClusterAndWait deletes a cluster object and waits for it to be gone.
-func deleteClusterAndWait(ctx context.Context, input capiframework.DeleteClusterAndWaitInput, interval Interval) error {
+// DeleteClusterAndWait deletes a cluster object and waits for it to be gone.
+func DeleteClusterAndWait(ctx context.Context, input capiframework.DeleteClusterAndWaitInput, interval Interval) error {
 
 	err := input.ClusterProxy.GetClient().Delete(ctx, input.Cluster)
 	if err != nil {
