@@ -37,6 +37,25 @@ const (
 	// remediation failed. A local string, since upstream only has a v1beta1 one.
 	K0sControlPlaneMachineRemediationFailedReason = "RemediationFailed"
 
+	// K0sControlPlaneMachineEtcdMemberHealthyCondition reports whether a control plane
+	// machine's etcd member is joined. Absent when the cluster keeps no etcd members.
+	K0sControlPlaneMachineEtcdMemberHealthyCondition = "EtcdMemberHealthy"
+
+	// K0sControlPlaneMachineEtcdMemberHealthyReason surfaces when the member is joined.
+	K0sControlPlaneMachineEtcdMemberHealthyReason = "Healthy"
+
+	// K0sControlPlaneMachineEtcdMemberNotHealthyReason surfaces when the member has left
+	// the cluster or k0s could not reconcile it.
+	K0sControlPlaneMachineEtcdMemberNotHealthyReason = "NotHealthy"
+
+	// K0sControlPlaneMachineEtcdMemberHealthyUnknownReason surfaces while the member has
+	// not been read, covering a machine still joining and a cluster that cannot be reached.
+	K0sControlPlaneMachineEtcdMemberHealthyUnknownReason = "NotReported"
+
+	// K0sControlPlaneMachineNoEtcdMembersReason surfaces when the control plane keeps no
+	// etcd members, because it uses kine or an external cluster.
+	K0sControlPlaneMachineNoEtcdMembersReason = "NoEtcdMembers"
+
 	// K0sControlPlaneScalingUpCondition is true if actual replicas < desired replicas.
 	// Note: In case a K0sControlPlane preflight check is preventing scale up, this will surface in the condition message.
 	K0sControlPlaneScalingUpCondition = clusterv1.ScalingUpCondition
