@@ -688,8 +688,15 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		Timeout:   time.Second,
 	}
 
+	// The field is optional, so the port lookup tolerates its absence the way the
+	// init path above already does.
+	var k0sConfig map[string]any
+	if scope.Config.Spec.K0s != nil {
+		k0sConfig = scope.Config.Spec.K0s.Object
+	}
+
 	port := "9443"
-	k0sAPIPort, found, err := unstructured.NestedInt64(scope.Config.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "k0sApiPort")
+	k0sAPIPort, found, err := unstructured.NestedInt64(k0sConfig, "spec", "api", "k0sApiPort")
 	if err != nil {
 		return "", fmt.Errorf("error retrieving k0sAPIPort: %w", err)
 	}
