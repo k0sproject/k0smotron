@@ -355,11 +355,21 @@ func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv2.K0sControllerConf
 	removeArgsGeneratedInControllerConfigReconcile(bootstrapConfigCopy)
 	bootstrapConfigSpecCopy := bootstrapConfigCopy.Spec.K0sConfigSpec.DeepCopy()
 
+	// The k0s config is optional on both sides, and the lookups below read the map
+	// rather than the pointer, so an absent one reads as a config with nothing in it.
+	var bootstrapK0s, kcpK0s map[string]any
+	if bootstrapConfigSpecCopy.K0s != nil {
+		bootstrapK0s = bootstrapConfigSpecCopy.K0s.Object
+	}
+	if kcpK0sConfigSpecCopy.K0s != nil {
+		kcpK0s = kcpK0sConfigSpecCopy.K0s.Object
+	}
+
 	// k0s config will be reconciled using dynamic config, so leave it out of the comparison
-	bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "api")
-	kcpAPIConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "api")
-	bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapConfigSpecCopy.K0s.Object, "spec", "storage")
-	kcpStorageConfig, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
+	bootstrapAPIConfig, _, _ := unstructured.NestedMap(bootstrapK0s, "spec", "api")
+	kcpAPIConfig, _, _ := unstructured.NestedMap(kcpK0s, "spec", "api")
+	bootstrapStorageConfig, _, _ := unstructured.NestedMap(bootstrapK0s, "spec", "storage")
+	kcpStorageConfig, _, _ := unstructured.NestedMap(kcpK0s, "spec", "storage")
 
 	// Handle nil cases consistently - convert nil to empty map for comparison
 	if bootstrapStorageConfig == nil {
@@ -370,7 +380,7 @@ func deprecatedIsK0sConfigChanged(bootstrapConfig *bootstrapv2.K0sControllerConf
 	}
 
 	// Bootstrap controller did set etcd name to the K0sControllerConfig, so we need to compare it with the name set in the K0sControlPlane
-	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcpK0sConfigSpecCopy.K0s.Object, "spec", "storage")
+	kcpStorageConfigEtcdWithName, _, _ := unstructured.NestedMap(kcpK0s, "spec", "storage")
 	if kcpStorageConfigEtcdWithName == nil {
 		kcpStorageConfigEtcdWithName = make(map[string]any)
 	}
