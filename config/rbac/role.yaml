@@ -72,6 +72,12 @@ rules:
   - update
   - watch
 - apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters/finalizers
+  verbs:
+  - update
+- apiGroups:
   - clusterctl.cluster.x-k8s.io
   resources:
   - providers
@@ -94,6 +100,13 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - k0scontrolplanes/finalizers
+  - k0smotroncontrolplanes/finalizers
+  verbs:
+  - update
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
