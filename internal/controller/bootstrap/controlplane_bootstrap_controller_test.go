@@ -39,7 +39,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+	bsutil "sigs.k8s.io/cluster-api/bootstrap/kubeadm/reconcilers/kubeadmconfig"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/secret"
