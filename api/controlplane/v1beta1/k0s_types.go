@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"slices"
-
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
@@ -183,10 +181,4 @@ func (k *K0sControlPlane) GetConditions() []metav1.Condition {
 // SetConditions sets the conditions on the K0sControlPlane status.
 func (k *K0sControlPlane) SetConditions(conditions []metav1.Condition) {
 	k.Status.Conditions = conditions
-}
-
-// WorkerEnabled returns true if the control plane is configured to run worker nodes as well
-// (i.e. if the --enable-worker argument is set in the K0sConfigSpec).
-func (k *K0sControlPlane) WorkerEnabled() bool {
-	return slices.Contains(k.Spec.K0sConfigSpec.Args, "--enable-worker")
 }
