@@ -23,6 +23,13 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps/finalizers
+  - secrets/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ""
+  resources:
   - namespaces
   verbs:
   - list
@@ -49,12 +56,6 @@ rules:
   - pods/exec
   verbs:
   - create
-- apiGroups:
-  - ""
-  resources:
-  - secrets/finalizers
-  verbs:
-  - update
 - apiGroups:
   - apps
   resources:

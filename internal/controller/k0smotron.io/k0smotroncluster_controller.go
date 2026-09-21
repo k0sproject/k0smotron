@@ -132,6 +132,7 @@ func (scope *kmcScope) reconcileResource(ctx context.Context, kmc *km.Cluster, o
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=secrets/finalizers,verbs=update
+// +kubebuilder:rbac:groups=core,resources=configmaps/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=persistentvolumes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
