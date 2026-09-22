@@ -1089,15 +1089,22 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 		ClusterCache:              clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}),
 	}
 
-	// The first pass records the paused condition and asks to be called again, which
-	// a watch on the object does for a controller that is actually running.
-	_, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
-	require.NoError(t, err)
+	// Adding the finalizer and recording the paused condition each return early, and
+	// the cached client trails both, so how many passes it takes is not fixed.
+	require.Eventually(t, func() bool {
+		if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)}); err != nil {
+			return false
+		}
 
-	_, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)})
-	require.NoError(t, err)
-	require.NoError(t, testEnv.GetAPIReader().Get(ctx, client.ObjectKey{Name: kcp.Name, Namespace: kcp.Namespace}, kcp))
-	require.NotEmpty(t, kcp.Status.Selector)
+		// Uncached, since the status is patched and a cached read still answers from
+		// before the patch.
+		if err := testEnv.GetAPIReader().Get(ctx, client.ObjectKey{Name: kcp.Name, Namespace: kcp.Namespace}, kcp); err != nil {
+			return false
+		}
+
+		return kcp.Status.Selector != ""
+	}, 20*time.Second, 200*time.Millisecond, "the reconcile never got far enough to write the status")
+
 	require.Equal(t, "v1.30.0+k0s.0", kcp.Status.Version)
 	require.Equal(t, ptr.Deref(kcp.Status.Replicas, 0), int32(1))
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(gmt), gmt))
