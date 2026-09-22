@@ -17,7 +17,11 @@ kubectl create -f https://github.com/kubevirt/kubevirt/releases/download/${VERSI
 To initialize the management cluster with Kubevirt infrastructure provider you can run:
 
 ```bash
-clusterctl init --core cluster-api --infrastructure kubevirt
+clusterctl init \
+  --core cluster-api:{{{ extra.capi_versions.core }}} \
+  --infrastructure kubevirt:{{{ extra.capi_versions.kubevirt }}} \
+  --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}}
 ```
 
 For more details on Cluster API Provider Kubevirt see it's [docs](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt).

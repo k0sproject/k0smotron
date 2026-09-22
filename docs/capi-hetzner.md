@@ -9,7 +9,11 @@ Before starting this example, ensure that you have met the [general prerequisite
 To initialize the management cluster with Hetzner infrastructure provider you can run:
 
 ```
-clusterctl init --core cluster-api:v1.11.2 --infrastructure hetzner:v1.0.7
+clusterctl init \
+  --core cluster-api:{{{ extra.capi_versions.core }}} \
+  --infrastructure hetzner:{{{ extra.capi_versions.hetzner }}} \
+  --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}}
 ```
 
 For more details on Cluster API Provider Hetzner see it's [docs](https://github.com/syself/cluster-api-provider-hetzner/tree/main/docs).
@@ -61,7 +65,7 @@ spec:
     annotations:
       load-balancer.hetzner.cloud/location: fsn1
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: HetznerCluster
 metadata:
   name: hetzner-test
@@ -76,6 +80,9 @@ spec:
     port: 6443
   controlPlaneRegions:
     - fsn1
+  sshKeys:
+    hcloud:
+      - name: ssh-key
   hetznerSecretRef:
     name: hetzner
     key:
@@ -111,16 +118,16 @@ spec:
         kind: HCloudMachineTemplate
         name: hetzner-test-mt
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: HCloudMachineTemplate
 metadata:
   name: hetzner-test-mt
   namespace: default
 spec:
-  imageName: ubuntu-22.04
-  type: cx21
-  sshKeys:
-    - name: ssh-key
+  template:
+    spec:
+      imageName: ubuntu-22.04
+      type: cx21
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: K0sWorkerConfigTemplate
