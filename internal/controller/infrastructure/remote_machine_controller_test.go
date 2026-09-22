@@ -76,9 +76,9 @@ func TestMergedMap(t *testing.T) {
 	})
 }
 
-// TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine covers a hand
+// TestReconcileFromPoolCopiesMetadataOntoBareRemoteMachine covers a hand
 // authored RemoteMachine, which carries no labels or annotations to copy into.
-func TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
+func TestReservePooledMachineAndPopulateRemoteMachine(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, infrastructure.AddToScheme(scheme))
 
@@ -95,6 +95,10 @@ func TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
 				Address: "10.0.0.1",
 				Port:    22,
 				User:    "root",
+				CleanUpCommands: []string{
+					"kubeadm reset -f",
+					"rm -rf /etc/kubernetes",
+				},
 			},
 		},
 	}
@@ -118,4 +122,5 @@ func TestReservePooledMachineCopiesMetadataOntoBareRemoteMachine(t *testing.T) {
 	require.Equal(t, "10.0.0.1", rm.Spec.Address)
 	require.Equal(t, map[string]string{"pool": "a"}, rm.Labels)
 	require.Equal(t, map[string]string{"note": "from the pool"}, rm.Annotations)
+	require.Equal(t, pooled.Spec.Machine.CleanUpCommands, rm.Spec.CleanUpCommands)
 }

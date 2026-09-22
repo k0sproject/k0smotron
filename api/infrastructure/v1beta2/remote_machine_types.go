@@ -304,9 +304,3 @@ func SetupRemoteMachineWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &RemoteMachine{}).
 		Complete()
 }
-
-// SetupPooledRemoteMachineWebhookWithManager registers the webhook for pooled remote machines in the manager.
-func SetupPooledRemoteMachineWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr, &PooledRemoteMachine{}).
-		Complete()
-}

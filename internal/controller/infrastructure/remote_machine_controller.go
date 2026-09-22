@@ -181,7 +181,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	if rm.Spec.Pool != "" && rm.ObjectMeta.DeletionTimestamp.IsZero() {
 		err := r.reservePooledMachineAndPopulateRemoteMachine(ctx, rm)
 		if err != nil {
-			log.Error(err, "Error reserving PooledMachine")
+			log.Error(err, "Error reconciling PooledMachine")
 			return ctrl.Result{Requeue: true}, err
 		}
 	}
@@ -349,8 +349,10 @@ func mergedMap(dst, src map[string]string) map[string]string {
 	return dst
 }
 
-// reservePooledMachineAndPopulateRemoteMachine finds a free machine from the pool specified in the RemoteMachine spec, reserves it, and populates
-// the RemoteMachine spec with the details of the reserved machine.
+// reservePooledMachineAndPopulateRemoteMachine reserves a machine from the pool
+// specified in the RemoteMachine spec and copies its values into the
+// RemoteMachine. The copied values form a snapshot for the lifetime of the
+// RemoteMachine; subsequent pool changes are not propagated.
 func (r *RemoteMachineController) reservePooledMachineAndPopulateRemoteMachine(ctx context.Context, rm *infrastructure.RemoteMachine) error {
 	pooledMachineList := &infrastructure.PooledRemoteMachineList{}
 	if err := r.Client.List(ctx, pooledMachineList, client.InNamespace(rm.Namespace)); err != nil {
