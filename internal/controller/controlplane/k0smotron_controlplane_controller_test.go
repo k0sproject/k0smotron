@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"testing"
 
+	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	kapi "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/version"
 	"github.com/stretchr/testify/require"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/contract"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -473,4 +475,62 @@ func Test_patchInfrastructureStatus(t *testing.T) {
 			require.Equal(t, tt.wantReady, ready)
 		})
 	}
+}
+
+// TestSetHostedScalingConditions covers the hosted flavour reporting scaling and
+// rollout separately, which it did not report at all before.
+func TestSetHostedScalingConditions(t *testing.T) {
+	get := func(kcp *cpv1beta2.K0smotronControlPlane, condType string) *v1.Condition {
+		return conditions.Get(kcp, condType)
+	}
+
+	for _, tc := range []struct {
+		name                        string
+		desired, replicas, upToDate int32
+		up, down, rolling           v1.ConditionStatus
+	}{
+		{"settled", 3, 3, 3, v1.ConditionFalse, v1.ConditionFalse, v1.ConditionFalse},
+		{"a pod short", 3, 2, 2, v1.ConditionTrue, v1.ConditionFalse, v1.ConditionFalse},
+		{"a pod too many", 1, 3, 3, v1.ConditionFalse, v1.ConditionTrue, v1.ConditionFalse},
+		{"a version rollout is not a scale", 3, 3, 1, v1.ConditionFalse, v1.ConditionFalse, v1.ConditionTrue},
+		{"nothing created yet", 3, 0, 0, v1.ConditionTrue, v1.ConditionFalse, v1.ConditionFalse},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			kcp := &cpv1beta2.K0smotronControlPlane{
+				Spec: kapi.ClusterSpec{Replicas: tc.desired},
+			}
+
+			setHostedScalingConditions(kcp, tc.replicas, tc.upToDate)
+
+			require.Equal(t, tc.up, get(kcp, clusterv1.ScalingUpCondition).Status)
+			require.Equal(t, tc.down, get(kcp, clusterv1.ScalingDownCondition).Status)
+			require.Equal(t, tc.rolling, get(kcp, clusterv1.RollingOutCondition).Status)
+		})
+	}
+}
+
+// TestHostedComputeStatusSetsScalingConditions covers the conditions coming from the
+// status path, not only from their own function.
+func TestHostedComputeStatusSetsScalingConditions(t *testing.T) {
+	cluster := &clusterv1.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}}
+	kcp := &cpv1beta2.K0smotronControlPlane{
+		ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default", UID: "hosted-uid"},
+	}
+	kcp.Spec.Version = "v1.30.0+k0s.0"
+	kcp.Spec.Replicas = 3
+
+	// Two pods against three wanted, so this is a scale up.
+	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).
+		WithObjects(
+			&kapi.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}},
+			controlPlanePod("cp-0", false),
+			controlPlanePod("cp-1", false),
+		).Build()
+	c := &K0smotronController{Client: cl, ClusterCache: stubClusterCache{err: fmt.Errorf("connection refused")}}
+
+	_ = c.computeStatus(context.Background(), cluster, kcp, &kmcScope{client: cl})
+
+	require.Equal(t, v1.ConditionTrue, conditions.Get(kcp, clusterv1.ScalingUpCondition).Status)
+	require.Equal(t, v1.ConditionFalse, conditions.Get(kcp, clusterv1.ScalingDownCondition).Status)
+	require.NotNil(t, conditions.Get(kcp, clusterv1.RollingOutCondition))
 }
