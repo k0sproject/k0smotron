@@ -1975,3 +1975,61 @@ func TestHostedReconcileDeletePersistsFinalizerRemoval(t *testing.T) {
 		require.True(t, apierrors.IsNotFound(err))
 	}
 }
+
+func Test_setVersions(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		kcp      *cpv1beta2.K0sControlPlane
+		machines []*clusterv1.Machine
+	}{
+		{
+			name: "test",
+			kcp: &cpv1beta2.K0sControlPlane{
+				Status: cpv1beta2.K0sControlPlaneStatus{},
+			},
+			machines: []*clusterv1.Machine{
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.35.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.33.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.35.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.34.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.33.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.33.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.30.0+k0s.0",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setVersions(tt.kcp, tt.machines)
+		})
+	}
+}
