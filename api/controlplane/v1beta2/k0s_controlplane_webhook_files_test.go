@@ -80,13 +80,13 @@ func TestValidateK0sControlPlaneWarnsOnIgnoredProvisionerFields(t *testing.T) {
 	warnings, err := (&K0sControlPlaneValidator{}).ValidateCreate(context.Background(), kcp)
 
 	require.NoError(t, err, "the control plane is still accepted")
-	require.Contains(t, warnings, "spec.k0sConfigSpec.provisioner.customUserDataRef is ignored by the ignition provisioner, use provisioner.ignition.additionalConfig instead")
+	require.Contains(t, warnings, "spec.k0sConfigSpec.provisioner.customUserDataRef is ignored by the ignition provisioner, use spec.k0sConfigSpec.provisioner.ignition.additionalConfig instead")
 }
 
 // TestValidateK0sControlPlaneWarnsOnUpdate covers the update path, where the warning has to
 // survive being returned next to an error rather than instead of one.
 func TestValidateK0sControlPlaneWarnsOnUpdate(t *testing.T) {
-	const warning = "spec.k0sConfigSpec.provisioner.customUserDataRef is ignored by the ignition provisioner, use provisioner.ignition.additionalConfig instead"
+	const warning = "spec.k0sConfigSpec.provisioner.customUserDataRef is ignored by the ignition provisioner, use spec.k0sConfigSpec.provisioner.ignition.additionalConfig instead"
 
 	kcp := func(version string) *K0sControlPlane {
 		return &K0sControlPlane{

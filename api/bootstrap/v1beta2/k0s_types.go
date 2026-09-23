@@ -513,9 +513,12 @@ func ProvisionerWarnings(spec ProvisionerSpec, pathPrefix *field.Path) admission
 	var warnings admission.Warnings
 
 	if spec.Type == provisioner.IgnitionProvisioningFormat && spec.CustomUserDataRef != nil {
+		// Both paths come from the same prefix, since the control plane carries the
+		// provisioner under k0sConfigSpec and a fixed string would be wrong there.
 		warnings = append(warnings, fmt.Sprintf(
-			"%s is ignored by the ignition provisioner, use provisioner.ignition.additionalConfig instead",
+			"%s is ignored by the ignition provisioner, use %s instead",
 			pathPrefix.Child("provisioner", "customUserDataRef"),
+			pathPrefix.Child("provisioner", "ignition", "additionalConfig"),
 		))
 	}
 
