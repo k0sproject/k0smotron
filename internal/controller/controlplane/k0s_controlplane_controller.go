@@ -826,9 +826,11 @@ func (c *K0sController) retrieveControlPlaneState(ctx context.Context, cluster *
 
 	// A kine cluster has no etcd members to read, so the health stays empty and every
 	// caller treats it the way it treats an unreadable one.
+	// Named without a field, since any of three storage paths can be the one that
+	// failed and the accessor error already says which.
 	scope.etcdManaged, err = etcdManaged(kcp)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving storage.kine.datasource: %w", err)
+		return nil, fmt.Errorf("error determining whether etcd is managed: %w", err)
 	}
 	if scope.etcdManaged {
 		scope.etcdMemberHealth = c.etcdMemberHealth(ctx, cluster, activeMachines)

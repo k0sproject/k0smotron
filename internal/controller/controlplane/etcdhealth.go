@@ -140,28 +140,38 @@ func (c *K0sController) etcdMemberHealth(ctx context.Context, cluster *clusterv1
 			continue
 		}
 
-		if etcdMemberUnhealthy(member) {
-			health[machine.Name] = metav1.ConditionFalse
-		} else {
-			health[machine.Name] = metav1.ConditionTrue
+		// Left out when the member says nothing either way, so an unknown state is
+		// never published as a healthy one.
+		if status := etcdMemberHealthOf(member); status != metav1.ConditionUnknown {
+			health[machine.Name] = status
 		}
 	}
 
 	return health
 }
 
-// etcdMemberUnhealthy reports a member that has left or that k0s failed to reconcile. An
-// absent or Unknown condition is a transient state rather than a failure.
-func etcdMemberUnhealthy(member etcdMember) bool {
+// etcdMemberHealthOf reports a member as healthy only when it says it joined. A member
+// that left or that k0s failed to reconcile is unhealthy, and anything else is unknown
+// rather than either, since an absent condition is no evidence of health.
+func etcdMemberHealthOf(member etcdMember) metav1.ConditionStatus {
 	if member.Status.ReconcileStatus == etcdMemberReconcileStatusFailed {
-		return true
+		return metav1.ConditionFalse
 	}
 
 	for _, condition := range member.Status.Conditions {
-		if condition.Type == etcdMemberConditionTypeJoined {
-			return condition.Status == string(metav1.ConditionFalse)
+		if condition.Type != etcdMemberConditionTypeJoined {
+			continue
 		}
+
+		switch condition.Status {
+		case string(metav1.ConditionTrue):
+			return metav1.ConditionTrue
+		case string(metav1.ConditionFalse):
+			return metav1.ConditionFalse
+		}
+
+		break
 	}
 
-	return false
+	return metav1.ConditionUnknown
 }

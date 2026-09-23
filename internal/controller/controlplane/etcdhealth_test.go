@@ -119,21 +119,28 @@ func TestEtcdManaged(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		k0s  map[string]any
+		// wantField is the path the accessor error names. notField is a path it must
+		// not name, since a wrapper that labels every failure with one field points a
+		// user at the wrong one for the other two.
+		wantField string
+		notField  string
 	}{
-		{name: "a storage type that is not a string", k0s: map[string]any{
+		{name: "a storage type that is not a string", wantField: ".spec.storage.type ", notField: "kine", k0s: map[string]any{
 			"spec": map[string]any{"storage": map[string]any{"type": int64(1)}},
 		}},
-		{name: "a kine data source that is not a string", k0s: map[string]any{
+		{name: "a kine data source that is not a string", wantField: ".spec.storage.kine.dataSource ", notField: "externalCluster", k0s: map[string]any{
 			"spec": map[string]any{"storage": map[string]any{"kine": map[string]any{"dataSource": int64(1)}}},
 		}},
-		{name: "an external cluster that is not a map", k0s: map[string]any{
+		{name: "an external cluster that is not a map", wantField: ".spec.storage.etcd.externalCluster ", notField: "kine", k0s: map[string]any{
 			"spec": map[string]any{"storage": map[string]any{"etcd": map[string]any{"externalCluster": "nope"}}},
 		}},
 	} {
 		t.Run(tc.name+" is an error", func(t *testing.T) {
 			_, err := etcdManaged(kcp(tc.k0s))
 
-			require.Error(t, err)
+			require.ErrorContains(t, err, tc.wantField)
+			require.NotContains(t, err.Error(), tc.notField,
+				"naming a field the failure was not about sends the reader to the wrong place")
 		})
 	}
 
@@ -149,7 +156,7 @@ func TestEtcdManaged(t *testing.T) {
 	})
 }
 
-func TestEtcdMemberUnhealthy(t *testing.T) {
+func TestEtcdMemberHealthOf(t *testing.T) {
 	member := func(reconcile string, conditions ...etcdMemberCondition) etcdMember {
 		return etcdMember{Status: etcdMemberStatus{ReconcileStatus: reconcile, Conditions: conditions}}
 	}
@@ -158,20 +165,28 @@ func TestEtcdMemberUnhealthy(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name      string
-		member    etcdMember
-		unhealthy bool
+		name   string
+		member etcdMember
+		want   metav1.ConditionStatus
 	}{
-		{name: "a joined member is healthy", member: member("Success", joined("True")), unhealthy: false},
-		{name: "a member that left is unhealthy", member: member("Success", joined("False")), unhealthy: true},
-		{name: "a failed reconcile is unhealthy", member: member("Failed", joined("True")), unhealthy: true},
-		// Neither of these means broken, so neither may read as broken.
-		{name: "an unknown condition is not unhealthy", member: member("", joined("Unknown")), unhealthy: false},
-		{name: "no conditions at all is not unhealthy", member: member(""), unhealthy: false},
-		{name: "another condition type is ignored", member: member("", etcdMemberCondition{Type: "Other", Status: "False"}), unhealthy: false},
+		{name: "a joined member is healthy", member: member("Success", joined("True")), want: metav1.ConditionTrue},
+		{name: "a member that left is unhealthy", member: member("Success", joined("False")), want: metav1.ConditionFalse},
+		{name: "a failed reconcile is unhealthy", member: member("Failed", joined("True")), want: metav1.ConditionFalse},
+		{name: "a failed reconcile outranks a joined condition that is absent", member: member("Failed"), want: metav1.ConditionFalse},
+		// None of these is evidence of health, so none may be reported as healthy.
+		{name: "an unknown condition is unknown", member: member("", joined("Unknown")), want: metav1.ConditionUnknown},
+		{name: "an empty condition status is unknown", member: member("", joined("")), want: metav1.ConditionUnknown},
+		{name: "a status that is not a condition value is unknown", member: member("", joined("yes")), want: metav1.ConditionUnknown},
+		{name: "no conditions at all is unknown", member: member(""), want: metav1.ConditionUnknown},
+		{name: "another condition type alone is unknown", member: member("", etcdMemberCondition{Type: "Other", Status: "True"}), want: metav1.ConditionUnknown},
+		{
+			name:   "another condition type does not hide the joined one",
+			member: member("", etcdMemberCondition{Type: "Other", Status: "False"}, joined("True")),
+			want:   metav1.ConditionTrue,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.unhealthy, etcdMemberUnhealthy(tc.member))
+			require.Equal(t, tc.want, etcdMemberHealthOf(tc.member))
 		})
 	}
 }
@@ -234,7 +249,7 @@ func TestEtcdMemberListWireContract(t *testing.T) {
 	require.Equal(t, "cp-0", list.Items[0].Name)
 	require.Equal(t, "Failed", list.Items[0].Status.ReconcileStatus)
 	require.Equal(t, etcdMemberConditionTypeJoined, list.Items[0].Status.Conditions[0].Type)
-	require.True(t, etcdMemberUnhealthy(list.Items[0]))
+	require.Equal(t, metav1.ConditionFalse, etcdMemberHealthOf(list.Items[0]))
 }
 
 func etcdMemberNamed(name, joined string) etcdMember {
@@ -290,6 +305,30 @@ func TestEtcdMemberHealth(t *testing.T) {
 	// neither healthy nor broken.
 	t.Run("a machine with no member yet is left out", func(t *testing.T) {
 		frt := &etcdMemberRoundTripper{members: []etcdMember{member("cp-0", "True")}}
+
+		got := controller(frt).etcdMemberHealth(context.Background(), cluster, machines)
+
+		require.Equal(t, map[string]metav1.ConditionStatus{"cp-0": metav1.ConditionTrue}, got)
+	})
+
+	// The state is not known, so it is neither published as healthy nor as broken. The
+	// condition that reads this map reports Unknown for an absent entry.
+	t.Run("a member whose joined state is unknown is left out", func(t *testing.T) {
+		frt := &etcdMemberRoundTripper{members: []etcdMember{
+			member("cp-0", "True"), member("cp-1", "Unknown"), member("cp-2", "False"),
+		}}
+
+		got := controller(frt).etcdMemberHealth(context.Background(), cluster, machines)
+
+		require.Equal(t, map[string]metav1.ConditionStatus{
+			"cp-0": metav1.ConditionTrue,
+			"cp-2": metav1.ConditionFalse,
+		}, got)
+	})
+
+	t.Run("a member with no conditions at all is left out", func(t *testing.T) {
+		bare := etcdMember{ObjectMeta: metav1.ObjectMeta{Name: "cp-1"}}
+		frt := &etcdMemberRoundTripper{members: []etcdMember{member("cp-0", "True"), bare}}
 
 		got := controller(frt).etcdMemberHealth(context.Background(), cluster, machines)
 

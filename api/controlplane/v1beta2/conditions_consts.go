@@ -38,7 +38,9 @@ const (
 	K0sControlPlaneMachineRemediationFailedReason = "RemediationFailed"
 
 	// K0sControlPlaneMachineEtcdMemberHealthyCondition reports whether a control plane
-	// machine's etcd member is joined. Absent when the cluster keeps no etcd members.
+	// machine's etcd member is joined. Reported as Unknown with NoEtcdMembers when the
+	// cluster keeps none, rather than left off, so a reading taken while it did keep
+	// them cannot survive a move to kine or an external cluster.
 	K0sControlPlaneMachineEtcdMemberHealthyCondition = "EtcdMemberHealthy"
 
 	// K0sControlPlaneMachineEtcdMemberHealthyReason surfaces when the member is joined.
