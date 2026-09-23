@@ -149,6 +149,18 @@ type K0sControlPlaneMachineTemplate struct {
 // K0sControlPlaneMachineTemplateSpec defines the spec for Machines
 // in a K0sControlPlane object.
 type K0sControlPlaneMachineTemplateSpec struct {
+	// readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+	//
+	// This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+	// computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=conditionType
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=32
+	ReadinessGates []clusterv1.MachineReadinessGate `json:"readinessGates,omitempty"`
+
 	// deletion contains configuration options for Machine deletion.
 	// +optional
 	Deletion K0sControlPlaneMachineTemplateDeletionSpec `json:"deletion,omitempty,omitzero"`

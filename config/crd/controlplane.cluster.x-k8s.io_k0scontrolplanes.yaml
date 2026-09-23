@@ -441,6 +441,45 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      readinessGates:
+                        description: |-
+                          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+
+                          This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+                          computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.
+                        items:
+                          description: MachineReadinessGate contains the type of a
+                            Machine condition to be used as a readiness gate.
+                          properties:
+                            conditionType:
+                              description: |-
+                                conditionType refers to a condition with matching type in the Machine's condition list.
+                                If the conditions doesn't exist, it will be treated as unknown.
+                                Note: Both Cluster API conditions or conditions added by 3rd party controllers can be used as readiness gates.
+                              maxLength: 316
+                              minLength: 1
+                              pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                              type: string
+                            polarity:
+                              description: |-
+                                polarity of the conditionType specified in this readinessGate.
+                                Valid values are Positive, Negative and omitted.
+                                When omitted, the default behaviour will be Positive.
+                                A positive polarity means that the condition should report a true status under normal conditions.
+                                A negative polarity means that the condition should report a false status under normal conditions.
+                              enum:
+                              - Positive
+                              - Negative
+                              type: string
+                          required:
+                          - conditionType
+                          type: object
+                        maxItems: 32
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - conditionType
+                        x-kubernetes-list-type: map
                     type: object
                 required:
                 - infrastructureRef
@@ -1061,6 +1100,45 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      readinessGates:
+                        description: |-
+                          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+
+                          This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+                          computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.
+                        items:
+                          description: MachineReadinessGate contains the type of a
+                            Machine condition to be used as a readiness gate.
+                          properties:
+                            conditionType:
+                              description: |-
+                                conditionType refers to a condition with matching type in the Machine's condition list.
+                                If the conditions doesn't exist, it will be treated as unknown.
+                                Note: Both Cluster API conditions or conditions added by 3rd party controllers can be used as readiness gates.
+                              maxLength: 316
+                              minLength: 1
+                              pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                              type: string
+                            polarity:
+                              description: |-
+                                polarity of the conditionType specified in this readinessGate.
+                                Valid values are Positive, Negative and omitted.
+                                When omitted, the default behaviour will be Positive.
+                                A positive polarity means that the condition should report a true status under normal conditions.
+                                A negative polarity means that the condition should report a false status under normal conditions.
+                              enum:
+                              - Positive
+                              - Negative
+                              type: string
+                          required:
+                          - conditionType
+                          type: object
+                        maxItems: 32
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - conditionType
+                        x-kubernetes-list-type: map
                     type: object
                 required:
                 - infrastructureRef

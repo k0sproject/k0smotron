@@ -131,6 +131,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 			InfrastructureRef: infraRef,
 			// The machine controller reads these off the Machine, so a template that
 			// only declared them would be accepted and then ignored.
+			ReadinessGates: kcp.Spec.MachineTemplate.Spec.ReadinessGates,
 			Deletion: clusterv1.MachineDeletionSpec{
 				NodeDrainTimeoutSeconds:        kcp.Spec.MachineTemplate.Spec.Deletion.NodeDrainTimeoutSeconds,
 				NodeVolumeDetachTimeoutSeconds: kcp.Spec.MachineTemplate.Spec.Deletion.NodeVolumeDetachTimeoutSeconds,
