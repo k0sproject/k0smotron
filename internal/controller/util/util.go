@@ -16,14 +16,10 @@ limitations under the License.
 package util
 
 import (
-	"context"
 	"maps"
 	"sort"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
-	"sigs.k8s.io/cluster-api/util/patch"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // ComponentLabel is the well-known Kubernetes recommended label key for identifying
@@ -117,35 +113,4 @@ func AddToExistingSans(existing []string, newSan []string) []string {
 	sort.Strings(finalSans)
 
 	return finalSans
-}
-
-// EnsureFinalizer adds a finalizer if the object doesn't have a deletionTimestamp set
-// and if the finalizer is not already set.
-// This util is usually used in reconcilers directly after the reconciled object was retrieved
-// and before pause is handled or "defer patch" with the patch helper.
-//
-// TODO: This function is copied from https://github.com/kubernetes-sigs/cluster-api/blob/v1.9.0/util/finalizers/finalizers.go.
-// Use it once the CAPI dependency is bumped to >=v1.9.0.
-func EnsureFinalizer(ctx context.Context, c client.Client, o client.Object, finalizer string) (finalizerAdded bool, err error) {
-	// Finalizers can only be added when the deletionTimestamp is not set.
-	if !o.GetDeletionTimestamp().IsZero() {
-		return false, nil
-	}
-
-	if controllerutil.ContainsFinalizer(o, finalizer) {
-		return false, nil
-	}
-
-	patchHelper, err := patch.NewHelper(o, c)
-	if err != nil {
-		return false, err
-	}
-
-	controllerutil.AddFinalizer(o, finalizer)
-
-	if err := patchHelper.Patch(ctx, o); err != nil {
-		return false, err
-	}
-
-	return true, nil
 }

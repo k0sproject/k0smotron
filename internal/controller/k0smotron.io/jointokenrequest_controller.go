@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/finalizers"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,7 +81,7 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	if finalizerAdded, err := util.EnsureFinalizer(ctx, r.Client, &jtr, joinTokenRequestFinalizer); err != nil || finalizerAdded {
+	if finalizerAdded, err := finalizers.EnsureFinalizer(ctx, r.Client, &jtr, joinTokenRequestFinalizer); err != nil || finalizerAdded {
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
 	}
 

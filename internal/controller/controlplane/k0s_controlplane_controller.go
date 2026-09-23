@@ -50,6 +50,7 @@ import (
 	capiutil "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/cluster-api/util/finalizers"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/paused"
@@ -153,7 +154,7 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, err
 	}
 
-	if finalizerAdded, err := util.EnsureFinalizer(ctx, c.Client, kcp, cpv1beta2.K0sControlPlaneFinalizer); err != nil || finalizerAdded {
+	if finalizerAdded, err := finalizers.EnsureFinalizer(ctx, c.Client, kcp, cpv1beta2.K0sControlPlaneFinalizer); err != nil || finalizerAdded {
 		return ctrl.Result{}, err
 	}
 
