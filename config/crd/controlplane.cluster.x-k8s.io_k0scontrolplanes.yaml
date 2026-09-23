@@ -338,51 +338,6 @@ spec:
                 description: K0sControlPlaneMachineTemplate describes the data needed
                   to create a Machine from a template.
                 properties:
-                  infrastructureRef:
-                    description: |-
-                      InfrastructureRef is a required reference to a custom resource
-                      offered by an infrastructure provider.
-                    properties:
-                      apiVersion:
-                        description: API version of the referent.
-                        type: string
-                      fieldPath:
-                        description: |-
-                          If referring to a piece of an object instead of an entire object, this string
-                          should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
-                          For example, if the object reference is to a container within a pod, this would take on a value like:
-                          "spec.containers{name}" (where "name" refers to the name of the container that triggered
-                          the event) or if no container name is specified "spec.containers[2]" (container with
-                          index 2 in this pod). This syntax is chosen only to have some well-defined way of
-                          referencing a part of an object.
-                        type: string
-                      kind:
-                        description: |-
-                          Kind of the referent.
-                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-                        type: string
-                      name:
-                        description: |-
-                          Name of the referent.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        type: string
-                      namespace:
-                        description: |-
-                          Namespace of the referent.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
-                        type: string
-                      resourceVersion:
-                        description: |-
-                          Specific resourceVersion to which this reference is made, if any.
-                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-                        type: string
-                      uid:
-                        description: |-
-                          UID of the referent.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
-                        type: string
-                    type: object
-                    x-kubernetes-map-type: atomic
                   metadata:
                     description: |-
                       Standard object's metadata.
@@ -409,8 +364,10 @@ spec:
                         type: object
                     type: object
                   spec:
-                    description: spec defines the spec for Machines in a K0sControlPlane
-                      object.
+                    description: |-
+                      spec defines the spec for Machines in a K0sControlPlane object.
+                      Required, or a manifest carrying the old flat infrastructureRef is accepted
+                      with the field silently pruned instead of being rejected.
                     properties:
                       deletion:
                         description: deletion contains configuration options for Machine
@@ -441,6 +398,51 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      infrastructureRef:
+                        description: |-
+                          infrastructureRef is a required reference to a custom resource
+                          offered by an infrastructure provider.
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          fieldPath:
+                            description: |-
+                              If referring to a piece of an object instead of an entire object, this string
+                              should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                              For example, if the object reference is to a container within a pod, this would take on a value like:
+                              "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                              the event) or if no container name is specified "spec.containers[2]" (container with
+                              index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                              referencing a part of an object.
+                            type: string
+                          kind:
+                            description: |-
+                              Kind of the referent.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                            type: string
+                          name:
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          namespace:
+                            description: |-
+                              Namespace of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                            type: string
+                          resourceVersion:
+                            description: |-
+                              Specific resourceVersion to which this reference is made, if any.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                            type: string
+                          uid:
+                            description: |-
+                              UID of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
                       readinessGates:
                         description: |-
                           readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
@@ -480,9 +482,11 @@ spec:
                         x-kubernetes-list-map-keys:
                         - conditionType
                         x-kubernetes-list-type: map
+                    required:
+                    - infrastructureRef
                     type: object
                 required:
-                - infrastructureRef
+                - spec
                 type: object
               replicas:
                 default: 1
@@ -997,51 +1001,6 @@ spec:
                 description: K0sControlPlaneMachineTemplate describes the data needed
                   to create a Machine from a template.
                 properties:
-                  infrastructureRef:
-                    description: |-
-                      InfrastructureRef is a required reference to a custom resource
-                      offered by an infrastructure provider.
-                    properties:
-                      apiVersion:
-                        description: API version of the referent.
-                        type: string
-                      fieldPath:
-                        description: |-
-                          If referring to a piece of an object instead of an entire object, this string
-                          should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
-                          For example, if the object reference is to a container within a pod, this would take on a value like:
-                          "spec.containers{name}" (where "name" refers to the name of the container that triggered
-                          the event) or if no container name is specified "spec.containers[2]" (container with
-                          index 2 in this pod). This syntax is chosen only to have some well-defined way of
-                          referencing a part of an object.
-                        type: string
-                      kind:
-                        description: |-
-                          Kind of the referent.
-                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-                        type: string
-                      name:
-                        description: |-
-                          Name of the referent.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        type: string
-                      namespace:
-                        description: |-
-                          Namespace of the referent.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
-                        type: string
-                      resourceVersion:
-                        description: |-
-                          Specific resourceVersion to which this reference is made, if any.
-                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-                        type: string
-                      uid:
-                        description: |-
-                          UID of the referent.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
-                        type: string
-                    type: object
-                    x-kubernetes-map-type: atomic
                   metadata:
                     description: |-
                       Standard object's metadata.
@@ -1068,8 +1027,10 @@ spec:
                         type: object
                     type: object
                   spec:
-                    description: spec defines the spec for Machines in a K0sControlPlane
-                      object.
+                    description: |-
+                      spec defines the spec for Machines in a K0sControlPlane object.
+                      Required, or a manifest carrying the old flat infrastructureRef is accepted
+                      with the field silently pruned instead of being rejected.
                     properties:
                       deletion:
                         description: deletion contains configuration options for Machine
@@ -1100,6 +1061,51 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      infrastructureRef:
+                        description: |-
+                          infrastructureRef is a required reference to a custom resource
+                          offered by an infrastructure provider.
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          fieldPath:
+                            description: |-
+                              If referring to a piece of an object instead of an entire object, this string
+                              should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                              For example, if the object reference is to a container within a pod, this would take on a value like:
+                              "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                              the event) or if no container name is specified "spec.containers[2]" (container with
+                              index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                              referencing a part of an object.
+                            type: string
+                          kind:
+                            description: |-
+                              Kind of the referent.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                            type: string
+                          name:
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          namespace:
+                            description: |-
+                              Namespace of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                            type: string
+                          resourceVersion:
+                            description: |-
+                              Specific resourceVersion to which this reference is made, if any.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                            type: string
+                          uid:
+                            description: |-
+                              UID of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
                       readinessGates:
                         description: |-
                           readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
@@ -1139,9 +1145,11 @@ spec:
                         x-kubernetes-list-map-keys:
                         - conditionType
                         x-kubernetes-list-type: map
+                    required:
+                    - infrastructureRef
                     type: object
                 required:
-                - infrastructureRef
+                - spec
                 type: object
               replicas:
                 default: 1

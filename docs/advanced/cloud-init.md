@@ -44,10 +44,11 @@ spec:
         name: cp-custom-userdata
         key: customUserData
   machineTemplate:
-    infrastructureRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
-      kind: DevMachineTemplate
-      name: my-cp-tpl
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: DevMachineTemplate
+        name: my-cp-tpl
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DevMachineTemplate

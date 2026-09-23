@@ -180,10 +180,11 @@ spec:
   updateStrategy: InPlace     # uses k0s Autopilot for upgrades
   k0sConfigSpec: {}
   machineTemplate:
-    infrastructureRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
-      kind: RemoteMachineTemplate
-      name: my-cluster-cp-template
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: RemoteMachineTemplate
+        name: my-cluster-cp-template
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteCluster

@@ -1353,11 +1353,13 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		},
 		Spec: cpv1beta2.K0sControlPlaneSpec{
 			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
-				InfrastructureRef: corev1.ObjectReference{
-					Kind:       "GenericInfrastructureMachineTemplate",
-					Namespace:  namespace,
-					Name:       "infra-foo",
-					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+				Spec: cpv1beta2.K0sControlPlaneMachineTemplateSpec{
+					InfrastructureRef: corev1.ObjectReference{
+						Kind:       "GenericInfrastructureMachineTemplate",
+						Namespace:  namespace,
+						Name:       "infra-foo",
+						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+					},
 				},
 			},
 			UpdateStrategy: cpv1beta2.UpdateRecreate,
@@ -1374,8 +1376,8 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 				"name":      "infra-foo",
 				"namespace": namespace,
 				"annotations": map[string]interface{}{
-					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.InfrastructureRef.Name,
-					clusterv1.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String(),
+					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
+					clusterv1.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.GroupVersionKind().GroupKind().String(),
 				},
 			},
 			"spec": map[string]interface{}{
@@ -1621,4 +1623,50 @@ func TestAvailabilityAnchorSurvivesAPatch(t *testing.T) {
 	require.NoError(t, helper.Patch(ctx, kcp))
 
 	require.Equal(t, metav1.ConditionFalse, readBack().Status)
+}
+
+// TestMachineTemplateSpecIsRequired covers the schema rejecting the shape that carried
+// infrastructureRef at the machine template root. Without the spec being required the
+// API server prunes the unknown field and admits an object with no reference at all,
+// which is a silent misconfiguration rather than a migration error.
+func TestMachineTemplateSpecIsRequired(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-machine-template-spec-required")
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(ctx, ns))
+	}()
+
+	kcp := func(name string, machineTemplate map[string]any) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": cpv1beta2.GroupVersion.String(),
+			"kind":       "K0sControlPlane",
+			"metadata":   map[string]any{"name": name, "namespace": ns.Name},
+			"spec": map[string]any{
+				"version":         "v1.30.0+k0s.0",
+				"k0sConfigSpec":   map[string]any{},
+				"machineTemplate": machineTemplate,
+			},
+		}}
+	}
+
+	ref := map[string]any{
+		"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta1",
+		"kind":       "GenericInfrastructureMachineTemplate",
+		"name":       "infra-foo",
+	}
+
+	require.NoError(t, testEnv.Create(ctx, kcp("nested", map[string]any{
+		"spec": map[string]any{"infrastructureRef": ref},
+	})), "the shape the contract asks for has to be accepted")
+
+	require.ErrorContains(t,
+		testEnv.Create(ctx, kcp("flat", map[string]any{"infrastructureRef": ref})),
+		"spec.machineTemplate.spec",
+		"the old flat shape has to be rejected rather than pruned")
+
+	require.ErrorContains(t,
+		testEnv.Create(ctx, kcp("empty", map[string]any{})),
+		"spec.machineTemplate.spec",
+		"a machine template with no reference at all has to be rejected")
 }

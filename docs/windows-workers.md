@@ -176,11 +176,12 @@ spec:
         network:
           provider: calico # Enable Calico networking
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: AWSMachineTemplate
-      name: k0s-aws-test-mt-cp
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        name: k0s-aws-test-mt-cp
+        namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSCluster

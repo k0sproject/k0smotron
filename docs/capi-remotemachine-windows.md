@@ -139,11 +139,12 @@ spec:
         network:
           provider: calico   # required for Windows nodes
   machineTemplate:
-    infrastructureRef:
-      # This ref is a classic ObjectReference -> use apiVersion, not apiGroup.
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: RemoteMachineTemplate
-      name: win-remote-cp
+    spec:
+      infrastructureRef:
+        # This ref is a classic ObjectReference -> use apiVersion, not apiGroup.
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: RemoteMachineTemplate
+        name: win-remote-cp
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteMachineTemplate
