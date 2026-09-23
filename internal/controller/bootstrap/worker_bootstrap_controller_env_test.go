@@ -814,3 +814,39 @@ func requirePausedReported(t *testing.T, obj pausedObject) {
 	require.NotNil(t, got, "a paused object has to say so, not only stop reconciling")
 	require.Equal(t, metav1.ConditionTrue, got.Status)
 }
+
+// TestWorkerConfigRejectsConflictingUserDataRef covers the conflict being refused by
+// the live webhook rather than only by the helper, since each reference is optional in
+// the schema and nothing else would catch two of them.
+func TestWorkerConfigRejectsConflictingUserDataRef(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-conflicting-user-data-ref")
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(ctx, ns))
+	}()
+
+	cfg := func(name string, ref *bootstrapv1.ContentSource) *bootstrapv1.K0sWorkerConfig {
+		return &bootstrapv1.K0sWorkerConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns.Name},
+			Spec: bootstrapv1.K0sWorkerConfigSpec{
+				Version:     "v1.30.0+k0s.0",
+				Provisioner: bootstrapv1.ProvisionerSpec{CustomUserDataRef: ref},
+			},
+		}
+	}
+
+	secretRef := &bootstrapv1.ContentSourceRef{Name: "extra", Key: "userdata"}
+	configMapRef := &bootstrapv1.ContentSourceRef{Name: "other", Key: "userdata"}
+
+	require.ErrorContains(t,
+		testEnv.Create(ctx, cfg("conflicting", &bootstrapv1.ContentSource{
+			SecretRef: secretRef, ConfigMapRef: configMapRef,
+		})),
+		"only one of secretRef or configMapRef",
+		"the webhook has to refuse two sources for one piece of content")
+
+	require.NoError(t,
+		testEnv.Create(ctx, cfg("single", &bootstrapv1.ContentSource{SecretRef: secretRef})),
+		"one source stays accepted")
+}

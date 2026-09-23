@@ -73,6 +73,10 @@ func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, kcp *K0sCon
 	warnings = append(warnings, bootstrapv1.ProvisionerWarnings(
 		kcp.Spec.K0sConfigSpec.Provisioner, field.NewPath("spec", "k0sConfigSpec"))...)
 
+	if errs := provisionerErrors(nil, kcp); len(errs) > 0 {
+		return warnings, errs.ToAggregate()
+	}
+
 	return warnings, validateK0sControlPlane(kcp)
 }
 
@@ -96,6 +100,10 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, new
 		if newV.Core().Segments()[1]-oldV.Core().Segments()[1] > 1 {
 			return warnings, fmt.Errorf("upgrading more than one minor version at a time is not allowed by the Kubernetes skew policy")
 		}
+	}
+
+	if errs := provisionerErrors(oldKcp, newKcp); len(errs) > 0 {
+		return warnings, errs.ToAggregate()
 	}
 
 	return warnings, validateK0sControlPlane(newKcp)
@@ -131,6 +139,22 @@ func validateK0sControlPlane(kcp *K0sControlPlane) error {
 	}
 
 	return nil
+}
+
+// provisionerErrors reports what the provisioner block gets wrong, ratcheted against
+// the old spec when there is one. Without that an object admitted before a rule
+// existed can never be updated again, which includes the controller stripping its own
+// finalizer, so the cluster cannot be deleted either.
+func provisionerErrors(oldKcp, newKcp *K0sControlPlane) field.ErrorList {
+	prefix := field.NewPath("spec", "k0sConfigSpec")
+
+	errs := bootstrapv1.ValidateProvisioner(newKcp.Spec.K0sConfigSpec.Provisioner, prefix)
+	if oldKcp == nil {
+		return errs
+	}
+
+	return bootstrapv1.RatchetErrors(
+		bootstrapv1.ValidateProvisioner(oldKcp.Spec.K0sConfigSpec.Provisioner, prefix), errs)
 }
 
 func denyIncompatibleProvisioners(kcp *K0sControlPlane) error {

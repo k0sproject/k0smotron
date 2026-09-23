@@ -525,6 +525,62 @@ func ProvisionerWarnings(spec ProvisionerSpec, pathPrefix *field.Path) admission
 	return warnings
 }
 
+// ValidateProvisioner rejects a provisioner whose own fields disagree, which the
+// schema cannot catch because each reference is optional on its own. The checks
+// mirror the ones a file's contentFrom already gets.
+func ValidateProvisioner(spec ProvisionerSpec, pathPrefix *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
+	ref := spec.CustomUserDataRef
+	if ref == nil {
+		return nil
+	}
+
+	refPath := pathPrefix.Child("provisioner", "customUserDataRef")
+
+	switch {
+	case ref.SecretRef != nil && ref.ConfigMapRef != nil:
+		allErrs = append(allErrs, field.Invalid(refPath, ref, conflictingContentSourceMsg))
+	case ref.SecretRef == nil && ref.ConfigMapRef == nil:
+		allErrs = append(allErrs, field.Required(refPath, noContentSourceMsg))
+	}
+
+	// The schema requires the key to be present but not to be non empty, so an empty
+	// name reaches the reconcile and fails there with the reason only in the log.
+	if ref.SecretRef != nil && ref.SecretRef.Name == "" {
+		allErrs = append(allErrs, field.Required(refPath.Child("secretRef", "name"), "name is required"))
+	}
+
+	if ref.ConfigMapRef != nil && ref.ConfigMapRef.Name == "" {
+		allErrs = append(allErrs, field.Required(refPath.Child("configMapRef", "name"), "name is required"))
+	}
+
+	return allErrs
+}
+
+// RatchetErrors drops the errors the old spec already produced, so a rule added after
+// an object was admitted does not make that object unupdatable. Without it the
+// controller cannot even strip its own finalizer and the object becomes undeletable.
+func RatchetErrors(oldErrs, newErrs field.ErrorList) field.ErrorList {
+	if len(oldErrs) == 0 {
+		return newErrs
+	}
+
+	existing := make(map[string]struct{}, len(oldErrs))
+	for _, e := range oldErrs {
+		existing[e.Type.String()+"\x00"+e.Field+"\x00"+e.Detail] = struct{}{}
+	}
+
+	var kept field.ErrorList
+	for _, e := range newErrs {
+		if _, had := existing[e.Type.String()+"\x00"+e.Field+"\x00"+e.Detail]; !had {
+			kept = append(kept, e)
+		}
+	}
+
+	return kept
+}
+
 // ValidateFileOwners rejects a file owner that the chosen format cannot apply,
 // or one whose shape could be mistaken for an argument by the chown it feeds.
 func ValidateFileOwners(files []File, spec ProvisionerSpec, pathPrefix *field.Path) field.ErrorList {
@@ -606,7 +662,7 @@ func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.Error
 					field.Invalid(
 						pathPrefix.Child("files").Index(i).Child("contentFrom"),
 						file.ContentFrom,
-						conflictingContentFromMsg,
+						conflictingContentSourceMsg,
 					),
 				)
 			}
