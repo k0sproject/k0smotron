@@ -102,9 +102,10 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		fsys = connection.SudoFsys()
 	}
 
+	installScriptPath := filepath.Join(p.machine.Spec.WorkingDir, "bootstrap.sh")
+
 	if p.machine.Spec.CommandsAsScript {
 		// Write the bootstrap script
-		installScriptPath := filepath.Join(p.machine.Spec.WorkingDir, "k0s_install.sh")
 		bootstrapFile := provisioner.File{
 			Path:        installScriptPath,
 			Permissions: "0700",
@@ -124,7 +125,6 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 
 	if p.machine.Spec.CommandsAsScript {
 		// Run the install script
-		installScriptPath := filepath.Join(p.machine.Spec.WorkingDir, "k0s_install.sh")
 		p.log.Info("running install script", "command", installScriptPath)
 		output, err := connection.ExecOutput(installScriptPath, execOpts...)
 		if err != nil {
