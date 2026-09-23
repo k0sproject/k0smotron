@@ -68,7 +68,7 @@ K0sControlPlane describes a k0s control plane for a Cluster API managed cluster.
         <td>
           K0sControlPlaneStatus defines the observed state of K0sControlPlane<br/>
           <br/>
-            <i>Default</i>: map[initialization:map[controlPlaneInitialized:false] version:]<br/>
+            <i>Default</i>: map[initialization:map[controlPlaneInitialized:false]]<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1259,7 +1259,16 @@ More info about label selectors: http://kubernetes.io/docs/user-guide/labels#lab
         <td>string</td>
         <td>
           version represents the minimum Kubernetes version for the control plane machines
-in the cluster.<br/>
+in the cluster.
+
+Deprecated: This field is deprecated and is going to be removed in a future API version. Please use status.versions instead.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanestatusversionsindex">versions</a></b></td>
+        <td>[]object</td>
+        <td>
+          versions is the aggregated Kubernetes versions in this KubeadmControlPlane.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1414,6 +1423,43 @@ when a machine created to replace an unhealthy machine also fails.<br/>
             <i>Format</i>: date-time<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.status.versions[index]
+<sup><sup>[↩ Parent](#k0scontrolplanestatus)</sup></sup>
+
+
+
+StatusVersion groups version-related status information.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          version is the Kubernetes version.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          replicas is the number of replicas at this version.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Minimum</i>: 1<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

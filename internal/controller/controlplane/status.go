@@ -74,9 +74,19 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 	// stay reported for the control plane most likely to be mid rollout.
 	setMachinesUpToDateCondition(ctx, controlplane)
 
+	var allReplicas []*clusterv1.Machine
+	allReplicas = append(allReplicas, controlplane.activeMachines.UnsortedList()...)
+	allReplicas = append(allReplicas, controlplane.deletedMachines.UnsortedList()...)
+
+	setReplicas(controlplane.kcp, allReplicas)
+	setVersions(controlplane.kcp, allReplicas)
+	setExternalManaged(controlplane.kcp)
+
+	setScalingConditions(controlplane)
+	setRollingOutCondition(controlplane)
 	setDeletingCondition(controlplane.kcp, controlplane.deletingReason, controlplane.deletingMessage)
 
-	return computeReplicas(controlplane)
+	return nil
 }
 
 func setDeletingCondition(kcp *cpv1beta2.K0sControlPlane, reason, message string) {
@@ -308,13 +318,76 @@ func setLastRemediation(controlplane *controlplane) {
 	}
 }
 
-func computeReplicas(controlplane *controlplane) error {
-	var allReplicas []*clusterv1.Machine
-	allReplicas = append(allReplicas, controlplane.activeMachines.UnsortedList()...)
-	allReplicas = append(allReplicas, controlplane.deletedMachines.UnsortedList()...)
+// setExternalManaged marks the controlplane as externally managed when its spec does NOT have
+// workers enabled. Otherwise CAPI assumes it'll find node objects for the machines.
+func setExternalManaged(kcp *cpv1beta2.K0sControlPlane) {
+	if !kcp.WorkerEnabled() {
+		kcp.Status.ExternalManagedControlPlane = new(true)
+	}
+}
 
+func setVersions(kcp *cpv1beta2.K0sControlPlane, machines []*clusterv1.Machine) {
+	kcp.Status.Versions = versionsFromMachines(machines)
+
+	if len(kcp.Status.Versions) == 0 {
+		return
+	}
+	// Per contract, the first element in the Versions slice represents the lowest version.
+	lowest := kcp.Status.Versions[0].Version
+	kcp.Status.Version = lowest
+
+	// If kcp has suffix but machines don't, we need to add it to the lowest version
+	// Otherwise CAPI topology will not be able to match the versions and might try to recreate the machines
+	// or restrict the upgrade path
+	if suffix := getVersionSuffix(kcp.Spec.Version); suffix != "" && !strings.Contains(lowest, "+") {
+		kcp.Status.Version = lowest + "+" + suffix
+	}
+}
+
+// versionsFromMachines groups the machines by version, lowest version first.
+// Versions that cannot be parsed sort after the valid ones, alphabetically.
+func versionsFromMachines(machines []*clusterv1.Machine) []clusterv1.StatusVersion {
+	count := map[string]int32{}
+	for _, machine := range machines {
+		if machine.Spec.Version != "" {
+			count[machine.Spec.Version]++
+		}
+	}
+
+	type entry struct {
+		status clusterv1.StatusVersion
+		parsed *version.Version
+	}
+	entries := make([]entry, 0, len(count))
+	for v, n := range count {
+		parsed, _ := version.NewVersion(v) // nil when unparseable
+		entries = append(entries, entry{clusterv1.StatusVersion{Version: v, Replicas: n}, parsed})
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		a, b := entries[i], entries[j]
+		switch {
+		case a.parsed != nil && b.parsed != nil:
+			if c := a.parsed.Compare(b.parsed); c != 0 {
+				return c < 0
+			}
+		case a.parsed != nil || b.parsed != nil:
+			return a.parsed != nil
+		}
+		return a.status.Version < b.status.Version
+	})
+
+	versions := make([]clusterv1.StatusVersion, len(entries))
+	for i, e := range entries {
+		versions[i] = e.status
+	}
+
+	return versions
+}
+
+func setReplicas(kcp *cpv1beta2.K0sControlPlane, machines []*clusterv1.Machine) {
 	var readyReplicas, availableReplicas, upToDateReplicas int32
-	for _, machine := range allReplicas {
+	for _, machine := range machines {
 		if conditions.IsTrue(machine, clusterv1.MachineReadyCondition) {
 			readyReplicas++
 		}
@@ -326,43 +399,10 @@ func computeReplicas(controlplane *controlplane) error {
 		}
 	}
 
-	// One collection feeds all four, so a machine that is deleting but still ready
-	// cannot be counted by one of them and left out of the total.
-	controlplane.kcp.Status.Replicas = new(int32(len(allReplicas)))
-	controlplane.kcp.Status.ReadyReplicas = new(int32(readyReplicas))
-	controlplane.kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
-	controlplane.kcp.Status.AvailableReplicas = new(int32(availableReplicas))
-
-	// Find the lowest version
-	lowestMachineVersion, err := minVersion(controlplane.activeMachines)
-	if err != nil {
-		log.Log.Error(err, "Failed to get the lowest version")
-		return err
-	}
-	controlplane.kcp.Status.Version = lowestMachineVersion
-
-	// If kcp has suffix but machines don't, we need to add it to minVersion
-	// Otherwise CAPI topology will not be able to match the versions and might try to recreate the machines
-	// or restrict the upgrade path
-	if strings.Contains(controlplane.kcp.Spec.Version, "+") && !strings.Contains(lowestMachineVersion, "+") && lowestMachineVersion != "" {
-		// Get the suffix from kcp version
-		suffix := strings.Split(controlplane.kcp.Spec.Version, "+")[1]
-		controlplane.kcp.Status.Version = controlplane.kcp.Status.Version + "+" + suffix
-	}
-
-	// If the controlplane spec does NOT have workers enabled
-	// we need to mark the controlplane as externally managed
-	// Otherwise CAPI assumes it'll find node objects for the machines
-	// TODO Check with upstream CAPI folks whether this is the correct approach in this case when
-	// we still run the controlplane on Machines
-	if !controlplane.kcp.WorkerEnabled() {
-		controlplane.kcp.Status.ExternalManagedControlPlane = new(true)
-	}
-
-	setScalingConditions(controlplane)
-	setRollingOutCondition(controlplane)
-
-	return nil
+	kcp.Status.Replicas = new(int32(len(machines)))
+	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
+	kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
+	kcp.Status.AvailableReplicas = new(int32(availableReplicas))
 }
 
 // setRollingOutCondition reports whether a machine still has to be replaced or
