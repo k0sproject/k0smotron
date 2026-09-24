@@ -25,6 +25,7 @@ import (
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	autopilot "github.com/k0sproject/k0smotron/v2/internal/autopilot"
+	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -48,12 +49,15 @@ func createAutopilotPlanForMachine(ctx context.Context, c client.Client, clients
 		target = autopilot.WorkersTarget
 	}
 
+	// machine version may lack the k0s suffix, the download URL and autopilot require it
+	version := util.NormalizeK0sVersion(desiredMachine.Spec.Version)
+
 	planParams := &autopilot.PlanParameters{
 		// compose autopilot plan id by using machine name, timestamp and desired version to ensure uniqueness
 		// in case of multiple updates on the same machine
-		ID:          fmt.Sprintf("id-%s-%s-%s", desiredMachine.Name, desiredMachine.Spec.Version, timestamp),
+		ID:          fmt.Sprintf("id-%s-%s-%s", desiredMachine.Name, version, timestamp),
 		Timestamp:   timestamp,
-		Version:     desiredMachine.Spec.Version,
+		Version:     version,
 		DownloadURL: downloadURL,
 		Target:      target,
 		Nodes:       []string{desiredMachine.Name},
