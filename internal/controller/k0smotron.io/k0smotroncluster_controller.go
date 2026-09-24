@@ -286,13 +286,6 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		}
 	}
 
-	if kmc.Spec.Ingress != nil {
-		err := kmcScope.ensureHAProxyCerts(ctx, kmc)
-		if err != nil {
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating ingress certificates: %w", err)
-		}
-	}
-
 	if err := kmcScope.reconcilePVC(ctx, kmc); err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling PVCs: %s", err.Error()))
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err

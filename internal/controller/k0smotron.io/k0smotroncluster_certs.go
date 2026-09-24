@@ -123,7 +123,7 @@ func (scope *kmcScope) ensureEtcdCertificates(ctx context.Context, kmc *km.Clust
 	return etcdCerts.SaveGenerated(ctx, scope.client, util.ObjectKey(kmc), owner)
 }
 
-func (scope *kmcScope) ensureHAProxyCerts(ctx context.Context, kmc *km.Cluster) error {
+func (scope *kmcScope) ensureIngressProxyCerts(ctx context.Context, kmc *km.Cluster) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
 	err := certificates.LookupCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc))
 	if err != nil {
@@ -152,7 +152,7 @@ func (scope *kmcScope) ensureHAProxyCerts(ctx context.Context, kmc *km.Cluster) 
 	g := &csr.Generator{Validator: genkey.Validator}
 
 	clusterCerts := secret.Certificates{
-		&secret.Certificate{Purpose: "ingress-haproxy"},
+		&secret.Certificate{Purpose: ingressProxyCertPurpose},
 	}
 
 	err = clusterCerts.LookupCached(ctx, scope.secretCachingClient, scope.client, util.ObjectKey(kmc))
