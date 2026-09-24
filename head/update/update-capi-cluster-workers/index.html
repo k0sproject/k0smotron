@@ -2765,10 +2765,6 @@ You are not currently viewing the documentation for the current stable release o
 <h2 id="updating-workers-with-the-cluster-api-in-place-updates-extension">Updating workers with the Cluster API in-place updates extension<a class="headerlink" href="#updating-workers-with-the-cluster-api-in-place-updates-extension" title="Permanent link">#</a></h2>
 <p>This requires the same prerequisites as for control plane nodes. See <a href="../update-capi-cluster/#cluster-api-in-place-updates-experimental">Cluster API in-place updates</a>.</p>
 <p>Once the extension is active, bump <code>spec.template.spec.version</code> on the <code>MachineDeployment</code> (and the referenced <code>K0sWorkerConfigTemplate</code>, if you keep the two in sync) to the target k0s version. Cluster API calls into the extension for each affected <code>Machine</code>, and the extension creates and monitors the autopilot <code>Plan</code> on your behalf, no manual <code>Plan</code> needed.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Set <code>spec.rollout.strategy.rollingUpdate.maxUnavailable</code> to <code>1</code> on the <code>MachineDeployment</code> (it cannot be <code>0</code>) for in-place updates to work correctly.</p>
-</div>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.x-k8s.io/v1beta2</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MachineDeployment</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2780,12 +2776,6 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker-test</span>
 <span class="w">      </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker-pool-1</span>
-<span class="w">  </span><span class="nt">rollout</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">strategy</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">rollingUpdate</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">maxSurge</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">        </span><span class="nt">maxUnavailable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"> </span><span class="c1"># required for in-place updates, cannot be 0</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RollingUpdate</span>
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
