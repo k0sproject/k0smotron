@@ -62,6 +62,10 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 	// stay reported for the control plane most likely to have something wrong with them.
 	setMachinesReadyCondition(ctx, controlplane)
 
+	// Ahead of computeReplicas, which gives up on an unparseable machine version, so the machines
+	// stay reported for the control plane most likely to be mid rollout.
+	setMachinesUpToDateCondition(ctx, controlplane)
+
 	return computeReplicas(controlplane)
 }
 
@@ -112,6 +116,68 @@ func setMachinesReadyCondition(ctx context.Context, controlplane *controlplane) 
 	}
 
 	conditions.Set(controlplane.kcp, *readyCondition)
+}
+
+// machineUpToDateGracePeriod is how long a machine is allowed to say nothing about being up to
+// date before its silence is reported. Matches upstream, which uses it for the same reason.
+const machineUpToDateGracePeriod = 10 * time.Second
+
+// setMachinesUpToDateCondition aggregates the machines' own UpToDate conditions, which is what
+// carries the reason a rollout is outstanding down to the machine it is outstanding on.
+func setMachinesUpToDateCondition(ctx context.Context, controlplane *controlplane) {
+	// Deleting machines are included, matching the replica counters, since a machine on its way
+	// out is still one the control plane is answering for.
+	var all []*clusterv1.Machine
+	all = append(all, controlplane.activeMachines.UnsortedList()...)
+	all = append(all, controlplane.deletedMachines.UnsortedList()...)
+
+	// A machine takes a moment to get its first UpToDate condition, and counting that silence as
+	// unknown would flip this condition on every scale up.
+	reportable := []*clusterv1.Machine{}
+	for _, m := range all {
+		if conditions.Has(m, clusterv1.MachineUpToDateCondition) || time.Since(m.CreationTimestamp.Time) > machineUpToDateGracePeriod {
+			reportable = append(reportable, m)
+		}
+	}
+
+	if len(reportable) == 0 {
+		conditions.Set(controlplane.kcp, metav1.Condition{
+			Type:   string(cpv1beta2.K0sControlPlaneMachinesUpToDateCondition),
+			Status: metav1.ConditionTrue,
+			Reason: cpv1beta2.K0sControlPlaneMachinesUpToDateNoReplicasReason,
+		})
+
+		return
+	}
+
+	upToDateCondition, err := conditions.NewAggregateCondition(
+		reportable, clusterv1.MachineUpToDateCondition,
+		conditions.TargetConditionType(cpv1beta2.K0sControlPlaneMachinesUpToDateCondition),
+		// The merge reasons default to generic ones like IssuesReported, so they are overridden
+		// with the up to date wording a reader of this condition expects.
+		conditions.CustomMergeStrategy{
+			MergeStrategy: conditions.DefaultMergeStrategy(
+				conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
+					cpv1beta2.K0sControlPlaneMachinesNotUpToDateReason,
+					cpv1beta2.K0sControlPlaneMachinesUpToDateUnknownReason,
+					cpv1beta2.K0sControlPlaneMachinesUpToDateReason,
+				)),
+			),
+		},
+	)
+	if err != nil {
+		ctrl.LoggerFrom(ctx).Error(err, "Failed to aggregate the machine conditions for the MachinesUpToDate condition")
+		conditions.Set(controlplane.kcp, metav1.Condition{
+			Type:    string(cpv1beta2.K0sControlPlaneMachinesUpToDateCondition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  cpv1beta2.K0sControlPlaneMachinesUpToDateInternalErrorReason,
+			Message: "Please check controller logs for errors",
+		})
+
+		return
+	}
+
+	conditions.Set(controlplane.kcp, *upToDateCondition)
 }
 
 func computeReplicas(controlplane *controlplane) error {
