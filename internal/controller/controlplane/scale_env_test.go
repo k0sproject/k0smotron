@@ -1010,6 +1010,63 @@ func TestReconcileMachinesRequeuesWhileNotUpToDate(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond)
 }
 
+// TestUpdateStatusReportsRollingOut covers the RollingOut condition being written by
+// the status path rather than only by its own function, against machines the
+// production code classified itself.
+func TestUpdateStatusReportsRollingOut(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-update-status-rolling-out")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	kcp.Spec.Replicas = 2
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+	require.NoError(t, testEnv.Create(ctx, kcp))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, gmt, cluster, ns)
+
+	r := buildTestController(t, nil)
+
+	// Driven through updateStatus rather than Reconcile, which would scale the
+	// outdated machine away while the condition it writes is being read.
+	rollingOutIs := func(t *testing.T, want metav1.ConditionStatus, wantReason string) {
+		t.Helper()
+
+		require.EventuallyWithT(t, func(c *assert.CollectT) {
+			scope, err := r.retrieveControlPlaneState(ctx, cluster, kcp)
+			if !assert.NoError(c, err) {
+				return
+			}
+			if !assert.NoError(c, r.updateStatus(ctx, scope)) {
+				return
+			}
+
+			cond := conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneRollingOutCondition))
+			if !assert.NotNil(c, cond, "the status path has to set the condition, not only its own function") {
+				return
+			}
+			assert.Equal(c, want, cond.Status)
+			assert.Equal(c, wantReason, cond.Reason)
+		}, 20*time.Second, 200*time.Millisecond)
+	}
+
+	m0, cfg0 := createControlPlaneMachine(t, fmt.Sprintf("%s-%d", kcp.Name, 0), ns.Name, cluster, kcp, gmt, kcp.Spec.Version)
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(ctx, m0, cfg0))
+	}()
+
+	rollingOutIs(t, metav1.ConditionFalse, cpv1beta2.K0sControlPlaneNotRollingOutReason)
+
+	m1, cfg1 := createControlPlaneMachine(t, fmt.Sprintf("%s-%d", kcp.Name, 1), ns.Name, cluster, kcp, gmt, "v1.29.0")
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(ctx, m1, cfg1))
+	}()
+
+	rollingOutIs(t, metav1.ConditionTrue, cpv1beta2.K0sControlPlaneRollingOutReason)
+}
+
 // fakeRoundTripperControlNodeNotFound returns 404 for controlnode GET requests so that
 // isLatestMachineReady returns false, simulating a machine that has not yet joined.
 type fakeRoundTripperControlNodeNotFound struct{}

@@ -1821,134 +1821,123 @@ func hostedReconcileFixture() (*clusterv1.Cluster, *cpv1beta2.K0smotronControlPl
 	return cluster, kcp, kmc
 }
 
-// machineWithConditions builds a machine carrying the given condition types as true.
-func machineWithConditions(name string, deleting bool, trueConditions ...string) *clusterv1.Machine {
-	m := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
-		Spec:       clusterv1.MachineSpec{Version: "v1.31.0"},
-	}
-	if deleting {
-		m.DeletionTimestamp = &metav1.Time{Time: time.Unix(1, 0)}
-	}
-	for _, t := range trueConditions {
-		m.Status.Conditions = append(m.Status.Conditions, metav1.Condition{Type: t, Status: metav1.ConditionTrue})
-	}
-
-	return m
-}
-
-// scalingScope builds a scope with the given machine counts, all of them active
-// unless deleting, and none of them up to date unless said so.
+// scalingScope builds a scope from machine counts, which is all the conditions
+// under test read. Up to date machines are taken from the active ones.
 func scalingScope(desired int32, active, deleting, upToDate int) *controlplane {
 	scope := &controlplane{
-		kcp:              &cpv1beta2.K0sControlPlane{Spec: cpv1beta2.K0sControlPlaneSpec{Version: "v1.31.0", Replicas: desired}},
+		kcp:              &cpv1beta2.K0sControlPlane{Spec: cpv1beta2.K0sControlPlaneSpec{Replicas: desired}},
 		activeMachines:   collections.New(),
 		deletedMachines:  collections.New(),
 		upToDateMachines: collections.New(),
 	}
 	for i := range active {
-		m := machineWithConditions(fmt.Sprintf("active%d", i), false)
+		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("active%d", i)}}
 		scope.activeMachines.Insert(m)
 		if i < upToDate {
 			scope.upToDateMachines.Insert(m)
 		}
 	}
 	for i := range deleting {
-		scope.deletedMachines.Insert(machineWithConditions(fmt.Sprintf("deleting%d", i), true))
+		scope.deletedMachines.Insert(&clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("deleting%d", i)}})
 	}
 	scope.notUpToDateMachines = scope.activeMachines.Difference(scope.upToDateMachines)
 
 	return scope
 }
 
-func scalingStatus(t *testing.T, scope *controlplane) (up, down *metav1.Condition) {
-	t.Helper()
+// TestScalingConditions covers scaling being reported from the machine total
+// rather than from how many are up to date, and rollout progress carrying the
+// signal the scaling conditions gave up.
+func TestScalingConditions(t *testing.T) {
+	for _, tc := range []struct {
+		name                             string
+		desired                          int32
+		active, deleting, upToDate       int
+		wantUp, wantDown, wantRollingOut metav1.ConditionStatus
+		wantScalingMessage               string
+		wantRollingOutMessage            string
+	}{
+		{
+			// Three wanted, three exist, one already replaced. The default InPlace
+			// strategy creates no machine at all, so nothing is scaling.
+			name:    "a rollout is not a scale up",
+			desired: 3, active: 3, upToDate: 1,
+			wantUp: metav1.ConditionFalse, wantDown: metav1.ConditionFalse,
+			wantRollingOut: metav1.ConditionTrue, wantRollingOutMessage: "2 not up-to-date",
+		},
+		{
+			name:    "a missing machine is a scale up",
+			desired: 3, active: 2, upToDate: 2,
+			wantUp: metav1.ConditionTrue, wantDown: metav1.ConditionFalse,
+			wantRollingOut: metav1.ConditionFalse, wantScalingMessage: "2/3",
+		},
+		{
+			name:    "a lowered replica count is a scale down",
+			desired: 1, active: 3, upToDate: 3,
+			wantUp: metav1.ConditionFalse, wantDown: metav1.ConditionTrue,
+			wantRollingOut: metav1.ConditionFalse, wantScalingMessage: "3/1",
+		},
+		{
+			// The surge machine is up, the outdated one is draining. Reporting the
+			// total keeps ScalingDown true until it is really gone.
+			name:    "a deleting machine still counts",
+			desired: 3, active: 3, deleting: 1, upToDate: 3,
+			wantUp: metav1.ConditionFalse, wantDown: metav1.ConditionTrue,
+			wantRollingOut: metav1.ConditionFalse, wantScalingMessage: "4/3",
+		},
+		{
+			name:    "every machine up to date",
+			desired: 3, active: 3, upToDate: 3,
+			wantUp: metav1.ConditionFalse, wantDown: metav1.ConditionFalse,
+			wantRollingOut: metav1.ConditionFalse,
+		},
+		{
+			name:    "no machines at all",
+			desired: 3,
+			wantUp:  metav1.ConditionTrue, wantDown: metav1.ConditionFalse,
+			wantRollingOut: metav1.ConditionFalse, wantScalingMessage: "0/3",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			scope := scalingScope(tc.desired, tc.active, tc.deleting, tc.upToDate)
+			setScalingConditions(scope)
+			setRollingOutCondition(scope)
 
-	setScalingConditions(scope)
+			up := conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneScalingUpCondition))
+			down := conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneScalingDownCondition))
+			rollingOut := conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneRollingOutCondition))
+			require.NotNil(t, up)
+			require.NotNil(t, down)
+			require.NotNil(t, rollingOut)
 
-	return conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneScalingUpCondition)),
-		conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneScalingDownCondition))
+			require.Equal(t, tc.wantUp, up.Status)
+			require.Equal(t, tc.wantDown, down.Status)
+			require.Equal(t, tc.wantRollingOut, rollingOut.Status)
+
+			// The reason follows the status one to one, so deriving it here keeps it
+			// covered without three more columns.
+			require.Equal(t, wantRollingOutReason(tc.wantRollingOut), rollingOut.Reason)
+
+			if tc.wantScalingMessage != "" {
+				scaling := up
+				if tc.wantDown == metav1.ConditionTrue {
+					scaling = down
+				}
+				require.Contains(t, scaling.Message, tc.wantScalingMessage)
+			}
+			if tc.wantRollingOutMessage != "" {
+				require.Contains(t, rollingOut.Message, tc.wantRollingOutMessage)
+			}
+		})
+	}
 }
 
-// TestSetScalingConditionsCountsMachines covers scaling being reported from the
-// machine total rather than from how many of them are up to date.
-func TestSetScalingConditionsCountsMachines(t *testing.T) {
-	t.Run("a rollout is not a scale up", func(t *testing.T) {
-		// Three machines wanted, three exist, one already replaced. The default
-		// InPlace strategy creates no machine at all, so nothing is scaling.
-		up, down := scalingStatus(t, scalingScope(3, 3, 0, 1))
-
-		require.Equal(t, metav1.ConditionFalse, up.Status, "a rollout must not report as scaling up")
-		require.Equal(t, metav1.ConditionFalse, down.Status)
-	})
-
-	t.Run("a missing machine is a scale up", func(t *testing.T) {
-		up, down := scalingStatus(t, scalingScope(3, 2, 0, 2))
-
-		require.Equal(t, metav1.ConditionTrue, up.Status)
-		require.Contains(t, up.Message, "2/3")
-		require.Equal(t, metav1.ConditionFalse, down.Status)
-	})
-
-	t.Run("a lowered replica count is a scale down", func(t *testing.T) {
-		up, down := scalingStatus(t, scalingScope(1, 3, 0, 3))
-
-		require.Equal(t, metav1.ConditionFalse, up.Status)
-		require.Equal(t, metav1.ConditionTrue, down.Status)
-		require.Contains(t, down.Message, "3/1")
-	})
-
-	t.Run("a deleting machine still counts", func(t *testing.T) {
-		// The surge machine is up, the outdated one is draining. Reporting the
-		// total keeps ScalingDown true until it is really gone.
-		up, down := scalingStatus(t, scalingScope(3, 3, 1, 3))
-
-		require.Equal(t, metav1.ConditionFalse, up.Status)
-		require.Equal(t, metav1.ConditionTrue, down.Status)
-		require.Contains(t, down.Message, "4/3")
-	})
-}
-
-// TestSetRollingOutCondition covers the signal the scaling conditions no longer
-// carry, so rollout progress is still visible somewhere.
-func TestSetRollingOutCondition(t *testing.T) {
-	rollingOut := func(scope *controlplane) *metav1.Condition {
-		setRollingOutCondition(scope)
-
-		return conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneRollingOutCondition))
+func wantRollingOutReason(status metav1.ConditionStatus) string {
+	if status == metav1.ConditionTrue {
+		return cpv1beta2.K0sControlPlaneRollingOutReason
 	}
 
-	t.Run("every machine up to date", func(t *testing.T) {
-		cond := rollingOut(scalingScope(3, 3, 0, 3))
-
-		require.NotNil(t, cond)
-		require.Equal(t, metav1.ConditionFalse, cond.Status)
-		require.Equal(t, cpv1beta2.K0sControlPlaneNotRollingOutReason, cond.Reason)
-	})
-
-	t.Run("a machine left to replace", func(t *testing.T) {
-		cond := rollingOut(scalingScope(3, 3, 0, 1))
-
-		require.NotNil(t, cond)
-		require.Equal(t, metav1.ConditionTrue, cond.Status)
-		require.Equal(t, cpv1beta2.K0sControlPlaneRollingOutReason, cond.Reason)
-		require.Contains(t, cond.Message, "2 not up-to-date")
-	})
-
-	t.Run("no machines at all", func(t *testing.T) {
-		cond := rollingOut(scalingScope(3, 0, 0, 0))
-
-		require.NotNil(t, cond)
-		require.Equal(t, metav1.ConditionFalse, cond.Status)
-	})
-
-	t.Run("the status path sets it", func(t *testing.T) {
-		scope := scalingScope(3, 3, 0, 1)
-		require.NoError(t, computeReplicas(scope))
-
-		require.NotNil(t, conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneRollingOutCondition)),
-			"the condition has to come from the status path, not only from its own function")
-	})
+	return cpv1beta2.K0sControlPlaneNotRollingOutReason
 }
 
 // failPodList is what makes computeStatus fail hard while the reconcile body succeeds.
