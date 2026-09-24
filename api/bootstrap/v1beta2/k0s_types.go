@@ -488,13 +488,13 @@ func (c *K0sWorkerConfig) GetJoinTokenPath() string {
 	return filepath.Join(c.Spec.WorkingDir, "k0s.token")
 }
 
-// appliesOwner reports whether the selected provisioner writes file ownership.
 // appliesAppend reports whether the format can add to a file another entry in the
 // same list already writes. Ignition cannot, it emits one entry per file.
 func (p ProvisionerSpec) appliesAppend() bool {
 	return p.Type != provisioner.IgnitionProvisioningFormat
 }
 
+// appliesOwner reports whether the selected provisioner writes file ownership.
 func (p ProvisionerSpec) appliesOwner() bool {
 	if p.Platform == PlatformWindows {
 		return false
@@ -616,11 +616,14 @@ func ValidateFiles(files []File, spec ProvisionerSpec, pathPrefix *field.Path) f
 				)
 			}
 		}
-		// An append adds to what an earlier entry wrote, so it neither conflicts nor
-		// claims the path, unless the format cannot append at all.
-		claimsPath := !file.Append || !spec.appliesAppend()
+		// Only an append the format can actually carry out adds to what an earlier
+		// entry wrote. Anything else takes the path over, so it both conflicts with
+		// an earlier claim and makes one of its own.
+		appendsToPath := file.Append && spec.appliesAppend()
 
-		if _, conflict := knownPaths[file.Path]; conflict && claimsPath {
+		if _, conflict := knownPaths[file.Path]; conflict && !appendsToPath {
+			// Reached with Append set only when the format cannot append, since
+			// otherwise this branch is skipped.
 			msg := pathConflictMsg
 			if file.Append {
 				msg = appendUnsupportedMsg
@@ -636,7 +639,7 @@ func ValidateFiles(files []File, spec ProvisionerSpec, pathPrefix *field.Path) f
 			)
 		}
 
-		if claimsPath {
+		if !appendsToPath {
 			knownPaths[file.Path] = struct{}{}
 		}
 	}
