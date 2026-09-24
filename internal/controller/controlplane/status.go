@@ -58,7 +58,25 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 
 	controlplane.kcp.Status.Selector = collections.ControlPlaneSelectorForCluster(controlplane.cluster.Name).String()
 
-	return computeReplicas(controlplane)
+	var allReplicas []*clusterv1.Machine
+	allReplicas = append(allReplicas, controlplane.activeMachines.UnsortedList()...)
+	allReplicas = append(allReplicas, controlplane.deletedMachines.UnsortedList()...)
+
+	setReplicas(controlplane.kcp, allReplicas)
+	setVersions(controlplane.kcp, allReplicas)
+
+	// If the controlplane spec does NOT have workers enabled
+	// we need to mark the controlplane as externally managed
+	// Otherwise CAPI assumes it'll find node objects for the machines
+	// TODO Check with upstream CAPI folks whether this is the correct approach in this case when
+	// we still run the controlplane on Machines
+	if !controlplane.kcp.WorkerEnabled() {
+		controlplane.kcp.Status.ExternalManagedControlPlane = new(true)
+	}
+
+	setScalingConditions(controlplane)
+
+	return nil
 }
 
 func computeReplicas(controlplane *controlplane) error {
@@ -112,9 +130,87 @@ func computeReplicas(controlplane *controlplane) error {
 		controlplane.kcp.Status.ExternalManagedControlPlane = new(true)
 	}
 
-	setScalingConditions(controlplane)
-
 	return nil
+}
+
+func setVersions(kcp *cpv1beta2.K0sControlPlane, machines []*clusterv1.Machine) {
+	kcp.Status.Versions = versionsFromMachines(machines)
+
+	if len(kcp.Status.Versions) > 0 {
+		// Per contract, the first element in the Versions slice represents the lowest version.
+		kcp.Status.Version = kcp.Status.Versions[0].Version
+	}
+}
+
+func versionsFromMachines(machines []*clusterv1.Machine) []clusterv1.StatusVersion {
+	machinesVersionCount := map[string]int32{}
+	for _, machine := range machines {
+		if machine.Spec.Version != "" {
+			machinesVersionCount[machine.Spec.Version]++
+		}
+	}
+
+	orderedStatusVersions := make([]clusterv1.StatusVersion, 0, len(machinesVersionCount))
+	for version, count := range machinesVersionCount {
+		orderedStatusVersions = insertOrdered(orderedStatusVersions, clusterv1.StatusVersion{
+			Version:  version,
+			Replicas: count,
+		})
+	}
+
+	return orderedStatusVersions
+}
+
+func insertOrdered(versions []clusterv1.StatusVersion, statusVersion clusterv1.StatusVersion) []clusterv1.StatusVersion {
+	if len(versions) == 0 {
+		versions = append(versions, statusVersion)
+		return versions
+	}
+
+	middle := len(versions) / 2
+	middleVersionStr := versions[middle].Version
+
+	middleVersion, _ := version.NewVersion(middleVersionStr)
+	v, _ := version.NewVersion(statusVersion.Version)
+
+	if middle == 0 {
+		if middleVersion.GreaterThanOrEqual(v) {
+			return []clusterv1.StatusVersion{statusVersion, versions[0]}
+		} else {
+			return []clusterv1.StatusVersion{versions[0], statusVersion}
+		}
+
+	}
+
+	leftOrder := versions[:middle]
+	rightOrder := versions[middle:]
+	if middleVersion.GreaterThanOrEqual(v) {
+		leftOrder = insertOrdered(leftOrder, statusVersion)
+	} else {
+		rightOrder = insertOrdered(rightOrder, statusVersion)
+	}
+
+	return append(leftOrder, rightOrder...)
+}
+
+func setReplicas(kcp *cpv1beta2.K0sControlPlane, machines []*clusterv1.Machine) {
+	var readyReplicas, availableReplicas, upToDateReplicas int32
+	for _, machine := range machines {
+		if conditions.IsTrue(machine, clusterv1.MachineReadyCondition) {
+			readyReplicas++
+		}
+		if conditions.IsTrue(machine, clusterv1.MachineAvailableCondition) {
+			availableReplicas++
+		}
+		if conditions.IsTrue(machine, clusterv1.MachineUpToDateCondition) {
+			upToDateReplicas++
+		}
+	}
+
+	kcp.Status.Replicas = new(int32(len(machines)))
+	kcp.Status.ReadyReplicas = new(int32(readyReplicas))
+	kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
+	kcp.Status.AvailableReplicas = new(int32(availableReplicas))
 }
 
 func setScalingConditions(controlplane *controlplane) {

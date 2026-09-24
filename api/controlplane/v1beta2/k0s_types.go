@@ -167,10 +167,23 @@ type K0sControlPlaneStatus struct {
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty"`
 
+	// versions is the aggregated Kubernetes versions in this KubeadmControlPlane.
+	// +optional
+	// +listType=map
+	// +listMapKey=version
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=100
+	Versions []clusterv1.StatusVersion `json:"versions,omitempty"`
+
 	// version represents the minimum Kubernetes version for the control plane machines
 	// in the cluster.
+	//
+	// Deprecated: This field is deprecated and is going to be removed in a future API version. Please use status.versions instead.
+	//
 	// +optional
-	Version string `json:"version"`
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Version string `json:"version,omitempty"`
 
 	// selector is the label selector in string format to avoid introspection
 	// by clients, and is used to provide the CRD-based integration for the
