@@ -592,6 +592,7 @@ func TestReconcileWorkerConfigVersionFallsBackToMachineVersion(t *testing.T) {
 
 	workloadClient, _ := fakeremote.NewClusterClient(ctx, "", testEnv, types.NamespacedName{})
 	r := &Controller{
+		TokenTTL:              DefaultTokenTTL,
 		Client:                testEnv,
 		workloadClusterClient: workloadClient,
 		SecretCachingClient:   testEnv,
@@ -609,7 +610,7 @@ func TestReconcileWorkerConfigVersionFallsBackToMachineVersion(t *testing.T) {
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{}, result)
+		requireRequeueWithinJitter(c, r.TokenTTL, result)
 
 		bootstrapSecret := &corev1.Secret{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKey{Namespace: k0sWorkerConfig.Namespace, Name: k0sWorkerConfig.Name}, bootstrapSecret))
@@ -690,6 +691,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 
 	workloadClient, _ := fakeremote.NewClusterClient(ctx, "", testEnv, types.NamespacedName{})
 	r := &Controller{
+		TokenTTL:              DefaultTokenTTL,
 		Client:                testEnv,
 		workloadClusterClient: workloadClient,
 		SecretCachingClient:   testEnv,
@@ -707,7 +709,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{}, result)
+		requireRequeueWithinJitter(c, r.TokenTTL, result)
 
 		bootstrapSecret := &corev1.Secret{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKey{Namespace: k0sWorkerConfig.Namespace, Name: k0sWorkerConfig.Name}, bootstrapSecret))
@@ -843,4 +845,11 @@ func requirePausedReported(t *testing.T, obj pausedObject) {
 	got := conditions.Get(obj, clusterv1.PausedCondition)
 	require.NotNil(t, got, "a paused object has to say so, not only stop reconciling")
 	require.Equal(t, metav1.ConditionTrue, got.Status)
+}
+
+// requireRequeueWithinJitter asserts that res requeues after the refresh interval plus up to the allowed jitter.
+func requireRequeueWithinJitter(t require.TestingT, ttl time.Duration, res ctrl.Result) {
+	base := ttl / 3
+	require.GreaterOrEqual(t, res.RequeueAfter, base)
+	require.LessOrEqual(t, res.RequeueAfter, base+time.Duration(float64(base)*tokenRefreshJitterFactor))
 }
