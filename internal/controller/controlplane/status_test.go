@@ -2090,3 +2090,142 @@ func TestUpdateStatusReportsMachinesReadyWhenReplicasFail(t *testing.T) {
 	require.Nil(t, conditions.Get(kcp, cpv1beta2.K0sControlPlaneScalingUpCondition),
 		"the scaling conditions are what the failure costs, which is what the ordering avoids")
 }
+
+// upToDateMachine builds a machine of the given age reporting the given UpToDate state, or
+// reporting nothing about it when the status is empty. The age is what the grace period reads.
+func upToDateMachine(name string, age time.Duration, status metav1.ConditionStatus, reason, message string) *clusterv1.Machine {
+	m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+		Name:              name,
+		Namespace:         "default",
+		CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
+	}}
+	if status != "" {
+		conditions.Set(m, metav1.Condition{
+			Type:    clusterv1.MachineUpToDateCondition,
+			Status:  status,
+			Reason:  reason,
+			Message: message,
+		})
+	}
+
+	return m
+}
+
+func TestSetMachinesUpToDateCondition(t *testing.T) {
+	const settled = time.Hour
+
+	current := func(name string) *clusterv1.Machine {
+		return upToDateMachine(name, settled, metav1.ConditionTrue, clusterv1.MachineUpToDateReason, "")
+	}
+	outdated := func(name string) *clusterv1.Machine {
+		return upToDateMachine(name, settled, metav1.ConditionFalse, clusterv1.MachineNotUpToDateReason, "Version v1.30.0, v1.31.0 required")
+	}
+
+	tests := []struct {
+		name        string
+		active      []*clusterv1.Machine
+		deleted     []*clusterv1.Machine
+		wantStatus  metav1.ConditionStatus
+		wantReason  string
+		wantMessage string
+	}{
+		{
+			name:       "the control plane owns no machine",
+			wantStatus: metav1.ConditionTrue,
+			wantReason: cpv1beta2.K0sControlPlaneMachinesUpToDateNoReplicasReason,
+		},
+		{
+			name:       "every machine is up to date",
+			active:     []*clusterv1.Machine{current("cp-0"), current("cp-1")},
+			wantStatus: metav1.ConditionTrue,
+			wantReason: cpv1beta2.K0sControlPlaneMachinesUpToDateReason,
+		},
+		{
+			name:        "one machine is outdated",
+			active:      []*clusterv1.Machine{outdated("cp-0"), current("cp-1")},
+			wantStatus:  metav1.ConditionFalse,
+			wantReason:  cpv1beta2.K0sControlPlaneMachinesNotUpToDateReason,
+			wantMessage: "* Machine cp-0: Version v1.30.0, v1.31.0 required",
+		},
+		{
+			name:        "a settled machine says nothing about being up to date",
+			active:      []*clusterv1.Machine{upToDateMachine("cp-0", settled, "", "", ""), current("cp-1")},
+			wantStatus:  metav1.ConditionUnknown,
+			wantReason:  cpv1beta2.K0sControlPlaneMachinesUpToDateUnknownReason,
+			wantMessage: "* Machine cp-0: Condition UpToDate not yet reported",
+		},
+		{
+			// Within the grace period the silence is not reported at all, so a scale up does
+			// not flip this condition to Unknown on its way to being answered.
+			name:       "a machine too new to have answered yet is the only machine",
+			active:     []*clusterv1.Machine{upToDateMachine("cp-0", time.Second, "", "", "")},
+			wantStatus: metav1.ConditionTrue,
+			wantReason: cpv1beta2.K0sControlPlaneMachinesUpToDateNoReplicasReason,
+		},
+		{
+			// The grace period drops the new machine from the aggregate without hiding what
+			// the machines that have answered are saying.
+			name:        "a machine too new to have answered yet sits alongside an outdated one",
+			active:      []*clusterv1.Machine{upToDateMachine("cp-0", time.Second, "", "", ""), outdated("cp-1")},
+			wantStatus:  metav1.ConditionFalse,
+			wantReason:  cpv1beta2.K0sControlPlaneMachinesNotUpToDateReason,
+			wantMessage: "* Machine cp-1: Version v1.30.0, v1.31.0 required",
+		},
+		{
+			name:        "the outdated machine is already deleting",
+			active:      []*clusterv1.Machine{current("cp-1")},
+			deleted:     []*clusterv1.Machine{outdated("cp-0")},
+			wantStatus:  metav1.ConditionFalse,
+			wantReason:  cpv1beta2.K0sControlPlaneMachinesNotUpToDateReason,
+			wantMessage: "* Machine cp-0: Version v1.30.0, v1.31.0 required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+
+			setMachinesUpToDateCondition(t.Context(), &controlplane{
+				kcp:             kcp,
+				activeMachines:  collections.FromMachines(tt.active...),
+				deletedMachines: collections.FromMachines(tt.deleted...),
+			})
+
+			got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneMachinesUpToDateCondition)
+			require.NotNil(t, got, "the condition has to be reported either way")
+			require.Equal(t, tt.wantStatus, got.Status)
+			require.Equal(t, tt.wantReason, got.Reason)
+			require.Equal(t, tt.wantMessage, got.Message)
+		})
+	}
+}
+
+// TestUpdateStatusReportsMachinesUpToDateWhenReplicasFail covers where the call sits. The replica
+// computation gives up on an unparseable machine version, taking the scaling conditions with it.
+func TestUpdateStatusReportsMachinesUpToDateWhenReplicasFail(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+
+	broken := upToDateMachine("cp-0", time.Hour, metav1.ConditionFalse, clusterv1.MachineNotUpToDateReason, "Version v1.30.0, v1.31.0 required")
+	broken.Spec.Version = "not-a-version"
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
+
+	err := c.updateStatus(t.Context(), &controlplane{
+		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		kcp:              kcp,
+		activeMachines:   collections.FromMachines(broken),
+		deletedMachines:  collections.Machines{},
+		upToDateMachines: collections.Machines{},
+	})
+	require.Error(t, err, "the replica computation has to fail for this test to say anything")
+
+	got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneMachinesUpToDateCondition)
+	require.NotNil(t, got, "the machines stay reported through a failure further down")
+	require.Equal(t, metav1.ConditionFalse, got.Status)
+
+	require.Nil(t, conditions.Get(kcp, cpv1beta2.K0sControlPlaneScalingUpCondition),
+		"the scaling conditions are what the failure costs, which is what the ordering avoids")
+}
