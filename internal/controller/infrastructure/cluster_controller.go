@@ -22,10 +22,15 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	infrastructure "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
@@ -35,7 +40,8 @@ import (
 // which represents a remote cluster that is being managed by k0smotron.
 type ClusterController struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme           *runtime.Scheme
+	WatchFilterValue string
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=remoteclusters,verbs=get;list;watch;create;update;patch;delete
@@ -74,9 +80,17 @@ func (r *ClusterController) Reconcile(ctx context.Context, req ctrl.Request) (re
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ClusterController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
+func (r *ClusterController) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opts controller.Options) error {
+	predicateLog := ctrl.LoggerFrom(ctx).WithValues("controller", "remotecluster")
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&infrastructure.RemoteCluster{}).
+		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), predicateLog, r.WatchFilterValue)).
+		Watches(
+			&clusterv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrastructure.GroupVersion.WithKind("RemoteCluster"), mgr.GetClient(), &infrastructure.RemoteCluster{})),
+			builder.WithPredicates(
+				predicates.ClusterPausedTransitions(mgr.GetScheme(), predicateLog),
+			)).
 		Complete(r)
 }
