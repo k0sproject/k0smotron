@@ -40,10 +40,13 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/finalizers"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -64,6 +67,7 @@ type RemoteMachineController struct {
 	Scheme              *runtime.Scheme
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
+	WatchFilterValue    string
 }
 
 // RemoteMachineMode defines the mode of the RemoteMachine, which can be
@@ -523,9 +527,29 @@ func updateStatus(ctx context.Context, rm *infrastructure.RemoteMachine, reconci
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *RemoteMachineController) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
+func (r *RemoteMachineController) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opts controller.Options) error {
+	predicateLog := ctrl.LoggerFrom(ctx).WithValues("controller", "RemoteMachine")
+
+	clusterToDockerMachines, err := capiutil.ClusterToTypedObjectsMapper(mgr.GetClient(), &infrastructure.RemoteClusterList{}, mgr.GetScheme())
+	if err != nil {
+		return err
+	}
+
+	// Note: We don't add watches for the RemoteCluster as its implementation is no-op and doesn't require reconciliation.
+
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&infrastructure.RemoteMachine{}).
+		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), predicateLog, r.WatchFilterValue)).
+		Watches(
+			&clusterv1.Machine{},
+			handler.EnqueueRequestsFromMapFunc(capiutil.MachineToInfrastructureMapFunc(infrastructure.GroupVersion.WithKind("RemoteMachine"))),
+		).
+		Watches(
+			&clusterv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(clusterToDockerMachines),
+			builder.WithPredicates(
+				predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), predicateLog),
+			)).
 		Complete(r)
 }
