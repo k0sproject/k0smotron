@@ -229,3 +229,91 @@ func TestReconcileUnhealthyMachinesToleratesTheRemediatedMachineBeingGone(t *tes
 	require.Contains(t, kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation,
 		"the remediation still has to have happened")
 }
+
+// TestReconcileUnhealthyMachinesClearsAStaleMarker covers the wedge where the marker
+// outlives its remediation, since the only place that removes it runs on scale up.
+func TestReconcileUnhealthyMachinesClearsAStaleMarker(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+
+	newScope := func(converged bool) (*controlplane, *clusterv1.Machine) {
+		unhealthy := remediationMachine("cp-0", false, false)
+		healthy := remediationMachine("cp-1", true, false)
+		active := collections.FromMachines(unhealthy, healthy)
+
+		kcp := &cpv1beta2.K0sControlPlane{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "kcp",
+				Namespace:   "default",
+				Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: "true"},
+			},
+			Spec: cpv1beta2.K0sControlPlaneSpec{Replicas: 2},
+		}
+		kcp.Status.Initialization.ControlPlaneInitialized = new(true)
+
+		scope := &controlplane{
+			cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+			kcp:             kcp,
+			activeMachines:  active,
+			deletedMachines: collections.Machines{},
+		}
+		if converged {
+			scope.upToDateMachines = active
+			scope.notUpToDateMachines = collections.Machines{}
+		} else {
+			// A replacement is still owed, so the marker is doing its job.
+			scope.upToDateMachines = collections.FromMachines(healthy)
+			scope.notUpToDateMachines = collections.FromMachines(unhealthy)
+		}
+
+		return scope, unhealthy
+	}
+
+	controller := func(scope *controlplane, machines ...*clusterv1.Machine) *K0sController {
+		objs := []client.Object{scope.kcp}
+		for _, m := range machines {
+			objs = append(objs, m)
+		}
+
+		return &K0sController{
+			Client: fake.NewClientBuilder().WithScheme(scheme).
+				WithObjects(objs...).WithStatusSubresource(objs...).Build(),
+		}
+	}
+
+	// Deleting the machine is the only thing remediation does that the fixture does not,
+	// so that is what says whether it ran or was skipped.
+	remediated := func(t *testing.T, c *K0sController, name string) bool {
+		t.Helper()
+
+		err := c.Get(context.Background(), client.ObjectKey{Namespace: "default", Name: name}, &clusterv1.Machine{})
+		if err == nil {
+			return false
+		}
+		require.True(t, apierrors.IsNotFound(err))
+
+		return true
+	}
+
+	t.Run("a converged control plane owes no replacement, so the marker goes", func(t *testing.T) {
+		scope, unhealthy := newScope(true)
+		c := controller(scope, unhealthy)
+
+		require.NoError(t, c.reconcileUnhealthyMachines(context.Background(), scope))
+
+		require.True(t, remediated(t, c, unhealthy.Name),
+			"a marker left behind by a finished remediation must not block the next one")
+	})
+
+	t.Run("a replacement still owed keeps the marker and skips", func(t *testing.T) {
+		scope, unhealthy := newScope(false)
+		c := controller(scope, unhealthy)
+
+		require.NoError(t, c.reconcileUnhealthyMachines(context.Background(), scope))
+
+		require.False(t, remediated(t, c, unhealthy.Name),
+			"remediation must not start while the last one is still owed a replacement")
+		require.Contains(t, scope.kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+	})
+}

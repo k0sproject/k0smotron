@@ -49,8 +49,15 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 		return err
 	}
 	if _, ok := scope.kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation]; ok {
-		log.Info("Another remediation is already in progress. Skipping remediation.")
-		return nil
+		// The marker is removed only where the replacement is created, so losing that write
+		// leaves it set for good. A control plane at its desired state owes no replacement.
+		if !isDesiredStateReached(scope) {
+			log.Info("Another remediation is already in progress. Skipping remediation.")
+			return nil
+		}
+
+		log.Info("Clearing a remediation marker that outlived its remediation")
+		delete(scope.kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
 	}
 
 	// retrieve machines marked as unheathy by MHC controller
