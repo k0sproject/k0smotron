@@ -9,12 +9,6 @@ spec:
     matchLabels:
       cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
       pool: worker-pool-1
-  rollout:
-    strategy:
-      rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 1 #IMPORTANT: This must be 1 to allow in-place upgrades. We can't set it to 0 here. 
-      type: RollingUpdate
   template:
     metadata:
       labels:
