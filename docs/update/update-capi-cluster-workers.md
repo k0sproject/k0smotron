@@ -19,9 +19,6 @@ This requires the same prerequisites as for control plane nodes. See [Cluster AP
 
 Once the extension is active, bump `spec.template.spec.version` on the `MachineDeployment` (and the referenced `K0sWorkerConfigTemplate`, if you keep the two in sync) to the target k0s version. Cluster API calls into the extension for each affected `Machine`, and the extension creates and monitors the autopilot `Plan` on your behalf, no manual `Plan` needed.
 
-!!! warning
-    Set `spec.rollout.strategy.rollingUpdate.maxUnavailable` to `1` on the `MachineDeployment` (it cannot be `0`) for in-place updates to work correctly.
-
 ```yaml
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
@@ -34,12 +31,6 @@ spec:
     matchLabels:
       cluster.x-k8s.io/cluster-name: docker-test
       pool: worker-pool-1
-  rollout:
-    strategy:
-      rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 1 # required for in-place updates, cannot be 0
-      type: RollingUpdate
   template:
     metadata:
       labels:
