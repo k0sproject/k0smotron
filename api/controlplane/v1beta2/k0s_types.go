@@ -137,19 +137,33 @@ type K0sControlPlaneMachineTemplate struct {
 	// +optional
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 
+	// Deprecated: use spec.infrastructureRef instead. Setting this still works and the admission
+	// webhook copies it across, but it will be removed in a future API version.
+	// +optional
+	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef,omitempty,omitzero"`
+
 	// spec defines the spec for Machines in a K0sControlPlane object.
-	// Required, or a manifest carrying the old flat infrastructureRef is accepted
-	// with the field silently pruned instead of being rejected.
-	// +required
+	// +optional
 	Spec K0sControlPlaneMachineTemplateSpec `json:"spec,omitempty,omitzero"`
+}
+
+// InfraRef returns the infrastructure template reference, preferring the nested field and falling
+// back to the deprecated flat one, which is all an object stored before the move has.
+func (t *K0sControlPlaneMachineTemplate) InfraRef() corev1.ObjectReference {
+	if t.Spec.InfrastructureRef != (corev1.ObjectReference{}) {
+		return t.Spec.InfrastructureRef
+	}
+
+	return t.InfrastructureRef
 }
 
 // K0sControlPlaneMachineTemplateSpec defines the spec for Machines
 // in a K0sControlPlane object.
 type K0sControlPlaneMachineTemplateSpec struct {
-	// infrastructureRef is a required reference to a custom resource
-	// offered by an infrastructure provider.
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
+	// infrastructureRef is a reference to a custom resource offered by an infrastructure provider.
+	// Optional in the schema only, since the deprecated field may carry it and admission requires one.
+	// +optional
+	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef,omitempty,omitzero"`
 
 	// readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
 	//

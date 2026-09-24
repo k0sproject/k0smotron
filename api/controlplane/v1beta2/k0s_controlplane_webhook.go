@@ -25,6 +25,7 @@ import (
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/k0sproject/version"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -51,7 +52,34 @@ func (d *K0sControlPlaneDefaulter) Default(_ context.Context, kcp *K0sControlPla
 		return fmt.Errorf("expected a K0sControlPlane object but got nil")
 	}
 
+	migrateDeprecatedInfrastructureRef(kcp)
+
 	return nil
+}
+
+// migrateDeprecatedInfrastructureRef copies on every write rather than only into an empty field,
+// since filling it once wedges the rotation a legacy manifest makes through the old field.
+func migrateDeprecatedInfrastructureRef(kcp *K0sControlPlane) {
+	mt := kcp.Spec.MachineTemplate
+	if mt == nil || mt.InfrastructureRef == (corev1.ObjectReference{}) {
+		return
+	}
+
+	// Copied rather than moved, since deleting a field the user wrote makes their next apply put
+	// it back and the resource diff forever.
+	mt.Spec.InfrastructureRef = mt.InfrastructureRef
+}
+
+// validateInfrastructureRef reads the deprecated field itself rather than an empty nested one,
+// because defaulting runs first and would otherwise have swallowed the warning.
+func (v *K0sControlPlaneValidator) validateInfrastructureRef(kcp *K0sControlPlane) admission.Warnings {
+	if kcp.Spec.MachineTemplate == nil || kcp.Spec.MachineTemplate.InfrastructureRef == (corev1.ObjectReference{}) {
+		return nil
+	}
+
+	return admission.Warnings{
+		"spec.machineTemplate.infrastructureRef is deprecated, use spec.machineTemplate.spec.infrastructureRef instead.",
+	}
 }
 
 // validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
@@ -70,12 +98,16 @@ func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, kcp *K0sCon
 	}
 
 	warnings := v.validateVersionSuffix(kcp.Spec.Version)
+	warnings = append(warnings, v.validateInfrastructureRef(kcp)...)
+
 	return warnings, validateK0sControlPlane(kcp)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
 func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, newKcp *K0sControlPlane) (admission.Warnings, error) {
 	warnings := v.validateVersionSuffix(newKcp.Spec.Version)
+	warnings = append(warnings, v.validateInfrastructureRef(newKcp)...)
+
 	if oldKcp.Spec.Version != newKcp.Spec.Version {
 		oldV, err := version.NewVersion(oldKcp.Spec.Version)
 		if err != nil {
@@ -101,6 +133,10 @@ func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ *K0sContr
 }
 
 func validateK0sControlPlane(kcp *K0sControlPlane) error {
+	if err := denyMissingInfrastructureRef(kcp); err != nil {
+		return err
+	}
+
 	if err := denyIncompatibleK0sVersions(kcp); err != nil {
 		return err
 	}
@@ -122,6 +158,21 @@ func validateK0sControlPlane(kcp *K0sControlPlane) error {
 		field.NewPath("spec", "k0sConfigSpec"),
 	); len(errs) > 0 {
 		return errs.ToAggregate()
+	}
+
+	return nil
+}
+
+// denyMissingInfrastructureRef takes over what the schema used to enforce, since neither field is
+// required on its own any more. A disagreeing pair is not refused, defaulting has resolved it.
+func denyMissingInfrastructureRef(kcp *K0sControlPlane) error {
+	mt := kcp.Spec.MachineTemplate
+	if mt == nil {
+		return nil
+	}
+
+	if mt.InfrastructureRef == (corev1.ObjectReference{}) && mt.Spec.InfrastructureRef == (corev1.ObjectReference{}) {
+		return fmt.Errorf("spec.machineTemplate.spec.infrastructureRef is required")
 	}
 
 	return nil
