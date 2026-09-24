@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -73,9 +72,11 @@ func butaneRejections(rep report.Report) string {
 func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte, error) {
 	files := []map[string]any{}
 	for _, f := range input.Files {
-		mi, err := strconv.ParseInt(f.Permissions, 8, 32)
+		// Permissions is optional and nothing defaults it, so parse through the
+		// helper that falls back rather than failing the whole render.
+		mi, err := f.PermissionsAsInt()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse permissions of file %s: %w", f.Path, err)
 		}
 
 		// Ignition has no notion of a content encoding, so decode here rather
