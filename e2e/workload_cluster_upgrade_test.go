@@ -401,9 +401,33 @@ func hasInPlaceUpdateAnnotations(annotations map[string]string) bool {
 	return ok
 }
 
+// describeMachineStates names the machines the count was taken over and says which are on their way
+// out, since a surge and a straggler read the same from a total alone.
+func describeMachineStates(machines []clusterv1.Machine) string {
+	lines := make([]string, 0, len(machines))
+	for _, m := range machines {
+		state := "active"
+		if !m.DeletionTimestamp.IsZero() {
+			// Clamped, since the timestamp lands on a whole second from a clock this process does
+			// not share and a machine deleted a moment ago would otherwise read as a negative age.
+			since := max(time.Since(m.DeletionTimestamp.Time).Truncate(time.Second), 0)
+			state = fmt.Sprintf("deleting since %s", since)
+		}
+		lines = append(lines, fmt.Sprintf("  %-45s %s", m.Name, state))
+	}
+
+	return strings.Join(lines, "\n")
+}
+
 // checkRecreateDeleteFirstMachineCount makes sure the RecreateDeleteFirst strategy never exceeds the
 // desired number of control plane machines. It returns when the given context is cancelled, which
 // happens once the upgrade is done.
+//
+// Deleting machines are counted on purpose, matching what the controller caps itself on in
+// isNeededScaleUp, so a machine on its way out still occupies one of the desired slots.
+//
+// That cap is the desired count only at three replicas or more, and calculateMaxSurge allows one
+// spare below that, so lowering this spec's control plane count would make this fail on nothing.
 func checkRecreateDeleteFirstMachineCount(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
 	desiredReplicas := int(input.ControlPlane.Spec.Replicas)
 
@@ -415,14 +439,16 @@ func checkRecreateDeleteFirstMachineCount(ctx context.Context, input util.Upgrad
 		); err != nil {
 			return false, err
 		}
-		count := 0
+		controlPlaneMachines := []clusterv1.Machine{}
 		for _, m := range machineList.Items {
 			if m.Labels[clusterv1.MachineControlPlaneLabel] == "true" {
-				count++
+				controlPlaneMachines = append(controlPlaneMachines, m)
 			}
 		}
-		if count > desiredReplicas {
-			return false, fmt.Errorf("RecreateDeleteFirst upgrade exceeded desired control plane machine count: got %d, expected max %d", count, desiredReplicas)
+
+		if len(controlPlaneMachines) > desiredReplicas {
+			return false, fmt.Errorf("RecreateDeleteFirst upgrade exceeded desired control plane machine count, got %d expected max %d\n%s",
+				len(controlPlaneMachines), desiredReplicas, describeMachineStates(controlPlaneMachines))
 		}
 		return false, nil
 	})
