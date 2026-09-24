@@ -212,6 +212,9 @@ type K0sWorkerConfigStatus struct {
 
 	// Conditions defines current service state of the K0sWorkerConfig.
 	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
@@ -248,6 +251,9 @@ type K0sControllerConfigStatus struct {
 
 	// Conditions defines current service state of the K0sControllerConfig.
 	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 

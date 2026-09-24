@@ -64,6 +64,9 @@ type JoinTokenRequestStatus struct {
 	TokenID string `json:"tokenID,omitempty"`
 	// Conditions represents the observations of the k0smotron cluster's state.
 	// Known condition types are Available, Deleting.
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
 	// +optional

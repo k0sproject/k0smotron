@@ -199,7 +199,11 @@ spec:
                   - status
                   - type
                   type: object
+                maxItems: 32
                 type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
               deprecated:
                 description: deprecated groups all the status fields that are deprecated
                   and will be removed when all the nested field are removed.

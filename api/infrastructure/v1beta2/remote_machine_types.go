@@ -133,6 +133,9 @@ type RemoteMachineStatus struct {
 	Addresses []clusterv1.MachineAddress `json:"addresses,omitempty"`
 	// conditions contains the conditions of the RemoteMachine, which represent the current state of the machine.
 	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
 	// +optional

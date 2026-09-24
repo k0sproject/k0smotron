@@ -118,5 +118,8 @@ type K0smotronControlPlaneStatus struct {
 
 	// Conditions defines current service state of the K0smotronControlPlane.
 	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
