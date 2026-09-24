@@ -191,7 +191,8 @@ func (ipuv *InPlaceVersionUpdateHandler) DoUpdateMachine(ctx context.Context, re
 	// Proceed with the removal of the plan and creation of a new one if any of the following conditions is met:
 	// - The current machine is not in the list of target nodes of the completed plan
 	// - The target version of the completed plan does not match the desired version of the current machine
-	if !slices.Contains(currentPlanTargetNodes, desiredMachine.Name) || targetVersion != desiredMachine.Spec.Version {
+	// the plan carries the normalized version
+	if !slices.Contains(currentPlanTargetNodes, desiredMachine.Name) || targetVersion != util.NormalizeK0sVersion(desiredMachine.Spec.Version) {
 		err := autopilot.DeletePlan(ctx, clientset)
 		if err != nil {
 			log.Error(err, "Failed to delete old autopilot plan")
