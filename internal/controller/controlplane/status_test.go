@@ -1821,6 +1821,94 @@ func hostedReconcileFixture() (*clusterv1.Cluster, *cpv1beta2.K0smotronControlPl
 	return cluster, kcp, kmc
 }
 
+// machineWithConditions builds a machine carrying the given condition types as true.
+func machineWithConditions(name string, deleting bool, trueConditions ...string) *clusterv1.Machine {
+	m := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec:       clusterv1.MachineSpec{Version: "v1.31.0"},
+	}
+	if deleting {
+		m.DeletionTimestamp = &metav1.Time{Time: time.Unix(1, 0)}
+	}
+	for _, t := range trueConditions {
+		m.Status.Conditions = append(m.Status.Conditions, metav1.Condition{Type: t, Status: metav1.ConditionTrue})
+	}
+
+	return m
+}
+
+// scalingScope builds a scope with the given machine counts, all of them active
+// unless deleting, and none of them up to date unless said so.
+func scalingScope(desired int32, active, deleting, upToDate int) *controlplane {
+	scope := &controlplane{
+		kcp:              &cpv1beta2.K0sControlPlane{Spec: cpv1beta2.K0sControlPlaneSpec{Version: "v1.31.0", Replicas: desired}},
+		activeMachines:   collections.New(),
+		deletedMachines:  collections.New(),
+		upToDateMachines: collections.New(),
+	}
+	for i := 0; i < active; i++ {
+		m := machineWithConditions(fmt.Sprintf("active%d", i), false)
+		scope.activeMachines.Insert(m)
+		if i < upToDate {
+			scope.upToDateMachines.Insert(m)
+		}
+	}
+	for i := 0; i < deleting; i++ {
+		scope.deletedMachines.Insert(machineWithConditions(fmt.Sprintf("deleting%d", i), true))
+	}
+	scope.notUpToDateMachines = scope.activeMachines.Difference(scope.upToDateMachines)
+
+	return scope
+}
+
+func scalingStatus(t *testing.T, scope *controlplane) (up, down *metav1.Condition) {
+	t.Helper()
+
+	setScalingConditions(scope)
+
+	return conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneScalingUpCondition)),
+		conditions.Get(scope.kcp, string(cpv1beta2.K0sControlPlaneScalingDownCondition))
+}
+
+// TestSetScalingConditionsCountsMachines covers scaling being reported from the
+// machine total rather than from how many of them are up to date.
+func TestSetScalingConditionsCountsMachines(t *testing.T) {
+	t.Run("a rollout is not a scale up", func(t *testing.T) {
+		// Three machines wanted, three exist, one already replaced. The default
+		// InPlace strategy creates no machine at all, so nothing is scaling.
+		up, down := scalingStatus(t, scalingScope(3, 3, 0, 1))
+
+		require.Equal(t, metav1.ConditionFalse, up.Status, "a rollout must not report as scaling up")
+		require.Equal(t, metav1.ConditionFalse, down.Status)
+	})
+
+	t.Run("a missing machine is a scale up", func(t *testing.T) {
+		up, down := scalingStatus(t, scalingScope(3, 2, 0, 2))
+
+		require.Equal(t, metav1.ConditionTrue, up.Status)
+		require.Contains(t, up.Message, "2/3")
+		require.Equal(t, metav1.ConditionFalse, down.Status)
+	})
+
+	t.Run("a lowered replica count is a scale down", func(t *testing.T) {
+		up, down := scalingStatus(t, scalingScope(1, 3, 0, 3))
+
+		require.Equal(t, metav1.ConditionFalse, up.Status)
+		require.Equal(t, metav1.ConditionTrue, down.Status)
+		require.Contains(t, down.Message, "3/1")
+	})
+
+	t.Run("a deleting machine still counts", func(t *testing.T) {
+		// The surge machine is up, the outdated one is draining. Reporting the
+		// total keeps ScalingDown true until it is really gone.
+		up, down := scalingStatus(t, scalingScope(3, 3, 1, 3))
+
+		require.Equal(t, metav1.ConditionFalse, up.Status)
+		require.Equal(t, metav1.ConditionTrue, down.Status)
+		require.Contains(t, down.Message, "4/3")
+	})
+}
+
 // failPodList is what makes computeStatus fail hard while the reconcile body succeeds.
 func failPodList() interceptor.Funcs {
 	return interceptor.Funcs{
