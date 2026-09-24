@@ -178,16 +178,30 @@ func TestValidateK0sControlPlaneKeepsTheReportedReasons(t *testing.T) {
 			"version v1.31.1+k0s.0 is not compatible with K0sControlPlane, use v1.31.2+")
 	})
 
-	t.Run("recreate on a single node cluster", func(t *testing.T) {
-		err := validateK0sControlPlane(&K0sControlPlane{
+	recreateWith := func(args ...string) error {
+		return validateK0sControlPlane(&K0sControlPlane{
 			Spec: K0sControlPlaneSpec{
 				Version:        "v1.30.0+k0s.0",
 				UpdateStrategy: UpdateRecreate,
-				K0sConfigSpec:  bootstrapv1.K0sConfigSpec{Args: []string{"--single"}},
+				K0sConfigSpec:  bootstrapv1.K0sConfigSpec{Args: args},
 			},
 		})
+	}
 
-		require.ErrorContains(t, err,
-			"UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode")
+	const singleModeRefusal = "UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode"
+
+	t.Run("recreate on a single node cluster", func(t *testing.T) {
+		require.ErrorContains(t, recreateWith("--single"), singleModeRefusal)
+	})
+
+	// The bare flag match let every other spelling through, so the guard was skipped on a cluster
+	// that is just as single node as the one above.
+	t.Run("recreate on a single node cluster spelled with a value", func(t *testing.T) {
+		require.ErrorContains(t, recreateWith("--single=true"), singleModeRefusal)
+	})
+
+	// Workloads on the controllers is not single node, so this one keeps its rollout strategy.
+	t.Run("recreate with worker enabled but not single", func(t *testing.T) {
+		require.NoError(t, recreateWith("--enable-worker"))
 	})
 }

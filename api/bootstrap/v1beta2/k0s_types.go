@@ -18,6 +18,7 @@ package v1beta2
 import (
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -449,19 +450,19 @@ func (kcs *K0sConfigSpec) GetJoinTokenPath() string {
 	return filepath.Join(kcs.WorkingDir, "k0s.token")
 }
 
-// WorkerEnabled returns true if the k0s configuration is configured to also run worker nodes.
-func (kcs *K0sConfigSpec) WorkerEnabled() bool {
+// hasBoolArg reports a pflag bool argument being on, where a bare flag means true and a value is
+// anything ParseBool accepts rather than only the word true.
+func (kcs *K0sConfigSpec) hasBoolArg(names ...string) bool {
 	if kcs == nil {
 		return false
 	}
+
 	for _, arg := range kcs.Args {
 		name, value, hasValue := strings.Cut(arg, "=")
-		if name != "--enable-worker" && name != "--single" {
+		if !slices.Contains(names, name) {
 			continue
 		}
 
-		// Both are pflag bools, so a bare flag means true and a value is anything
-		// ParseBool accepts rather than only the word true.
 		if !hasValue {
 			return true
 		}
@@ -469,7 +470,19 @@ func (kcs *K0sConfigSpec) WorkerEnabled() bool {
 			return true
 		}
 	}
+
 	return false
+}
+
+// WorkerEnabled returns true if the k0s configuration is configured to also run worker nodes.
+func (kcs *K0sConfigSpec) WorkerEnabled() bool {
+	return kcs.hasBoolArg("--enable-worker", "--single")
+}
+
+// SingleNodeEnabled returns true if the k0s configuration asks for single node mode. Narrower than
+// WorkerEnabled, which also matches a multi controller cluster running workloads on its controllers.
+func (kcs *K0sConfigSpec) SingleNodeEnabled() bool {
+	return kcs.hasBoolArg("--single")
 }
 
 // GetK0sConfigPath returns the full path to the k0s.yaml file in the working directory.

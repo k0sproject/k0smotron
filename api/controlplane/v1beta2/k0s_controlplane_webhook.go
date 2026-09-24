@@ -19,7 +19,6 @@ package v1beta2
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
@@ -163,18 +162,14 @@ func denyIncompatibleK0sVersions(kcp *K0sControlPlane, prefix *field.Path) *fiel
 }
 
 func denyRecreateOnSingleClusters(kcp *K0sControlPlane, prefix *field.Path) *field.Error {
-	if kcp.Spec.UpdateStrategy == UpdateRecreate {
-
-		// If the cluster is running in single mode, we can't use the Recreate strategy
-		if kcp.Spec.K0sConfigSpec.Args != nil {
-			if slices.Contains(kcp.Spec.K0sConfigSpec.Args, "--single") {
-				return field.Invalid(
-					prefix.Child("updateStrategy"),
-					kcp.Spec.UpdateStrategy,
-					"UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode",
-				)
-			}
-		}
+	// Read through the helper rather than matching the bare flag, which missed --single=true and
+	// every other spelling pflag accepts.
+	if kcp.Spec.UpdateStrategy == UpdateRecreate && kcp.Spec.K0sConfigSpec.SingleNodeEnabled() {
+		return field.Invalid(
+			prefix.Child("updateStrategy"),
+			kcp.Spec.UpdateStrategy,
+			"UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode",
+		)
 	}
 
 	return nil

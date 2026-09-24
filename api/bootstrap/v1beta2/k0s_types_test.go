@@ -67,3 +67,35 @@ func TestK0sConfigSpecWorkerEnabledNilSpec(t *testing.T) {
 	var spec *K0sConfigSpec
 	assert.False(t, spec.WorkerEnabled())
 }
+
+func TestK0sConfigSpecSingleNodeEnabled(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+		want bool
+	}{
+		{name: "no args", args: nil, want: false},
+		{name: "single", args: []string{"--single"}, want: true},
+		{name: "single among others", args: []string{"--no-taints", "--single"}, want: true},
+		// The spellings the old bare match missed, which is what sent them past the guard.
+		{name: "single=true", args: []string{"--single=true"}, want: true},
+		{name: "single=1", args: []string{"--single=1"}, want: true},
+		{name: "single=T", args: []string{"--single=T"}, want: true},
+		{name: "single=false", args: []string{"--single=false"}, want: false},
+		{name: "value pflag rejects", args: []string{"--single=yes"}, want: false},
+		// Narrower than WorkerEnabled, since a multi controller cluster running workloads
+		// on its controllers is not single node.
+		{name: "enable-worker alone", args: []string{"--enable-worker"}, want: false},
+		{name: "enable-worker=true alone", args: []string{"--enable-worker=true"}, want: false},
+		{name: "unrelated flag with single substring", args: []string{"--single-foo"}, want: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, (&K0sConfigSpec{Args: tc.args}).SingleNodeEnabled())
+		})
+	}
+}
+
+func TestK0sConfigSpecSingleNodeEnabledNilSpec(t *testing.T) {
+	var spec *K0sConfigSpec
+	assert.False(t, spec.SingleNodeEnabled())
+}
