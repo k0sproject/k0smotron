@@ -1088,7 +1088,11 @@ spec:
                   - status
                   - type
                   type: object
+                maxItems: 32
                 type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
               externalManagedControlPlane:
                 description: externalManagedControlPlane is a bool that should be
                   set to true if the Node objects do not exist in the cluster.

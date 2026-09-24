@@ -66,6 +66,9 @@ type RemoteClusterStatus struct {
 	Initialization RemoteClusterInitializationStatus `json:"initialization,omitempty,omitzero"`
 	// conditions contains the conditions of the RemoteCluster, which represent the current state of the cluster.
 	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 

@@ -181,7 +181,11 @@ spec:
                   - status
                   - type
                   type: object
+                maxItems: 32
                 type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
               initialization:
                 description: |-
                   initialization provides observations of the RemoteCluster initialization process.
