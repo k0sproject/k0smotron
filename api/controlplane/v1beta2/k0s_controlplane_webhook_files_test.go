@@ -134,3 +134,60 @@ func TestValidateK0sControlPlaneChecksFileContents(t *testing.T) {
 		require.NoError(t, validateK0sControlPlane(kcp(file("/etc/a", "a"), file("/etc/b", "b"))))
 	})
 }
+
+// TestValidateK0sControlPlaneCollectsEveryProblem covers a spec with several faults
+// reporting all of them at once, rather than revealing the next one on every apply.
+func TestValidateK0sControlPlaneCollectsEveryProblem(t *testing.T) {
+	kcp := &K0sControlPlane{
+		Spec: K0sControlPlaneSpec{
+			// Incompatible, which used to short circuit everything after it.
+			Version:        "v1.31.1+k0s.0",
+			UpdateStrategy: UpdateRecreate,
+			K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+				Args: []string{"--single"},
+				Files: []bootstrapv1.File{
+					{File: provisioner.File{Path: "/a", Content: "x"}},
+					{File: provisioner.File{Path: "/a", Content: "y"}},
+				},
+			},
+		},
+	}
+
+	err := validateK0sControlPlane(kcp)
+	require.Error(t, err)
+
+	for _, want := range []string{
+		"spec.version",
+		"spec.updateStrategy",
+		"spec.k0sConfigSpec.files[1].path",
+	} {
+		require.Contains(t, err.Error(), want, "every fault has to name its own field")
+	}
+}
+
+// TestValidateK0sControlPlaneKeepsTheReportedReasons pins the sentences the e2e
+// admission tests match on, since those run nowhere near this package and a rewording
+// here would only surface there.
+func TestValidateK0sControlPlaneKeepsTheReportedReasons(t *testing.T) {
+	t.Run("an incompatible version", func(t *testing.T) {
+		err := validateK0sControlPlane(&K0sControlPlane{
+			Spec: K0sControlPlaneSpec{Version: "v1.31.1+k0s.0"},
+		})
+
+		require.ErrorContains(t, err,
+			"version v1.31.1+k0s.0 is not compatible with K0sControlPlane, use v1.31.2+")
+	})
+
+	t.Run("recreate on a single node cluster", func(t *testing.T) {
+		err := validateK0sControlPlane(&K0sControlPlane{
+			Spec: K0sControlPlaneSpec{
+				Version:        "v1.30.0+k0s.0",
+				UpdateStrategy: UpdateRecreate,
+				K0sConfigSpec:  bootstrapv1.K0sConfigSpec{Args: []string{"--single"}},
+			},
+		})
+
+		require.ErrorContains(t, err,
+			"UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode")
+	})
+}
