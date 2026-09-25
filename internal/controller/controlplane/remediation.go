@@ -18,6 +18,9 @@ package controlplane
 
 import (
 	"context"
+	"encoding/json"
+	"math"
+	"time"
 
 	"k8s.io/utils/ptr"
 
@@ -142,13 +145,75 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 	}
 	log.Info("Remediated unhealthy machine, another new machine should take its place soon.")
 
-	// Mark controlplane to track that remediation is in progress and do not proceed until machine is gone.
-	// This annotation is removed when new controlplane creates a new machine.
+	// Marks that a remediation is in progress and carries what the replacement inherits. Cleared
+	// where that replacement is created, which is also where the value moves onto it.
 	annotations.AddAnnotations(scope.kcp, map[string]string{
-		cpv1beta2.RemediationInProgressAnnotation: "true",
+		cpv1beta2.RemediationInProgressAnnotation: remediationInProgressFor(machineToBeRemediated).marshal(),
 	})
 
 	return nil
+}
+
+// minHealthyPeriod is how long a replacement has to survive before the next failure counts as a
+// new sequence rather than a retry. Upstream's DefaultMinHealthyPeriodSeconds, not yet a spec field.
+const minHealthyPeriod = time.Hour
+
+// maxReportedMachineName is the bound status puts on the machine it names, so a longer one is not
+// worth carrying. Keep it equal to the MaxLength marker on LastRemediationStatus.Machine.
+const maxReportedMachineName = 253
+
+// remediationData is what the in progress marker carries, so the replacement machine can record
+// which machine it replaced and how far into a retry sequence the control plane is.
+type remediationData struct {
+	Machine    string      `json:"machine"`
+	Timestamp  metav1.Time `json:"timestamp"`
+	RetryCount int32       `json:"retryCount"`
+}
+
+// A string, a time and an int32 cannot fail to marshal, so the error is dropped rather than
+// carried through callers that could do nothing useful with it.
+func (r remediationData) marshal() string {
+	value, _ := json.Marshal(r)
+
+	return string(value)
+}
+
+// remediationDataFrom reads the payload an annotation carries. Anything unreadable is treated as
+// absent, which is also what the literal "true" older versions wrote becomes.
+func remediationDataFrom(objAnnotations map[string]string, key string) (remediationData, bool) {
+	value, ok := objAnnotations[key]
+	if !ok {
+		return remediationData{}, false
+	}
+
+	var data remediationData
+	if err := json.Unmarshal([]byte(value), &data); err != nil {
+		return remediationData{}, false
+	}
+
+	// The bounds status declares, since anyone can write this annotation and a value status
+	// rejects would fail the whole control plane patch on every reconcile from then on.
+	if data.Machine == "" || len(data.Machine) > maxReportedMachineName {
+		return remediationData{}, false
+	}
+	if data.Timestamp.IsZero() || data.RetryCount < 0 || data.RetryCount >= math.MaxInt32 {
+		return remediationData{}, false
+	}
+
+	return data, true
+}
+
+// remediationInProgressFor describes the remediation about to start. A machine that already carries
+// a recent sequence continues it, so a replacement failing again reads as a retry and not a first try.
+func remediationInProgressFor(machineToBeRemediated *clusterv1.Machine) remediationData {
+	data := remediationData{Machine: machineToBeRemediated.Name, Timestamp: metav1.Now()}
+
+	last, ok := remediationDataFrom(machineToBeRemediated.Annotations, cpv1beta2.RemediationForAnnotation)
+	if ok && last.Timestamp.Add(minHealthyPeriod).After(data.Timestamp.Time) {
+		data.RetryCount = last.RetryCount + 1
+	}
+
+	return data
 }
 
 func isHealthy(machine *clusterv1.Machine) bool {
