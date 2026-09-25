@@ -202,6 +202,11 @@ type JoinTokenSecretRef struct {
 
 // K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig
 type K0sWorkerConfigStatus struct {
+	// observedGeneration is the latest generation observed by the controller.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional
 	DataSecretName *string `json:"dataSecretName,omitempty"`
@@ -241,6 +246,11 @@ type K0sControllerConfig struct {
 
 // K0sControllerConfigStatus defines the observed state of K0sControllerConfig
 type K0sControllerConfigStatus struct {
+	// observedGeneration is the latest generation observed by the controller.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
 	// +optional
 	DataSecretName *string `json:"dataSecretName,omitempty"`

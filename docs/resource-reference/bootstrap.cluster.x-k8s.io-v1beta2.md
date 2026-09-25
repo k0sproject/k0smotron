@@ -733,6 +733,16 @@ K0sControllerConfigStatus defines the observed state of K0sControllerConfig
           Initialization represents the initialization status of the worker node<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration is the latest generation observed by the controller.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 1<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -1464,6 +1474,16 @@ K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig
         <td>object</td>
         <td>
           Initialization represents the initialization status of the worker node<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration is the latest generation observed by the controller.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 1<br/>
         </td>
         <td>false</td>
       </tr></tbody>

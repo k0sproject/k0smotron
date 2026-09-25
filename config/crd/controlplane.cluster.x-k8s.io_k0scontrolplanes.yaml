@@ -1108,6 +1108,12 @@ spec:
                       plane is initialized
                     type: boolean
                 type: object
+              observedGeneration:
+                description: observedGeneration is the latest generation observed
+                  by the controller.
+                format: int64
+                minimum: 1
+                type: integer
               readyReplicas:
                 description: readyReplicas is the number of ready replicas for this
                   K0sControlPlane. A machine is considered ready when Machine's Ready

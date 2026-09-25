@@ -175,12 +175,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	scope.WorkerEnabled = config.Spec.WorkerEnabled()
 
-	if scope.Config.Status.Initialization.DataSecretCreated != nil && *scope.Config.Status.Initialization.DataSecretCreated {
-		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
-		log.Info("Bootstrapdata already created, reconciled succesfully")
-		return ctrl.Result{}, nil
-	}
-
 	patchHelper, err := patch.NewHelper(config, c.Client)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -189,7 +183,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	oldConfig := config.DeepCopy()
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
-		err := conditions.SetSummaryCondition(config, config, string(bootstrapv2.ConfigReadyCondition),
+		serr := conditions.SetSummaryCondition(config, config, string(bootstrapv2.ConfigReadyCondition),
 			conditions.ForConditionTypes{
 				bootstrapv2.DataSecretAvailableCondition,
 			},
@@ -206,16 +200,39 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 				),
 			},
 		)
-		if err != nil {
-			log.Error(err, "Failed to set summary condition")
+		if serr != nil {
+			log.Error(serr, "Failed to set summary condition")
+		}
+
+		// observedGeneration says the reported status matches this generation, so it is
+		// recorded only when the reconcile reached the end without an error.
+		patchOpts := []patch.Option{}
+		if err == nil && serr == nil {
+			patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
 		}
 
 		config.Spec = oldConfig.Spec
-		err = patchHelper.Patch(ctx, config)
-		if err != nil {
-			log.Error(err, "Failed to patch K0sControllerConfig status")
+		if perr := patchHelper.Patch(ctx, config, patchOpts...); perr != nil {
+			log.Error(perr, "Failed to patch K0sControllerConfig status")
 		}
 	}()
+
+	// Below the patch helper on purpose, so a settled config still records the
+	// generation it observed. The patch is empty unless that generation moved.
+	if scope.Config.Status.Initialization.DataSecretCreated != nil && *scope.Config.Status.Initialization.DataSecretCreated {
+		// Re-asserted rather than assumed, since the deferred summary is computed from
+		// this condition and would otherwise report Unknown for good if it went missing.
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
+			Status:  metav1.ConditionTrue,
+			Reason:  bootstrapv2.ConfigSecretAvailableReason,
+			Message: "Bootstrap secret created",
+		})
+
+		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
+		log.Info("Bootstrapdata already created, reconciled succesfully")
+		return ctrl.Result{}, nil
+	}
 
 	if scope.Cluster.Spec.ControlPlaneEndpoint.IsZero() {
 		log.Info("control plane endpoint is not set")

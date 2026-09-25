@@ -649,6 +649,12 @@ spec:
                   dataSecretCreated:
                     type: boolean
                 type: object
+              observedGeneration:
+                description: observedGeneration is the latest generation observed
+                  by the controller.
+                format: int64
+                minimum: 1
+                type: integer
             type: object
         type: object
     served: true

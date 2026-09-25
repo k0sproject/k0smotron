@@ -168,12 +168,6 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{}, err
 	}
 
-	if config.Status.Initialization.DataSecretCreated != nil && *config.Status.Initialization.DataSecretCreated {
-		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
-		log.Info("Bootstrapdata already created, reconciled succesfully")
-		return ctrl.Result{}, nil
-	}
-
 	patchHelper, err := patch.NewHelper(config, r.Client)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -181,7 +175,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 
 	defer func() {
 		// Always report the status of the bootsrap data secret generation.
-		err := conditions.SetSummaryCondition(config, config, string(bootstrapv2.ConfigReadyCondition),
+		serr := conditions.SetSummaryCondition(config, config, string(bootstrapv2.ConfigReadyCondition),
 			conditions.ForConditionTypes{string(bootstrapv2.DataSecretAvailableCondition)},
 			// Using a custom merge strategy to override reasons applied during merge and to ignore some
 			// info message so the ready condition aggregation in other resources is less noisy.
@@ -196,15 +190,38 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 				),
 			},
 		)
-		if err != nil {
-			log.Error(err, "Failed to set summary condition")
+		if serr != nil {
+			log.Error(serr, "Failed to set summary condition")
 		}
 
-		err = patchHelper.Patch(ctx, config)
-		if err != nil {
-			log.Error(err, "Failed to patch K0sWorkerConfig status")
+		// observedGeneration says the reported status matches this generation, so it is
+		// recorded only when the reconcile reached the end without an error.
+		patchOpts := []patch.Option{}
+		if err == nil && serr == nil {
+			patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
+		}
+
+		if perr := patchHelper.Patch(ctx, config, patchOpts...); perr != nil {
+			log.Error(perr, "Failed to patch K0sWorkerConfig status")
 		}
 	}()
+
+	// Below the patch helper on purpose, so a settled config still records the
+	// generation it observed. The patch is empty unless that generation moved.
+	if config.Status.Initialization.DataSecretCreated != nil && *config.Status.Initialization.DataSecretCreated {
+		// Re-asserted rather than assumed, since the deferred summary is computed from
+		// this condition and would otherwise report Unknown for good if it went missing.
+		conditions.Set(config, metav1.Condition{
+			Type:    string(bootstrapv2.DataSecretAvailableCondition),
+			Status:  metav1.ConditionTrue,
+			Reason:  bootstrapv2.ConfigSecretAvailableReason,
+			Message: "Bootstrap secret created",
+		})
+
+		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
+		log.Info("Bootstrapdata already created, reconciled succesfully")
+		return ctrl.Result{}, nil
+	}
 
 	scope := &Scope{
 		Config:      config,

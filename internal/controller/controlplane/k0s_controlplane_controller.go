@@ -216,7 +216,16 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 			}
 		}
 
-		derr = kcpPatchHelper.Patch(ctx, controlplane.kcp)
+		// observedGeneration says the reported status matches this generation, so it is
+		// recorded only when the reconcile got that far and the status was computed.
+		// Deleting is excluded because it skips the computation above and still moves
+		// the generation.
+		patchOpts := []patch.Option{}
+		if err == nil && derr == nil && kcp.DeletionTimestamp.IsZero() {
+			patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
+		}
+
+		derr = kcpPatchHelper.Patch(ctx, controlplane.kcp, patchOpts...)
 		if derr != nil {
 			log.Error(derr, "Failed to patch status")
 			res = ctrl.Result{}
