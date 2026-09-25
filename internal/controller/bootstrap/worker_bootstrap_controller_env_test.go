@@ -562,6 +562,7 @@ func TestReconcileWorkerConfigVersionFallsBackToMachineVersion(t *testing.T) {
 
 	workloadClient, _ := fakeremote.NewClusterClient(ctx, "", testEnv, types.NamespacedName{})
 	r := &Controller{
+		TokenTTL:              DefaultTokenTTL,
 		Client:                testEnv,
 		workloadClusterClient: workloadClient,
 		SecretCachingClient:   testEnv,
@@ -579,7 +580,7 @@ func TestReconcileWorkerConfigVersionFallsBackToMachineVersion(t *testing.T) {
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{}, result)
+		assert.Equal(c, ctrl.Result{RequeueAfter: tokenCheckRefreshOrRotationInterval(r.TokenTTL)}, result)
 
 		bootstrapSecret := &corev1.Secret{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKey{Namespace: k0sWorkerConfig.Namespace, Name: k0sWorkerConfig.Name}, bootstrapSecret))
@@ -660,6 +661,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 
 	workloadClient, _ := fakeremote.NewClusterClient(ctx, "", testEnv, types.NamespacedName{})
 	r := &Controller{
+		TokenTTL:              DefaultTokenTTL,
 		Client:                testEnv,
 		workloadClusterClient: workloadClient,
 		SecretCachingClient:   testEnv,
@@ -677,7 +679,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{}, result)
+		assert.Equal(c, ctrl.Result{RequeueAfter: tokenCheckRefreshOrRotationInterval(r.TokenTTL)}, result)
 
 		bootstrapSecret := &corev1.Secret{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKey{Namespace: k0sWorkerConfig.Namespace, Name: k0sWorkerConfig.Name}, bootstrapSecret))

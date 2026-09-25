@@ -23,6 +23,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/pflag"
 	uberzap "go.uber.org/zap"
@@ -78,6 +79,7 @@ var (
 		infrastructureController: true,
 	}
 	featureGates   string
+	tokenTTL       time.Duration
 	managerOptions = flags.ManagerOptions{}
 )
 
@@ -141,6 +143,8 @@ func main() {
 
 	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	pflag.CommandLine.StringVar(&watchFilter, "watch-filter", "", "Label value used to filter reconciled objects via label "+clusterv1.WatchLabel+"=<value>. Enables running multiple provider instances in the same cluster.")
+	pflag.CommandLine.DurationVar(&tokenTTL, "bootstrap-token-ttl", bootstrap.DefaultTokenTTL,
+		"The amount of time the bootstrap token will be valid. The token is refreshed until the machine joins the cluster.")
 	pflag.CommandLine.StringVar(&namespace, "namespace", "", "Namespace that the controller watches to reconcile cluster-api objects. If unspecified, all namespaces are watched.")
 	opts := zap.Options{
 		Development: true,
@@ -428,6 +432,7 @@ func setupCAPIControllersOrDie(ctx context.Context, mgr manager.Manager, clientS
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
+			TokenTTL:            tokenTTL,
 		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
@@ -439,6 +444,7 @@ func setupCAPIControllersOrDie(ctx context.Context, mgr manager.Manager, clientS
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
+			TokenTTL:            tokenTTL,
 		}).SetupWithManager(mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
