@@ -53,9 +53,11 @@ It requires cert-manager to be preinstalled.
 #### Per-module installation for Cluster API
 
 ```bash
-clusterctl init --bootstrap k0sproject-k0smotron \
-                --control-plane k0sproject-k0smotron \
-                --infrastructure k0sproject-k0smotron
+clusterctl init \
+  --core cluster-api:{{{ extra.capi_versions.core }}} \
+  --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --infrastructure k0sproject-k0smotron:{{{ extra.k0smotron_version }}}
 ```
 
 In this case, `clusterctl` also ensures that `cert-manager` is installed automatically.

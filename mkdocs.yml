@@ -152,6 +152,16 @@ markdown_extensions:
 
 extra:
   k0smotron_version: !!python/object/apply:os.getenv ["K0SMOTRON_VERSION"]
+  # Keep provider pins together and update them with the corresponding examples.
+  capi_versions:
+    core: v1.12.1
+    aws: v2.9.0
+    docker: v1.12.1
+    hetzner: v1.0.7
+    kubevirt: v0.11.2
+    openstack: v0.14.8
+    vsphere: v1.15.3
+    ipam: v1.0.3
   generator: false
   social:
     - icon: fontawesome/brands/github
