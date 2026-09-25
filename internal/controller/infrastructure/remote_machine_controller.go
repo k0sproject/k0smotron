@@ -36,10 +36,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capiutil "sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/finalizers"
 	"sigs.k8s.io/cluster-api/util/patch"
+	"sigs.k8s.io/cluster-api/util/paused"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -137,10 +137,8 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Bail out early if surrounding objects are not ready
-	if annotations.IsPaused(cluster, rm) {
-		log.Info("Cluster is paused, skipping RemoteMachine reconciliation")
-		return ctrl.Result{}, nil
+	if isPaused, requeue, err := paused.EnsurePausedCondition(ctx, r.Client, cluster, rm); err != nil || isPaused || requeue {
+		return ctrl.Result{}, err
 	}
 
 	if !conditions.IsTrue(cluster, clusterv1.ClusterInfrastructureReadyCondition) {

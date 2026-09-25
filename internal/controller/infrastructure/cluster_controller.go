@@ -25,6 +25,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/paused"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -52,8 +53,8 @@ func (r *ClusterController) Reconcile(ctx context.Context, req ctrl.Request) (re
 	log := log.FromContext(ctx).WithValues("remotecluster", req.NamespacedName)
 	log.Info("Reconciling RemoteCluster")
 
-	c := &infrastructure.RemoteCluster{}
-	if err := r.Get(ctx, req.NamespacedName, c); err != nil {
+	rc := &infrastructure.RemoteCluster{}
+	if err := r.Get(ctx, req.NamespacedName, rc); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("RemoteCluster not found, ignoring since object must be deleted")
 			return ctrl.Result{}, nil
@@ -62,15 +63,28 @@ func (r *ClusterController) Reconcile(ctx context.Context, req ctrl.Request) (re
 		return ctrl.Result{}, err
 	}
 
+	cluster, err := util.GetOwnerCluster(ctx, r.Client, rc.ObjectMeta)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if cluster == nil {
+		log.Info("Waiting for Cluster Controller to set OwnerRef on RemoteCluster")
+		return ctrl.Result{}, nil
+	}
+
+	if isPaused, requeue, err := paused.EnsurePausedCondition(ctx, r.Client, cluster, rc); err != nil || isPaused || requeue {
+		return ctrl.Result{}, err
+	}
+
 	// Nothing really to do, except put the cluster in a ready state
-	if c.ObjectMeta.DeletionTimestamp.IsZero() {
-		c.Status.Initialization.Provisioned = new(true)
-		conditions.Set(c, metav1.Condition{
+	if rc.ObjectMeta.DeletionTimestamp.IsZero() {
+		rc.Status.Initialization.Provisioned = new(true)
+		conditions.Set(rc, metav1.Condition{
 			Type:   infrastructure.RemoteClusterReadyCondition,
 			Status: metav1.ConditionTrue,
 			Reason: infrastructure.RemoteClusterReadyReason,
 		})
-		if err := r.Status().Update(ctx, c); err != nil {
+		if err := r.Status().Update(ctx, rc); err != nil {
 			log.Error(err, "Failed to update RemoteCluster status")
 			return ctrl.Result{}, err
 		}
