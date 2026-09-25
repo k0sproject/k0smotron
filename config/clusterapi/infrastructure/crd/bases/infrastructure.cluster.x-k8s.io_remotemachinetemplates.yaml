@@ -19024,6 +19024,44 @@ spec:
             required:
             - template
             type: object
+          status:
+            description: RemoteMachineTemplateStatus defines the observed state of
+              RemoteMachineTemplate.
+            properties:
+              capacity:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: |-
+                  capacity defines the resource capacity of the machines this template draws from.
+                  The pool holds machines that already exist, so k0smotron cannot measure them and
+                  leaves this for the operator to declare.
+                  Autoscaling from zero reads this value, as described by the proposal at
+                  https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210310-opt-in-autoscaling-from-zero.md
+                type: object
+              nodeInfo:
+                description: nodeInfo describes the architecture and the operating
+                  system of those machines.
+                minProperties: 1
+                properties:
+                  architecture:
+                    description: architecture is the CPU architecture of the node.
+                    enum:
+                    - amd64
+                    - arm64
+                    - s390x
+                    - ppc64le
+                    type: string
+                  operatingSystem:
+                    description: |-
+                      operatingSystem is a string representing the operating system of the node.
+                      This may be a string like 'linux' or 'windows'.
+                    type: string
+                type: object
+            type: object
         type: object
     served: true
     storage: true

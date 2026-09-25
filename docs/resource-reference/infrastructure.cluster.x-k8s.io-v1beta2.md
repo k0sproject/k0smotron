@@ -18574,6 +18574,13 @@ RemoteMachineTemplate is the Schema for the remotemachinetemplates API
           RemoteMachineTemplateSpec defines the desired state of RemoteMachineTemplate<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatestatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          RemoteMachineTemplateStatus defines the observed state of RemoteMachineTemplate.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -36007,6 +36014,81 @@ For example, if the completed indexes are 1, 3, 4, 5 and 7, they are
 represented as "1,3-5,7".
 When this field is null, this field doesn't default to any value
 and is never evaluated at any time.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.status
+<sup><sup>[↩ Parent](#remotemachinetemplate)</sup></sup>
+
+
+
+RemoteMachineTemplateStatus defines the observed state of RemoteMachineTemplate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>capacity</b></td>
+        <td>map[string]int or string</td>
+        <td>
+          capacity defines the resource capacity of the machines this template draws from.
+The pool holds machines that already exist, so k0smotron cannot measure them and
+leaves this for the operator to declare.
+Autoscaling from zero reads this value, as described by the proposal at
+https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210310-opt-in-autoscaling-from-zero.md<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#remotemachinetemplatestatusnodeinfo">nodeInfo</a></b></td>
+        <td>object</td>
+        <td>
+          nodeInfo describes the architecture and the operating system of those machines.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.status.nodeInfo
+<sup><sup>[↩ Parent](#remotemachinetemplatestatus)</sup></sup>
+
+
+
+nodeInfo describes the architecture and the operating system of those machines.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>architecture</b></td>
+        <td>enum</td>
+        <td>
+          architecture is the CPU architecture of the node.<br/>
+          <br/>
+            <i>Enum</i>: amd64, arm64, s390x, ppc64le<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>operatingSystem</b></td>
+        <td>string</td>
+        <td>
+          operatingSystem is a string representing the operating system of the node.
+This may be a string like 'linux' or 'windows'.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
