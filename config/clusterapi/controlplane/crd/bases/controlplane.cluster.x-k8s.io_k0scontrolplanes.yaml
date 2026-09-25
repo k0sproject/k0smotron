@@ -340,8 +340,8 @@ spec:
                 properties:
                   infrastructureRef:
                     description: |-
-                      InfrastructureRef is a required reference to a custom resource
-                      offered by an infrastructure provider.
+                      Deprecated: use spec.infrastructureRef instead. Setting this still works and the admission
+                      webhook copies it across, but it will be removed in a future API version.
                     properties:
                       apiVersion:
                         description: API version of the referent.
@@ -408,8 +408,124 @@ spec:
                           More info: http://kubernetes.io/docs/user-guide/labels
                         type: object
                     type: object
-                required:
-                - infrastructureRef
+                  spec:
+                    description: spec defines the spec for Machines in a K0sControlPlane
+                      object.
+                    properties:
+                      deletion:
+                        description: deletion contains configuration options for Machine
+                          deletion.
+                        minProperties: 1
+                        properties:
+                          nodeDeletionTimeoutSeconds:
+                            description: |-
+                              nodeDeletionTimeoutSeconds defines how long the machine controller will attempt to delete the Node that the Machine
+                              hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+                              If no value is provided, the default value for this property of the Machine resource will be used.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          nodeDrainTimeoutSeconds:
+                            description: |-
+                              nodeDrainTimeoutSeconds is the total amount of time that the controller will spend on draining a controlplane node
+                              The default value is 0, meaning that the node can be drained without any time limitations.
+                              NOTE: nodeDrainTimeoutSeconds is different from `kubectl drain --timeout`
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          nodeVolumeDetachTimeoutSeconds:
+                            description: |-
+                              nodeVolumeDetachTimeoutSeconds is the total amount of time that the controller will spend on waiting for all volumes
+                              to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                        type: object
+                      infrastructureRef:
+                        description: |-
+                          infrastructureRef is a reference to a custom resource offered by an infrastructure provider.
+                          Optional in the schema only, since the deprecated field may carry it and admission requires one.
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          fieldPath:
+                            description: |-
+                              If referring to a piece of an object instead of an entire object, this string
+                              should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                              For example, if the object reference is to a container within a pod, this would take on a value like:
+                              "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                              the event) or if no container name is specified "spec.containers[2]" (container with
+                              index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                              referencing a part of an object.
+                            type: string
+                          kind:
+                            description: |-
+                              Kind of the referent.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                            type: string
+                          name:
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          namespace:
+                            description: |-
+                              Namespace of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                            type: string
+                          resourceVersion:
+                            description: |-
+                              Specific resourceVersion to which this reference is made, if any.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                            type: string
+                          uid:
+                            description: |-
+                              UID of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      readinessGates:
+                        description: |-
+                          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+
+                          This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+                          computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.
+                        items:
+                          description: MachineReadinessGate contains the type of a
+                            Machine condition to be used as a readiness gate.
+                          properties:
+                            conditionType:
+                              description: |-
+                                conditionType refers to a condition with matching type in the Machine's condition list.
+                                If the conditions doesn't exist, it will be treated as unknown.
+                                Note: Both Cluster API conditions or conditions added by 3rd party controllers can be used as readiness gates.
+                              maxLength: 316
+                              minLength: 1
+                              pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                              type: string
+                            polarity:
+                              description: |-
+                                polarity of the conditionType specified in this readinessGate.
+                                Valid values are Positive, Negative and omitted.
+                                When omitted, the default behaviour will be Positive.
+                                A positive polarity means that the condition should report a true status under normal conditions.
+                                A negative polarity means that the condition should report a false status under normal conditions.
+                              enum:
+                              - Positive
+                              - Negative
+                              type: string
+                          required:
+                          - conditionType
+                          type: object
+                        maxItems: 32
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - conditionType
+                        x-kubernetes-list-type: map
+                    type: object
                 type: object
               replicas:
                 default: 1
@@ -926,8 +1042,8 @@ spec:
                 properties:
                   infrastructureRef:
                     description: |-
-                      InfrastructureRef is a required reference to a custom resource
-                      offered by an infrastructure provider.
+                      Deprecated: use spec.infrastructureRef instead. Setting this still works and the admission
+                      webhook copies it across, but it will be removed in a future API version.
                     properties:
                       apiVersion:
                         description: API version of the referent.
@@ -994,8 +1110,124 @@ spec:
                           More info: http://kubernetes.io/docs/user-guide/labels
                         type: object
                     type: object
-                required:
-                - infrastructureRef
+                  spec:
+                    description: spec defines the spec for Machines in a K0sControlPlane
+                      object.
+                    properties:
+                      deletion:
+                        description: deletion contains configuration options for Machine
+                          deletion.
+                        minProperties: 1
+                        properties:
+                          nodeDeletionTimeoutSeconds:
+                            description: |-
+                              nodeDeletionTimeoutSeconds defines how long the machine controller will attempt to delete the Node that the Machine
+                              hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+                              If no value is provided, the default value for this property of the Machine resource will be used.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          nodeDrainTimeoutSeconds:
+                            description: |-
+                              nodeDrainTimeoutSeconds is the total amount of time that the controller will spend on draining a controlplane node
+                              The default value is 0, meaning that the node can be drained without any time limitations.
+                              NOTE: nodeDrainTimeoutSeconds is different from `kubectl drain --timeout`
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          nodeVolumeDetachTimeoutSeconds:
+                            description: |-
+                              nodeVolumeDetachTimeoutSeconds is the total amount of time that the controller will spend on waiting for all volumes
+                              to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                        type: object
+                      infrastructureRef:
+                        description: |-
+                          infrastructureRef is a reference to a custom resource offered by an infrastructure provider.
+                          Optional in the schema only, since the deprecated field may carry it and admission requires one.
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          fieldPath:
+                            description: |-
+                              If referring to a piece of an object instead of an entire object, this string
+                              should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                              For example, if the object reference is to a container within a pod, this would take on a value like:
+                              "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                              the event) or if no container name is specified "spec.containers[2]" (container with
+                              index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                              referencing a part of an object.
+                            type: string
+                          kind:
+                            description: |-
+                              Kind of the referent.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                            type: string
+                          name:
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          namespace:
+                            description: |-
+                              Namespace of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                            type: string
+                          resourceVersion:
+                            description: |-
+                              Specific resourceVersion to which this reference is made, if any.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                            type: string
+                          uid:
+                            description: |-
+                              UID of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      readinessGates:
+                        description: |-
+                          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+
+                          This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+                          computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.
+                        items:
+                          description: MachineReadinessGate contains the type of a
+                            Machine condition to be used as a readiness gate.
+                          properties:
+                            conditionType:
+                              description: |-
+                                conditionType refers to a condition with matching type in the Machine's condition list.
+                                If the conditions doesn't exist, it will be treated as unknown.
+                                Note: Both Cluster API conditions or conditions added by 3rd party controllers can be used as readiness gates.
+                              maxLength: 316
+                              minLength: 1
+                              pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                              type: string
+                            polarity:
+                              description: |-
+                                polarity of the conditionType specified in this readinessGate.
+                                Valid values are Positive, Negative and omitted.
+                                When omitted, the default behaviour will be Positive.
+                                A positive polarity means that the condition should report a true status under normal conditions.
+                                A negative polarity means that the condition should report a false status under normal conditions.
+                              enum:
+                              - Positive
+                              - Negative
+                              type: string
+                          required:
+                          - conditionType
+                          type: object
+                        maxItems: 32
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - conditionType
+                        x-kubernetes-list-type: map
+                    type: object
                 type: object
               replicas:
                 default: 1

@@ -42,7 +42,7 @@ import (
 )
 
 func (c *K0sController) getMachineTemplate(ctx context.Context, kcp *cpv1beta2.K0sControlPlane) (*unstructured.Unstructured, error) {
-	infRef := kcp.Spec.MachineTemplate.InfrastructureRef
+	infRef := kcp.Spec.MachineTemplate.InfraRef()
 
 	infraMachineTemplate := new(unstructured.Unstructured)
 	infraMachineTemplate.SetAPIVersion(infRef.APIVersion)

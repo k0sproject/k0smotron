@@ -743,11 +743,13 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		},
 		Spec: cpv1beta2.K0sControlPlaneSpec{
 			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
-				InfrastructureRef: corev1.ObjectReference{
-					Kind:       "GenericInfrastructureMachineTemplate",
-					Namespace:  namespace,
-					Name:       "infra-foo",
-					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+				Spec: cpv1beta2.K0sControlPlaneMachineTemplateSpec{
+					InfrastructureRef: corev1.ObjectReference{
+						Kind:       "GenericInfrastructureMachineTemplate",
+						Namespace:  namespace,
+						Name:       "infra-foo",
+						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+					},
 				},
 			},
 			UpdateStrategy: cpv1beta2.UpdateRecreate,
@@ -764,8 +766,8 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 				"name":      "infra-foo",
 				"namespace": namespace,
 				"annotations": map[string]interface{}{
-					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.InfrastructureRef.Name,
-					clusterv1.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String(),
+					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
+					clusterv1.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.GroupVersionKind().GroupKind().String(),
 				},
 			},
 			"spec": map[string]interface{}{

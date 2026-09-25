@@ -137,9 +137,73 @@ type K0sControlPlaneMachineTemplate struct {
 	// +optional
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 
-	// InfrastructureRef is a required reference to a custom resource
-	// offered by an infrastructure provider.
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
+	// Deprecated: use spec.infrastructureRef instead. Setting this still works and the admission
+	// webhook copies it across, but it will be removed in a future API version.
+	// +optional
+	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef,omitempty,omitzero"`
+
+	// spec defines the spec for Machines in a K0sControlPlane object.
+	// +optional
+	Spec K0sControlPlaneMachineTemplateSpec `json:"spec,omitempty,omitzero"`
+}
+
+// InfraRef returns the infrastructure template reference, preferring the nested field and falling
+// back to the deprecated flat one, which is all an object stored before the move has.
+func (t *K0sControlPlaneMachineTemplate) InfraRef() corev1.ObjectReference {
+	if t.Spec.InfrastructureRef != (corev1.ObjectReference{}) {
+		return t.Spec.InfrastructureRef
+	}
+
+	return t.InfrastructureRef
+}
+
+// K0sControlPlaneMachineTemplateSpec defines the spec for Machines
+// in a K0sControlPlane object.
+type K0sControlPlaneMachineTemplateSpec struct {
+	// infrastructureRef is a reference to a custom resource offered by an infrastructure provider.
+	// Optional in the schema only, since the deprecated field may carry it and admission requires one.
+	// +optional
+	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef,omitempty,omitzero"`
+
+	// readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+	//
+	// This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+	// computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=conditionType
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=32
+	ReadinessGates []clusterv1.MachineReadinessGate `json:"readinessGates,omitempty"`
+
+	// deletion contains configuration options for Machine deletion.
+	// +optional
+	Deletion K0sControlPlaneMachineTemplateDeletionSpec `json:"deletion,omitempty,omitzero"`
+}
+
+// K0sControlPlaneMachineTemplateDeletionSpec contains configuration options for Machine deletion.
+// +kubebuilder:validation:MinProperties=1
+type K0sControlPlaneMachineTemplateDeletionSpec struct {
+	// nodeDrainTimeoutSeconds is the total amount of time that the controller will spend on draining a controlplane node
+	// The default value is 0, meaning that the node can be drained without any time limitations.
+	// NOTE: nodeDrainTimeoutSeconds is different from `kubectl drain --timeout`
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	NodeDrainTimeoutSeconds *int32 `json:"nodeDrainTimeoutSeconds,omitempty"`
+
+	// nodeVolumeDetachTimeoutSeconds is the total amount of time that the controller will spend on waiting for all volumes
+	// to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	NodeVolumeDetachTimeoutSeconds *int32 `json:"nodeVolumeDetachTimeoutSeconds,omitempty"`
+
+	// nodeDeletionTimeoutSeconds defines how long the machine controller will attempt to delete the Node that the Machine
+	// hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+	// If no value is provided, the default value for this property of the Machine resource will be used.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	NodeDeletionTimeoutSeconds *int32 `json:"nodeDeletionTimeoutSeconds,omitempty"`
 }
 
 // +kubebuilder:object:root=true

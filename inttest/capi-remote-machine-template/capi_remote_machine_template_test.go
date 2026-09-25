@@ -309,11 +309,12 @@ spec:
       - --enable-worker
       - --no-taints
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: RemoteMachineTemplate
-      name: remote-test-cp-template
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: RemoteMachineTemplate
+        name: remote-test-cp-template
+        namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteCluster
