@@ -94,12 +94,18 @@ type machineState struct {
 }
 
 type controlplane struct {
-	cluster                            *clusterv1.Cluster
-	kcp                                *cpv1beta2.K0sControlPlane
-	activeMachines                     collections.Machines
-	deletedMachines                    collections.Machines
-	upToDateMachines                   collections.Machines
-	notUpToDateMachines                collections.Machines
+	cluster             *clusterv1.Cluster
+	kcp                 *cpv1beta2.K0sControlPlane
+	activeMachines      collections.Machines
+	deletedMachines     collections.Machines
+	upToDateMachines    collections.Machines
+	notUpToDateMachines collections.Machines
+	// etcdManaged records that cluster data lives in etcd rather than in kine, so there
+	// are member objects to read at all.
+	etcdManaged bool
+	// etcdMemberHealth is the joined state of each machine's etcd member, keyed by machine
+	// name. A machine is absent when its state could not be determined.
+	etcdMemberHealth                   map[string]metav1.ConditionStatus
 	controllerConfigs                  map[string]*bootstrapv2.K0sControllerConfig
 	infraMachines                      map[string]*unstructured.Unstructured
 	hasMachinesWithOnlyVersionOutdated bool
@@ -817,6 +823,18 @@ func (c *K0sController) retrieveControlPlaneState(ctx context.Context, cluster *
 		hasMachinesWithOnlyVersionOutdated: hasMachinesWithOnlyVersionOutdated,
 		controllerConfigs:                  controllerConfigs,
 		infraMachines:                      infraMachines,
+	}
+
+	// A kine cluster has no etcd members to read, so the health stays empty and every
+	// caller treats it the way it treats an unreadable one.
+	// Named without a field, since any of three storage paths can be the one that
+	// failed and the accessor error already says which.
+	scope.etcdManaged, err = etcdManaged(kcp)
+	if err != nil {
+		return nil, fmt.Errorf("error determining whether etcd is managed: %w", err)
+	}
+	if scope.etcdManaged {
+		scope.etcdMemberHealth = c.etcdMemberHealth(ctx, cluster, activeMachines)
 	}
 
 	return scope, nil

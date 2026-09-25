@@ -260,6 +260,7 @@ jobs:
           - check-capi-docker-machinedeployment
           - check-capi-controlplane-docker
           - check-capi-controlplane-docker-downscaling
+          - check-capi-controlplane-docker-etcd-health
           - check-capi-controlplane-docker-tunneling
           - check-capi-controlplane-docker-tunneling-proxy
           - check-capi-controlplane-docker-worker

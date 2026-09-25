@@ -48,6 +48,9 @@ func (c *K0sController) reconcileMachines(ctx context.Context, scope *controlpla
 		if err := c.setUpToDateMachineCondition(ctx, scope); err != nil {
 			logger.Error(err, "Failed to set up-to-date machine condition")
 		}
+		if err := c.setEtcdMemberHealthyCondition(ctx, scope); err != nil {
+			logger.Error(err, "Failed to set etcd member healthy machine condition")
+		}
 	}()
 
 	if res, err := c.preflightChecks(ctx, scope); err != nil || !res.IsZero() {
@@ -129,6 +132,43 @@ func (c *K0sController) setUpToDateMachineCondition(ctx context.Context, scope *
 	return kerrors.NewAggregate(errs)
 }
 
+// setEtcdMemberHealthyCondition reports each machine's etcd member on the machine itself,
+// including when there are no members to report, so a stale reading cannot sit there.
+func (c *K0sController) setEtcdMemberHealthyCondition(ctx context.Context, scope *controlplane) error {
+	errs := make([]error, 0, len(scope.activeMachines))
+	for _, machine := range scope.activeMachines {
+		patchHelper, err := patch.NewHelper(machine, c.Client)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		condition := metav1.Condition{
+			Type:   cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
+			Status: metav1.ConditionUnknown,
+			Reason: cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyUnknownReason,
+		}
+		// Reported even when the cluster keeps no members, so a condition set while it
+		// did cannot sit there afterwards still claiming the member is fine.
+		switch {
+		case !scope.etcdManaged:
+			condition.Reason = cpv1beta2.K0sControlPlaneMachineNoEtcdMembersReason
+		case scope.etcdMemberHealth[machine.Name] == metav1.ConditionTrue:
+			condition.Status = metav1.ConditionTrue
+			condition.Reason = cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyReason
+		case scope.etcdMemberHealth[machine.Name] == metav1.ConditionFalse:
+			condition.Status = metav1.ConditionFalse
+			condition.Reason = cpv1beta2.K0sControlPlaneMachineEtcdMemberNotHealthyReason
+		}
+
+		conditions.Set(machine, condition)
+
+		errs = append(errs, patchHelper.Patch(ctx, machine))
+	}
+
+	return kerrors.NewAggregate(errs)
+}
+
 // isDesiredStateReached checks if the control plane has reached the desired state, which is when the number of up to date machines is
 // equal to the desired replicas, there are no not up to date machines and no machine is still being deleted.
 func isDesiredStateReached(scope *controlplane) bool {
@@ -189,6 +229,30 @@ func calculateMaxSurge(scope *controlplane) int {
 
 // nextFailureDomain picks the failure domain for a new control plane machine.
 // A deleting machine still occupies one, so it counts toward the total.
+// oldestInFullestFailureDomain picks the oldest candidate from the failure domain
+// holding the most machines, so a scale down does not unbalance the spread.
+func oldestInFullestFailureDomain(ctx context.Context, scope *controlplane, candidates collections.Machines) *clusterv1.Machine {
+	allMachines := collections.FromMachines(append(scope.activeMachines.UnsortedList(), scope.deletedMachines.UnsortedList()...)...)
+
+	if fd := failuredomains.PickMost(ctx, filterControlPlaneFailureDomains(*scope.cluster), allMachines, candidates); fd != "" {
+		if inDomain := candidates.Filter(collections.InFailureDomains(fd)); inDomain.Len() > 0 {
+			return inDomain.Oldest()
+		}
+	}
+
+	return candidates.Oldest()
+}
+
+// annotatedForDeletion returns the machines an operator has marked for removal with the
+// upstream delete-machine annotation.
+func annotatedForDeletion(machines collections.Machines) collections.Machines {
+	return machines.Filter(func(m *clusterv1.Machine) bool {
+		_, ok := m.Annotations[clusterv1.DeleteMachineAnnotation]
+
+		return ok
+	})
+}
+
 func nextFailureDomain(ctx context.Context, scope *controlplane) string {
 	allMachines := collections.FromMachines(append(scope.activeMachines.UnsortedList(), scope.deletedMachines.UnsortedList()...)...)
 
@@ -246,23 +310,46 @@ func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error 
 }
 
 func (c *K0sController) scaleDown(ctx context.Context, scope *controlplane) error {
-	logger := log.FromContext(ctx)
-	machineToDelete := scope.notUpToDateMachines.Oldest()
-	reason := "outdated"
-
-	if machineToDelete == nil {
-		// If we need to scale down but there are no machines elegible for deletion, it means that all the machines are up to date but we
-		// still have more machines than desired. In this case, we can delete the oldest machine, even if it's up to date.
-		machineToDelete = scope.upToDateMachines.Oldest()
-		reason = "excess"
-	}
+	machineToDelete, reason := selectMachineToDelete(ctx, scope)
 	if machineToDelete == nil {
 		return fmt.Errorf("no machine found to delete")
 	}
 
-	logger.Info("Deleting control plane machine", "machine", machineToDelete.Name, "reason", reason)
+	log.FromContext(ctx).Info("Deleting control plane machine", "machine", machineToDelete.Name, "reason", reason)
 
 	return c.deleteMachine(ctx, machineToDelete.Name, scope.kcp)
+}
+
+// selectMachineToDelete returns the machine to remove and why, in the two phases upstream
+// uses. An eligible subset is chosen first, then one machine out of the fullest domain.
+func selectMachineToDelete(ctx context.Context, scope *controlplane) (*clusterv1.Machine, string) {
+	var (
+		eligible collections.Machines
+		reason   string
+	)
+
+	outdatedWithUnhealthyEtcd := scope.notUpToDateMachines.Filter(func(m *clusterv1.Machine) bool {
+		return scope.etcdMemberHealth[m.Name] == metav1.ConditionFalse
+	})
+
+	switch {
+	// An operator naming a machine outranks every other signal, and an outdated one
+	// among those named outranks the rest, so the rollout gets the same delete.
+	case annotatedForDeletion(scope.notUpToDateMachines).Len() > 0:
+		eligible, reason = annotatedForDeletion(scope.notUpToDateMachines), "annotated and outdated"
+	case annotatedForDeletion(scope.activeMachines).Len() > 0:
+		eligible, reason = annotatedForDeletion(scope.activeMachines), "annotated"
+	// Upstream weighs every control plane component here. k0s supervises the API server,
+	// the scheduler and the controller manager as processes, so only etcd is observable.
+	case outdatedWithUnhealthyEtcd.Len() > 0:
+		eligible, reason = outdatedWithUnhealthyEtcd, "outdated with an unhealthy etcd member"
+	case scope.notUpToDateMachines.Len() > 0:
+		eligible, reason = scope.notUpToDateMachines, "outdated"
+	default:
+		eligible, reason = scope.activeMachines, "excess"
+	}
+
+	return oldestInFullestFailureDomain(ctx, scope, eligible), reason
 }
 
 // preflightChecks performs necessary checks before updating the control plane, ensuring that the cluster is in a healthy state and ready
@@ -392,6 +479,7 @@ func removeMachineFromScope(scope *controlplane, machineName string) {
 	delete(scope.infraMachines, machineName)
 	delete(scope.controllerConfigs, machineName)
 	delete(scope.deletedMachines, machineName)
+	delete(scope.etcdMemberHealth, machineName)
 }
 
 func (c *K0sController) deleteK0sNodeResources(ctx context.Context, scope *controlplane, machine *clusterv1.Machine) error {
