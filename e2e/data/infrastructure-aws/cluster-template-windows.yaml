@@ -88,12 +88,11 @@ spec:
         network:
           provider: calico
   machineTemplate:
-    spec:
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-        kind: AWSMachineTemplate
-        name: ${CLUSTER_NAME}-mt-cp
-        namespace: ${NAMESPACE}
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: AWSMachineTemplate
+      name: ${CLUSTER_NAME}-mt-cp
+      namespace: ${NAMESPACE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSCluster

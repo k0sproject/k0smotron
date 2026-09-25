@@ -64,12 +64,11 @@ spec:
         telemetry:
           enabled: false
   machineTemplate:
-    spec:
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-        kind: AWSMachineTemplate
-        name: ${CLUSTER_NAME}-aws-test-mt
-        namespace: ${NAMESPACE}
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: AWSMachineTemplate
+      name: ${CLUSTER_NAME}-aws-test-mt
+      namespace: ${NAMESPACE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSCluster
