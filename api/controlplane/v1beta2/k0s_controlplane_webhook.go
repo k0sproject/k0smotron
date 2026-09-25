@@ -76,7 +76,9 @@ func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, kcp *K0sCon
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
 func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, newKcp *K0sControlPlane) (admission.Warnings, error) {
 	warnings := v.validateVersionSuffix(newKcp.Spec.Version)
-	if oldKcp.Spec.Version != newKcp.Spec.Version {
+	// The field is optional, and a skew only exists between two versions that are set.
+	// Requiring both also lets the controller persist the version it defaults.
+	if oldKcp.Spec.Version != "" && newKcp.Spec.Version != "" && oldKcp.Spec.Version != newKcp.Spec.Version {
 		oldV, err := version.NewVersion(oldKcp.Spec.Version)
 		if err != nil {
 			return warnings, fmt.Errorf("failed to parse old version: %v", err)
@@ -87,7 +89,10 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, new
 		}
 
 		// According to the Kubernetes skew policy, we can't upgrade more than one minor version at a time.
-		if newV.Core().Segments()[1]-oldV.Core().Segments()[1] > 1 {
+		// Comparing minors alone reads a major bump as a large downgrade, so the major has to be
+		// part of the comparison the way upstream's ceiling is.
+		oldCore, newCore := oldV.Core().Segments(), newV.Core().Segments()
+		if newCore[0] > oldCore[0] || (newCore[0] == oldCore[0] && newCore[1]-oldCore[1] > 1) {
 			return warnings, fmt.Errorf("upgrading more than one minor version at a time is not allowed by the Kubernetes skew policy")
 		}
 	}
@@ -141,6 +146,12 @@ func denyIncompatibleK0sVersions(kcp *K0sControlPlane) error {
 	var incompatibleVersions = map[string]string{
 		"1.31.1": "v1.31.2+",
 	}
+	// The field is optional and the controller picks a version when it is empty, so
+	// there is nothing to hold against the incompatible list yet.
+	if kcp.Spec.Version == "" {
+		return nil
+	}
+
 	v, err := version.NewVersion(kcp.Spec.Version)
 	if err != nil {
 		return fmt.Errorf("failed to parse version: %v", err)
