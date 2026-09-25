@@ -20,7 +20,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 var (
 	conflictingFileSourceMsg  = "only one of content or contentFrom may be specified for a single file"
-	conflictingContentFromMsg = "only one of contentFrom.secretKeyRef or contentFrom.configMapKeyRef may be specified for a single file"
+	conflictingContentFromMsg = "only one of secretRef or configMapRef may be specified"
 	pathConflictMsg           = "path property must be unique among all files"
 	noContentMsg              = "either content or contentFrom must be specified for a file"
 )
