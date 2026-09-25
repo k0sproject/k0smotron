@@ -68,7 +68,7 @@ func WaitForControlPlaneToBeReady(ctx context.Context, client crclient.Client, c
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf(capiframework.PrettyPrint(controlplane) + "\n")
+		return fmt.Errorf("%s\n", capiframework.PrettyPrint(controlplane))
 	}
 
 	return nil
