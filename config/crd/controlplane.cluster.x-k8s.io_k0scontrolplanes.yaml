@@ -1108,6 +1108,33 @@ spec:
                       plane is initialized
                     type: boolean
                 type: object
+              lastRemediation:
+                description: lastRemediation stores info about the last remediation
+                  performed.
+                properties:
+                  machine:
+                    description: machine is the machine name of the latest machine
+                      being remediated.
+                    maxLength: 253
+                    minLength: 1
+                    type: string
+                  retryCount:
+                    description: |-
+                      retryCount tracks the remediation retries for the last remediated machine. A retry happens
+                      when a machine created to replace an unhealthy machine also fails.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  time:
+                    description: time is when the last remediation happened. It is
+                      represented in RFC3339 form and is in UTC.
+                    format: date-time
+                    type: string
+                required:
+                - machine
+                - retryCount
+                - time
+                type: object
               readyReplicas:
                 description: readyReplicas is the number of ready replicas for this
                   K0sControlPlane. A machine is considered ready when Machine's Ready
