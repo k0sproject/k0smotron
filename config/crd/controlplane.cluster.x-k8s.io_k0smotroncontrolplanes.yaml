@@ -10214,6 +10214,12 @@ spec:
                       plane is initialized
                     type: boolean
                 type: object
+              observedGeneration:
+                description: observedGeneration is the latest generation observed
+                  by the controller.
+                format: int64
+                minimum: 1
+                type: integer
               readyReplicas:
                 description: readyReplicas is the total number of fully running and
                   ready control plane pods.

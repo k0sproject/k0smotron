@@ -411,6 +411,46 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 		// We assume that the bootstrap data is already created, so secret bootstrap data shouldn't be created again.
 		assert.True(c, apierrors.IsNotFound(testEnv.Get(ctx, client.ObjectKeyFromObject(k0sControllerConfig), &corev1.Secret{})))
 	}, 10*time.Second, 100*time.Millisecond)
+
+	// A settled config still records the generation it observed, which is what keeps
+	// the staleness signal usable after the data secret exists. Read as v1beta2, since
+	// the field is only on the stored version and converting down drops it.
+	hub := &bootstrapv2.K0sControllerConfig{}
+	key := client.ObjectKeyFromObject(k0sControllerConfig)
+	caughtUp := func() bool {
+		if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: key}); err != nil {
+			return false
+		}
+
+		// Uncached, since the status is patched and a cached read still answers from
+		// before the patch.
+		if err := testEnv.GetAPIReader().Get(ctx, key, hub); err != nil {
+			return false
+		}
+
+		return hub.Status.ObservedGeneration == hub.Generation
+	}
+
+	require.Eventually(t, caughtUp, 10*time.Second, 100*time.Millisecond,
+		"a settled config still has to record the generation it observed")
+	require.NotZero(t, hub.Generation, "a zero generation would make the assertion above vacuous")
+
+	// The deferred summary runs for a settled config now, and it is computed from the
+	// DataSecretAvailable condition, which this config never carried. Re-asserting it
+	// in that branch is what keeps ConfigReady from being written Unknown for good.
+	ready := conditions.Get(hub, string(bootstrapv2.ConfigReadyCondition))
+	require.NotNil(t, ready, "the settled branch has to report readiness")
+	require.Equal(t, metav1.ConditionTrue, ready.Status,
+		"a config whose data secret exists is ready, whatever conditions it was missing")
+
+	before := hub.Generation
+	hub.Spec.Version = "v1.31.0+k0s.0"
+	require.NoError(t, testEnv.Update(ctx, hub))
+	require.NoError(t, testEnv.GetAPIReader().Get(ctx, key, hub))
+	require.Greater(t, hub.Generation, before, "the edit has to move the generation")
+
+	require.Eventually(t, caughtUp, 10*time.Second, 100*time.Millisecond,
+		"the field did not follow the generation on a config that is already done")
 }
 
 func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
