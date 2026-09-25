@@ -2348,3 +2348,123 @@ func TestUpdateStatusReportsMachinesUpToDateWhenReplicasFail(t *testing.T) {
 	require.Nil(t, conditions.Get(kcp, cpv1beta2.K0sControlPlaneScalingUpCondition),
 		"the scaling conditions are what the failure costs, which is what the ordering avoids")
 }
+
+// flaggedNotRemediated builds a machine a MachineHealthCheck has marked unhealthy but which the
+// control plane is not replacing, which is the case the NotRemediating message exists for.
+func flaggedNotRemediated(name string) *clusterv1.Machine {
+	m := remediationMachine(name, false, false)
+	conditions.Delete(m, clusterv1.MachineOwnerRemediatedCondition)
+
+	return m
+}
+
+// waitingForRemediation is how both a MachineHealthCheck and reconcileUnhealthyMachines leave a
+// machine they have marked, carrying the reason remediation has not gone ahead.
+func waitingForRemediation(name, message string, deleting bool) *clusterv1.Machine {
+	m := remediationMachine(name, false, deleting)
+	conditions.Set(m, metav1.Condition{
+		Type:    clusterv1.MachineOwnerRemediatedCondition,
+		Status:  metav1.ConditionFalse,
+		Reason:  clusterv1.MachineOwnerRemediatedWaitingForRemediationReason,
+		Message: message,
+	})
+
+	return m
+}
+
+func TestSetRemediatingCondition(t *testing.T) {
+	tests := []struct {
+		name        string
+		active      []*clusterv1.Machine
+		deleted     []*clusterv1.Machine
+		wantStatus  metav1.ConditionStatus
+		wantReason  string
+		wantMessage string
+	}{
+		{
+			name:        "no machine is unhealthy",
+			active:      []*clusterv1.Machine{remediationMachine("cp-0", true, false)},
+			wantStatus:  metav1.ConditionFalse,
+			wantReason:  cpv1beta2.K0sControlPlaneNotRemediatingReason,
+			wantMessage: "",
+		},
+		{
+			name:        "one machine is being remediated",
+			active:      []*clusterv1.Machine{waitingForRemediation("cp-0", "waiting for the replacement", false), remediationMachine("cp-1", true, false)},
+			wantStatus:  metav1.ConditionTrue,
+			wantReason:  cpv1beta2.K0sControlPlaneRemediatingReason,
+			wantMessage: "* Machine cp-0: waiting for the replacement",
+		},
+		{
+			// The machine leaves activeMachines the moment it is deleted, and the remediation
+			// it is the subject of is not over until it is gone.
+			name:        "the machine being remediated is already deleting",
+			deleted:     []*clusterv1.Machine{waitingForRemediation("cp-0", "waiting for the replacement", true)},
+			wantStatus:  metav1.ConditionTrue,
+			wantReason:  cpv1beta2.K0sControlPlaneRemediatingReason,
+			wantMessage: "* Machine cp-0: waiting for the replacement",
+		},
+		{
+			name:        "one machine is unhealthy and not being remediated",
+			active:      []*clusterv1.Machine{flaggedNotRemediated("cp-0"), remediationMachine("cp-1", true, false)},
+			wantStatus:  metav1.ConditionFalse,
+			wantReason:  cpv1beta2.K0sControlPlaneNotRemediatingReason,
+			wantMessage: "Machine cp-0 is not healthy and not being remediated by the K0sControlPlane",
+		},
+		{
+			name:        "several machines are unhealthy and not being remediated",
+			active:      []*clusterv1.Machine{flaggedNotRemediated("cp-2"), flaggedNotRemediated("cp-0"), flaggedNotRemediated("cp-1")},
+			wantStatus:  metav1.ConditionFalse,
+			wantReason:  cpv1beta2.K0sControlPlaneNotRemediatingReason,
+			wantMessage: "Machines cp-0, cp-1, cp-2 are not healthy and not being remediated by the K0sControlPlane",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+
+			setRemediatingCondition(t.Context(), &controlplane{
+				kcp:             kcp,
+				activeMachines:  collections.FromMachines(tt.active...),
+				deletedMachines: collections.FromMachines(tt.deleted...),
+			})
+
+			got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneRemediatingCondition)
+			require.NotNil(t, got, "the condition has to be reported either way")
+			require.Equal(t, tt.wantStatus, got.Status)
+			require.Equal(t, tt.wantReason, got.Reason)
+			require.Equal(t, tt.wantMessage, got.Message)
+		})
+	}
+}
+
+// TestUpdateStatusReportsRemediationWhenReplicasFail covers where the call sits. The replica
+// computation gives up on an unparseable machine version, taking the scaling conditions with it.
+func TestUpdateStatusReportsRemediationWhenReplicasFail(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+
+	broken := waitingForRemediation("cp-0", "waiting for the replacement", false)
+	broken.Spec.Version = "not-a-version"
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
+
+	err := c.updateStatus(t.Context(), &controlplane{
+		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		kcp:              kcp,
+		activeMachines:   collections.FromMachines(broken),
+		deletedMachines:  collections.Machines{},
+		upToDateMachines: collections.Machines{},
+	})
+	require.Error(t, err, "the replica computation has to fail for this test to say anything")
+
+	got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneRemediatingCondition)
+	require.NotNil(t, got, "remediation stays reported through a failure further down")
+	require.Equal(t, metav1.ConditionTrue, got.Status)
+
+	require.Nil(t, conditions.Get(kcp, cpv1beta2.K0sControlPlaneScalingUpCondition),
+		"the scaling conditions are what the failure costs, which is what the ordering avoids")
+}
