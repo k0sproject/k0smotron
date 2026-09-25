@@ -131,11 +131,6 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	log = log.WithValues("kind", configOwner.GetKind(), "version", configOwner.GetResourceVersion(), "name", configOwner.GetName())
 
-	// If the version does not contain the k0s suffix, append it.
-	if config.Spec.Version != "" && !strings.Contains(config.Spec.Version, "+k0s.") {
-		config.Spec.Version = fmt.Sprintf("%s+%s", config.Spec.Version, defaultK0sSuffix)
-	}
-
 	// Lookup the cluster the config owner is associated with
 	cluster, err := capiutil.GetClusterByName(ctx, c.Client, configOwner.GetNamespace(), configOwner.ClusterName())
 	if err != nil {
@@ -158,7 +153,10 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, err
 	}
 
-	currentKCPVersion, err := version.NewVersion(config.Spec.Version)
+	// Config owner (K0sControlPlane) version is guaranteed to have a K0s suffix.
+	// TODO: Check if we should use the kcp.status.version (minimum k0s version in the control plane replicas)
+	// instead of the spec version (desired).
+	currentKCPVersion, err := version.NewVersion(configOwner.KubernetesVersion())
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error parsing k0s version: %w", err)
 	}
@@ -801,7 +799,7 @@ func (c *ControlPlaneController) genK0sCommands(scope *ControllerScope, installC
 	commandsMap := make(map[provisioner.VarName]string)
 	commands := scope.Config.Spec.PreK0sCommands
 
-	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.Config.Spec.Version, scope.Config.Spec.K0sInstallDir)
+	downloadCommands, err := util.DownloadCommands(scope.Config.Spec.PreInstalledK0s, scope.Config.Spec.DownloadURL, scope.ConfigOwner.KubernetesVersion(), scope.Config.Spec.K0sInstallDir)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error generating download commands: %w", err)
 	}

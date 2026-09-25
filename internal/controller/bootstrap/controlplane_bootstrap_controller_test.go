@@ -112,12 +112,18 @@ func TestController_genK0sCommands(t *testing.T) {
 				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
 					Spec: bootstrapv2.K0sControllerConfigSpec{
-						Version: "v1.31.0",
 						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							DownloadURL: util.DefaultK0sDownloadURL,
 						},
 					},
 				},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{
+					Object: map[string]any{
+						"spec": map[string]any{
+							"version": "v1.31.0",
+						},
+					},
+				}},
 			},
 			installCmd: "k0s install controller --force --enable-dynamic-config",
 			want: []string{
@@ -135,12 +141,18 @@ func TestController_genK0sCommands(t *testing.T) {
 				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
 					Spec: bootstrapv2.K0sControllerConfigSpec{
-						Version: "v1.31.6",
 						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							DownloadURL: util.DefaultK0sDownloadURL,
 						},
 					},
 				},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{
+					Object: map[string]any{
+						"spec": map[string]any{
+							"version": "v1.31.6",
+						},
+					},
+				}},
 			},
 			installCmd: "k0s install controller --force --enable-dynamic-config",
 			want: []string{
@@ -155,12 +167,18 @@ func TestController_genK0sCommands(t *testing.T) {
 				Config: &bootstrapv2.K0sControllerConfig{
 					ObjectMeta: metav1.ObjectMeta{Name: "test"},
 					Spec: bootstrapv2.K0sControllerConfigSpec{
-						Version: "v1.31.6+k0s.0",
 						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							DownloadURL: util.DefaultK0sDownloadURL,
 						},
 					},
 				},
+				ConfigOwner: &bsutil.ConfigOwner{Unstructured: &unstructured.Unstructured{
+					Object: map[string]any{
+						"spec": map[string]any{
+							"version": "v1.31.6+k0s.0",
+						},
+					},
+				}},
 			},
 			installCmd: "k0s install controller --force --enable-dynamic-config",
 			want: []string{

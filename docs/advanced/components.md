@@ -160,7 +160,7 @@ spec:
         pool: worker-pool-1
     spec:
       clusterName: docker-test
-      version: v1.34.3
+      version: v1.34.3+k0s.0
       bootstrap:
         configRef:
           apiGroup: bootstrap.cluster.x-k8s.io
@@ -188,8 +188,7 @@ metadata:
   name: docker-test-machine-config
 spec:
   template:
-    spec:
-      version: v1.34.3+k0s.0
+    spec: {}
 ```
 
 After the cluster is provisioned, verify that the patches were applied. Resource names follow the conventions described in [Generated Resources](../generated-resources.md).
