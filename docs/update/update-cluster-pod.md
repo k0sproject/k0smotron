@@ -36,8 +36,8 @@ the k0s version and machine names in the YAML configuration file:
     spec:
       version: v1.27.2-k0s.0
     ```
-2. Make sure that the [persistence](../resource-reference/k0smotron.io-v1beta2.md#clusterspecpersistence) is configured
-to prevent data loss. For example:
+2. Make sure that any extra manifests the control plane needs are supplied via
+`spec.manifests`, so that they are reapplied when the control plane pod is recreated:
 
    ```yaml
     ---
@@ -47,14 +47,16 @@ to prevent data loss. For example:
       name: docker-test-cp
     spec:
       version: v1.27.2-k0s.0
-      persistence:
-        type: hostPath
-        hostPath: "/tmp/kmc-test" # k0smotron will mount a basic hostPath volume to avoid data loss.
+      manifests:
+        - name: mystack
+          configMap:
+            name: mystack-manifests
    ```
 
-   Using the `hostPath` volume type introduces many security risks.
-   Avoid configuring persistence for volumes of the `hostPath` type in production environments.
-   Learn more from [official Kubernetes documentation: hostPath](https://kubernetes.io/docs/concepts/storage/volumes/#hostpath).
+   Control plane pods are stateless, so no additional persistence is needed for the
+   update. Cluster data is held by the storage backend, which has its own volume.
+   See [Persistence](../configuration.md#persistence) for details. Files written into
+   `/var/lib/k0s` out of band are lost when the pod is recreated.
 
 3. Change all the k0s versions to the target one. For example:
 

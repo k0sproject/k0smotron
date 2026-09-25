@@ -84,8 +84,6 @@ metadata:
   namespace: default
 spec:
   version: v1.34.3-k0s.0
-  persistence:
-    type: emptyDir
   service:
     type: LoadBalancer
   patches:
