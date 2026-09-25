@@ -19,7 +19,6 @@ package v1beta2
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
@@ -101,67 +100,76 @@ func (v *K0sControlPlaneValidator) ValidateDelete(_ context.Context, _ *K0sContr
 }
 
 func validateK0sControlPlane(kcp *K0sControlPlane) error {
-	if err := denyIncompatibleK0sVersions(kcp); err != nil {
-		return err
-	}
+	prefix := field.NewPath("spec")
 
-	if err := denyIncompatibleProvisioners(kcp); err != nil {
-		return err
-	}
+	// Collected rather than returned one at a time, so a spec with several problems
+	// reports all of them instead of revealing the next one on every apply.
+	var allErrs field.ErrorList
 
-	// nolint:revive
-	if err := denyRecreateOnSingleClusters(kcp); err != nil {
-		return err
+	for _, err := range []*field.Error{
+		denyIncompatibleK0sVersions(kcp, prefix),
+		denyIncompatibleProvisioners(kcp, prefix),
+		denyRecreateOnSingleClusters(kcp, prefix),
+	} {
+		if err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	// K0sControllerConfig has no webhook of its own, so validate the files here
 	// where they are still part of the control plane spec.
-	if errs := bootstrapv1.ValidateFileOwners(
+	allErrs = append(allErrs, bootstrapv1.ValidateFiles(
 		kcp.Spec.K0sConfigSpec.Files,
 		kcp.Spec.K0sConfigSpec.Provisioner,
-		field.NewPath("spec", "k0sConfigSpec"),
-	); len(errs) > 0 {
-		return errs.ToAggregate()
-	}
+		prefix.Child("k0sConfigSpec"),
+	)...)
 
-	return nil
+	return allErrs.ToAggregate()
 }
 
-func denyIncompatibleProvisioners(kcp *K0sControlPlane) error {
+func denyIncompatibleProvisioners(kcp *K0sControlPlane, prefix *field.Path) *field.Error {
 	if kcp.Spec.K0sConfigSpec.Provisioner.Platform == bootstrapv1.PlatformWindows ||
 		kcp.Spec.K0sConfigSpec.Provisioner.Type == provisioner.PowershellXMLProvisioningFormat ||
 		kcp.Spec.K0sConfigSpec.Provisioner.Type == provisioner.PowershellProvisioningFormat {
-		return fmt.Errorf("K0sControlPlane does not support powershell and powershell-xml provisioning formats")
+		return field.Invalid(
+			prefix.Child("k0sConfigSpec", "provisioner"),
+			kcp.Spec.K0sConfigSpec.Provisioner.Type,
+			"K0sControlPlane does not support powershell and powershell-xml provisioning formats",
+		)
 	}
 
 	return nil
 }
 
-func denyIncompatibleK0sVersions(kcp *K0sControlPlane) error {
+func denyIncompatibleK0sVersions(kcp *K0sControlPlane, prefix *field.Path) *field.Error {
 	var incompatibleVersions = map[string]string{
 		"1.31.1": "v1.31.2+",
 	}
+
+	versionPath := prefix.Child("version")
+
 	v, err := version.NewVersion(kcp.Spec.Version)
 	if err != nil {
-		return fmt.Errorf("failed to parse version: %v", err)
+		return field.Invalid(versionPath, kcp.Spec.Version, fmt.Sprintf("failed to parse version: %v", err))
 	}
 
 	if vv, ok := incompatibleVersions[v.Core().String()]; ok {
-		return fmt.Errorf("version %s is not compatible with K0sControlPlane, use %s", kcp.Spec.Version, vv)
+		return field.Invalid(versionPath, kcp.Spec.Version,
+			fmt.Sprintf("version %s is not compatible with K0sControlPlane, use %s", kcp.Spec.Version, vv))
 	}
 
 	return nil
 }
 
-func denyRecreateOnSingleClusters(kcp *K0sControlPlane) error {
-	if kcp.Spec.UpdateStrategy == UpdateRecreate {
-
-		// If the cluster is running in single mode, we can't use the Recreate strategy
-		if kcp.Spec.K0sConfigSpec.Args != nil {
-			if slices.Contains(kcp.Spec.K0sConfigSpec.Args, "--single") {
-				return fmt.Errorf("UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode")
-			}
-		}
+func denyRecreateOnSingleClusters(kcp *K0sControlPlane, prefix *field.Path) *field.Error {
+	// Read through the helper rather than matching the bare flag, which missed --single=true and
+	// every other spelling pflag accepts.
+	if kcp.Spec.UpdateStrategy == UpdateRecreate && kcp.Spec.K0sConfigSpec.SingleNodeEnabled() {
+		return field.Invalid(
+			prefix.Child("updateStrategy"),
+			kcp.Spec.UpdateStrategy,
+			"UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode",
+		)
 	}
 
 	return nil
