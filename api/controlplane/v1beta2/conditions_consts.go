@@ -122,4 +122,30 @@ const (
 
 	// K0sControlPlaneRemediatingInternalErrorReason surfaces a failure to compute the condition.
 	K0sControlPlaneRemediatingInternalErrorReason = clusterv1.InternalErrorReason
+
+	// K0sControlPlaneDeletingCondition is true while the control plane is being deleted.
+	K0sControlPlaneDeletingCondition = clusterv1.DeletingCondition
+
+	// K0sControlPlaneNotDeletingReason surfaces when the control plane is not being deleted.
+	K0sControlPlaneNotDeletingReason = clusterv1.NotDeletingReason
+
+	// K0sControlPlaneDeletingReason surfaces when the control plane is being deleted.
+	K0sControlPlaneDeletingReason = clusterv1.DeletingReason
+
+	// K0sControlPlaneDeletingInternalErrorReason surfaces unexpected failures when deleting a K0sControlPlane object.
+	K0sControlPlaneDeletingInternalErrorReason = clusterv1.InternalErrorReason
+
+	// K0sControlPlaneDeletingDeletionCompletedReason surfaces when the K0sControlPlane deletion has been completed.
+	// This reason is set right after the `k0s.controlplane.cluster.x-k8s.io` finalizer is removed.
+	// This means that the object will go away (i.e. be removed from etcd), except if there are other
+	// finalizers on the K0sControlPlane object.
+	K0sControlPlaneDeletingDeletionCompletedReason = clusterv1.DeletionCompletedReason
+
+	// K0sControlPlaneDeletingWaitingForWorkersDeletionReason surfaces when the K0sControlPlane deletion
+	// waits for the workers to be deleted.
+	K0sControlPlaneDeletingWaitingForWorkersDeletionReason = "WaitingForWorkersDeletion"
+
+	// K0sControlPlaneDeletingWaitingForMachineDeletionReason surfaces when the K0sControlPlane deletion
+	// waits for the control plane Machines to be deleted.
+	K0sControlPlaneDeletingWaitingForMachineDeletionReason = "WaitingForMachineDeletion"
 )
