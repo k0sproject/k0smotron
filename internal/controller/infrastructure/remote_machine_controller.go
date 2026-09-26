@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"slices"
 	"sort"
 	"time"
 
@@ -365,28 +366,45 @@ func (r *RemoteMachineController) reservePooledMachineAndPopulateRemoteMachine(c
 	})
 
 	var (
-		firstFreePooledMachine *infrastructure.PooledRemoteMachine
-		foundPooledMachine     *infrastructure.PooledRemoteMachine
+		freePooledMachine  *infrastructure.PooledRemoteMachine
+		foundPooledMachine *infrastructure.PooledRemoteMachine
 	)
 	for _, pm := range pooledMachineList.Items {
-		if pm.Spec.Pool == rm.Spec.Pool {
-			if pm.Status.Reserved && pm.Status.MachineRef.Name == rm.GetName() {
-				foundPooledMachine = &pm
-				break
-			}
-
-			if !pm.Status.Reserved && firstFreePooledMachine == nil {
-				firstFreePooledMachine = &pm
-			}
+		if pm.Status.Reserved && pm.Status.MachineRef.Name == rm.GetName() {
+			foundPooledMachine = &pm
+			break
 		}
+
+		if pm.Status.Reserved || pm.Spec.Pool != rm.Spec.Pool {
+			continue
+		}
+
+		// if remote machine spec matches unresureved pooled machine
+		// then assume remote manchine already has reserved pooled machine
+		// and need to reservec it again
+		if remoteMachineSpecMatchToPooled(rm, &pm) {
+			freePooledMachine = &pm
+			break
+		}
+
+		// if remote machine doesn't have adrees yet, assume
+		// that remote has not reserved any machine yet
+		// because address is required field of pm
+		if rm.Spec.Address == "" {
+			freePooledMachine = &pm
+			break
+		}
+
+		// if remote machine has address then we need to find
+		// unresureved pool machine, that was reserved by it
 	}
 
-	if foundPooledMachine == nil && firstFreePooledMachine == nil {
+	if foundPooledMachine == nil && freePooledMachine == nil {
 		return ErrPooledMachineNotFound
 	}
 
-	if foundPooledMachine == nil && firstFreePooledMachine != nil {
-		foundPooledMachine = firstFreePooledMachine
+	if foundPooledMachine == nil && freePooledMachine != nil {
+		foundPooledMachine = freePooledMachine
 		foundPooledMachine.Status.Reserved = true
 		foundPooledMachine.Status.MachineRef = infrastructure.RemoteMachineRef{
 			Name:      rm.GetName(),
@@ -411,6 +429,17 @@ func (r *RemoteMachineController) reservePooledMachineAndPopulateRemoteMachine(c
 	rm.Spec.CleanUpCommands = foundPooledMachine.Spec.Machine.CleanUpCommands
 
 	return nil
+}
+
+func remoteMachineSpecMatchToPooled(rm *infrastructure.RemoteMachine, prm *infrastructure.PooledRemoteMachine) bool {
+	return rm.Spec.Address == prm.Spec.Machine.Address &&
+		rm.Spec.Port == prm.Spec.Machine.Port &&
+		rm.Spec.User == prm.Spec.Machine.User &&
+		rm.Spec.SSHKeyRef == prm.Spec.Machine.SSHKeyRef &&
+		rm.Spec.UseSudo == prm.Spec.Machine.UseSudo &&
+		rm.Spec.CommandsAsScript == prm.Spec.Machine.CommandsAsScript &&
+		rm.Spec.WorkingDir == prm.Spec.Machine.WorkingDir &&
+		slices.Equal(rm.Spec.CleanUpCommands, prm.Spec.Machine.CleanUpCommands)
 }
 
 func (r *RemoteMachineController) returnMachineToPool(ctx context.Context, rm *infrastructure.RemoteMachine) error {
@@ -462,7 +491,6 @@ func (r *RemoteMachineController) getSSHKey(ctx context.Context, rm *infrastruct
 	}
 
 	return secret.Data["value"], nil
-
 }
 
 func (r *RemoteMachineController) getBootstrapData(ctx context.Context, machine *clusterv1.Machine) ([]byte, error) {
