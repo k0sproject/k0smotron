@@ -126,7 +126,6 @@ type RemoteMachineList struct {
 // +kubebuilder:printcolumn:name="Address",type=string,JSONPath=".spec.machine.address",description="IP address or DNS name of the remote machine"
 // +kubebuilder:printcolumn:name="Reserved",type=string,JSONPath=".status.reserved",description="Indicates if the machine is reserved"
 // +kubebuilder:printcolumn:name="Remote Machine",type=string,JSONPath=".status.machineRef.name",description="Reference to the RemoteMachine"
-// +kubebuilder:validation:XValidation:rule="!has(oldSelf.status) || !oldSelf.status.reserved || self.spec == oldSelf.spec",message="spec cannot be changed while the PooledRemoteMachine is reserved",fieldPath=".spec"
 
 // PooledRemoteMachine represents a RemoteMachine that is part of a pool and can be reserved for use.
 type PooledRemoteMachine struct {
