@@ -377,8 +377,6 @@ spec:
         type: object
     served: true
     storage: false
-    subresources:
-      status: {}
   - name: v1beta2
     schema:
       openAPIV3Schema:
@@ -777,5 +775,3 @@ spec:
         type: object
     served: true
     storage: true
-    subresources:
-      status: {}

@@ -37,7 +37,6 @@ func init() {
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
 // +kubebuilder:conversion-gen=./api/bootstrap/v1beta2
-// +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/provider=bootstrap-k0smotron"
 

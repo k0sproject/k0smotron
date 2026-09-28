@@ -27,7 +27,6 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta1=v1beta1"
 
 // K0sControlPlaneTemplate is the template for creating K0s control planes.
