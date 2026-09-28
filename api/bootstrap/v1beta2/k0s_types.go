@@ -18,6 +18,7 @@ package v1beta2
 import (
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -449,19 +450,19 @@ func (kcs *K0sConfigSpec) GetJoinTokenPath() string {
 	return filepath.Join(kcs.WorkingDir, "k0s.token")
 }
 
-// WorkerEnabled returns true if the k0s configuration is configured to also run worker nodes.
-func (kcs *K0sConfigSpec) WorkerEnabled() bool {
+// hasBoolArg reports a pflag bool argument being on, where a bare flag means true and a value is
+// anything ParseBool accepts rather than only the word true.
+func (kcs *K0sConfigSpec) hasBoolArg(names ...string) bool {
 	if kcs == nil {
 		return false
 	}
+
 	for _, arg := range kcs.Args {
 		name, value, hasValue := strings.Cut(arg, "=")
-		if name != "--enable-worker" && name != "--single" {
+		if !slices.Contains(names, name) {
 			continue
 		}
 
-		// Both are pflag bools, so a bare flag means true and a value is anything
-		// ParseBool accepts rather than only the word true.
 		if !hasValue {
 			return true
 		}
@@ -469,7 +470,19 @@ func (kcs *K0sConfigSpec) WorkerEnabled() bool {
 			return true
 		}
 	}
+
 	return false
+}
+
+// WorkerEnabled returns true if the k0s configuration is configured to also run worker nodes.
+func (kcs *K0sConfigSpec) WorkerEnabled() bool {
+	return kcs.hasBoolArg("--enable-worker", "--single")
+}
+
+// SingleNodeEnabled returns true if the k0s configuration asks for single node mode. Narrower than
+// WorkerEnabled, which also matches a multi controller cluster running workloads on its controllers.
+func (kcs *K0sConfigSpec) SingleNodeEnabled() bool {
+	return kcs.hasBoolArg("--single")
 }
 
 // GetK0sConfigPath returns the full path to the k0s.yaml file in the working directory.
@@ -486,6 +499,12 @@ func (c *K0sWorkerConfig) GetJoinTokenPath() string {
 		return "/etc/k0s.token"
 	}
 	return filepath.Join(c.Spec.WorkingDir, "k0s.token")
+}
+
+// appliesAppend reports whether the format can add to a file another entry in the
+// same list already writes. Ignition cannot, it emits one entry per file.
+func (p ProvisionerSpec) appliesAppend() bool {
+	return p.Type != provisioner.IgnitionProvisioningFormat
 }
 
 // appliesOwner reports whether the selected provisioner writes file ownership.
@@ -542,18 +561,20 @@ func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList 
 
 	// TODO: validate Ignition
 	allErrs = append(allErrs, cs.validateVersion(pathPrefix)...)
-	allErrs = append(allErrs, cs.validateFiles(pathPrefix)...)
+	allErrs = append(allErrs, ValidateFiles(cs.Files, cs.Provisioner, pathPrefix)...)
 	allErrs = append(allErrs, cs.validateWindows(pathPrefix)...)
 
 	return allErrs
 }
 
-func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.ErrorList {
+// ValidateFiles rejects a files list that cannot be resolved or applied, covering
+// the content source, the paths and the owners.
+func ValidateFiles(files []File, spec ProvisionerSpec, pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	knownPaths := map[string]struct{}{}
 
-	for i, file := range cs.Files {
+	for i, file := range files {
 		if file.Content != "" && file.ContentFrom != nil {
 			allErrs = append(
 				allErrs,
@@ -608,21 +629,35 @@ func (cs *K0sWorkerConfigSpec) validateFiles(pathPrefix *field.Path) field.Error
 				)
 			}
 		}
-		_, conflict := knownPaths[file.Path]
-		if conflict {
+		// Only an append the format can actually carry out adds to what an earlier
+		// entry wrote. Anything else takes the path over, so it both conflicts with
+		// an earlier claim and makes one of its own.
+		appendsToPath := file.Append && spec.appliesAppend()
+
+		if _, conflict := knownPaths[file.Path]; conflict && !appendsToPath {
+			// Reached with Append set only when the format cannot append, since
+			// otherwise this branch is skipped.
+			msg := pathConflictMsg
+			if file.Append {
+				msg = appendUnsupportedMsg
+			}
+
 			allErrs = append(
 				allErrs,
 				field.Invalid(
 					pathPrefix.Child("files").Index(i).Child("path"),
 					file,
-					pathConflictMsg,
+					msg,
 				),
 			)
 		}
-		knownPaths[file.Path] = struct{}{}
+
+		if !appendsToPath {
+			knownPaths[file.Path] = struct{}{}
+		}
 	}
 
-	allErrs = append(allErrs, ValidateFileOwners(cs.Files, cs.Provisioner, pathPrefix)...)
+	allErrs = append(allErrs, ValidateFileOwners(files, spec, pathPrefix)...)
 
 	return allErrs
 }
