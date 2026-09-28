@@ -1622,3 +1622,71 @@ func TestAvailabilityAnchorSurvivesAPatch(t *testing.T) {
 
 	require.Equal(t, metav1.ConditionFalse, readBack().Status)
 }
+
+// TestReconcileRecordsObservedGeneration covers the staleness signal, which says the
+// reported status was computed from this generation of the spec.
+func TestReconcileRecordsObservedGeneration(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-observed-generation")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	kcp.Spec.Replicas = 1
+	require.NoError(t, testEnv.Create(ctx, cluster))
+	require.NoError(t, testEnv.Create(ctx, kcp))
+	require.NoError(t, testEnv.Create(ctx, gmt))
+
+	defer func(do ...client.Object) {
+		require.NoError(t, testEnv.Cleanup(ctx, do...))
+	}(kcp, gmt, cluster, ns)
+
+	frt := &fakeRoundTripper{}
+	fakeClient := &restfake.RESTClient{
+		Client: restfake.CreateHTTPClient(frt.run),
+	}
+	restClient, _ := rest.RESTClientFor(&rest.Config{
+		ContentConfig: rest.ContentConfig{
+			NegotiatedSerializer: scheme.Codecs,
+			GroupVersion:         &metav1.SchemeGroupVersion,
+		},
+	})
+	restClient.Client = fakeClient.Client
+
+	r := &K0sController{
+		Client:                    testEnv,
+		APIReader:                 testEnv.GetAPIReader(),
+		workloadClusterKubeClient: kubernetes.New(restClient),
+		SecretCachingClient:       secretCachingClient,
+		ClusterCache:              clustercache.NewFakeClusterCache(fake.NewClientBuilder().Build(), client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}),
+	}
+
+	// The reconcile defaults the version suffix, which is itself a spec write, so the
+	// generation moves under the first passes and only settles once it stops changing.
+	caughtUp := func() bool {
+		if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(kcp)}); err != nil {
+			return false
+		}
+
+		// Uncached, since the status is patched and a cached read still answers from
+		// before the patch.
+		if err := testEnv.GetAPIReader().Get(ctx, util.ObjectKey(kcp), kcp); err != nil {
+			return false
+		}
+
+		return kcp.Status.ObservedGeneration == kcp.Generation
+	}
+
+	require.Eventually(t, caughtUp, 20*time.Second, 200*time.Millisecond,
+		"the reconcile never recorded the generation it observed")
+	require.NotZero(t, kcp.Generation, "a zero generation would make the assertion above vacuous")
+
+	// A spec edit moves the generation, and the field has to follow it rather than
+	// stay at whatever was observed first.
+	before := kcp.Generation
+	kcp.Spec.Replicas = 2
+	require.NoError(t, testEnv.Update(ctx, kcp))
+	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(kcp), kcp))
+	require.Greater(t, kcp.Generation, before, "the edit has to move the generation")
+
+	require.Eventually(t, caughtUp, 20*time.Second, 200*time.Millisecond,
+		"the field did not follow the generation after a spec edit")
+}

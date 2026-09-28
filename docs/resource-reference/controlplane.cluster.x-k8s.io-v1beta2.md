@@ -1003,6 +1003,16 @@ NOTE: Fields in this struct are part of the Cluster API contract and are used to
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration is the latest generation observed by the controller.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 1<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>readyReplicas</b></td>
         <td>integer</td>
         <td>
@@ -12241,6 +12251,16 @@ K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
         <td>
           initialization represents the initialization status of the control plane
 NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration is the latest generation observed by the controller.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 1<br/>
         </td>
         <td>false</td>
       </tr><tr>

@@ -397,8 +397,38 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 		assert.Equal(c, ctrl.Result{}, result)
 		// We assume that the bootstrap data is already created, so secret bootstrap data shouldn't be created again.
 		assert.True(c, apierrors.IsNotFound(testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), &corev1.Secret{})))
+
+		// Uncached, since the status is patched and a cached read still answers from
+		// before the patch.
+		assert.NoError(c, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(k0sWorkerConfig), k0sWorkerConfig))
+		// A settled config still records the generation it observed, which is what keeps
+		// the staleness signal usable after the data secret exists.
+		assert.Equal(c, k0sWorkerConfig.Generation, k0sWorkerConfig.Status.ObservedGeneration)
 	}, 10*time.Second, 100*time.Millisecond)
 
+	require.NotZero(t, k0sWorkerConfig.Generation, "a zero generation would make the assertion above vacuous")
+
+	// The deferred summary runs for a settled config now, and it is computed from the
+	// DataSecretAvailable condition, which this config never carried. Re-asserting it
+	// in that branch is what keeps ConfigReady from being written Unknown for good.
+	ready := conditions.Get(k0sWorkerConfig, string(bootstrapv1.ConfigReadyCondition))
+	require.NotNil(t, ready, "the settled branch has to report readiness")
+	require.Equal(t, metav1.ConditionTrue, ready.Status,
+		"a config whose data secret exists is ready, whatever conditions it was missing")
+
+	before := k0sWorkerConfig.Generation
+	k0sWorkerConfig.Spec.Version = "v1.31.0+k0s.0"
+	require.NoError(t, testEnv.Update(ctx, k0sWorkerConfig))
+	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(k0sWorkerConfig), k0sWorkerConfig))
+	require.Greater(t, k0sWorkerConfig.Generation, before, "the edit has to move the generation")
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		_, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
+		assert.NoError(c, err)
+		assert.NoError(c, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(k0sWorkerConfig), k0sWorkerConfig))
+		assert.Equal(c, k0sWorkerConfig.Generation, k0sWorkerConfig.Status.ObservedGeneration,
+			"the field did not follow the generation on a config that is already done")
+	}, 10*time.Second, 100*time.Millisecond)
 }
 
 func TestReconcileControlPlaneNotReady(t *testing.T) {

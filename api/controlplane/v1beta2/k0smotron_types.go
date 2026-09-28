@@ -84,6 +84,10 @@ type Initialization struct {
 
 // K0smotronControlPlaneStatus defines the observed state of K0smotronControlPlane
 type K0smotronControlPlaneStatus struct {
+	// observedGeneration is the latest generation observed by the controller.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
 	// initialization represents the initialization status of the control plane
 	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.

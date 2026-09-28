@@ -196,21 +196,32 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	defer func() {
 		// Status is not recomputed while deleting, but the patches below still run,
 		// since removing the finalizer is only ever persisted by them.
+		var serr error
 		if kcp.DeletionTimestamp.IsZero() {
-			derr := c.computeStatus(ctx, cluster, kcp, kmcScope)
-			if derr != nil {
-				if errors.Is(derr, util.ErrNotReady) {
+			serr = c.computeStatus(ctx, cluster, kcp, kmcScope)
+			if serr != nil {
+				if errors.Is(serr, util.ErrNotReady) {
 					res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
 				} else {
-					log.Error(derr, "Failed to update K0smotronControlPlane status")
+					log.Error(serr, "Failed to update K0smotronControlPlane status")
 					// Recorded without returning, since the availability computed above is
 					// only ever persisted by the patches below.
-					err = kerrors.NewAggregate([]error{err, derr})
+					err = kerrors.NewAggregate([]error{err, serr})
 				}
 			}
 		}
 
-		derr := kcpPatchHelper.Patch(ctx, kcp)
+		// observedGeneration says the reported status matches this generation, so it is
+		// recorded only when the reconcile got that far and the status was computed. The
+		// not ready case requeues without setting err, so it is checked on its own, and
+		// deleting is excluded because it skips the computation and still moves the
+		// generation.
+		patchOpts := []patch.Option{}
+		if err == nil && serr == nil && kcp.DeletionTimestamp.IsZero() {
+			patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
+		}
+
+		derr := kcpPatchHelper.Patch(ctx, kcp, patchOpts...)
 		if derr != nil {
 			log.Error(derr, "Failed to patch K0smotronControlPlane")
 			err = kerrors.NewAggregate([]error{err, derr})
