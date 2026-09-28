@@ -124,6 +124,7 @@ func (in *K0sControlPlaneList) DeepCopyObject() runtime.Object {
 func (in *K0sControlPlaneMachineTemplate) DeepCopyInto(out *K0sControlPlaneMachineTemplate) {
 	*out = *in
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	out.InfrastructureRef = in.InfrastructureRef
 	in.Spec.DeepCopyInto(&out.Spec)
 }
 

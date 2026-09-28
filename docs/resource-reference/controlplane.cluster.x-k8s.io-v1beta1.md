@@ -690,14 +690,13 @@ K0sControlPlaneMachineTemplate describes the data needed to create a Machine fro
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#k0scontrolplanespecmachinetemplatespec">spec</a></b></td>
+        <td><b><a href="#k0scontrolplanespecmachinetemplateinfrastructureref">infrastructureRef</a></b></td>
         <td>object</td>
         <td>
-          spec defines the spec for Machines in a K0sControlPlane object.
-Required, or a manifest carrying the old flat infrastructureRef is accepted
-with the field silently pruned instead of being rejected.<br/>
+          Deprecated: use spec.infrastructureRef instead. Setting this still works and the admission
+webhook copies it across, but it will be removed in a future API version.<br/>
         </td>
-        <td>true</td>
+        <td>false</td>
       </tr><tr>
         <td><b><a href="#k0scontrolplanespecmachinetemplatemetadata">metadata</a></b></td>
         <td>object</td>
@@ -706,64 +705,24 @@ with the field silently pruned instead of being rejected.<br/>
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatespec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          spec defines the spec for Machines in a K0sControlPlane object.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
 
-### K0sControlPlane.spec.machineTemplate.spec
+### K0sControlPlane.spec.machineTemplate.infrastructureRef
 <sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate)</sup></sup>
 
 
 
-spec defines the spec for Machines in a K0sControlPlane object.
-Required, or a manifest carrying the old flat infrastructureRef is accepted
-with the field silently pruned instead of being rejected.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b><a href="#k0scontrolplanespecmachinetemplatespecinfrastructureref">infrastructureRef</a></b></td>
-        <td>object</td>
-        <td>
-          infrastructureRef is a required reference to a custom resource
-offered by an infrastructure provider.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b><a href="#k0scontrolplanespecmachinetemplatespecdeletion">deletion</a></b></td>
-        <td>object</td>
-        <td>
-          deletion contains configuration options for Machine deletion.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#k0scontrolplanespecmachinetemplatespecreadinessgatesindex">readinessGates</a></b></td>
-        <td>[]object</td>
-        <td>
-          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
-
-This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
-computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0sControlPlane.spec.machineTemplate.spec.infrastructureRef
-<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplatespec)</sup></sup>
-
-
-
-infrastructureRef is a required reference to a custom resource
-offered by an infrastructure provider.
+Deprecated: use spec.infrastructureRef instead. Setting this still works and the admission
+webhook copies it across, but it will be removed in a future API version.
 
 <table>
     <thead>
@@ -838,6 +797,92 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 </table>
 
 
+### K0sControlPlane.spec.machineTemplate.metadata
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate)</sup></sup>
+
+
+
+Standard object's metadata.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td>
+          annotations is an unstructured key value map stored with a resource that may be
+set by external tools to store and retrieve arbitrary metadata. They are not
+queryable and should be preserved when modifying objects.
+More info: http://kubernetes.io/docs/user-guide/annotations<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td>
+          labels is a map of string keys and values that can be used to organize and categorize
+(scope and select) objects. May match selectors of replication controllers
+and services.
+More info: http://kubernetes.io/docs/user-guide/labels<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.spec
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate)</sup></sup>
+
+
+
+spec defines the spec for Machines in a K0sControlPlane object.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatespecdeletion">deletion</a></b></td>
+        <td>object</td>
+        <td>
+          deletion contains configuration options for Machine deletion.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatespecinfrastructureref">infrastructureRef</a></b></td>
+        <td>object</td>
+        <td>
+          infrastructureRef is a reference to a custom resource offered by an infrastructure provider.
+Optional in the schema only, since the deprecated field may carry it and admission requires one.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatespecreadinessgatesindex">readinessGates</a></b></td>
+        <td>[]object</td>
+        <td>
+          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+
+This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### K0sControlPlane.spec.machineTemplate.spec.deletion
 <sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplatespec)</sup></sup>
 
@@ -893,6 +938,87 @@ to be detached. The default value is 0, meaning that the volumes can be detached
 </table>
 
 
+### K0sControlPlane.spec.machineTemplate.spec.infrastructureRef
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplatespec)</sup></sup>
+
+
+
+infrastructureRef is a reference to a custom resource offered by an infrastructure provider.
+Optional in the schema only, since the deprecated field may carry it and admission requires one.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>
+          API version of the referent.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>
+          If referring to a piece of an object instead of an entire object, this string
+should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+For example, if the object reference is to a container within a pod, this would take on a value like:
+"spec.containers{name}" (where "name" refers to the name of the container that triggered
+the event) or if no container name is specified "spec.containers[2]" (container with
+index 2 in this pod). This syntax is chosen only to have some well-defined way of
+referencing a part of an object.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>
+          Kind of the referent.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          Namespace of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>resourceVersion</b></td>
+        <td>string</td>
+        <td>
+          Specific resourceVersion to which this reference is made, if any.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>uid</b></td>
+        <td>string</td>
+        <td>
+          UID of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### K0sControlPlane.spec.machineTemplate.spec.readinessGates[index]
 <sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplatespec)</sup></sup>
 
@@ -929,47 +1055,6 @@ A positive polarity means that the condition should report a true status under n
 A negative polarity means that the condition should report a false status under normal conditions.<br/>
           <br/>
             <i>Enum</i>: Positive, Negative<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### K0sControlPlane.spec.machineTemplate.metadata
-<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplate)</sup></sup>
-
-
-
-Standard object's metadata.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>annotations</b></td>
-        <td>map[string]string</td>
-        <td>
-          annotations is an unstructured key value map stored with a resource that may be
-set by external tools to store and retrieve arbitrary metadata. They are not
-queryable and should be preserved when modifying objects.
-More info: http://kubernetes.io/docs/user-guide/annotations<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>labels</b></td>
-        <td>map[string]string</td>
-        <td>
-          labels is a map of string keys and values that can be used to organize and categorize
-(scope and select) objects. May match selectors of replication controllers
-and services.
-More info: http://kubernetes.io/docs/user-guide/labels<br/>
         </td>
         <td>false</td>
       </tr></tbody>
