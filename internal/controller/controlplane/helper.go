@@ -266,8 +266,8 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 
 	maps.Copy(annotations, kcp.Spec.MachineTemplate.ObjectMeta.Annotations)
 
-	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.Name
-	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
+	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name
+	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.Spec.InfrastructureRef.GroupVersionKind().GroupKind().String()
 	infraMachine.SetAnnotations(annotations)
 
 	infraMachine.SetLabels(controlPlaneCommonLabelsForCluster(kcp, cluster.GetName()))
@@ -448,8 +448,8 @@ func isInfraMachineUpToDate(infraMachine *unstructured.Unstructured, kcp *cpv1be
 	clonedFromName := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation]
 	clonedFromGroupKind := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation]
 
-	return clonedFromName == kcp.Spec.MachineTemplate.InfrastructureRef.Name &&
-		clonedFromGroupKind == kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
+	return clonedFromName == kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name &&
+		clonedFromGroupKind == kcp.Spec.MachineTemplate.Spec.InfrastructureRef.GroupVersionKind().GroupKind().String()
 }
 
 func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clientset *kubernetes.Clientset) (bool, error) {

@@ -636,11 +636,13 @@ func TestGenControlPlaneJoinFilesLeavesNoTokenWhenTheJoinHostIsUnknown(t *testin
 		ObjectMeta: metav1.ObjectMeta{Name: kcpName, Namespace: ns.Name, UID: "1"},
 		Spec: cpv1beta2.K0sControlPlaneSpec{
 			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
-				InfrastructureRef: corev1.ObjectReference{
-					Kind:       "GenericInfrastructureMachineTemplate",
-					Namespace:  ns.Name,
-					Name:       "infra-join-token",
-					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+				Spec: cpv1beta2.K0sControlPlaneMachineTemplateSpec{
+					InfrastructureRef: corev1.ObjectReference{
+						Kind:       "GenericInfrastructureMachineTemplate",
+						Namespace:  ns.Name,
+						Name:       "infra-join-token",
+						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+					},
 				},
 			},
 			Replicas: int32(1),

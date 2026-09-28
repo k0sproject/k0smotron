@@ -137,18 +137,20 @@ type K0sControlPlaneMachineTemplate struct {
 	// +optional
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 
-	// InfrastructureRef is a required reference to a custom resource
-	// offered by an infrastructure provider.
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
-
 	// spec defines the spec for Machines in a K0sControlPlane object.
-	// +optional
+	// Required, or a manifest carrying the old flat infrastructureRef is accepted
+	// with the field silently pruned instead of being rejected.
+	// +required
 	Spec K0sControlPlaneMachineTemplateSpec `json:"spec,omitempty,omitzero"`
 }
 
 // K0sControlPlaneMachineTemplateSpec defines the spec for Machines
 // in a K0sControlPlane object.
 type K0sControlPlaneMachineTemplateSpec struct {
+	// infrastructureRef is a required reference to a custom resource
+	// offered by an infrastructure provider.
+	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
+
 	// readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
 	//
 	// This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready

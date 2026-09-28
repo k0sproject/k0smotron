@@ -218,11 +218,12 @@ spec:
       - --enable-worker
       - --no-taints
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DevMachineTemplate
-      name: docker-test-cp-template
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: DevMachineTemplate
+        name: docker-test-cp-template
+        namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DevCluster

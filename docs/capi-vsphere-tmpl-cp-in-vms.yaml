@@ -173,6 +173,7 @@ spec:
             enabled: true
             type: EnvoyProxy
   machineTemplate:
+    spec:
       infrastructureRef:
         apiGroup: infrastructure.cluster.x-k8s.io
         kind: VSphereMachineTemplate
