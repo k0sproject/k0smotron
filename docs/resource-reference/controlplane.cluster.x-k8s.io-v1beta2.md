@@ -949,6 +949,16 @@ spec defines the spec for Machines in a K0sControlPlane object.
           deletion contains configuration options for Machine deletion.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatespecreadinessgatesindex">readinessGates</a></b></td>
+        <td>[]object</td>
+        <td>
+          readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
+
+This field can be used e.g. to instruct the machine controller to include in the computation for Machine's ready
+computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -1002,6 +1012,48 @@ to be detached. The default value is 0, meaning that the volumes can be detached
           <br/>
             <i>Format</i>: int32<br/>
             <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.machineTemplate.spec.readinessGates[index]
+<sup><sup>[↩ Parent](#k0scontrolplanespecmachinetemplatespec)</sup></sup>
+
+
+
+MachineReadinessGate contains the type of a Machine condition to be used as a readiness gate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>conditionType</b></td>
+        <td>string</td>
+        <td>
+          conditionType refers to a condition with matching type in the Machine's condition list.
+If the conditions doesn't exist, it will be treated as unknown.
+Note: Both Cluster API conditions or conditions added by 3rd party controllers can be used as readiness gates.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>polarity</b></td>
+        <td>enum</td>
+        <td>
+          polarity of the conditionType specified in this readinessGate.
+Valid values are Positive, Negative and omitted.
+When omitted, the default behaviour will be Positive.
+A positive polarity means that the condition should report a true status under normal conditions.
+A negative polarity means that the condition should report a false status under normal conditions.<br/>
+          <br/>
+            <i>Enum</i>: Positive, Negative<br/>
         </td>
         <td>false</td>
       </tr></tbody>
