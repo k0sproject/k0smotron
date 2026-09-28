@@ -27,7 +27,6 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="cluster.x-k8s.io/v1beta2=v1beta2"
 // +kubebuilder:storageversion
 // +kubebuilder:conversion-gen=./api/controlplane/v1beta2
