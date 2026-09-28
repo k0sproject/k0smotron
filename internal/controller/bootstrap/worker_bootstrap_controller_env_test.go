@@ -397,26 +397,15 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 		assert.Equal(c, ctrl.Result{}, result)
 		// We assume that the bootstrap data is already created, so secret bootstrap data shouldn't be created again.
 		assert.True(c, apierrors.IsNotFound(testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), &corev1.Secret{})))
-	}, 10*time.Second, 100*time.Millisecond)
-
-	// A settled config still records the generation it observed, which is what keeps
-	// the staleness signal usable after the data secret exists.
-	caughtUp := func() bool {
-		if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)}); err != nil {
-			return false
-		}
 
 		// Uncached, since the status is patched and a cached read still answers from
 		// before the patch.
-		if err := testEnv.GetAPIReader().Get(ctx, util.ObjectKey(k0sWorkerConfig), k0sWorkerConfig); err != nil {
-			return false
-		}
+		assert.NoError(c, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(k0sWorkerConfig), k0sWorkerConfig))
+		// A settled config still records the generation it observed, which is what keeps
+		// the staleness signal usable after the data secret exists.
+		assert.Equal(c, k0sWorkerConfig.Generation, k0sWorkerConfig.Status.ObservedGeneration)
+	}, 10*time.Second, 100*time.Millisecond)
 
-		return k0sWorkerConfig.Status.ObservedGeneration == k0sWorkerConfig.Generation
-	}
-
-	require.Eventually(t, caughtUp, 10*time.Second, 100*time.Millisecond,
-		"a settled config still has to record the generation it observed")
 	require.NotZero(t, k0sWorkerConfig.Generation, "a zero generation would make the assertion above vacuous")
 
 	// The deferred summary runs for a settled config now, and it is computed from the
@@ -433,8 +422,13 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(k0sWorkerConfig), k0sWorkerConfig))
 	require.Greater(t, k0sWorkerConfig.Generation, before, "the edit has to move the generation")
 
-	require.Eventually(t, caughtUp, 10*time.Second, 100*time.Millisecond,
-		"the field did not follow the generation on a config that is already done")
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		_, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
+		assert.NoError(c, err)
+		assert.NoError(c, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(k0sWorkerConfig), k0sWorkerConfig))
+		assert.Equal(c, k0sWorkerConfig.Generation, k0sWorkerConfig.Status.ObservedGeneration,
+			"the field did not follow the generation on a config that is already done")
+	}, 10*time.Second, 100*time.Millisecond)
 }
 
 func TestReconcileControlPlaneNotReady(t *testing.T) {

@@ -404,35 +404,26 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 		Client:              testEnv,
 		SecretCachingClient: secretCachingClient,
 	}
+	// Read as v1beta2, since the field is only on the stored version and converting
+	// down drops it.
+	hub := &bootstrapv2.K0sControllerConfig{}
+	key := client.ObjectKeyFromObject(k0sControllerConfig)
+
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sControllerConfig)})
+		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: key})
 		assert.NoError(c, err)
 		assert.Equal(c, ctrl.Result{}, result)
 		// We assume that the bootstrap data is already created, so secret bootstrap data shouldn't be created again.
 		assert.True(c, apierrors.IsNotFound(testEnv.Get(ctx, client.ObjectKeyFromObject(k0sControllerConfig), &corev1.Secret{})))
-	}, 10*time.Second, 100*time.Millisecond)
-
-	// A settled config still records the generation it observed, which is what keeps
-	// the staleness signal usable after the data secret exists. Read as v1beta2, since
-	// the field is only on the stored version and converting down drops it.
-	hub := &bootstrapv2.K0sControllerConfig{}
-	key := client.ObjectKeyFromObject(k0sControllerConfig)
-	caughtUp := func() bool {
-		if _, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: key}); err != nil {
-			return false
-		}
 
 		// Uncached, since the status is patched and a cached read still answers from
 		// before the patch.
-		if err := testEnv.GetAPIReader().Get(ctx, key, hub); err != nil {
-			return false
-		}
+		assert.NoError(c, testEnv.GetAPIReader().Get(ctx, key, hub))
+		// A settled config still records the generation it observed, which is what keeps
+		// the staleness signal usable after the data secret exists.
+		assert.Equal(c, hub.Generation, hub.Status.ObservedGeneration)
+	}, 10*time.Second, 100*time.Millisecond)
 
-		return hub.Status.ObservedGeneration == hub.Generation
-	}
-
-	require.Eventually(t, caughtUp, 10*time.Second, 100*time.Millisecond,
-		"a settled config still has to record the generation it observed")
 	require.NotZero(t, hub.Generation, "a zero generation would make the assertion above vacuous")
 
 	// The deferred summary runs for a settled config now, and it is computed from the
@@ -449,8 +440,13 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, key, hub))
 	require.Greater(t, hub.Generation, before, "the edit has to move the generation")
 
-	require.Eventually(t, caughtUp, 10*time.Second, 100*time.Millisecond,
-		"the field did not follow the generation on a config that is already done")
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		_, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: key})
+		assert.NoError(c, err)
+		assert.NoError(c, testEnv.GetAPIReader().Get(ctx, key, hub))
+		assert.Equal(c, hub.Generation, hub.Status.ObservedGeneration,
+			"the field did not follow the generation on a config that is already done")
+	}, 10*time.Second, 100*time.Millisecond)
 }
 
 func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
