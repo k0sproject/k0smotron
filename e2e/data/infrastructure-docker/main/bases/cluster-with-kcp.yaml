@@ -61,12 +61,11 @@ spec:
     preStartCommands:
     - echo "Pre start command executed"
   machineTemplate:
-    spec:
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: DevMachineTemplate
-        name: docker-test-cp-template
-        namespace: ${NAMESPACE}
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DevMachineTemplate
+      name: docker-test-cp-template
+      namespace: ${NAMESPACE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DevCluster
