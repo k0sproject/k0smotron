@@ -265,7 +265,7 @@ func main() {
 	}
 
 	// setup controllers based on the enabled controllers and whether the CAPI core provider is installed
-	setupControllersOrDie(ctx, isCAPICoreProviderInstalled, mgr, clientSet, restConfig, ctrlOptions)
+	setupControllersOrDie(ctx, isCAPICoreProviderInstalled, mgr, clientSet, restConfig, watchFilter, ctrlOptions)
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -334,7 +334,7 @@ func isCAPIControllerEnabled(dc *discovery.DiscoveryClient) (bool, error) {
 	return false, nil
 }
 
-func setupControllersOrDie(ctx context.Context, isCAPICoreProviderInstalled bool, mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, opts capictrl.Options) {
+func setupControllersOrDie(ctx context.Context, isCAPICoreProviderInstalled bool, mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, watchFilter string, opts capictrl.Options) {
 	switch {
 	// CAPI might be installed, but the standalone controller is explicitly enabled, which means the
 	// CAPI controllers should not be started.
@@ -345,7 +345,7 @@ func setupControllersOrDie(ctx context.Context, isCAPICoreProviderInstalled bool
 		// - infrastructure controller
 		// CAPI integration definition: https://docs.k0smotron.io/stable/usage-overview/#cluster-api-integration
 		setupLog.Info("Setting up controllers for k0smotron Cluster API integration")
-		setupCAPIControllersOrDie(ctx, mgr, clientSet, restConfig, opts)
+		setupCAPIControllersOrDie(ctx, mgr, clientSet, restConfig, watchFilter, opts)
 	default:
 		// This setup includes only the standalone controllers.
 		// Standalone definition: https://docs.k0smotron.io/stable/usage-overview/#standalone
@@ -383,7 +383,7 @@ func setStandaloneControllersOrDie(mgr manager.Manager, clientSet *kubernetes.Cl
 	}
 }
 
-func setupCAPIControllersOrDie(ctx context.Context, mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, ctrlOptions capictrl.Options) {
+func setupCAPIControllersOrDie(ctx context.Context, mgr manager.Manager, clientSet *kubernetes.Clientset, restConfig *rest.Config, watchFilter string, ctrlOptions capictrl.Options) {
 	secretCachingClient, err := client.New(mgr.GetConfig(), client.Options{
 		HTTPClient: mgr.GetHTTPClient(),
 		Scheme:     mgr.GetScheme(),
@@ -500,15 +500,17 @@ func setupCAPIControllersOrDie(ctx context.Context, mgr manager.Manager, clientS
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			WatchFilterValue:    watchFilter,
+		}).SetupWithManager(ctx, mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "RemoteMachine")
 			os.Exit(1)
 		}
 
 		if err = (&infrastructure.ClusterController{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			Client:           mgr.GetClient(),
+			Scheme:           mgr.GetScheme(),
+			WatchFilterValue: watchFilter,
+		}).SetupWithManager(ctx, mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
 			os.Exit(1)
 		}
