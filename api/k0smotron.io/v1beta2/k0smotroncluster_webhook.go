@@ -41,10 +41,6 @@ func (c ClusterValidator) ValidateCreate(_ context.Context, kmc *Cluster) (warni
 		return nil, fmt.Errorf("expected a Cluster object but got nil")
 	}
 
-	if err := kmc.validateCertificates(); err != nil {
-		return nil, err
-	}
-
 	return c.ValidateClusterSpec(&kmc.Spec)
 }
 
@@ -191,6 +187,10 @@ func validateCertificates(kcs *ClusterSpec) error {
 		return fmt.Errorf("spec.certificates.duration must be positive")
 	}
 
+	if kcs.Certificates.RenewBefore != nil && kcs.Certificates.RenewBefore.Duration <= 0 {
+		return fmt.Errorf("spec.certificates.renewBefore must be positive")
+	}
+
 	if kcs.Certificates.Duration == nil || kcs.Certificates.RenewBefore == nil {
 		return nil
 	}
@@ -200,11 +200,6 @@ func validateCertificates(kcs *ClusterSpec) error {
 	}
 
 	return nil
-}
-
-// validateCertificates delegates to the shared ClusterSpec validation.
-func (c *Cluster) validateCertificates() error {
-	return validateCertificates(&c.Spec)
 }
 
 // validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't

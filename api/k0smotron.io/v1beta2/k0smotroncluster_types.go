@@ -546,7 +546,7 @@ type CertificatesSpec struct {
 	Duration *metav1.Duration `json:"duration,omitempty"`
 
 	// RenewBefore is how long before expiry a certificate is renewed. It must
-	// be shorter than Duration.
+	// be positive and shorter than Duration.
 	//+kubebuilder:default="720h"
 	//+kubebuilder:validation:Optional
 	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`

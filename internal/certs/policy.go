@@ -35,7 +35,25 @@ const (
 	// about to be. Signing with a zero or negative expiry produces a
 	// certificate that is invalid on arrival.
 	minLeafExpiry = time.Hour
+
+	// minRenewalGain is how much later than the current certificate a renewed
+	// one must expire for renewal to be worthwhile. cfssl backdates NotBefore
+	// by a few minutes, so a leaf already clamped to its CA ends slightly
+	// before the CA rather than exactly on it; the margin absorbs that.
+	minRenewalGain = time.Hour
 )
+
+// CanExtend reports whether re-signing a certificate under a CA expiring at
+// caNotAfter would produce a certificate that meaningfully outlives the current
+// one.
+//
+// Once the CA is closer to expiry than renewBefore, every leaf is clamped to the
+// CA and is therefore due for renewal the moment it is signed. Without this
+// check each reconcile would re-sign it again, change the pod-template
+// fingerprint and roll the pods in an endless loop until the CA is rotated.
+func CanExtend(i Info, caNotAfter time.Time) bool {
+	return caNotAfter.Sub(i.NotAfter) > minRenewalGain
+}
 
 // SigningPolicy builds an explicit cfssl signing policy.
 //

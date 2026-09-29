@@ -162,15 +162,23 @@ func TestCluster_ValidateCertificates(t *testing.T) {
 			wantErr:     true,
 			errContains: "duration must be positive",
 		},
+		{
+			name:        "zero renewBefore is rejected",
+			certs:       &CertificatesSpec{Duration: dur(48 * time.Hour), RenewBefore: dur(0)},
+			wantErr:     true,
+			errContains: "renewBefore must be positive",
+		},
+		{
+			name:        "negative renewBefore is rejected",
+			certs:       &CertificatesSpec{Duration: dur(48 * time.Hour), RenewBefore: dur(-time.Hour)},
+			wantErr:     true,
+			errContains: "renewBefore must be positive",
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			c := &Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-				Spec:       ClusterSpec{Certificates: tc.certs},
-			}
-			err := c.validateCertificates()
+			err := validateCertificates(&ClusterSpec{Certificates: tc.certs})
 			if tc.wantErr {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.errContains)

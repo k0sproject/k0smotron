@@ -49,7 +49,6 @@ import (
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	kcerts "github.com/k0sproject/k0smotron/v2/internal/certs"
 	kutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
-	"github.com/k0sproject/k0smotron/v2/internal/metrics"
 )
 
 var (
@@ -121,6 +120,11 @@ type currentReconcileState struct {
 	// this reconcile. It gates stamping the rollout fingerprint, so an operator upgrade
 	// does not roll pods for certificates that never changed.
 	certificatesRenewed bool
+	// nextCertificateRenewal is the earliest moment a managed certificate
+	// becomes due for renewal, or the zero time when there is nothing to
+	// schedule. User-supplied certificates and certificates renewal cannot
+	// extend are excluded, since requeueing for them would change nothing.
+	nextCertificateRenewal time.Time
 }
 
 // filterPurposes narrows a set of certificate infos to the given purposes, so
@@ -389,7 +393,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	// reconcile, which re-signs again — a self-sustaining etcd rolling-restart
 	// loop. Without the fingerprint the annotation was merely wasteful; with it
 	// the annotation is an outage.
-	if clearRenewCertificatesAnnotation(kmc) {
+	//
+	// The request is consumed even when a renewal failed: retrying it would
+	// re-sign, and roll, every certificate that did succeed. The failure is
+	// already surfaced by the CertificateRenewalFailed events above, and a
+	// certificate that is actually due is retried by the regular threshold.
+	if clearRenewCertificatesAnnotation(kmc) && len(kmcScope.currentReconcileState.certificateRenewalErrors) == 0 {
 		r.Recorder.Event(kmc, corev1.EventTypeNormal, "CertificateRenewed",
 			"Certificates renewed on request")
 	}
@@ -436,8 +445,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 
 	// Requeue when the earliest certificate becomes due, rather than relying on
 	// the resync period: an otherwise idle cluster must still renew on time.
-	_, renewBefore := certificateSettings(kmc)
-	if due := kcerts.EarliestRenewal(kmcScope.currentReconcileState.certificates, renewBefore); !due.IsZero() {
+	if due := kmcScope.currentReconcileState.nextCertificateRenewal; !due.IsZero() {
 		after := time.Until(due)
 		if after <= 0 {
 			// Already past due, which is exactly what a failed renewal looks
@@ -459,14 +467,6 @@ func (r *ClusterReconciler) reconcileDelete(ctx context.Context, scope *kmcScope
 	logger := log.FromContext(ctx)
 
 	logger.Info("Reconcile cluster delete")
-
-	// Drop this cluster's certificate metric series first, before any
-	// error-prone deletion step below can return early: a deleted cluster must
-	// stop reporting a certificate that will never be renewed even if the rest
-	// of the delete flow stalls on a persistent error. Resetting early is
-	// safe — if deletion is somehow abandoned, the next successful reconcile
-	// re-emits the series.
-	metrics.ResetCluster(kmc.Namespace, kmc.Name)
 
 	// If controlplanes run in a different cluster, we need to delete the resources associated with
 	// the k0smotron.Cluster by deleting the external owner which owns all the resources associated

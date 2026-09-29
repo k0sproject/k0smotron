@@ -36,8 +36,12 @@ spec:
     renewBefore: 720h    # renew this long before expiry
 ```
 
-`renewBefore` must be shorter than `duration`. A leaf certificate is
-additionally clamped so that it never outlives the CA that issued it.
+`renewBefore` must be positive and shorter than `duration`. A leaf certificate
+is additionally clamped so that it never outlives the CA that issued it. Once
+the CA itself is within `renewBefore` of expiry, a leaf that already expires
+together with the CA is no longer renewed automatically, since re-signing it
+cannot extend its validity; `CertificatesExpiring` stays `True` until the CA is
+rotated.
 
 `spec.certificates` exists only in `k0smotron.io/v1beta2`. Reading and
 re-applying a `Cluster` through the deprecated `v1beta1` API drops this field,
@@ -63,19 +67,6 @@ Apply the annotation to the `k0smotron.io/Cluster` resource, **not** to the
 child `Cluster`, so annotating the `K0smotronControlPlane` has no effect at all.
 
 ## Observing expiry
-
-Two metrics are exported on the manager's metrics endpoint:
-
-- `k0smotron_certificate_expiration_timestamp_seconds{namespace,cluster,kind,purpose}`
-- `k0smotron_certificate_renewal_total{namespace,cluster,purpose,result}`
-
-An alert on the first one:
-
-```yaml
-- alert: K0smotronCertificateExpiringSoon
-  expr: k0smotron_certificate_expiration_timestamp_seconds - time() < 7 * 24 * 3600
-  for: 1h
-```
 
 Two conditions are set on the cluster resource:
 

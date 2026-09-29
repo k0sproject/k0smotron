@@ -128,20 +128,6 @@ func TestNeedsRenewal(t *testing.T) {
 	}
 }
 
-func TestEarliestRenewal(t *testing.T) {
-	base := time.Date(2026, 8, 17, 0, 0, 0, 0, time.UTC)
-	is := []Info{
-		{Purpose: "a", NotAfter: base.Add(100 * 24 * time.Hour)},
-		{Purpose: "b", NotAfter: base.Add(40 * 24 * time.Hour)},
-	}
-	got := EarliestRenewal(is, 30*24*time.Hour)
-	assert.Equal(t, base.Add(10*24*time.Hour).Unix(), got.Unix())
-}
-
-func TestEarliestRenewal_empty(t *testing.T) {
-	assert.True(t, EarliestRenewal(nil, time.Hour).IsZero())
-}
-
 func TestFingerprint(t *testing.T) {
 	a := []Info{{Purpose: "etcd-server", Serial: "2a"}, {Purpose: "etcd-peer", Serial: "2b"}}
 	// Order must not matter.

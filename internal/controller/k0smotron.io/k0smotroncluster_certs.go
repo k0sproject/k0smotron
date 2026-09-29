@@ -40,7 +40,6 @@ import (
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	kcerts "github.com/k0sproject/k0smotron/v2/internal/certs"
 	kutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
-	"github.com/k0sproject/k0smotron/v2/internal/metrics"
 )
 
 // certificateSettings resolves the effective certificate duration and renewal
@@ -63,12 +62,24 @@ func certificateSettings(kmc *km.Cluster) (time.Duration, time.Duration) {
 
 // shouldRenew reports whether a certificate must be re-signed now, either
 // because it entered its renewal window or because the operator asked for it
-// explicitly via the renew annotation.
-func shouldRenew(kmc *km.Cluster, i kcerts.Info, renewBefore time.Duration, now time.Time) bool {
+// explicitly via the renew annotation. A certificate already clamped to its CA
+// is not renewed automatically: re-signing cannot extend it (see
+// kcerts.CanExtend), and doing so on every reconcile would roll the pods
+// endlessly.
+func shouldRenew(kmc *km.Cluster, i kcerts.Info, renewBefore time.Duration, caNotAfter, now time.Time) bool {
 	if _, forced := kmc.Annotations[km.RenewCertificatesAnnotation]; forced {
 		return true
 	}
-	return kcerts.NeedsRenewal(i, renewBefore, now)
+	return kcerts.NeedsRenewal(i, renewBefore, now) && kcerts.CanExtend(i, caNotAfter)
+}
+
+// scheduleCertificateRenewal records the moment a certificate becomes due for
+// renewal, keeping the earliest one so that Reconcile can requeue in time.
+func (scope *kmcScope) scheduleCertificateRenewal(due time.Time) {
+	next := &scope.currentReconcileState.nextCertificateRenewal
+	if next.IsZero() || due.Before(*next) {
+		*next = due
+	}
 }
 
 // isManagedSecret reports whether a certificate secret was created by
@@ -180,10 +191,19 @@ func (scope *kmcScope) signLeaves(
 		return nil, fmt.Errorf("error looking up certs: %w", err)
 	}
 
+	// schedule requeues for a managed certificate's renewal. Certificates that
+	// renewal cannot extend are left to the resync period: requeueing for them
+	// would only re-evaluate a renewal that is never going to happen.
+	schedule := func(i kcerts.Info) {
+		if kcerts.CanExtend(i, caCert.NotAfter) {
+			scope.scheduleCertificateRenewal(i.NotAfter.Add(-renewBefore))
+		}
+	}
+
 	g := &csr.Generator{Validator: genkey.Validator}
 	infos := make([]kcerts.Info, 0, len(leaves))
 	var renewalErrs []error
-	var issuedPurposes []string
+	issued := false
 
 	// Renewal errors are reported, never returned: they must not abort the
 	// rest of the reconcile loop. A defer drains them on every exit path —
@@ -219,7 +239,8 @@ func (scope *kmcScope) signLeaves(
 				continue
 			}
 
-			if !shouldRenew(kmc, info, renewBefore, now) {
+			if !shouldRenew(kmc, info, renewBefore, caCert.NotAfter, now) {
+				schedule(info)
 				infos = append(infos, info)
 				continue
 			}
@@ -228,9 +249,9 @@ func (scope *kmcScope) signLeaves(
 			if err != nil {
 				// A renewal failure must not break the rest of reconciliation:
 				// the existing certificate is still valid until its expiry, and
-				// the condition plus the counter surface the problem.
-				metrics.RecordRenewal(kmc.Namespace, kmc.Name, purpose, metrics.RenewalResultError)
+				// the condition plus the event surface the problem.
 				renewalErrs = append(renewalErrs, fmt.Errorf("renewing %q: %w", purpose, err))
+				scope.scheduleCertificateRenewal(now)
 				infos = append(infos, info)
 				continue
 			}
@@ -239,14 +260,13 @@ func (scope *kmcScope) signLeaves(
 			// update the existing secret in place.
 			secretKey := client.ObjectKey{Namespace: kmc.Namespace, Name: secret.Name(kmc.Name, c.Purpose)}
 			if err := kcerts.SaveRenewed(ctx, scope.client, secretKey, crt, keyPEM); err != nil {
-				metrics.RecordRenewal(kmc.Namespace, kmc.Name, purpose, metrics.RenewalResultError)
 				renewalErrs = append(renewalErrs, fmt.Errorf("saving renewed %q: %w", purpose, err))
+				scope.scheduleCertificateRenewal(now)
 				infos = append(infos, info)
 				continue
 			}
 
 			c.KeyPair = &certs.KeyPair{Cert: crt, Key: keyPEM}
-			metrics.RecordRenewal(kmc.Namespace, kmc.Name, purpose, metrics.RenewalResultSuccess)
 			scope.currentReconcileState.certificatesRenewed = true
 
 			renewed, err := inspectKeyPair(purpose, crt)
@@ -258,6 +278,7 @@ func (scope *kmcScope) signLeaves(
 				renewalErrs = append(renewalErrs, fmt.Errorf("inspecting freshly renewed certificate %q: %w", purpose, err))
 				continue
 			}
+			schedule(renewed)
 			infos = append(infos, renewed)
 			continue
 		}
@@ -266,36 +287,26 @@ func (scope *kmcScope) signLeaves(
 		// the etcd and control plane StatefulSets cannot start at all.
 		crt, keyPEM, err := signOne(g, signr, purpose, hosts(purpose), org(purpose))
 		if err != nil {
-			metrics.RecordRenewal(kmc.Namespace, kmc.Name, purpose, metrics.RenewalResultError)
 			return infos, fmt.Errorf("signing certificate %q: %w", purpose, err)
 		}
 
 		c.Generated = true
 		c.KeyPair = &certs.KeyPair{Cert: crt, Key: keyPEM}
-		// Success is not counted yet: SaveGenerated below is what actually
-		// persists this certificate, and it can still fail. Counting here
-		// would claim success before the write is known to have happened.
-		issuedPurposes = append(issuedPurposes, purpose)
+		issued = true
 
-		issued, err := inspectKeyPair(purpose, crt)
+		info, err := inspectKeyPair(purpose, crt)
 		if err != nil {
 			return infos, fmt.Errorf("inspecting freshly signed certificate %q: %w", purpose, err)
 		}
-		infos = append(infos, issued)
+		schedule(info)
+		infos = append(infos, info)
 	}
 
 	if err := leaves.SaveGenerated(ctx, scope.client, util.ObjectKey(kmc), owner); err != nil {
-		for _, purpose := range issuedPurposes {
-			metrics.RecordRenewal(kmc.Namespace, kmc.Name, purpose, metrics.RenewalResultError)
-		}
 		return infos, err
 	}
 
-	for _, purpose := range issuedPurposes {
-		metrics.RecordRenewal(kmc.Namespace, kmc.Name, purpose, metrics.RenewalResultSuccess)
-	}
-
-	if len(issuedPurposes) > 0 {
+	if issued {
 		// First issuance counts too: a certificate appearing for the first time on
 		// an existing cluster (e.g. apiserver-etcd-client when storage changes)
 		// needs the consuming pods to pick it up.

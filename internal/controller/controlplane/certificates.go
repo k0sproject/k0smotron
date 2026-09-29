@@ -64,7 +64,7 @@ func inspectClusterCertificates(ctx context.Context, c client.Client, key client
 
 		// The purpose label carries the fixed cluster-api purpose string
 		// rather than the secret name, which a user may have influenced and
-		// which would otherwise leak into report.Emit's metric labels.
+		// which would otherwise leak into condition messages.
 		if s.Labels == nil {
 			s.Labels = map[string]string{}
 		}

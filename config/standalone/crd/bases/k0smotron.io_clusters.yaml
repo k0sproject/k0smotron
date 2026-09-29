@@ -5015,7 +5015,7 @@ spec:
                     default: 720h
                     description: |-
                       RenewBefore is how long before expiry a certificate is renewed. It must
-                      be shorter than Duration.
+                      be positive and shorter than Duration.
                     type: string
                 type: object
               controlPlaneFlags:

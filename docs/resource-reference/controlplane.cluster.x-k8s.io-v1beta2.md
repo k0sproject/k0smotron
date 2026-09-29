@@ -2425,7 +2425,7 @@ outlive the CA that issued them.<br/>
         <td>string</td>
         <td>
           RenewBefore is how long before expiry a certificate is renewed. It must
-be shorter than Duration.<br/>
+be positive and shorter than Duration.<br/>
           <br/>
             <i>Default</i>: 720h<br/>
         </td>
@@ -12893,7 +12893,7 @@ outlive the CA that issued them.<br/>
         <td>string</td>
         <td>
           RenewBefore is how long before expiry a certificate is renewed. It must
-be shorter than Duration.<br/>
+be positive and shorter than Duration.<br/>
           <br/>
             <i>Default</i>: 720h<br/>
         </td>

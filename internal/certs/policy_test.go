@@ -94,3 +94,24 @@ func TestSigningPolicy_zeroDurationWithShortLivedCA(t *testing.T) {
 	require.NotNil(t, p.Default)
 	assert.Equal(t, 5*time.Minute, p.Default.Expiry, "zero-duration fallback must be clamped to CA remaining lifetime")
 }
+
+func TestCanExtend(t *testing.T) {
+	caNotAfter := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		notAfter time.Time
+		want     bool
+	}{
+		{"leaf well before CA expiry", caNotAfter.Add(-90 * 24 * time.Hour), true},
+		// cfssl backdates NotBefore, so a leaf clamped to the CA ends a few
+		// minutes before the CA rather than exactly on it.
+		{"leaf already clamped to CA", caNotAfter.Add(-5 * time.Minute), false},
+		{"leaf ending with the CA", caNotAfter, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, CanExtend(Info{NotAfter: tc.notAfter}, caNotAfter))
+		})
+	}
+}

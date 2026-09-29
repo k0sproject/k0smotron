@@ -101,20 +101,6 @@ func NeedsRenewal(i Info, renewBefore time.Duration, now time.Time) bool {
 	return !now.Before(i.NotAfter.Add(-renewBefore))
 }
 
-// EarliestRenewal returns the earliest moment at which any of the given
-// certificates becomes due for renewal. It returns the zero time when there is
-// nothing to schedule.
-func EarliestRenewal(is []Info, renewBefore time.Duration) time.Time {
-	var earliest time.Time
-	for _, i := range is {
-		due := i.NotAfter.Add(-renewBefore)
-		if earliest.IsZero() || due.Before(earliest) {
-			earliest = due
-		}
-	}
-	return earliest
-}
-
 // Fingerprint is a stable hash over the certificate serials. It is stamped onto
 // a pod template so that re-signing a certificate rolls the pods that mount it.
 // The result is independent of the order of the input.

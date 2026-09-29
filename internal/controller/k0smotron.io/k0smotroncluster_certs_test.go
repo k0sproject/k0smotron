@@ -80,25 +80,52 @@ func TestCertificateSettings(t *testing.T) {
 func TestShouldRenew(t *testing.T) {
 	now := time.Date(2026, 8, 17, 0, 0, 0, 0, time.UTC)
 	renewBefore := 30 * 24 * time.Hour
+	caNotAfter := now.Add(10 * 365 * 24 * time.Hour)
 
 	t.Run("forced by annotation regardless of threshold", func(t *testing.T) {
 		kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{km.RenewCertificatesAnnotation: ""},
 		}}
 		info := certs.Info{NotAfter: now.Add(365 * 24 * time.Hour)}
-		assert.True(t, shouldRenew(kmc, info, renewBefore, now))
+		assert.True(t, shouldRenew(kmc, info, renewBefore, caNotAfter, now))
 	})
 
 	t.Run("not forced and far from expiry", func(t *testing.T) {
 		kmc := &km.Cluster{}
 		info := certs.Info{NotAfter: now.Add(365 * 24 * time.Hour)}
-		assert.False(t, shouldRenew(kmc, info, renewBefore, now))
+		assert.False(t, shouldRenew(kmc, info, renewBefore, caNotAfter, now))
 	})
 
 	t.Run("inside threshold", func(t *testing.T) {
 		kmc := &km.Cluster{}
 		info := certs.Info{NotAfter: now.Add(10 * 24 * time.Hour)}
-		assert.True(t, shouldRenew(kmc, info, renewBefore, now))
+		assert.True(t, shouldRenew(kmc, info, renewBefore, caNotAfter, now))
+	})
+
+	// Once the CA itself is inside the renewal window, a re-signed leaf is
+	// clamped to the CA and immediately due again. Renewing it would re-sign
+	// and roll the pods on every reconcile.
+	t.Run("inside threshold but already clamped to the CA", func(t *testing.T) {
+		kmc := &km.Cluster{}
+		shortCA := now.Add(10 * 24 * time.Hour)
+		info := certs.Info{NotAfter: shortCA.Add(-5 * time.Minute)}
+		assert.False(t, shouldRenew(kmc, info, renewBefore, shortCA, now))
+	})
+
+	t.Run("inside threshold and CA can still extend it", func(t *testing.T) {
+		kmc := &km.Cluster{}
+		shortCA := now.Add(20 * 24 * time.Hour)
+		info := certs.Info{NotAfter: now.Add(5 * 24 * time.Hour)}
+		assert.True(t, shouldRenew(kmc, info, renewBefore, shortCA, now))
+	})
+
+	t.Run("forced even when clamped to the CA", func(t *testing.T) {
+		kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{km.RenewCertificatesAnnotation: ""},
+		}}
+		shortCA := now.Add(10 * 24 * time.Hour)
+		info := certs.Info{NotAfter: shortCA.Add(-5 * time.Minute)}
+		assert.True(t, shouldRenew(kmc, info, renewBefore, shortCA, now))
 	})
 }
 
@@ -212,8 +239,8 @@ func newCertTestScopeWithInterceptor(funcs interceptor.Funcs, objs ...client.Obj
 // stamps the external owner (a ConfigMap), not the Cluster, on its
 // certificate secrets. Against the pre-fix isManagedSecret (which checked
 // only kmc.UID), this secret would be classified as user-supplied and never
-// renewed — reproducing the etcd expiry bug with no error and no metric. This
-// test fails against that pre-fix behavior.
+// renewed — reproducing the etcd expiry bug with no error and no condition
+// change. This test fails against that pre-fix behavior.
 func TestSignLeaves_renewsSecretOwnedByExternalOwner(t *testing.T) {
 	now := time.Now()
 	caCertPEM, caKeyPEM := testCA(t, now.Add(10*365*24*time.Hour))
@@ -373,4 +400,79 @@ func TestSignLeaves_userSuppliedSecretIsNeverRewritten(t *testing.T) {
 	require.NoError(t, scope.client.Get(context.Background(),
 		client.ObjectKey{Namespace: "default", Name: "kmc-ingress-haproxy"}, got))
 	assert.Equal(t, oldCert, got.Data["tls.crt"], "a user-supplied certificate must never be overwritten")
+}
+
+// TestSignLeaves_leafClampedToExpiringCAIsNotResigned guards against a rolling
+// restart loop. Once the CA is inside the renewal window, a re-signed leaf is
+// clamped to the CA and is due for renewal again immediately. Re-signing it on
+// every reconcile would change the pod-template fingerprint each time.
+func TestSignLeaves_leafClampedToExpiringCAIsNotResigned(t *testing.T) {
+	now := time.Now()
+	caNotAfter := now.Add(10 * 24 * time.Hour) // inside the default 720h renewal window
+	caCertPEM, caKeyPEM := testCA(t, caNotAfter)
+
+	// A leaf already clamped to the CA: cfssl backdates NotBefore, so it ends a
+	// few minutes before the CA rather than exactly on it.
+	oldCert := testLeafCertPEM(t, "etcd-server", 3, caNotAfter.Add(-5*time.Minute))
+	existing := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "kmc-etcd-server",
+			Namespace:       "default",
+			OwnerReferences: []metav1.OwnerReference{{UID: "cluster-uid"}},
+		},
+		Data: map[string][]byte{"tls.crt": oldCert, "tls.key": []byte("old-key")},
+	}
+
+	scope := newCertTestScope(existing)
+	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default", UID: "cluster-uid"}}
+
+	infos, err := scope.signLeaves(context.Background(), kmc, caCertPEM, caKeyPEM,
+		secret.Certificates{&secret.Certificate{Purpose: "etcd-server"}},
+		func(string) []string { return []string{"localhost"} },
+		func(purpose string) string { return purpose },
+		*metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")),
+	)
+	require.NoError(t, err)
+	require.Len(t, infos, 1)
+
+	assert.False(t, scope.currentReconcileState.certificatesRenewed,
+		"a leaf that renewal cannot extend must not be re-signed")
+	assert.True(t, scope.currentReconcileState.nextCertificateRenewal.IsZero(),
+		"no requeue must be scheduled for a renewal that is never going to happen")
+
+	got := &corev1.Secret{}
+	require.NoError(t, scope.client.Get(context.Background(),
+		client.ObjectKey{Namespace: "default", Name: "kmc-etcd-server"}, got))
+	assert.Equal(t, oldCert, got.Data["tls.crt"])
+}
+
+// TestSignLeaves_schedulesNextRenewal verifies that a healthy managed leaf
+// schedules a requeue for the moment it enters its renewal window.
+func TestSignLeaves_schedulesNextRenewal(t *testing.T) {
+	now := time.Now()
+	caCertPEM, caKeyPEM := testCA(t, now.Add(10*365*24*time.Hour))
+
+	notAfter := now.Add(200 * 24 * time.Hour).Truncate(time.Second)
+	existing := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "kmc-etcd-server",
+			Namespace:       "default",
+			OwnerReferences: []metav1.OwnerReference{{UID: "cluster-uid"}},
+		},
+		Data: map[string][]byte{"tls.crt": testLeafCertPEM(t, "etcd-server", 4, notAfter), "tls.key": []byte("key")},
+	}
+
+	scope := newCertTestScope(existing)
+	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default", UID: "cluster-uid"}}
+
+	_, err := scope.signLeaves(context.Background(), kmc, caCertPEM, caKeyPEM,
+		secret.Certificates{&secret.Certificate{Purpose: "etcd-server"}},
+		func(string) []string { return []string{"localhost"} },
+		func(purpose string) string { return purpose },
+		*metav1.NewControllerRef(kmc, km.GroupVersion.WithKind("Cluster")),
+	)
+	require.NoError(t, err)
+
+	assert.Equal(t, notAfter.Add(-certs.DefaultRenewBefore).Unix(),
+		scope.currentReconcileState.nextCertificateRenewal.Unix())
 }

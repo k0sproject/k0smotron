@@ -66,7 +66,6 @@ import (
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	kcerts "github.com/k0sproject/k0smotron/v2/internal/certs"
 	"github.com/k0sproject/k0smotron/v2/internal/certs/report"
-	"github.com/k0sproject/k0smotron/v2/internal/metrics"
 	kutil "github.com/k0sproject/k0smotron/v2/internal/util"
 )
 
@@ -461,7 +460,6 @@ func (c *K0sController) reconcileCertificateConditions(ctx context.Context, cont
 	status := report.Build(infos, unreadable, kcerts.DefaultRenewBefore, time.Now())
 	conditions.Set(controlplane.kcp, status.Available)
 	conditions.Set(controlplane.kcp, status.Expiring)
-	report.Emit(controlplane.cluster.Namespace, controlplane.cluster.Name, "K0sControlPlane", infos)
 }
 
 func (c *K0sController) reconcileConfig(ctx context.Context, controlplane *controlplane) error {
@@ -708,13 +706,6 @@ func (c *K0sController) reconcileDelete(ctx context.Context, controlplane *contr
 	logger := log.FromContext(ctx)
 
 	clearAvailabilityFailures(&c.availabilityFailures, controlplane.kcp)
-
-	// Drop this cluster's certificate metric series first, before any
-	// error-prone step below can return early: a deleted cluster must stop
-	// reporting a certificate that will never be renewed. Resetting early is
-	// safe - if deletion is somehow abandoned, the next successful reconcile
-	// re-emits the series.
-	metrics.ResetCluster(controlplane.cluster.Namespace, controlplane.cluster.Name)
 
 	// Read from the API server: an empty list makes the finalizer be removed, which cannot be undone,
 	// so it must not be decided from a cache that may not have observed the Machines yet.

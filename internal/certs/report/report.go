@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package report turns certificate inspection results into the conditions and
-// metrics every k0smotron controller publishes, so that all three cluster types
+// Package report turns certificate inspection results into the conditions
+// every k0smotron controller publishes, so that all three cluster types
 // report certificate state identically.
 package report
 
@@ -29,7 +29,6 @@ import (
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/certs"
-	"github.com/k0sproject/k0smotron/v2/internal/metrics"
 )
 
 // Info is re-exported so callers need only import this package.
@@ -144,12 +143,5 @@ func buildExpiring(expired, due, unparseable []string) metav1.Condition {
 			Status: metav1.ConditionFalse,
 			Reason: km.ClusterCertificatesValidReason,
 		}
-	}
-}
-
-// Emit publishes the expiry of every inspected certificate as a metric.
-func Emit(namespace, cluster, kind string, is []Info) {
-	for _, i := range is {
-		metrics.RecordExpiry(namespace, cluster, kind, i)
 	}
 }

@@ -611,7 +611,6 @@ func (c *K0smotronController) reconcileCertificateConditions(ctx context.Context
 	status := report.Build(infos, unreadable, kcerts.DefaultRenewBefore, time.Now())
 	conditions.Set(kcp, status.Available)
 	conditions.Set(kcp, status.Expiring)
-	report.Emit(cluster.Namespace, cluster.Name, "K0smotronControlPlane", infos)
 }
 
 // listControlPlanePods returns the control plane pods for the given cluster. The listing is scoped to the

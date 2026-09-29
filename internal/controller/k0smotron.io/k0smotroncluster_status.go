@@ -142,8 +142,6 @@ func setCertificatesConditions(kmc *k0smotroniov1beta2.Cluster, state currentRec
 
 	conditions.Set(kmc, status.Available)
 	conditions.Set(kmc, status.Expiring)
-
-	report.Emit(kmc.Namespace, kmc.Name, "Cluster", state.certificates)
 }
 
 func setControlPlaneKubeconfigAvailableCondition(kmc *k0smotroniov1beta2.Cluster, controlPlaneState controlplaneState) {
