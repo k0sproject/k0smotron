@@ -75,6 +75,16 @@ func (v *K0sControlPlaneValidator) ValidateCreate(_ context.Context, kcp *K0sCon
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type K0sControlPlane.
 func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, newKcp *K0sControlPlane) (admission.Warnings, error) {
 	warnings := v.validateVersionSuffix(newKcp.Spec.Version)
+
+	// k0s does not support changing --data-dir on an existing setup: the state would be left behind.
+	if oldDir, newDir := oldKcp.Spec.K0sConfigSpec.GetDataDir(), newKcp.Spec.K0sConfigSpec.GetDataDir(); oldDir != newDir {
+		return warnings, field.Invalid(
+			field.NewPath("spec", "k0sConfigSpec", "args"),
+			newDir,
+			fmt.Sprintf("the k0s data directory cannot be changed on an existing cluster (was %q)", oldDir),
+		)
+	}
+
 	if oldKcp.Spec.Version != newKcp.Spec.Version {
 		oldV, err := version.NewVersion(oldKcp.Spec.Version)
 		if err != nil {

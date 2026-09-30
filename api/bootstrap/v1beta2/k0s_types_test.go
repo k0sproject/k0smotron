@@ -99,3 +99,21 @@ func TestK0sConfigSpecSingleNodeEnabledNilSpec(t *testing.T) {
 	var spec *K0sConfigSpec
 	assert.False(t, spec.SingleNodeEnabled())
 }
+
+func TestK0sConfigSpecGetDataDir(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "default", want: "/var/lib/k0s"},
+		{name: "equals form", args: []string{"--data-dir=/data/k0s"}, want: "/data/k0s"},
+		{name: "separate value", args: []string{"--data-dir", "/data/k0s"}, want: "/data/k0s"},
+		{name: "empty value", args: []string{"--data-dir="}, want: "/var/lib/k0s"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := &K0sConfigSpec{Args: tc.args}
+			assert.Equal(t, tc.want, spec.GetDataDir())
+		})
+	}
+}

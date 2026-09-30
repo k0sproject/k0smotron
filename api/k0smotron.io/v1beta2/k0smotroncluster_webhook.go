@@ -63,6 +63,11 @@ func (c ClusterValidator) ValidateDelete(_ context.Context, _ *Cluster) (warning
 
 // ValidateClusterSpecUpdate validates the ClusterSpec during an update and returns any warnings or errors.
 func (c ClusterValidator) ValidateClusterSpecUpdate(oldKCS, kcs *ClusterSpec) (warnings admission.Warnings, err error) {
+	// k0s does not support changing --data-dir on an existing setup: the state would be left behind.
+	if oldDir, newDir := oldKCS.GetDataDir(), kcs.GetDataDir(); oldDir != newDir {
+		return warnings, fmt.Errorf("the k0s data directory cannot be changed on an existing cluster (from %q to %q)", oldDir, newDir)
+	}
+
 	// This doesn't prevent running kubectl scale command, but better than nothing
 	if kcs.Storage.Type == StorageTypeNATS && oldKCS.Replicas != kcs.Replicas {
 		return warnings, fmt.Errorf("NATS storage does not support scaling, replicas cannot be changed from %d to %d. "+

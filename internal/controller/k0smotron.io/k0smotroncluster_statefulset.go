@@ -340,6 +340,8 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		statefulSet.Spec.Template.Spec.TopologySpreadConstraints = kmc.Spec.TopologySpreadConstraints
 	}
 
+	k0sDataDir := kmc.Spec.GetDataDir()
+
 	switch kmc.Spec.Persistence.Type {
 	case "hostPath":
 		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
@@ -352,7 +354,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		})
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.GetVolumeName(),
-			MountPath: "/var/lib/k0s",
+			MountPath: k0sDataDir,
 		})
 	case "pvc":
 		if kmc.Spec.Persistence.PersistentVolumeClaim == nil {
@@ -380,7 +382,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.Spec.Persistence.PersistentVolumeClaim.Name,
-			MountPath: "/var/lib/k0s",
+			MountPath: k0sDataDir,
 		})
 	case "emptyDir":
 		fallthrough
@@ -393,7 +395,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		})
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.GetVolumeName(),
-			MountPath: "/var/lib/k0s",
+			MountPath: k0sDataDir,
 		})
 	}
 
@@ -402,7 +404,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      manifest.Name,
-			MountPath: fmt.Sprintf("/var/lib/k0s/manifests/%s", manifest.Name),
+			MountPath: fmt.Sprintf("%s/manifests/%s", k0sDataDir, manifest.Name),
 			ReadOnly:  true,
 		})
 	}
@@ -462,7 +464,7 @@ data:
 
 	statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 		Name:      cm.Name,
-		MountPath: "/var/lib/k0s/manifests/k0s-telemetry",
+		MountPath: fmt.Sprintf("%s/manifests/k0s-telemetry", k0sDataDir),
 		ReadOnly:  true,
 	})
 
@@ -646,7 +648,9 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 		k0sDataVolumeName = kmc.Spec.Persistence.PersistentVolumeClaim.Name
 	}
 
-	// We need to copy the certs from the projected volume to the /var/lib/k0s/pki directory
+	k0sDataDir := kmc.Spec.GetDataDir()
+
+	// We need to copy the certs from the projected volume to the <data-dir>/pki directory
 	// Otherwise k0s will trip over the permissions and RO mounts
 	sfs.Spec.Template.Spec.InitContainers = append(sfs.Spec.Template.Spec.InitContainers, v1.Container{
 		Name:  "certs-init",
@@ -654,7 +658,7 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 		Command: []string{
 			"sh",
 			"-c",
-			"mkdir -p /var/lib/k0s/pki && rm -rf /var/lib/k0s/pki/server.* && cp /certs-init/*.* /var/lib/k0s/pki/",
+			fmt.Sprintf("mkdir -p %s/pki && rm -rf %s/pki/server.* && cp /certs-init/*.* %s/pki/", k0sDataDir, k0sDataDir, k0sDataDir),
 		},
 		VolumeMounts: []v1.VolumeMount{
 			{
@@ -663,7 +667,7 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 			},
 			{
 				Name:      k0sDataVolumeName,
-				MountPath: "/var/lib/k0s",
+				MountPath: k0sDataDir,
 			},
 		},
 	})
@@ -715,7 +719,7 @@ func addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
 		}},
 		VolumeMounts: []v1.VolumeMount{{
 			Name:      kmc.GetVolumeName(),
-			MountPath: "/var/lib/k0s",
+			MountPath: kmc.Spec.GetDataDir(),
 		}, {
 			Name:      kmc.GetMonitoringConfigMapName(),
 			MountPath: "/prometheus/prometheus.yml",

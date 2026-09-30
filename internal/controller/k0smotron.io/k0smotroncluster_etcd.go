@@ -41,9 +41,11 @@ import (
 )
 
 var etcdEntrypointScriptTmpl *template.Template
+var etcdInitScriptTmpl *template.Template
 
 func init() {
 	etcdEntrypointScriptTmpl = template.Must(template.New("entrypoint.sh").Parse(etcdEntrypointScriptTemplate))
+	etcdInitScriptTmpl = template.Must(template.New("init.sh").Parse(initEntryScriptTemplate))
 }
 
 func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster, certFingerprint string) (ctrl.Result, error) {
@@ -119,6 +121,8 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 	maps.Copy(metadataLabels, selectorLabels)
 	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
+	k0sDataDir := kmc.Spec.GetDataDir()
+
 	cronJob := batchv1.CronJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "batch/v1",
@@ -148,15 +152,15 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 									ImagePullPolicy: v1.PullIfNotPresent,
 									Args: []string{
 										fmt.Sprintf("--endpoints=https://%s:2379", kmc.GetEtcdServiceName()),
-										"--cacert=/var/lib/k0s/pki/etcd/ca.crt",
-										"--cert=/var/lib/k0s/pki/etcd/client.crt",
-										"--key=/var/lib/k0s/pki/etcd/client.key",
+										fmt.Sprintf("--cacert=%s/pki/etcd/ca.crt", k0sDataDir),
+										fmt.Sprintf("--cert=%s/pki/etcd/client.crt", k0sDataDir),
+										fmt.Sprintf("--key=%s/pki/etcd/client.key", k0sDataDir),
 										"--cluster",
 										"--defrag-rule",
 										kmc.Spec.Storage.Etcd.DefragJob.Rule,
 									},
 									VolumeMounts: []v1.VolumeMount{
-										{Name: "certs", MountPath: "/var/lib/k0s/pki/etcd/"},
+										{Name: "certs", MountPath: fmt.Sprintf("%s/pki/etcd/", k0sDataDir)},
 									},
 								},
 							},
@@ -262,10 +266,14 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 
 	var etcdEntrypointScriptBuf bytes.Buffer
 	_ = etcdEntrypointScriptTmpl.Execute(&etcdEntrypointScriptBuf, struct {
-		Args []string
+		Args    []string
+		DataDir string
 	}{
-		Args: kmc.Spec.Storage.Etcd.Args,
+		Args:    kmc.Spec.Storage.Etcd.Args,
+		DataDir: kmc.Spec.GetDataDir(),
 	})
+
+	k0sDataDir := kmc.Spec.GetDataDir()
 
 	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
@@ -361,9 +369,9 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 						Env: []v1.EnvVar{
 							{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
 							{Name: "ETCDCTL_ENDPOINTS", Value: fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
-							{Name: "ETCDCTL_CACERT", Value: "/var/lib/k0s/pki/etcd/ca.crt"},
-							{Name: "ETCDCTL_CERT", Value: "/var/lib/k0s/pki/etcd/server.crt"},
-							{Name: "ETCDCTL_KEY", Value: "/var/lib/k0s/pki/etcd/server.key"},
+							{Name: "ETCDCTL_CACERT", Value: fmt.Sprintf("%s/pki/etcd/ca.crt", k0sDataDir)},
+							{Name: "ETCDCTL_CERT", Value: fmt.Sprintf("%s/pki/etcd/server.crt", k0sDataDir)},
+							{Name: "ETCDCTL_KEY", Value: fmt.Sprintf("%s/pki/etcd/server.key", k0sDataDir)},
 							{Name: "ETCD_INITIAL_CLUSTER", Value: initialCluster(kmc, replicas)},
 						},
 						Resources: kmc.Spec.Storage.Etcd.Resources,
@@ -387,8 +395,8 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 							},
 						},
 						VolumeMounts: []v1.VolumeMount{
-							{Name: "certs", MountPath: "/var/lib/k0s/pki/etcd/"},
-							{Name: "etcd-data", MountPath: "/var/lib/k0s/etcd"},
+							{Name: "certs", MountPath: fmt.Sprintf("%s/pki/etcd/", k0sDataDir)},
+							{Name: "etcd-data", MountPath: fmt.Sprintf("%s/etcd", k0sDataDir)},
 						},
 					}},
 				},
@@ -426,6 +434,9 @@ func initialCluster(kmc *km.Cluster, replicas int32) string {
 
 func generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet) []v1.Container {
 	checkImage := kmc.Spec.GetImage()
+	k0sDataDir := kmc.Spec.GetDataDir()
+	var initScriptBuf bytes.Buffer
+	_ = etcdInitScriptTmpl.Execute(&initScriptBuf, struct{ DataDir string }{DataDir: k0sDataDir})
 	if existingSts != nil {
 		for _, c := range existingSts.Spec.Template.Spec.InitContainers {
 			if c.Name == "dns-check" {
@@ -452,17 +463,17 @@ func generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet) 
 			Image:           kmc.Spec.Storage.Etcd.Image,
 			ImagePullPolicy: v1.PullIfNotPresent,
 			Command:         []string{"/bin/bash"},
-			Args:            []string{"-c", initEntryScript},
+			Args:            []string{"-c", initScriptBuf.String()},
 			Env: []v1.EnvVar{
 				{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
 				{Name: "ETCDCTL_API", Value: "3"},
-				{Name: "ETCDCTL_CACERT", Value: "/var/lib/k0s/pki/etcd/ca.crt"},
-				{Name: "ETCDCTL_CERT", Value: "/var/lib/k0s/pki/etcd/server.crt"},
-				{Name: "ETCDCTL_KEY", Value: "/var/lib/k0s/pki/etcd/server.key"},
+				{Name: "ETCDCTL_CACERT", Value: fmt.Sprintf("%s/pki/etcd/ca.crt", k0sDataDir)},
+				{Name: "ETCDCTL_CERT", Value: fmt.Sprintf("%s/pki/etcd/server.crt", k0sDataDir)},
+				{Name: "ETCDCTL_KEY", Value: fmt.Sprintf("%s/pki/etcd/server.key", k0sDataDir)},
 			},
 			VolumeMounts: []v1.VolumeMount{
-				{Name: "certs", MountPath: "/var/lib/k0s/pki/etcd/"},
-				{Name: "etcd-data", MountPath: "/var/lib/k0s/etcd"},
+				{Name: "certs", MountPath: fmt.Sprintf("%s/pki/etcd/", k0sDataDir)},
+				{Name: "etcd-data", MountPath: fmt.Sprintf("%s/etcd", k0sDataDir)},
 			},
 		},
 	}
@@ -489,7 +500,7 @@ func calculateDesiredReplicas(kmc *km.Cluster, existingEtcdSts *apps.StatefulSet
 const etcdEntrypointScriptTemplate = `
 
 export ETCD_INITIAL_CLUSTER_STATE="new"
-if [[ -f /var/lib/k0s/etcd/existing ]]; then
+if [[ -f {{ .DataDir }}/etcd/existing ]]; then
   export ETCD_INITIAL_CLUSTER_STATE="existing"
 fi
 
@@ -500,12 +511,12 @@ etcd --name ${HOSTNAME} \
   --initial-advertise-peer-urls=https://${HOSTNAME}.${SVC_NAME}:2380 \
   --client-cert-auth=true \
   --tls-min-version=TLS1.2 \
-  --trusted-ca-file=/var/lib/k0s/pki/etcd/ca.crt \
-  --cert-file=/var/lib/k0s/pki/etcd/server.crt \
-  --key-file=/var/lib/k0s/pki/etcd/server.key \
-  --peer-trusted-ca-file=/var/lib/k0s/pki/etcd/ca.crt \
-  --peer-key-file=/var/lib/k0s/pki/etcd/peer.key \
-  --peer-cert-file=/var/lib/k0s/pki/etcd/peer.crt \
+  --trusted-ca-file={{ .DataDir }}/pki/etcd/ca.crt \
+  --cert-file={{ .DataDir }}/pki/etcd/server.crt \
+  --key-file={{ .DataDir }}/pki/etcd/server.key \
+  --peer-trusted-ca-file={{ .DataDir }}/pki/etcd/ca.crt \
+  --peer-key-file={{ .DataDir }}/pki/etcd/peer.key \
+  --peer-cert-file={{ .DataDir }}/pki/etcd/peer.crt \
   --peer-client-cert-auth=true \
   --enable-pprof=false \
   --auto-compaction-mode=periodic \
@@ -514,17 +525,17 @@ etcd --name ${HOSTNAME} \
 {{- range $arg := .Args }}
   {{ $arg }} \
 {{- end }}
-  --data-dir=/var/lib/k0s/etcd
+  --data-dir={{ .DataDir }}/etcd
 `
 
-var initEntryScript = `
+const initEntryScriptTemplate = `
 #!/bin/bash
 
 set -eu
 
 export ETCDCTL_ENDPOINTS=https://${SVC_NAME}:2379
 
-if [[ ! -f /var/lib/k0s/etcd/member/snap/db ]]; then
+if [[ ! -f {{ .DataDir }}/etcd/member/snap/db ]]; then
   echo "Checking if cluster is functional"
   if etcdctl member list; then
     echo "Cluster is functional"
@@ -536,7 +547,7 @@ if [[ ! -f /var/lib/k0s/etcd/member/snap/db ]]; then
 	fi
 
     etcdctl member add ${HOSTNAME} --peer-urls https://${HOSTNAME}.${SVC_NAME}:2380
-    touch /var/lib/k0s/etcd/existing
+    touch {{ .DataDir }}/etcd/existing
   else
     echo "Could not list members, assuming this is the first member or the cluster is not up yet"
   fi

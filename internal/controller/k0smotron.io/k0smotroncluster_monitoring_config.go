@@ -39,9 +39,11 @@ func (scope *kmcScope) generateMonitoringCM(kmc *km.Cluster) (v1.ConfigMap, erro
 	err := prometheusConfigTmpl.Execute(&entrypointBuf, struct {
 		Kmc         *km.Cluster
 		EtcdSvcName string
+		DataDir     string
 	}{
 		Kmc:         kmc,
 		EtcdSvcName: kmc.GetEtcdServiceName(),
+		DataDir:     kmc.Spec.GetDataDir(),
 	})
 	if err != nil {
 		return v1.ConfigMap{}, err
@@ -89,8 +91,8 @@ scrape_configs:
     scheme: https
     tls_config:
       insecure_skip_verify: true
-      cert_file: /var/lib/k0s/pki/admin.crt
-      key_file: /var/lib/k0s/pki/admin.key
+      cert_file: {{ .DataDir }}/pki/admin.crt
+      key_file: {{ .DataDir }}/pki/admin.key
     static_configs:
       - targets: ["localhost:{{ .Kmc.Spec.Service.APIPort }}"]
         labels:
@@ -108,8 +110,8 @@ scrape_configs:
     scheme: https
     tls_config:
       insecure_skip_verify: true
-      cert_file: /var/lib/k0s/pki/etcd-ca.crt
-      key_file: /var/lib/k0s/pki/etcd-ca.key
+      cert_file: {{ .DataDir }}/pki/etcd-ca.crt
+      key_file: {{ .DataDir }}/pki/etcd-ca.key
     static_configs:
       - targets: ["{{ .EtcdSvcName }}:2379"]
         labels:

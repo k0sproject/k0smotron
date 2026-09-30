@@ -2244,7 +2244,7 @@ Note: This metadata will have precedence over default labels/annotations on the 
         <td>
           Manifests allows to specify list of volumes with manifests to be
 deployed in the cluster. The volumes will be mounted
-in /var/lib/k0s/manifests/<manifests.name>, for this reason each
+in /var/lib/k0s/manifests/<manifests.name> by default, for this reason each
 manifest is a stack. K0smotron allows any kind of volume, but the
 recommendation is to use secrets and configmaps.
 For more information check:
@@ -12712,7 +12712,7 @@ Note: This metadata will have precedence over default labels/annotations on the 
         <td>
           Manifests allows to specify list of volumes with manifests to be
 deployed in the cluster. The volumes will be mounted
-in /var/lib/k0s/manifests/<manifests.name>, for this reason each
+in /var/lib/k0s/manifests/<manifests.name> by default, for this reason each
 manifest is a stack. K0smotron allows any kind of volume, but the
 recommendation is to use secrets and configmaps.
 For more information check:
