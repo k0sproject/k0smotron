@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/k0sproject/k0smotron/v2/internal/util"
 	"github.com/k0sproject/version"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -187,7 +188,7 @@ type ClusterSpec struct {
 	CertificateRefs []CertificateRef `json:"certificateRefs,omitempty"`
 	// Manifests allows to specify list of volumes with manifests to be
 	// deployed in the cluster. The volumes will be mounted
-	// in /var/lib/k0s/manifests/<manifests.name>, for this reason each
+	// in /var/lib/k0s/manifests/<manifests.name> by default, for this reason each
 	// manifest is a stack. K0smotron allows any kind of volume, but the
 	// recommendation is to use secrets and configmaps.
 	// For more information check:
@@ -408,6 +409,12 @@ func (c *ClusterSpec) HasNativeIngressKonnectivity() bool {
 		return false
 	}
 	return !v.Core().LessThan(nativeKonnectivityMinVersion.Core())
+}
+
+// GetDataDir returns the data directory for the k0s cluster, taking into account any overrides specified in the control plane flags
+// as specified by the --data-dir flag.
+func (c *ClusterSpec) GetDataDir() string {
+	return util.GetDataDir(c.ControlPlaneFlags)
 }
 
 // GetConditions returns the conditions of the Cluster status.

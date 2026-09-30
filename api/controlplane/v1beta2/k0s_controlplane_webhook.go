@@ -112,6 +112,15 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, new
 	warnings := v.validateVersionSuffix(newKcp.Spec.Version)
 	warnings = append(warnings, v.validateInfrastructureRef(newKcp)...)
 
+	// k0s does not support changing --data-dir on an existing setup: the state would be left behind.
+	if oldDir, newDir := oldKcp.Spec.K0sConfigSpec.GetDataDir(), newKcp.Spec.K0sConfigSpec.GetDataDir(); oldDir != newDir {
+		return warnings, field.Invalid(
+			field.NewPath("spec", "k0sConfigSpec", "args"),
+			newDir,
+			fmt.Sprintf("the k0s data directory cannot be changed on an existing cluster (was %q)", oldDir),
+		)
+	}
+
 	if oldKcp.Spec.Version != newKcp.Spec.Version {
 		oldV, err := version.NewVersion(oldKcp.Spec.Version)
 		if err != nil {
@@ -147,6 +156,7 @@ func validateK0sControlPlane(kcp *K0sControlPlane) error {
 		denyMissingInfrastructureRef(kcp, prefix),
 		denyIncompatibleK0sVersions(kcp, prefix),
 		denyIncompatibleProvisioners(kcp, prefix),
+		bootstrapv1.DenyInvalidArgs(kcp.Spec.K0sConfigSpec.Args, prefix.Child("k0sConfigSpec", "args")),
 		denyRecreateOnSingleClusters(kcp, prefix),
 	} {
 		if err != nil {

@@ -656,7 +656,7 @@ spec:
 
 `
 	return []provisioner.File{{
-		Path:        "/var/lib/k0s/manifests/k0smotron-tunneling/manifest.yaml",
+		Path:        filepath.Join(scope.Config.Spec.GetDataDir(), "manifests/k0smotron-tunneling/manifest.yaml"),
 		Permissions: "0644",
 		Content:     fmt.Sprintf(tunnelingResources, scope.Config.Spec.Tunneling.ServerAddress, scope.Config.Spec.Tunneling.ServerNodePort, frpToken, localIP, modeConfig),
 	}}, nil
@@ -665,7 +665,7 @@ spec:
 func (c *ControlPlaneController) getCerts(ctx context.Context, scope *ControllerScope) ([]provisioner.File, *secret.Certificate, error) {
 	var files []provisioner.File
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
-		CertificatesDir: "/var/lib/k0s/pki",
+		CertificatesDir: filepath.Join(scope.Config.Spec.GetDataDir(), "pki"),
 	})
 
 	s := &corev1.Secret{}

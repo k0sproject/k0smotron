@@ -223,3 +223,54 @@ func TestValidateService(t *testing.T) {
 		})
 	}
 }
+func TestClusterValidator_DataDirImmutable(t *testing.T) {
+	spec := func(flags ...string) *ClusterSpec {
+		return &ClusterSpec{ControlPlaneFlags: flags}
+	}
+
+	for _, tc := range []struct {
+		name     string
+		old, new *ClusterSpec
+		wantErr  bool
+	}{
+		{name: "unset to unset", old: spec(), new: spec()},
+		{name: "unset to explicit default", old: spec(), new: spec("--data-dir=/var/lib/k0s")},
+		{name: "same custom value in different arg", old: spec("--data-dir=/data"), new: spec("--data-dir", "/data"), wantErr: true},
+		{name: "unset to custom", old: spec(), new: spec("--data-dir=/data"), wantErr: true},
+		{name: "custom to other", old: spec("--data-dir=/data"), new: spec("--data-dir=/other"), wantErr: true},
+		{name: "custom to unset", old: spec("--data-dir=/data"), new: spec(), wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ClusterValidator{}.ValidateClusterSpecUpdate(tc.old, tc.new)
+			if tc.wantErr {
+				require.ErrorContains(t, err, "data directory cannot be changed")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestClusterValidator_VersionUpdate(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		old, new string
+		wantErr  string
+	}{
+		{name: "same version", old: "v1.30.0+k0s.0", new: "v1.30.0+k0s.0"},
+		{name: "one minor", old: "v1.30.0+k0s.0", new: "v1.31.0+k0s.0"},
+		{name: "two minors", old: "v1.30.0+k0s.0", new: "v1.32.0+k0s.0", wantErr: "more than one minor version"},
+		{name: "old empty", old: "", new: "v1.32.0+k0s.0"},
+		{name: "new empty", old: "v1.30.0+k0s.0", new: ""},
+		{name: "invalid old", old: "nope", new: "v1.30.0+k0s.0", wantErr: "failed to parse old version"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ClusterValidator{}.ValidateClusterSpecUpdate(&ClusterSpec{Version: tc.old}, &ClusterSpec{Version: tc.new})
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

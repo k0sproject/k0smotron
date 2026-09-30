@@ -21,6 +21,7 @@ package k0smotronio
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	kutil "github.com/k0sproject/k0smotron/v2/internal/util"
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -367,4 +369,65 @@ func TestGenerateStatefulSet_upgradeDoesNotRoll(t *testing.T) {
 
 	_, ok := sts.Spec.Template.Annotations[certificateFingerprintAnnotation]
 	assert.False(t, ok, "adopting a pre-existing StatefulSet without a genuine renewal must not stamp the fingerprint, or the upgrade rolls the pods for nothing")
+}
+
+// TestGenerateStatefulSet_customDataDir checks that every path derived from the
+// k0s data directory moves together: if one of them kept the default, k0s would
+// look for its state, manifests or certificates in a different place than the
+// one the pod populates.
+func TestGenerateStatefulSet_customDataDir(t *testing.T) {
+	const dataDir = "/data/k0s"
+
+	kmc := &km.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
+		Spec: km.ClusterSpec{
+			Replicas:          1,
+			ControlPlaneFlags: []string{"--data-dir=" + dataDir},
+			Manifests: []corev1.Volume{{
+				Name:         "my-manifest",
+				VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: "cm"}}},
+			}},
+			CertificateRefs: []km.CertificateRef{{Name: "ca-secret", Type: "ca"}},
+		},
+	}
+
+	scope := newStatefulSetTestScope(t, map[string]string{"controlplane": ""})
+	sts, _, err := scope.generateStatefulSet(context.Background(), kmc)
+	require.NoError(t, err)
+
+	podSpec := sts.Spec.Template.Spec
+
+	mounts := map[string]string{}
+	for _, c := range podSpec.Containers {
+		for _, m := range c.VolumeMounts {
+			mounts[m.Name] = m.MountPath
+		}
+	}
+	// Check expected mount paths for the data directory, custom user manifests, and default telemetry manifests.
+	require.Equal(t, dataDir, mounts[kmc.GetVolumeName()], "data volume")
+	require.Equal(t, dataDir+"/manifests/my-manifest", mounts["my-manifest"], "user manifest")
+	require.Equal(t, dataDir+"/manifests/k0s-telemetry", mounts[fmt.Sprintf("kmc-%s-telemetry-config", kmc.Name)], "telemetry manifest")
+
+	var certsInit *corev1.Container
+	for i := range podSpec.InitContainers {
+		if podSpec.InitContainers[i].Name == "certs-init" {
+			certsInit = &podSpec.InitContainers[i]
+		}
+	}
+	require.NotNil(t, certsInit)
+	require.Equal(t,
+		"mkdir -p /var/lib/k0s/pki && rm -rf /var/lib/k0s/pki/server.* && cp /certs-init/*.* /var/lib/k0s/pki/",
+		certsInit.Command[2])
+	require.Contains(t, certsInit.VolumeMounts, corev1.VolumeMount{Name: kmc.GetVolumeName(), MountPath: kutil.DefaultK0sDataDir})
+	require.Contains(t, certsInit.VolumeMounts, corev1.VolumeMount{Name: "certs", MountPath: "/certs-init"})
+
+	for _, c := range podSpec.Containers {
+		for _, m := range c.VolumeMounts {
+			require.False(t, strings.HasPrefix(m.MountPath, kutil.DefaultK0sDataDir),
+				"container %s mount %s still uses the default data dir", c.Name, m.MountPath)
+		}
+		for _, s := range append(append([]string{}, c.Command...), c.Args...) {
+			require.NotContains(t, s, kutil.DefaultK0sDataDir, "container %s", c.Name)
+		}
+	}
 }

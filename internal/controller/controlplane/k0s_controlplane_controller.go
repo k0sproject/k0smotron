@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -448,7 +449,7 @@ func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName str
 
 func (c *K0sController) ensureCertificates(ctx context.Context, controlplane *controlplane) error {
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
-		CertificatesDir: "/var/lib/k0s/pki",
+		CertificatesDir: filepath.Join(controlplane.kcp.Spec.K0sConfigSpec.GetDataDir(), "pki"),
 	})
 	return certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(controlplane.cluster), *metav1.NewControllerRef(controlplane.kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")))
 }

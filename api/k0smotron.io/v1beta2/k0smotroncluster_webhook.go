@@ -64,6 +64,15 @@ func (c ClusterValidator) ValidateDelete(_ context.Context, _ *Cluster) (warning
 
 // ValidateClusterSpecUpdate validates the ClusterSpec during an update and returns any warnings or errors.
 func (c ClusterValidator) ValidateClusterSpecUpdate(oldKCS, kcs *ClusterSpec) (warnings admission.Warnings, err error) {
+	// k0s does not support changing --data-dir on an existing setup: the state would be left behind.
+	if oldDir, newDir := oldKCS.GetDataDir(), kcs.GetDataDir(); oldDir != newDir {
+		return warnings, fmt.Errorf("the k0s data directory cannot be changed on an existing cluster (from %q to %q)", oldDir, newDir)
+	}
+
+	if err := validateVersionUpdate(oldKCS.Version, kcs.Version); err != nil {
+		return warnings, err
+	}
+
 	// This doesn't prevent running kubectl scale command, but better than nothing
 	if kcs.Storage.Type == StorageTypeNATS && oldKCS.Replicas != kcs.Replicas {
 		return warnings, fmt.Errorf("NATS storage does not support scaling, replicas cannot be changed from %d to %d. "+
@@ -84,6 +93,28 @@ func (c ClusterValidator) ValidateClusterSpecUpdate(oldKCS, kcs *ClusterSpec) (w
 	specWarnings, err := c.ValidateClusterSpec(kcs)
 	warnings = append(warnings, specWarnings...)
 	return warnings, err
+}
+
+// validateVersionUpdate rejects k0s upgrades that skip a minor version, following the
+// k0s version skew policy. The check is skipped when either version is empty.
+func validateVersionUpdate(oldVersion, newVersion string) error {
+	if oldVersion == newVersion || oldVersion == "" || newVersion == "" {
+		return nil
+	}
+
+	oldV, err := version.NewVersion(oldVersion)
+	if err != nil {
+		return fmt.Errorf("failed to parse old version: %v", err)
+	}
+	newV, err := version.NewVersion(newVersion)
+	if err != nil {
+		return fmt.Errorf("failed to parse new version: %v", err)
+	}
+
+	if newV.Core().Segments()[1]-oldV.Core().Segments()[1] > 1 {
+		return fmt.Errorf("upgrading more than one minor version at a time is not allowed by the Kubernetes skew policy")
+	}
+	return nil
 }
 
 // validateEtcdVersionUpgrade rejects etcd upgrades that skip a minor version. etcd only

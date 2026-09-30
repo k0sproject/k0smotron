@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/k0sproject/version"
+	"github.com/mattn/go-shellwords"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -32,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
+	"github.com/k0sproject/k0smotron/v2/internal/util"
 )
 
 // Add RBAC for the authorized diagnostics endpoint.
@@ -463,6 +465,11 @@ func (kcs *K0sConfigSpec) GetJoinTokenPath() string {
 	return filepath.Join(kcs.WorkingDir, "k0s.token")
 }
 
+// GetDataDir returns the k0s data directory, honoring a user provided --data-dir argument.
+func (kcs *K0sConfigSpec) GetDataDir() string {
+	return util.GetDataDir(kcs.Args)
+}
+
 // hasBoolArg reports a pflag bool argument being on, where a bare flag means true and a value is
 // anything ParseBool accepts rather than only the word true.
 func (kcs *K0sConfigSpec) hasBoolArg(names ...string) bool {
@@ -577,6 +584,9 @@ func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) (admission.Warni
 	allErrs = append(allErrs, versionErrs...)
 	allErrs = append(allErrs, ValidateFiles(cs.Files, cs.Provisioner, pathPrefix)...)
 	allErrs = append(allErrs, cs.validateWindows(pathPrefix)...)
+	if err := DenyInvalidArgs(cs.Args, pathPrefix.Child("args")); err != nil {
+		allErrs = append(allErrs, err)
+	}
 
 	return warnings, allErrs
 }
@@ -731,5 +741,28 @@ func ValidateWindowsK0sVersion(v string) error {
 		return fmt.Errorf("windows worker nodes require k0s version %s or higher", minWindowsVersion)
 	}
 
+	return nil
+}
+
+// DenyInvalidArgs rejects k0s arguments that cannot be parsed the way the shell running them would.
+// argsPath is the path of the args list in the validated object.
+func DenyInvalidArgs(args []string, argsPath *field.Path) *field.Error {
+	for i, arg := range args {
+		path := argsPath.Index(i)
+
+		parsed, err := shellwords.Parse(arg)
+		if err != nil {
+			return field.Invalid(path, arg, fmt.Sprintf("failed to parse argument: %v", err))
+		}
+		if len(parsed) == 0 {
+			return field.Invalid(path, arg, "argument is empty after parsing")
+		}
+
+		if len(parsed) == 1 && parsed[0] == "--data-dir" {
+			return field.Invalid(path, arg, "missing value for --data-dir")
+		}
+
+		// TODO: Add more validation for other arguments as needed.
+	}
 	return nil
 }

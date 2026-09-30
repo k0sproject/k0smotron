@@ -159,7 +159,7 @@ fi
 
 {{if .PrivilegedPortIsUsed}}
 apk add --no-cache libcap
-{ while ! setcap 'cap_net_bind_service=+ep' /var/lib/k0s/bin/kube-apiserver; do sleep 1 ; done ; } &
+{ while ! setcap 'cap_net_bind_service=+ep' -- "$K0S_DATA_DIR"/bin/kube-apiserver; do sleep 1 ; done ; } &
 {{end}}
 
 # Run the k0s controller

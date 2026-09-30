@@ -395,3 +395,23 @@ func TestExtractCloudInitRejectsAppend(t *testing.T) {
 
 	require.ErrorContains(t, err, "not supported when provisioning through a job")
 }
+
+func TestResetCommand(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		cmds []string
+		want string
+	}{
+		{name: "default", cmds: []string{"k0s install controller --force"}, want: "k0s reset"},
+		{name: "kubelet root dir", cmds: []string{"k0s install worker --kubelet-root-dir=/var/lib/kubelet"}, want: "k0s reset --kubelet-root-dir /var/lib/kubelet"},
+		{name: "data dir equals", cmds: []string{"k0s install controller --data-dir=/data/k0s --force"}, want: "k0s reset --data-dir /data/k0s"},
+		{name: "data dir separate", cmds: []string{"k0s install controller --data-dir /data/k0s"}, want: "k0s reset --data-dir /data/k0s"},
+		{name: "data dir quoted", cmds: []string{`k0s install controller --data-dir="/data/k0s" --force`}, want: "k0s reset --data-dir /data/k0s"},
+		{name: "both flags", cmds: []string{"k0s install worker --kubelet-root-dir=/var/lib/kubelet --data-dir=/data/k0s"}, want: "k0s reset --kubelet-root-dir /var/lib/kubelet --data-dir /data/k0s"},
+		{name: "last data dir wins", cmds: []string{"k0s install controller --data-dir=/a --data-dir=/b"}, want: "k0s reset --data-dir /b"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, resetCommand(tc.cmds))
+		})
+	}
+}

@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"maps"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -211,6 +212,12 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 								ContainerPort: int32(kmc.Spec.Service.KonnectivityPort),
 							},
 						},
+						Env: []v1.EnvVar{
+							{
+								Name:  "K0S_DATA_DIR",
+								Value: kmc.Spec.GetDataDir(),
+							},
+						},
 						EnvFrom: []v1.EnvFromSource{{
 							ConfigMapRef: &v1.ConfigMapEnvSource{
 								LocalObjectReference: v1.LocalObjectReference{
@@ -340,6 +347,8 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		statefulSet.Spec.Template.Spec.TopologySpreadConstraints = kmc.Spec.TopologySpreadConstraints
 	}
 
+	k0sDataDir := kmc.Spec.GetDataDir()
+
 	switch kmc.Spec.Persistence.Type {
 	case "hostPath":
 		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
@@ -352,7 +361,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		})
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.GetVolumeName(),
-			MountPath: "/var/lib/k0s",
+			MountPath: k0sDataDir,
 		})
 	case "pvc":
 		if kmc.Spec.Persistence.PersistentVolumeClaim == nil {
@@ -380,7 +389,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.Spec.Persistence.PersistentVolumeClaim.Name,
-			MountPath: "/var/lib/k0s",
+			MountPath: k0sDataDir,
 		})
 	case "emptyDir":
 		fallthrough
@@ -393,7 +402,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		})
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.GetVolumeName(),
-			MountPath: "/var/lib/k0s",
+			MountPath: k0sDataDir,
 		})
 	}
 
@@ -402,7 +411,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      manifest.Name,
-			MountPath: fmt.Sprintf("/var/lib/k0s/manifests/%s", manifest.Name),
+			MountPath: filepath.Join(k0sDataDir, "manifests", manifest.Name),
 			ReadOnly:  true,
 		})
 	}
@@ -462,7 +471,7 @@ data:
 
 	statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 		Name:      cm.Name,
-		MountPath: "/var/lib/k0s/manifests/k0s-telemetry",
+		MountPath: fmt.Sprintf("%s/manifests/k0s-telemetry", k0sDataDir),
 		ReadOnly:  true,
 	})
 
@@ -715,7 +724,7 @@ func addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
 		}},
 		VolumeMounts: []v1.VolumeMount{{
 			Name:      kmc.GetVolumeName(),
-			MountPath: "/var/lib/k0s",
+			MountPath: kmc.Spec.GetDataDir(),
 		}, {
 			Name:      kmc.GetMonitoringConfigMapName(),
 			MountPath: "/prometheus/prometheus.yml",

@@ -111,3 +111,8 @@ func TestShortName(t *testing.T) {
 		})
 	}
 }
+
+func TestClusterSpec_GetDataDir(t *testing.T) {
+	require.Equal(t, "/data/k0s", (&ClusterSpec{ControlPlaneFlags: []string{"--data-dir=/data/k0s"}}).GetDataDir())
+	require.Equal(t, "/var/lib/k0s", (&ClusterSpec{}).GetDataDir())
+}
