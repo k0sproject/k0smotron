@@ -227,8 +227,6 @@ func calculateMaxSurge(scope *controlplane) int {
 	return int(scope.kcp.Spec.Replicas) + 1
 }
 
-// nextFailureDomain picks the failure domain for a new control plane machine.
-// A deleting machine still occupies one, so it counts toward the total.
 // oldestInFullestFailureDomain picks the oldest candidate from the failure domain
 // holding the most machines, so a scale down does not unbalance the spread.
 func oldestInFullestFailureDomain(ctx context.Context, scope *controlplane, candidates collections.Machines) *clusterv1.Machine {
@@ -253,6 +251,8 @@ func annotatedForDeletion(machines collections.Machines) collections.Machines {
 	})
 }
 
+// nextFailureDomain picks the failure domain for a new control plane machine.
+// A deleting machine still occupies one, so it counts toward the total.
 func nextFailureDomain(ctx context.Context, scope *controlplane) string {
 	allMachines := collections.FromMachines(append(scope.activeMachines.UnsortedList(), scope.deletedMachines.UnsortedList()...)...)
 
@@ -332,13 +332,16 @@ func selectMachineToDelete(ctx context.Context, scope *controlplane) (*clusterv1
 		return scope.etcdMemberHealth[m.Name] == metav1.ConditionFalse
 	})
 
+	outdatedAnnotatedForDeletion := annotatedForDeletion(scope.notUpToDateMachines)
+	allAnnotatedForDeletion := annotatedForDeletion(scope.activeMachines)
+
 	switch {
 	// An operator naming a machine outranks every other signal, and an outdated one
 	// among those named outranks the rest, so the rollout gets the same delete.
-	case annotatedForDeletion(scope.notUpToDateMachines).Len() > 0:
-		eligible, reason = annotatedForDeletion(scope.notUpToDateMachines), "annotated and outdated"
-	case annotatedForDeletion(scope.activeMachines).Len() > 0:
-		eligible, reason = annotatedForDeletion(scope.activeMachines), "annotated"
+	case outdatedAnnotatedForDeletion.Len() > 0:
+		eligible, reason = outdatedAnnotatedForDeletion, "annotated and outdated"
+	case allAnnotatedForDeletion.Len() > 0:
+		eligible, reason = allAnnotatedForDeletion, "annotated"
 	// Upstream weighs every control plane component here. k0s supervises the API server,
 	// the scheduler and the controller manager as processes, so only etcd is observable.
 	case outdatedWithUnhealthyEtcd.Len() > 0:

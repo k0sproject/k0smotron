@@ -130,8 +130,8 @@ func (c *K0sController) etcdMemberHealth(ctx context.Context, cluster *clusterv1
 	for _, machine := range machines {
 		member, ok := members[machine.Name]
 		if !ok && machine.Status.NodeRef.IsDefined() {
-			// Only k0s v1.31.1 and above names the member after the machine, older
-			// versions name it after the node.
+			// k0smotron names the member after the machine through storage.etcd.extraArgs.name,
+			// and only from k0s v1.31.1. Older versions keep k0s's default, the node name.
 			member, ok = members[machine.Status.NodeRef.Name]
 		}
 		// A machine that is still joining has no member yet, which is not a failure, so
