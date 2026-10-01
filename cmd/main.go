@@ -428,7 +428,8 @@ func setupCAPIControllersOrDie(ctx context.Context, mgr manager.Manager, clientS
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			WatchFilterValue:    watchFilter,
+		}).SetupWithManager(ctx, mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
 		}
@@ -439,7 +440,8 @@ func setupCAPIControllersOrDie(ctx context.Context, mgr manager.Manager, clientS
 			Scheme:              mgr.GetScheme(),
 			ClientSet:           clientSet,
 			RESTConfig:          restConfig,
-		}).SetupWithManager(mgr, ctrlOptions); err != nil {
+			WatchFilterValue:    watchFilter,
+		}).SetupWithManager(ctx, mgr, ctrlOptions); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Bootstrap")
 			os.Exit(1)
 		}
