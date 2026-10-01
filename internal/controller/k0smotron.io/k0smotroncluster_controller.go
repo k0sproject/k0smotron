@@ -47,6 +47,7 @@ import (
 
 	k0smotroniov1beta2 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
+	kcerts "github.com/k0sproject/k0smotron/v2/internal/certs"
 	kutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 )
 
@@ -90,12 +91,68 @@ type kmcScope struct {
 	clusterSettings clusterSettings
 	// currentReconcileState holds the state of the current reconcile loop that can be used generate the status conditions at the end of the loop.
 	currentReconcileState currentReconcileState
+	// certFingerprints holds the per-workload certificate fingerprint used to
+	// trigger a rolling update after renewal. Keys: "controlplane", "etcd".
+	certFingerprints map[string]string
 }
 
 type currentReconcileState struct {
 	message      string
 	reason       string
 	controlplane controlplaneState
+	// certificates holds the inspection results for every certificate this
+	// cluster manages, gathered during reconcile.
+	certificates []kcerts.Info
+	// certificatesReconciled records whether reconcile got far enough to
+	// inspect certificates this pass. Without it, an unrelated early return
+	// (e.g. a transient services/ingress/config-map error) would let the
+	// deferred updateStatus overwrite real certificate state with a false
+	// "none found", since kmcScope is freshly zero-valued on every call.
+	certificatesReconciled bool
+	// certificatesUnparseable holds the purposes of certificates whose secret
+	// could not be parsed, e.g. a malformed user-supplied certificate.
+	certificatesUnparseable []string
+	// certificateRenewalErrors holds the errors encountered while renewing
+	// certificates that already existed. These do not abort reconciliation,
+	// since the certificate remains valid until its expiry.
+	certificateRenewalErrors []string
+	// certificatesRenewed records whether any certificate keypair was actually written
+	// this reconcile. It gates stamping the rollout fingerprint, so an operator upgrade
+	// does not roll pods for certificates that never changed.
+	certificatesRenewed bool
+	// nextCertificateRenewal is the earliest moment a managed certificate
+	// becomes due for renewal, or the zero time when there is nothing to
+	// schedule. User-supplied certificates and certificates renewal cannot
+	// extend are excluded, since requeueing for them would change nothing.
+	nextCertificateRenewal time.Time
+}
+
+// filterPurposes narrows a set of certificate infos to the given purposes, so
+// that each StatefulSet's fingerprint covers only the certificates it mounts.
+func filterPurposes(is []kcerts.Info, purposes ...string) []kcerts.Info {
+	want := make(map[string]struct{}, len(purposes))
+	for _, p := range purposes {
+		want[p] = struct{}{}
+	}
+
+	out := make([]kcerts.Info, 0, len(purposes))
+	for _, i := range is {
+		if _, ok := want[i.Purpose]; ok {
+			out = append(out, i)
+		}
+	}
+
+	return out
+}
+
+// clearRenewCertificatesAnnotation removes the force-renewal annotation and
+// reports whether it was present, so the caller can emit an event exactly once.
+func clearRenewCertificatesAnnotation(kmc *km.Cluster) bool {
+	if _, forced := kmc.Annotations[km.RenewCertificatesAnnotation]; !forced {
+		return false
+	}
+	delete(kmc.Annotations, km.RenewCertificatesAnnotation)
+	return true
 }
 
 type controlplaneState struct {
@@ -264,6 +321,13 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 		}
 	}
+	kmcScope.certFingerprints = map[string]string{}
+
+	// allCertInfos accumulates the inspection results from every certificate
+	// group reconciled below, so they can be reported as conditions/metrics and
+	// used to schedule the renewal requeue.
+	var allCertInfos []kcerts.Info
+
 	if kmc.Spec.Storage.Type == km.StorageTypeEtcd {
 		isAPIServerEtcdClientCertRef := false
 		for _, cr := range kmc.Spec.CertificateRefs {
@@ -273,10 +337,22 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 			}
 		}
 		logger.Info("Reconciling etcd certs")
-		err := kmcScope.ensureEtcdCertificates(ctx, kmc)
+		etcdInfos, err := kmcScope.ensureEtcdCertificates(ctx, kmc)
 		if err != nil {
+			// This path also covers first issuance (e.g. a missing etcd CA on a
+			// brand-new cluster), so it must not claim a renewal failed for
+			// something that was never renewed. Only the per-purpose renewal
+			// errors accumulated below use CertificateRenewalFailed.
+			r.Recorder.Eventf(kmc, corev1.EventTypeWarning, "CertificateIssuanceFailed",
+				"Failed to ensure etcd certificates: %v", err)
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating etcd certificates: %w", err)
 		}
+
+		// Each workload rolls only on the certificates it actually mounts.
+		kmcScope.certFingerprints["etcd"] = kcerts.Fingerprint(filterPurposes(etcdInfos, "etcd-server", "etcd-peer"))
+		kmcScope.certFingerprints["controlplane"] = kcerts.Fingerprint(filterPurposes(etcdInfos, "apiserver-etcd-client"))
+
+		allCertInfos = append(allCertInfos, etcdInfos...)
 
 		if !isAPIServerEtcdClientCertRef {
 			kmc.Spec.CertificateRefs = append(kmc.Spec.CertificateRefs, km.CertificateRef{
@@ -287,10 +363,44 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	}
 
 	if kmc.Spec.Ingress != nil {
-		err := kmcScope.ensureHAProxyCerts(ctx, kmc)
+		haproxyInfos, err := kmcScope.ensureHAProxyCerts(ctx, kmc)
 		if err != nil {
+			// Also covers first issuance; see the etcd case above.
+			r.Recorder.Eventf(kmc, corev1.EventTypeWarning, "CertificateIssuanceFailed",
+				"Failed to ensure ingress certificates: %v", err)
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating ingress certificates: %w", err)
 		}
+		allCertInfos = append(allCertInfos, haproxyInfos...)
+	}
+
+	kmcScope.currentReconcileState.certificates = allCertInfos
+	kmcScope.currentReconcileState.certificatesReconciled = true
+
+	// Renewal failures do not abort reconciliation, so surface them here as
+	// events instead. The certificate remains valid until its expiry; the next
+	// reconcile retries.
+	for _, msg := range kmcScope.currentReconcileState.certificateRenewalErrors {
+		r.Recorder.Event(kmc, corev1.EventTypeWarning, "CertificateRenewalFailed", msg)
+	}
+
+	// Clear the force-renewal annotation as soon as the leaves have been
+	// re-signed, so the operator's request is consumed exactly once.
+	//
+	// This MUST land in the same task as the fingerprint, not later. shouldRenew
+	// returns true on every reconcile while the annotation is present, and this
+	// task makes every re-sign change the pod-template fingerprint. That updates
+	// the StatefulSet, which the controller Owns(), which triggers another
+	// reconcile, which re-signs again — a self-sustaining etcd rolling-restart
+	// loop. Without the fingerprint the annotation was merely wasteful; with it
+	// the annotation is an outage.
+	//
+	// The request is consumed even when a renewal failed: retrying it would
+	// re-sign, and roll, every certificate that did succeed. The failure is
+	// already surfaced by the CertificateRenewalFailed events above, and a
+	// certificate that is actually due is retried by the regular threshold.
+	if clearRenewCertificatesAnnotation(kmc) && len(kmcScope.currentReconcileState.certificateRenewalErrors) == 0 {
+		r.Recorder.Event(kmc, corev1.EventTypeNormal, "CertificateRenewed",
+			"Certificates renewed on request")
 	}
 
 	if err := kmcScope.reconcilePVC(ctx, kmc); err != nil {
@@ -304,7 +414,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	}
 
 	logger.Info("Reconciling etcd")
-	result, err := kmcScope.reconcileEtcd(ctx, kmc)
+	result, err := kmcScope.reconcileEtcd(ctx, kmc, kmcScope.certFingerprints["etcd"])
 	if err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling etcd, %s", err.Error()))
 		return result, err
@@ -333,6 +443,23 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 
 	kmc.SetReconciliationStatus("Reconciliation successful")
 
+	// Requeue when the earliest certificate becomes due, rather than relying on
+	// the resync period: an otherwise idle cluster must still renew on time.
+	if due := kmcScope.currentReconcileState.nextCertificateRenewal; !due.IsZero() {
+		after := time.Until(due)
+		if after <= 0 {
+			// Already past due, which is exactly what a failed renewal looks
+			// like. Skipping the requeue here would drop the retry back to the
+			// long resync period in the one case where a prompt retry matters
+			// most, so use a short floor instead.
+			after = time.Minute
+		}
+		// Only ever lower an existing RequeueAfter, never raise it.
+		if result.RequeueAfter == 0 || after < result.RequeueAfter {
+			result.RequeueAfter = after
+		}
+	}
+
 	return result, nil
 }
 
@@ -340,6 +467,7 @@ func (r *ClusterReconciler) reconcileDelete(ctx context.Context, scope *kmcScope
 	logger := log.FromContext(ctx)
 
 	logger.Info("Reconcile cluster delete")
+
 	// If controlplanes run in a different cluster, we need to delete the resources associated with
 	// the k0smotron.Cluster by deleting the external owner which owns all the resources associated
 	// with the k0smotron.Cluster.
