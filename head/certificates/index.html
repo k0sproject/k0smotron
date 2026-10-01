@@ -12,13 +12,13 @@
         <meta name="author" content="Mirantis, Inc.">
       
       
-        <link rel="canonical" href="https://docs.k0smotron.io/head/commercial-support/">
+        <link rel="canonical" href="https://docs.k0smotron.io/head/certificates/">
       
       
-        <link rel="prev" href="../troubleshooting/">
+        <link rel="prev" href="../operator-configuration/">
       
       
-        <link rel="next" href="../contributing/contribute-overview/">
+        <link rel="next" href="../usage-overview/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Commercial Support - Documentation</title>
+        <title>Certificates - Documentation</title>
       
     
     
@@ -89,7 +89,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#commercial-support" class="md-skip">
+        <a href="#certificates" class="md-skip">
           Skip to content
         </a>
       
@@ -140,7 +140,7 @@ You are not currently viewing the documentation for the current stable release o
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Commercial Support
+              Certificates
             
           </span>
         </div>
@@ -392,10 +392,37 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../certificates/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Certificates
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -411,6 +438,98 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-k0smotron-manages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What k0smotron manages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-lifetime-and-renewal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring lifetime and renewal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observing-expiry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observing expiry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Limitations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workers-provisioned-before-an-ingress-certificate-renewal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workers provisioned before an ingress certificate renewal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#k0s-in-pod-certificates-on-persistent-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        k0s in-pod certificates on persistent storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2003,19 +2122,10 @@ You are not currently viewing the documentation for the current stable release o
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../commercial-support/" class="md-nav__link">
         
   
   
@@ -2031,7 +2141,6 @@ You are not currently viewing the documentation for the current stable release o
   
 
       </a>
-      
     </li>
   
 
@@ -2638,6 +2747,86 @@ You are not currently viewing the documentation for the current stable release o
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-k0smotron-manages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What k0smotron manages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-lifetime-and-renewal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring lifetime and renewal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observing-expiry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observing expiry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Limitations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workers-provisioned-before-an-ingress-certificate-renewal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workers provisioned before an ingress certificate renewal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#k0s-in-pod-certificates-on-persistent-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        k0s in-pod certificates on persistent storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2653,16 +2842,114 @@ You are not currently viewing the documentation for the current stable release o
 
 
 
-<h1 id="commercial-support">Commercial support<a class="headerlink" href="#commercial-support" title="Permanent link">#</a></h1>
-<p>Commercial support for k0smotron is offered by <a href="https://mirantis.com">Mirantis Inc.</a>.</p>
-<p>Mirantis supports k0smotron three ways:</p>
+<h1 id="certificates">Certificates<a class="headerlink" href="#certificates" title="Permanent link">#</a></h1>
+<p>k0smotron signs four leaf certificates for a hosted control plane and renews
+them automatically before they expire.</p>
+<h2 id="what-k0smotron-manages">What k0smotron manages<a class="headerlink" href="#what-k0smotron-manages" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Certificate</th>
+<th>Signed by</th>
+<th>Renewed automatically</th>
+<th>Expiry reported on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ca</code>, <code>etcd</code>, <code>front-proxy</code></td>
+<td>Cluster API, 10 year validity</td>
+<td>No</td>
+<td><code>K0sControlPlane</code> only</td>
+</tr>
+<tr>
+<td><code>etcd-server</code>, <code>etcd-peer</code>, <code>apiserver-etcd-client</code></td>
+<td>k0smotron</td>
+<td>Yes</td>
+<td><code>Cluster</code>, mirrored onto <code>K0smotronControlPlane</code></td>
+</tr>
+<tr>
+<td><code>ingress-haproxy</code></td>
+<td>k0smotron</td>
+<td>Yes, with the limitation below</td>
+<td><code>Cluster</code>, mirrored onto <code>K0smotronControlPlane</code></td>
+</tr>
+<tr>
+<td><code>&lt;cluster&gt;-kubeconfig</code></td>
+<td>Cluster API</td>
+<td>Yes, independently</td>
+<td>not reported</td>
+</tr>
+</tbody>
+</table>
+<p>For a hosted control plane, the CA certificates are <strong>not</strong> reported: the
+<code>k0smotron.io/Cluster</code> resource reports only the leaves it signs itself, and the
+<code>K0smotronControlPlane</code> mirrors those leaf-only conditions up from its child
+<code>Cluster</code> once that child exists. Only a machine-based <code>K0sControlPlane</code> reports
+CA expiry, because CAs are the only certificates visible to it from the
+management cluster.</p>
+<p>With <code>spec.storage.type: kine</code> and no ingress, k0smotron signs no leaf
+certificates at all, so the <code>Cluster</code> reports <code>CertificatesAvailable: True</code> with
+nothing to track.</p>
+<h2 id="configuring-lifetime-and-renewal">Configuring lifetime and renewal<a class="headerlink" href="#configuring-lifetime-and-renewal" title="Permanent link">#</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k0smotron.io/v1beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">certificates</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8760h</span><span class="w">      </span><span class="c1"># requested validity of certificates k0smotron signs</span>
+<span class="w">    </span><span class="nt">renewBefore</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">720h</span><span class="w">    </span><span class="c1"># renew this long before expiry</span>
+</code></pre></div>
+<p><code>renewBefore</code> must be positive and shorter than <code>duration</code>. A leaf certificate
+is additionally clamped so that it never outlives the CA that issued it. Once
+the CA itself is within <code>renewBefore</code> of expiry, a leaf that already expires
+together with the CA is no longer renewed automatically, since re-signing it
+cannot extend its validity; <code>CertificatesExpiring</code> stays <code>True</code> until the CA is
+rotated.</p>
+<p><code>spec.certificates</code> exists only in <code>k0smotron.io/v1beta2</code>. Reading and
+re-applying a <code>Cluster</code> through the deprecated <code>v1beta1</code> API drops this field,
+reverting to the defaults (<code>8760h</code>/<code>720h</code>). Use <code>v1beta2</code> if you have
+configured non-default certificate lifetimes.</p>
+<p>Renewal rewrites the certificate secret and stamps a new fingerprint on the
+affected StatefulSet's pod template, which makes Kubernetes perform an ordered,
+readiness-gated rolling update. Because the CA does not change, the old and new
+certificates trust each other, so there is no window in which a renewed pod
+cannot talk to a not-yet-renewed one.</p>
+<p>To renew immediately without waiting for the threshold:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>annotate<span class="w"> </span>cluster.k0smotron.io<span class="w"> </span>my-cluster<span class="w"> </span>k0smotron.io/renew-certificates<span class="o">=</span><span class="s2">&quot;&quot;</span>
+</code></pre></div>
+<p>The controller removes the annotation once renewal completes.</p>
+<p>Apply the annotation to the <code>k0smotron.io/Cluster</code> resource, <strong>not</strong> to the
+<code>K0smotronControlPlane</code>: only <code>spec</code> is copied from the control plane down to the
+child <code>Cluster</code>, so annotating the <code>K0smotronControlPlane</code> has no effect at all.</p>
+<h2 id="observing-expiry">Observing expiry<a class="headerlink" href="#observing-expiry" title="Permanent link">#</a></h2>
+<p>Two conditions are set on the cluster resource:</p>
 <ul>
-<li>LabCare: 8 x 5 (M-F) business hours support. For non-production workloads</li>
-<li>Opscare: 24 x 7 support with 30-minute response-time SLA for critical issues.</li>
-<li>Opscare Plus: Fully-managed proactive support, with 15-minute response-time SLA for critical issues.</li>
+<li><code>CertificatesAvailable</code> — <code>False</code> when a managed certificate has expired,
+  <code>Unknown</code> when a certificate secret cannot be read.</li>
+<li><code>CertificatesExpiring</code> — <code>True</code> when a certificate is inside its renewal
+  window or already expired. Negative polarity: <code>True</code> means attention needed.
+  <code>Unknown</code> when a certificate secret cannot be read, so an unreadable
+  certificate is never reported as <code>Valid</code>.</li>
 </ul>
-<p>k0smotron support includes support for <a href="https://github.com/k0sproject/k0s">k0s</a>, making use of k0s in k0smotron contexts effectively free.</p>
-<p>If you are interested in commercial support for k0smotron check out our <a href="https://www.mirantis.com/support/enterprise-support-options/">support description</a> and please <a href="https://www.mirantis.com/contact/">contact us</a> for further details.</p>
+<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">#</a></h2>
+<h3 id="workers-provisioned-before-an-ingress-certificate-renewal">Workers provisioned before an ingress certificate renewal<a class="headerlink" href="#workers-provisioned-before-an-ingress-certificate-renewal" title="Permanent link">#</a></h3>
+<p>The <code>ingress-haproxy</code> certificate is written into worker <strong>bootstrap data</strong>,
+which is rendered once when a machine is provisioned. Renewing the certificate
+updates newly provisioned and replaced workers; workers already running keep the
+old certificate until they are rolled. A certificate renewal deliberately does
+not trigger node replacement.</p>
+<h3 id="k0s-in-pod-certificates-on-persistent-storage">k0s in-pod certificates on persistent storage<a class="headerlink" href="#k0s-in-pod-certificates-on-persistent-storage" title="Permanent link">#</a></h3>
+<p>k0s generates its own certificates inside the control plane pod (apiserver
+serving, konnectivity, <code>admin.conf</code>). With the default
+<code>spec.persistence.type: emptyDir</code> these are discarded and regenerated on every
+pod restart, so they never approach expiry.</p>
+<p>With <code>spec.persistence.type: pvc</code> or <code>hostPath</code> they survive restarts and are
+<strong>not</strong> renewed by k0smotron or by k0s: k0s only regenerates certificates whose
+issuer common name is one it recognises, and Cluster API issues CAs under the
+common name <code>kubernetes</code>. PVC persistence for hosted control planes is
+deprecated; use the default <code>emptyDir</code>.</p>
 
 
 
