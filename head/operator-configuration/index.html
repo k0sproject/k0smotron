@@ -2853,6 +2853,12 @@ You are not currently viewing the documentation for the current stable release o
 <td><code>""</code></td>
 <td>Namespace that the controller watches. If unspecified, all namespaces are watched.</td>
 </tr>
+<tr>
+<td><code>--bootstrap-token-ttl</code></td>
+<td>duration</td>
+<td><code>24h</code></td>
+<td>Validity of the bootstrap tokens used by machines to join a cluster. The token is refreshed until the machine joins. Same as CAPI kubeadm bootstrap provider <code>--bootstrap-token-ttl</code>.</td>
+</tr>
 </tbody>
 </table>
 <h3 id="deprecated-flags">Deprecated flags<a class="headerlink" href="#deprecated-flags" title="Permanent link">#</a></h3>
