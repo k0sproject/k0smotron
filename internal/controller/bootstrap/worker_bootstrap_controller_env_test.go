@@ -31,6 +31,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -744,11 +745,10 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		Spec: cpv1beta2.K0sControlPlaneSpec{
 			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
 				Spec: cpv1beta2.K0sControlPlaneMachineTemplateSpec{
-					InfrastructureRef: corev1.ObjectReference{
-						Kind:       "GenericInfrastructureMachineTemplate",
-						Namespace:  namespace,
-						Name:       "infra-foo",
-						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						Kind:     "GenericInfrastructureMachineTemplate",
+						Name:     "infra-foo",
+						APIGroup: "infrastructure.cluster.x-k8s.io",
 					},
 				},
 			},
@@ -767,7 +767,7 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 				"namespace": namespace,
 				"annotations": map[string]interface{}{
 					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
-					clusterv1.TemplateClonedFromGroupKindAnnotation: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.GroupVersionKind().GroupKind().String(),
+					clusterv1.TemplateClonedFromGroupKindAnnotation: schema.GroupKind{Group: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.APIGroup, Kind: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Kind}.String(),
 				},
 			},
 			"spec": map[string]interface{}{

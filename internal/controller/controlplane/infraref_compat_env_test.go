@@ -74,6 +74,15 @@ func infraRefFields(name string) map[string]any {
 	}
 }
 
+// The nested field follows the contract shape, which carries a group rather than a version.
+func nestedInfraRefFields(name string) map[string]any {
+	return map[string]any{
+		"apiGroup": "infrastructure.cluster.x-k8s.io",
+		"kind":     "GenericInfrastructureMachineTemplate",
+		"name":     name,
+	}
+}
+
 // TestDeprecatedInfrastructureRefStillApplies covers a manifest written against the released API.
 // The field moved into machineTemplate.spec, and anything already deployed names it flat.
 func TestDeprecatedInfrastructureRefStillApplies(t *testing.T) {
@@ -108,7 +117,7 @@ func TestDeprecatedInfrastructureRefStillApplies(t *testing.T) {
 
 	t.Run("a nested manifest is accepted and nothing is written backwards", func(t *testing.T) {
 		kcp := controlPlaneManifest(ns.Name, map[string]any{
-			"spec": map[string]any{"infrastructureRef": infraRefFields("infra-nested")},
+			"spec": map[string]any{"infrastructureRef": nestedInfraRefFields("infra-nested")},
 		})
 		require.NoError(t, testEnv.Create(t.Context(), kcp))
 

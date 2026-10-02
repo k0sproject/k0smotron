@@ -34,6 +34,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
@@ -268,7 +269,7 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 
 	infRef := kcp.Spec.MachineTemplate.InfraRef()
 	annotations[clusterv1.TemplateClonedFromNameAnnotation] = infRef.Name
-	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = infRef.GroupVersionKind().GroupKind().String()
+	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = schema.GroupKind{Group: infRef.APIGroup, Kind: infRef.Kind}.String()
 	infraMachine.SetAnnotations(annotations)
 
 	infraMachine.SetLabels(controlPlaneCommonLabelsForCluster(kcp, cluster.GetName()))
@@ -452,7 +453,7 @@ func isInfraMachineUpToDate(infraMachine *unstructured.Unstructured, kcp *cpv1be
 	infRef := kcp.Spec.MachineTemplate.InfraRef()
 
 	return clonedFromName == infRef.Name &&
-		clonedFromGroupKind == infRef.GroupVersionKind().GroupKind().String()
+		clonedFromGroupKind == schema.GroupKind{Group: infRef.APIGroup, Kind: infRef.Kind}.String()
 }
 
 func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clientset *kubernetes.Clientset) (bool, error) {

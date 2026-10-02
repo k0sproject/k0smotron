@@ -18,6 +18,7 @@ import (
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
@@ -149,12 +150,26 @@ type K0sControlPlaneMachineTemplate struct {
 
 // InfraRef returns the infrastructure template reference, preferring the nested field and falling
 // back to the deprecated flat one, which is all an object stored before the move has.
-func (t *K0sControlPlaneMachineTemplate) InfraRef() corev1.ObjectReference {
-	if t.Spec.InfrastructureRef != (corev1.ObjectReference{}) {
+func (t *K0sControlPlaneMachineTemplate) InfraRef() clusterv1.ContractVersionedObjectReference {
+	if t.Spec.InfrastructureRef != (clusterv1.ContractVersionedObjectReference{}) {
 		return t.Spec.InfrastructureRef
 	}
 
-	return t.InfrastructureRef
+	return ContractRefFromObjectReference(t.InfrastructureRef)
+}
+
+// ContractRefFromObjectReference converts the deprecated reference to the contract one. The
+// contract carries a group rather than a version, which it resolves from the CRD labels.
+func ContractRefFromObjectReference(ref corev1.ObjectReference) clusterv1.ContractVersionedObjectReference {
+	if ref == (corev1.ObjectReference{}) {
+		return clusterv1.ContractVersionedObjectReference{}
+	}
+
+	return clusterv1.ContractVersionedObjectReference{
+		APIGroup: schema.FromAPIVersionAndKind(ref.APIVersion, ref.Kind).Group,
+		Kind:     ref.Kind,
+		Name:     ref.Name,
+	}
 }
 
 // K0sControlPlaneMachineTemplateSpec defines the spec for Machines
@@ -163,7 +178,7 @@ type K0sControlPlaneMachineTemplateSpec struct {
 	// infrastructureRef is a reference to a custom resource offered by an infrastructure provider.
 	// Optional in the schema only, since the deprecated field may carry it and admission requires one.
 	// +optional
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef,omitempty,omitzero"`
+	InfrastructureRef clusterv1.ContractVersionedObjectReference `json:"infrastructureRef,omitempty,omitzero"`
 
 	// readinessGates specifies additional conditions to include when evaluating Machine Ready condition.
 	//

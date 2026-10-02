@@ -26,6 +26,7 @@ import (
 	"github.com/k0sproject/version"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -66,7 +67,7 @@ func migrateDeprecatedInfrastructureRef(kcp *K0sControlPlane) {
 
 	// Copied rather than moved, since deleting a field the user wrote makes their next apply put
 	// it back and the resource diff forever.
-	mt.Spec.InfrastructureRef = mt.InfrastructureRef
+	mt.Spec.InfrastructureRef = ContractRefFromObjectReference(mt.InfrastructureRef)
 }
 
 // validateInfrastructureRef reads the deprecated field itself rather than an empty nested one,
@@ -168,7 +169,7 @@ func denyMissingInfrastructureRef(kcp *K0sControlPlane, prefix *field.Path) *fie
 		return nil
 	}
 
-	if mt.InfrastructureRef == (corev1.ObjectReference{}) && mt.Spec.InfrastructureRef == (corev1.ObjectReference{}) {
+	if mt.InfrastructureRef == (corev1.ObjectReference{}) && mt.Spec.InfrastructureRef == (clusterv1.ContractVersionedObjectReference{}) {
 		return field.Required(prefix.Child("machineTemplate", "spec", "infrastructureRef"),
 			"an infrastructure template reference is required")
 	}

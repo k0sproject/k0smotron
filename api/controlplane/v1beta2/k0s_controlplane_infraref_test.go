@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 var (
@@ -37,7 +38,11 @@ var (
 	}
 )
 
-func templateWith(deprecated, nested corev1.ObjectReference) *K0sControlPlaneMachineTemplate {
+// The nested field follows the contract shape, so its fixture is the same reference converted
+// rather than a second one that could drift from the first.
+var oldContractRef = ContractRefFromObjectReference(oldRef)
+
+func templateWith(deprecated corev1.ObjectReference, nested clusterv1.ContractVersionedObjectReference) *K0sControlPlaneMachineTemplate {
 	return &K0sControlPlaneMachineTemplate{
 		InfrastructureRef: deprecated,
 		Spec:              K0sControlPlaneMachineTemplateSpec{InfrastructureRef: nested},
@@ -48,17 +53,19 @@ func templateWith(deprecated, nested corev1.ObjectReference) *K0sControlPlaneMac
 // one stored before the field moved is only re-admitted when something writes to it.
 func TestInfraRefFallsBackToTheDeprecatedField(t *testing.T) {
 	none := corev1.ObjectReference{}
+	noneContract := clusterv1.ContractVersionedObjectReference{}
 
 	tests := []struct {
-		name               string
-		deprecated, nested corev1.ObjectReference
-		want               corev1.ObjectReference
+		name       string
+		deprecated corev1.ObjectReference
+		nested     clusterv1.ContractVersionedObjectReference
+		want       clusterv1.ContractVersionedObjectReference
 	}{
-		{"only the deprecated field, an object stored before the move", oldRef, none, oldRef},
-		{"only the nested field, the shape being moved to", none, oldRef, oldRef},
-		{"both agree, which is what a defaulted object looks like", oldRef, oldRef, oldRef},
-		{"the nested field wins on a pair the defaulter has not seen", otherRef, oldRef, oldRef},
-		{"neither is set, which admission refuses separately", none, none, none},
+		{"only the deprecated field, an object stored before the move", oldRef, noneContract, oldContractRef},
+		{"only the nested field, the shape being moved to", none, oldContractRef, oldContractRef},
+		{"both agree, which is what a defaulted object looks like", oldRef, oldContractRef, oldContractRef},
+		{"the nested field wins on a pair the defaulter has not seen", otherRef, oldContractRef, oldContractRef},
+		{"neither is set, which admission refuses separately", none, noneContract, noneContract},
 	}
 
 	for _, tt := range tests {
@@ -75,11 +82,11 @@ func TestDefaultMigratesTheDeprecatedInfrastructureRef(t *testing.T) {
 
 	t.Run("an empty nested field is filled from the deprecated one", func(t *testing.T) {
 		kcp := &K0sControlPlane{Spec: K0sControlPlaneSpec{
-			MachineTemplate: templateWith(oldRef, corev1.ObjectReference{}),
+			MachineTemplate: templateWith(oldRef, clusterv1.ContractVersionedObjectReference{}),
 		}}
 		require.NoError(t, defaulter.Default(t.Context(), kcp))
 
-		require.Equal(t, oldRef, kcp.Spec.MachineTemplate.Spec.InfrastructureRef)
+		require.Equal(t, oldContractRef, kcp.Spec.MachineTemplate.Spec.InfrastructureRef)
 		require.Equal(t, oldRef, kcp.Spec.MachineTemplate.InfrastructureRef,
 			"the deprecated field stays, since removing what the user wrote makes the next apply put it back")
 	})
@@ -88,21 +95,21 @@ func TestDefaultMigratesTheDeprecatedInfrastructureRef(t *testing.T) {
 	// the nested one stale and the controller cloning the template the user moved off.
 	t.Run("a rotation through the deprecated field overwrites the nested one", func(t *testing.T) {
 		kcp := &K0sControlPlane{Spec: K0sControlPlaneSpec{
-			MachineTemplate: templateWith(otherRef, oldRef),
+			MachineTemplate: templateWith(otherRef, oldContractRef),
 		}}
 		require.NoError(t, defaulter.Default(t.Context(), kcp))
 
-		require.Equal(t, otherRef, kcp.Spec.MachineTemplate.Spec.InfrastructureRef,
+		require.Equal(t, ContractRefFromObjectReference(otherRef), kcp.Spec.MachineTemplate.Spec.InfrastructureRef,
 			"whoever still writes the deprecated field owns the value")
 	})
 
 	t.Run("a nested only object is left alone", func(t *testing.T) {
 		kcp := &K0sControlPlane{Spec: K0sControlPlaneSpec{
-			MachineTemplate: templateWith(corev1.ObjectReference{}, oldRef),
+			MachineTemplate: templateWith(corev1.ObjectReference{}, oldContractRef),
 		}}
 		require.NoError(t, defaulter.Default(t.Context(), kcp))
 
-		require.Equal(t, oldRef, kcp.Spec.MachineTemplate.Spec.InfrastructureRef)
+		require.Equal(t, oldContractRef, kcp.Spec.MachineTemplate.Spec.InfrastructureRef)
 		require.Equal(t, corev1.ObjectReference{}, kcp.Spec.MachineTemplate.InfrastructureRef,
 			"nothing writes backwards into the deprecated field")
 	})
@@ -119,24 +126,25 @@ func TestValidateInfrastructureRef(t *testing.T) {
 	validator := &K0sControlPlaneValidator{}
 
 	tests := []struct {
-		name               string
-		deprecated, nested corev1.ObjectReference
-		wantErr            string
-		wantWarning        bool
+		name        string
+		deprecated  corev1.ObjectReference
+		nested      clusterv1.ContractVersionedObjectReference
+		wantErr     string
+		wantWarning bool
 	}{
-		{name: "the nested field alone is accepted in silence", nested: oldRef},
+		{name: "the nested field alone is accepted in silence", nested: oldContractRef},
 		{name: "the deprecated field alone is accepted with a warning", deprecated: oldRef, wantWarning: true},
-		{name: "both set to the same template still warns", deprecated: oldRef, nested: oldRef, wantWarning: true},
+		{name: "both set to the same template still warns", deprecated: oldRef, nested: oldContractRef, wantWarning: true},
 		{
 			// Defaulting has already resolved this in favour of the deprecated field by the time
 			// validation runs. Refusing it here refused every rotation a legacy manifest made.
 			name:       "a pair that still disagrees is not an error",
-			deprecated: otherRef, nested: oldRef,
+			deprecated: otherRef, nested: oldContractRef,
 			wantWarning: true,
 		},
 		{
 			name:       "neither is set, which the schema used to catch",
-			deprecated: none, nested: none,
+			deprecated: none, nested: clusterv1.ContractVersionedObjectReference{},
 			wantErr: "is required",
 		},
 	}

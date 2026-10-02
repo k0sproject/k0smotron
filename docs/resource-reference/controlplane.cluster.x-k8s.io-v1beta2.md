@@ -1044,65 +1044,31 @@ Optional in the schema only, since the deprecated field may carry it and admissi
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>apiVersion</b></td>
+        <td><b>apiGroup</b></td>
         <td>string</td>
         <td>
-          API version of the referent.<br/>
+          apiGroup is the group of the resource being referenced.
+apiGroup must be fully qualified domain name.
+The corresponding version for this reference will be looked up from the contract
+labels of the corresponding CRD of the resource being referenced.<br/>
         </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>fieldPath</b></td>
-        <td>string</td>
-        <td>
-          If referring to a piece of an object instead of an entire object, this string
-should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
-For example, if the object reference is to a container within a pod, this would take on a value like:
-"spec.containers{name}" (where "name" refers to the name of the container that triggered
-the event) or if no container name is specified "spec.containers[2]" (container with
-index 2 in this pod). This syntax is chosen only to have some well-defined way of
-referencing a part of an object.<br/>
-        </td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
         <td><b>kind</b></td>
         <td>string</td>
         <td>
-          Kind of the referent.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds<br/>
+          kind of the resource being referenced.
+kind must consist of alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character.<br/>
         </td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name of the referent.
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          name of the resource being referenced.
+name must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character.<br/>
         </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>namespace</b></td>
-        <td>string</td>
-        <td>
-          Namespace of the referent.
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>resourceVersion</b></td>
-        <td>string</td>
-        <td>
-          Specific resourceVersion to which this reference is made, if any.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>uid</b></td>
-        <td>string</td>
-        <td>
-          UID of the referent.
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids<br/>
-        </td>
-        <td>false</td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
