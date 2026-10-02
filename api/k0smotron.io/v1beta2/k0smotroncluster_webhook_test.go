@@ -188,3 +188,30 @@ func TestCluster_ValidateCertificates(t *testing.T) {
 		})
 	}
 }
+func TestClusterValidator_DataDirImmutable(t *testing.T) {
+	spec := func(flags ...string) *ClusterSpec {
+		return &ClusterSpec{ControlPlaneFlags: flags}
+	}
+
+	for _, tc := range []struct {
+		name     string
+		old, new *ClusterSpec
+		wantErr  bool
+	}{
+		{name: "unset to unset", old: spec(), new: spec()},
+		{name: "unset to explicit default", old: spec(), new: spec("--data-dir=/var/lib/k0s")},
+		{name: "same custom value, different form", old: spec("--data-dir=/data"), new: spec("--data-dir", "/data")},
+		{name: "unset to custom", old: spec(), new: spec("--data-dir=/data"), wantErr: true},
+		{name: "custom to other", old: spec("--data-dir=/data"), new: spec("--data-dir=/other"), wantErr: true},
+		{name: "custom to unset", old: spec("--data-dir=/data"), new: spec(), wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ClusterValidator{}.ValidateClusterSpecUpdate(tc.old, tc.new)
+			if tc.wantErr {
+				require.ErrorContains(t, err, "data directory cannot be changed")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

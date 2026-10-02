@@ -460,6 +460,29 @@ func (kcs *K0sConfigSpec) GetJoinTokenPath() string {
 	return filepath.Join(kcs.WorkingDir, "k0s.token")
 }
 
+// DefaultK0sDataDir is the data directory k0s uses when --data-dir is not set.
+const DefaultK0sDataDir = "/var/lib/k0s"
+
+// GetDataDir returns the k0s data directory, honoring a user provided --data-dir argument.
+func (kcs *K0sConfigSpec) GetDataDir() string {
+	if kcs == nil {
+		return DefaultK0sDataDir
+	}
+
+	dir := DefaultK0sDataDir
+	for i, arg := range kcs.Args {
+		if v, ok := strings.CutPrefix(arg, "--data-dir="); ok {
+			dir = v
+		} else if arg == "--data-dir" && i+1 < len(kcs.Args) {
+			dir = kcs.Args[i+1]
+		}
+	}
+	if dir == "" {
+		return DefaultK0sDataDir
+	}
+	return dir
+}
+
 // hasBoolArg reports a pflag bool argument being on, where a bare flag means true and a value is
 // anything ParseBool accepts rather than only the word true.
 func (kcs *K0sConfigSpec) hasBoolArg(names ...string) bool {

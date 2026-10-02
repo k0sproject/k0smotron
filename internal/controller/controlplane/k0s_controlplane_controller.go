@@ -450,8 +450,12 @@ func (c *K0sController) checkMachineIsReady(ctx context.Context, machineName str
 }
 
 func (c *K0sController) ensureCertificates(ctx context.Context, controlplane *controlplane) error {
+	if controlplane.kcp == nil {
+		return fmt.Errorf("k0scontrolplane is nil")
+	}
+
 	certificates := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{
-		CertificatesDir: "/var/lib/k0s/pki",
+		CertificatesDir: fmt.Sprintf("%s/pki", controlplane.kcp.Spec.K0sConfigSpec.GetDataDir()),
 	})
 	return certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(controlplane.cluster), *metav1.NewControllerRef(controlplane.kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")))
 }

@@ -43,6 +43,7 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 		"K0sControllerArgs":            getControllerFlags(kmc),
 		"PrivilegedPortIsUsed":         kmc.Spec.Service.APIPort <= 1024,
 		"UniversalSedInplace":          universalSedInplace,
+		"K0sDataDir":                   kmc.Spec.GetDataDir(),
 	})
 	if err != nil {
 		return v1.ConfigMap{}, err
@@ -159,7 +160,7 @@ fi
 
 {{if .PrivilegedPortIsUsed}}
 apk add --no-cache libcap
-{ while ! setcap 'cap_net_bind_service=+ep' /var/lib/k0s/bin/kube-apiserver; do sleep 1 ; done ; } &
+{ while ! setcap 'cap_net_bind_service=+ep' {{ .K0sDataDir }}/bin/kube-apiserver; do sleep 1 ; done ; } &
 {{end}}
 
 # Run the k0s controller
