@@ -52,16 +52,29 @@ func (v *K0sWorkerConfigValidator) ValidateCreate(_ context.Context, c *K0sWorke
 		return nil, apierrors.NewBadRequest("expected a K0sWorkerConfig but got nil")
 	}
 
-	return ProvisionerWarnings(c.Spec.Provisioner, field.NewPath("spec")), v.validate(c.Spec, c.Name)
+	prefix := field.NewPath("spec")
+
+	return ProvisionerWarnings(c.Spec.Provisioner, prefix),
+		v.validate(c.Name, ValidateProvisioner(c.Spec.Provisioner, prefix), c.Spec.Validate(prefix))
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, _, newConfig *K0sWorkerConfig) (admission.Warnings, error) {
+func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, oldConfig, newConfig *K0sWorkerConfig) (admission.Warnings, error) {
 	if newConfig == nil {
 		return nil, apierrors.NewBadRequest("expected a K0sWorkerConfig but got nil")
 	}
 
-	return ProvisionerWarnings(newConfig.Spec.Provisioner, field.NewPath("spec")), v.validate(newConfig.Spec, newConfig.Name)
+	prefix := field.NewPath("spec")
+
+	// Ratcheted, or an object admitted before a rule existed can never be updated
+	// again, which includes the controller stripping its own finalizer.
+	provisionerErrs := ValidateProvisioner(newConfig.Spec.Provisioner, prefix)
+	if oldConfig != nil {
+		provisionerErrs = RatchetErrors(ValidateProvisioner(oldConfig.Spec.Provisioner, prefix), provisionerErrs)
+	}
+
+	return ProvisionerWarnings(newConfig.Spec.Provisioner, prefix),
+		v.validate(newConfig.Name, provisionerErrs, newConfig.Spec.Validate(prefix))
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -69,8 +82,11 @@ func (v *K0sWorkerConfigValidator) ValidateDelete(_ context.Context, _ *K0sWorke
 	return nil, nil
 }
 
-func (v *K0sWorkerConfigValidator) validate(c K0sWorkerConfigSpec, name string) error {
-	allErrs := c.Validate(field.NewPath("spec"))
+func (v *K0sWorkerConfigValidator) validate(name string, errLists ...field.ErrorList) error {
+	var allErrs field.ErrorList
+	for _, errs := range errLists {
+		allErrs = append(allErrs, errs...)
+	}
 
 	if len(allErrs) == 0 {
 		return nil
