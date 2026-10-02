@@ -57,11 +57,15 @@ func (d *K0sControlPlaneDefaulter) Default(_ context.Context, kcp *K0sControlPla
 	return nil
 }
 
-// migrateDeprecatedInfrastructureRef copies on every write rather than only into an empty field,
-// since filling it once wedges the rotation a legacy manifest makes through the old field.
+// migrateDeprecatedInfrastructureRef fills the nested field from the deprecated one only where the
+// nested is unset, so a value written through the new API is never overwritten by a leftover.
 func migrateDeprecatedInfrastructureRef(kcp *K0sControlPlane) {
 	mt := kcp.Spec.MachineTemplate
 	if mt == nil || mt.InfrastructureRef == (corev1.ObjectReference{}) {
+		return
+	}
+
+	if mt.Spec.InfrastructureRef != (clusterv1.ContractVersionedObjectReference{}) {
 		return
 	}
 

@@ -91,16 +91,16 @@ func TestDefaultMigratesTheDeprecatedInfrastructureRef(t *testing.T) {
 			"the deprecated field stays, since removing what the user wrote makes the next apply put it back")
 	})
 
-	// A legacy manifest rotates through the deprecated field alone, so copying just once leaves
-	// the nested one stale and the controller cloning the template the user moved off.
-	t.Run("a rotation through the deprecated field overwrites the nested one", func(t *testing.T) {
+	// Setting the nested field says the deprecated one is a leftover from the migration, so a
+	// disagreeing pair resolves to the new API rather than to whatever was left behind.
+	t.Run("a set nested field is never overwritten by the deprecated one", func(t *testing.T) {
 		kcp := &K0sControlPlane{Spec: K0sControlPlaneSpec{
 			MachineTemplate: templateWith(otherRef, oldContractRef),
 		}}
 		require.NoError(t, defaulter.Default(t.Context(), kcp))
 
-		require.Equal(t, ContractRefFromObjectReference(otherRef), kcp.Spec.MachineTemplate.Spec.InfrastructureRef,
-			"whoever still writes the deprecated field owns the value")
+		require.Equal(t, oldContractRef, kcp.Spec.MachineTemplate.Spec.InfrastructureRef,
+			"the nested field is the one the user is expected to maintain")
 	})
 
 	t.Run("a nested only object is left alone", func(t *testing.T) {
@@ -136,8 +136,8 @@ func TestValidateInfrastructureRef(t *testing.T) {
 		{name: "the deprecated field alone is accepted with a warning", deprecated: oldRef, wantWarning: true},
 		{name: "both set to the same template still warns", deprecated: oldRef, nested: oldContractRef, wantWarning: true},
 		{
-			// Defaulting has already resolved this in favour of the deprecated field by the time
-			// validation runs. Refusing it here refused every rotation a legacy manifest made.
+			// Defaulting leaves the nested field alone, so a pair that disagrees means the
+			// deprecated one is a leftover rather than a conflict to refuse.
 			name:       "a pair that still disagrees is not an error",
 			deprecated: otherRef, nested: oldContractRef,
 			wantWarning: true,
