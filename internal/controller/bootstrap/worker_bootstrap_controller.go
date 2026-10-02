@@ -69,6 +69,8 @@ type Controller struct {
 	Scheme              *runtime.Scheme
 	ClientSet           *kubernetes.Clientset
 	RESTConfig          *rest.Config
+	// TokenTTL is the amount of time a bootstrap token will be valid.
+	TokenTTL time.Duration
 	// workloadClusterClient is used during testing to inject a fake client
 	workloadClusterClient client.Client
 }
@@ -82,6 +84,8 @@ type Scope struct {
 	client              client.Client
 	secretCachingClient client.Client
 	provisioner         provisioner.Provisioner
+	// bootstrapTokenID is the ID of the bootstrap token embedded in the generated bootstrap data.
+	bootstrapTokenID string
 }
 
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=k0sworkerconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -219,8 +223,8 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		})
 
 		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
-		log.Info("Bootstrapdata already created, reconciled succesfully")
-		return ctrl.Result{}, nil
+		log.Info("Bootstrapdata already created")
+		return r.reconcileBootstrapToken(ctx, cluster, config, configOwner)
 	}
 
 	scope := &Scope{
@@ -287,10 +291,45 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	// Set the status to ready
 	scope.Config.Status.Initialization.DataSecretCreated = new(true)
 	scope.Config.Status.DataSecretName = new(bootstrapSecret.Name)
+	// Only track the token once the bootstrap data embedding it is persisted, so a failed regeneration does not
+	// make the controller refresh a token the machine never received.
+	metav1.SetMetaDataAnnotation(&scope.Config.ObjectMeta, bootstrapTokenIDAnnotation, scope.bootstrapTokenID)
 
 	log.Info("Reconciled succesfully")
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: tokenCheckRefreshInterval(r.TokenTTL)}, nil
+}
+
+// reconcileBootstrapToken refreshes the bootstrap token embedded in already generated bootstrap data until
+// the node joins the cluster.
+func (r *Controller) reconcileBootstrapToken(ctx context.Context, cluster *clusterv1.Cluster, config *bootstrapv2.K0sWorkerConfig, configOwner *bsutil.ConfigOwner) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+	tokenID := config.GetAnnotations()[bootstrapTokenIDAnnotation]
+	if tokenID == "" {
+		log.Info("No bootstrap token tracked for this config, skipping refresh")
+		return ctrl.Result{}, nil
+	}
+	if configOwner.HasNodeRefs() {
+		// The node has already joined, the token will expire on its own.
+		log.Info("Node has already joined, skipping bootstrap token refresh")
+		return ctrl.Result{}, nil
+	}
+
+	wcClient, err := r.getWorkloadClusterClient(ctx, cluster)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	refreshed, err := refreshBootstrapTokenIfNeeded(ctx, wcClient, tokenID, r.TokenTTL)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if refreshed {
+		log.Info("Bootstrap token refreshed")
+	}
+	// At this point the bootstrap token is not consumed yet and has been refreshed if needed.
+	// Requeue the reconciliation to check the token again after the defined interval.
+	return ctrl.Result{RequeueAfter: tokenCheckRefreshInterval(r.TokenTTL)}, nil
 }
 
 func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log logr.Logger, scope *Scope) ([]byte, error) {
@@ -497,20 +536,28 @@ func getLinuxCommands(scope *Scope) ([]string, map[provisioner.VarName]string, e
 	return commands, commandsMap, nil
 }
 
-func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
+func (r *Controller) getWorkloadClusterClient(ctx context.Context, cluster *clusterv1.Cluster) (client.Client, error) {
 	// Check if the workload cluster client is already set. This client is used for testing purposes to inject a fake client.
-	wcClient := r.workloadClusterClient
-	if wcClient == nil {
-		var err error
-		cp, err := util.FindK0sControlPlane(ctx, r.Client, scope.Cluster)
-		if err != nil {
-			return "", fmt.Errorf("failed to get K0sControlPlane resource: %w", err)
-		}
+	if r.workloadClusterClient != nil {
+		return r.workloadClusterClient, nil
+	}
 
-		wcClient, err = util.GetControllerRuntimeClient(ctx, r.Client, r.ClusterCache, cp, client.ObjectKeyFromObject(scope.Cluster))
-		if err != nil {
-			return "", fmt.Errorf("failed to create child cluster client: %w", err)
-		}
+	cp, err := util.FindK0sControlPlane(ctx, r.Client, cluster)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get K0sControlPlane resource: %w", err)
+	}
+
+	wcClient, err := util.GetControllerRuntimeClient(ctx, r.Client, r.ClusterCache, cp, client.ObjectKeyFromObject(cluster))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create child cluster client: %w", err)
+	}
+	return wcClient, nil
+}
+
+func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, error) {
+	wcClient, err := r.getWorkloadClusterClient(ctx, scope.Cluster)
+	if err != nil {
+		return "", err
 	}
 
 	tokenID := kutil.RandomString(6)
@@ -532,7 +579,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		joinURL = fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port)
 	}
 
-	joinToken, err := kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, joinURL, "kubelet-bootstrap")
+	joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, joinURL, "kubelet-bootstrap")
 	if err != nil {
 		return "", fmt.Errorf("failed to create join token: %w", err)
 	}
@@ -546,10 +593,9 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 		},
 		Type: corev1.SecretTypeBootstrapToken,
 		StringData: map[string]string{
-			"token-id":     tokenID,
-			"token-secret": tokenSecret,
-			// TODO We need bit shorter time for the token
-			"expiration":                       time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+			"token-id":                         tokenID,
+			"token-secret":                     tokenSecret,
+			"expiration":                       tokenExpiration(r.TokenTTL),
 			"usage-bootstrap-api-auth":         "true",
 			"description":                      "Worker bootstrap token generated by k0smotron",
 			"usage-bootstrap-authentication":   "true",
@@ -558,6 +604,7 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	}); err != nil {
 		return "", fmt.Errorf("failed to create token secret: %w", err)
 	}
+	scope.bootstrapTokenID = tokenID
 
 	return joinToken, nil
 }
@@ -721,6 +768,10 @@ func createInstallCmd(scope *Scope) string {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *Controller) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
+	if r.TokenTTL <= 0 {
+		r.TokenTTL = DefaultTokenTTL
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(opts).
 		For(&bootstrapv2.K0sWorkerConfig{}).
