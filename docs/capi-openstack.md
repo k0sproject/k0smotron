@@ -11,7 +11,11 @@ Before proceeding, ensure your management cluster meets the following requiremen
 - A healthy Kubernetes cluster with cluster-admin access
 - Cluster API initialized with the OpenStack infrastructure provider:
   ```bash
-  clusterctl init --infrastructure openstack
+  clusterctl init \
+    --core cluster-api:{{{ extra.capi_versions.core }}} \
+    --infrastructure openstack:{{{ extra.capi_versions.openstack }}} \
+    --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+    --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}}
   ```
 - k0smotron installed (docs: https://docs.k0smotron.io/stable/install/#software-prerequisites)
 - A LoadBalancer implementation for the hosted control plane service (OpenStack CCM/Octavia or MetalLB)
@@ -146,7 +150,7 @@ spec:
     kind: OpenStackCluster
     name: openstack-hcp-cluster
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: OpenStackCluster
 metadata:
   name: openstack-hcp-cluster
@@ -156,6 +160,7 @@ spec:
     filter:
       name: public
   identityRef:
+    type: Secret
     cloudName: openstack
     name: openstack-cloud-config
     region: RegionOne
@@ -197,7 +202,7 @@ spec:
         name: openstack-hcp-cluster-mt
       version: v1.32.6
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: OpenStackMachineTemplate
 metadata:
   name: openstack-hcp-cluster-mt
@@ -207,6 +212,7 @@ spec:
     spec:
       flavor: m1.medium
       identityRef:
+        type: Secret
         cloudName: openstack
         name: openstack-cloud-config
         region: RegionOne

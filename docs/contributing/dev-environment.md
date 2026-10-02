@@ -28,7 +28,11 @@ provided configuration file:
 4. Initialize the cluster, patch configurations, and enable features:
 
     ```bash
-    clusterctl init --infrastructure docker
+    clusterctl init \
+      --core cluster-api:{{{ extra.capi_versions.core }}} \
+      --infrastructure docker:{{{ extra.capi_versions.docker }}} \
+      --bootstrap kubeadm:{{{ extra.capi_versions.core }}} \
+      --control-plane kubeadm:{{{ extra.capi_versions.core }}}
               kubectl patch -n capi-system deployment/capi-controller-manager -p \
                 '{"spec":{"template":{"spec":{"containers":[{"name":"manager","args":["--leader-elect", "--metrics-bind-addr=localhost:8080", "--feature-gates=ClusterTopology=true"]}]}}}}'
               kubectl patch -n capd-system deployment/capd-controller-manager -p \
