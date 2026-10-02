@@ -194,12 +194,24 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 			Path: fileName,
 		})
 
-		buf.WriteString(fmt.Sprintf("%s /var/lib/bootstrap-data/%s %s:%s\n", scpCommand, fileName, machineDSN, file.Path))
-		// These run through the entrypoint shell inside the job, so quote them.
-		// Giving a file away also needs the same privilege the commands use.
-		buf.WriteString(fmt.Sprintf("%s %schmod %s %s\n", sshCommand, sudoPrefix, shellQuote(file.Permissions), shellQuote(file.Path)))
+		// Permissions is optional and nothing defaults it, so parse through the helper
+		// that falls back rather than emitting a chmod with an empty mode.
+		mode, err := file.PermissionsAsInt()
+		if err != nil {
+			return volume, volumeMounts, secretData, fmt.Errorf("failed to parse permissions of file %s: %w", file.Path, err)
+		}
+
+		// Both are one word for the shell that runs this script, so a path holding a
+		// space or a semicolon must not be able to split them.
+		buf.WriteString(fmt.Sprintf("%s %s %s\n", scpCommand,
+			shellQuote("/var/lib/bootstrap-data/"+fileName),
+			shellQuote(machineDSN+":"+file.Path)))
+		// Giving a file away needs the same privilege the commands use.
+		buf.WriteString(sshRemoteCommand(sshCommand,
+			fmt.Sprintf("%schmod %04o %s", sudoPrefix, mode, shellQuote(file.Path))))
 		if file.Owner != "" {
-			buf.WriteString(fmt.Sprintf("%s %schown -- %s %s\n", sshCommand, sudoPrefix, shellQuote(file.Owner), shellQuote(file.Path)))
+			buf.WriteString(sshRemoteCommand(sshCommand,
+				fmt.Sprintf("%schown -- %s %s", sudoPrefix, shellQuote(file.Owner), shellQuote(file.Path))))
 		}
 	}
 	volumeMounts = append(volumeMounts, v1.VolumeMount{
@@ -208,10 +220,12 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 	})
 
 	for _, cmd := range cloudInit.Commands {
+		// A command is meant for the target's shell, so it is passed through whole and
+		// only the sudo wrapper around it has to survive that shell's parse.
 		if p.remoteMachine.Spec.UseSudo {
-			cmd = fmt.Sprintf("sudo su -c '%s'", cmd)
+			cmd = fmt.Sprintf("sudo su -c %s", shellQuote(cmd))
 		}
-		buf.WriteString(fmt.Sprintf("%s \"%s\"\n", sshCommand, cmd))
+		buf.WriteString(sshRemoteCommand(sshCommand, cmd))
 	}
 	secretData["k0smotron-entrypoint.sh"] = buf.Bytes()
 
@@ -222,6 +236,12 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 	})
 
 	return volume, volumeMounts, secretData, nil
+}
+
+// ssh joins its arguments and the target parses the result, so a command already quoted
+// for the target is quoted once more to reach ssh as a single word.
+func sshRemoteCommand(sshCommand, remoteCommand string) string {
+	return fmt.Sprintf("%s %s\n", sshCommand, shellQuote(remoteCommand))
 }
 
 func (p *JobProvisioner) machineDSN() (dsn string) {

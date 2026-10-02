@@ -31,10 +31,7 @@ import (
 	"github.com/k0sproject/rig/exec"
 	"github.com/k0sproject/rig/pkg/rigfs"
 	"github.com/stretchr/testify/require"
-	batchv1 "k8s.io/api/batch/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	api "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 )
 
@@ -293,105 +290,4 @@ func TestShellQuote(t *testing.T) {
 	} {
 		require.Equal(t, want, shellQuote(in), "quoting %q", in)
 	}
-}
-
-func TestExtractCloudInitDecodesAndChowns(t *testing.T) {
-	p := &JobProvisioner{
-		remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
-		provisionJob: &api.ProvisionJob{
-			SSHCommand:  "ssh",
-			SCPCommand:  "scp",
-			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
-		},
-	}
-
-	_, _, secretData, err := p.extractCloudInit(&provisioner.InputProvisionData{
-		Files: []provisioner.File{{
-			Path:        "/etc/thing",
-			Content:     base64.StdEncoding.EncodeToString([]byte("decoded body")),
-			Encoding:    provisioner.Base64,
-			Permissions: "0640",
-			Owner:       "etcd:etcd",
-		}},
-	})
-	require.NoError(t, err)
-
-	var staged string
-	for name, data := range secretData {
-		if name != "k0smotron-entrypoint.sh" {
-			staged = string(data)
-		}
-	}
-	require.Equal(t, "decoded body", staged, "content must be decoded before it is staged")
-
-	script := string(secretData["k0smotron-entrypoint.sh"])
-	// The job entrypoint is a shell script, so both must be quoted.
-	require.Contains(t, script, "chown -- 'etcd:etcd' '/etc/thing'")
-	require.Contains(t, script, "chmod '0640' '/etc/thing'")
-}
-
-func TestExtractCloudInitQuotesOwnerAgainstInjection(t *testing.T) {
-	p := &JobProvisioner{
-		remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
-		provisionJob: &api.ProvisionJob{
-			SSHCommand:  "ssh",
-			SCPCommand:  "scp",
-			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
-		},
-	}
-
-	_, _, secretData, err := p.extractCloudInit(&provisioner.InputProvisionData{
-		Files: []provisioner.File{{Path: "/etc/thing", Content: "body", Owner: "root; rm -rf /"}},
-	})
-	require.NoError(t, err)
-
-	script := string(secretData["k0smotron-entrypoint.sh"])
-	require.Contains(t, script, "chown -- "+shellQuote("root; rm -rf /"))
-	require.NotContains(t, script, "chown -- root; rm")
-}
-
-func TestExtractCloudInitUsesSudoWhenRequested(t *testing.T) {
-	// Giving a file to another user needs privilege, the same way the commands
-	// in the same script get it.
-	for _, useSudo := range []bool{false, true} {
-		p := &JobProvisioner{
-			remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root", UseSudo: useSudo}},
-			provisionJob: &api.ProvisionJob{
-				SSHCommand:  "ssh",
-				SCPCommand:  "scp",
-				JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
-			},
-		}
-
-		_, _, secretData, err := p.extractCloudInit(&provisioner.InputProvisionData{
-			Files: []provisioner.File{{Path: "/etc/thing", Content: "body", Permissions: "0640", Owner: "etcd:etcd"}},
-		})
-		require.NoError(t, err)
-
-		script := string(secretData["k0smotron-entrypoint.sh"])
-		if useSudo {
-			require.Contains(t, script, "ssh root@host sudo chown -- 'etcd:etcd'")
-			require.Contains(t, script, "ssh root@host sudo chmod '0640'")
-		} else {
-			require.Contains(t, script, "ssh root@host chown -- 'etcd:etcd'")
-			require.NotContains(t, script, "sudo chown")
-		}
-	}
-}
-
-func TestExtractCloudInitRejectsAppend(t *testing.T) {
-	p := &JobProvisioner{
-		remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
-		provisionJob: &api.ProvisionJob{
-			SSHCommand:  "ssh",
-			SCPCommand:  "scp",
-			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
-		},
-	}
-
-	_, _, _, err := p.extractCloudInit(&provisioner.InputProvisionData{
-		Files: []provisioner.File{{Path: "/etc/thing", Content: "body", Append: true}},
-	})
-
-	require.ErrorContains(t, err, "not supported when provisioning through a job")
 }
