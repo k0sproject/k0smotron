@@ -273,11 +273,11 @@ spec:
         telemetry:
           enabled: false
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DevMachineTemplate
-      name: docker-test-cp-template
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: DevMachineTemplate
+        name: docker-test-cp-template
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DevCluster
@@ -409,9 +409,9 @@ spec:
         telemetry:
           enabled: false
   machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      kind: DevMachineTemplate
-      name: docker-test-cp-template
-      namespace: default
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: DevMachineTemplate
+        name: docker-test-cp-template
 `
