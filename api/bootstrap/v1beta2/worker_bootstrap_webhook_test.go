@@ -322,7 +322,7 @@ func TestProvisionerWarningsForIgnition(t *testing.T) {
 		}, field.NewPath("spec"))
 
 		require.Len(t, warnings, 1)
-		require.Contains(t, warnings[0], "spec.provisioner.customUserDataRef is ignored by the ignition provisioner")
+		require.Equal(t, "spec.provisioner.customUserDataRef is ignored by the ignition provisioner, use spec.provisioner.ignition.additionalConfig instead", warnings[0])
 	})
 
 	t.Run("cloud-init with the same ref is silent", func(t *testing.T) {
@@ -372,5 +372,5 @@ func TestProvisionerWarningsOnWorkerUpdate(t *testing.T) {
 
 	require.NoError(t, err, "the config is still accepted")
 	require.Len(t, warnings, 1)
-	require.Contains(t, warnings[0], "spec.provisioner.customUserDataRef is ignored by the ignition provisioner")
+	require.Equal(t, "spec.provisioner.customUserDataRef is ignored by the ignition provisioner, use spec.provisioner.ignition.additionalConfig instead", warnings[0])
 }
