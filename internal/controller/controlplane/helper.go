@@ -256,6 +256,10 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 	annotations := map[string]string{}
 	maps.Copy(annotations, kcp.Annotations)
 
+	// The marker says a replacement is owed, and this object is part of that replacement, so
+	// carrying it here would assert something untrue for the life of the machine.
+	delete(annotations, cpv1beta2.RemediationInProgressAnnotation)
+
 	maps.Copy(annotations, kcp.Spec.MachineTemplate.ObjectMeta.Annotations)
 
 	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.Name
