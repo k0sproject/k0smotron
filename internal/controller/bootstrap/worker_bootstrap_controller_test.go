@@ -145,3 +145,36 @@ func Test_getWindowsCommands(t *testing.T) {
 	}
 
 }
+
+func Test_apiServerURL(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		port string
+		want string
+	}{
+		{
+			name: "ipv4 host",
+			host: "10.0.0.1",
+			port: "443",
+			want: "https://10.0.0.1:443",
+		},
+		{
+			name: "dns host",
+			host: "api.example.com",
+			port: "6443",
+			want: "https://api.example.com:6443",
+		},
+		{
+			name: "ipv6 host is bracketed",
+			host: "2001:db8:11:1103::3",
+			port: "443",
+			want: "https://[2001:db8:11:1103::3]:443",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, apiServerURL(tt.host, tt.port))
+		})
+	}
+}
