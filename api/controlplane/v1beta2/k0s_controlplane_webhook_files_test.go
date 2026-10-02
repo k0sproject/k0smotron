@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -204,4 +205,27 @@ func TestValidateK0sControlPlaneKeepsTheReportedReasons(t *testing.T) {
 	t.Run("recreate with worker enabled but not single", func(t *testing.T) {
 		require.NoError(t, recreateWith("--enable-worker"))
 	})
+}
+
+// TestValidateK0sControlPlaneWarnsOnIgnoredProvisionerFields covers the hint reaching
+// the control plane path as well, where the field is set far from the provisioner.
+func TestValidateK0sControlPlaneWarnsOnIgnoredProvisionerFields(t *testing.T) {
+	kcp := &K0sControlPlane{
+		Spec: K0sControlPlaneSpec{
+			Version: "v1.30.0+k0s.0",
+			K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+				Provisioner: bootstrapv1.ProvisionerSpec{
+					Type: provisioner.IgnitionProvisioningFormat,
+					CustomUserDataRef: &bootstrapv1.ContentSource{
+						SecretRef: &bootstrapv1.ContentSourceRef{Name: "extra", Key: "userdata"},
+					},
+				},
+			},
+		},
+	}
+
+	warnings, err := (&K0sControlPlaneValidator{}).ValidateCreate(context.Background(), kcp)
+
+	require.NoError(t, err, "the control plane is still accepted")
+	require.Contains(t, warnings, "spec.k0sConfigSpec.provisioner.customUserDataRef is ignored by the ignition provisioner, use provisioner.ignition.additionalConfig instead")
 }
