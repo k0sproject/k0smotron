@@ -275,10 +275,9 @@ spec:
   machineTemplate:
     spec:
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: DevMachineTemplate
         name: docker-test-cp-template
-        namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: DevCluster
@@ -412,8 +411,7 @@ spec:
   machineTemplate:
     spec:
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: DevMachineTemplate
         name: docker-test-cp-template
-        namespace: default
 `
