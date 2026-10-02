@@ -72,7 +72,27 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 	// stay reported for the control plane most likely to be mid rollout.
 	setMachinesUpToDateCondition(ctx, controlplane)
 
+	setDeletingCondition(controlplane.kcp, controlplane.deletingReason, controlplane.deletingMessage)
+
 	return computeReplicas(controlplane)
+}
+
+func setDeletingCondition(kcp *cpv1beta2.K0sControlPlane, reason, message string) {
+	if kcp.DeletionTimestamp.IsZero() {
+		conditions.Set(kcp, metav1.Condition{
+			Type:   cpv1beta2.K0sControlPlaneDeletingCondition,
+			Status: metav1.ConditionFalse,
+			Reason: cpv1beta2.K0sControlPlaneNotDeletingReason,
+		})
+		return
+	}
+
+	conditions.Set(kcp, metav1.Condition{
+		Type:    cpv1beta2.K0sControlPlaneDeletingCondition,
+		Status:  metav1.ConditionTrue,
+		Reason:  reason,
+		Message: message,
+	})
 }
 
 // setMachinesReadyCondition aggregates the machines' own Ready conditions, which is what carries
