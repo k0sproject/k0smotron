@@ -34,6 +34,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
@@ -129,6 +130,14 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 				},
 			},
 			InfrastructureRef: infraRef,
+			// The machine controller reads these off the Machine, so a template that
+			// only declared them would be accepted and then ignored.
+			ReadinessGates: kcp.Spec.MachineTemplate.Spec.ReadinessGates,
+			Deletion: clusterv1.MachineDeletionSpec{
+				NodeDrainTimeoutSeconds:        kcp.Spec.MachineTemplate.Spec.Deletion.NodeDrainTimeoutSeconds,
+				NodeVolumeDetachTimeoutSeconds: kcp.Spec.MachineTemplate.Spec.Deletion.NodeVolumeDetachTimeoutSeconds,
+				NodeDeletionTimeoutSeconds:     kcp.Spec.MachineTemplate.Spec.Deletion.NodeDeletionTimeoutSeconds,
+			},
 		},
 	}
 	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
@@ -258,8 +267,9 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 
 	maps.Copy(annotations, kcp.Spec.MachineTemplate.ObjectMeta.Annotations)
 
-	annotations[clusterv1.TemplateClonedFromNameAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.Name
-	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
+	infRef := kcp.Spec.MachineTemplate.InfraRef()
+	annotations[clusterv1.TemplateClonedFromNameAnnotation] = infRef.Name
+	annotations[clusterv1.TemplateClonedFromGroupKindAnnotation] = schema.GroupKind{Group: infRef.APIGroup, Kind: infRef.Kind}.String()
 	infraMachine.SetAnnotations(annotations)
 
 	infraMachine.SetLabels(controlPlaneCommonLabelsForCluster(kcp, cluster.GetName()))
@@ -440,8 +450,10 @@ func isInfraMachineUpToDate(infraMachine *unstructured.Unstructured, kcp *cpv1be
 	clonedFromName := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromNameAnnotation]
 	clonedFromGroupKind := infraMachine.GetAnnotations()[clusterv1.TemplateClonedFromGroupKindAnnotation]
 
-	return clonedFromName == kcp.Spec.MachineTemplate.InfrastructureRef.Name &&
-		clonedFromGroupKind == kcp.Spec.MachineTemplate.InfrastructureRef.GroupVersionKind().GroupKind().String()
+	infRef := kcp.Spec.MachineTemplate.InfraRef()
+
+	return clonedFromName == infRef.Name &&
+		clonedFromGroupKind == schema.GroupKind{Group: infRef.APIGroup, Kind: infRef.Kind}.String()
 }
 
 func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clientset *kubernetes.Clientset) (bool, error) {
