@@ -2994,11 +2994,12 @@ serves as the required Linux worker) and Calico networking.</p>
 <span class="w">        </span><span class="nt">network</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calico</span><span class="w">   </span><span class="c1"># required for Windows nodes</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">infrastructureRef</span><span class="p">:</span>
-<span class="w">      </span><span class="c1"># This ref is a classic ObjectReference -&gt; use apiVersion, not apiGroup.</span>
-<span class="w">      </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
-<span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachineTemplate</span>
-<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-cp</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># This ref is a classic ObjectReference -&gt; use apiVersion, not apiGroup.</span>
+<span class="w">        </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
+<span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachineTemplate</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-cp</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachineTemplate</span>
