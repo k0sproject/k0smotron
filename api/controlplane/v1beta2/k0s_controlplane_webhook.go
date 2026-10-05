@@ -112,7 +112,9 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, new
 	warnings := v.validateVersionSuffix(newKcp.Spec.Version)
 	warnings = append(warnings, v.validateInfrastructureRef(newKcp)...)
 
-	if oldKcp.Spec.Version != newKcp.Spec.Version {
+	// The field is optional, and a skew only exists between two versions that are set.
+	// Requiring both also lets the controller persist the version it defaults.
+	if oldKcp.Spec.Version != "" && newKcp.Spec.Version != "" && oldKcp.Spec.Version != newKcp.Spec.Version {
 		oldV, err := version.NewVersion(oldKcp.Spec.Version)
 		if err != nil {
 			return warnings, fmt.Errorf("failed to parse old version: %v", err)
@@ -201,6 +203,12 @@ func denyIncompatibleProvisioners(kcp *K0sControlPlane, prefix *field.Path) *fie
 func denyIncompatibleK0sVersions(kcp *K0sControlPlane, prefix *field.Path) *field.Error {
 	var incompatibleVersions = map[string]string{
 		"1.31.1": "v1.31.2+",
+	}
+
+	// The field is optional and the controller picks a version when it is empty, so
+	// there is nothing to hold against the incompatible list yet.
+	if kcp.Spec.Version == "" {
+		return nil
 	}
 
 	versionPath := prefix.Child("version")
