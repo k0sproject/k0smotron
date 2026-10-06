@@ -115,6 +115,10 @@ type controlplane struct {
 	// availabilityUndecided records that availability was left as it was, so the
 	// reconcile has to come back instead of waiting for an unrelated event.
 	availabilityUndecided bool
+	// deletingReason is the reason that should be used when setting the Deleting condition.
+	deletingReason string
+	// deletingMessage is the message that should be used when setting the Deleting condition.
+	deletingMessage string
 }
 
 // K0sController is responsible for reconciling K0sControlPlane objects.
@@ -212,17 +216,11 @@ func (c *K0sController) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	defer func() {
 		log.Info("Updating status")
 
-		// When controlplane is being deleted, we don't update the status to avoid requests workload API
-		// because it is terminating so machines probably are terminating too.
-		// TODO: maybe updateStatus method should be refactored to at least report unavailable machines,
-		// which not requires to call workload API.
 		var derr error
-		if kcp.DeletionTimestamp.IsZero() {
-			// Separate var for status update errors to avoid shadowing err
-			derr = c.updateStatus(ctx, controlplane)
-			if derr != nil {
-				log.Error(derr, "Failed to calculate status")
-			}
+		// Separate var for status update errors to avoid shadowing err
+		derr = c.updateStatus(ctx, controlplane)
+		if derr != nil {
+			log.Error(derr, "Failed to calculate status")
 		}
 
 		// observedGeneration says the reported status matches this generation, so it is
@@ -717,6 +715,8 @@ func (c *K0sController) reconcileDelete(ctx context.Context, controlplane *contr
 	// so it must not be decided from a cache that may not have observed the Machines yet.
 	allMachines, err := collections.GetFilteredMachinesForCluster(ctx, c.APIReader, controlplane.cluster)
 	if err != nil {
+		controlplane.deletingReason = cpv1beta2.K0sControlPlaneDeletingInternalErrorReason
+		controlplane.deletingMessage = "Please check controller logs for errors"
 		return ctrl.Result{}, fmt.Errorf("failed to get machines: %w", err)
 	}
 
@@ -725,12 +725,16 @@ func (c *K0sController) reconcileDelete(ctx context.Context, controlplane *contr
 	if len(cpMachines) == 0 {
 		// No machines left, we can finally delete the K0sControlPlane by removing the finalizer.
 		controllerutil.RemoveFinalizer(controlplane.kcp, cpv1beta2.K0sControlPlaneFinalizer)
+		controlplane.deletingReason = cpv1beta2.K0sControlPlaneDeletingDeletionCompletedReason
+		controlplane.deletingMessage = "Deletion completed"
 		return ctrl.Result{}, nil
 	}
 
 	// Wait for removing worker machines first to avoid possible issues removing worker nodes without a controlplane running.
-	if allMachines.Len() != cpMachines.Len() {
+	if workerMachines := allMachines.Difference(cpMachines); len(workerMachines) > 0 {
 		logger.Info("Waiting for worker nodes to be deleted first")
+		controlplane.deletingReason = cpv1beta2.K0sControlPlaneDeletingWaitingForWorkersDeletionReason
+		controlplane.deletingMessage = fmt.Sprintf("K0sControlPlane deletion blocked because following objects worker machines still exist:\n%s", strings.Join(workerMachines.Names(), "\n"))
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
@@ -752,6 +756,8 @@ func (c *K0sController) reconcileDelete(ctx context.Context, controlplane *contr
 		}
 	}
 
+	controlplane.deletingReason = cpv1beta2.K0sControlPlaneDeletingWaitingForMachineDeletionReason
+	controlplane.deletingMessage = fmt.Sprintf("K0sControlPlane deletion blocked because following control plane machines still exist:\n%s", strings.Join(cpMachines.Names(), "\n"))
 	// Requeue to wait for the machines and their dependencies to be deleted.
 	return ctrl.Result{RequeueAfter: 10 * time.Second}, kerrors.NewAggregate(errs)
 }
