@@ -133,6 +133,10 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
 
+	// Before the machine is created, so the sequence survives the marker being cleared and a
+	// later failure reads as a retry.
+	carryRemediationLineage(kcp, machine)
+
 	return machine, nil
 }
 

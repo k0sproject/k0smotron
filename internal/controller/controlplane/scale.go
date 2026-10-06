@@ -285,10 +285,6 @@ func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error 
 		return fmt.Errorf("error generating machine: %w", err)
 	}
 
-	// Before the machine is created below, so the sequence survives the marker being cleared and a
-	// later failure reads as a retry.
-	carryRemediationLineage(scope.kcp, machine)
-
 	machineK0sConfig, err := getMachineK0sConfig(machine)
 	if err != nil {
 		return fmt.Errorf("error getting machine k0s config: %w", err)
