@@ -16,6 +16,8 @@ limitations under the License.
 package v1beta2
 
 import (
+	"errors"
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -27,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 )
@@ -136,6 +139,7 @@ type K0sWorkerConfigSpec struct {
 	// Make sure the version is compatible with the k0s version running on the control plane.
 	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
 	// +kubebuilder:validation:Optional
+	// Deprecated: Use Machine version instead.
 	Version string `json:"version,omitempty"`
 
 	// UseSystemHostname specifies whether to use the system hostname for the kubernetes node name.
@@ -294,11 +298,10 @@ type K0sControllerConfigList struct {
 
 // K0sControllerConfigSpec describes a k0s controller configuration's spec.
 type K0sControllerConfigSpec struct {
-	// Version is the version of k0s to use. In case this is not set, k0smotron will use
-	// a version field of the Machine object. If it's empty, the latest version is used.
-	// Make sure the version is compatible with the k0s version running on the control plane.
-	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
+	// Version is ignored: the k0s version is taken from the Machine, which the control plane
+	// controller sets from the K0sControlPlane version.
 	// +kubebuilder:validation:Optional
+	// Deprecated: This field is ignored and will be removed in a future release.
 	Version string `json:"version,omitempty"`
 
 	*K0sConfigSpec `json:",inline"`
@@ -566,15 +569,16 @@ func ValidateFileOwners(files []File, spec ProvisionerSpec, pathPrefix *field.Pa
 }
 
 // Validate validates the K0sWorkerConfigSpec.
-func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList {
+func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
 
 	// TODO: validate Ignition
-	allErrs = append(allErrs, cs.validateVersion(pathPrefix)...)
+	warnings, versionErrs := cs.validateVersion(pathPrefix)
+	allErrs = append(allErrs, versionErrs...)
 	allErrs = append(allErrs, ValidateFiles(cs.Files, cs.Provisioner, pathPrefix)...)
 	allErrs = append(allErrs, cs.validateWindows(pathPrefix)...)
 
-	return allErrs
+	return warnings, allErrs
 }
 
 // ValidateFiles rejects a files list that cannot be resolved or applied, covering
@@ -672,8 +676,15 @@ func ValidateFiles(files []File, spec ProvisionerSpec, pathPrefix *field.Path) f
 	return allErrs
 }
 
-func (cs *K0sWorkerConfigSpec) validateVersion(pathPrefix *field.Path) field.ErrorList {
+const deprecatedK0sConfigVersionField = "K0sWorkerConfig.spec.version is deprecated and will be removed in a future release. It currently takes precedence over the Machine's version field."
+
+func (cs *K0sWorkerConfigSpec) validateVersion(pathPrefix *field.Path) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
+
+	var warnings admission.Warnings
+	if cs.Version != "" {
+		warnings = append(warnings, deprecatedK0sConfigVersionField)
+	}
 
 	if strings.Contains(cs.Version, "-k0s.") {
 		allErrs = append(
@@ -684,44 +695,41 @@ func (cs *K0sWorkerConfigSpec) validateVersion(pathPrefix *field.Path) field.Err
 				"k0s specific versions must be specified using the '+k0s' suffix",
 			),
 		)
-		return allErrs
+		return warnings, allErrs
 	}
 
-	return allErrs
+	return warnings, allErrs
 }
 
 func (cs *K0sWorkerConfigSpec) validateWindows(pathPrefix *field.Path) field.ErrorList {
-	if cs.Provisioner.Platform != PlatformWindows {
+	if cs.Provisioner.Platform != PlatformWindows || cs.Version == "" {
 		return field.ErrorList{}
 	}
 
-	var allErrs field.ErrorList
-
-	ver, err := version.NewVersion(cs.Version)
-	if err != nil {
-		allErrs = append(
-			allErrs,
-			field.Invalid(
-				pathPrefix.Child("version"),
-				cs.Version,
-				"invalid version format",
-			),
-		)
-		return allErrs
+	if err := ValidateWindowsK0sVersion(cs.Version); err != nil {
+		return field.ErrorList{field.Invalid(pathPrefix.Child("version"), cs.Version, err.Error())}
 	}
 
-	if ver.LessThan(minWindowsVersion) {
-		allErrs = append(
-			allErrs,
-			field.Invalid(
-				pathPrefix.Child("version"),
-				cs.Version,
-				"windows worker nodes require k0s version v1.34.2+k0s.0 or higher",
-			),
-		)
-	}
-
-	return allErrs
+	return field.ErrorList{}
 }
 
 var minWindowsVersion = version.MustParse("v1.34.2+k0s.0")
+
+// ValidateWindowsK0sVersion checks that the given k0s version supports windows worker nodes.
+// Unlike on linux, the version is required, as there is no install script resolving the latest one.
+func ValidateWindowsK0sVersion(v string) error {
+	if v == "" {
+		return errors.New("windows worker nodes require a k0s version, set it in the Machine version field")
+	}
+
+	ver, err := version.NewVersion(v)
+	if err != nil {
+		return errors.New("invalid version format")
+	}
+
+	if ver.LessThan(minWindowsVersion) {
+		return fmt.Errorf("windows worker nodes require k0s version %s or higher", minWindowsVersion)
+	}
+
+	return nil
+}

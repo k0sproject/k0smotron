@@ -157,8 +157,7 @@ metadata:
   namespace: default
 spec:
   template:
-    spec:
-      version: v1.27.2+k0s.0
+    spec: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DevMachineTemplate

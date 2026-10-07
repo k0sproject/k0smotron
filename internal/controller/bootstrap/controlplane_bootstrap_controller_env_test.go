@@ -778,8 +778,10 @@ func TestGetK0sTokenLeavesNoTokenWhenTheClusterCAIsMissing(t *testing.T) {
 		Cluster:             cluster,
 		client:              testEnv,
 		secretCachingClient: secretCachingClient,
-		Config: &bootstrapv2.K0sWorkerConfig{
-			ObjectMeta: metav1.ObjectMeta{Name: "joining-worker", Namespace: ns.Name},
+		Config: &k0sWorkerConfig{
+			K0sWorkerConfig: &bootstrapv2.K0sWorkerConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: "joining-worker", Namespace: ns.Name},
+			},
 		},
 	}
 

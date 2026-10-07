@@ -131,6 +131,7 @@ spec:
         cluster.x-k8s.io/cluster-name: aws-test-cluster
         pool: worker-pool-1
     spec:
+      version: v1.33.2+k0s.0
       clusterName: aws-test-cluster
       failureDomain: eu-west-1
       bootstrap:
@@ -149,8 +150,7 @@ metadata:
   name: k0s-aws-test-machine-config
 spec:
   template:
-    spec:
-      version: v1.33.2+k0s.0
+    spec: {}
 ```
 
 ```shell

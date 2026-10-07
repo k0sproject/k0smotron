@@ -93,6 +93,7 @@ spec:
         cluster.x-k8s.io/cluster-name: k0s-aws-test
         pool: worker-pool-1
     spec:
+      version: v1.27.2+k0s.0
       clusterName: k0s-aws-test
       failureDomain: eu-central-1a
       bootstrap:
@@ -135,8 +136,7 @@ metadata:
   name: k0s-aws-test-machine-config
 spec:
   template:
-    spec:
-      version: v1.27.2+k0s.0
+    spec: {}
       # More details of the worker configuration can be set here
 ---
 ```
