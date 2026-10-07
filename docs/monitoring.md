@@ -29,3 +29,13 @@ Once done, two sidecar containers are added to the control plane pods:
 
 All metrics contain the `k0smotron_cluster` label with the name of the managed
 cluster.
+
+The `monitoring-agent` scrapes the API server, scheduler and controller manager.
+Depending on `spec.storage.type`, it also scrapes the storage backend:
+
+* `etcd` - the etcd metrics endpoint (`component: etcd`).
+* `kine` - the kine metrics endpoint on port `2380` (`component: kine`).
+  k0s only serves kine metrics on this port from v1.31; older versions use `8080`,
+  so the kine target will show as down there.
+
+Other storage types, such as `nats`, add no storage job.

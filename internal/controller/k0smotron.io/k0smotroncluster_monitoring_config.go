@@ -35,13 +35,21 @@ func init() {
 }
 
 func (scope *kmcScope) generateMonitoringCM(kmc *km.Cluster) (v1.ConfigMap, error) {
+	// An unset storage type means etcd, same as in the k0s config generation.
+	storageType := kmc.Spec.Storage.Type
+	if storageType == "" {
+		storageType = km.StorageTypeEtcd
+	}
+
 	var entrypointBuf bytes.Buffer
 	err := prometheusConfigTmpl.Execute(&entrypointBuf, struct {
 		Kmc         *km.Cluster
 		EtcdSvcName string
+		StorageType km.StorageType
 	}{
 		Kmc:         kmc,
 		EtcdSvcName: kmc.GetEtcdServiceName(),
+		StorageType: storageType,
 	})
 	if err != nil {
 		return v1.ConfigMap{}, err
@@ -104,6 +112,7 @@ scrape_configs:
         labels:
           component: kube-controller-manager
           k0smotron_cluster: "{{ .Kmc.Name }}"
+{{- if eq .StorageType "etcd" }}
   - job_name: "k0smotron_etcd_metrics"
     scheme: https
     tls_config:
@@ -115,6 +124,15 @@ scrape_configs:
         labels:
           component: etcd
           k0smotron_cluster: "{{ .Kmc.Name }}"
+{{- end }}
+{{- if eq .StorageType "kine" }}
+  - job_name: "k0smotron_kine_metrics"
+    static_configs:
+      - targets: ["localhost:2380"]
+        labels:
+          component: kine
+          k0smotron_cluster: "{{ .Kmc.Name }}"
+{{- end }}
 `
 
 const nginxConf = `
