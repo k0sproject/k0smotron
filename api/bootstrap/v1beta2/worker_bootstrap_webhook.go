@@ -71,6 +71,7 @@ func (v *K0sWorkerConfigValidator) ValidateDelete(_ context.Context, _ *K0sWorke
 
 func (v *K0sWorkerConfigValidator) validate(c K0sWorkerConfigSpec, name string) (admission.Warnings, error) {
 	warnings, allErrs := c.Validate(field.NewPath("spec"))
+	warnings = append(ProvisionerWarnings(c.Provisioner, field.NewPath("spec")), warnings...)
 
 	if len(allErrs) == 0 {
 		return warnings, nil
