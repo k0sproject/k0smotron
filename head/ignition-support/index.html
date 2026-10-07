@@ -2905,6 +2905,7 @@ clusterctl<span class="w"> </span>init<span class="w"> </span>--infrastructure<s
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ignition-test-cluster</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.30.2+k0s.0</span>
 <span class="w">      </span><span class="nt">bootstrap</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">configRef</span><span class="p">:</span><span class="w"> </span><span class="c1"># This triggers our controller to create cloud-init secret</span>
 <span class="w">          </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bootstrap.cluster.x-k8s.io/v1beta2</span>
@@ -2924,7 +2925,6 @@ clusterctl<span class="w"> </span>init<span class="w"> </span>--infrastructure<s
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">template</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.30.2+k0s.0</span>
 <span class="w">      </span><span class="c1"># Flatcar, as inmutable OS, needs k0s in /opt/bin. It cannot write k0s binary in the default /usr/local/bin.</span>
 <span class="w">      </span><span class="nt">k0sInstallDir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/bin</span><span class="w"> </span>
 <span class="w">      </span><span class="nt">ignition</span><span class="p">:</span>
