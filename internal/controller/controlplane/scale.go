@@ -309,6 +309,20 @@ func (c *K0sController) scaleUp(ctx context.Context, scope *controlplane) error 
 	return nil
 }
 
+// carryRemediationLineage records on a replacement machine which machine it replaced. Going
+// through the payload drops a marker no reader could use and bounds what reaches the machine.
+func carryRemediationLineage(kcp *cpv1beta2.K0sControlPlane, machine *clusterv1.Machine) {
+	data, ok := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+	if !ok {
+		return
+	}
+
+	if machine.Annotations == nil {
+		machine.Annotations = map[string]string{}
+	}
+	machine.Annotations[cpv1beta2.RemediationForAnnotation] = data.marshal()
+}
+
 func (c *K0sController) scaleDown(ctx context.Context, scope *controlplane) error {
 	machineToDelete, reason := selectMachineToDelete(ctx, scope)
 	if machineToDelete == nil {

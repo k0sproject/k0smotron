@@ -142,6 +142,10 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
 
+	// Before the machine is created, so the sequence survives the marker being cleared and a
+	// later failure reads as a retry.
+	carryRemediationLineage(kcp, machine)
+
 	return machine, nil
 }
 
@@ -264,6 +268,10 @@ func (c *K0sController) generateMachineFromTemplate(ctx context.Context, name st
 
 	annotations := map[string]string{}
 	maps.Copy(annotations, kcp.Annotations)
+
+	// The marker says a replacement is owed, and this object is part of that replacement, so
+	// carrying it here would assert something untrue for the life of the machine.
+	delete(annotations, cpv1beta2.RemediationInProgressAnnotation)
 
 	maps.Copy(annotations, kcp.Spec.MachineTemplate.ObjectMeta.Annotations)
 
