@@ -52,16 +52,32 @@ func (v *K0sWorkerConfigValidator) ValidateCreate(_ context.Context, c *K0sWorke
 		return nil, apierrors.NewBadRequest("expected a K0sWorkerConfig but got nil")
 	}
 
-	return v.validate(c.Spec, c.Name)
+	prefix := field.NewPath("spec")
+	warnings, specErrs := c.Spec.Validate(prefix)
+
+	return append(ProvisionerWarnings(c.Spec.Provisioner, prefix), warnings...),
+		v.validate(c.Name, ValidateProvisioner(c.Spec.Provisioner, prefix), specErrs)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, _, newConfig *K0sWorkerConfig) (admission.Warnings, error) {
+func (v *K0sWorkerConfigValidator) ValidateUpdate(_ context.Context, oldConfig, newConfig *K0sWorkerConfig) (admission.Warnings, error) {
 	if newConfig == nil {
 		return nil, apierrors.NewBadRequest("expected a K0sWorkerConfig but got nil")
 	}
 
-	return v.validate(newConfig.Spec, newConfig.Name)
+	prefix := field.NewPath("spec")
+
+	// Ratcheted, or an object admitted before a rule existed can never be updated
+	// again, which includes the controller stripping its own finalizer.
+	provisionerErrs := ValidateProvisioner(newConfig.Spec.Provisioner, prefix)
+	if oldConfig != nil {
+		provisionerErrs = RatchetErrors(ValidateProvisioner(oldConfig.Spec.Provisioner, prefix), provisionerErrs)
+	}
+
+	warnings, specErrs := newConfig.Spec.Validate(prefix)
+
+	return append(ProvisionerWarnings(newConfig.Spec.Provisioner, prefix), warnings...),
+		v.validate(newConfig.Name, provisionerErrs, specErrs)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -69,15 +85,17 @@ func (v *K0sWorkerConfigValidator) ValidateDelete(_ context.Context, _ *K0sWorke
 	return nil, nil
 }
 
-func (v *K0sWorkerConfigValidator) validate(c K0sWorkerConfigSpec, name string) (admission.Warnings, error) {
-	warnings, allErrs := c.Validate(field.NewPath("spec"))
-	warnings = append(ProvisionerWarnings(c.Provisioner, field.NewPath("spec")), warnings...)
-
-	if len(allErrs) == 0 {
-		return warnings, nil
+func (v *K0sWorkerConfigValidator) validate(name string, errLists ...field.ErrorList) error {
+	var allErrs field.ErrorList
+	for _, errs := range errLists {
+		allErrs = append(allErrs, errs...)
 	}
 
-	return warnings, apierrors.NewInvalid(GroupVersion.WithKind("K0sWorkerConfig").GroupKind(), name, allErrs)
+	if len(allErrs) == 0 {
+		return nil
+	}
+
+	return apierrors.NewInvalid(GroupVersion.WithKind("K0sWorkerConfig").GroupKind(), name, allErrs)
 }
 
 // SetupK0sWorkerConfigWebhookWithManager registers the webhook for K0sWorkerConfig in the manager.
