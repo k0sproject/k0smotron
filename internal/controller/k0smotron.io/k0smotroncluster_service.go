@@ -121,7 +121,7 @@ func generateService(kmc *km.Cluster) v1.Service {
 	return svc
 }
 
-func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) error {
+func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) (err error) {
 	logger := log.FromContext(ctx)
 	// Depending on ingress configuration create nodePort service.
 	logger.Info("Reconciling services")
@@ -129,10 +129,16 @@ func (scope *kmcScope) reconcileServices(ctx context.Context, kmc *km.Cluster) e
 
 	_ = util.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
+	defer func() {
+		if err != nil {
+			scope.currentReconcileState.controlplane.svc.message = err.Error()
+		}
+	}()
+
 	if err := scope.reconcileResource(ctx, kmc, &svc); err != nil {
 		return err
 	}
-	scope.currentReconcileState.controlplane.svc = svc.DeepCopy()
+	scope.currentReconcileState.controlplane.svc.data = svc.DeepCopy()
 
 	if kmc.Spec.Service.Type == v1.ServiceTypeLoadBalancer && kmc.Spec.ExternalAddress == "" {
 		// Wait for LB address to be available

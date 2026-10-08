@@ -174,13 +174,17 @@ func setControlPlaneKubeconfigAvailableCondition(kmc *k0smotroniov1beta2.Cluster
 	})
 }
 
-func setControlPlaneExposedCondition(kmc *k0smotroniov1beta2.Cluster, svc *corev1.Service) {
-	if svc == nil {
+func setControlPlaneExposedCondition(kmc *k0smotroniov1beta2.Cluster, svc svcState) {
+	if svc.data == nil {
+		message := svc.message
+		if message == "" {
+			message = "Check controller logs for more details"
+		}
 		conditions.Set(kmc, metav1.Condition{
 			Type:    k0smotroniov1beta2.ClusterControlPlaneExposedCondition,
 			Status:  metav1.ConditionUnknown,
 			Reason:  k0smotroniov1beta2.NotFoundReason,
-			Message: "Check controller logs for more details",
+			Message: message,
 		})
 		return
 	}

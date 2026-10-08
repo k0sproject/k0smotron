@@ -22,6 +22,7 @@ import (
 
 	"github.com/k0sproject/version"
 	corev1 "k8s.io/api/core/v1"
+	utilnet "k8s.io/apimachinery/pkg/util/net"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -148,8 +149,56 @@ func (c ClusterValidator) ValidateClusterSpec(kcs *ClusterSpec) (warnings admiss
 		}
 	}
 
+	svcWarnings, err := validateService(&kcs.Service)
+	if err != nil {
+		return warnings, err
+	}
+	warnings = append(warnings, svcWarnings...)
+
 	if err := c.validatePatches(kcs.Patches); err != nil {
 		return warnings, err
+	}
+
+	return warnings, nil
+}
+
+// validateService validates service configuration.
+func validateService(serviceSpec *ServiceSpec) (admission.Warnings, error) {
+	if serviceSpec == nil {
+		return nil, nil
+	}
+
+	ports := []struct {
+		name  string
+		value int
+	}{
+		{"apiPort", serviceSpec.APIPort},
+		{"konnectivityPort", serviceSpec.KonnectivityPort},
+	}
+
+	for _, port := range ports {
+		if port.value != 0 && (port.value < 1 || port.value > 65535) {
+			return nil, fmt.Errorf("service.%s must be in the range 1-65535, got %d", port.name, port.value)
+		}
+	}
+
+	if serviceSpec.APIPort != 0 && serviceSpec.APIPort == serviceSpec.KonnectivityPort {
+		return nil, fmt.Errorf("service.apiPort and service.konnectivityPort must be different, both are %d", serviceSpec.APIPort)
+	}
+
+	// defaultNodePortRange mirrors the kube-apiserver default for --service-node-port-range (30000-32767).
+	// It is duplicated here to avoid importing k8s.io/kubernetes from the API package.
+	var defaultNodePortRange = utilnet.PortRange{Base: 30000, Size: 2768}
+
+	var warnings admission.Warnings
+	if serviceSpec.Type == corev1.ServiceTypeNodePort {
+		for _, port := range ports {
+			if port.value != 0 && !defaultNodePortRange.Contains(port.value) {
+				warnings = append(warnings, fmt.Sprintf(
+					"service.%s %d is outside the default NodePort range %s; it will be rejected unless the hosting cluster's kube-apiserver --service-node-port-range allows it",
+					port.name, port.value, defaultNodePortRange.String()))
+			}
+		}
 	}
 
 	return warnings, nil
