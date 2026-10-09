@@ -17,32 +17,20 @@ limitations under the License.
 package k0smotronio
 
 import (
-	"bytes"
 	"context"
-	"text/template"
+	"fmt"
+	"path/filepath"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	kcontrollerutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/yaml"
 )
 
-var prometheusConfigTmpl *template.Template
-
-func init() {
-	prometheusConfigTmpl = template.Must(template.New("prometheus.yml").Parse(prometheusConfigTemplate))
-}
-
 func (scope *kmcScope) generateMonitoringCM(kmc *km.Cluster) (v1.ConfigMap, error) {
-	var entrypointBuf bytes.Buffer
-	err := prometheusConfigTmpl.Execute(&entrypointBuf, struct {
-		Kmc         *km.Cluster
-		EtcdSvcName string
-	}{
-		Kmc:         kmc,
-		EtcdSvcName: kmc.GetEtcdServiceName(),
-	})
+	prometheusConfig, err := prometheusConfigYAML(kmc)
 	if err != nil {
 		return v1.ConfigMap{}, err
 	}
@@ -59,7 +47,7 @@ func (scope *kmcScope) generateMonitoringCM(kmc *km.Cluster) (v1.ConfigMap, erro
 			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		},
 		Data: map[string]string{
-			"prometheus.yml": entrypointBuf.String(),
+			"prometheus.yml": prometheusConfig,
 			"nginx.conf":     nginxConf,
 		},
 	}
@@ -80,42 +68,59 @@ func (scope *kmcScope) reconcileMonitoringCM(ctx context.Context, kmc *km.Cluste
 	return scope.reconcileResource(ctx, kmc, &cm)
 }
 
-const prometheusConfigTemplate = `
-global:
-  scrape_interval:     10s
-  evaluation_interval: 10s
-scrape_configs:
-  - job_name: "k0smotron_cluster_metrics"
-    scheme: https
-    tls_config:
-      insecure_skip_verify: true
-      cert_file: /var/lib/k0s/pki/admin.crt
-      key_file: /var/lib/k0s/pki/admin.key
-    static_configs:
-      - targets: ["localhost:{{ .Kmc.Spec.Service.APIPort }}"]
-        labels:
-          component: kube-apiserver
-          k0smotron_cluster: "{{ .Kmc.Name }}"
-      - targets: ["localhost:10259"]
-        labels:
-          component: kube-scheduler
-          k0smotron_cluster: "{{ .Kmc.Name }}"
-      - targets: ["localhost:10257"]
-        labels:
-          component: kube-controller-manager
-          k0smotron_cluster: "{{ .Kmc.Name }}"
-  - job_name: "k0smotron_etcd_metrics"
-    scheme: https
-    tls_config:
-      insecure_skip_verify: true
-      cert_file: /var/lib/k0s/pki/etcd-ca.crt
-      key_file: /var/lib/k0s/pki/etcd-ca.key
-    static_configs:
-      - targets: ["{{ .EtcdSvcName }}:2379"]
-        labels:
-          component: etcd
-          k0smotron_cluster: "{{ .Kmc.Name }}"
-`
+// prometheusConfigYAML renders the Prometheus config as a Go map marshaled to YAML.
+func prometheusConfigYAML(kmc *km.Cluster) (string, error) {
+	pkiDir := filepath.Join(kmc.Spec.GetDataDir(), "pki")
+	target := func(addr, component string) map[string]any {
+		return map[string]any{
+			"targets": []any{addr},
+			"labels": map[string]any{
+				"component":         component,
+				"k0smotron_cluster": kmc.Name,
+			},
+		}
+	}
+	tlsConfig := func(certFile, keyFile string) map[string]any {
+		return map[string]any{
+			"insecure_skip_verify": true,
+			"cert_file":            filepath.Join(pkiDir, certFile),
+			"key_file":             filepath.Join(pkiDir, keyFile),
+		}
+	}
+
+	cfg := map[string]any{
+		"global": map[string]any{
+			"scrape_interval":     "10s",
+			"evaluation_interval": "10s",
+		},
+		"scrape_configs": []any{
+			map[string]any{
+				"job_name":   "k0smotron_cluster_metrics",
+				"scheme":     "https",
+				"tls_config": tlsConfig("admin.crt", "admin.key"),
+				"static_configs": []any{
+					target(fmt.Sprintf("localhost:%d", kmc.Spec.Service.APIPort), "kube-apiserver"),
+					target("localhost:10259", "kube-scheduler"),
+					target("localhost:10257", "kube-controller-manager"),
+				},
+			},
+			map[string]any{
+				"job_name":   "k0smotron_etcd_metrics",
+				"scheme":     "https",
+				"tls_config": tlsConfig("etcd-ca.crt", "etcd-ca.key"),
+				"static_configs": []any{
+					target(fmt.Sprintf("%s:2379", kmc.GetEtcdServiceName()), "etcd"),
+				},
+			},
+		},
+	}
+
+	out, err := yaml.Marshal(cfg)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
 
 const nginxConf = `
 worker_processes  2;

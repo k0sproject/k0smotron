@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -173,6 +174,38 @@ func TestK0sWorkerConfigSpec_validateVersion(t *testing.T) {
 			gotWarnings, gotErrs := cs.validateVersion(pathPrefix)
 			assert.Equal(t, tt.wantWarnings, gotWarnings)
 			assert.Len(t, gotErrs, tt.wantErrs)
+		})
+	}
+}
+
+func TestK0sConfigSpecGetDataDir(t *testing.T) {
+	assert.Equal(t, "/data/k0s", (&K0sConfigSpec{Args: []string{"--data-dir=/data/k0s"}}).GetDataDir())
+	assert.Equal(t, "/var/lib/k0s", (&K0sConfigSpec{}).GetDataDir())
+}
+
+func TestDenyInvalidArgs(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		args      []string
+		wantField string
+		wantMsg   string
+	}{
+		{name: "no args"},
+		{name: "valid args", args: []string{"--no-taints", "--data-dir=/data/k0s", `--data-dir="/data/k0s"`, "--data-dir /data/k0s"}},
+		{name: "data-dir without value", args: []string{"--no-taints", "--data-dir"}, wantField: "spec.args[1]", wantMsg: "missing value for --data-dir"},
+		{name: "data-dir value in separate argument", args: []string{"--data-dir", "/data/k0s"}, wantField: "spec.args[0]", wantMsg: "missing value for --data-dir"},
+		{name: "unbalanced quote", args: []string{`--data-dir="/data/k0s`}, wantField: "spec.args[0]", wantMsg: "failed to parse argument"},
+		{name: "empty argument", args: []string{"--no-taints", ""}, wantField: "spec.args[1]", wantMsg: "empty after parsing"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := DenyInvalidArgs(tc.args, field.NewPath("spec", "args"))
+			if tc.wantField == "" {
+				require.Nil(t, err)
+				return
+			}
+			require.NotNil(t, err)
+			assert.Equal(t, tc.wantField, err.Field)
+			assert.Contains(t, err.Detail, tc.wantMsg)
 		})
 	}
 }

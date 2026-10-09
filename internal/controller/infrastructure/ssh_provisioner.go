@@ -38,6 +38,8 @@ import (
 
 var regex = regexp.MustCompile(`--kubelet-root-dir[ =](/[/a-zA-Z0-9_-]+)+`)
 
+var dataDirRegex = regexp.MustCompile(`--data-dir[ =]["']?(/[^\s"']+)`)
+
 func init() {
 	// RemoteMachine manages infrastructure where VMs may be reprovisioned with
 	// new host keys at the same address. Disable host key verification to avoid
@@ -214,21 +216,7 @@ func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) erro
 		cmds = append(cmds, fmt.Sprintf(stopCommandTemplate, workerService, workerService, ctrlService))
 	}
 
-	var kubeletRootDir string
-	for _, cmd := range p.cloudInit.Commands {
-		if strings.Contains(cmd, "--kubelet-root-dir") {
-			finds := regex.FindStringSubmatch(cmd)
-			if len(finds) > 1 {
-				kubeletRootDir = finds[1]
-				break
-			}
-		}
-	}
-	if kubeletRootDir == "" {
-		cmds = append(cmds, "k0s reset")
-	} else {
-		cmds = append(cmds, "k0s reset --kubelet-root-dir "+kubeletRootDir)
-	}
+	cmds = append(cmds, resetCommand(p.cloudInit.Commands))
 
 	p.log.Info("Cleaning up remote machine...")
 	for _, cmd := range cmds {
@@ -251,6 +239,32 @@ func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) erro
 	}
 
 	return nil
+}
+
+// resetCommand builds the k0s reset command. By the time it runs k0s is stopped and its runtime config
+// is gone, so a custom --data-dir used at install time has to be passed again or reset would
+// clean the default directory instead.
+func resetCommand(installCmds []string) string {
+	var kubeletRootDir, dataDir string
+	for _, cmd := range installCmds {
+		if kubeletRootDir == "" && strings.Contains(cmd, "--kubelet-root-dir") {
+			if finds := regex.FindStringSubmatch(cmd); len(finds) > 1 {
+				kubeletRootDir = finds[1]
+			}
+		}
+		if finds := dataDirRegex.FindAllStringSubmatch(cmd, -1); len(finds) > 0 {
+			dataDir = finds[len(finds)-1][1]
+		}
+	}
+
+	reset := "k0s reset"
+	if kubeletRootDir != "" {
+		reset += " --kubelet-root-dir " + kubeletRootDir
+	}
+	if dataDir != "" {
+		reset += " --data-dir " + dataDir
+	}
+	return reset
 }
 
 // commandRunner runs a command on the remote machine. rig.Connection satisfies

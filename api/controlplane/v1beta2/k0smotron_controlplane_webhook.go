@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	k0smotroniov1beta2 "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
-	"github.com/k0sproject/version"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -62,27 +61,6 @@ func (v *K0smotronControlPlaneValidator) ValidateUpdate(_ context.Context, oldKc
 	}
 
 	warnings := admission.Warnings{}
-
-	if oldKcp.Spec.Version != newKcp.Spec.Version {
-		// Skip validation if either version is empty
-		if oldKcp.Spec.Version == "" || newKcp.Spec.Version == "" {
-			return warnings, nil
-		}
-
-		oldV, err := version.NewVersion(oldKcp.Spec.Version)
-		if err != nil {
-			return warnings, fmt.Errorf("failed to parse old version: %v", err)
-		}
-		newV, err := version.NewVersion(newKcp.Spec.Version)
-		if err != nil {
-			return warnings, fmt.Errorf("failed to parse new version: %v", err)
-		}
-
-		// According to the Kubernetes skew policy, we can't upgrade more than one minor version at a time.
-		if newV.Core().Segments()[1]-oldV.Core().Segments()[1] > 1 {
-			return warnings, fmt.Errorf("upgrading more than one minor version at a time is not allowed by the Kubernetes skew policy")
-		}
-	}
 
 	specWarnings, err := v.cv.ValidateClusterSpecUpdate(&oldKcp.Spec, &newKcp.Spec)
 	if err != nil {

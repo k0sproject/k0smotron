@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"path/filepath"
 	"sort"
 	"strconv"
 
@@ -220,6 +221,7 @@ func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {
 }
 
 func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
+	pkiDir := filepath.Join(kmc.Spec.GetDataDir(), "pki")
 	iSliceSans := make([]any, len(sans))
 	for i, s := range sans {
 		iSliceSans[i] = s
@@ -255,9 +257,9 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
 				"externalCluster": map[string]any{
 					"endpoints":      []any{fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
 					"etcdPrefix":     kmc.GetName(),
-					"caFile":         "/var/lib/k0s/pki/etcd-ca.crt",
-					"clientCertFile": "/var/lib/k0s/pki/apiserver-etcd-client.crt",
-					"clientKeyFile":  "/var/lib/k0s/pki/apiserver-etcd-client.key",
+					"caFile":         filepath.Join(pkiDir, "etcd-ca.crt"),
+					"clientCertFile": filepath.Join(pkiDir, "apiserver-etcd-client.crt"),
+					"clientKeyFile":  filepath.Join(pkiDir, "apiserver-etcd-client.key"),
 				},
 			},
 		}
