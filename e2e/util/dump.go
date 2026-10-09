@@ -72,7 +72,6 @@ func dumpAllResourcesAndLogs(ctx context.Context, clusterProxy capiframework.Clu
 	if err := clusterProxy.GetClient().Get(ctx, client.ObjectKeyFromObject(cluster), &clusterv1.Cluster{}); err == nil {
 		capiframework.DumpResourcesForCluster(ctx, capiframework.DumpResourcesForClusterInput{
 			Lister:  clusterProxy.GetWorkloadCluster(ctx, cluster.Namespace, cluster.Name).GetClient(),
-			Cluster: cluster,
 			LogPath: filepath.Join(artifactFolder, "clusters", cluster.Name, "resources"),
 			Resources: []capiframework.DumpNamespaceAndGVK{
 				{

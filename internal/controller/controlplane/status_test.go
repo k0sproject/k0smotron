@@ -69,9 +69,9 @@ func Test_machineStatusCompute(t *testing.T) {
 			kcp:            kcp,
 			activeMachines: collections.Machines{},
 		}
-		err := computeReplicas(scope)
-
-		require.NoError(t, err)
+		setReplicas(scope.kcp, scope.activeMachines.UnsortedList())
+		setVersions(scope.kcp, scope.activeMachines.UnsortedList())
+		setExternalManaged(scope.kcp)
 		require.Zero(t, ptr.Deref(kcp.Status.Replicas, 0))
 		require.Empty(t, kcp.Status.Version)
 		require.True(t, *kcp.Status.ExternalManagedControlPlane)
@@ -132,9 +132,9 @@ func Test_machineStatusCompute(t *testing.T) {
 				"machine1": activeMachines["machine1"],
 			},
 		}
-		err := computeReplicas(scope)
-
-		require.NoError(t, err)
+		setReplicas(scope.kcp, scope.activeMachines.UnsortedList())
+		setVersions(scope.kcp, scope.activeMachines.UnsortedList())
+		setExternalManaged(scope.kcp)
 		require.Equal(t, int32(2), *kcp.Status.Replicas)
 		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
@@ -171,9 +171,7 @@ func Test_machineStatusCompute(t *testing.T) {
 				},
 			},
 		}
-		err := computeReplicas(scope)
-
-		require.NoError(t, err)
+		setReplicas(scope.kcp, append(scope.activeMachines.UnsortedList(), scope.deletedMachines.UnsortedList()...))
 		require.Equal(t, int32(2), *kcp.Status.Replicas)
 		require.Equal(t, int32(2), *kcp.Status.ReadyReplicas)
 		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
@@ -235,9 +233,9 @@ func Test_machineStatusCompute(t *testing.T) {
 				"machine1": machines["machine1"],
 			},
 		}
-		err := computeReplicas(scope)
-
-		require.NoError(t, err)
+		setReplicas(scope.kcp, scope.activeMachines.UnsortedList())
+		setVersions(scope.kcp, scope.activeMachines.UnsortedList())
+		setExternalManaged(scope.kcp)
 		require.Equal(t, int32(2), *kcp.Status.Replicas)
 		require.Equal(t, int32(2), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
@@ -300,9 +298,9 @@ func Test_machineStatusCompute(t *testing.T) {
 				"machine1": machines["machine1"],
 			},
 		}
-		err := computeReplicas(scope)
-
-		require.NoError(t, err)
+		setReplicas(scope.kcp, scope.activeMachines.UnsortedList())
+		setVersions(scope.kcp, scope.activeMachines.UnsortedList())
+		setExternalManaged(scope.kcp)
 		require.Equal(t, int32(2), *kcp.Status.Replicas)
 		require.Equal(t, int32(1), *kcp.Status.AvailableReplicas)
 		require.Equal(t, int32(1), *kcp.Status.UpToDateReplicas)
@@ -310,6 +308,61 @@ func Test_machineStatusCompute(t *testing.T) {
 		require.Nil(t, kcp.Status.ExternalManagedControlPlane)
 		require.Equal(t, "v1.30.0", kcp.Status.Version)
 	})
+}
+
+func Test_versionsFromMachines(t *testing.T) {
+	machine := func(v string) *clusterv1.Machine {
+		return &clusterv1.Machine{Spec: clusterv1.MachineSpec{Version: v}}
+	}
+	sv := func(v string, n int32) clusterv1.StatusVersion {
+		return clusterv1.StatusVersion{Version: v, Replicas: n}
+	}
+
+	tests := []struct {
+		name     string
+		machines []*clusterv1.Machine
+		want     []clusterv1.StatusVersion
+	}{
+		{
+			name: "no machines",
+			want: []clusterv1.StatusVersion{},
+		},
+		{
+			name:     "machines without version are ignored",
+			machines: []*clusterv1.Machine{machine(""), machine("v1.30.0+k0s.0")},
+			want:     []clusterv1.StatusVersion{sv("v1.30.0+k0s.0", 1)},
+		},
+		{
+			name:     "same version is counted",
+			machines: []*clusterv1.Machine{machine("v1.30.0+k0s.0"), machine("v1.30.0+k0s.0"), machine("v1.30.0+k0s.0")},
+			want:     []clusterv1.StatusVersion{sv("v1.30.0+k0s.0", 3)},
+		},
+		{
+			name: "sorted by semantic version, lowest first",
+			machines: []*clusterv1.Machine{
+				machine("v1.31.0+k0s.0"), machine("v1.9.0+k0s.0"), machine("v1.30.2+k0s.0"),
+				machine("v1.30.2+k0s.0"), machine("v1.10.0+k0s.0"),
+			},
+			want: []clusterv1.StatusVersion{
+				sv("v1.9.0+k0s.0", 1), sv("v1.10.0+k0s.0", 1), sv("v1.30.2+k0s.0", 2), sv("v1.31.0+k0s.0", 1),
+			},
+		},
+		{
+			name:     "k0s suffix breaks ties",
+			machines: []*clusterv1.Machine{machine("v1.30.0+k0s.1"), machine("v1.30.0+k0s.0")},
+			want:     []clusterv1.StatusVersion{sv("v1.30.0+k0s.0", 1), sv("v1.30.0+k0s.1", 1)},
+		},
+		{
+			name:     "unparseable versions go last, alphabetically",
+			machines: []*clusterv1.Machine{machine("zzz"), machine("v1.30.0+k0s.0"), machine("aaa")},
+			want:     []clusterv1.StatusVersion{sv("v1.30.0+k0s.0", 1), sv("aaa", 1), sv("zzz", 1)},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, versionsFromMachines(tt.machines))
+		})
+	}
 }
 
 func Test_versionMatches(t *testing.T) {
@@ -2180,36 +2233,6 @@ func TestSetMachinesReadyCondition(t *testing.T) {
 	}
 }
 
-// TestUpdateStatusReportsMachinesReadyWhenReplicasFail covers where the call sits. The replica
-// computation gives up on an unparseable machine version, taking the scaling conditions with it.
-func TestUpdateStatusReportsMachinesReadyWhenReplicasFail(t *testing.T) {
-	scheme := runtime.NewScheme()
-	require.NoError(t, clusterv1.AddToScheme(scheme))
-	require.NoError(t, cpv1beta2.AddToScheme(scheme))
-
-	broken := readyMachine("cp-0", metav1.ConditionFalse, "NodeNotReady", "Node cp-0 is not ready")
-	broken.Spec.Version = "not-a-version"
-
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
-	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
-
-	err := c.updateStatus(t.Context(), &controlplane{
-		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
-		kcp:              kcp,
-		activeMachines:   collections.FromMachines(broken),
-		deletedMachines:  collections.Machines{},
-		upToDateMachines: collections.Machines{},
-	})
-	require.Error(t, err, "the replica computation has to fail for this test to say anything")
-
-	got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneMachinesReadyCondition)
-	require.NotNil(t, got, "the machines stay reported through a failure further down")
-	require.Equal(t, metav1.ConditionFalse, got.Status)
-
-	require.Nil(t, conditions.Get(kcp, cpv1beta2.K0sControlPlaneScalingUpCondition),
-		"the scaling conditions are what the failure costs, which is what the ordering avoids")
-}
-
 // upToDateMachine builds a machine of the given age reporting the given UpToDate state, or
 // reporting nothing about it when the status is empty. The age is what the grace period reads.
 func upToDateMachine(name string, age time.Duration, status metav1.ConditionStatus, reason, message string) *clusterv1.Machine {
@@ -2319,36 +2342,6 @@ func TestSetMachinesUpToDateCondition(t *testing.T) {
 	}
 }
 
-// TestUpdateStatusReportsMachinesUpToDateWhenReplicasFail covers where the call sits. The replica
-// computation gives up on an unparseable machine version, taking the scaling conditions with it.
-func TestUpdateStatusReportsMachinesUpToDateWhenReplicasFail(t *testing.T) {
-	scheme := runtime.NewScheme()
-	require.NoError(t, clusterv1.AddToScheme(scheme))
-	require.NoError(t, cpv1beta2.AddToScheme(scheme))
-
-	broken := upToDateMachine("cp-0", time.Hour, metav1.ConditionFalse, clusterv1.MachineNotUpToDateReason, "Version v1.30.0, v1.31.0 required")
-	broken.Spec.Version = "not-a-version"
-
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
-	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
-
-	err := c.updateStatus(t.Context(), &controlplane{
-		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
-		kcp:              kcp,
-		activeMachines:   collections.FromMachines(broken),
-		deletedMachines:  collections.Machines{},
-		upToDateMachines: collections.Machines{},
-	})
-	require.Error(t, err, "the replica computation has to fail for this test to say anything")
-
-	got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneMachinesUpToDateCondition)
-	require.NotNil(t, got, "the machines stay reported through a failure further down")
-	require.Equal(t, metav1.ConditionFalse, got.Status)
-
-	require.Nil(t, conditions.Get(kcp, cpv1beta2.K0sControlPlaneScalingUpCondition),
-		"the scaling conditions are what the failure costs, which is what the ordering avoids")
-}
-
 // flaggedNotRemediated builds a machine a MachineHealthCheck has marked unhealthy but which the
 // control plane is not replacing, which is the case the NotRemediating message exists for.
 func flaggedNotRemediated(name string) *clusterv1.Machine {
@@ -2437,36 +2430,6 @@ func TestSetRemediatingCondition(t *testing.T) {
 			require.Equal(t, tt.wantMessage, got.Message)
 		})
 	}
-}
-
-// TestUpdateStatusReportsRemediationWhenReplicasFail covers where the call sits. The replica
-// computation gives up on an unparseable machine version, taking the scaling conditions with it.
-func TestUpdateStatusReportsRemediationWhenReplicasFail(t *testing.T) {
-	scheme := runtime.NewScheme()
-	require.NoError(t, clusterv1.AddToScheme(scheme))
-	require.NoError(t, cpv1beta2.AddToScheme(scheme))
-
-	broken := waitingForRemediation("cp-0", "waiting for the replacement", false)
-	broken.Spec.Version = "not-a-version"
-
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
-	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
-
-	err := c.updateStatus(t.Context(), &controlplane{
-		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
-		kcp:              kcp,
-		activeMachines:   collections.FromMachines(broken),
-		deletedMachines:  collections.Machines{},
-		upToDateMachines: collections.Machines{},
-	})
-	require.Error(t, err, "the replica computation has to fail for this test to say anything")
-
-	got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneRemediatingCondition)
-	require.NotNil(t, got, "remediation stays reported through a failure further down")
-	require.Equal(t, metav1.ConditionTrue, got.Status)
-
-	require.Nil(t, conditions.Get(kcp, cpv1beta2.K0sControlPlaneScalingUpCondition),
-		"the scaling conditions are what the failure costs, which is what the ordering avoids")
 }
 
 // TestHostedReconcileHoldsObservedGenerationOnAStatusError covers the staleness signal
@@ -2624,4 +2587,61 @@ func TestUpdateStatusReportsLastRemediation(t *testing.T) {
 	require.Equal(t, "cp-unhealthy", kcp.Status.LastRemediation.Machine)
 	require.NotNil(t, kcp.Status.LastRemediation.RetryCount)
 	require.Equal(t, int32(1), *kcp.Status.LastRemediation.RetryCount)
+}
+func Test_setVersions(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		kcp      *cpv1beta2.K0sControlPlane
+		machines []*clusterv1.Machine
+	}{
+		{
+			name: "test",
+			kcp: &cpv1beta2.K0sControlPlane{
+				Status: cpv1beta2.K0sControlPlaneStatus{},
+			},
+			machines: []*clusterv1.Machine{
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.35.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.33.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.35.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.34.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.33.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.33.0+k0s.0",
+					},
+				},
+				{
+					Spec: clusterv1.MachineSpec{
+						Version: "v1.30.0+k0s.0",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setVersions(tt.kcp, tt.machines)
+		})
+	}
 }
