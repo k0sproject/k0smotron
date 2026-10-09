@@ -2681,6 +2681,15 @@ in the <code>Cluster</code> resource:</p>
 </ul>
 <p>All metrics contain the <code>k0smotron_cluster</code> label with the name of the managed
 cluster.</p>
+<p>The <code>monitoring-agent</code> scrapes the API server, scheduler and controller manager.
+Depending on <code>spec.storage.type</code>, it also scrapes the storage backend:</p>
+<ul>
+<li><code>etcd</code> - the etcd metrics endpoint (<code>component: etcd</code>).</li>
+<li><code>kine</code> - the kine metrics endpoint on port <code>2380</code> (<code>component: kine</code>).
+  k0s only serves kine metrics on this port from v1.31; older versions use <code>8080</code>,
+  so the kine target will show as down there.</li>
+</ul>
+<p>Other storage types, such as <code>nats</code>, add no storage job.</p>
 
 
 
