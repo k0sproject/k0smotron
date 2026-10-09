@@ -157,13 +157,18 @@ func clearRenewCertificatesAnnotation(kmc *km.Cluster) bool {
 
 type controlplaneState struct {
 	sts        *apps.StatefulSet
-	svc        *corev1.Service
+	svc        svcState
 	kubeconfig kubeconfigState
 }
 
 type kubeconfigState struct {
 	message string
 	data    *corev1.Secret
+}
+
+type svcState struct {
+	message string
+	data    *corev1.Service
 }
 
 type clusterSettings struct {

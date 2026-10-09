@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -185,6 +186,40 @@ func TestCluster_ValidateCertificates(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestValidateService(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		spec         *ServiceSpec
+		wantErr      string
+		wantWarnings []string
+	}{
+		{name: "nil", spec: nil},
+		{name: "unset ports", spec: &ServiceSpec{Type: corev1.ServiceTypeClusterIP}},
+		{name: "clusterip ok", spec: &ServiceSpec{Type: corev1.ServiceTypeClusterIP, APIPort: 443, KonnectivityPort: 8132}},
+		{name: "port too high", spec: &ServiceSpec{Type: corev1.ServiceTypeClusterIP, APIPort: 70000}, wantErr: "1-65535"},
+		{name: "negative port", spec: &ServiceSpec{Type: corev1.ServiceTypeLoadBalancer, KonnectivityPort: -1}, wantErr: "1-65535"},
+		{name: "same ports", spec: &ServiceSpec{Type: corev1.ServiceTypeClusterIP, APIPort: 6443, KonnectivityPort: 6443}, wantErr: "must be different"},
+		{name: "nodeport lower bound", spec: &ServiceSpec{Type: corev1.ServiceTypeNodePort, APIPort: 30000, KonnectivityPort: 30001}},
+		{name: "nodeport upper bound", spec: &ServiceSpec{Type: corev1.ServiceTypeNodePort, APIPort: 32767, KonnectivityPort: 32766}},
+		{name: "nodeport api out of range", spec: &ServiceSpec{Type: corev1.ServiceTypeNodePort, APIPort: 6443, KonnectivityPort: 30132}, wantWarnings: []string{"service.apiPort 6443"}},
+		{name: "nodeport konnectivity out of range", spec: &ServiceSpec{Type: corev1.ServiceTypeNodePort, APIPort: 30443, KonnectivityPort: 32768}, wantWarnings: []string{"service.konnectivityPort 32768"}},
+		{name: "clusterip out of nodeport range", spec: &ServiceSpec{Type: corev1.ServiceTypeClusterIP, APIPort: 6443, KonnectivityPort: 8132}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			warnings, err := validateService(tc.spec)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, warnings, len(tc.wantWarnings))
+			for i, w := range tc.wantWarnings {
+				require.Contains(t, warnings[i], w)
+			}
 		})
 	}
 }
