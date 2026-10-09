@@ -1,0 +1,37 @@
+The chart is published to OCI as <registry>/k0sproject/k0smotron-chart, and
+`helm push` derives that repository name from Chart.yaml's `name`. The scaffolded
+"chart.name" helper feeds .Chart.Name into app.kubernetes.io/name (and into the
+manager Deployment's immutable selector), so without this patch every object
+would be labelled "k0smotron-chart".
+
+The edit drops the .Chart.Name branch so the helper resolves to .Values.nameOverride
+or the constant "k0smotron", decoupling the published artifact name from the
+in-cluster labels.
+
+Like manager.patch, `make helm-chart` deletes the file first so the plugin writes
+a pristine copy, then applies this on top. If a kubebuilder bump changes the
+scaffold, `git apply` fails loudly; refresh by editing the generated file and
+re-diffing it against a pristine scaffold.
+
+diff --git a/dist/chart/templates/_helpers.tpl b/dist/chart/templates/_helpers.tpl
+index b0d9081..c1ed9be 100644
+--- a/dist/chart/templates/_helpers.tpl
++++ b/dist/chart/templates/_helpers.tpl
+@@ -1,14 +1,8 @@
+ {{- define "chart.name" -}}
+-{{- if .Chart }}
+-  {{- if .Chart.Name }}
+-    {{- .Chart.Name | trunc 63 | trimSuffix "-" }}
+-  {{- else if .Values.nameOverride }}
+-    {{ .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+-  {{- else }}
+-    k0smotron
+-  {{- end }}
++{{- if .Values.nameOverride }}
++  {{- .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+ {{- else }}
+-  k0smotron
++  {{- "k0smotron" }}
+ {{- end }}
+ {{- end }}
+ 
