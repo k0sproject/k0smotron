@@ -201,5 +201,8 @@ You can enable the `CloudInitVars` feature gate by:
 
   ```bash
   export K0SMOTRON_FEATURE_GATES="CloudInitVars=true"
-  clusterctl init --bootstrap k0sproject-k0smotron
+  clusterctl init \
+    --core cluster-api:{{{ extra.capi_versions.core }}} \
+    --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+    --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}}
   ```
