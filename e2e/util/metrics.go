@@ -41,6 +41,9 @@ import (
 const (
 	reconcileMetricName = "controller_runtime_reconcile_total"
 	metricsRemotePort   = 8080
+
+	scrapeRetryInterval = 2 * time.Second
+	scrapeRetryTimeout  = 30 * time.Second
 )
 
 // ReconcileCounters maps controller name (from the controller-runtime "controller" label)
@@ -62,14 +65,18 @@ func (p PodReconcileCounters) Total() ReconcileCounters {
 	return out
 }
 
-// Diff returns per-controller delta vs prev, summed across pods. Pods present in cur
-// but not in prev contribute their full count (treated as new). A negative delta within
-// a pod (counter regression after a restart inside the window) is treated as the current
-// value.
+// Diff returns per-controller delta vs prev, summed across pods. Only pods present in
+// both snapshots count, since a pod that appeared after the baseline has no rate to
+// measure and its whole counter would read as a storm that did not happen. A negative
+// delta within a pod (counter regression after a restart inside the window) is treated
+// as the current value.
 func (p PodReconcileCounters) Diff(prev PodReconcileCounters) ReconcileCounters {
 	out := ReconcileCounters{}
 	for pod, cur := range p {
-		base := prev[pod]
+		base, seenAtBaseline := prev[pod]
+		if !seenAtBaseline {
+			continue
+		}
 		for k, v := range cur {
 			d := v - base[k]
 			if d < 0 {
@@ -155,17 +162,60 @@ func ensureInsecureMetricsArgs(d *appsv1.Deployment) bool {
 // (delegating TLS and auth to the apiserver) and returns reconcile counts aggregated by
 // controller label.
 func scrapePodReconcileCounters(ctx context.Context, cs kubernetes.Interface, pod, namespace string) (ReconcileCounters, error) {
-	data, err := cs.CoreV1().RESTClient().Get().
-		Namespace(namespace).
-		Resource("pods").
-		Name(fmt.Sprintf("%s:%d", pod, metricsRemotePort)).
-		SubResource("proxy").
-		Suffix("metrics").
-		DoRaw(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("scrape metrics %s/%s: %w", namespace, pod, err)
+	var (
+		data    []byte
+		lastErr error
+	)
+
+	// A pod that is Ready can still refuse the connection for a moment, and the proxy
+	// reports that as a bare 400, so give it a few tries before failing the suite.
+	if err := wait.PollUntilContextTimeout(ctx, scrapeRetryInterval, scrapeRetryTimeout, true,
+		func(ctx context.Context) (bool, error) {
+			data, lastErr = cs.CoreV1().RESTClient().Get().
+				Namespace(namespace).
+				Resource("pods").
+				Name(fmt.Sprintf("%s:%d", pod, metricsRemotePort)).
+				SubResource("proxy").
+				Suffix("metrics").
+				DoRaw(ctx)
+
+			return lastErr == nil, nil
+		}); err != nil {
+		if lastErr == nil {
+			lastErr = err
+		}
+
+		return nil, fmt.Errorf("scrape metrics %s/%s: %w", namespace, pod, lastErr)
 	}
+
 	return parseReconcileCounters(bytes.NewReader(data))
+}
+
+// scrapablePods keeps the pods whose metrics endpoint can be expected to answer. A
+// terminating pod stays Running while its server is already gone, which is why Phase
+// alone is not enough.
+func scrapablePods(pods []corev1.Pod) []corev1.Pod {
+	out := make([]corev1.Pod, 0, len(pods))
+	for _, p := range pods {
+		if p.DeletionTimestamp != nil || p.Status.Phase != corev1.PodRunning {
+			continue
+		}
+
+		ready := false
+		for _, c := range p.Status.Conditions {
+			if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+				ready = true
+				break
+			}
+		}
+		if !ready {
+			continue
+		}
+
+		out = append(out, p)
+	}
+
+	return out
 }
 
 // ScrapeDeploymentReconcileCounters returns counters keyed by pod for every Running pod
@@ -185,10 +235,7 @@ func ScrapeDeploymentReconcileCounters(ctx context.Context, cs kubernetes.Interf
 	}
 
 	out := PodReconcileCounters{}
-	for _, p := range pods.Items {
-		if p.Status.Phase != corev1.PodRunning {
-			continue
-		}
+	for _, p := range scrapablePods(pods.Items) {
 		c, err := scrapePodReconcileCounters(ctx, cs, p.Name, namespace)
 		if err != nil {
 			return nil, err
@@ -196,7 +243,7 @@ func ScrapeDeploymentReconcileCounters(ctx context.Context, cs kubernetes.Interf
 		out[p.Name] = c
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("no Running pods scraped for deployment %s/%s", namespace, deployment)
+		return nil, fmt.Errorf("no scrapable pods for deployment %s/%s", namespace, deployment)
 	}
 	return out, nil
 }
