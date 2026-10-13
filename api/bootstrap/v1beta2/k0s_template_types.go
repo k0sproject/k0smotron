@@ -21,13 +21,14 @@ import (
 )
 
 var (
-	conflictingFileSourceMsg  = "only one of content or contentFrom may be specified for a single file"
-	conflictingContentFromMsg = "only one of contentFrom.secretKeyRef or contentFrom.configMapKeyRef may be specified for a single file"
-	pathConflictMsg           = "path property must be unique among all files"
-	appendUnsupportedMsg      = "the ignition provisioner writes one entry per file, so a path cannot be appended to by another file"
-	noContentMsg              = "either content or contentFrom must be specified for a file"
-	ownerFormatMsg            = "owner must be of the form user[:group], using only alphanumerics, '.', '_' or '-'"
-	ownerOnPowerShellMsg      = "owner is not supported by the powershell provisioner formats or on the windows platform"
+	conflictingFileSourceMsg    = "only one of content or contentFrom may be specified for a single file"
+	conflictingContentSourceMsg = "only one of secretRef or configMapRef may be specified"
+	pathConflictMsg             = "path property must be unique among all files"
+	appendUnsupportedMsg        = "the ignition provisioner writes one entry per file, so a path cannot be appended to by another file"
+	noContentMsg                = "either content or contentFrom must be specified for a file"
+	noContentSourceMsg          = "either secretRef or configMapRef must be specified"
+	ownerFormatMsg              = "owner must be of the form user[:group], using only alphanumerics, '.', '_' or '-'"
+	ownerOnPowerShellMsg        = "owner is not supported by the powershell provisioner formats or on the windows platform"
 )
 
 func init() {
