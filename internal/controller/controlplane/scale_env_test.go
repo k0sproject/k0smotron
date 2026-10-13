@@ -490,6 +490,18 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		_, err = r.reconcileMachines(ctx, controlplane)
 		assert.NoError(c, err)
 
+		// Jump into the next phase by adding the MachineDeletingCondition with the reason "WaitingForPreTerminateHook"
+		// for all deleted machines.
+		for _, m := range controlplane.deletedMachines {
+			conditions.Set(m, metav1.Condition{
+				Type:               clusterv1.MachineDeletingCondition,
+				Status:             metav1.ConditionTrue,
+				Reason:             clusterv1.MachineDeletingWaitingForPreTerminateHookReason,
+				LastTransitionTime: metav1.Now(),
+			})
+			assert.NoError(c, testEnv.Status().Update(ctx, m))
+		}
+
 		machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
 		assert.NoError(c, err)
 		assert.Len(c, machines, desiredReplicas)
