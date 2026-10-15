@@ -64,6 +64,46 @@ func (c *K0sController) updateStatus(ctx context.Context, controlplane *controlp
 	// stay reported for the control plane most likely to have something wrong with them.
 	setMachinesReadyCondition(ctx, controlplane)
 
+	if controlplane.etcdManaged {
+		members := controlplane.activeMachines.Filter(func(m *clusterv1.Machine) bool {
+			return m.Spec.ProviderID != "" || !conditions.IsUnknown(m, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition)
+		})
+		healthy, err := conditions.NewAggregateCondition(
+			members.UnsortedList(), cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
+			conditions.TargetConditionType(cpv1beta2.K0sControlPlaneEtcdClusterHealthyCondition),
+			conditions.CustomMergeStrategy{
+				MergeStrategy: conditions.DefaultMergeStrategy(
+					conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
+						cpv1beta2.K0sControlPlaneEtcdClusterNotHealthyReason,
+						cpv1beta2.K0sControlPlaneEtcdClusterHealthUnknownReason,
+						cpv1beta2.K0sControlPlaneEtcdClusterHealthyReason,
+					)),
+				),
+			},
+		)
+		switch {
+		case members.Len() == 0:
+			conditions.Set(controlplane.kcp, metav1.Condition{
+				Type:    cpv1beta2.K0sControlPlaneEtcdClusterHealthyCondition,
+				Status:  metav1.ConditionUnknown,
+				Reason:  cpv1beta2.K0sControlPlaneEtcdClusterHealthUnknownReason,
+				Message: "No control plane machine is provisioned yet",
+			})
+		case err != nil:
+			ctrl.LoggerFrom(ctx).Error(err, "Failed to aggregate the machine conditions for the EtcdClusterHealthy condition")
+			conditions.Set(controlplane.kcp, metav1.Condition{
+				Type:    cpv1beta2.K0sControlPlaneEtcdClusterHealthyCondition,
+				Status:  metav1.ConditionUnknown,
+				Reason:  cpv1beta2.K0sControlPlaneEtcdClusterInspectionFailedReason,
+				Message: "Please check controller logs for errors",
+			})
+		default:
+			conditions.Set(controlplane.kcp, *healthy)
+		}
+	} else {
+		conditions.Delete(controlplane.kcp, cpv1beta2.K0sControlPlaneEtcdClusterHealthyCondition)
+	}
+
 	// Ahead of computeReplicas, which gives up on an unparseable machine version, so remediation
 	// stays reported for the cluster most likely to be undergoing it.
 	setRemediatingCondition(ctx, controlplane)
