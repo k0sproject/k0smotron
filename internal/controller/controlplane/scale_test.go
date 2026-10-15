@@ -633,3 +633,33 @@ func TestPreflightChecksLetsAReplacementPastAnUnhealthyNewestMachine(t *testing.
 		})
 	}
 }
+
+func TestReconcileMachineDeletionsHoldsAfterReleasingAHook(t *testing.T) {
+	scheme := machineScheme(t)
+
+	leaving := remediationMachine("cp-0", true, true)
+	leaving.Annotations = map[string]string{cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation: ""}
+	conditions.Set(leaving, metav1.Condition{
+		Type: clusterv1.MachineDeletingCondition, Status: metav1.ConditionTrue,
+		Reason: clusterv1.MachineDeletingWaitingForPreTerminateHookReason,
+	})
+	staying := remediationMachine("cp-1", true, false)
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).
+		WithObjects(leaving, staying, kcp).WithStatusSubresource(leaving, staying, kcp).Build()}
+
+	res, err := c.reconcileMachineDeletions(t.Context(), &controlplane{
+		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		kcp:             kcp,
+		activeMachines:  collections.FromMachines(staying),
+		deletedMachines: collections.FromMachines(leaving),
+		infraMachines:   map[string]*unstructured.Unstructured{"cp-1": {}},
+	})
+	require.NoError(t, err)
+	require.False(t, res.IsZero(), "nothing else may scale in the pass that lets a machine go")
+
+	released := &clusterv1.Machine{}
+	require.NoError(t, c.Get(t.Context(), client.ObjectKeyFromObject(leaving), released))
+	require.NotContains(t, released.Annotations, cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation)
+}
