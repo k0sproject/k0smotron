@@ -512,7 +512,7 @@ func TestGenerateMachineCopiesMachineTemplateSpec(t *testing.T) {
 		})
 
 		machine, err := c.generateMachine(context.Background(), "test-0", cluster, kcp,
-			clusterv1.ContractVersionedObjectReference{}, "")
+			clusterv1.ContractVersionedObjectReference{}, "", nil)
 		require.NoError(t, err)
 
 		require.Equal(t, int32(60), *machine.Spec.Deletion.NodeDrainTimeoutSeconds)
@@ -528,7 +528,7 @@ func TestGenerateMachineCopiesMachineTemplateSpec(t *testing.T) {
 		}
 
 		machine, err := c.generateMachine(context.Background(), "test-0", cluster, kcp,
-			clusterv1.ContractVersionedObjectReference{}, "")
+			clusterv1.ContractVersionedObjectReference{}, "", nil)
 		require.NoError(t, err)
 
 		require.Equal(t, kcp.Spec.MachineTemplate.Spec.ReadinessGates, machine.Spec.ReadinessGates)
@@ -541,7 +541,7 @@ func TestGenerateMachineCopiesMachineTemplateSpec(t *testing.T) {
 		}
 
 		machine, err := c.generateMachine(t.Context(), "test-0", cluster, kcp,
-			clusterv1.ContractVersionedObjectReference{}, "")
+			clusterv1.ContractVersionedObjectReference{}, "", nil)
 		require.NoError(t, err)
 
 		require.Equal(t, kcp.Spec.MachineTemplate.Spec.Taints, machine.Spec.Taints)
@@ -550,7 +550,7 @@ func TestGenerateMachineCopiesMachineTemplateSpec(t *testing.T) {
 	t.Run("no readiness gates leaves the Machine list unset", func(t *testing.T) {
 		machine, err := c.generateMachine(context.Background(), "test-0", cluster,
 			newKCP(cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec{}),
-			clusterv1.ContractVersionedObjectReference{}, "")
+			clusterv1.ContractVersionedObjectReference{}, "", nil)
 		require.NoError(t, err)
 
 		require.Nil(t, machine.Spec.ReadinessGates)
@@ -559,13 +559,51 @@ func TestGenerateMachineCopiesMachineTemplateSpec(t *testing.T) {
 	t.Run("unset timeouts stay unset rather than becoming zero", func(t *testing.T) {
 		machine, err := c.generateMachine(context.Background(), "test-0", cluster,
 			newKCP(cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec{}),
-			clusterv1.ContractVersionedObjectReference{}, "")
+			clusterv1.ContractVersionedObjectReference{}, "", nil)
 		require.NoError(t, err)
 
 		require.Nil(t, machine.Spec.Deletion.NodeDrainTimeoutSeconds)
 		require.Nil(t, machine.Spec.Deletion.NodeVolumeDetachTimeoutSeconds)
 		require.Nil(t, machine.Spec.Deletion.NodeDeletionTimeoutSeconds)
 	})
+}
+
+func TestGenerateMachineKeepsWhatAnExistingMachineWasCreatedWith(t *testing.T) {
+	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "test",
+			Namespace:   "default",
+			Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: remediationData{Machine: "other", Timestamp: metav1.Now()}.marshal()},
+		},
+		Spec: cpv1beta2.K0sControlPlaneSpec{
+			Version:         "v1.31.0",
+			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{},
+			K0sConfigSpec:   bootstrapv2.K0sConfigSpec{Args: []string{"--enable-worker"}},
+		},
+	}
+	existing := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:             "existing-uid",
+			ResourceVersion: "42",
+			Annotations: map[string]string{
+				cpv1beta2.MachineK0sConfigAnnotation: "created-with",
+				cpv1beta2.RemediationForAnnotation:   "lineage",
+			},
+		},
+		Spec: clusterv1.MachineSpec{Version: "v1.30.0+k0s.0"},
+	}
+
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(machineScheme(t)).Build()}
+	machine, err := c.generateMachine(t.Context(), "test-0", cluster, kcp, clusterv1.ContractVersionedObjectReference{}, "", existing)
+	require.NoError(t, err)
+
+	require.Equal(t, existing.UID, machine.UID)
+	require.Equal(t, existing.ResourceVersion, machine.ResourceVersion)
+	require.Equal(t, "v1.30.0+k0s.0", machine.Spec.Version)
+	require.NotContains(t, machine.Labels, "k0smotron.io/control-plane-worker-enabled")
+	require.Equal(t, "created-with", machine.Annotations[cpv1beta2.MachineK0sConfigAnnotation])
+	require.Equal(t, "lineage", machine.Annotations[cpv1beta2.RemediationForAnnotation])
 }
 
 // machineScheme is the minimum needed for the owner reference generateMachine sets.

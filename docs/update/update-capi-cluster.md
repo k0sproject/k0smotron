@@ -32,6 +32,8 @@ When `spec.machineTemplate.infrastructureRef` points to a new or changed infrast
 
 Like configuration changes, template changes always trigger machine recreation.
 
+Changes to `spec.machineTemplate.metadata`, `spec.machineTemplate.spec.readinessGates`, `spec.machineTemplate.spec.deletion` and `spec.machineTemplate.spec.taints` do not replace machines. k0smotron applies them to the existing `Machine` objects. A `Machine` that is already being deleted only gets the new deletion timeouts and taints.
+
 ## Update strategies
 
 k0smotron supports three update strategies, configured via `spec.updateStrategy`:
@@ -52,7 +54,7 @@ k0smotron supports three update strategies, configured via `spec.updateStrategy`
 
 Under the `InPlace` strategy, control plane nodes are always updated the same way under the hood: k0smotron creates a k0s [autopilot](https://docs.k0sproject.io/stable/autopilot/) `Plan` in the workload cluster, and autopilot rolls the new k0s version onto each control plane node without replacing the machine.
 
-This in-place mechanism only updates **the k0s version** running on a node. It does not apply configuration or machine template changes, those are always handled by recreating machines regardless of `spec.updateStrategy`, as described above.
+This in-place mechanism only updates **the k0s version** running on a node. It does not apply configuration or infrastructure template changes, those are always handled by recreating machines regardless of `spec.updateStrategy`, as described above.
 
 #### Standalone (default)
 
