@@ -379,12 +379,11 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	// Before machines scaling, we need to make sure that all manual deletions are fully reconciled, to avoid having machines in a limbo state during
-	// the scaling process, which could lead to unexpected behaviors and issues. This includes deleting the k0s node resources for the manually deleted
-	// machines and also deleting the machines whose infrastructure has been deleted.
-	err = c.reconcileManualDeletions(ctx, scope)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("error reconciling manual deletions: %w", err)
+	// Before machines scaling, we need to make sure that all deleted machines are fully reconciled, to avoid having machines in a limbo state during
+	// the scaling process, which could lead to unexpected behaviors and issues. This includes deleting the k0s node resources for the machines deleted
+	// and also deleting the machines whose infrastructure has been deleted.
+	if res, err := c.reconcileMachineDeletions(ctx, scope); err != nil || !res.IsZero() {
+		return res, err
 	}
 
 	// Wait for the latest created machine to be available before proceeding with scaling if the desired number of replicas is not met,
@@ -450,16 +449,20 @@ func retrieveOldestMachineOutOfDate(scope *controlplane) (*clusterv1.Machine, *u
 	return machine, infra, config, nil
 }
 
-func (c *K0sController) reconcileManualDeletions(ctx context.Context, scope *controlplane) error {
+func (c *K0sController) reconcileMachineDeletions(ctx context.Context, scope *controlplane) (ctrl.Result, error) {
 	var errs []error
 
-	// Delete k0s resources for manually deleted machines.
-	if scope.deletedMachines.Len() > 0 {
-		for _, m := range scope.deletedMachines.SortedByCreationTimestamp() {
-			err := c.deleteK0sNodeResources(ctx, scope, m)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("error deleting k0s node resources for machine %s: %w", m.Name, err))
-			}
+	deletedShorted := scope.deletedMachines.SortedByCreationTimestamp()
+	if len(deletedShorted) > 0 {
+		highestPriorityDeleted := deletedShorted[0]
+		if !isWaitingForPreTerminateHook(highestPriorityDeleted) {
+			// When machine is not waiting for pre-terminate hook yet it means that it is still draining or detaching volumes
+			// as part of the machine deletion process in the machine controller side.
+			return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+		}
+		err := c.deleteK0sNodeResources(ctx, scope, highestPriorityDeleted)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("error deleting k0s node resources for machine %s: %w", highestPriorityDeleted.Name, err)
 		}
 	}
 
@@ -483,10 +486,10 @@ func (c *K0sController) reconcileManualDeletions(ctx context.Context, scope *con
 	}
 
 	if len(errs) > 0 {
-		return kerrors.NewAggregate(errs)
+		return ctrl.Result{}, kerrors.NewAggregate(errs)
 	}
 
-	return nil
+	return ctrl.Result{}, nil
 }
 
 func removeMachineFromScope(scope *controlplane, machineName string) {
@@ -554,4 +557,11 @@ func (c *K0sController) removePreTerminateHookAnnotationFromMachine(ctx context.
 	}
 
 	return nil
+}
+
+// isWaitingForPreTerminateHook checks if the given Machine is waiting for the pre-terminate hook to complete before deletion.
+func isWaitingForPreTerminateHook(m *clusterv1.Machine) bool {
+	c := conditions.Get(m, clusterv1.MachineDeletingCondition)
+	return c != nil && c.Status == metav1.ConditionTrue &&
+		c.Reason == clusterv1.MachineDeletingWaitingForPreTerminateHookReason
 }
