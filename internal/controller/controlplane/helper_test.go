@@ -28,6 +28,7 @@ import (
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -531,6 +532,19 @@ func TestGenerateMachineCopiesMachineTemplateSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, kcp.Spec.MachineTemplate.Spec.ReadinessGates, machine.Spec.ReadinessGates)
+	})
+
+	t.Run("taints are carried over", func(t *testing.T) {
+		kcp := newKCP(cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec{})
+		kcp.Spec.MachineTemplate.Spec.Taints = []clusterv1.MachineTaint{
+			{Key: "dedicated", Value: "control-plane", Effect: corev1.TaintEffectNoSchedule, Propagation: clusterv1.MachineTaintPropagationAlways},
+		}
+
+		machine, err := c.generateMachine(t.Context(), "test-0", cluster, kcp,
+			clusterv1.ContractVersionedObjectReference{}, "")
+		require.NoError(t, err)
+
+		require.Equal(t, kcp.Spec.MachineTemplate.Spec.Taints, machine.Spec.Taints)
 	})
 
 	t.Run("no readiness gates leaves the Machine list unset", func(t *testing.T) {
