@@ -92,6 +92,8 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		return fmt.Errorf("failed to connect to host: %w", err)
 	}
 	defer connection.Disconnect()
+	// rig runs commands without a context, so closing the connection is what stops a hung one.
+	defer context.AfterFunc(ctx, connection.SSH.Disconnect)()
 
 	// If sudo is required, run commands with elevated permissions and use the
 	// sudo-capable filesystem for uploads.
