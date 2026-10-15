@@ -479,6 +479,8 @@ func (c *K0sController) reconcileMachineDeletions(ctx context.Context, scope *co
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error deleting k0s node resources for machine %s: %w", highestPriorityDeleted.Name, err)
 		}
+
+		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
 	}
 
 	// Delete k0s node resources and machine resource when infrastructure has been deleted.
