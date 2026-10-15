@@ -115,6 +115,11 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.T().Log("Pushing public key to worker")
 	s.Require().NoError(workerSSH.Exec(s.Context(), "cat >>/root/.ssh/authorized_keys", common.SSHStreams{In: bytes.NewReader(s.publicKey)}))
 
+	// Scoped sudo with listpw=always: "sudo -n -l" is refused while the commands themselves run without password.
+	s.Require().NoError(workerSSH.Exec(ctx, `printf 'Defaults listpw=always\ntest ALL=(root) NOPASSWD: /bin/sh, /bin/bash\n' > /etc/sudoers.d/test && chmod 440 /etc/sudoers.d/test`, common.SSHStreams{}))
+	s.Require().Error(workerSSH.Exec(ctx, `su test -c 'sudo -n -l'`, common.SSHStreams{}), "sudo -l must require a password")
+	s.Require().NoError(workerSSH.Exec(ctx, `su test -c 'sudo -n -- /bin/sh -c true'`, common.SSHStreams{}))
+
 	s.Require().NoError(err)
 	defer func() {
 		keep := os.Getenv("KEEP_AFTER_TEST")

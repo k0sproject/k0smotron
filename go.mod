@@ -3,6 +3,7 @@ module github.com/k0sproject/k0smotron
 go 1.26
 
 require (
+	al.essio.dev/pkg/shellescape v1.6.0
 	github.com/cloudflare/cfssl v1.6.4
 	github.com/coreos/butane v0.24.0
 	github.com/evanphx/json-patch/v5 v5.9.11
@@ -74,7 +75,6 @@ require (
 )
 
 require (
-	al.essio.dev/pkg/shellescape v1.6.0 // indirect
 	cel.dev/expr v0.24.0 // indirect
 	github.com/Azure/go-ntlmssp v0.1.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
