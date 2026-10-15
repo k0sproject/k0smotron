@@ -195,21 +195,25 @@ func (c *K0sController) setEtcdMemberHealthyCondition(ctx context.Context, scope
 		}
 
 		condition := metav1.Condition{
-			Type:   cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
-			Status: metav1.ConditionUnknown,
-			Reason: cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyUnknownReason,
+			Type:    cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
+			Status:  metav1.ConditionUnknown,
+			Reason:  cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyUnknownReason,
+			Message: "The etcd member state could not be determined",
 		}
 		// Reported even when the cluster keeps no members, so a condition set while it
 		// did cannot sit there afterwards still claiming the member is fine.
 		switch {
 		case !scope.etcdManaged:
 			condition.Reason = cpv1beta2.K0sControlPlaneMachineNoEtcdMembersReason
+			condition.Message = ""
 		case scope.etcdMemberHealth[machine.Name] == metav1.ConditionTrue:
 			condition.Status = metav1.ConditionTrue
 			condition.Reason = cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyReason
+			condition.Message = ""
 		case scope.etcdMemberHealth[machine.Name] == metav1.ConditionFalse:
 			condition.Status = metav1.ConditionFalse
 			condition.Reason = cpv1beta2.K0sControlPlaneMachineEtcdMemberNotHealthyReason
+			condition.Message = "The etcd member left the cluster or k0s failed to reconcile it"
 		}
 
 		conditions.Set(machine, condition)
