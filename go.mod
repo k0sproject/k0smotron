@@ -5,6 +5,7 @@ go 1.26
 toolchain go1.26.5
 
 require (
+	al.essio.dev/pkg/shellescape v1.6.0
 	github.com/cloudflare/cfssl v1.6.4
 	github.com/coreos/butane v0.24.0
 	github.com/go-logr/logr v1.4.3

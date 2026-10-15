@@ -27,6 +27,7 @@ import (
 	"regexp"
 	"strings"
 
+	"al.essio.dev/pkg/shellescape"
 	"github.com/go-logr/logr"
 	"github.com/k0sproject/rig"
 	"github.com/k0sproject/rig/exec"
@@ -67,6 +68,23 @@ const (
 	workerService = "k0sworker"
 )
 
+// ensureSudo makes sure the connection has a sudo wrapper when rig could not detect one.
+// rig probes with "sudo -n -l", which fails when "Defaults listpw=always" is within sudoers,
+// even when the commands themselves run without a password. If the user really cannot use sudo,
+// the first elevated command fails with sudo's own error.
+func ensureSudo(connection *rig.Connection) {
+	if connection.IsWindows() {
+		return
+	}
+	if _, err := connection.Sudo("true"); err == nil {
+		return
+	}
+	// sudo wrapper is not set for this connection, so we provide one.
+	connection.SetSudofn(func(cmd string) string {
+		return `sudo -n -- "${SHELL:-sh}" -c ` + shellescape.Quote(cmd)
+	})
+}
+
 // Provision provisions a new machine
 // The provisioning process is as follows:
 // 1. Open SSH connection to the machine
@@ -100,6 +118,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	var execOpts []exec.Option
 	fsys := connection.Fsys()
 	if p.machine.Spec.UseSudo {
+		ensureSudo(connection)
 		execOpts = append(execOpts, exec.Sudo(connection))
 		fsys = connection.SudoFsys()
 	}
@@ -184,6 +203,7 @@ func (p *SSHProvisioner) Cleanup(_ context.Context, mode RemoteMachineMode) erro
 	// If sudo is required, run commands with elevated permissions.
 	var execOpts []exec.Option
 	if p.machine.Spec.UseSudo {
+		ensureSudo(connection)
 		execOpts = append(execOpts, exec.Sudo(connection))
 	}
 
