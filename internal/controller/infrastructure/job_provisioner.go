@@ -204,9 +204,11 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 			shellQuote(machineDSN+":"+file.Path)))
 		// These run through the entrypoint shell inside the job, so quote them.
 		// Giving a file away also needs the same privilege the commands use.
-		buf.WriteString(fmt.Sprintf("%s %schmod %04o %s\n", sshCommand, sudoPrefix, mode, shellQuote(file.Path)))
+		buf.WriteString(fmt.Sprintf("%s %s\n", sshCommand,
+			shellQuote(fmt.Sprintf("%schmod %04o %s", sudoPrefix, mode, shellQuote(file.Path)))))
 		if file.Owner != "" {
-			buf.WriteString(fmt.Sprintf("%s %schown -- %s %s\n", sshCommand, sudoPrefix, shellQuote(file.Owner), shellQuote(file.Path)))
+			buf.WriteString(fmt.Sprintf("%s %s\n", sshCommand,
+				shellQuote(fmt.Sprintf("%schown -- %s %s", sudoPrefix, shellQuote(file.Owner), shellQuote(file.Path)))))
 		}
 	}
 	volumeMounts = append(volumeMounts, v1.VolumeMount{
@@ -216,9 +218,9 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 
 	for _, cmd := range cloudInit.Commands {
 		if p.remoteMachine.Spec.UseSudo {
-			cmd = fmt.Sprintf("sudo su -c '%s'", cmd)
+			cmd = fmt.Sprintf("sudo su -c %s", shellQuote(cmd))
 		}
-		buf.WriteString(fmt.Sprintf("%s \"%s\"\n", sshCommand, cmd))
+		buf.WriteString(fmt.Sprintf("%s %s\n", sshCommand, shellQuote(cmd)))
 	}
 	secretData["k0smotron-entrypoint.sh"] = buf.Bytes()
 

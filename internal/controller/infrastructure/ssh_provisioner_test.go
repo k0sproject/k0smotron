@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	osexec "os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -326,8 +327,8 @@ func TestExtractCloudInitDecodesAndChowns(t *testing.T) {
 
 	script := string(secretData["k0smotron-entrypoint.sh"])
 	// The job entrypoint is a shell script, so both must be quoted.
-	require.Contains(t, script, "chown -- 'etcd:etcd' '/etc/thing'")
-	require.Contains(t, script, "chmod 0640 '/etc/thing'")
+	require.Contains(t, script, shellQuote("chown -- 'etcd:etcd' '/etc/thing'"))
+	require.Contains(t, script, shellQuote("chmod 0640 '/etc/thing'"))
 }
 
 func TestExtractCloudInitFileMode(t *testing.T) {
@@ -378,7 +379,7 @@ func TestExtractCloudInitQuotesOwnerAgainstInjection(t *testing.T) {
 	require.NoError(t, err)
 
 	script := string(secretData["k0smotron-entrypoint.sh"])
-	require.Contains(t, script, "chown -- "+shellQuote("root; rm -rf /"))
+	require.Contains(t, script, shellQuote("chown -- "+shellQuote("root; rm -rf /")+" '/etc/thing'"))
 	require.NotContains(t, script, "chown -- root; rm")
 }
 
@@ -420,10 +421,10 @@ func TestExtractCloudInitUsesSudoWhenRequested(t *testing.T) {
 
 		script := string(secretData["k0smotron-entrypoint.sh"])
 		if useSudo {
-			require.Contains(t, script, "ssh root@host sudo chown -- 'etcd:etcd'")
-			require.Contains(t, script, "ssh root@host sudo chmod 0640")
+			require.Contains(t, script, "ssh root@host "+shellQuote("sudo chown -- 'etcd:etcd' '/etc/thing'"))
+			require.Contains(t, script, "ssh root@host "+shellQuote("sudo chmod 0640 '/etc/thing'"))
 		} else {
-			require.Contains(t, script, "ssh root@host chown -- 'etcd:etcd'")
+			require.Contains(t, script, "ssh root@host "+shellQuote("chown -- 'etcd:etcd' '/etc/thing'"))
 			require.NotContains(t, script, "sudo chown")
 		}
 	}
@@ -444,4 +445,35 @@ func TestExtractCloudInitRejectsAppend(t *testing.T) {
 	})
 
 	require.ErrorContains(t, err, "not supported when provisioning through a job")
+}
+
+func remoteArgv(t *testing.T, script string) []string {
+	t.Helper()
+
+	out, err := osexec.Command("sh", "-c", "scp() { :; }\nssh() { [ $# -eq 2 ] || exit 1; eval \"set -- $2\"; printf '%s\\n' \"$@\"; echo; }\n"+script).Output()
+	require.NoError(t, err)
+
+	return strings.Split(strings.Split(string(out), "\n\n")[0], "\n")
+}
+
+func TestExtractCloudInitSurvivesTheTargetShellParse(t *testing.T) {
+	p := &JobProvisioner{
+		remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
+		provisionJob: &api.ProvisionJob{
+			SSHCommand:  "ssh",
+			SCPCommand:  "scp",
+			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+		},
+	}
+
+	_, _, secretData, err := p.extractCloudInit(&provisioner.InputProvisionData{
+		Files: []provisioner.File{{Path: "/etc/a b; echo injected", Content: "body"}},
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"chmod", "0644", "/etc/a b; echo injected"}, remoteArgv(t, string(secretData["k0smotron-entrypoint.sh"])))
+
+	p.remoteMachine.Spec.UseSudo = true
+	_, _, secretData, err = p.extractCloudInit(&provisioner.InputProvisionData{Commands: []string{"echo 'it''s' $HOME"}})
+	require.NoError(t, err)
+	require.Equal(t, []string{"sudo", "su", "-c", "echo 'it''s' $HOME"}, remoteArgv(t, string(secretData["k0smotron-entrypoint.sh"])))
 }
