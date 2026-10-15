@@ -439,7 +439,7 @@ func selectMachineToDelete(ctx context.Context, scope *controlplane) (*clusterv1
 
 // preflightChecks performs necessary checks before updating the control plane, ensuring that the cluster is in a healthy state and ready
 // for scaling/updating operations. This includes verifying that there are no machines currently being deleted, and that the most recently created machine
-// is available before proceeding with scaling.
+// is available, or awaiting remediation, before proceeding with scaling.
 func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -456,11 +456,17 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 		return res, err
 	}
 
+	_, remediating := scope.kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation]
+	inplaceUpdatePending := scope.hasMachinesWithOnlyVersionOutdated && isVersionInPlaceEnabled(scope.kcp)
+	replacementOwed := scope.activeMachines.Len()+scope.deletedMachines.Len() < int(scope.kcp.Spec.Replicas)
+	latestAwaitsRemediation := remediating && replacementOwed && !inplaceUpdatePending &&
+		collections.IsUnhealthyAndOwnerRemediated(scope.activeMachines.Newest())
+
 	// Wait for the latest created machine to be available before proceeding with scaling if the desired number of replicas is not met,
 	// ensuring etcd stability.
 	// A machine is considered available if the machines is ready for more than 'machine.spec.mindReadySeconds' seconds. This value
 	// is set by the controller when creating the controlplane machine.
-	if !c.isLatestMachineReady(ctx, scope) {
+	if !latestAwaitsRemediation && !c.isLatestMachineReady(ctx, scope) {
 		if latest := scope.activeMachines.Newest(); latest != nil {
 			logger.Info("Waiting for latest machine to be ready before scaling", "machine", latest.Name)
 			scope.preflightBlockers = append(scope.preflightBlockers, fmt.Sprintf("* waiting for Machine %s to become ready", latest.Name))
