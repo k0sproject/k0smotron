@@ -433,13 +433,18 @@ func setScalingConditions(controlplane *controlplane) {
 	// machines count too, so a scale down stays true until they are gone.
 	replicas := controlplane.activeMachines.Len() + controlplane.deletedMachines.Len()
 
+	var blocked string
+	if len(controlplane.preflightBlockers) > 0 {
+		blocked = "\nBlocked because:\n" + strings.Join(controlplane.preflightBlockers, "\n")
+	}
+
 	if replicas < int(controlplane.kcp.Spec.Replicas) {
 		conditions.Set(controlplane.kcp, metav1.Condition{
 			Type:   string(cpv1beta2.K0sControlPlaneScalingUpCondition),
 			Status: metav1.ConditionTrue,
 			Reason: cpv1beta2.K0sControlPlaneScalingUpReason,
 			Message: fmt.Sprintf("Control plane is scaling up: %d/%d",
-				replicas, controlplane.kcp.Spec.Replicas),
+				replicas, controlplane.kcp.Spec.Replicas) + blocked,
 		})
 	} else {
 		conditions.Set(controlplane.kcp, metav1.Condition{
@@ -455,7 +460,7 @@ func setScalingConditions(controlplane *controlplane) {
 			Status: metav1.ConditionTrue,
 			Reason: cpv1beta2.K0sControlPlaneScalingDownReason,
 			Message: fmt.Sprintf("Control plane is scaling down: %d/%d",
-				replicas, controlplane.kcp.Spec.Replicas),
+				replicas, controlplane.kcp.Spec.Replicas) + blocked,
 		})
 	} else {
 		conditions.Set(controlplane.kcp, metav1.Condition{

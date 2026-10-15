@@ -119,6 +119,8 @@ type controlplane struct {
 	deletingReason string
 	// deletingMessage is the message that should be used when setting the Deleting condition.
 	deletingMessage string
+
+	preflightBlockers []string
 }
 
 // K0sController is responsible for reconciling K0sControlPlane objects.
