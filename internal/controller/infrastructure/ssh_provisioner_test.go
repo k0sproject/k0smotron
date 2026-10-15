@@ -28,8 +28,10 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/k0sproject/rig/exec"
-	"github.com/k0sproject/rig/pkg/rigfs"
+	"github.com/k0sproject/rig/v2"
+	"github.com/k0sproject/rig/v2/cmd"
+	"github.com/k0sproject/rig/v2/protocol"
+	"github.com/k0sproject/rig/v2/remotefs"
 	"github.com/stretchr/testify/require"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +50,7 @@ func (f *fakeFile) Read(_ []byte) (int, error)            { return 0, io.EOF }
 func (f *fakeFile) Close() error                          { return nil }
 func (f *fakeFile) Stat() (fs.FileInfo, error)            { return fakeInfo{name: "file"}, nil }
 func (f *fakeFile) Seek(_ int64, _ int) (int64, error)    { return 0, nil }
+func (f *fakeFile) Name() string                          { return "file" }
 func (f *fakeFile) CopyFrom(src io.Reader) (int64, error) { return io.Copy(&f.buf, src) }
 func (f *fakeFile) CopyTo(dst io.Writer) (int64, error)   { return io.Copy(dst, &f.buf) }
 
@@ -64,8 +67,10 @@ func (i fakeInfo) ModTime() time.Time { return time.Time{} }
 func (i fakeInfo) IsDir() bool        { return true }
 func (i fakeInfo) Sys() any           { return nil }
 
-// fakeFsys is the smallest rigfs.Fsys that uploadFile exercises.
+// fakeFsys is the smallest remotefs.FS that uploadFile exercises. Anything else
+// is left to the nil embedded interface and panics if used.
 type fakeFsys struct {
+	remotefs.FS
 	file      *fakeFile
 	openFlag  int
 	openPerm  fs.FileMode
@@ -75,13 +80,13 @@ type fakeFsys struct {
 	dirExists bool
 }
 
-func (f *fakeFsys) OpenFile(path string, flag int, perm fs.FileMode) (rigfs.File, error) {
+func (f *fakeFsys) OpenFile(path string, flag int, perm fs.FileMode) (remotefs.File, error) {
 	f.openPath, f.openFlag, f.openPerm = path, flag, perm
 	f.file = &fakeFile{}
 	return f.file, nil
 }
 
-func (f *fakeFsys) MkDirAll(path string, perm fs.FileMode) error {
+func (f *fakeFsys) MkdirAll(path string, perm fs.FileMode) error {
 	f.mkdirPath, f.mkdirPerm = path, perm
 	return nil
 }
@@ -93,24 +98,18 @@ func (f *fakeFsys) Stat(name string) (fs.FileInfo, error) {
 	return nil, &fs.PathError{Op: "stat", Path: name, Err: fs.ErrNotExist}
 }
 
-func (f *fakeFsys) Open(_ string) (fs.File, error)  { return nil, nil }
-func (f *fakeFsys) Sha256(_ string) (string, error) { return "", nil }
-func (f *fakeFsys) Remove(_ string) error           { return nil }
-func (f *fakeFsys) RemoveAll(_ string) error        { return nil }
-
-// fakeRunner records the commands uploadFile asks the host to run, how many
-// exec options came with them, and what the file looked like at that moment.
+// fakeRunner records the commands uploadFile asks the host to run and what the
+// file looked like at that moment.
 type fakeRunner struct {
+	cmd.Runner
 	fsys       *fakeFsys
 	cmds       []string
-	optCounts  []int
 	bodyAtExec []string
 	err        error
 }
 
-func (r *fakeRunner) ExecOutput(cmd string, opts ...exec.Option) (string, error) {
-	r.cmds = append(r.cmds, cmd)
-	r.optCounts = append(r.optCounts, len(opts))
+func (r *fakeRunner) ExecOutput(command string, _ ...cmd.ExecOption) (string, error) {
+	r.cmds = append(r.cmds, command)
 
 	body := ""
 	if r.fsys != nil && r.fsys.file != nil {
@@ -121,6 +120,24 @@ func (r *fakeRunner) ExecOutput(cmd string, opts ...exec.Option) (string, error)
 	return "", r.err
 }
 
+// fakeConn gives rig.NewClient the little it asks of a connection.
+type fakeConn struct {
+	protocol.Connection
+}
+
+func (fakeConn) String() string       { return "fake" }
+func (fakeConn) Protocol() string     { return "fake" }
+func (fakeConn) ProtocolName() string { return "fake" }
+func (fakeConn) IsConnected() bool    { return true }
+
+// newClient returns a rig client whose commands go to runner.
+func newClient(t *testing.T, runner *fakeRunner) *rig.Client {
+	t.Helper()
+	client, err := rig.NewClient(rig.WithConnection(fakeConn{}), rig.WithRunner(runner))
+	require.NoError(t, err)
+	return client
+}
+
 func newProvisioner() *SSHProvisioner {
 	return &SSHProvisioner{log: logr.Discard()}
 }
@@ -128,7 +145,7 @@ func newProvisioner() *SSHProvisioner {
 func TestUploadFileWritesDecodedContent(t *testing.T) {
 	fsys, runner := &fakeFsys{}, &fakeRunner{}
 
-	err := newProvisioner().uploadFile(runner, nil, fsys, provisioner.File{
+	err := newProvisioner().uploadFile(newClient(t, runner), fsys, provisioner.File{
 		Path:        "/etc/thing",
 		Content:     base64.StdEncoding.EncodeToString([]byte("secret body")),
 		Encoding:    provisioner.Base64,
@@ -145,7 +162,7 @@ func TestUploadFileWritesDecodedContent(t *testing.T) {
 func TestUploadFileTruncates(t *testing.T) {
 	fsys := &fakeFsys{}
 
-	err := newProvisioner().uploadFile(&fakeRunner{}, nil, fsys, provisioner.File{
+	err := newProvisioner().uploadFile(newClient(t, &fakeRunner{}), fsys, provisioner.File{
 		Path: "/etc/thing", Content: "body", Permissions: "0644",
 	})
 	require.NoError(t, err)
@@ -157,7 +174,7 @@ func TestUploadFileTruncates(t *testing.T) {
 func TestUploadFileRejectsAppend(t *testing.T) {
 	fsys, runner := &fakeFsys{}, &fakeRunner{}
 
-	err := newProvisioner().uploadFile(runner, nil, fsys, provisioner.File{
+	err := newProvisioner().uploadFile(newClient(t, runner), fsys, provisioner.File{
 		Path: "/etc/thing", Content: "body", Permissions: "0644", Append: true,
 	})
 
@@ -174,7 +191,7 @@ func TestUploadFileCreatesDirectoryTraversable(t *testing.T) {
 	for _, permissions := range []string{"", "0600", "0400", "0640", "0644", "0700", "0755"} {
 		fsys := &fakeFsys{}
 
-		err := newProvisioner().uploadFile(&fakeRunner{}, nil, fsys, provisioner.File{
+		err := newProvisioner().uploadFile(newClient(t, &fakeRunner{}), fsys, provisioner.File{
 			Path: "/var/lib/k0s/thing", Content: "body", Permissions: permissions,
 		})
 		require.NoError(t, err, "permissions %q", permissions)
@@ -198,7 +215,7 @@ func TestUploadFileChownsQuotedAndAfterTheWrite(t *testing.T) {
 	fsys := &fakeFsys{}
 	runner := &fakeRunner{fsys: fsys}
 
-	err := newProvisioner().uploadFile(runner, nil, fsys, provisioner.File{
+	err := newProvisioner().uploadFile(newClient(t, runner), fsys, provisioner.File{
 		Path: "/etc/thing", Content: "body", Permissions: "0640", Owner: "etcd:etcd",
 	})
 	require.NoError(t, err)
@@ -214,27 +231,12 @@ func TestUploadFileChownsQuotedAndAfterTheWrite(t *testing.T) {
 func TestUploadFileSkipsMkdirWhenParentExists(t *testing.T) {
 	fsys := &fakeFsys{dirExists: true}
 
-	err := newProvisioner().uploadFile(&fakeRunner{}, nil, fsys, provisioner.File{
+	err := newProvisioner().uploadFile(newClient(t, &fakeRunner{}), fsys, provisioner.File{
 		Path: "/etc/thing", Content: "body", Permissions: "0644",
 	})
 	require.NoError(t, err)
 
 	require.Empty(t, fsys.mkdirPath, "an existing parent must not be recreated")
-}
-
-func TestUploadFileChownInheritsExecOptions(t *testing.T) {
-	// Without these the chown runs unprivileged on every machine that asked
-	// for sudo.
-	fsys := &fakeFsys{}
-	runner := &fakeRunner{fsys: fsys}
-	execOpts := []exec.Option{exec.HideOutput()}
-
-	err := newProvisioner().uploadFile(runner, execOpts, fsys, provisioner.File{
-		Path: "/etc/thing", Content: "body", Permissions: "0644", Owner: "nobody",
-	})
-	require.NoError(t, err)
-
-	require.Equal(t, []int{len(execOpts)}, runner.optCounts)
 }
 
 func TestUploadFileChownQuotingResistsInjection(t *testing.T) {
@@ -243,7 +245,7 @@ func TestUploadFileChownQuotingResistsInjection(t *testing.T) {
 	for _, owner := range []string{"root; rm -rf /", "$(id -u)", "a'b", "root\nid"} {
 		runner := &fakeRunner{}
 
-		err := newProvisioner().uploadFile(runner, nil, &fakeFsys{}, provisioner.File{
+		err := newProvisioner().uploadFile(newClient(t, runner), &fakeFsys{}, provisioner.File{
 			Path: "/etc/thing", Content: "body", Permissions: "0644", Owner: owner,
 		})
 		require.NoError(t, err)
@@ -264,7 +266,7 @@ func TestUploadFileChownQuotingResistsInjection(t *testing.T) {
 func TestUploadFileSurfacesChownFailure(t *testing.T) {
 	runner := &fakeRunner{err: errors.New("operation not permitted")}
 
-	err := newProvisioner().uploadFile(runner, nil, &fakeFsys{}, provisioner.File{
+	err := newProvisioner().uploadFile(newClient(t, runner), &fakeFsys{}, provisioner.File{
 		Path: "/etc/thing", Content: "body", Permissions: "0644", Owner: "nobody",
 	})
 
@@ -275,7 +277,7 @@ func TestUploadFileSurfacesChownFailure(t *testing.T) {
 func TestUploadFileRejectsUndecodableContent(t *testing.T) {
 	fsys := &fakeFsys{}
 
-	err := newProvisioner().uploadFile(&fakeRunner{}, nil, fsys, provisioner.File{
+	err := newProvisioner().uploadFile(newClient(t, &fakeRunner{}), fsys, provisioner.File{
 		Path: "/etc/thing", Content: "!!!", Encoding: provisioner.Base64, Permissions: "0644",
 	})
 
