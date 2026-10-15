@@ -387,6 +387,9 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 	// the scaling process, which could lead to unexpected behaviors and issues. This includes deleting the k0s node resources for the machines deleted
 	// and also deleting the machines whose infrastructure has been deleted.
 	if res, err := c.reconcileMachineDeletions(ctx, scope); err != nil || !res.IsZero() {
+		if err == nil {
+			scope.preflightBlockers = append(scope.preflightBlockers, "* waiting for a control plane Machine to complete deletion")
+		}
 		return res, err
 	}
 
@@ -397,6 +400,7 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 	if !c.isLatestMachineReady(ctx, scope) {
 		if latest := scope.activeMachines.Newest(); latest != nil {
 			logger.Info("Waiting for latest machine to be ready before scaling", "machine", latest.Name)
+			scope.preflightBlockers = append(scope.preflightBlockers, fmt.Sprintf("* waiting for Machine %s to become ready", latest.Name))
 		}
 		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
 	}
@@ -405,6 +409,7 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 	// the next machine, as it needs a new autopilot plan to be created for the next machine, and we cannot have multiple plans running at the same time.
 	if isAnyMachineUpdating(scope) {
 		logger.Info("Waiting for machines to finish updating before scaling")
+		scope.preflightBlockers = append(scope.preflightBlockers, "* waiting for control plane Machines to finish updating in place")
 		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
 	}
 
