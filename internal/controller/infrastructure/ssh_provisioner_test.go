@@ -18,10 +18,15 @@ package infrastructure
 
 import (
 	"bytes"
+	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"io"
 	"io/fs"
+	"net"
 	"os"
 	osexec "os/exec"
 	"strings"
@@ -32,6 +37,7 @@ import (
 	"github.com/k0sproject/rig/exec"
 	"github.com/k0sproject/rig/pkg/rigfs"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ssh"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -476,4 +482,76 @@ func TestExtractCloudInitSurvivesTheTargetShellParse(t *testing.T) {
 	_, _, secretData, err = p.extractCloudInit(&provisioner.InputProvisionData{Commands: []string{"echo 'it''s' $HOME"}})
 	require.NoError(t, err)
 	require.Equal(t, []string{"sudo", "su", "-c", "echo 'it''s' $HOME"}, remoteArgv(t, string(secretData["k0smotron-entrypoint.sh"])))
+}
+
+func TestProvisionStopsWhenTheContextEnds(t *testing.T) {
+	_, key, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+	signer, err := ssh.NewSignerFromKey(key)
+	require.NoError(t, err)
+	keyPEM, err := ssh.MarshalPrivateKey(key, "")
+	require.NoError(t, err)
+	serverConfig := &ssh.ServerConfig{
+		PublicKeyCallback: func(ssh.ConnMetadata, ssh.PublicKey) (*ssh.Permissions, error) { return nil, nil },
+	}
+	serverConfig.AddHostKey(signer)
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = listener.Close() })
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			go func() {
+				_, chans, reqs, err := ssh.NewServerConn(conn, serverConfig)
+				if err != nil {
+					return
+				}
+				go ssh.DiscardRequests(reqs)
+				for newChannel := range chans {
+					channel, requests, _ := newChannel.Accept()
+					go func() {
+						for req := range requests {
+							_ = req.Reply(req.Type == "exec", nil)
+							if req.Type == "exec" && !strings.Contains(string(req.Payload), "sleep infinity") {
+								if strings.Contains(string(req.Payload), "os-release") {
+									_, _ = channel.Write([]byte("ID=ubuntu\nVERSION_ID=24.04\n"))
+								}
+								_, _ = channel.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{0}))
+								_ = channel.Close()
+							}
+						}
+					}()
+				}
+			}()
+		}
+	}()
+
+	addr := listener.Addr().(*net.TCPAddr)
+	p := &SSHProvisioner{
+		cloudInit: &provisioner.InputProvisionData{Commands: []string{"sleep infinity"}},
+		machine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{
+			Address: addr.IP.String(),
+			Port:    addr.Port,
+			User:    "root",
+		}},
+		sshKey: pem.EncodeToMemory(keyPEM),
+		log:    logr.Discard(),
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- p.Provision(ctx) }()
+
+	select {
+	case err := <-done:
+		require.Error(t, err)
+		require.ErrorIs(t, ctx.Err(), context.DeadlineExceeded)
+	case <-time.After(10 * time.Second):
+		t.Fatal("Provision did not return after its context ended")
+	}
 }
