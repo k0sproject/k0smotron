@@ -327,7 +327,39 @@ func TestExtractCloudInitDecodesAndChowns(t *testing.T) {
 	script := string(secretData["k0smotron-entrypoint.sh"])
 	// The job entrypoint is a shell script, so both must be quoted.
 	require.Contains(t, script, "chown -- 'etcd:etcd' '/etc/thing'")
-	require.Contains(t, script, "chmod '0640' '/etc/thing'")
+	require.Contains(t, script, "chmod 0640 '/etc/thing'")
+}
+
+func TestExtractCloudInitFileMode(t *testing.T) {
+	p := &JobProvisioner{
+		remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
+		provisionJob: &api.ProvisionJob{
+			SSHCommand:  "ssh",
+			SCPCommand:  "scp",
+			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+		},
+	}
+
+	for _, tc := range []struct {
+		permissions string
+		want        string
+		wantErr     string
+	}{
+		{permissions: "", want: "chmod 0644 "},
+		{permissions: "rw-r--r--", wantErr: "failed to parse permissions of file /etc/thing"},
+	} {
+		t.Run(tc.permissions, func(t *testing.T) {
+			_, _, secretData, err := p.extractCloudInit(&provisioner.InputProvisionData{
+				Files: []provisioner.File{{Path: "/etc/thing", Content: "body", Permissions: tc.permissions}},
+			})
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Contains(t, string(secretData["k0smotron-entrypoint.sh"]), tc.want)
+		})
+	}
 }
 
 func TestExtractCloudInitQuotesOwnerAgainstInjection(t *testing.T) {
@@ -371,7 +403,7 @@ func TestExtractCloudInitUsesSudoWhenRequested(t *testing.T) {
 		script := string(secretData["k0smotron-entrypoint.sh"])
 		if useSudo {
 			require.Contains(t, script, "ssh root@host sudo chown -- 'etcd:etcd'")
-			require.Contains(t, script, "ssh root@host sudo chmod '0640'")
+			require.Contains(t, script, "ssh root@host sudo chmod 0640")
 		} else {
 			require.Contains(t, script, "ssh root@host chown -- 'etcd:etcd'")
 			require.NotContains(t, script, "sudo chown")
