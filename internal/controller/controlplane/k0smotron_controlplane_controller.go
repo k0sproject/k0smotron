@@ -636,6 +636,8 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 	// still reporting the last good state.
 	c.computeAvailability(ctx, cluster, kcp)
 
+	setHostedDeletingCondition(kcp, clusterv1.NotDeletingReason, "")
+
 	var kmc kapi.Cluster
 	err := c.Client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &kmc)
 	if err != nil {
@@ -990,7 +992,14 @@ func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.Nam
 			// The cluster is already deleted. Remove the finalizer from the K0smotronControlPlane object for complete cleanup.
 			controllerutil.RemoveFinalizer(kcp, cpv1beta2.K0smotronControlPlaneFinalizer)
 			err = nil
+			setHostedDeletingCondition(kcp, clusterv1.DeletionCompletedReason, "Deletion completed")
+			return
 		}
+		if err != nil {
+			setHostedDeletingCondition(kcp, clusterv1.InternalErrorReason, "Please check controller logs for errors")
+			return
+		}
+		setHostedDeletingCondition(kcp, clusterv1.DeletingReason, "Waiting for the k0smotron Cluster to be deleted")
 	}()
 
 	kmc := &kapi.Cluster{}
@@ -1009,6 +1018,20 @@ func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.Nam
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func setHostedDeletingCondition(kcp *cpv1beta2.K0smotronControlPlane, reason, message string) {
+	status := metav1.ConditionTrue
+	if reason == clusterv1.NotDeletingReason {
+		status = metav1.ConditionFalse
+	}
+
+	conditions.Set(kcp, metav1.Condition{
+		Type:    clusterv1.DeletingCondition,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
+	})
 }
 
 func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0smotronControlPlane) (*kmcScope, error) {

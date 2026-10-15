@@ -144,21 +144,25 @@ func (c *K0sController) setEtcdMemberHealthyCondition(ctx context.Context, scope
 		}
 
 		condition := metav1.Condition{
-			Type:   cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
-			Status: metav1.ConditionUnknown,
-			Reason: cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyUnknownReason,
+			Type:    cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
+			Status:  metav1.ConditionUnknown,
+			Reason:  cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyUnknownReason,
+			Message: "The etcd member state could not be determined",
 		}
 		// Reported even when the cluster keeps no members, so a condition set while it
 		// did cannot sit there afterwards still claiming the member is fine.
 		switch {
 		case !scope.etcdManaged:
 			condition.Reason = cpv1beta2.K0sControlPlaneMachineNoEtcdMembersReason
+			condition.Message = ""
 		case scope.etcdMemberHealth[machine.Name] == metav1.ConditionTrue:
 			condition.Status = metav1.ConditionTrue
 			condition.Reason = cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyReason
+			condition.Message = ""
 		case scope.etcdMemberHealth[machine.Name] == metav1.ConditionFalse:
 			condition.Status = metav1.ConditionFalse
 			condition.Reason = cpv1beta2.K0sControlPlaneMachineEtcdMemberNotHealthyReason
+			condition.Message = "The etcd member left the cluster or k0s failed to reconcile it"
 		}
 
 		conditions.Set(machine, condition)
@@ -371,7 +375,7 @@ func selectMachineToDelete(ctx context.Context, scope *controlplane) (*clusterv1
 
 // preflightChecks performs necessary checks before updating the control plane, ensuring that the cluster is in a healthy state and ready
 // for scaling/updating operations. This includes verifying that there are no machines currently being deleted, and that the most recently created machine
-// is available before proceeding with scaling.
+// is available, or awaiting remediation, before proceeding with scaling.
 func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -383,16 +387,26 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 	// the scaling process, which could lead to unexpected behaviors and issues. This includes deleting the k0s node resources for the machines deleted
 	// and also deleting the machines whose infrastructure has been deleted.
 	if res, err := c.reconcileMachineDeletions(ctx, scope); err != nil || !res.IsZero() {
+		if err == nil {
+			scope.preflightBlockers = append(scope.preflightBlockers, "* waiting for a control plane Machine to complete deletion")
+		}
 		return res, err
 	}
+
+	_, remediating := scope.kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation]
+	inplaceUpdatePending := scope.hasMachinesWithOnlyVersionOutdated && scope.kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace
+	replacementOwed := scope.activeMachines.Len()+scope.deletedMachines.Len() < int(scope.kcp.Spec.Replicas)
+	latestAwaitsRemediation := remediating && replacementOwed && !inplaceUpdatePending &&
+		collections.IsUnhealthyAndOwnerRemediated(scope.activeMachines.Newest())
 
 	// Wait for the latest created machine to be available before proceeding with scaling if the desired number of replicas is not met,
 	// ensuring etcd stability.
 	// A machine is considered available if the machines is ready for more than 'machine.spec.mindReadySeconds' seconds. This value
 	// is set by the controller when creating the controlplane machine.
-	if !c.isLatestMachineReady(ctx, scope) {
+	if !latestAwaitsRemediation && !c.isLatestMachineReady(ctx, scope) {
 		if latest := scope.activeMachines.Newest(); latest != nil {
 			logger.Info("Waiting for latest machine to be ready before scaling", "machine", latest.Name)
+			scope.preflightBlockers = append(scope.preflightBlockers, fmt.Sprintf("* waiting for Machine %s to become ready", latest.Name))
 		}
 		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
 	}
@@ -401,6 +415,7 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 	// the next machine, as it needs a new autopilot plan to be created for the next machine, and we cannot have multiple plans running at the same time.
 	if isAnyMachineUpdating(scope) {
 		logger.Info("Waiting for machines to finish updating before scaling")
+		scope.preflightBlockers = append(scope.preflightBlockers, "* waiting for control plane Machines to finish updating in place")
 		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
 	}
 
@@ -464,6 +479,8 @@ func (c *K0sController) reconcileMachineDeletions(ctx context.Context, scope *co
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error deleting k0s node resources for machine %s: %w", highestPriorityDeleted.Name, err)
 		}
+
+		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
 	}
 
 	// Delete k0s node resources and machine resource when infrastructure has been deleted.

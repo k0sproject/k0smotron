@@ -106,7 +106,7 @@ func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *c
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf(capiframework.PrettyPrint(controlplane) + "\n")
+		return fmt.Errorf("%s\n", capiframework.PrettyPrint(controlplane))
 	}
 
 	return nil
