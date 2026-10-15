@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"strings"
 	"testing"
@@ -32,6 +33,7 @@ import (
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -1773,4 +1775,220 @@ func TestReconcileMachinesScaleUpCarriesRemediationLineage(t *testing.T) {
 	require.True(t, ok, "the replacement has to record the machine it replaced")
 	require.Equal(t, "cp-unhealthy", stored.Machine)
 	require.Equal(t, int32(2), stored.RetryCount)
+}
+
+func TestSyncMachines(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(t.Context(), "test-sync-machines")
+	require.NoError(t, err)
+
+	cluster, kcp, gmt := createClusterWithControlPlane(ns.Name)
+	kcp.Spec.K0sConfigSpec.Args = []string{"--enable-worker"}
+	kcp.Spec.MachineTemplate.ObjectMeta = clusterv1.ObjectMeta{
+		Labels:      map[string]string{"kept": "old", "dropped": "yes", "contested": "template"},
+		Annotations: map[string]string{"note": "old"},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), cluster))
+	require.NoError(t, testEnv.Create(t.Context(), gmt))
+	require.NoError(t, testEnv.Create(t.Context(), kcp))
+	t.Cleanup(func() {
+		require.NoError(t, testEnv.Cleanup(context.Background(), kcp, gmt, cluster, ns))
+	})
+
+	r := &K0sController{Client: testEnv, APIReader: testEnv.GetAPIReader()}
+
+	lineage := remediationData{Machine: "cp-gone", Timestamp: metav1.Now(), RetryCount: 1}.marshal()
+	createMachine := func(name string, annotations map[string]string) *clusterv1.Machine {
+		infraRef := clusterv1.ContractVersionedObjectReference{
+			APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			Kind:     "GenericInfrastructureMachine",
+			Name:     name,
+		}
+		m, err := r.generateMachine(t.Context(), name, cluster, kcp, infraRef, "fd-"+name, nil)
+		require.NoError(t, err)
+		maps.Copy(m.Annotations, annotations)
+		m.Spec.Version = "v1.29.0+k0s.0"
+		m.Spec.Deletion.NodeDeletionTimeoutSeconds = new(int32(10))
+		require.NoError(t, testEnv.Patch(t.Context(), m, client.Apply, client.FieldOwner("k0smotron")))
+
+		other := m.DeepCopy()
+		other.Labels["foreign"] = "kept"
+		other.Labels["contested"] = "foreign"
+		require.NoError(t, testEnv.Patch(t.Context(), other, client.MergeFrom(m), client.FieldOwner("someone-else")))
+
+		return other
+	}
+	replacement := createMachine(kcp.Name+"-0", map[string]string{cpv1beta2.RemediationForAnnotation: lineage})
+	plain := createMachine(kcp.Name+"-1", nil)
+	deleting := createMachine(kcp.Name+"-2", nil)
+
+	releasedHook := deleting.DeepCopy()
+	releasedHook.Finalizers = []string{"test.k0smotron.io/hold"}
+	delete(releasedHook.Annotations, cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation)
+	require.NoError(t, testEnv.Patch(t.Context(), releasedHook, client.MergeFrom(deleting)))
+	require.NoError(t, testEnv.Delete(t.Context(), releasedHook))
+	require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(releasedHook), releasedHook))
+	t.Cleanup(func() {
+		released := releasedHook.DeepCopy()
+		released.Finalizers = nil
+		require.NoError(t, testEnv.Patch(context.Background(), released, client.MergeFrom(releasedHook)))
+	})
+
+	kcp.Spec.K0sConfigSpec.Args = nil
+	kcp.Spec.MachineTemplate.ObjectMeta = clusterv1.ObjectMeta{
+		Labels:      map[string]string{"kept": "new", "added": "yes", "contested": "template"},
+		Annotations: map[string]string{"note": "new"},
+	}
+	kcp.Spec.MachineTemplate.Spec.Deletion.NodeDrainTimeoutSeconds = new(int32(60))
+	kcp.Spec.MachineTemplate.Spec.Deletion.NodeVolumeDetachTimeoutSeconds = new(int32(120))
+	kcp.Spec.MachineTemplate.Spec.Taints = []clusterv1.MachineTaint{
+		{Key: "dedicated", Value: "control-plane", Effect: corev1.TaintEffectNoSchedule, Propagation: clusterv1.MachineTaintPropagationAlways},
+	}
+	kcp.Annotations = map[string]string{
+		cpv1beta2.RemediationInProgressAnnotation: remediationData{Machine: "cp-other", Timestamp: metav1.Now()}.marshal(),
+	}
+
+	t.Run("updates existing machines in place", func(t *testing.T) {
+		require.NoError(t, r.syncMachines(t.Context(), &controlplane{
+			cluster:         cluster,
+			kcp:             kcp,
+			activeMachines:  collections.FromMachines(replacement, plain),
+			deletedMachines: collections.FromMachines(releasedHook),
+		}))
+
+		for _, m := range []*clusterv1.Machine{replacement, plain} {
+			stored := &clusterv1.Machine{}
+			require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(m), stored))
+
+			assert.Equal(t, "new", stored.Labels["kept"])
+			assert.Equal(t, "yes", stored.Labels["added"])
+			assert.NotContains(t, stored.Labels, "dropped")
+			assert.Equal(t, "template", stored.Labels["contested"])
+			assert.Equal(t, "kept", stored.Labels["foreign"])
+			assert.Equal(t, "true", stored.Labels["k0smotron.io/control-plane-worker-enabled"])
+			assert.Equal(t, "new", stored.Annotations["note"])
+			assert.Contains(t, stored.Annotations, cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation)
+			assert.Equal(t, m.Annotations[cpv1beta2.MachineK0sConfigAnnotation], stored.Annotations[cpv1beta2.MachineK0sConfigAnnotation])
+			assert.Equal(t, "v1.29.0+k0s.0", stored.Spec.Version)
+			assert.Equal(t, m.Spec.FailureDomain, stored.Spec.FailureDomain)
+			assert.Equal(t, m.Spec.InfrastructureRef, stored.Spec.InfrastructureRef)
+			assert.Equal(t, new(int32(60)), stored.Spec.Deletion.NodeDrainTimeoutSeconds)
+			assert.Equal(t, kcp.Spec.MachineTemplate.Spec.Taints, stored.Spec.Taints)
+		}
+
+		stored := &clusterv1.Machine{}
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(replacement), stored))
+		assert.Equal(t, lineage, stored.Annotations[cpv1beta2.RemediationForAnnotation])
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(plain), stored))
+		assert.NotContains(t, stored.Annotations, cpv1beta2.RemediationForAnnotation)
+
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(releasedHook), stored))
+		assert.Equal(t, new(int32(60)), stored.Spec.Deletion.NodeDrainTimeoutSeconds)
+		assert.Equal(t, new(int32(120)), stored.Spec.Deletion.NodeVolumeDetachTimeoutSeconds)
+		assert.Equal(t, new(int32(10)), stored.Spec.Deletion.NodeDeletionTimeoutSeconds)
+		assert.Equal(t, kcp.Spec.MachineTemplate.Spec.Taints, stored.Spec.Taints)
+		assert.NotContains(t, stored.Annotations, cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation)
+		assert.Equal(t, "old", stored.Labels["kept"])
+	})
+
+	t.Run("runs on every machines reconcile", func(t *testing.T) {
+		kcp.Spec.Replicas = 2
+		kcp.Spec.MachineTemplate.ObjectMeta.Labels["kept"] = "reconciled"
+		kcp.Spec.MachineTemplate.Spec.Deletion.NodeDeletionTimeoutSeconds = new(int32(30))
+		scope, err := r.retrieveControlPlaneState(t.Context(), cluster, kcp)
+		require.NoError(t, err)
+
+		_, _ = r.reconcileMachines(t.Context(), scope)
+
+		stored := &clusterv1.Machine{}
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(plain), stored))
+		assert.Equal(t, "reconciled", stored.Labels["kept"])
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(releasedHook), stored))
+		assert.Equal(t, new(int32(30)), stored.Spec.Deletion.NodeDeletionTimeoutSeconds)
+	})
+
+	t.Run("a failing machine does not stop the others", func(t *testing.T) {
+		kcp.Spec.MachineTemplate.ObjectMeta.Labels["kept"] = "despite-failures"
+		listed := &clusterv1.Machine{}
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(plain), listed))
+		ghosts := collections.New()
+		var invalid []*clusterv1.Machine
+		for _, name := range []string{"ghost", "ghost-2"} {
+			ghost := listed.DeepCopy()
+			ghost.Name = name
+			ghost.UID = ""
+			ghost.Spec.Deletion.NodeDrainTimeoutSeconds = nil
+			ghosts.Insert(ghost)
+		}
+		for _, name := range []string{"Not_A_Valid_Name", "Also_Invalid"} {
+			m := listed.DeepCopy()
+			m.Name = name
+			m.UID = ""
+			m.ResourceVersion = ""
+			invalid = append(invalid, m)
+		}
+
+		err := r.syncMachines(t.Context(), &controlplane{
+			cluster:         cluster,
+			kcp:             kcp,
+			activeMachines:  collections.FromMachines(append(invalid, listed)...),
+			deletedMachines: ghosts,
+		})
+		require.ErrorContains(t, err, "error patching machine ghost:")
+		require.ErrorContains(t, err, "error patching machine ghost-2:")
+		require.ErrorContains(t, err, "error applying machine Not_A_Valid_Name")
+		require.ErrorContains(t, err, "error applying machine Also_Invalid")
+
+		stored := &clusterv1.Machine{}
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(plain), stored))
+		assert.Equal(t, "despite-failures", stored.Labels["kept"])
+
+		unversioned := kcp.DeepCopy()
+		unversioned.Spec.Version = ""
+		err = r.syncMachines(t.Context(), &controlplane{
+			cluster:         cluster,
+			kcp:             unversioned,
+			activeMachines:  collections.FromMachines(listed, invalid[0]),
+			deletedMachines: collections.New(),
+		})
+		require.ErrorContains(t, err, "error generating machine "+listed.Name)
+		require.ErrorContains(t, err, "error generating machine "+invalid[0].Name)
+	})
+
+	t.Run("does not revert a write made since the machine was listed", func(t *testing.T) {
+		listed := &clusterv1.Machine{}
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(plain), listed))
+
+		updated := listed.DeepCopy()
+		updated.Spec.Version = "v1.30.0+k0s.0"
+		require.NoError(t, testEnv.Patch(t.Context(), updated, client.MergeFrom(listed)))
+
+		kcp.Spec.MachineTemplate.ObjectMeta.Labels["kept"] = "newer"
+		require.NoError(t, r.syncMachines(t.Context(), &controlplane{
+			cluster:         cluster,
+			kcp:             kcp,
+			activeMachines:  collections.FromMachines(listed),
+			deletedMachines: collections.New(),
+		}))
+
+		stored := &clusterv1.Machine{}
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(plain), stored))
+		assert.Equal(t, "v1.30.0+k0s.0", stored.Spec.Version)
+		assert.Equal(t, listed.Labels["kept"], stored.Labels["kept"])
+	})
+
+	t.Run("does not recreate a machine deleted since it was listed", func(t *testing.T) {
+		gone := &clusterv1.Machine{}
+		require.NoError(t, testEnv.Get(t.Context(), client.ObjectKeyFromObject(plain), gone))
+		require.NoError(t, testEnv.Delete(t.Context(), gone.DeepCopy()))
+
+		require.NoError(t, r.syncMachines(t.Context(), &controlplane{
+			cluster:         cluster,
+			kcp:             kcp,
+			activeMachines:  collections.FromMachines(gone),
+			deletedMachines: collections.New(),
+		}))
+
+		err := testEnv.GetAPIReader().Get(t.Context(), client.ObjectKeyFromObject(gone), &clusterv1.Machine{})
+		assert.True(t, apierrors.IsNotFound(err))
+	})
 }

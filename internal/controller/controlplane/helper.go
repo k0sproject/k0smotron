@@ -85,7 +85,7 @@ func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv
 	return nil
 }
 
-func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string) (*clusterv1.Machine, error) {
+func (c *K0sController) generateMachine(_ context.Context, name string, cluster *clusterv1.Cluster, kcp *cpv1beta2.K0sControlPlane, infraRef clusterv1.ContractVersionedObjectReference, failureDomain string, existing *clusterv1.Machine) (*clusterv1.Machine, error) {
 	v := kcp.Spec.Version
 
 	labels := controlPlaneCommonLabelsForCluster(kcp, cluster.Name)
@@ -143,9 +143,29 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	}
 	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
 
-	// Before the machine is created, so the sequence survives the marker being cleared and a
-	// later failure reads as a retry.
-	carryRemediationLineage(kcp, machine)
+	if existing == nil {
+		// Before the machine is created, so the sequence survives the marker being cleared and a
+		// later failure reads as a retry.
+		carryRemediationLineage(kcp, machine)
+
+		return machine, nil
+	}
+
+	// The UID keeps a Machine deleted since the list from being recreated, and the resource
+	// version keeps a write made since, such as an in-place version update, from being reverted.
+	machine.UID = existing.UID
+	machine.ResourceVersion = existing.ResourceVersion
+	machine.Spec.Version = existing.Spec.Version
+	preserve := func(desired, existing map[string]string, key string) {
+		if v, ok := existing[key]; ok {
+			desired[key] = v
+		} else {
+			delete(desired, key)
+		}
+	}
+	preserve(machine.Labels, existing.Labels, "k0smotron.io/control-plane-worker-enabled")
+	preserve(machine.Annotations, existing.Annotations, cpv1beta2.MachineK0sConfigAnnotation)
+	preserve(machine.Annotations, existing.Annotations, cpv1beta2.RemediationForAnnotation)
 
 	return machine, nil
 }
