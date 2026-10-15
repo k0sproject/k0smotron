@@ -232,6 +232,25 @@ type K0sControlPlaneMachineTemplateSpec struct {
 	// deletion contains configuration options for Machine deletion.
 	// +optional
 	Deletion K0sControlPlaneMachineTemplateDeletionSpec `json:"deletion,omitempty,omitzero"`
+
+	// taints are the node taints that Cluster API will manage.
+	// This list is not necessarily complete: other Kubernetes components may add or remove other taints from nodes,
+	// e.g. the node controller might add the node.kubernetes.io/not-ready taint.
+	// Only those taints defined in this list will be added or removed by core Cluster API controllers.
+	// Cluster API refuses Machines carrying taints unless its MachineTaintPropagation feature gate is enabled.
+	// Taints reach a Node only when the controllers run with --enable-worker, since otherwise they register no Node.
+	//
+	// There can be at most 64 taints.
+	// A pod would have to tolerate all existing taints to run on the corresponding node.
+	//
+	// NOTE: This list is implemented as a "map" type, meaning that individual elements can be managed by different owners.
+	// +optional
+	// +listType=map
+	// +listMapKey=key
+	// +listMapKey=effect
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=64
+	Taints []clusterv1.MachineTaint `json:"taints,omitempty"`
 }
 
 // K0sControlPlaneMachineTemplateDeletionSpec contains configuration options for Machine deletion.

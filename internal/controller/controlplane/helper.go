@@ -138,6 +138,7 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 				NodeVolumeDetachTimeoutSeconds: kcp.Spec.MachineTemplate.Spec.Deletion.NodeVolumeDetachTimeoutSeconds,
 				NodeDeletionTimeoutSeconds:     kcp.Spec.MachineTemplate.Spec.Deletion.NodeDeletionTimeoutSeconds,
 			},
+			Taints: kcp.Spec.MachineTemplate.Spec.Taints,
 		},
 	}
 	_ = ctrl.SetControllerReference(kcp, machine, c.Client.Scheme())
