@@ -120,7 +120,7 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, new
 	warnings = append(warnings, bootstrapv1.ProvisionerWarnings(
 		newKcp.Spec.K0sConfigSpec.Provisioner, field.NewPath("spec", "k0sConfigSpec"))...)
 
-	if oldKcp.Spec.Version != newKcp.Spec.Version {
+	if oldKcp.Spec.Version != "" && oldKcp.Spec.Version != newKcp.Spec.Version {
 		oldV, err := version.NewVersion(oldKcp.Spec.Version)
 		if err != nil {
 			return warnings, fmt.Errorf("failed to parse old version: %v", err)
@@ -226,6 +226,10 @@ func denyIncompatibleProvisioners(kcp *K0sControlPlane, prefix *field.Path) *fie
 func denyIncompatibleK0sVersions(kcp *K0sControlPlane, prefix *field.Path) *field.Error {
 	var incompatibleVersions = map[string]string{
 		"1.31.1": "v1.31.2+",
+	}
+
+	if kcp.Spec.Version == "" {
+		return nil
 	}
 
 	versionPath := prefix.Child("version")
