@@ -255,7 +255,7 @@ func TestReconcileTunneling(t *testing.T) {
 
 	defer func(do ...client.Object) {
 		require.NoError(t, testEnv.Cleanup(ctx, do...))
-	}(kcp, cluster, ns)
+	}(kcp, cluster, ns, node)
 
 	clientSet, err := kubernetes.NewForConfig(testEnv.Config)
 	require.NoError(t, err)
@@ -287,6 +287,9 @@ func TestReconcileTunneling(t *testing.T) {
 
 	frpService, err := clientSet.CoreV1().Services(ns.Name).Get(ctx, fmt.Sprintf(FRPServiceNameTemplate, kcp.GetName()), metav1.GetOptions{})
 	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(ctx, frpService))
+	}()
 	require.True(t, metav1.IsControlledBy(frpService, kcp))
 }
 
