@@ -116,7 +116,7 @@ func workloadClusterUpgradeSpec(t *testing.T) {
 
 	// For Inplace upgrades we need to wait for the controlplane to have all the replicas ready before upgrading it again.
 	if strings.HasPrefix(strings.ToLower(flavor), "inplace") {
-		err = util.WaitForControlPlaneToBeReady(ctx, bootstrapClusterProxy.GetClient(), controlPlane, util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
+		err = util.WaitForControlPlaneReplicatedWithDesiredState(ctx, bootstrapClusterProxy.GetClient(), controlPlane, util.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
 		require.NoError(t, err)
 	}
 

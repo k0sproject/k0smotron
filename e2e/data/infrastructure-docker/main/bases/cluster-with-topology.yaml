@@ -1,0 +1,14 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  topology:
+    controlPlane:
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+    classRef:
+      name: basic
+      namespace: ${NAMESPACE}
+    version: ${K0S_VERSION}
+---

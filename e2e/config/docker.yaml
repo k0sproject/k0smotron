@@ -46,6 +46,8 @@ providers:
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreate.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-recreatedeletefirst.yaml"
       - sourcePath: "../data/infrastructure-docker/main/cluster-template-inplacecapi.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/cluster-template-chain-upgrades.yaml"
+      - sourcePath: "../data/infrastructure-docker/main/clusterclass-basic.yaml"
   - name: k0sproject-k0smotron
     type: ControlPlaneProvider
     versions:
@@ -161,6 +163,8 @@ variables:
   KUBERNETES_VERSION: "v1.31.0"
   KUBERNETES_VERSION_FIRST_UPGRADE_TO: "v1.30.2+k0s.0"
   KUBERNETES_VERSION_SECOND_UPGRADE_TO: "v1.31.2+k0s.0"
+  K0S_VERSION_FROM_UPGRADE_CHAIN: "v1.33.4+k0s.0"
+  K0S_VERSION_TO_UPGRADE_CHAIN: "v1.35.9+k0s.0"
   IP_FAMILY: "IPv4"
   KIND_IMAGE_VERSION: "v1.30.0"
   # Enabling the feature flags by setting the env variables.
@@ -200,3 +204,4 @@ intervals:
   machinedeployment/wait-cluster: ["20m", "10s"]
   machinedeployment/wait-control-plane: ["20m", "10s"]
   machinedeployment/wait-delete-cluster: ["20m", "10s"]
+  chain-upgrades/wait-control-plane: ["20m", "10s"]
