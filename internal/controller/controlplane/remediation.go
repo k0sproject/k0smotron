@@ -53,9 +53,18 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 		return err
 	}
 	if _, ok := scope.kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation]; ok {
+		outlived := false
+		if marker, ok := remediationDataFrom(scope.kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation); ok {
+			for _, m := range append(scope.activeMachines.UnsortedList(), scope.deletedMachines.UnsortedList()...) {
+				if m.CreationTimestamp.After(marker.Timestamp.Time) {
+					outlived = true
+				}
+			}
+		}
+
 		// The marker is removed only where the replacement is created, so losing that write
 		// leaves it set for good. A control plane at its desired state owes no replacement.
-		if !isDesiredStateReached(scope) {
+		if !isDesiredStateReached(scope) && !outlived {
 			log.Info("Another remediation is already in progress. Skipping remediation.")
 			return nil
 		}

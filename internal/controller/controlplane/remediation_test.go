@@ -665,3 +665,49 @@ func TestReconcileUnhealthyMachinesPicksTheMostBroken(t *testing.T) {
 		})
 	}
 }
+
+func TestReconcileUnhealthyMachinesClearsAMarkerAMachineOutlived(t *testing.T) {
+	marker := remediationData{Machine: "cp-gone", Timestamp: metav1.NewTime(time.Unix(2000, 0))}.marshal()
+
+	tests := []struct {
+		name     string
+		created  time.Time
+		deleting bool
+		cleared  bool
+	}{
+		{name: "a machine created after the marker means it is stale", created: time.Unix(3000, 0), cleared: true},
+		{name: "machines older than the marker keep it", created: time.Unix(1000, 0)},
+		{name: "a deleting machine created after the marker counts too", created: time.Unix(3000, 0), deleting: true, cleared: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			unhealthy := remediationMachine("cp-0", false, false)
+			unhealthy.CreationTimestamp = metav1.NewTime(time.Unix(500, 0))
+			other := remediationMachine("cp-1", true, tt.deleting)
+			other.CreationTimestamp = metav1.NewTime(tt.created)
+
+			kcp := initializedControlPlane()
+			kcp.Annotations = map[string]string{cpv1beta2.RemediationInProgressAnnotation: marker}
+			kcp.Spec.Replicas = 3
+
+			active, deleted := []*clusterv1.Machine{unhealthy, other}, []*clusterv1.Machine(nil)
+			if tt.deleting {
+				active, deleted = []*clusterv1.Machine{unhealthy}, []*clusterv1.Machine{other}
+			}
+			c, scope := remediationScope(t, kcp, active, deleted)
+			scope.upToDateMachines = collections.FromMachines(active...)
+			scope.notUpToDateMachines = collections.Machines{}
+
+			require.NoError(t, c.reconcileUnhealthyMachines(t.Context(), scope))
+
+			data, marked := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+			if !tt.cleared {
+				require.True(t, marked)
+				require.Equal(t, "cp-gone", data.Machine)
+				return
+			}
+			require.True(t, !marked || data.Machine == "cp-0", "the stale marker has to be gone")
+		})
+	}
+}
