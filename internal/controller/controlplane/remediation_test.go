@@ -745,6 +745,7 @@ func withLineage(m *clusterv1.Machine, age time.Duration, retries int32) *cluste
 
 func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 	deleting := cpv1beta2.K0sControlPlaneMachineRemediationMachineDeletingReason
+	deferred := cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason
 
 	tests := []struct {
 		name          string
@@ -754,7 +755,9 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 		retries       int32
 		age           time.Duration
 		minHealthy    *int32
+		period        *int32
 		reason        string
+		message       string
 		wantRetry     int32
 	}{
 		{name: "a failure inside the default window is a retry", retries: 2, age: 30 * time.Minute,
@@ -769,6 +772,20 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 			reason: deleting, wantRetry: 2},
 		{name: "a stale marker is cleared and the retry goes ahead", staleMarker: true, retries: 1, age: time.Minute,
 			reason: deleting, wantRetry: 2},
+		{name: "no retry period retries at once", retries: 1, age: time.Minute,
+			reason: deleting, wantRetry: 2},
+		{name: "a retry inside the period is deferred", retries: 1, age: time.Minute, period: new(int32(600)),
+			reason: deferred, message: "RetryPeriodSeconds"},
+		{name: "a retry after the period goes ahead", retries: 1, age: 15 * time.Minute, period: new(int32(600)),
+			reason: deleting, wantRetry: 2},
+		{name: "a new sequence ignores the period", retries: 1, age: 2 * time.Hour, period: new(int32(3 * 60 * 60 * 24)),
+			reason: deleting, wantRetry: 0},
+		{name: "the retry period is checked before the single replica guard", single: true, retries: 1, age: time.Minute, period: new(int32(600)),
+			reason: deferred, message: "RetryPeriodSeconds"},
+		{name: "an uninitialized control plane still honours the retry period", single: true, uninitialized: true, retries: 1, age: time.Minute, period: new(int32(600)),
+			reason: deferred, message: "RetryPeriodSeconds"},
+		{name: "a stale marker is cleared even when the retry period refuses", staleMarker: true, retries: 1, age: time.Minute, period: new(int32(600)),
+			reason: deferred, message: "RetryPeriodSeconds"},
 	}
 
 	for _, tt := range tests {
@@ -784,6 +801,7 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 			kcp := initializedControlPlane()
 			kcp.Spec.Remediation = cpv1beta2.K0sControlPlaneRemediationSpec{
 				MinHealthyPeriodSeconds: tt.minHealthy,
+				RetryPeriodSeconds:      tt.period,
 			}
 			kcp.Status.Initialization.ControlPlaneInitialized = new(!tt.uninitialized)
 			if tt.staleMarker {
@@ -799,8 +817,14 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 			got := conditions.Get(unhealthy, clusterv1.MachineOwnerRemediatedCondition)
 			require.NotNil(t, got)
 			require.Equal(t, tt.reason, got.Reason)
+			require.Contains(t, got.Message, tt.message)
 
 			marked, ok := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+			if tt.reason != deleting {
+				require.False(t, ok, "a refused remediation leaves no marker, stale or new")
+				require.True(t, res.IsZero())
+				return
+			}
 
 			require.True(t, ok)
 			require.Equal(t, "cp-0", marked.Machine)
@@ -812,6 +836,47 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 			carried, ok := remediationDataFrom(replacement.Annotations, cpv1beta2.RemediationForAnnotation)
 			require.True(t, ok)
 			require.Equal(t, tt.wantRetry, carried.RetryCount)
+		})
+	}
+}
+
+func TestReconcileUnhealthyMachinesRetryFollowsTheSelectedMachine(t *testing.T) {
+	for _, tt := range []struct {
+		name              string
+		lineageOnSelected bool
+	}{
+		{name: "the selected machine's lineage defers it", lineageOnSelected: true},
+		{name: "another machine's lineage does not apply", lineageOnSelected: false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			old := remediationMachine("old", false, false)
+			old.CreationTimestamp = metav1.NewTime(time.Unix(1000, 0))
+			asked := remediationMachine("asked", false, false)
+			asked.CreationTimestamp = metav1.NewTime(time.Unix(2000, 0))
+			asked.Annotations = map[string]string{clusterv1.RemediateMachineAnnotation: ""}
+			if tt.lineageOnSelected {
+				withLineage(asked, time.Minute, 1)
+			} else {
+				withLineage(old, time.Minute, 1)
+			}
+
+			kcp := initializedControlPlane()
+			kcp.Spec.Remediation.RetryPeriodSeconds = new(int32(600))
+			c, scope := remediationScope(t, kcp, []*clusterv1.Machine{old, asked}, nil)
+			require.NoError(t, remediate(t.Context(), c, scope))
+
+			got := conditions.Get(asked, clusterv1.MachineOwnerRemediatedCondition)
+			require.NotNil(t, got)
+			marked, ok := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+			if tt.lineageOnSelected {
+				require.Equal(t, cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason, got.Reason)
+				require.False(t, ok)
+			} else {
+				require.Equal(t, cpv1beta2.K0sControlPlaneMachineRemediationMachineDeletingReason, got.Reason)
+				require.True(t, ok)
+				require.Equal(t, "asked", marked.Machine)
+				require.Equal(t, int32(0), marked.RetryCount)
+			}
 		})
 	}
 }

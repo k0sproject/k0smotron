@@ -25,7 +25,10 @@ import (
 
 func TestK0sControlPlaneConversionKeepsRemediation(t *testing.T) {
 	hub := &v1beta2.K0sControlPlane{Spec: v1beta2.K0sControlPlaneSpec{
-		Remediation: v1beta2.K0sControlPlaneRemediationSpec{MinHealthyPeriodSeconds: new(int32(120))},
+		Remediation: v1beta2.K0sControlPlaneRemediationSpec{
+			MinHealthyPeriodSeconds: new(int32(120)),
+			RetryPeriodSeconds:      new(int32(30)),
+		},
 	}}
 
 	spoke := &K0sControlPlane{}

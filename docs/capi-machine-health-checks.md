@@ -63,6 +63,10 @@ the same remediation sequence. `spec.remediation` on the `K0sControlPlane` contr
 - `minHealthyPeriodSeconds` is how long after a Machine is remediated the remediation of its replacement
   still counts as a retry. A later remediation starts a new sequence and resets the retry count. It
   defaults to 3600, and 0 makes every remediation start a new sequence.
+- `retryPeriodSeconds` is the minimum time between a remediation and the retry that follows it. A retry
+  inside the period is deferred and the Machine reports `RemediationDeferred`. A retry deferred past
+  `minHealthyPeriodSeconds` starts a new sequence instead, so keep it below that. No retry period
+  applies when it is not set.
 
 ```yaml
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
@@ -72,6 +76,7 @@ metadata:
 spec:
   remediation:
     minHealthyPeriodSeconds: 3600
+    retryPeriodSeconds: 300
 ```
 
 The most recent remediation and its retry count are reported in `status.lastRemediation`.
