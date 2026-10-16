@@ -54,6 +54,7 @@ func k0sControlPlaneSpecV1beta1ToV1beta2(spec K0sControlPlaneSpec) v1beta2.K0sCo
 		UpdateStrategy:           spec.UpdateStrategy,
 		Version:                  spec.Version,
 		KubeconfigSecretMetadata: spec.KubeconfigSecretMetadata,
+		Remediation:              *spec.Remediation.DeepCopy(),
 	}
 }
 
@@ -70,6 +71,7 @@ func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 		UpdateStrategy:           src.Spec.UpdateStrategy,
 		Version:                  src.Spec.Version,
 		KubeconfigSecretMetadata: src.Spec.KubeconfigSecretMetadata,
+		Remediation:              *src.Spec.Remediation.DeepCopy(),
 	}
 	kcpv1beta1.Status = K0sControlPlaneStatus{
 		Ready:       ptr.Deref(src.Status.ReadyReplicas, 0) > 0,

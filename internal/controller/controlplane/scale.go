@@ -375,9 +375,8 @@ func selectMachineToDelete(ctx context.Context, scope *controlplane) (*clusterv1
 func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	err := c.reconcileUnhealthyMachines(ctx, scope)
-	if err != nil {
-		return ctrl.Result{}, err
+	if res, err := c.reconcileUnhealthyMachines(ctx, scope); err != nil || !res.IsZero() {
+		return res, err
 	}
 	// Before machines scaling, we need to make sure that all deleted machines are fully reconciled, to avoid having machines in a limbo state during
 	// the scaling process, which could lead to unexpected behaviors and issues. This includes deleting the k0s node resources for the machines deleted
