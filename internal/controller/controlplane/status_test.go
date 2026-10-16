@@ -2358,8 +2358,8 @@ func flaggedNotRemediated(name string) *clusterv1.Machine {
 	return m
 }
 
-// waitingForRemediation is how both a MachineHealthCheck and reconcileUnhealthyMachines leave a
-// machine they have marked, carrying the reason remediation has not gone ahead.
+// waitingForRemediation is how a MachineHealthCheck leaves a
+// machine it has marked, carrying the reason remediation has not gone ahead.
 func waitingForRemediation(name, message string, deleting bool) *clusterv1.Machine {
 	m := remediationMachine(name, false, deleting)
 	conditions.Set(m, metav1.Condition{
