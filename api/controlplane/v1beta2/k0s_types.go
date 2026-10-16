@@ -132,6 +132,24 @@ type K0sControlPlaneSpec struct {
 	// Note: This metadata will have precedence over default labels/annotations on the Secret.
 	// +kubebuilder:validation:Optional
 	KubeconfigSecretMetadata bootstrapv2.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
+	// Remediation controls how the control plane remediates Machines a MachineHealthCheck marks unhealthy.
+	// +optional
+	Remediation K0sControlPlaneRemediationSpec `json:"remediation,omitempty,omitzero"`
+}
+
+// DefaultMinHealthyPeriodSeconds is the value used when spec.remediation.minHealthyPeriodSeconds is not set.
+const DefaultMinHealthyPeriodSeconds = int32(60 * 60)
+
+// K0sControlPlaneRemediationSpec controls how the control plane remediates Machines a MachineHealthCheck marks unhealthy.
+// +kubebuilder:validation:MinProperties=1
+type K0sControlPlaneRemediationSpec struct {
+	// MinHealthyPeriodSeconds is how long after a Machine is remediated the remediation of its replacement
+	// Machine still counts as a retry of the same remediation sequence. A later remediation starts a new
+	// sequence and resets the retry count. 0 makes every remediation start a new sequence. 3600 is used when
+	// it is not set.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MinHealthyPeriodSeconds *int32 `json:"minHealthyPeriodSeconds,omitempty"`
 }
 
 // K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.

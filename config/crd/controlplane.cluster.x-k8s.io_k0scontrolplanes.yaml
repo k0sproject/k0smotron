@@ -1214,6 +1214,21 @@ spec:
                         x-kubernetes-list-type: map
                     type: object
                 type: object
+              remediation:
+                description: Remediation controls how the control plane remediates
+                  Machines a MachineHealthCheck marks unhealthy.
+                minProperties: 1
+                properties:
+                  minHealthyPeriodSeconds:
+                    description: |-
+                      MinHealthyPeriodSeconds is how long after a Machine is remediated the remediation of its replacement
+                      Machine still counts as a retry of the same remediation sequence. A later remediation starts a new
+                      sequence and resets the retry count. 0 makes every remediation start a new sequence. 3600 is used when
+                      it is not set.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                type: object
               replicas:
                 default: 1
                 format: int32

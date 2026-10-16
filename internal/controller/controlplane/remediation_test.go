@@ -436,7 +436,7 @@ func TestRemediationInProgressFor(t *testing.T) {
 		{
 			// Long enough healthy that this is a fresh problem rather than the same one again.
 			name: "a replacement failing outside the window starts over",
-			in:   withLineage("cp-2", minHealthyPeriod+time.Minute, 4),
+			in:   withLineage("cp-2", time.Hour+time.Minute, 4),
 			want: 0,
 		},
 		{
@@ -451,7 +451,7 @@ func TestRemediationInProgressFor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := remediationInProgressFor(tt.in)
+			got := remediationInProgressFor(tt.in, &cpv1beta2.K0sControlPlane{})
 			require.Equal(t, tt.in.Name, got.Machine, "the marker names the machine being remediated")
 			require.Equal(t, tt.want, got.RetryCount)
 			require.False(t, got.Timestamp.IsZero())
@@ -464,7 +464,7 @@ func TestRemediationInProgressFor(t *testing.T) {
 func TestRemediationLineageSurvivesARetry(t *testing.T) {
 	unhealthy := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-0"}}
 
-	first := remediationInProgressFor(unhealthy)
+	first := remediationInProgressFor(unhealthy, &cpv1beta2.K0sControlPlane{})
 	require.Equal(t, int32(0), first.RetryCount, "a machine that replaced nothing starts a sequence")
 
 	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{
@@ -476,7 +476,7 @@ func TestRemediationLineageSurvivesARetry(t *testing.T) {
 	require.Contains(t, replacement.Annotations, cpv1beta2.RemediationForAnnotation)
 
 	// The replacement fails inside the window, so the sequence continues rather than restarting.
-	second := remediationInProgressFor(replacement)
+	second := remediationInProgressFor(replacement, &cpv1beta2.K0sControlPlane{})
 	require.Equal(t, "cp-1", second.Machine)
 	require.Equal(t, int32(1), second.RetryCount)
 
@@ -484,7 +484,7 @@ func TestRemediationLineageSurvivesARetry(t *testing.T) {
 	kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation] = second.marshal()
 	third := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-2"}}
 	carryRemediationLineage(kcp, third)
-	require.Equal(t, int32(2), remediationInProgressFor(third).RetryCount)
+	require.Equal(t, int32(2), remediationInProgressFor(third, &cpv1beta2.K0sControlPlane{}).RetryCount)
 }
 
 func remediationScope(t *testing.T, kcp *cpv1beta2.K0sControlPlane, active, deleted []*clusterv1.Machine) (*K0sController, *controlplane) {
@@ -731,4 +731,87 @@ func TestPreflightChecksStopsAfterRemediating(t *testing.T) {
 func remediate(ctx context.Context, c *K0sController, scope *controlplane) error {
 	_, err := c.reconcileUnhealthyMachines(ctx, scope)
 	return err
+}
+
+func withLineage(m *clusterv1.Machine, age time.Duration, retries int32) *clusterv1.Machine {
+	if m.Annotations == nil {
+		m.Annotations = map[string]string{}
+	}
+	m.Annotations[cpv1beta2.RemediationForAnnotation] = remediationData{
+		Machine: "cp-replaced", Timestamp: metav1.NewTime(time.Now().Add(-age)), RetryCount: retries,
+	}.marshal()
+	return m
+}
+
+func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
+	deleting := cpv1beta2.K0sControlPlaneMachineRemediationMachineDeletingReason
+
+	tests := []struct {
+		name          string
+		single        bool
+		uninitialized bool
+		staleMarker   bool
+		retries       int32
+		age           time.Duration
+		minHealthy    *int32
+		reason        string
+		wantRetry     int32
+	}{
+		{name: "a failure inside the default window is a retry", retries: 2, age: 30 * time.Minute,
+			reason: deleting, wantRetry: 3},
+		{name: "a failure outside the default window starts a new sequence", retries: 2, age: 2 * time.Hour,
+			reason: deleting, wantRetry: 0},
+		{name: "a zero window makes every failure a new sequence", retries: 2, age: time.Minute, minHealthy: new(int32(0)),
+			reason: deleting, wantRetry: 0},
+		{name: "a longer window keeps an older failure a retry", retries: 2, age: 2 * time.Hour, minHealthy: new(int32(3 * 60 * 60)),
+			reason: deleting, wantRetry: 3},
+		{name: "an uninitialized single replica is remediated as the next retry", single: true, uninitialized: true, retries: 1, age: time.Minute,
+			reason: deleting, wantRetry: 2},
+		{name: "a stale marker is cleared and the retry goes ahead", staleMarker: true, retries: 1, age: time.Minute,
+			reason: deleting, wantRetry: 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			unhealthy := withLineage(remediationMachine("cp-0", false, false), tt.age, tt.retries)
+			active := []*clusterv1.Machine{unhealthy}
+			if !tt.single {
+				healthy := remediationMachine("cp-1", true, false)
+				healthy.CreationTimestamp = metav1.NewTime(time.Unix(3000, 0))
+				active = append(active, healthy)
+			}
+
+			kcp := initializedControlPlane()
+			kcp.Spec.Remediation = cpv1beta2.K0sControlPlaneRemediationSpec{
+				MinHealthyPeriodSeconds: tt.minHealthy,
+			}
+			kcp.Status.Initialization.ControlPlaneInitialized = new(!tt.uninitialized)
+			if tt.staleMarker {
+				kcp.Annotations = map[string]string{cpv1beta2.RemediationInProgressAnnotation: remediationData{
+					Machine: "cp-gone", Timestamp: metav1.NewTime(time.Unix(2000, 0)),
+				}.marshal()}
+			}
+
+			c, scope := remediationScope(t, kcp, active, nil)
+			res, err := c.reconcileUnhealthyMachines(t.Context(), scope)
+			require.NoError(t, err)
+
+			got := conditions.Get(unhealthy, clusterv1.MachineOwnerRemediatedCondition)
+			require.NotNil(t, got)
+			require.Equal(t, tt.reason, got.Reason)
+
+			marked, ok := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+
+			require.True(t, ok)
+			require.Equal(t, "cp-0", marked.Machine)
+			require.Equal(t, tt.wantRetry, marked.RetryCount)
+			require.Equal(t, ctrl.Result{RequeueAfter: time.Second}, res)
+
+			replacement := &clusterv1.Machine{}
+			carryRemediationLineage(kcp, replacement)
+			carried, ok := remediationDataFrom(replacement.Annotations, cpv1beta2.RemediationForAnnotation)
+			require.True(t, ok)
+			require.Equal(t, tt.wantRetry, carried.RetryCount)
+		})
+	}
 }
