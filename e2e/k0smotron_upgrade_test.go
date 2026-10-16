@@ -170,7 +170,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		Cluster: cluster,
 	}, e2eutil.GetInterval(e2eConfig, testName, "wait-controllers"))
 	require.NoError(t, err)
-	err = e2eutil.WaitForControlPlaneToBeReady(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
+	err = e2eutil.WaitForControlPlaneReplicasWithDesiredState(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
 	require.NoError(t, err)
 
 	// Wait for the expected machine number
@@ -215,7 +215,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 			Cluster: cluster,
 		}, e2eutil.GetInterval(e2eConfig, testName, "wait-controllers"))
 		require.NoError(t, err)
-		err = e2eutil.WaitForControlPlaneToBeReady(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
+		err = e2eutil.WaitForControlPlaneReplicasWithDesiredState(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
 		require.NoError(t, err)
 
 		postUpgradeMachineList := &clusterv1.MachineList{}
@@ -250,7 +250,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		Cluster: cluster,
 	}, e2eutil.GetInterval(e2eConfig, testName, "wait-controllers"))
 	require.NoError(t, err)
-	err = e2eutil.WaitForControlPlaneToBeReady(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
+	err = e2eutil.WaitForControlPlaneReplicasWithDesiredState(ctx, managementClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-kube-proxy-upgrade"))
 	require.NoError(t, err)
 
 	postUpgradeMachineList := &clusterv1.MachineList{}

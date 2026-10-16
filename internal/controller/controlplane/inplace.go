@@ -217,7 +217,7 @@ func (c *K0sController) runStandaloneAutopilotPlan(ctx context.Context, clientse
 
 func isK0smotronExtensionForInplaceUpdateDeployed(ctx context.Context, c client.Client) (bool, error) {
 	var k0smotronInplaceVersionUpdateExtension runtimev1.ExtensionConfig
-	err := c.Get(ctx, client.ObjectKey{Name: "inplace-version-update-extensionconfig"}, &k0smotronInplaceVersionUpdateExtension)
+	err := c.Get(ctx, client.ObjectKey{Name: "k0smotron-extensionconfig"}, &k0smotronInplaceVersionUpdateExtension)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return false, nil

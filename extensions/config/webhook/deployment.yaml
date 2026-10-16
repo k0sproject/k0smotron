@@ -17,6 +17,8 @@ spec:
       containers:
         - command:
             - /extension-webhook-server
+          args:
+            - --extensions=${K0SMOTRON_EXTENSIONS:=inplace-update,chain-upgrades}
           image: extension-webhook
           name: extension-webhook-server
           ports:
