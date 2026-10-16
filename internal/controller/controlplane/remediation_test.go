@@ -34,6 +34,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
@@ -107,7 +108,7 @@ func TestReconcileUnhealthyMachinesWaitsForDeletions(t *testing.T) {
 			WithStatusSubresource(unhealthy, healthy, kcp).Build(),
 	}
 
-	require.NoError(t, c.reconcileUnhealthyMachines(context.Background(), scope))
+	require.NoError(t, remediate(context.Background(), c, scope))
 
 	require.NotContains(t, scope.kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation,
 		"remediation must not start while another control plane machine is being deleted")
@@ -146,7 +147,7 @@ func TestReconcileUnhealthyMachinesRemediatesWhenNothingIsDeleting(t *testing.T)
 			WithStatusSubresource(unhealthy, healthy, kcp).Build(),
 	}
 
-	require.NoError(t, c.reconcileUnhealthyMachines(context.Background(), scope))
+	require.NoError(t, remediate(context.Background(), c, scope))
 
 	require.Contains(t, scope.kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation,
 		"with nothing being deleted the unhealthy machine has to be remediated")
@@ -186,7 +187,7 @@ func TestReconcileUnhealthyMachinesReportsAFailedConditionPatch(t *testing.T) {
 
 	// A single replica is one of the preflight refusals, so the condition carrying the reason is
 	// all this reconcile produces and the patch is what delivers it.
-	err := c.reconcileUnhealthyMachines(context.Background(), &controlplane{
+	err := remediate(context.Background(), c, &controlplane{
 		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
 		kcp:             kcp,
 		activeMachines:  collections.FromMachines(unhealthy),
@@ -225,7 +226,7 @@ func TestReconcileUnhealthyMachinesToleratesTheRemediatedMachineBeingGone(t *tes
 			}).Build(),
 	}
 
-	require.NoError(t, c.reconcileUnhealthyMachines(context.Background(), &controlplane{
+	require.NoError(t, remediate(context.Background(), c, &controlplane{
 		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
 		kcp:             kcp,
 		activeMachines:  collections.FromMachines(unhealthy, healthy),
@@ -307,7 +308,7 @@ func TestReconcileUnhealthyMachinesClearsAStaleMarker(t *testing.T) {
 		scope, unhealthy := newScope(true)
 		c := controller(scope, unhealthy)
 
-		require.NoError(t, c.reconcileUnhealthyMachines(context.Background(), scope))
+		require.NoError(t, remediate(context.Background(), c, scope))
 
 		require.True(t, remediated(t, c, unhealthy.Name),
 			"a marker left behind by a finished remediation must not block the next one")
@@ -317,7 +318,7 @@ func TestReconcileUnhealthyMachinesClearsAStaleMarker(t *testing.T) {
 		scope, unhealthy := newScope(false)
 		c := controller(scope, unhealthy)
 
-		require.NoError(t, c.reconcileUnhealthyMachines(context.Background(), scope))
+		require.NoError(t, remediate(context.Background(), c, scope))
 
 		require.False(t, remediated(t, c, unhealthy.Name),
 			"remediation must not start while the last one is still owed a replacement")
@@ -554,7 +555,13 @@ func TestReconcileUnhealthyMachinesReportsDistinctReasons(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			unhealthy := remediationMachine("cp-0", false, false)
 			c, scope := remediationScope(t, initializedControlPlane(), append([]*clusterv1.Machine{unhealthy}, tt.others...), tt.deleted)
-			require.NoError(t, c.reconcileUnhealthyMachines(t.Context(), scope))
+			res, err := c.reconcileUnhealthyMachines(t.Context(), scope)
+			require.NoError(t, err)
+			if tt.reason == cpv1beta2.K0sControlPlaneMachineRemediationMachineDeletingReason {
+				require.Equal(t, ctrl.Result{RequeueAfter: time.Second}, res)
+			} else {
+				require.True(t, res.IsZero())
+			}
 
 			got := conditions.Get(unhealthy, clusterv1.MachineOwnerRemediatedCondition)
 			require.NotNil(t, got)
@@ -657,7 +664,7 @@ func TestReconcileUnhealthyMachinesPicksTheMostBroken(t *testing.T) {
 			c, scope := remediationScope(t, kcp, tt.machines, nil)
 			scope.etcdManaged = tt.etcdManaged
 
-			require.NoError(t, c.reconcileUnhealthyMachines(t.Context(), scope))
+			require.NoError(t, remediate(t.Context(), c, scope))
 
 			marked, ok := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
 			require.True(t, ok)
@@ -699,7 +706,7 @@ func TestReconcileUnhealthyMachinesClearsAMarkerAMachineOutlived(t *testing.T) {
 			scope.upToDateMachines = collections.FromMachines(active...)
 			scope.notUpToDateMachines = collections.Machines{}
 
-			require.NoError(t, c.reconcileUnhealthyMachines(t.Context(), scope))
+			require.NoError(t, remediate(t.Context(), c, scope))
 
 			data, marked := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
 			if !tt.cleared {
@@ -710,4 +717,18 @@ func TestReconcileUnhealthyMachinesClearsAMarkerAMachineOutlived(t *testing.T) {
 			require.True(t, !marked || data.Machine == "cp-0", "the stale marker has to be gone")
 		})
 	}
+}
+
+func TestPreflightChecksStopsAfterRemediating(t *testing.T) {
+	c, scope := remediationScope(t, initializedControlPlane(),
+		[]*clusterv1.Machine{remediationMachine("cp-0", false, false), remediationMachine("cp-1", true, false)}, nil)
+
+	res, err := c.preflightChecks(t.Context(), scope)
+	require.NoError(t, err)
+	require.Equal(t, ctrl.Result{RequeueAfter: time.Second}, res)
+}
+
+func remediate(ctx context.Context, c *K0sController, scope *controlplane) error {
+	_, err := c.reconcileUnhealthyMachines(ctx, scope)
+	return err
 }

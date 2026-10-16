@@ -38,7 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *controlplane) (retErr error) {
+func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *controlplane) (_ ctrl.Result, retErr error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	healthyMachines := scope.activeMachines.Filter(isHealthy)
@@ -50,7 +50,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 	// OwnerRemediated=False (machine was marked as unhealthy previously)
 	err := c.sanitizeHealthyMachines(ctx, healthyMachines)
 	if err != nil {
-		return err
+		return ctrl.Result{}, err
 	}
 	if _, ok := scope.kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation]; ok {
 		outlived := false
@@ -66,7 +66,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 		// leaves it set for good. A control plane at its desired state owes no replacement.
 		if !isDesiredStateReached(scope) && !outlived {
 			log.Info("Another remediation is already in progress. Skipping remediation.")
-			return nil
+			return ctrl.Result{}, nil
 		}
 
 		log.Info("Clearing a remediation marker that outlived its remediation")
@@ -78,7 +78,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 
 	// no unhealthy machines to remediate. Reconciliation can move on to the next stage.
 	if len(unhealthyMachines) == 0 {
-		return nil
+		return ctrl.Result{}, nil
 	}
 	candidates := unhealthyMachines.UnsortedList()
 	sort.Slice(candidates, func(i, j int) bool {
@@ -105,7 +105,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 
 	if !machineToBeRemediated.ObjectMeta.DeletionTimestamp.IsZero() {
 		log.Info("Machine to remediate is being deleted.")
-		return nil
+		return ctrl.Result{}, nil
 	}
 	log = log.WithValues("Machine", machineToBeRemediated)
 	// The condition is all a reader gets, so a patch that fails is reported rather than logged. A
@@ -133,7 +133,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 				Reason:  cpv1beta2.K0sControlPlaneMachineCannotBeRemediatedReason,
 				Message: "KCP can't remediate if current replicas are less or equal to 1",
 			})
-			return nil
+			return ctrl.Result{}, nil
 		}
 
 		// The cluster MUST NOT have healthy machines still being provisioned. This rule prevents KCP taking actions while the cluster is in a transitional state.
@@ -145,7 +145,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 				Reason:  cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason,
 				Message: "KCP waiting for control plane machine provisioning to complete before triggering remediation",
 			})
-			return nil
+			return ctrl.Result{}, nil
 		}
 
 		// The cluster MUST have no machines with a deletion timestamp. This rule prevents KCP taking actions while the cluster is in a transitional state.
@@ -159,7 +159,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 				Reason:  cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason,
 				Message: "KCP waiting for control plane machine deletion to complete before triggering remediation",
 			})
-			return nil
+			return ctrl.Result{}, nil
 		}
 	}
 
@@ -172,7 +172,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 			Reason:  cpv1beta2.K0sControlPlaneMachineRemediationFailedReason,
 			Message: err.Error(),
 		})
-		return errors.Wrapf(err, "failed to delete unhealthy machine %s", machineToBeRemediated.Name)
+		return ctrl.Result{}, errors.Wrapf(err, "failed to delete unhealthy machine %s", machineToBeRemediated.Name)
 	}
 	log.Info("Remediated unhealthy machine, another new machine should take its place soon.")
 	conditions.Set(machineToBeRemediated, metav1.Condition{
@@ -188,7 +188,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 		cpv1beta2.RemediationInProgressAnnotation: remediationInProgressFor(machineToBeRemediated).marshal(),
 	})
 
-	return nil
+	return ctrl.Result{RequeueAfter: time.Second}, nil
 }
 
 // minHealthyPeriod is how long a replacement has to survive before the next failure counts as a
