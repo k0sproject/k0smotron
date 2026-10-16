@@ -19,6 +19,8 @@ limitations under the License.
 package bootstrap
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -1099,4 +1101,135 @@ func TestReconcileRotatesTheTokenOfAJoinedMachinePool(t *testing.T) {
 	require.NoError(t, testEnv.Create(t.Context(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "source", Namespace: ns.Name}, Data: source.Data}))
 	_, secondData := reconcileUntilTracked(firstID)
 	require.NotEqual(t, firstData, secondData)
+}
+
+func TestReconcileRendersAdditionalIgnitionConfigFromASecret(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-additional-ignition-from")
+	require.NoError(t, err)
+
+	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	require.NoError(t, testEnv.Create(t.Context(), cluster))
+	require.NoError(t, testEnv.Create(t.Context(), kcp))
+	conditions.Set(cluster, metav1.Condition{
+		Type:   string(clusterv1.ClusterControlPlaneInitializedCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "ControlPlaneReady",
+	})
+	require.NoError(t, testEnv.Status().Update(t.Context(), cluster))
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{Name: "worker", Namespace: ns.Name},
+		Spec: clusterv1.MachineSpec{
+			ClusterName: cluster.Name,
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachine",
+				Name:     "worker",
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{ConfigRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "K0sWorkerConfig",
+				Name:     "worker",
+				APIGroup: clusterv1.GroupVersionBootstrap.Group,
+			}},
+		},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), machine))
+
+	butane := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "butane", Namespace: ns.Name},
+		Data: map[string][]byte{"config": []byte(
+			"variant: fcos\nversion: 1.0.0\nstorage:\n  files:\n  - path: /etc/from-a-secret.conf\n    contents:\n      inline: resolved\n")},
+	}
+
+	ignition := &bootstrapv1.IgnitionSpec{
+		Variant:              "fcos",
+		Version:              "1.0.0",
+		AdditionalConfigFrom: &bootstrapv1.ContentSource{SecretRef: &bootstrapv1.ContentSourceRef{Name: "butane", Key: "config"}},
+	}
+	config := &bootstrapv1.K0sWorkerConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "worker",
+			Namespace: ns.Name,
+			OwnerReferences: []metav1.OwnerReference{{
+				Kind:       "Machine",
+				APIVersion: clusterv1.GroupVersion.String(),
+				Name:       machine.Name,
+				UID:        machine.UID,
+			}},
+		},
+		Spec: bootstrapv1.K0sWorkerConfigSpec{Provisioner: bootstrapv1.ProvisionerSpec{Type: provisioner.IgnitionProvisioningFormat, Ignition: ignition}},
+	}
+
+	both := config.DeepCopy()
+	both.Name = "both"
+	both.Spec.Provisioner.Ignition = ignition.DeepCopy()
+	both.Spec.Provisioner.Ignition.AdditionalConfig = "variant: fcos\nversion: 1.0.0\n"
+	require.ErrorContains(t, testEnv.Create(t.Context(), both), "additionalConfig and additionalConfigFrom are mutually exclusive")
+	for _, ref := range []*bootstrapv1.ContentSource{
+		{},
+		{SecretRef: &bootstrapv1.ContentSourceRef{Name: "butane", Key: "config"}, ConfigMapRef: &bootstrapv1.ContentSourceRef{Name: "butane", Key: "config"}},
+	} {
+		invalid := config.DeepCopy()
+		invalid.Name = "invalid"
+		invalid.Spec.Provisioner.Ignition = ignition.DeepCopy()
+		invalid.Spec.Provisioner.Ignition.AdditionalConfigFrom = ref
+		require.ErrorContains(t, testEnv.Create(t.Context(), invalid), "exactly one of secretRef or configMapRef must be set")
+	}
+
+	require.NoError(t, testEnv.Create(t.Context(), config))
+
+	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+	require.NoError(t, clusterCerts.Generate())
+	caCertSecret := clusterCerts.GetByPurpose(secret.ClusterCA).AsSecret(
+		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
+	)
+	require.NoError(t, testEnv.Create(t.Context(), caCertSecret))
+
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(t.Context(), caCertSecret, config, butane, machine, kcp, cluster, ns))
+	}()
+
+	r := &Controller{
+		TokenTTL:              DefaultTokenTTL,
+		Client:                testEnv,
+		workloadClusterClient: testEnv,
+		SecretCachingClient:   testEnv,
+	}
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err != nil && strings.Contains(err.Error(), "additional ignition config")
+	}, 10*time.Second, 100*time.Millisecond)
+	require.NoError(t, testEnv.Create(t.Context(), butane))
+	bootstrapSecret := &corev1.Secret{}
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err == nil && testEnv.Get(t.Context(), util.ObjectKey(config), bootstrapSecret) == nil
+	}, 10*time.Second, 100*time.Millisecond)
+	require.Contains(t, ignitionMergeSources(t, bootstrapSecret.Data["value"]), "/etc/from-a-secret.conf")
+}
+
+func ignitionMergeSources(t *testing.T, rendered []byte) string {
+	t.Helper()
+
+	var ign struct {
+		Ignition struct {
+			Config struct {
+				Merge []struct {
+					Source string `json:"source"`
+				} `json:"merge"`
+			} `json:"config"`
+		} `json:"ignition"`
+	}
+	require.NoError(t, json.Unmarshal(rendered, &ign))
+
+	var merged string
+	for _, m := range ign.Ignition.Config.Merge {
+		raw, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(m.Source, "data:application/json;base64,"))
+		require.NoError(t, err)
+		merged += string(raw)
+	}
+
+	return merged
 }

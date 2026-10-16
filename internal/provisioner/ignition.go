@@ -18,6 +18,7 @@ package provisioner
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -182,12 +183,13 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 		},
 	}
 
-	if i.AdditionalConfig != "" {
+	additionalConfig := cmp.Or(input.AdditionalConfig, i.AdditionalConfig)
+	if additionalConfig != "" {
 		// translate additional Butane YAML to Ignition JSON
 		// User supplied Butane can still use inline contents, so auto compression has
 		// to stay off here or their file bodies come out gzipped.
 		addIgn, addReport, err := config.TranslateBytes(
-			[]byte(i.AdditionalConfig),
+			[]byte(additionalConfig),
 			bcommon.TranslateBytesOptions{
 				TranslateOptions: bcommon.TranslateOptions{NoResourceAutoCompression: true},
 				Pretty:           true,

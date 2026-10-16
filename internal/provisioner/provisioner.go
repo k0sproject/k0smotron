@@ -42,6 +42,8 @@ type InputProvisionData struct {
 	Commands       []string           `yaml:"runcmd"`
 	CustomUserData string             `yaml:"-"`
 	Vars           map[VarName]string `yaml:"-"`
+	// AdditionalConfig is the resolved ignition.additionalConfigFrom, which a provisioner cannot read itself.
+	AdditionalConfig string `yaml:"-"`
 }
 
 // Encoding specifies the encoding of a file's content.

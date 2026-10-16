@@ -47,7 +47,7 @@ func (in *K0sConfigSpec) DeepCopyInto(out *K0sConfigSpec) {
 	if in.Ignition != nil {
 		in, out := &in.Ignition, &out.Ignition
 		*out = new(v1beta2.IgnitionSpec)
-		**out = **in
+		(*in).DeepCopyInto(*out)
 	}
 	if in.K0s != nil {
 		in, out := &in.K0s, &out.K0s
@@ -264,7 +264,7 @@ func (in *K0sWorkerConfigSpec) DeepCopyInto(out *K0sWorkerConfigSpec) {
 	if in.Ignition != nil {
 		in, out := &in.Ignition, &out.Ignition
 		*out = new(v1beta2.IgnitionSpec)
-		**out = **in
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Files != nil {
 		in, out := &in.Files, &out.Files

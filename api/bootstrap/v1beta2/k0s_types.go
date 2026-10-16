@@ -122,7 +122,7 @@ type ProvisionerSpec struct {
 	// See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html
 	// This field, and the variable substitution applied to it, are for cloud-init and PowerShell only.
 	// The ignition provisioner ignores it, since an Ignition config cannot be appended to as text.
-	// Use ignition.additionalConfig for extra Butane config there.
+	// Use ignition.additionalConfig or ignition.additionalConfigFrom for extra Butane config there.
 	// +kubebuilder:validation:Optional
 	CustomUserDataRef *ContentSource `json:"customUserDataRef,omitempty"`
 }
@@ -432,6 +432,7 @@ type TunnelingSpec struct {
 }
 
 // IgnitionSpec defines the configuration for the Ignition provisioner.
+// +kubebuilder:validation:XValidation:rule="!has(self.additionalConfig) || !has(self.additionalConfigFrom)",message="additionalConfig and additionalConfigFrom are mutually exclusive"
 type IgnitionSpec struct {
 	// Variant declares which distribution variant the generated config is for.
 	// +kubebuilder:validation:Required
@@ -448,6 +449,11 @@ type IgnitionSpec struct {
 	// with the generated one. The format follows Butane spec: https://coreos.github.io/butane/
 	// +kubebuilder:validation:Optional
 	AdditionalConfig string `json:"additionalConfig,omitempty"`
+	// AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+	// It cannot be set together with additionalConfig.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:rule="has(self.secretRef) != has(self.configMapRef)",message="exactly one of secretRef or configMapRef must be set"
+	AdditionalConfigFrom *ContentSource `json:"additionalConfigFrom,omitempty"`
 }
 
 // GetK0sConfigPath returns the full path to the k0s.yaml file in the working directory.
@@ -546,9 +552,10 @@ func ProvisionerWarnings(spec ProvisionerSpec, pathPrefix *field.Path) admission
 		// Both paths come from the same prefix, since the control plane carries the
 		// provisioner under k0sConfigSpec and a fixed string would be wrong there.
 		warnings = append(warnings, fmt.Sprintf(
-			"%s is ignored by the ignition provisioner, use %s instead",
+			"%s is ignored by the ignition provisioner, use %s or %s instead",
 			pathPrefix.Child("provisioner", "customUserDataRef"),
 			pathPrefix.Child("provisioner", "ignition", "additionalConfig"),
+			pathPrefix.Child("provisioner", "ignition", "additionalConfigFrom"),
 		))
 	}
 

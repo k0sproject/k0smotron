@@ -207,6 +207,8 @@ Ignition bootstrap is enabled implicitly by configuring an `ignition` section fo
 
 k0smotron allows extending the generated Ignition bootstrap data using the `additionalConfig` field. In this example, `additionalConfig` is used to configure SSH access for the default `core` user by injecting an SSH public key, allowing access to the machine after provisioning.
 
+To keep that Butane config out of the resource, put it in a `Secret` or `ConfigMap` in the Cluster's namespace and reference it with `additionalConfigFrom` instead, for example `additionalConfigFrom: {secretRef: {name: extra-butane, key: config}}`. Only one of `additionalConfig` and `additionalConfigFrom` can be set.
+
 Additionally, because Flatcar is an immutable operating system, it does not allow writing the k0s binary to the default `/usr/local/bin` location. For this reason, an alternative installation directory is specified using `k0sInstallDir`.
 
 We can check the state of our recently created cluster by running:
