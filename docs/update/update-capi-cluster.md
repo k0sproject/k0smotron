@@ -81,6 +81,14 @@ kubectl apply --server-side=true -f https://docs.k0smotron.io/{{{ extra.k0smotro
 !!! info "Worker nodes"
     Because the standalone path has no controller watching worker `Machine`/`MachineDeployment` objects, only the Cluster API in-place updates extension can perform in-place updates of worker nodes — the same webhook server also handles the hook calls Cluster API sends for machines owned by a `MachineDeployment`/`MachineSet`. See [Update worker nodes in Cluster API clusters (VMs)](update-capi-cluster-workers.md) for details.
 
+## Chained upgrades across several minor versions
+
+The same extension webhook server implements Cluster API's `GenerateUpgradePlan` hook ([chained upgrades](https://cluster-api.sigs.k8s.io/tasks/experimental-features/runtime-sdk/implement-upgrade-plan-hooks.html)). When the target k0s version is more than one minor ahead of the current one, k0smotron looks up the released k0s versions and returns the steps the control plane has to go through: the latest release of every intermediate minor, followed by the target version. For example, upgrading from `v1.29.9+k0s.0` to `v1.31.2+k0s.0` produces `v1.30.x+k0s.N` (the current latest release of the `v1.30` series) and then `v1.31.2+k0s.0`. The worker plan is left empty, so Cluster API picks the minimal worker steps.
+
+!!! note
+
+    Only stable releases are considered when picking intermediate versions; pre-releases are skipped.
+
 ## Monitoring upgrade status
 
 The `K0sControlPlane` status fields give visibility into an in-progress upgrade:

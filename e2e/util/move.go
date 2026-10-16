@@ -72,7 +72,7 @@ func MoveClusterAndWait(ctx context.Context, input MoveClusterAndWaitInput) erro
 		return fmt.Errorf("no K0sControlPlane found in the target management cluster for cluster %s/%s", cluster.Namespace, cluster.Name)
 	}
 
-	if err := WaitForControlPlaneToBeReady(ctx, targetClient, controlPlane, input.WaitForControlPlane); err != nil {
+	if err := WaitForControlPlaneReplicasWithDesiredState(ctx, targetClient, controlPlane, input.WaitForControlPlane); err != nil {
 		return fmt.Errorf("control plane is not ready in the target management cluster: %w", err)
 	}
 

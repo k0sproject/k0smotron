@@ -308,6 +308,7 @@ jobs:
           - TestIngressKubeRouter
           - TestIngressCalico
           - TestClusterctlMove
+          - TestChainUpgrade
 
     uses: ./.github/workflows/e2e.yaml
     with:

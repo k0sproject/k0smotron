@@ -2,7 +2,7 @@ resources:
 - ../webhook
 - ../certmanager
 - ../rbac
-- ../runtimeextension
+- extension_config.yaml
 
 patches:
 # Enable webhook with corresponding certificate mount.

@@ -124,7 +124,7 @@ func clusterctlMoveSpec(t *testing.T) {
 		Cluster: cluster,
 	}, util.GetInterval(e2eConfig, testName, "wait-control-plane"))
 	require.NoError(t, err)
-	err = util.WaitForControlPlaneToBeReady(ctx, bootstrapClusterProxy.GetClient(), controlPlane, util.GetInterval(e2eConfig, testName, "wait-control-plane"))
+	err = util.WaitForControlPlaneReplicasWithDesiredState(ctx, bootstrapClusterProxy.GetClient(), controlPlane, util.GetInterval(e2eConfig, testName, "wait-control-plane"))
 	require.NoError(t, err)
 
 	err = mothership.InitAndWatchControllerLogs(watchesCtx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
