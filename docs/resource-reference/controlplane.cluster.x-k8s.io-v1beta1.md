@@ -115,6 +115,13 @@ Note: This metadata will have precedence over default labels/annotations on the 
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#k0scontrolplanespecremediation">remediation</a></b></td>
+        <td>object</td>
+        <td>
+          Remediation controls how the control plane remediates Machines a MachineHealthCheck marks unhealthy.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>replicas</b></td>
         <td>integer</td>
         <td>
@@ -1057,6 +1064,39 @@ Note: This metadata will have precedence over default labels/annotations on the 
         <td>map[string]string</td>
         <td>
           Labels to be added to the bootstrap Secret<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.remediation
+<sup><sup>[↩ Parent](#k0scontrolplanespec)</sup></sup>
+
+
+
+Remediation controls how the control plane remediates Machines a MachineHealthCheck marks unhealthy.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>minHealthyPeriodSeconds</b></td>
+        <td>integer</td>
+        <td>
+          MinHealthyPeriodSeconds is how long after a Machine is remediated the remediation of its replacement
+Machine still counts as a retry of the same remediation sequence. A later remediation starts a new
+sequence and resets the retry count. 0 makes every remediation start a new sequence. 3600 is used when
+it is not set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Minimum</i>: 0<br/>
         </td>
         <td>false</td>
       </tr></tbody>

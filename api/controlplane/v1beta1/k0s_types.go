@@ -100,6 +100,9 @@ type K0sControlPlaneSpec struct {
 	// Note: This metadata will have precedence over default labels/annotations on the Secret.
 	// +kubebuilder:validation:Optional
 	KubeconfigSecretMetadata bootstrapv2.SecretMetadata `json:"kubeconfigSecretMetadata,omitempty,omitzero"`
+	// Remediation controls how the control plane remediates Machines a MachineHealthCheck marks unhealthy.
+	// +optional
+	Remediation cpv2.K0sControlPlaneRemediationSpec `json:"remediation,omitempty,omitzero"`
 }
 
 // +kubebuilder:object:root=true

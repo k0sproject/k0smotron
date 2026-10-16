@@ -185,15 +185,11 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 	// Marks that a remediation is in progress and carries what the replacement inherits. Cleared
 	// where that replacement is created, which is also where the value moves onto it.
 	annotations.AddAnnotations(scope.kcp, map[string]string{
-		cpv1beta2.RemediationInProgressAnnotation: remediationInProgressFor(machineToBeRemediated).marshal(),
+		cpv1beta2.RemediationInProgressAnnotation: remediationInProgressFor(machineToBeRemediated, scope.kcp).marshal(),
 	})
 
 	return ctrl.Result{RequeueAfter: time.Second}, nil
 }
-
-// minHealthyPeriod is how long a replacement has to survive before the next failure counts as a
-// new sequence rather than a retry. Upstream's DefaultMinHealthyPeriodSeconds, not yet a spec field.
-const minHealthyPeriod = time.Hour
 
 // maxReportedMachineName is the bound status puts on the machine it names, so a longer one is not
 // worth carrying. Keep it equal to the MaxLength marker on LastRemediationStatus.Machine.
@@ -242,7 +238,10 @@ func remediationDataFrom(objAnnotations map[string]string, key string) (remediat
 
 // remediationInProgressFor describes the remediation about to start. A machine that already carries
 // a recent sequence continues it, so a replacement failing again reads as a retry and not a first try.
-func remediationInProgressFor(machineToBeRemediated *clusterv1.Machine) remediationData {
+func remediationInProgressFor(machineToBeRemediated *clusterv1.Machine, kcp *cpv1beta2.K0sControlPlane) remediationData {
+	// minHealthyPeriod is how long after the previous remediation a new failure still counts as a
+	// retry rather than starting a new sequence.
+	minHealthyPeriod := time.Duration(ptr.Deref(kcp.Spec.Remediation.MinHealthyPeriodSeconds, cpv1beta2.DefaultMinHealthyPeriodSeconds)) * time.Second
 	data := remediationData{Machine: machineToBeRemediated.Name, Timestamp: metav1.Now()}
 
 	last, ok := remediationDataFrom(machineToBeRemediated.Annotations, cpv1beta2.RemediationForAnnotation)

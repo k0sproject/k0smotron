@@ -55,6 +55,27 @@ k0smotron includes several safety mechanisms to prevent cluster disruption:
 - **No concurrent operations**: Waits for provisioning/deletion operations to complete
 - **Graceful deletion**: Properly removes machines from the k0s cluster before deletion
 
+## Retry limits
+
+When a Machine created to replace an unhealthy one fails as well, its remediation counts as a retry of
+the same remediation sequence. `spec.remediation` on the `K0sControlPlane` controls those retries.
+
+- `minHealthyPeriodSeconds` is how long after a Machine is remediated the remediation of its replacement
+  still counts as a retry. A later remediation starts a new sequence and resets the retry count. It
+  defaults to 3600, and 0 makes every remediation start a new sequence.
+
+```yaml
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+kind: K0sControlPlane
+metadata:
+  name: my-cluster
+spec:
+  remediation:
+    minHealthyPeriodSeconds: 3600
+```
+
+The most recent remediation and its retry count are reported in `status.lastRemediation`.
+
 ## Best Practices
 
 - Always use at least 3 control plane replicas in production
