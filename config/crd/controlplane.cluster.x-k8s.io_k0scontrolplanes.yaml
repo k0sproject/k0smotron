@@ -523,6 +523,15 @@ spec:
                   Machines a MachineHealthCheck marks unhealthy.
                 minProperties: 1
                 properties:
+                  maxRetry:
+                    description: |-
+                      MaxRetry is how many retries one remediation sequence may make. A retry is the remediation of a
+                      replacement Machine within minHealthyPeriodSeconds of the remediation it followed. A retry past the
+                      limit is refused with reason CannotBeRemediated until minHealthyPeriodSeconds has passed since the
+                      previous remediation, when the Machine is remediated as the start of a new sequence. 0 or a negative
+                      value refuses every retry. Retries are unlimited when it is not set.
+                    format: int32
+                    type: integer
                   minHealthyPeriodSeconds:
                     description: |-
                       MinHealthyPeriodSeconds is how long after a Machine is remediated the remediation of its replacement
@@ -1243,6 +1252,15 @@ spec:
                   Machines a MachineHealthCheck marks unhealthy.
                 minProperties: 1
                 properties:
+                  maxRetry:
+                    description: |-
+                      MaxRetry is how many retries one remediation sequence may make. A retry is the remediation of a
+                      replacement Machine within minHealthyPeriodSeconds of the remediation it followed. A retry past the
+                      limit is refused with reason CannotBeRemediated until minHealthyPeriodSeconds has passed since the
+                      previous remediation, when the Machine is remediated as the start of a new sequence. 0 or a negative
+                      value refuses every retry. Retries are unlimited when it is not set.
+                    format: int32
+                    type: integer
                   minHealthyPeriodSeconds:
                     description: |-
                       MinHealthyPeriodSeconds is how long after a Machine is remediated the remediation of its replacement

@@ -28,6 +28,7 @@ func TestK0sControlPlaneConversionKeepsRemediation(t *testing.T) {
 		Remediation: v1beta2.K0sControlPlaneRemediationSpec{
 			MinHealthyPeriodSeconds: new(int32(120)),
 			RetryPeriodSeconds:      new(int32(30)),
+			MaxRetry:                new(int32(3)),
 		},
 	}}
 
