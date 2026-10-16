@@ -13,7 +13,7 @@ k0smotron operator accepts the following command-line flags.
 | `--enable-controller`         | string | `""` (all) | The controller to enable. Valid values: `bootstrap`, `control-plane`, `infrastructure`, `standalone`. Defaults to all controllers.                                                                                                  |
 | `--watch-filter`              | string | `""`       | Label value used to filter reconciled objects. Only resources with label `cluster.x-k8s.io/watch-filter=<value>` are reconciled. See [Running multiple instances](#running-multiple-instances).                                     |
 | `--namespace`                 | string | `""`       | Namespace that the controller watches. If unspecified, all namespaces are watched.                                                                                                                                                  |
-| `--bootstrap-token-ttl`       | duration | `24h`    | Validity of the bootstrap tokens used by machines to join a cluster. The token is refreshed until the machine joins. Same as CAPI kubeadm bootstrap provider `--bootstrap-token-ttl`. |
+| `--bootstrap-token-ttl`       | duration | `24h`    | Validity of the bootstrap tokens used by machines to join a cluster. The token is refreshed until the machine joins. A MachinePool token is refreshed until all replicas have joined. After that it is not refreshed, and the MachinePool gets bootstrap data with a new token when a periodic check finds less than half the TTL left. A MachinePool also gets a new token if its token Secret is gone from the workload cluster. Same as CAPI kubeadm bootstrap provider `--bootstrap-token-ttl`. |
 
 ### Deprecated flags
 

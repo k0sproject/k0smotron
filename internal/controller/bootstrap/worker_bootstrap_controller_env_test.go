@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	fakeremote "sigs.k8s.io/cluster-api/controllers/remote/fake"
@@ -982,4 +983,120 @@ func TestReconcileDeletesTheTokenOfBootstrapDataItCouldNotGenerate(t *testing.T)
 		return err == nil
 	}, 10*time.Second, 100*time.Millisecond)
 	require.Equal(t, before+1, countBootstrapTokens(t))
+}
+
+func TestReconcileRotatesTheTokenOfAJoinedMachinePool(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-machinepool-token-rotation")
+	require.NoError(t, err)
+
+	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	require.NoError(t, testEnv.Create(t.Context(), cluster))
+	require.NoError(t, testEnv.Create(t.Context(), kcp))
+	conditions.Set(cluster, metav1.Condition{
+		Type:   string(clusterv1.ClusterControlPlaneInitializedCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "ControlPlaneReady",
+	})
+	require.NoError(t, testEnv.Status().Update(t.Context(), cluster))
+
+	pool := &clusterv1.MachinePool{
+		ObjectMeta: metav1.ObjectMeta{Name: "pool", Namespace: ns.Name},
+		Spec: clusterv1.MachinePoolSpec{
+			ClusterName: cluster.Name,
+			Replicas:    new(int32(1)),
+			Template: clusterv1.MachineTemplateSpec{Spec: clusterv1.MachineSpec{
+				ClusterName: cluster.Name,
+				Version:     "v1.30.0",
+				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+					Kind:     "GenericInfrastructureMachine",
+					Name:     "pool",
+					APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+				},
+				Bootstrap: clusterv1.Bootstrap{ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Kind:     "K0sWorkerConfig",
+					Name:     "pool",
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+				}},
+			}},
+		},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), pool))
+	pool.Status.NodeRefs = []corev1.ObjectReference{{Name: "node"}}
+	require.NoError(t, testEnv.Status().Update(t.Context(), pool))
+
+	config := &bootstrapv1.K0sWorkerConfig{ObjectMeta: metav1.ObjectMeta{
+		Name:      "pool",
+		Namespace: ns.Name,
+		OwnerReferences: []metav1.OwnerReference{{
+			Kind:       "MachinePool",
+			APIVersion: clusterv1.GroupVersion.String(),
+			Name:       pool.Name,
+			UID:        pool.UID,
+		}},
+	}, Spec: bootstrapv1.K0sWorkerConfigSpec{Files: []bootstrapv1.File{{
+		File:        provisioner.File{Path: "/etc/source"},
+		ContentFrom: &bootstrapv1.ContentSource{SecretRef: &bootstrapv1.ContentSourceRef{Name: "source", Key: "value"}},
+	}}}}
+	require.NoError(t, testEnv.Create(t.Context(), config))
+	source := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "source", Namespace: ns.Name}, Data: map[string][]byte{"value": []byte("body")}}
+	require.NoError(t, testEnv.Create(t.Context(), source))
+
+	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+	require.NoError(t, clusterCerts.Generate())
+	caCertSecret := clusterCerts.GetByPurpose(secret.ClusterCA).AsSecret(
+		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
+	)
+	require.NoError(t, testEnv.Create(t.Context(), caCertSecret))
+
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(t.Context(), caCertSecret, config, pool, kcp, cluster, ns))
+	}()
+
+	r := &Controller{
+		TokenTTL:              DefaultTokenTTL,
+		Client:                testEnv,
+		workloadClusterClient: testEnv,
+		SecretCachingClient:   testEnv,
+	}
+	reconcileUntilTracked := func(notID string) (string, []byte) {
+		var id string
+		var data []byte
+		require.Eventually(t, func() bool {
+			if _, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)}); err != nil {
+				return false
+			}
+			stored := &bootstrapv1.K0sWorkerConfig{}
+			bootstrapSecret := &corev1.Secret{}
+			if testEnv.GetAPIReader().Get(t.Context(), util.ObjectKey(config), stored) != nil ||
+				testEnv.GetAPIReader().Get(t.Context(), util.ObjectKey(config), bootstrapSecret) != nil {
+				return false
+			}
+			id, data = stored.Annotations[bootstrapTokenIDAnnotation], bootstrapSecret.Data["value"]
+			return id != "" && id != notID
+		}, 10*time.Second, 100*time.Millisecond)
+		return id, data
+	}
+
+	firstID, firstData := reconcileUntilTracked("")
+
+	token, err := getTokenSecret(t.Context(), testEnv, firstID)
+	require.NoError(t, err)
+	token.Data[bootstrapapi.BootstrapTokenExpirationKey] = []byte(time.Now().Add(r.TokenTTL / 3).UTC().Format(time.RFC3339))
+	require.NoError(t, testEnv.Update(t.Context(), token))
+
+	require.NoError(t, testEnv.Delete(t.Context(), source))
+	before := countBootstrapTokens(t)
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err != nil && strings.Contains(err.Error(), "source")
+	}, 10*time.Second, 100*time.Millisecond)
+	require.Equal(t, before, countBootstrapTokens(t))
+	stored := &bootstrapv1.K0sWorkerConfig{}
+	require.NoError(t, testEnv.GetAPIReader().Get(t.Context(), util.ObjectKey(config), stored))
+	require.Equal(t, firstID, stored.Annotations[bootstrapTokenIDAnnotation])
+
+	require.NoError(t, testEnv.Create(t.Context(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "source", Namespace: ns.Name}, Data: source.Data}))
+	_, secondData := reconcileUntilTracked(firstID)
+	require.NotEqual(t, firstData, secondData)
 }

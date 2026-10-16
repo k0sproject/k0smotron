@@ -111,7 +111,7 @@ func TestWorkerReconcileBootstrapToken(t *testing.T) {
 	t.Run("not joined machine refreshes the token", func(t *testing.T) {
 		wc := fake.NewClientBuilder().WithObjects(newTokenSecret(time.Now().Add(time.Minute))).Build()
 		r := &Controller{TokenTTL: ttl, workloadClusterClient: wc}
-		res, err := r.reconcileBootstrapToken(context.Background(), &clusterv1.Cluster{}, config, newConfigOwner(t, machine))
+		res, _, err := r.reconcileBootstrapToken(context.Background(), &clusterv1.Cluster{}, config, newConfigOwner(t, machine))
 		require.NoError(t, err)
 		requireRequeueWithinJitter(t, ttl, res)
 		require.WithinDuration(t, time.Now().Add(ttl), getTokenExpiration(t, wc), 5*time.Second)
@@ -121,15 +121,46 @@ func TestWorkerReconcileBootstrapToken(t *testing.T) {
 		exp := time.Now().Add(time.Minute).Truncate(time.Second)
 		wc := fake.NewClientBuilder().WithObjects(newTokenSecret(exp)).Build()
 		r := &Controller{TokenTTL: ttl, workloadClusterClient: wc}
-		res, err := r.reconcileBootstrapToken(context.Background(), &clusterv1.Cluster{}, config, newConfigOwner(t, joinedMachine))
+		res, _, err := r.reconcileBootstrapToken(context.Background(), &clusterv1.Cluster{}, config, newConfigOwner(t, joinedMachine))
 		require.NoError(t, err)
 		require.Equal(t, ctrl.Result{}, res)
 		require.True(t, getTokenExpiration(t, wc).Equal(exp))
 	})
 
+	pool := &clusterv1.MachinePool{
+		TypeMeta: metav1.TypeMeta{APIVersion: clusterv1.GroupVersion.String(), Kind: "MachinePool"},
+		Spec:     clusterv1.MachinePoolSpec{Replicas: new(int32(1))},
+	}
+	joinedPool := pool.DeepCopy()
+	joinedPool.Status.NodeRefs = []corev1.ObjectReference{{Name: "node"}}
+
+	for _, tc := range []struct {
+		name       string
+		owner      client.Object
+		token      []client.Object
+		wantRotate bool
+		wantErr    bool
+	}{
+		{name: "joined pool keeps a token before half its lifetime", owner: joinedPool, token: []client.Object{newTokenSecret(time.Now().Add(ttl / 2).Add(time.Minute))}},
+		{name: "joined pool rotates a token past half its lifetime", owner: joinedPool, token: []client.Object{newTokenSecret(time.Now().Add(ttl / 2).Add(-time.Minute))}, wantRotate: true},
+		{name: "joined pool rotates a missing token", owner: joinedPool, wantRotate: true},
+		{name: "pool still joining rotates a missing token", owner: pool, wantRotate: true},
+		{name: "machine still joining reports a missing token", owner: machine, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := &Controller{TokenTTL: ttl, workloadClusterClient: fake.NewClientBuilder().WithObjects(tc.token...).Build()}
+			res, rotate, err := r.reconcileBootstrapToken(t.Context(), &clusterv1.Cluster{}, config, newConfigOwner(t, tc.owner))
+			require.Equal(t, tc.wantErr, err != nil)
+			require.Equal(t, tc.wantRotate, rotate)
+			if !rotate && !tc.wantErr {
+				requireRequeueWithinJitter(t, ttl, res)
+			}
+		})
+	}
+
 	t.Run("config without tracked token is skipped", func(t *testing.T) {
 		r := &Controller{TokenTTL: ttl}
-		res, err := r.reconcileBootstrapToken(context.Background(), &clusterv1.Cluster{}, &bootstrapv2.K0sWorkerConfig{}, newConfigOwner(t, machine))
+		res, _, err := r.reconcileBootstrapToken(context.Background(), &clusterv1.Cluster{}, &bootstrapv2.K0sWorkerConfig{}, newConfigOwner(t, machine))
 		require.NoError(t, err)
 		require.Equal(t, ctrl.Result{}, res)
 	})

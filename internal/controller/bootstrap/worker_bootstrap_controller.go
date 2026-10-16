@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
@@ -217,8 +218,13 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		})
 
 		// Bootstrapdata field is ready to be consumed, skipping the generation of the bootstrap data secret
+		// unless the token of a MachinePool has to be rotated
 		log.Info("Bootstrapdata already created")
-		return r.reconcileBootstrapToken(ctx, cluster, config, configOwner)
+		res, rotate, err := r.reconcileBootstrapToken(ctx, cluster, config, configOwner)
+		if err != nil || !rotate {
+			return res, err
+		}
+		log.Info("Rotating the bootstrap token of the MachinePool")
 	}
 
 	scope := &Scope{
@@ -328,35 +334,53 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 }
 
 // reconcileBootstrapToken refreshes the bootstrap token embedded in already generated bootstrap data until
-// the node joins the cluster.
-func (r *Controller) reconcileBootstrapToken(ctx context.Context, cluster *clusterv1.Cluster, config *bootstrapv2.K0sWorkerConfig, configOwner *bsutil.ConfigOwner) (ctrl.Result, error) {
+// the node joins the cluster, and reports when a MachinePool needs bootstrap data with a new token.
+func (r *Controller) reconcileBootstrapToken(ctx context.Context, cluster *clusterv1.Cluster, config *bootstrapv2.K0sWorkerConfig, configOwner *bsutil.ConfigOwner) (_ ctrl.Result, rotate bool, _ error) {
 	log := ctrl.LoggerFrom(ctx)
 	tokenID := config.GetAnnotations()[bootstrapTokenIDAnnotation]
 	if tokenID == "" {
 		log.Info("No bootstrap token tracked for this config, skipping refresh")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, false, nil
 	}
-	if configOwner.HasNodeRefs() {
+	if configOwner.HasNodeRefs() && !configOwner.IsMachinePool() {
 		// The node has already joined, the token will expire on its own.
 		log.Info("Node has already joined, skipping bootstrap token refresh")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, false, nil
 	}
 
 	wcClient, err := r.getWorkloadClusterClient(ctx, cluster)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, false, err
+	}
+
+	if configOwner.HasNodeRefs() {
+		s, err := getTokenSecret(ctx, wcClient, tokenID)
+		if apierrors.IsNotFound(err) {
+			return ctrl.Result{}, true, nil
+		}
+		if err != nil {
+			return ctrl.Result{}, false, err
+		}
+		expiration, err := time.Parse(time.RFC3339, string(s.Data[bootstrapapi.BootstrapTokenExpirationKey]))
+		if err != nil {
+			return ctrl.Result{}, false, fmt.Errorf("can't parse expiration time of bootstrap token: %w", err)
+		}
+		return ctrl.Result{RequeueAfter: tokenCheckRefreshInterval(r.TokenTTL)}, expiration.Before(time.Now().Add(r.TokenTTL / 2)), nil
 	}
 
 	refreshed, err := refreshBootstrapTokenIfNeeded(ctx, wcClient, tokenID, r.TokenTTL)
+	if apierrors.IsNotFound(err) && configOwner.IsMachinePool() {
+		return ctrl.Result{}, true, nil
+	}
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, false, err
 	}
 	if refreshed {
 		log.Info("Bootstrap token refreshed")
 	}
 	// At this point the bootstrap token is not consumed yet and has been refreshed if needed.
 	// Requeue the reconciliation to check the token again after the defined interval.
-	return ctrl.Result{RequeueAfter: tokenCheckRefreshInterval(r.TokenTTL)}, nil
+	return ctrl.Result{RequeueAfter: tokenCheckRefreshInterval(r.TokenTTL)}, false, nil
 }
 
 func (r *Controller) generateBootstrapDataForWorker(ctx context.Context, log logr.Logger, scope *Scope) ([]byte, error) {
@@ -876,6 +900,16 @@ func (r *Controller) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 		Watches(
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(machineToWorkerBootstrapMapFunc),
+		).
+		Watches(
+			&clusterv1.MachinePool{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []ctrl.Request {
+				ref := o.(*clusterv1.MachinePool).Spec.Template.Spec.Bootstrap.ConfigRef
+				if !ref.IsDefined() || ref.GroupKind() != bootstrapv2.GroupVersion.WithKind("K0sWorkerConfig").GroupKind() {
+					return nil
+				}
+				return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: o.GetNamespace(), Name: ref.Name}}}
+			}),
 		).
 		Watches(
 			&clusterv1.Cluster{},
