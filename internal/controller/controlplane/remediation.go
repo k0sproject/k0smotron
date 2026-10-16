@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"sort"
 	"time"
 
 	"k8s.io/utils/ptr"
@@ -70,7 +71,28 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 	if len(unhealthyMachines) == 0 {
 		return nil
 	}
-	machineToBeRemediated := unhealthyMachines.Oldest()
+	candidates := unhealthyMachines.UnsortedList()
+	sort.Slice(candidates, func(i, j int) bool {
+		a, b := candidates[i], candidates[j]
+		if annotations.HasRemediateMachine(a) != annotations.HasRemediateMachine(b) {
+			return annotations.HasRemediateMachine(a)
+		}
+		if a.Status.NodeRef.IsDefined() != b.Status.NodeRef.IsDefined() {
+			return !a.Status.NodeRef.IsDefined()
+		}
+		if scope.etcdManaged {
+			aHealthy := conditions.IsTrue(a, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition)
+			bHealthy := conditions.IsTrue(b, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition)
+			if aHealthy != bHealthy {
+				return !aHealthy
+			}
+		}
+		if a.CreationTimestamp.Equal(&b.CreationTimestamp) {
+			return a.Name < b.Name
+		}
+		return a.CreationTimestamp.Before(&b.CreationTimestamp)
+	})
+	machineToBeRemediated := candidates[0]
 
 	if !machineToBeRemediated.ObjectMeta.DeletionTimestamp.IsZero() {
 		log.Info("Machine to remediate is being deleted.")

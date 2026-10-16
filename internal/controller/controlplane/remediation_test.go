@@ -564,3 +564,104 @@ func TestReconcileUnhealthyMachinesReportsDistinctReasons(t *testing.T) {
 		})
 	}
 }
+
+func TestReconcileUnhealthyMachinesPicksTheMostBroken(t *testing.T) {
+	machine := func(name string, age time.Duration, mutate ...func(*clusterv1.Machine)) *clusterv1.Machine {
+		m := remediationMachine(name, false, false)
+		m.CreationTimestamp = metav1.NewTime(time.Unix(1000, 0).Add(-age))
+		conditions.Set(m, metav1.Condition{
+			Type:   cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
+			Status: metav1.ConditionTrue,
+			Reason: "Healthy",
+		})
+		for _, f := range mutate {
+			f(m)
+		}
+		return m
+	}
+	annotated := func(m *clusterv1.Machine) {
+		m.Annotations = map[string]string{clusterv1.RemediateMachineAnnotation: ""}
+	}
+	noNode := func(m *clusterv1.Machine) { m.Status.NodeRef = clusterv1.MachineNodeReference{} }
+	etcdUnhealthy := func(m *clusterv1.Machine) {
+		conditions.Set(m, metav1.Condition{
+			Type:   cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
+			Status: metav1.ConditionFalse,
+			Reason: "Unhealthy",
+		})
+	}
+	etcdSilent := func(m *clusterv1.Machine) {
+		conditions.Delete(m, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition)
+	}
+
+	tests := []struct {
+		name        string
+		machines    []*clusterv1.Machine
+		etcdManaged bool
+		want        string
+	}{
+		{
+			name:     "the remediate annotation wins over age",
+			machines: []*clusterv1.Machine{machine("old", time.Hour), machine("asked", time.Minute, annotated)},
+			want:     "asked",
+		},
+		{
+			name:     "a machine without a node wins over age",
+			machines: []*clusterv1.Machine{machine("old", time.Hour), machine("nonode", time.Minute, noNode)},
+			want:     "nonode",
+		},
+		{
+			name:        "an unhealthy etcd member wins over age",
+			machines:    []*clusterv1.Machine{machine("old", time.Hour), machine("etcd", time.Minute, etcdUnhealthy)},
+			etcdManaged: true,
+			want:        "etcd",
+		},
+		{
+			name:     "etcd health is ignored when etcd is not managed",
+			machines: []*clusterv1.Machine{machine("old", time.Hour), machine("etcd", time.Minute, etcdUnhealthy)},
+			want:     "old",
+		},
+		{
+			name:     "the annotation wins over a missing node",
+			machines: []*clusterv1.Machine{machine("nonode", time.Hour, noNode), machine("asked", time.Minute, annotated)},
+			want:     "asked",
+		},
+		{
+			name:        "the annotation wins over an unhealthy etcd member",
+			machines:    []*clusterv1.Machine{machine("etcd", time.Hour, etcdUnhealthy), machine("asked", time.Minute, annotated)},
+			etcdManaged: true,
+			want:        "asked",
+		},
+		{
+			name:        "a missing node wins over an unhealthy etcd member",
+			machines:    []*clusterv1.Machine{machine("etcd", time.Hour, etcdUnhealthy), machine("nonode", time.Minute, noNode)},
+			etcdManaged: true,
+			want:        "nonode",
+		},
+		{
+			name:        "an etcd member that says nothing counts as unhealthy",
+			machines:    []*clusterv1.Machine{machine("old", time.Hour), machine("silent", time.Minute, etcdSilent)},
+			etcdManaged: true,
+			want:        "silent",
+		},
+		{
+			name:     "the name breaks a tie in age",
+			machines: []*clusterv1.Machine{machine("b", time.Hour), machine("a", time.Hour)},
+			want:     "a",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kcp := initializedControlPlane()
+			c, scope := remediationScope(t, kcp, tt.machines, nil)
+			scope.etcdManaged = tt.etcdManaged
+
+			require.NoError(t, c.reconcileUnhealthyMachines(t.Context(), scope))
+
+			marked, ok := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+			require.True(t, ok)
+			require.Equal(t, tt.want, marked.Machine)
+		})
+	}
+}
