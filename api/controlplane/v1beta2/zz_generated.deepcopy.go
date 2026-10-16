@@ -226,6 +226,11 @@ func (in *K0sControlPlaneStatus) DeepCopyInto(out *K0sControlPlaneStatus) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.Versions != nil {
+		in, out := &in.Versions, &out.Versions
+		*out = make([]corev1beta2.StatusVersion, len(*in))
+		copy(*out, *in)
+	}
 	if in.ReadyReplicas != nil {
 		in, out := &in.ReadyReplicas, &out.ReadyReplicas
 		*out = new(int32)
