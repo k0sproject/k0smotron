@@ -207,6 +207,8 @@ kubectl delete k0scontrollerconfig <lost-node-name>
 
 After that you need to trigger the reconciliation of the control plane object by updating the `K0sControlPlane` object or restarting the controller manager.
 
+If every control plane Machine is lost after the control plane was initialized, k0smotron does not initialize a new control plane. A new control plane Machine gets join bootstrap data only once a controller of the existing cluster is reachable.
+
 ```bash
 
 ## Running workloads on the control plane

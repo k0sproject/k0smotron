@@ -459,7 +459,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		scope.installArgs = append(scope.installArgs, "--config", k0sConfigPath)
 	}
 
-	if scope.machines.Oldest().Name == scope.Config.Name {
+	if !conditions.IsTrue(scope.Cluster, string(clusterv1.ClusterControlPlaneInitializedCondition)) && scope.machines.Oldest().Name == scope.Config.Name {
 		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
 		if err != nil {
 			return nil, fmt.Errorf("error generating initial control plane files: %v", err)
