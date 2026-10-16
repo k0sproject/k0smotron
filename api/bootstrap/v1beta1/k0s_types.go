@@ -150,16 +150,6 @@ type K0sWorkerConfigSpec struct {
 	WorkingDir string `json:"workingDir,omitempty"`
 }
 
-// JoinTokenSecretRef is a reference to a secret that contains the join token for k0s worker nodes.
-type JoinTokenSecretRef struct {
-	// Name is the name of the secret
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
-	// Key is the key in the secret that contains the join token
-	// +kubebuilder:validation:Required
-	Key string `json:"key"`
-}
-
 // K0sWorkerConfigStatus defines the observed state of K0sWorkerConfig
 type K0sWorkerConfigStatus struct {
 	// Ready indicates the Bootstrapdata field is ready to be consumed
