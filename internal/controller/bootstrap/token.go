@@ -68,6 +68,14 @@ func getTokenSecret(ctx context.Context, c client.Client, tokenID string) (*core
 	return s, nil
 }
 
+// deleteBootstrapToken deletes the secret of the given bootstrap token, if it exists.
+func deleteBootstrapToken(ctx context.Context, c client.Client, tokenID string) error {
+	return client.IgnoreNotFound(c.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+		Name:      bootstraputil.BootstrapTokenSecretName(tokenID),
+		Namespace: metav1.NamespaceSystem,
+	}}))
+}
+
 // refreshBootstrapTokenIfNeeded extends the expiration of the given bootstrap token if it is close to expire.
 func refreshBootstrapTokenIfNeeded(ctx context.Context, c client.Client, tokenID string, ttl time.Duration) (bool, error) {
 	s, err := getTokenSecret(ctx, c, tokenID)

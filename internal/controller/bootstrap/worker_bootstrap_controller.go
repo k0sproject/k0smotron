@@ -269,6 +269,19 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
+	defer func() {
+		if scope.bootstrapTokenID == "" || config.Annotations[bootstrapTokenIDAnnotation] == scope.bootstrapTokenID {
+			return
+		}
+		wcClient, err := r.getWorkloadClusterClient(ctx, cluster)
+		if err == nil {
+			err = deleteBootstrapToken(ctx, wcClient, scope.bootstrapTokenID)
+		}
+		if err != nil {
+			log.Error(err, "Failed to delete the bootstrap token of bootstrap data that was not stored")
+		}
+	}()
+
 	log.Info("Generating bootstrap data")
 	bootstrapData, err := r.generateBootstrapDataForWorker(ctx, log, scope)
 	if err != nil {

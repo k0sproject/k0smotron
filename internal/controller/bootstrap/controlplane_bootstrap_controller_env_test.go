@@ -20,12 +20,14 @@ package bootstrap
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -792,4 +794,116 @@ func TestGetK0sTokenLeavesNoTokenWhenTheClusterCAIsMissing(t *testing.T) {
 
 	require.Equal(t, before, countBootstrapTokens(t),
 		"a failed token generation left a usable join token behind in the workload cluster")
+}
+
+func TestReconcileDeletesTheJoinTokenOfBootstrapDataItCouldNotGenerate(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(t.Context(), "test-controller-token-of-failed-generation")
+	require.NoError(t, err)
+
+	cluster := newCluster(ns.Name)
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "127.0.0.1", Port: 6443}
+	require.NoError(t, testEnv.Create(t.Context(), cluster))
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", UID: "1"}}
+
+	kubeconfigSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+			Namespace: cluster.Namespace,
+			Labels:    map[string]string{clusterv1.ClusterNameLabel: cluster.Name},
+		},
+		Data: map[string][]byte{secret.KubeconfigDataName: kubeconfig.FromEnvTestConfig(testEnv.Config, cluster)},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), kubeconfigSecret))
+
+	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+	require.NoError(t, clusterCerts.Generate())
+	caCertSecret := clusterCerts.GetByPurpose(secret.ClusterCA).AsSecret(
+		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
+	)
+	require.NoError(t, testEnv.Create(t.Context(), caCertSecret))
+
+	newMachine := func(name string) *clusterv1.Machine {
+		m := &clusterv1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel:         cluster.Name,
+					clusterv1.MachineControlPlaneLabel: "true",
+				},
+			},
+			Spec: clusterv1.MachineSpec{
+				ClusterName: cluster.Name,
+				Version:     "v1.30.0",
+				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+					Kind:     "GenericInfrastructureMachine",
+					Name:     name,
+					APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+				},
+				Bootstrap: clusterv1.Bootstrap{ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Kind:     "K0sControllerConfig",
+					Name:     name,
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+				}},
+			},
+		}
+		require.NoError(t, testEnv.Create(t.Context(), m))
+		return m
+	}
+	first := newMachine("controller-0")
+	first.Status.Addresses = clusterv1.MachineAddresses{{Type: clusterv1.MachineExternalIP, Address: "127.0.0.1"}}
+	require.NoError(t, testEnv.Status().Update(t.Context(), first))
+	joining := newMachine("controller-1")
+
+	config := &bootstrapv2.K0sControllerConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      joining.Name,
+			Namespace: ns.Name,
+			OwnerReferences: []metav1.OwnerReference{{
+				Kind:       "Machine",
+				APIVersion: clusterv1.GroupVersion.String(),
+				Name:       joining.Name,
+				UID:        joining.UID,
+			}},
+		},
+		Spec: bootstrapv2.K0sControllerConfigSpec{
+			Version: "v1.30.0+k0s.0",
+			K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+				Files: []bootstrapv2.File{{
+					File:        provisioner.File{Path: "/etc/missing"},
+					ContentFrom: &bootstrapv2.ContentSource{SecretRef: &bootstrapv2.ContentSourceRef{Name: "missing", Key: "value"}},
+				}},
+			},
+		},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), config))
+
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(t.Context(), config, joining, first, caCertSecret, kubeconfigSecret, cluster, ns))
+	}()
+
+	r := &ControlPlaneController{
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
+		TokenTTL:            DefaultTokenTTL,
+	}
+
+	before := countBootstrapTokens(t)
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err != nil && strings.Contains(err.Error(), "missing")
+	}, 10*time.Second, 100*time.Millisecond)
+	require.Equal(t, before, countBootstrapTokens(t))
+
+	require.NoError(t, testEnv.Create(t.Context(), &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "missing", Namespace: ns.Name},
+		Data:       map[string][]byte{"value": []byte("body")},
+	}))
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err == nil
+	}, 10*time.Second, 100*time.Millisecond)
+	require.Equal(t, before+1, countBootstrapTokens(t))
 }

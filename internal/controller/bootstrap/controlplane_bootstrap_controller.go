@@ -279,6 +279,19 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	scope.machines = machines
 
+	defer func() {
+		if scope.bootstrapTokenID == "" || config.Annotations[bootstrapTokenIDAnnotation] == scope.bootstrapTokenID {
+			return
+		}
+		wcClient, err := c.getWorkloadClusterClient(ctx, cluster)
+		if err == nil {
+			err = deleteBootstrapToken(ctx, wcClient, scope.bootstrapTokenID)
+		}
+		if err != nil {
+			log.Error(err, "Failed to delete the bootstrap token of bootstrap data that was not stored")
+		}
+	}()
+
 	bootstrapData, err := c.generateBootstrapDataForController(ctx, scope)
 	if err != nil {
 		// if the bootstrap data generation corresponds to a controller that is not the initial one, it is common to try to obtain

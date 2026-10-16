@@ -20,11 +20,13 @@ package bootstrap
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -890,4 +892,94 @@ func TestWorkerConfigRejectsConflictingUserDataRef(t *testing.T) {
 	require.NoError(t,
 		testEnv.Create(ctx, cfg("single", &bootstrapv1.ContentSource{SecretRef: secretRef})),
 		"one source stays accepted")
+}
+
+func TestReconcileDeletesTheTokenOfBootstrapDataItCouldNotGenerate(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-token-of-failed-generation")
+	require.NoError(t, err)
+
+	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	require.NoError(t, testEnv.Create(t.Context(), cluster))
+	require.NoError(t, testEnv.Create(t.Context(), kcp))
+	conditions.Set(cluster, metav1.Condition{
+		Type:   string(clusterv1.ClusterControlPlaneInitializedCondition),
+		Status: metav1.ConditionTrue,
+		Reason: "ControlPlaneReady",
+	})
+	require.NoError(t, testEnv.Status().Update(t.Context(), cluster))
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{Name: "worker", Namespace: ns.Name},
+		Spec: clusterv1.MachineSpec{
+			ClusterName: cluster.Name,
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachine",
+				Name:     "worker",
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{ConfigRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "K0sWorkerConfig",
+				Name:     "worker",
+				APIGroup: clusterv1.GroupVersionBootstrap.Group,
+			}},
+		},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), machine))
+
+	config := &bootstrapv1.K0sWorkerConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "worker",
+			Namespace: ns.Name,
+			OwnerReferences: []metav1.OwnerReference{{
+				Kind:       "Machine",
+				APIVersion: clusterv1.GroupVersion.String(),
+				Name:       machine.Name,
+				UID:        machine.UID,
+			}},
+		},
+		Spec: bootstrapv1.K0sWorkerConfigSpec{
+			Files: []bootstrapv1.File{{
+				File:        provisioner.File{Path: "/etc/missing"},
+				ContentFrom: &bootstrapv1.ContentSource{SecretRef: &bootstrapv1.ContentSourceRef{Name: "missing", Key: "value"}},
+			}},
+		},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), config))
+
+	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+	require.NoError(t, clusterCerts.Generate())
+	caCertSecret := clusterCerts.GetByPurpose(secret.ClusterCA).AsSecret(
+		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
+	)
+	require.NoError(t, testEnv.Create(t.Context(), caCertSecret))
+
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(t.Context(), caCertSecret, config, machine, kcp, cluster, ns))
+	}()
+
+	r := &Controller{
+		TokenTTL:              DefaultTokenTTL,
+		Client:                testEnv,
+		workloadClusterClient: testEnv,
+		SecretCachingClient:   testEnv,
+	}
+
+	before := countBootstrapTokens(t)
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err != nil && strings.Contains(err.Error(), "missing")
+	}, 10*time.Second, 100*time.Millisecond)
+	require.Equal(t, before, countBootstrapTokens(t))
+
+	require.NoError(t, testEnv.Create(t.Context(), &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "missing", Namespace: ns.Name},
+		Data:       map[string][]byte{"value": []byte("body")},
+	}))
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err == nil
+	}, 10*time.Second, 100*time.Millisecond)
+	require.Equal(t, before+1, countBootstrapTokens(t))
 }
