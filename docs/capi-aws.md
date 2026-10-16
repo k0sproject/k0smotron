@@ -11,7 +11,15 @@ Before starting this example, ensure that you have met the [general prerequisite
 
 Before launching a cluster, it's crucial to set up your infrastructure provider. Each provider has its unique prerequisites and configuration steps.
 
-Follow the AWS Provider [installation guide](https://cluster-api-aws.sigs.k8s.io/getting-started.html#initialize-the-management-cluster) for detailed steps.
+Follow the AWS Provider [installation guide](https://cluster-api-aws.sigs.k8s.io/getting-started.html#initialize-the-management-cluster) for detailed steps. After configuring credentials and IAM, initialize the provider with the pinned versions used by this example:
+
+```bash
+clusterctl init \
+  --core cluster-api:{{{ extra.capi_versions.core }}} \
+  --infrastructure aws:{{{ extra.capi_versions.aws }}} \
+  --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}}
+```
 
 ## Creating a child cluster
 
