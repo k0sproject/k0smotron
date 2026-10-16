@@ -485,3 +485,82 @@ func TestRemediationLineageSurvivesARetry(t *testing.T) {
 	carryRemediationLineage(kcp, third)
 	require.Equal(t, int32(2), remediationInProgressFor(third).RetryCount)
 }
+
+func remediationScope(t *testing.T, kcp *cpv1beta2.K0sControlPlane, active, deleted []*clusterv1.Machine) (*K0sController, *controlplane) {
+	t.Helper()
+	scheme := runtime.NewScheme()
+	require.NoError(t, clusterv1.AddToScheme(scheme))
+	require.NoError(t, cpv1beta2.AddToScheme(scheme))
+
+	objs := []client.Object{kcp}
+	for _, m := range active {
+		objs = append(objs, m)
+	}
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).
+		WithObjects(objs...).WithStatusSubresource(objs...).Build()}
+
+	return c, &controlplane{
+		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		kcp:             kcp,
+		activeMachines:  collections.FromMachines(active...),
+		deletedMachines: collections.FromMachines(deleted...),
+	}
+}
+
+func initializedControlPlane() *cpv1beta2.K0sControlPlane {
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
+	return kcp
+}
+
+func TestReconcileUnhealthyMachinesReportsDistinctReasons(t *testing.T) {
+	provisioning := remediationMachine("cp-1", true, false)
+	provisioning.Status.NodeRef = clusterv1.MachineNodeReference{}
+
+	tests := []struct {
+		name    string
+		others  []*clusterv1.Machine
+		deleted []*clusterv1.Machine
+		reason  string
+		message string
+	}{
+		{
+			name:    "a single replica cannot be remediated",
+			reason:  cpv1beta2.K0sControlPlaneMachineCannotBeRemediatedReason,
+			message: "less or equal to 1",
+		},
+		{
+			name:    "a healthy machine still provisioning defers it",
+			others:  []*clusterv1.Machine{provisioning},
+			reason:  cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason,
+			message: "provisioning",
+		},
+		{
+			name:    "a machine being deleted defers it",
+			others:  []*clusterv1.Machine{remediationMachine("cp-1", true, false)},
+			deleted: []*clusterv1.Machine{remediationMachine("cp-2", true, true)},
+			reason:  cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason,
+			message: "deletion",
+		},
+		{
+			name:    "a remediated machine reports it is deleting",
+			others:  []*clusterv1.Machine{remediationMachine("cp-1", true, false)},
+			reason:  cpv1beta2.K0sControlPlaneMachineRemediationMachineDeletingReason,
+			message: "Machine is deleting",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			unhealthy := remediationMachine("cp-0", false, false)
+			c, scope := remediationScope(t, initializedControlPlane(), append([]*clusterv1.Machine{unhealthy}, tt.others...), tt.deleted)
+			require.NoError(t, c.reconcileUnhealthyMachines(t.Context(), scope))
+
+			got := conditions.Get(unhealthy, clusterv1.MachineOwnerRemediatedCondition)
+			require.NotNil(t, got)
+			require.Equal(t, metav1.ConditionFalse, got.Status)
+			require.Equal(t, tt.reason, got.Reason)
+			require.Contains(t, got.Message, tt.message)
+		})
+	}
+}

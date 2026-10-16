@@ -99,7 +99,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 			conditions.Set(machineToBeRemediated, metav1.Condition{
 				Type:    string(clusterv1.MachineOwnerRemediatedCondition),
 				Status:  metav1.ConditionFalse,
-				Reason:  clusterv1.MachineOwnerRemediatedWaitingForRemediationReason,
+				Reason:  cpv1beta2.K0sControlPlaneMachineCannotBeRemediatedReason,
 				Message: "KCP can't remediate if current replicas are less or equal to 1",
 			})
 			return nil
@@ -111,7 +111,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 			conditions.Set(machineToBeRemediated, metav1.Condition{
 				Type:    string(clusterv1.MachineOwnerRemediatedCondition),
 				Status:  metav1.ConditionFalse,
-				Reason:  clusterv1.MachineOwnerRemediatedWaitingForRemediationReason,
+				Reason:  cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason,
 				Message: "KCP waiting for control plane machine provisioning to complete before triggering remediation",
 			})
 			return nil
@@ -125,7 +125,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 			conditions.Set(machineToBeRemediated, metav1.Condition{
 				Type:    string(clusterv1.MachineOwnerRemediatedCondition),
 				Status:  metav1.ConditionFalse,
-				Reason:  clusterv1.MachineOwnerRemediatedWaitingForRemediationReason,
+				Reason:  cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason,
 				Message: "KCP waiting for control plane machine deletion to complete before triggering remediation",
 			})
 			return nil
@@ -144,6 +144,12 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 		return errors.Wrapf(err, "failed to delete unhealthy machine %s", machineToBeRemediated.Name)
 	}
 	log.Info("Remediated unhealthy machine, another new machine should take its place soon.")
+	conditions.Set(machineToBeRemediated, metav1.Condition{
+		Type:    string(clusterv1.MachineOwnerRemediatedCondition),
+		Status:  metav1.ConditionFalse,
+		Reason:  cpv1beta2.K0sControlPlaneMachineRemediationMachineDeletingReason,
+		Message: "Machine is deleting",
+	})
 
 	// Marks that a remediation is in progress and carries what the replacement inherits. Cleared
 	// where that replacement is created, which is also where the value moves onto it.
