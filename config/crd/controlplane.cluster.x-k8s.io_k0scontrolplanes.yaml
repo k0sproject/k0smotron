@@ -219,6 +219,46 @@ spec:
                           AdditionalConfig is an unstructured object that contains additional config to be merged
                           with the generated one. The format follows Butane spec: https://coreos.github.io/butane/
                         type: string
+                      additionalConfigFrom:
+                        description: |-
+                          AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+                          It cannot be set together with additionalConfig.
+                        properties:
+                          configMapRef:
+                            description: ConfigMapRef is a reference to a configmap
+                              that contains the content.
+                            properties:
+                              key:
+                                description: Key is the key in the source that contains
+                                  the content
+                                type: string
+                              name:
+                                description: Name is the name of the source
+                                type: string
+                            required:
+                            - key
+                            - name
+                            type: object
+                          secretRef:
+                            description: SecretRef is a reference to a secret that
+                              contains the content.
+                            properties:
+                              key:
+                                description: Key is the key in the source that contains
+                                  the content
+                                type: string
+                              name:
+                                description: Name is the name of the source
+                                type: string
+                            required:
+                            - key
+                            - name
+                            type: object
+                        type: object
+                        x-kubernetes-validations:
+                        - message: exactly one of secretRef or configMapRef must be
+                            set
+                          rule: has(self.secretRef) != has(self.configMapRef)
                       variant:
                         description: |-
                           Variant declares which distribution variant the generated config is for.
@@ -241,6 +281,10 @@ spec:
                     - variant
                     - version
                     type: object
+                    x-kubernetes-validations:
+                    - message: additionalConfig and additionalConfigFrom are mutually
+                        exclusive
+                      rule: '!has(self.additionalConfig) || !has(self.additionalConfigFrom)'
                   k0s:
                     description: |-
                       K0s defines the k0s configuration. Note, that some fields will be overwritten by k0smotron.
@@ -868,7 +912,7 @@ spec:
                           See: https://cloudinit.readthedocs.io/en/latest/reference/merging.html
                           This field, and the variable substitution applied to it, are for cloud-init and PowerShell only.
                           The ignition provisioner ignores it, since an Ignition config cannot be appended to as text.
-                          Use ignition.additionalConfig for extra Butane config there.
+                          Use ignition.additionalConfig or ignition.additionalConfigFrom for extra Butane config there.
                         properties:
                           configMapRef:
                             description: ConfigMapRef is a reference to a configmap
@@ -910,6 +954,46 @@ spec:
                               AdditionalConfig is an unstructured object that contains additional config to be merged
                               with the generated one. The format follows Butane spec: https://coreos.github.io/butane/
                             type: string
+                          additionalConfigFrom:
+                            description: |-
+                              AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+                              It cannot be set together with additionalConfig.
+                            properties:
+                              configMapRef:
+                                description: ConfigMapRef is a reference to a configmap
+                                  that contains the content.
+                                properties:
+                                  key:
+                                    description: Key is the key in the source that
+                                      contains the content
+                                    type: string
+                                  name:
+                                    description: Name is the name of the source
+                                    type: string
+                                required:
+                                - key
+                                - name
+                                type: object
+                              secretRef:
+                                description: SecretRef is a reference to a secret
+                                  that contains the content.
+                                properties:
+                                  key:
+                                    description: Key is the key in the source that
+                                      contains the content
+                                    type: string
+                                  name:
+                                    description: Name is the name of the source
+                                    type: string
+                                required:
+                                - key
+                                - name
+                                type: object
+                            type: object
+                            x-kubernetes-validations:
+                            - message: exactly one of secretRef or configMapRef must
+                                be set
+                              rule: has(self.secretRef) != has(self.configMapRef)
                           variant:
                             description: |-
                               Variant declares which distribution variant the generated config is for.
@@ -932,6 +1016,10 @@ spec:
                         - variant
                         - version
                         type: object
+                        x-kubernetes-validations:
+                        - message: additionalConfig and additionalConfigFrom are mutually
+                            exclusive
+                          rule: '!has(self.additionalConfig) || !has(self.additionalConfigFrom)'
                       platform:
                         default: linux
                         description: Platform specifies the target platform for the

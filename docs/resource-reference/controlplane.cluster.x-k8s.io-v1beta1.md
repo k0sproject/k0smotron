@@ -599,6 +599,117 @@ https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specif
 with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfrom">additionalConfigFrom</a></b></td>
+        <td>object</td>
+        <td>
+          AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+It cannot be set together with additionalConfig.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.ignition.additionalConfigFrom
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecignition)</sup></sup>
+
+
+
+AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+It cannot be set together with additionalConfig.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfromconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfromsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.ignition.additionalConfigFrom.configMapRef
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfrom)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.spec.k0sConfigSpec.ignition.additionalConfigFrom.secretRef
+<sup><sup>[↩ Parent](#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfrom)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -1958,6 +2069,117 @@ https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specif
 with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfrom">additionalConfigFrom</a></b></td>
+        <td>object</td>
+        <td>
+          AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+It cannot be set together with additionalConfig.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.ignition.additionalConfigFrom
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecignition)</sup></sup>
+
+
+
+AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+It cannot be set together with additionalConfig.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfromconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfromsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.ignition.additionalConfigFrom.configMapRef
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfrom)</sup></sup>
+
+
+
+ConfigMapRef is a reference to a configmap that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.ignition.additionalConfigFrom.secretRef
+<sup><sup>[↩ Parent](#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfrom)</sup></sup>
+
+
+
+SecretRef is a reference to a secret that contains the content.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
