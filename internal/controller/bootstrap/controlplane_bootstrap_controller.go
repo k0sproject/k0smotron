@@ -459,16 +459,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		scope.installArgs = append(scope.installArgs, "--config", k0sConfigPath)
 	}
 
-	// Kine or an external etcd can hold the data the lost machines served, so a replacement may init against it.
-	var k0sConfig map[string]any
-	if scope.Config.Spec.K0s != nil {
-		k0sConfig = scope.Config.Spec.K0s.Object
-	}
-	storageType, _, _ := unstructured.NestedString(k0sConfig, "spec", "storage", "type")
-	externalEtcd, _, _ := unstructured.NestedMap(k0sConfig, "spec", "storage", "etcd", "externalCluster")
-	mayInit := storageType == "kine" || len(externalEtcd) > 0 || !conditions.IsTrue(scope.Cluster, string(clusterv1.ClusterControlPlaneInitializedCondition))
-
-	if mayInit && scope.machines.Oldest().Name == scope.Config.Name {
+	if mayInitControlPlane(scope) && scope.machines.Oldest().Name == scope.Config.Name {
 		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
 		if err != nil {
 			return nil, fmt.Errorf("error generating initial control plane files: %v", err)
@@ -535,6 +526,23 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		Vars:             vars,
 		AdditionalConfig: additionalConfig,
 	})
+}
+
+// mayInitControlPlane reports whether the init path may be taken. Kine or an external etcd can hold
+// the data the lost machines served, so a replacement may init against it.
+func mayInitControlPlane(scope *ControllerScope) bool {
+	if !conditions.IsTrue(scope.Cluster, string(clusterv1.ClusterControlPlaneInitializedCondition)) {
+		return true
+	}
+
+	var k0sConfig map[string]any
+	if scope.Config.Spec.K0s != nil {
+		k0sConfig = scope.Config.Spec.K0s.Object
+	}
+	storageType, _, _ := unstructured.NestedString(k0sConfig, "spec", "storage", "type")
+	externalEtcd, _, _ := unstructured.NestedMap(k0sConfig, "spec", "storage", "etcd", "externalCluster")
+
+	return storageType == "kine" || len(externalEtcd) > 0
 }
 
 func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File) ([]provisioner.File, error) {
