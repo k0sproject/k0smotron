@@ -20,6 +20,15 @@ RUN rc-update add local default
 # Ensures that /usr/local/bin/k0s is seeded from /dist at startup
 RUN rc-update add k0s-seed default
 
+# Add 'test' user, create its .ssh dir and set permissions
+RUN adduser -D -s /bin/sh test && \
+    passwd -d test && \
+    mkdir -p /home/test/.ssh && \
+    chown -R test:test /home/test/.ssh && \
+    chmod 700 /home/test/.ssh && \
+    echo "test ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/test && \
+    chmod 440 /etc/sudoers.d/test
+
 # remove -docker keyword so we actually mount cgroups in container
 RUN sed -i -e '/keyword/s/-docker//' /etc/init.d/cgroups
 # disable ttys
