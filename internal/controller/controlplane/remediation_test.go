@@ -572,7 +572,7 @@ func TestReconcileUnhealthyMachinesReportsDistinctReasons(t *testing.T) {
 	}
 }
 
-func TestReconcileUnhealthyMachinesPicksTheMostBroken(t *testing.T) {
+func TestElectMachineToRemediate(t *testing.T) {
 	machine := func(name string, age time.Duration, mutate ...func(*clusterv1.Machine)) *clusterv1.Machine {
 		m := remediationMachine(name, false, false)
 		m.CreationTimestamp = metav1.NewTime(time.Unix(1000, 0).Add(-age))
@@ -660,17 +660,21 @@ func TestReconcileUnhealthyMachinesPicksTheMostBroken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kcp := initializedControlPlane()
-			c, scope := remediationScope(t, kcp, tt.machines, nil)
-			scope.etcdManaged = tt.etcdManaged
-
-			require.NoError(t, remediate(t.Context(), c, scope))
-
-			marked, ok := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
-			require.True(t, ok)
-			require.Equal(t, tt.want, marked.Machine)
+			require.Equal(t, tt.want, electMachineToRemediate(collections.FromMachines(tt.machines...), tt.etcdManaged).Name)
 		})
 	}
+
+	t.Run("reconcile remediates the elected machine", func(t *testing.T) {
+		kcp := initializedControlPlane()
+		c, scope := remediationScope(t, kcp, []*clusterv1.Machine{machine("old", time.Hour), machine("etcd", time.Minute, etcdUnhealthy)}, nil)
+		scope.etcdManaged = true
+
+		require.NoError(t, remediate(t.Context(), c, scope))
+
+		marked, ok := remediationDataFrom(kcp.Annotations, cpv1beta2.RemediationInProgressAnnotation)
+		require.True(t, ok)
+		require.Equal(t, "etcd", marked.Machine)
+	})
 }
 
 func TestReconcileUnhealthyMachinesClearsAMarkerAMachineOutlived(t *testing.T) {

@@ -81,28 +81,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 	if len(unhealthyMachines) == 0 {
 		return ctrl.Result{}, nil
 	}
-	candidates := unhealthyMachines.UnsortedList()
-	sort.Slice(candidates, func(i, j int) bool {
-		a, b := candidates[i], candidates[j]
-		if annotations.HasRemediateMachine(a) != annotations.HasRemediateMachine(b) {
-			return annotations.HasRemediateMachine(a)
-		}
-		if a.Status.NodeRef.IsDefined() != b.Status.NodeRef.IsDefined() {
-			return !a.Status.NodeRef.IsDefined()
-		}
-		if scope.etcdManaged {
-			aHealthy := conditions.IsTrue(a, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition)
-			bHealthy := conditions.IsTrue(b, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition)
-			if aHealthy != bHealthy {
-				return !aHealthy
-			}
-		}
-		if a.CreationTimestamp.Equal(&b.CreationTimestamp) {
-			return a.Name < b.Name
-		}
-		return a.CreationTimestamp.Before(&b.CreationTimestamp)
-	})
-	machineToBeRemediated := candidates[0]
+	machineToBeRemediated := electMachineToRemediate(unhealthyMachines, scope.etcdManaged)
 
 	if !machineToBeRemediated.ObjectMeta.DeletionTimestamp.IsZero() {
 		log.Info("Machine to remediate is being deleted.")
@@ -215,6 +194,34 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 	})
 
 	return ctrl.Result{RequeueAfter: time.Second}, nil
+}
+
+// electMachineToRemediate picks the machine to remediate first, the one a user asked for, then one
+// without a node, then one with an unhealthy etcd member, then the oldest, with the name breaking ties.
+func electMachineToRemediate(machines collections.Machines, etcdManaged bool) *clusterv1.Machine {
+	candidates := machines.UnsortedList()
+	sort.Slice(candidates, func(i, j int) bool {
+		a, b := candidates[i], candidates[j]
+		if annotations.HasRemediateMachine(a) != annotations.HasRemediateMachine(b) {
+			return annotations.HasRemediateMachine(a)
+		}
+		if a.Status.NodeRef.IsDefined() != b.Status.NodeRef.IsDefined() {
+			return !a.Status.NodeRef.IsDefined()
+		}
+		if etcdManaged {
+			aHealthy := conditions.IsTrue(a, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition)
+			bHealthy := conditions.IsTrue(b, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition)
+			if aHealthy != bHealthy {
+				return !aHealthy
+			}
+		}
+		if a.CreationTimestamp.Equal(&b.CreationTimestamp) {
+			return a.Name < b.Name
+		}
+		return a.CreationTimestamp.Before(&b.CreationTimestamp)
+	})
+
+	return candidates[0]
 }
 
 // maxReportedMachineName is the bound status puts on the machine it names, so a longer one is not
