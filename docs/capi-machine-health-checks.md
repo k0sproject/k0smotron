@@ -67,6 +67,10 @@ the same remediation sequence. `spec.remediation` on the `K0sControlPlane` contr
   inside the period is deferred and the Machine reports `RemediationDeferred`. A retry deferred past
   `minHealthyPeriodSeconds` starts a new sequence instead, so keep it below that. No retry period
   applies when it is not set.
+- `maxRetry` is how many retries one sequence may make. A retry past it is refused and the Machine
+  reports `CannotBeRemediated` until `minHealthyPeriodSeconds` has passed since the previous
+  remediation, when it is remediated as the start of a new sequence. 0 or a negative value refuses
+  every retry, and retries are unlimited when it is not set.
 
 ```yaml
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
@@ -77,6 +81,7 @@ spec:
   remediation:
     minHealthyPeriodSeconds: 3600
     retryPeriodSeconds: 300
+    maxRetry: 3
 ```
 
 The most recent remediation and its retry count are reported in `status.lastRemediation`.

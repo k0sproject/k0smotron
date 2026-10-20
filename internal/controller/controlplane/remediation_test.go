@@ -746,6 +746,7 @@ func withLineage(m *clusterv1.Machine, age time.Duration, retries int32) *cluste
 func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 	deleting := cpv1beta2.K0sControlPlaneMachineRemediationMachineDeletingReason
 	deferred := cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason
+	cannot := cpv1beta2.K0sControlPlaneMachineCannotBeRemediatedReason
 
 	tests := []struct {
 		name          string
@@ -756,6 +757,8 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 		age           time.Duration
 		minHealthy    *int32
 		period        *int32
+		maxRetry      *int32
+		deleting      bool
 		reason        string
 		message       string
 		wantRetry     int32
@@ -786,6 +789,28 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 			reason: deferred, message: "RetryPeriodSeconds"},
 		{name: "a stale marker is cleared even when the retry period refuses", staleMarker: true, retries: 1, age: time.Minute, period: new(int32(600)),
 			reason: deferred, message: "RetryPeriodSeconds"},
+		{name: "no limit keeps retrying", retries: 5, age: time.Minute,
+			reason: deleting, wantRetry: 6},
+		{name: "a retry under the limit goes ahead", retries: 1, age: time.Minute, maxRetry: new(int32(2)),
+			reason: deleting, wantRetry: 2},
+		{name: "a retry past the limit is refused", retries: 2, age: time.Minute, maxRetry: new(int32(2)),
+			reason: cannot, message: "retry 3 exceeds MaxRetry 2"},
+		{name: "zero allows no retry at all", retries: 0, age: time.Minute, maxRetry: new(int32(0)),
+			reason: cannot, message: "retry 1 exceeds MaxRetry 0"},
+		{name: "a new sequence is not a retry", retries: 9, age: 2 * time.Hour, maxRetry: new(int32(0)),
+			reason: deleting, wantRetry: 0},
+		{name: "a negative limit still allows a new sequence", retries: 9, age: 2 * time.Hour, maxRetry: new(int32(-1)),
+			reason: deleting, wantRetry: 0},
+		{name: "the retry period is checked before maxRetry", retries: 5, age: time.Minute, period: new(int32(600)), maxRetry: new(int32(2)),
+			reason: deferred, message: "RetryPeriodSeconds"},
+		{name: "a retry past the period still stops at maxRetry", retries: 5, age: 15 * time.Minute, period: new(int32(600)), maxRetry: new(int32(2)),
+			reason: cannot, message: "MaxRetry"},
+		{name: "maxRetry is checked before the deletion guard", deleting: true, retries: 5, age: time.Minute, maxRetry: new(int32(2)),
+			reason: cannot, message: "MaxRetry"},
+		{name: "an uninitialized control plane still stops at maxRetry", single: true, uninitialized: true, retries: 5, age: time.Minute, maxRetry: new(int32(2)),
+			reason: cannot, message: "MaxRetry"},
+		{name: "a short window makes the failure new for both retry checks", retries: 9, age: 5 * time.Minute, minHealthy: new(int32(60)), period: new(int32(3600)), maxRetry: new(int32(0)),
+			reason: deleting, wantRetry: 0},
 	}
 
 	for _, tt := range tests {
@@ -797,11 +822,16 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 				healthy.CreationTimestamp = metav1.NewTime(time.Unix(3000, 0))
 				active = append(active, healthy)
 			}
+			var deleted []*clusterv1.Machine
+			if tt.deleting {
+				deleted = append(deleted, remediationMachine("cp-2", true, true))
+			}
 
 			kcp := initializedControlPlane()
 			kcp.Spec.Remediation = cpv1beta2.K0sControlPlaneRemediationSpec{
 				MinHealthyPeriodSeconds: tt.minHealthy,
 				RetryPeriodSeconds:      tt.period,
+				MaxRetry:                tt.maxRetry,
 			}
 			kcp.Status.Initialization.ControlPlaneInitialized = new(!tt.uninitialized)
 			if tt.staleMarker {
@@ -810,7 +840,7 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 				}.marshal()}
 			}
 
-			c, scope := remediationScope(t, kcp, active, nil)
+			c, scope := remediationScope(t, kcp, active, deleted)
 			res, err := c.reconcileUnhealthyMachines(t.Context(), scope)
 			require.NoError(t, err)
 

@@ -1181,6 +1181,19 @@ Remediation controls how the control plane remediates Machines a MachineHealthCh
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>maxRetry</b></td>
+        <td>integer</td>
+        <td>
+          MaxRetry is how many retries one remediation sequence may make. A retry is the remediation of a
+replacement Machine within minHealthyPeriodSeconds of the remediation it followed. A retry past the
+limit is refused with reason CannotBeRemediated until minHealthyPeriodSeconds has passed since the
+previous remediation, when the Machine is remediated as the start of a new sequence. 0 or a negative
+value refuses every retry. Retries are unlimited when it is not set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>minHealthyPeriodSeconds</b></td>
         <td>integer</td>
         <td>

@@ -143,6 +143,14 @@ const DefaultMinHealthyPeriodSeconds = int32(60 * 60)
 // K0sControlPlaneRemediationSpec controls how the control plane remediates Machines a MachineHealthCheck marks unhealthy.
 // +kubebuilder:validation:MinProperties=1
 type K0sControlPlaneRemediationSpec struct {
+	// MaxRetry is how many retries one remediation sequence may make. A retry is the remediation of a
+	// replacement Machine within minHealthyPeriodSeconds of the remediation it followed. A retry past the
+	// limit is refused with reason CannotBeRemediated until minHealthyPeriodSeconds has passed since the
+	// previous remediation, when the Machine is remediated as the start of a new sequence. 0 or a negative
+	// value refuses every retry. Retries are unlimited when it is not set.
+	// +optional
+	MaxRetry *int32 `json:"maxRetry,omitempty"`
+
 	// MinHealthyPeriodSeconds is how long after a Machine is remediated the remediation of its replacement
 	// Machine still counts as a retry of the same remediation sequence. A later remediation starts a new
 	// sequence and resets the retry count. 0 makes every remediation start a new sequence. 3600 is used when

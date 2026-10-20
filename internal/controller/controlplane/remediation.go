@@ -136,6 +136,17 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 		return ctrl.Result{}, nil
 	}
 
+	if maxRetry := scope.kcp.Spec.Remediation.MaxRetry; maxRetry != nil && inProgress.RetryCount > 0 && inProgress.RetryCount > *maxRetry {
+		log.Info("A control plane machine needs remediation, but the operation already failed too many times. Skipping remediation", "maxRetry", *maxRetry, "retryCount", inProgress.RetryCount)
+		conditions.Set(machineToBeRemediated, metav1.Condition{
+			Type:    string(clusterv1.MachineOwnerRemediatedCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  cpv1beta2.K0sControlPlaneMachineCannotBeRemediatedReason,
+			Message: fmt.Sprintf("KCP can't remediate this machine because retry %d exceeds MaxRetry %d", inProgress.RetryCount, *maxRetry),
+		})
+		return ctrl.Result{}, nil
+	}
+
 	// Ensure that the cluster remains available during and after the remediation process. The remediation must not
 	// compromise the cluster's ability to serve workloads or cause disruption to the control plane's functionality.
 	if ptr.Deref(scope.kcp.Status.Initialization.ControlPlaneInitialized, false) {
