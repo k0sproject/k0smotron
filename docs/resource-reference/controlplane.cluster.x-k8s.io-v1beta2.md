@@ -1193,6 +1193,19 @@ it is not set.<br/>
             <i>Minimum</i>: 0<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>retryPeriodSeconds</b></td>
+        <td>integer</td>
+        <td>
+          RetryPeriodSeconds is the minimum time between remediating a Machine and remediating its replacement
+Machine when that is a retry, see minHealthyPeriodSeconds. A retry inside this period is deferred with
+reason RemediationDeferred. A retry deferred past minHealthyPeriodSeconds starts a new sequence instead,
+so keep this below it. No retry period applies when it is not set.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

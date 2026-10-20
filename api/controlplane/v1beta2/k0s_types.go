@@ -150,6 +150,14 @@ type K0sControlPlaneRemediationSpec struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	MinHealthyPeriodSeconds *int32 `json:"minHealthyPeriodSeconds,omitempty"`
+
+	// RetryPeriodSeconds is the minimum time between remediating a Machine and remediating its replacement
+	// Machine when that is a retry, see minHealthyPeriodSeconds. A retry inside this period is deferred with
+	// reason RemediationDeferred. A retry deferred past minHealthyPeriodSeconds starts a new sequence instead,
+	// so keep this below it. No retry period applies when it is not set.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	RetryPeriodSeconds *int32 `json:"retryPeriodSeconds,omitempty"`
 }
 
 // K0sControlPlaneMachineTemplate describes the data needed to create a Machine from a template.
@@ -310,7 +318,7 @@ type K0sControlPlaneStatus struct {
 }
 
 // LastRemediationStatus records the most recent remediation, reconstructed from the machine that
-// replaced the unhealthy one. Nothing acts on retryCount yet, it is reported only.
+// replaced the unhealthy one.
 type LastRemediationStatus struct {
 	// machine is the machine name of the latest machine being remediated.
 	// +required

@@ -19,6 +19,7 @@ package controlplane
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"sort"
 	"time"
@@ -121,6 +122,20 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 			retErr = errors.Wrapf(derr, "failed to patch control plane Machine %s", machineToBeRemediated.Name)
 		}
 	}()
+	inProgress := remediationInProgressFor(machineToBeRemediated, scope.kcp)
+	retryPeriod := time.Duration(ptr.Deref(scope.kcp.Spec.Remediation.RetryPeriodSeconds, 0)) * time.Second
+	last, _ := remediationDataFrom(machineToBeRemediated.Annotations, cpv1beta2.RemediationForAnnotation)
+	if inProgress.RetryCount > 0 && last.Timestamp.Add(retryPeriod).After(inProgress.Timestamp.Time) {
+		log.Info("A control plane machine needs remediation, but the previous remediation in this sequence is within the retry period. Skipping remediation", "retryPeriod", retryPeriod)
+		conditions.Set(machineToBeRemediated, metav1.Condition{
+			Type:    string(clusterv1.MachineOwnerRemediatedCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  cpv1beta2.K0sControlPlaneMachineRemediationDeferredReason,
+			Message: fmt.Sprintf("KCP defers remediating this machine until %s after the previous remediation (RetryPeriodSeconds)", retryPeriod),
+		})
+		return ctrl.Result{}, nil
+	}
+
 	// Ensure that the cluster remains available during and after the remediation process. The remediation must not
 	// compromise the cluster's ability to serve workloads or cause disruption to the control plane's functionality.
 	if ptr.Deref(scope.kcp.Status.Initialization.ControlPlaneInitialized, false) {
@@ -185,7 +200,7 @@ func (c *K0sController) reconcileUnhealthyMachines(ctx context.Context, scope *c
 	// Marks that a remediation is in progress and carries what the replacement inherits. Cleared
 	// where that replacement is created, which is also where the value moves onto it.
 	annotations.AddAnnotations(scope.kcp, map[string]string{
-		cpv1beta2.RemediationInProgressAnnotation: remediationInProgressFor(machineToBeRemediated, scope.kcp).marshal(),
+		cpv1beta2.RemediationInProgressAnnotation: inProgress.marshal(),
 	})
 
 	return ctrl.Result{RequeueAfter: time.Second}, nil
