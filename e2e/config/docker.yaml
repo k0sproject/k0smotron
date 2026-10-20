@@ -76,7 +76,16 @@ providers:
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: v2.2.99 # potentially next release. Manifest from source files (development) are used.
+      - name: "{go://github.com/k0sproject/k0smotron@v2.2}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v2.2}/control-plane-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../data/shared/v2.2/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: v2.3.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../config/clusterapi/controlplane
         contract: v1beta1
         files:
@@ -116,7 +125,16 @@ providers:
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
-      - name: v2.2.99 # potentially next release. Manifest from source files (development) are used.
+      - name: "{go://github.com/k0sproject/k0smotron@v2.2}"
+        value: https://github.com/k0sproject/k0smotron/releases/download/{go://github.com/k0sproject/k0smotron@v2.2}/bootstrap-components.yaml
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../data/shared/v2.2/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+      - name: v2.3.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../config/clusterapi/bootstrap
         contract: v1beta1
         files:
@@ -130,7 +148,7 @@ providers:
   - name: k0sproject-k0smotron
     type: RuntimeExtensionProvider
     versions:
-      - name: v2.2.99 # potentially next release. Manifest from source files (development) are used.
+      - name: v2.3.99 # potentially next release. Manifest from source files (development) are used.
         value: ../../extensions/config/default
         files:
         - sourcePath: "../../metadata.yaml"
