@@ -227,6 +227,8 @@ func newControlPlaneUpgradeChecks(preMachines *clusterv1.MachineList) upgradeChe
 		checks.DuringUpgradeCheck = checkStandaloneInPlace
 	case "InPlaceCAPI":
 		checks.DuringUpgradeCheck = checkCAPIInPlace
+	case "Recreate":
+		checks.DuringUpgradeCheck = checkRecreateMachineCount
 	case "RecreateDeleteFirst":
 		checks.DuringUpgradeCheck = checkRecreateDeleteFirstMachineCount
 	}
@@ -416,18 +418,71 @@ func checkRecreateDeleteFirstMachineCount(ctx context.Context, input util.Upgrad
 			return false, err
 		}
 		count := 0
+		deleting := 0
 		for _, m := range machineList.Items {
 			if m.Labels[clusterv1.MachineControlPlaneLabel] == "true" {
 				count++
+				if isDeleting(&m) {
+					deleting++
+				}
 			}
 		}
 		if count > desiredReplicas {
 			return false, fmt.Errorf("RecreateDeleteFirst upgrade exceeded desired control plane machine count: got %d, expected max %d", count, desiredReplicas)
 		}
+		if deleting > 1 {
+			return false, fmt.Errorf("More than one control plane machine is being deleted")
+		}
+
 		return false, nil
 	})
 	if errors.Is(err, context.Canceled) {
 		return nil
 	}
 	return err
+}
+
+func checkRecreateMachineCount(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
+	maxSurge := int(input.ControlPlane.Spec.Replicas) + 1
+
+	err := wait.PollUntilContextCancel(ctx, time.Second, true, func(fctx context.Context) (bool, error) {
+		machineList := &clusterv1.MachineList{}
+		if err := input.ClusterProxy.GetClient().List(fctx, machineList,
+			client.InNamespace(input.Cluster.Namespace),
+			client.MatchingLabels{clusterv1.ClusterNameLabel: input.Cluster.Name},
+		); err != nil {
+			return false, err
+		}
+		count := 0
+		deleting := 0
+		for _, m := range machineList.Items {
+			if m.Labels[clusterv1.MachineControlPlaneLabel] == "true" {
+				count++
+				if isDeleting(&m) {
+					deleting++
+				}
+			}
+		}
+
+		if count > maxSurge {
+			return false, fmt.Errorf("Recreate upgrade exceeded desired control plane machine count: got %d, expected max %d", count, maxSurge)
+		}
+		if deleting > 1 {
+			return false, fmt.Errorf("More than one control plane machine is being deleted")
+		}
+
+		return false, nil
+	})
+	if errors.Is(err, context.Canceled) {
+		return nil
+	}
+	return err
+}
+
+func isDeleting(machine *clusterv1.Machine) bool {
+	if _, ok := machine.Annotations[clusterv1.DeleteMachineAnnotation]; ok {
+		return true
+	}
+
+	return false
 }

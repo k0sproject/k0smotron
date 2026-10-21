@@ -185,6 +185,11 @@ func isDesiredStateReached(scope *controlplane) bool {
 
 // isNeededScaleDown checks if it's needed to scale down the control plane based on the current state of the cluster and the desired number of replicas.
 func isNeededScaleDown(scope *controlplane) bool {
+	if scope.deletedMachines.Len() > 0 {
+		// If there are machines being deleted, we should not scale down until they are gone.
+		return false
+	}
+
 	potentialMachinesCount := scope.activeMachines.Len() - 1
 	minimumAllowedMachines := 1
 	// Never scale down if that would cause to have zero machines, to avoid having a non-functional control plane.
