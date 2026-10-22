@@ -27,6 +27,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 )
 
 // pagedNodes serves the given pages in order and records the options it was called
@@ -84,7 +86,7 @@ func TestNodeForMachineMatching(t *testing.T) {
 
 	t.Run("by machine name label", func(t *testing.T) {
 		list, _ := pagedNodes([]corev1.Node{node("node1", func(n *corev1.Node) {
-			n.Labels = map[string]string{machineNameNodeLabel: "machine1"}
+			n.Labels = map[string]string{bootstrapv2.MachineNameNodeLabel: "machine1"}
 		})})
 
 		found, _, err := nodeForMachine(context.Background(), list, machine)

@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/k0sproject/k0smotron/v2/internal/autopilot"
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
@@ -172,7 +171,7 @@ func (ipuv *InPlaceVersionUpdateHandler) DoUpdateMachine(ctx context.Context, re
 		return
 	}
 
-	currentPlanTargetNodes, err := autopilot.GetPlanTargetNodes(plan)
+	targetsMachine, err := planTargetsMachine(plan, desiredMachine, isControlPlaneMachine)
 	if err != nil {
 		log.Error(err, "Failed to get autopilot plan target")
 		resp.Message = err.Error()
@@ -189,10 +188,10 @@ func (ipuv *InPlaceVersionUpdateHandler) DoUpdateMachine(ctx context.Context, re
 	}
 
 	// Proceed with the removal of the plan and creation of a new one if any of the following conditions is met:
-	// - The current machine is not in the list of target nodes of the completed plan
+	// - The completed plan does not target the current machine
 	// - The target version of the completed plan does not match the desired version of the current machine
 	// the plan carries the normalized version
-	if !slices.Contains(currentPlanTargetNodes, desiredMachine.Name) || targetVersion != util.NormalizeK0sVersion(desiredMachine.Spec.Version) {
+	if !targetsMachine || targetVersion != util.NormalizeK0sVersion(desiredMachine.Spec.Version) {
 		err := autopilot.DeletePlan(ctx, clientset)
 		if err != nil {
 			log.Error(err, "Failed to delete old autopilot plan")
