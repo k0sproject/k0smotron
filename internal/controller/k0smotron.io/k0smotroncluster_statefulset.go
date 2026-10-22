@@ -487,11 +487,8 @@ data:
 	}
 	effectiveFingerprint := effectiveCertFingerprintFromLookup(existingControlPlaneSts, getErr, scope.certFingerprints["controlplane"], scope.currentReconcileState.certificatesRenewed)
 
-	// Template.Annotations may alias kmc.Annotations (see
-	// util.AnnotationsForK0smotronCluster, which returns the Cluster's own
-	// annotations map rather than a copy). Merging into a fresh map instead of
-	// mutating in place keeps the fingerprint on the pod template only, so it
-	// is never persisted back onto the Cluster object itself.
+	// annotations is reused below for the StatefulSet's own metadata, so merge
+	// the fingerprint into a fresh map to keep it on the pod template only.
 	templateAnnotations := make(map[string]string, len(statefulSet.Spec.Template.Annotations)+1)
 	maps.Copy(templateAnnotations, statefulSet.Spec.Template.Annotations)
 	maps.Copy(templateAnnotations, certificateAnnotations(effectiveFingerprint))
