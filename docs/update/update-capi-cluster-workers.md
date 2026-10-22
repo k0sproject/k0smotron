@@ -19,6 +19,9 @@ This requires the same prerequisites as for control plane nodes. See [Cluster AP
 
 Once the extension is active, bump `spec.template.spec.version` on the `MachineDeployment` (and the referenced `K0sWorkerConfigTemplate`, if you keep the two in sync) to the target k0s version. Cluster API calls into the extension for each affected `Machine`, and the extension creates and monitors the autopilot `Plan` on your behalf, no manual `Plan` needed.
 
+!!! note
+    The extension selects the worker node through the `k0smotron.io/machine-name` label that k0smotron sets on every worker node, not through the node name. In-place updates therefore also work for workers whose node name differs from their `Machine` name, for example nodes bootstrapped with `useSystemHostname: true`.
+
 ```yaml
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
