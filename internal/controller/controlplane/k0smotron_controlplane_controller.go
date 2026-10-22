@@ -509,6 +509,19 @@ func isClusterSpecSynced(kmc kapi.Cluster, kcpSpec kapi.ClusterSpec) (isSynced b
 				return false, kcpSpecHash, fmt.Errorf("failed to set api.sans in K0smotronCluster spec: %w", err)
 			}
 		}
+
+		desiredK0sConfigName, found, err := unstructured.NestedString(overridenKmcSpec.K0sConfig.Object, "metadata", "name")
+		if found && err == nil {
+			k0sConfigName, found, err := unstructured.NestedString(kmcSpec.K0sConfig.Object, "metadata", "name")
+			if found && err == nil {
+				if desiredK0sConfigName != k0sConfigName {
+					err = unstructured.SetNestedField(overridenKmcSpec.K0sConfig.Object, k0sConfigName, "metadata", "name")
+					if err != nil {
+						return false, kcpSpecHash, fmt.Errorf("failed to set metadata.name in K0smotronCluster spec: %w", err)
+					}
+				}
+			}
+		}
 	}
 
 	return reflect.DeepEqual(kmcSpec, *overridenKmcSpec), kcpSpecHash, nil
