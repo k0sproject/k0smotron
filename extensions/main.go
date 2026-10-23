@@ -23,8 +23,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	inplaceversionupdate "github.com/k0sproject/k0smotron/v2/extensions/inplaceversionupdate"
+	"github.com/k0sproject/k0smotron/v2/extensions/upgradechain"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	cliflag "k8s.io/component-base/cli/flag"
@@ -52,6 +54,8 @@ var (
 	profilerAddress string
 	webhookPort     int
 	webhookCertDir  string
+	releasesURL     string
+	releasesTTL     time.Duration
 	logOptions      = logs.NewOptions()
 
 	// Creates a logger to be used during the main func using controller runtime utilities
@@ -78,6 +82,12 @@ func InitFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&webhookCertDir, "webhook-cert-dir", "/tmp/k8s-webhook-server/serving-certs/",
 		"Webhook cert dir.")
+
+	fs.StringVar(&releasesURL, "k0s-releases-url", upgradechain.DefaultReleasesURL,
+		"URL of the GitHub-compatible releases API used to discover the available k0s versions.")
+
+	fs.DurationVar(&releasesTTL, "k0s-releases-cache-ttl", time.Hour,
+		"How long the list of available k0s versions is cached.")
 }
 
 func main() {
@@ -138,6 +148,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := setupUpgradeChainHookHandlers(webhookServer); err != nil {
+		setupLog.Error(err, "Error setting up upgrade chain hook handlers")
+		os.Exit(1)
+	}
+
 	// Setup a context listening for SIGINT.
 	ctx := ctrl.SetupSignalHandler()
 
@@ -176,6 +191,21 @@ func setupInPlaceVersionUpdateHookHandlers(runtimeExtensionWebhookServer *server
 		HandlerFunc: ipvu.DoUpdateMachine,
 	}); err != nil {
 		return fmt.Errorf("error adding UpdateMachine handler: %w", err)
+	}
+
+	return nil
+}
+
+// setupUpgradeChainHookHandlers sets up the GenerateUpgradePlan hook, which builds upgrade plans from the available k0s versions.
+func setupUpgradeChainHookHandlers(runtimeExtensionWebhookServer *server.Server) error {
+	h := upgradechain.NewHandler(upgradechain.NewGitHubVersionSource(releasesURL, releasesTTL))
+
+	if err := runtimeExtensionWebhookServer.AddExtensionHandler(server.ExtensionHandler{
+		Hook:        runtimehooksv1.GenerateUpgradePlan,
+		Name:        "generate-upgrade-plan",
+		HandlerFunc: h.DoGenerateUpgradePlan,
+	}); err != nil {
+		return fmt.Errorf("error adding GenerateUpgradePlan handler: %w", err)
 	}
 
 	return nil
