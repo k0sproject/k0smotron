@@ -64,6 +64,7 @@ import (
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	kapi "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	kcerts "github.com/k0sproject/k0smotron/v2/internal/certs"
 	"github.com/k0sproject/k0smotron/v2/internal/certs/report"
 	kutil "github.com/k0sproject/k0smotron/v2/internal/util"
@@ -119,6 +120,8 @@ type controlplane struct {
 	deletingReason string
 	// deletingMessage is the message that should be used when setting the Deleting condition.
 	deletingMessage string
+
+	preflightBlockers []string
 }
 
 // K0sController is responsible for reconciling K0sControlPlane objects.
@@ -451,13 +454,25 @@ func (c *K0sController) ensureCertificates(ctx context.Context, controlplane *co
 		CertificatesDir: "/var/lib/k0s/pki",
 	})
 
+	lookupFailed := metav1.Condition{
+		Type:    kapi.ClusterCertificatesAvailableCondition,
+		Status:  metav1.ConditionUnknown,
+		Reason:  kapi.InternalErrorReason,
+		Message: "Please check controller logs for errors",
+	}
+
 	// Before the control plane is up the certificates are ours to mint. Once it is up
 	// they are in use, and a fresh authority would invalidate every node and kubeconfig.
 	if !ptr.Deref(controlplane.kcp.Status.Initialization.ControlPlaneInitialized, false) {
-		return certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(controlplane.cluster), *metav1.NewControllerRef(controlplane.kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")))
+		err := certificates.LookupOrGenerateCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(controlplane.cluster), *metav1.NewControllerRef(controlplane.kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")))
+		if err != nil {
+			conditions.Set(controlplane.kcp, lookupFailed)
+		}
+		return err
 	}
 
 	if err := certificates.LookupCached(ctx, c.SecretCachingClient, c.Client, capiutil.ObjectKey(controlplane.cluster)); err != nil {
+		conditions.Set(controlplane.kcp, lookupFailed)
 		return fmt.Errorf("error looking up cluster certificates: %w", err)
 	}
 
@@ -471,6 +486,12 @@ func (c *K0sController) ensureCertificates(ctx context.Context, controlplane *co
 	}
 
 	if len(missing) > 0 {
+		conditions.Set(controlplane.kcp, metav1.Condition{
+			Type:    kapi.ClusterCertificatesAvailableCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  kapi.NotFoundReason,
+			Message: fmt.Sprintf("Missing certificates: %s", strings.Join(missing, ", ")),
+		})
 		return fmt.Errorf("cluster certificates %s are missing and are not regenerated for a control plane that is already up, restore the secrets from a backup", strings.Join(missing, ", "))
 	}
 
