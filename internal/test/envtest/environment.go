@@ -247,17 +247,17 @@ func (e *Environment) Stop() error {
 }
 
 func getFilePathToCAPICoreCRDs() string {
-	packageName := "sigs.k8s.io/cluster-api"
+	packageName := "sigs.k8s.io/cluster-api/util"
 	packageConfig := &packages.Config{
 		Mode: packages.NeedModule,
 	}
 
 	pkgs, err := packages.Load(packageConfig, packageName)
-	if err != nil {
+	if err != nil || len(pkgs) == 0 || pkgs[0].Module == nil {
 		return ""
 	}
 
-	return filepath.Join(pkgs[0].Module.Dir, "config", "crd", "bases")
+	return filepath.Join(pkgs[0].Module.Dir, "core", "config", "crd", "bases")
 }
 
 // CreateNamespace creates a new namespace with a generated name.
