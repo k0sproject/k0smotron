@@ -1166,6 +1166,17 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
+  <a href="#retry-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retry limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#best-practices" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2807,6 +2818,17 @@ You are not currently viewing the documentation for the current stable release o
 </li>
       
         <li class="md-nav__item">
+  <a href="#retry-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retry limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#best-practices" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2880,6 +2902,33 @@ You are not currently viewing the documentation for the current stable release o
 <li><strong>No concurrent operations</strong>: Waits for provisioning/deletion operations to complete</li>
 <li><strong>Graceful deletion</strong>: Properly removes machines from the k0s cluster before deletion</li>
 </ul>
+<h2 id="retry-limits">Retry limits<a class="headerlink" href="#retry-limits" title="Permanent link">#</a></h2>
+<p>When a Machine created to replace an unhealthy one fails as well, its remediation counts as a retry of
+the same remediation sequence. <code>spec.remediation</code> on the <code>K0sControlPlane</code> controls those retries.</p>
+<ul>
+<li><code>minHealthyPeriodSeconds</code> is how long after a Machine is remediated the remediation of its replacement
+  still counts as a retry. A later remediation starts a new sequence and resets the retry count. It
+  defaults to 3600, and 0 makes every remediation start a new sequence.</li>
+<li><code>retryPeriodSeconds</code> is the minimum time between a remediation and the retry that follows it. A retry
+  inside the period is deferred and the Machine reports <code>RemediationDeferred</code>. A retry deferred past
+  <code>minHealthyPeriodSeconds</code> starts a new sequence instead, so keep it below that. No retry period
+  applies when it is not set.</li>
+<li><code>maxRetry</code> is how many retries one sequence may make. A retry past it is refused and the Machine
+  reports <code>CannotBeRemediated</code> until <code>minHealthyPeriodSeconds</code> has passed since the previous
+  remediation, when it is remediated as the start of a new sequence. 0 or a negative value refuses
+  every retry, and retries are unlimited when it is not set.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">remediation</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">minHealthyPeriodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3600</span>
+<span class="w">    </span><span class="nt">retryPeriodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">maxRetry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</code></pre></div>
+<p>The most recent remediation and its retry count are reported in <code>status.lastRemediation</code>.</p>
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">#</a></h2>
 <ul>
 <li>Always use at least 3 control plane replicas in production</li>
