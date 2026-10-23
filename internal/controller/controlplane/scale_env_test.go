@@ -490,6 +490,9 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		_, err = r.reconcileMachines(ctx, controlplane)
 		assert.NoError(c, err)
 
+		// Machines must be removed one at a time.
+		assert.LessOrEqual(c, controlplane.deletedMachines.Len(), 1)
+
 		// Jump into the next phase by adding the MachineDeletingCondition with the reason "WaitingForPreTerminateHook"
 		// for all deleted machines.
 		for _, m := range controlplane.deletedMachines {
@@ -500,6 +503,11 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				LastTransitionTime: metav1.Now(),
 			})
 			assert.NoError(c, testEnv.Status().Update(ctx, m))
+
+			// Simulate the machine controller finishing the deletion: the machine is gone once its finalizer is removed.
+			patch := client.MergeFrom(m.DeepCopy())
+			m.Finalizers = nil
+			assert.NoError(c, testEnv.Patch(ctx, m, patch))
 		}
 
 		machines, err := collections.GetFilteredMachinesForCluster(ctx, testEnv, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
