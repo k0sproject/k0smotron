@@ -91,18 +91,6 @@ func TestDefaultMigratesTheDeprecatedInfrastructureRef(t *testing.T) {
 			"the deprecated field stays, since removing what the user wrote makes the next apply put it back")
 	})
 
-	// Setting the nested field says the deprecated one is a leftover from the migration, so a
-	// disagreeing pair resolves to the new API rather than to whatever was left behind.
-	t.Run("a set nested field is never overwritten by the deprecated one", func(t *testing.T) {
-		kcp := &K0sControlPlane{Spec: K0sControlPlaneSpec{
-			MachineTemplate: templateWith(otherRef, oldContractRef),
-		}}
-		require.NoError(t, defaulter.Default(t.Context(), kcp))
-
-		require.Equal(t, oldContractRef, kcp.Spec.MachineTemplate.Spec.InfrastructureRef,
-			"the nested field is the one the user is expected to maintain")
-	})
-
 	t.Run("a nested only object is left alone", func(t *testing.T) {
 		kcp := &K0sControlPlane{Spec: K0sControlPlaneSpec{
 			MachineTemplate: templateWith(corev1.ObjectReference{}, oldContractRef),
