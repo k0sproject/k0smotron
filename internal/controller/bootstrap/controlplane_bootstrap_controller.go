@@ -511,20 +511,19 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		vars = commandsMap
 	}
 
-	var additionalConfig string
-	if ign := scope.Config.Spec.Provisioner.Ignition; ign != nil && ign.AdditionalConfigFrom != nil {
-		additionalConfig, err = resolveContentFromFile(ctx, c.Client, scope.Cluster, ign.AdditionalConfigFrom)
+	ignition, isIgnition := scope.provisioner.(*provisioner.IgnitionProvisioner)
+	if ign := scope.Config.Spec.Provisioner.Ignition; isIgnition && ign != nil && ign.AdditionalConfigFrom != nil {
+		ignition.AdditionalConfig, err = resolveContentFromFile(ctx, c.Client, scope.Cluster, ign.AdditionalConfigFrom)
 		if err != nil {
 			return nil, fmt.Errorf("error extracting the contents of the provided additional ignition config: %w", err)
 		}
 	}
 
 	return scope.provisioner.ToProvisionData(&provisioner.InputProvisionData{
-		Files:            files,
-		Commands:         commands,
-		CustomUserData:   customUserData,
-		Vars:             vars,
-		AdditionalConfig: additionalConfig,
+		Files:          files,
+		Commands:       commands,
+		CustomUserData: customUserData,
+		Vars:           vars,
 	})
 }
 

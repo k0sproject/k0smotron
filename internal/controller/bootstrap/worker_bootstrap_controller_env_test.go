@@ -1201,6 +1201,28 @@ func TestReconcileRendersAdditionalIgnitionConfigFromASecret(t *testing.T) {
 		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
 		return err != nil && strings.Contains(err.Error(), "additional ignition config")
 	}, 10*time.Second, 100*time.Millisecond)
+
+	cloudMachine := machine.DeepCopy()
+	cloudMachine.ObjectMeta = metav1.ObjectMeta{Name: "cloud", Namespace: ns.Name}
+	cloudMachine.Spec.Bootstrap.ConfigRef.Name = "cloud"
+	require.NoError(t, testEnv.Create(t.Context(), cloudMachine))
+	cloud := config.DeepCopy()
+	cloud.ObjectMeta = metav1.ObjectMeta{Name: "cloud", Namespace: ns.Name, OwnerReferences: []metav1.OwnerReference{{
+		Kind:       "Machine",
+		APIVersion: clusterv1.GroupVersion.String(),
+		Name:       cloudMachine.Name,
+		UID:        cloudMachine.UID,
+	}}}
+	cloud.Spec.Provisioner.Type = provisioner.CloudInitProvisioningFormat
+	require.NoError(t, testEnv.Create(t.Context(), cloud))
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(t.Context(), cloud, cloudMachine))
+	}()
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(cloud)})
+		return err == nil && testEnv.GetAPIReader().Get(t.Context(), util.ObjectKey(cloud), &corev1.Secret{}) == nil
+	}, 10*time.Second, 100*time.Millisecond)
+
 	require.NoError(t, testEnv.Create(t.Context(), butane))
 	bootstrapSecret := &corev1.Secret{}
 	require.Eventually(t, func() bool {
