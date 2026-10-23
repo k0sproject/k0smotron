@@ -279,6 +279,19 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	scope.machines = machines
 
+	defer func() {
+		if scope.bootstrapTokenID == "" || config.Annotations[bootstrapTokenIDAnnotation] == scope.bootstrapTokenID {
+			return
+		}
+		wcClient, err := c.getWorkloadClusterClient(ctx, cluster)
+		if err == nil {
+			err = deleteBootstrapToken(ctx, wcClient, scope.bootstrapTokenID)
+		}
+		if err != nil {
+			log.Error(err, "Failed to delete the bootstrap token of bootstrap data that was not stored")
+		}
+	}()
+
 	bootstrapData, err := c.generateBootstrapDataForController(ctx, scope)
 	if err != nil {
 		// if the bootstrap data generation corresponds to a controller that is not the initial one, it is common to try to obtain
@@ -446,7 +459,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		scope.installArgs = append(scope.installArgs, "--config", k0sConfigPath)
 	}
 
-	if scope.machines.Oldest().Name == scope.Config.Name {
+	if mayInitControlPlane(scope) && scope.machines.Oldest().Name == scope.Config.Name {
 		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
 		if err != nil {
 			return nil, fmt.Errorf("error generating initial control plane files: %v", err)
@@ -498,12 +511,37 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 		vars = commandsMap
 	}
 
+	ignition, isIgnition := scope.provisioner.(*provisioner.IgnitionProvisioner)
+	if ign := scope.Config.Spec.Provisioner.Ignition; isIgnition && ign != nil && ign.AdditionalConfigFrom != nil {
+		ignition.AdditionalConfig, err = resolveContentFromFile(ctx, c.Client, scope.Cluster, ign.AdditionalConfigFrom)
+		if err != nil {
+			return nil, fmt.Errorf("error extracting the contents of the provided additional ignition config: %w", err)
+		}
+	}
+
 	return scope.provisioner.ToProvisionData(&provisioner.InputProvisionData{
 		Files:          files,
 		Commands:       commands,
 		CustomUserData: customUserData,
 		Vars:           vars,
 	})
+}
+
+// mayInitControlPlane reports whether the init path may be taken. Kine or an external etcd can hold
+// the data the lost machines served, so a replacement may init against it.
+func mayInitControlPlane(scope *ControllerScope) bool {
+	if !conditions.IsTrue(scope.Cluster, string(clusterv1.ClusterControlPlaneInitializedCondition)) {
+		return true
+	}
+
+	var k0sConfig map[string]any
+	if scope.Config.Spec.K0s != nil {
+		k0sConfig = scope.Config.Spec.K0s.Object
+	}
+	storageType, _, _ := unstructured.NestedString(k0sConfig, "spec", "storage", "type")
+	externalEtcd, _, _ := unstructured.NestedMap(k0sConfig, "spec", "storage", "etcd", "externalCluster")
+
+	return storageType == "kine" || len(externalEtcd) > 0
 }
 
 func (c *ControlPlaneController) genInitialControlPlaneFiles(ctx context.Context, scope *ControllerScope, files []provisioner.File) ([]provisioner.File, error) {

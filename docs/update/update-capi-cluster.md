@@ -24,7 +24,7 @@ k0smotron handles configuration changes differently depending on which part of `
 - **Changes to any other field in `spec.k0sConfigSpec`** (such as `args`, `files`, `preK0sCommands`, etc.) are detected by comparing a hash of the bootstrap config stored in each machine's annotations against the current spec. Machines whose config no longer matches are marked for replacement, using the Recreate workflow regardless of `spec.updateStrategy`. 
 
 !!! warning
-    k0smotron only detects configuration changes made **directly in the `K0sControlPlane` spec**. The `spec.k0sConfigSpec.files` field supports loading file content from external `Secret` or `ConfigMap` objects via `contentFrom`, but if only the content of those objects changes, k0smotron will **not** detect it and no upgrade will be triggered. To propagate updated file content, create a new `Secret` or `ConfigMap` and update `contentFrom` in the `K0sControlPlane` spec to reference the new object.
+    k0smotron only detects configuration changes made **directly in the `K0sControlPlane` spec**. The `spec.k0sConfigSpec.files` field supports loading file content from external `Secret` or `ConfigMap` objects via `contentFrom`, but if only the content of those objects changes, k0smotron will **not** detect it and no upgrade will be triggered. To propagate updated file content, create a new `Secret` or `ConfigMap` and update `contentFrom` in the `K0sControlPlane` spec to reference the new object. The same applies to `spec.k0sConfigSpec.provisioner.ignition.additionalConfigFrom`.
 
 ### Machine template change
 

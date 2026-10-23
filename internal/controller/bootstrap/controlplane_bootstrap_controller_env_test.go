@@ -20,12 +20,14 @@ package bootstrap
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta1"
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -792,4 +794,328 @@ func TestGetK0sTokenLeavesNoTokenWhenTheClusterCAIsMissing(t *testing.T) {
 
 	require.Equal(t, before, countBootstrapTokens(t),
 		"a failed token generation left a usable join token behind in the workload cluster")
+}
+
+func TestReconcileDeletesTheJoinTokenOfBootstrapDataItCouldNotGenerate(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(t.Context(), "test-controller-token-of-failed-generation")
+	require.NoError(t, err)
+
+	cluster := newCluster(ns.Name)
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "127.0.0.1", Port: 6443}
+	require.NoError(t, testEnv.Create(t.Context(), cluster))
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", UID: "1"}}
+
+	kubeconfigSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+			Namespace: cluster.Namespace,
+			Labels:    map[string]string{clusterv1.ClusterNameLabel: cluster.Name},
+		},
+		Data: map[string][]byte{secret.KubeconfigDataName: kubeconfig.FromEnvTestConfig(testEnv.Config, cluster)},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), kubeconfigSecret))
+
+	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+	require.NoError(t, clusterCerts.Generate())
+	caCertSecret := clusterCerts.GetByPurpose(secret.ClusterCA).AsSecret(
+		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
+	)
+	require.NoError(t, testEnv.Create(t.Context(), caCertSecret))
+
+	newMachine := func(name string) *clusterv1.Machine {
+		m := &clusterv1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					clusterv1.ClusterNameLabel:         cluster.Name,
+					clusterv1.MachineControlPlaneLabel: "true",
+				},
+			},
+			Spec: clusterv1.MachineSpec{
+				ClusterName: cluster.Name,
+				Version:     "v1.30.0",
+				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+					Kind:     "GenericInfrastructureMachine",
+					Name:     name,
+					APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+				},
+				Bootstrap: clusterv1.Bootstrap{ConfigRef: clusterv1.ContractVersionedObjectReference{
+					Kind:     "K0sControllerConfig",
+					Name:     name,
+					APIGroup: clusterv1.GroupVersionBootstrap.Group,
+				}},
+			},
+		}
+		require.NoError(t, testEnv.Create(t.Context(), m))
+		return m
+	}
+	first := newMachine("controller-0")
+	first.Status.Addresses = clusterv1.MachineAddresses{{Type: clusterv1.MachineExternalIP, Address: "127.0.0.1"}}
+	require.NoError(t, testEnv.Status().Update(t.Context(), first))
+	joining := newMachine("controller-1")
+
+	config := &bootstrapv2.K0sControllerConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      joining.Name,
+			Namespace: ns.Name,
+			OwnerReferences: []metav1.OwnerReference{{
+				Kind:       "Machine",
+				APIVersion: clusterv1.GroupVersion.String(),
+				Name:       joining.Name,
+				UID:        joining.UID,
+			}},
+		},
+		Spec: bootstrapv2.K0sControllerConfigSpec{
+			Version: "v1.30.0+k0s.0",
+			K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
+				Files: []bootstrapv2.File{{
+					File:        provisioner.File{Path: "/etc/missing"},
+					ContentFrom: &bootstrapv2.ContentSource{SecretRef: &bootstrapv2.ContentSourceRef{Name: "missing", Key: "value"}},
+				}},
+			},
+		},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), config))
+
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(t.Context(), config, joining, first, caCertSecret, kubeconfigSecret, cluster, ns))
+	}()
+
+	r := &ControlPlaneController{
+		Client:              testEnv,
+		SecretCachingClient: secretCachingClient,
+		TokenTTL:            DefaultTokenTTL,
+	}
+
+	before := countBootstrapTokens(t)
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err != nil && strings.Contains(err.Error(), "missing")
+	}, 10*time.Second, 100*time.Millisecond)
+	require.Equal(t, before, countBootstrapTokens(t))
+
+	require.NoError(t, testEnv.Create(t.Context(), &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "missing", Namespace: ns.Name},
+		Data:       map[string][]byte{"value": []byte("body")},
+	}))
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err == nil
+	}, 10*time.Second, 100*time.Millisecond)
+	require.Equal(t, before+1, countBootstrapTokens(t))
+}
+
+func TestReconcileInitializesAnInitializedClusterOnlyOnExternalStorage(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		storage  map[string]any
+		wantInit bool
+	}{
+		{name: "embedded etcd", storage: map[string]any{"type": "etcd"}},
+		{name: "kine", storage: map[string]any{"type": "kine"}, wantInit: true},
+		{name: "external etcd", storage: map[string]any{"type": "etcd", "etcd": map[string]any{"externalCluster": map[string]any{"endpoints": []any{"https://etcd:2379"}}}}, wantInit: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ns, err := testEnv.CreateNamespace(t.Context(), "test-controller-initialized-cluster")
+			require.NoError(t, err)
+
+			cluster := newCluster(ns.Name)
+			require.NoError(t, testEnv.Create(t.Context(), cluster))
+			cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "localhost"}
+			conditions.Set(cluster, metav1.Condition{
+				Type:   string(clusterv1.ClusterControlPlaneInitializedCondition),
+				Status: metav1.ConditionTrue,
+				Reason: "ControlPlaneReady",
+			})
+			require.NoError(t, testEnv.Status().Update(t.Context(), cluster))
+
+			machine := &clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "replacement",
+					Namespace: ns.Name,
+					Labels: map[string]string{
+						clusterv1.ClusterNameLabel:         cluster.Name,
+						clusterv1.MachineControlPlaneLabel: "true",
+					},
+				},
+				Spec: clusterv1.MachineSpec{
+					ClusterName: cluster.Name,
+					Version:     "v1.30.0",
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						Kind:     "GenericInfrastructureMachine",
+						Name:     "replacement",
+						APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+					},
+					Bootstrap: clusterv1.Bootstrap{ConfigRef: clusterv1.ContractVersionedObjectReference{
+						Kind:     "K0sControllerConfig",
+						Name:     "replacement",
+						APIGroup: clusterv1.GroupVersionBootstrap.Group,
+					}},
+				},
+			}
+			require.NoError(t, testEnv.Create(t.Context(), machine))
+
+			config := &bootstrapv2.K0sControllerConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      machine.Name,
+					Namespace: ns.Name,
+					OwnerReferences: []metav1.OwnerReference{{
+						Kind:       "Machine",
+						APIVersion: clusterv1.GroupVersion.String(),
+						Name:       machine.Name,
+						UID:        machine.UID,
+					}},
+				},
+				Spec: bootstrapv2.K0sControllerConfigSpec{
+					Version:       machine.Spec.Version,
+					K0sConfigSpec: &bootstrapv2.K0sConfigSpec{K0s: &unstructured.Unstructured{Object: map[string]any{"apiVersion": "k0s.k0sproject.io/v1beta1", "kind": "ClusterConfig", "spec": map[string]any{"storage": tc.storage}}}},
+				},
+			}
+			require.NoError(t, testEnv.Create(t.Context(), config))
+
+			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", UID: "1"}}
+			kubeconfigSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+					Namespace: cluster.Namespace,
+					Labels:    map[string]string{clusterv1.ClusterNameLabel: cluster.Name},
+				},
+				Data: map[string][]byte{secret.KubeconfigDataName: kubeconfig.FromEnvTestConfig(testEnv.Config, cluster)},
+			}
+			require.NoError(t, testEnv.Create(t.Context(), kubeconfigSecret))
+			clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+			require.NoError(t, clusterCerts.Generate())
+			caCertSecret := clusterCerts.GetByPurpose(secret.ClusterCA).AsSecret(
+				client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
+				*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
+			)
+			require.NoError(t, testEnv.Create(t.Context(), caCertSecret))
+
+			defer func() {
+				require.NoError(t, testEnv.Cleanup(t.Context(), caCertSecret, kubeconfigSecret, config, machine, cluster, ns))
+			}()
+
+			r := &ControlPlaneController{Client: testEnv, SecretCachingClient: secretCachingClient}
+			require.Eventually(t, func() bool {
+				_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+				if err != nil {
+					return false
+				}
+				if tc.wantInit {
+					return testEnv.GetAPIReader().Get(t.Context(), util.ObjectKey(config), &corev1.Secret{}) == nil
+				}
+				stored := &bootstrapv2.K0sControllerConfig{}
+				return testEnv.GetAPIReader().Get(t.Context(), util.ObjectKey(config), stored) == nil &&
+					conditions.GetReason(stored, bootstrapv2.DataSecretAvailableCondition) == bootstrapv2.WaitingForInfrastructureInitializationReason
+			}, 10*time.Second, 100*time.Millisecond)
+
+			err = testEnv.GetAPIReader().Get(t.Context(), util.ObjectKey(config), &corev1.Secret{})
+			require.Equal(t, tc.wantInit, err == nil)
+		})
+	}
+}
+
+func TestReconcileControllerRendersAdditionalIgnitionConfigFromASecret(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(t.Context(), "test-controller-additional-ignition-from")
+	require.NoError(t, err)
+
+	cluster := newCluster(ns.Name)
+	require.NoError(t, testEnv.Create(t.Context(), cluster))
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "localhost"}
+	require.NoError(t, testEnv.Status().Update(t.Context(), cluster))
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "controller",
+			Namespace: ns.Name,
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel:         cluster.Name,
+				clusterv1.MachineControlPlaneLabel: "true",
+			},
+		},
+		Spec: clusterv1.MachineSpec{
+			ClusterName: cluster.Name,
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachine",
+				Name:     "controller",
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{ConfigRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "K0sControllerConfig",
+				Name:     "controller",
+				APIGroup: clusterv1.GroupVersionBootstrap.Group,
+			}},
+		},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), machine))
+
+	butane := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "butane", Namespace: ns.Name},
+		Data: map[string][]byte{"config": []byte(
+			"variant: fcos\nversion: 1.0.0\nstorage:\n  files:\n  - path: /etc/from-a-secret.conf\n    contents:\n      inline: resolved\n")},
+	}
+
+	config := &bootstrapv2.K0sControllerConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      machine.Name,
+			Namespace: ns.Name,
+			OwnerReferences: []metav1.OwnerReference{{
+				Kind:       "Machine",
+				APIVersion: clusterv1.GroupVersion.String(),
+				Name:       machine.Name,
+				UID:        machine.UID,
+			}},
+		},
+		Spec: bootstrapv2.K0sControllerConfigSpec{
+			Version: machine.Spec.Version,
+			K0sConfigSpec: &bootstrapv2.K0sConfigSpec{Provisioner: bootstrapv2.ProvisionerSpec{
+				Type: provisioner.IgnitionProvisioningFormat,
+				Ignition: &bootstrapv2.IgnitionSpec{
+					Variant:              "fcos",
+					Version:              "1.0.0",
+					AdditionalConfigFrom: &bootstrapv2.ContentSource{SecretRef: &bootstrapv2.ContentSourceRef{Name: "butane", Key: "config"}},
+				},
+			}},
+		},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), config))
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", UID: "1"}}
+	kubeconfigSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+			Namespace: cluster.Namespace,
+			Labels:    map[string]string{clusterv1.ClusterNameLabel: cluster.Name},
+		},
+		Data: map[string][]byte{secret.KubeconfigDataName: {}},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), kubeconfigSecret))
+	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+	require.NoError(t, clusterCerts.Generate())
+	caCertSecret := clusterCerts.GetByPurpose(secret.ClusterCA).AsSecret(
+		client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name},
+		*metav1.NewControllerRef(kcp, cpv1beta2.GroupVersion.WithKind("K0sControlPlane")),
+	)
+	require.NoError(t, testEnv.Create(t.Context(), caCertSecret))
+
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(t.Context(), caCertSecret, kubeconfigSecret, config, butane, machine, cluster, ns))
+	}()
+
+	r := &ControlPlaneController{Client: testEnv, SecretCachingClient: secretCachingClient}
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err != nil && strings.Contains(err.Error(), "additional ignition config")
+	}, 10*time.Second, 100*time.Millisecond)
+	require.NoError(t, testEnv.Create(t.Context(), butane))
+	bootstrapSecret := &corev1.Secret{}
+	require.Eventually(t, func() bool {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		return err == nil && testEnv.Get(t.Context(), util.ObjectKey(config), bootstrapSecret) == nil
+	}, 10*time.Second, 100*time.Millisecond)
+	require.Contains(t, ignitionMergeSources(t, bootstrapSecret.Data["value"]), "/etc/from-a-secret.conf")
 }
