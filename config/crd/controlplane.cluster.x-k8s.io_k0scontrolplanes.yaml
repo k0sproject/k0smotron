@@ -1302,6 +1302,39 @@ spec:
                         x-kubernetes-list-type: map
                     type: object
                 type: object
+              remediation:
+                description: Remediation controls how the control plane remediates
+                  Machines a MachineHealthCheck marks unhealthy.
+                minProperties: 1
+                properties:
+                  maxRetry:
+                    description: |-
+                      MaxRetry is how many retries one remediation sequence may make. A retry is the remediation of a
+                      replacement Machine within minHealthyPeriodSeconds of the remediation it followed. A retry past the
+                      limit is refused with reason CannotBeRemediated until minHealthyPeriodSeconds has passed since the
+                      previous remediation, when the Machine is remediated as the start of a new sequence. 0 or a negative
+                      value refuses every retry. Retries are unlimited when it is not set.
+                    format: int32
+                    type: integer
+                  minHealthyPeriodSeconds:
+                    description: |-
+                      MinHealthyPeriodSeconds is how long after a Machine is remediated the remediation of its replacement
+                      Machine still counts as a retry of the same remediation sequence. A later remediation starts a new
+                      sequence and resets the retry count. 0 makes every remediation start a new sequence. 3600 is used when
+                      it is not set.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  retryPeriodSeconds:
+                    description: |-
+                      RetryPeriodSeconds is the minimum time between remediating a Machine and remediating its replacement
+                      Machine when that is a retry, see minHealthyPeriodSeconds. A retry inside this period is deferred with
+                      reason RemediationDeferred. A retry deferred past minHealthyPeriodSeconds starts a new sequence instead,
+                      so keep this below it. No retry period applies when it is not set.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                type: object
               replicas:
                 default: 1
                 format: int32

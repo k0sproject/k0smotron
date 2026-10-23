@@ -37,6 +37,16 @@ const (
 	// remediation failed. A local string, since upstream only has a v1beta1 one.
 	K0sControlPlaneMachineRemediationFailedReason = "RemediationFailed"
 
+	// K0sControlPlaneMachineCannotBeRemediatedReason surfaces when remediation of a control plane machine can't be started.
+	K0sControlPlaneMachineCannotBeRemediatedReason = "CannotBeRemediated"
+
+	// K0sControlPlaneMachineRemediationDeferredReason surfaces when remediation of a control plane machine must be deferred.
+	K0sControlPlaneMachineRemediationDeferredReason = "RemediationDeferred"
+
+	// K0sControlPlaneMachineRemediationMachineDeletingReason surfaces when remediation of a control plane machine
+	// has been completed by deleting the unhealthy machine.
+	K0sControlPlaneMachineRemediationMachineDeletingReason = "MachineDeleting"
+
 	// K0sControlPlaneMachineEtcdMemberHealthyCondition reports whether a control plane
 	// machine's etcd member is joined. Reported as Unknown with NoEtcdMembers when the
 	// cluster keeps none, rather than left off, so a reading taken while it did keep
