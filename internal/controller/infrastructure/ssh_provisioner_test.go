@@ -18,11 +18,17 @@ package infrastructure
 
 import (
 	"bytes"
+	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"io"
 	"io/fs"
+	"net"
 	"os"
+	osexec "os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -31,6 +37,7 @@ import (
 	"github.com/k0sproject/rig/exec"
 	"github.com/k0sproject/rig/pkg/rigfs"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ssh"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -326,8 +333,40 @@ func TestExtractCloudInitDecodesAndChowns(t *testing.T) {
 
 	script := string(secretData["k0smotron-entrypoint.sh"])
 	// The job entrypoint is a shell script, so both must be quoted.
-	require.Contains(t, script, "chown -- 'etcd:etcd' '/etc/thing'")
-	require.Contains(t, script, "chmod '0640' '/etc/thing'")
+	require.Contains(t, script, shellQuote("chown -- 'etcd:etcd' '/etc/thing'"))
+	require.Contains(t, script, shellQuote("chmod 0640 '/etc/thing'"))
+}
+
+func TestExtractCloudInitFileMode(t *testing.T) {
+	p := &JobProvisioner{
+		remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
+		provisionJob: &api.ProvisionJob{
+			SSHCommand:  "ssh",
+			SCPCommand:  "scp",
+			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+		},
+	}
+
+	for _, tc := range []struct {
+		permissions string
+		want        string
+		wantErr     string
+	}{
+		{permissions: "", want: "chmod 0644 "},
+		{permissions: "rw-r--r--", wantErr: "failed to parse permissions of file /etc/thing"},
+	} {
+		t.Run(tc.permissions, func(t *testing.T) {
+			_, _, secretData, err := p.extractCloudInit(&provisioner.InputProvisionData{
+				Files: []provisioner.File{{Path: "/etc/thing", Content: "body", Permissions: tc.permissions}},
+			})
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Contains(t, string(secretData["k0smotron-entrypoint.sh"]), tc.want)
+		})
+	}
 }
 
 func TestExtractCloudInitQuotesOwnerAgainstInjection(t *testing.T) {
@@ -346,8 +385,26 @@ func TestExtractCloudInitQuotesOwnerAgainstInjection(t *testing.T) {
 	require.NoError(t, err)
 
 	script := string(secretData["k0smotron-entrypoint.sh"])
-	require.Contains(t, script, "chown -- "+shellQuote("root; rm -rf /"))
+	require.Contains(t, script, shellQuote("chown -- "+shellQuote("root; rm -rf /")+" '/etc/thing'"))
 	require.NotContains(t, script, "chown -- root; rm")
+}
+
+func TestExtractCloudInitQuotesScpDestination(t *testing.T) {
+	p := &JobProvisioner{
+		remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
+		provisionJob: &api.ProvisionJob{
+			SSHCommand:  "ssh",
+			SCPCommand:  "scp",
+			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+		},
+	}
+
+	_, _, secretData, err := p.extractCloudInit(&provisioner.InputProvisionData{
+		Files: []provisioner.File{{Path: "/etc/a b; echo injected", Content: "body"}},
+	})
+	require.NoError(t, err)
+
+	require.Contains(t, string(secretData["k0smotron-entrypoint.sh"]), "scp "+shellQuote("/var/lib/bootstrap-data/"+genFileName("/etc/a b; echo injected"))+" "+shellQuote("root@host:/etc/a b; echo injected")+"\n")
 }
 
 func TestExtractCloudInitUsesSudoWhenRequested(t *testing.T) {
@@ -370,10 +427,10 @@ func TestExtractCloudInitUsesSudoWhenRequested(t *testing.T) {
 
 		script := string(secretData["k0smotron-entrypoint.sh"])
 		if useSudo {
-			require.Contains(t, script, "ssh root@host sudo chown -- 'etcd:etcd'")
-			require.Contains(t, script, "ssh root@host sudo chmod '0640'")
+			require.Contains(t, script, "ssh root@host "+shellQuote("sudo chown -- 'etcd:etcd' '/etc/thing'"))
+			require.Contains(t, script, "ssh root@host "+shellQuote("sudo chmod 0640 '/etc/thing'"))
 		} else {
-			require.Contains(t, script, "ssh root@host chown -- 'etcd:etcd'")
+			require.Contains(t, script, "ssh root@host "+shellQuote("chown -- 'etcd:etcd' '/etc/thing'"))
 			require.NotContains(t, script, "sudo chown")
 		}
 	}
@@ -394,4 +451,107 @@ func TestExtractCloudInitRejectsAppend(t *testing.T) {
 	})
 
 	require.ErrorContains(t, err, "not supported when provisioning through a job")
+}
+
+func remoteArgv(t *testing.T, script string) []string {
+	t.Helper()
+
+	out, err := osexec.Command("sh", "-c", "scp() { :; }\nssh() { [ $# -eq 2 ] || exit 1; eval \"set -- $2\"; printf '%s\\n' \"$@\"; echo; }\n"+script).Output()
+	require.NoError(t, err)
+
+	return strings.Split(strings.Split(string(out), "\n\n")[0], "\n")
+}
+
+func TestExtractCloudInitSurvivesTheTargetShellParse(t *testing.T) {
+	p := &JobProvisioner{
+		remoteMachine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{Address: "host", User: "root"}},
+		provisionJob: &api.ProvisionJob{
+			SSHCommand:  "ssh",
+			SCPCommand:  "scp",
+			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+		},
+	}
+
+	_, _, secretData, err := p.extractCloudInit(&provisioner.InputProvisionData{
+		Files: []provisioner.File{{Path: "/etc/a b; echo injected", Content: "body"}},
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"chmod", "0644", "/etc/a b; echo injected"}, remoteArgv(t, string(secretData["k0smotron-entrypoint.sh"])))
+
+	p.remoteMachine.Spec.UseSudo = true
+	_, _, secretData, err = p.extractCloudInit(&provisioner.InputProvisionData{Commands: []string{"echo 'it''s' $HOME"}})
+	require.NoError(t, err)
+	require.Equal(t, []string{"sudo", "su", "-c", "echo 'it''s' $HOME"}, remoteArgv(t, string(secretData["k0smotron-entrypoint.sh"])))
+}
+
+func TestProvisionStopsWhenTheContextEnds(t *testing.T) {
+	_, key, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+	signer, err := ssh.NewSignerFromKey(key)
+	require.NoError(t, err)
+	keyPEM, err := ssh.MarshalPrivateKey(key, "")
+	require.NoError(t, err)
+	serverConfig := &ssh.ServerConfig{
+		PublicKeyCallback: func(ssh.ConnMetadata, ssh.PublicKey) (*ssh.Permissions, error) { return nil, nil },
+	}
+	serverConfig.AddHostKey(signer)
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = listener.Close() })
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			go func() {
+				_, chans, reqs, err := ssh.NewServerConn(conn, serverConfig)
+				if err != nil {
+					return
+				}
+				go ssh.DiscardRequests(reqs)
+				for newChannel := range chans {
+					channel, requests, _ := newChannel.Accept()
+					go func() {
+						for req := range requests {
+							_ = req.Reply(req.Type == "exec", nil)
+							if req.Type == "exec" && !strings.Contains(string(req.Payload), "sleep infinity") {
+								if strings.Contains(string(req.Payload), "os-release") {
+									_, _ = channel.Write([]byte("ID=ubuntu\nVERSION_ID=24.04\n"))
+								}
+								_, _ = channel.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{0}))
+								_ = channel.Close()
+							}
+						}
+					}()
+				}
+			}()
+		}
+	}()
+
+	addr := listener.Addr().(*net.TCPAddr)
+	p := &SSHProvisioner{
+		cloudInit: &provisioner.InputProvisionData{Commands: []string{"sleep infinity"}},
+		machine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{
+			Address: addr.IP.String(),
+			Port:    addr.Port,
+			User:    "root",
+		}},
+		sshKey: pem.EncodeToMemory(keyPEM),
+		log:    logr.Discard(),
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- p.Provision(ctx) }()
+
+	select {
+	case err := <-done:
+		require.Error(t, err)
+		require.ErrorIs(t, ctx.Err(), context.DeadlineExceeded)
+	case <-time.After(10 * time.Second):
+		t.Fatal("Provision did not return after its context ended")
+	}
 }
