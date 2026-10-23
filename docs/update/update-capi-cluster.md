@@ -32,6 +32,8 @@ When `spec.machineTemplate.infrastructureRef` points to a new or changed infrast
 
 Like configuration changes, template changes always trigger machine recreation.
 
+Changes to `spec.machineTemplate.metadata`, `spec.machineTemplate.spec.readinessGates`, `spec.machineTemplate.spec.deletion` and `spec.machineTemplate.spec.taints` do not replace machines. k0smotron applies them to the existing `Machine` objects.
+
 ## Update strategies
 
 k0smotron supports three update strategies, configured via `spec.updateStrategy`:

@@ -24,6 +24,7 @@ import (
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -44,6 +45,9 @@ func (c *K0sController) reconcileMachines(ctx context.Context, scope *controlpla
 	logger := log.FromContext(ctx)
 
 	defer func() {
+		if err := c.syncMachines(ctx, scope); err != nil {
+			logger.Error(err, "Failed to sync machines")
+		}
 		// UpToDate conditions is set by the controller owning the machine.
 		if err := c.setUpToDateMachineCondition(ctx, scope); err != nil {
 			logger.Error(err, "Failed to set up-to-date machine condition")
@@ -102,6 +106,68 @@ func (c *K0sController) reconcileMachines(ctx context.Context, scope *controlpla
 
 	logger.Info("Control plane machines are in the desired state")
 	return ctrl.Result{}, nil
+}
+
+// syncMachines carries the in-place mutable fields of the machine template onto existing Machines.
+func (c *K0sController) syncMachines(ctx context.Context, scope *controlplane) error {
+	tmpl := scope.kcp.Spec.MachineTemplate.Spec
+	var errs []error
+
+	// A full apply would put back the pre-terminate hook a deleting Machine may already have
+	// released, so only the deletion timeouts and taints are patched.
+	for _, m := range scope.deletedMachines {
+		patchHelper, err := patch.NewHelper(m, c.Client)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		m.Spec.Deletion.NodeDrainTimeoutSeconds = tmpl.Deletion.NodeDrainTimeoutSeconds
+		m.Spec.Deletion.NodeVolumeDetachTimeoutSeconds = tmpl.Deletion.NodeVolumeDetachTimeoutSeconds
+		// The Machine webhook defaults an unset value, so clearing it would patch again on every pass.
+		if tmpl.Deletion.NodeDeletionTimeoutSeconds != nil {
+			m.Spec.Deletion.NodeDeletionTimeoutSeconds = tmpl.Deletion.NodeDeletionTimeoutSeconds
+		}
+		m.Spec.Taints = tmpl.Taints
+
+		if err := patchHelper.Patch(ctx, m); err != nil {
+			errs = append(errs, fmt.Errorf("error patching machine %s: %w", m.Name, err))
+		}
+	}
+
+	preserve := func(desired, existing map[string]string, key string) {
+		if v, ok := existing[key]; ok {
+			desired[key] = v
+		} else {
+			delete(desired, key)
+		}
+	}
+	for _, m := range scope.activeMachines {
+		desired, err := c.generateMachine(ctx, m.Name, scope.cluster, scope.kcp, m.Spec.InfrastructureRef, m.Spec.FailureDomain)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error generating machine %s: %w", m.Name, err))
+			continue
+		}
+
+		// The UID keeps a Machine deleted since the list from being recreated, and the resource
+		// version keeps a write made since, such as an in-place version update, from being reverted.
+		desired.UID = m.UID
+		desired.ResourceVersion = m.ResourceVersion
+		desired.Spec.Version = m.Spec.Version
+		preserve(desired.Labels, m.Labels, "k0smotron.io/control-plane-worker-enabled")
+		preserve(desired.Annotations, m.Annotations, cpv1beta2.MachineK0sConfigAnnotation)
+		preserve(desired.Annotations, m.Annotations, cpv1beta2.RemediationForAnnotation)
+
+		err = c.Client.Patch(ctx, desired, client.Apply, client.ForceOwnership, &client.PatchOptions{
+			FieldManager: "k0smotron",
+		})
+		// A Machine changed since the list is synced on the next pass.
+		if err != nil && !apierrors.IsConflict(err) {
+			errs = append(errs, fmt.Errorf("error applying machine %s: %w", m.Name, err))
+		}
+	}
+
+	return kerrors.NewAggregate(errs)
 }
 
 func (c *K0sController) setUpToDateMachineCondition(ctx context.Context, scope *controlplane) error {
