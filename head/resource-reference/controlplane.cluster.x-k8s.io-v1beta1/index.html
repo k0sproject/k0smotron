@@ -3199,6 +3199,102 @@ https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specif
 with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfrom">additionalConfigFrom</a></b></td>
+        <td>object</td>
+        <td>
+          AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+It cannot be set together with additionalConfig.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0scontrolplanespeck0sconfigspecignitionadditionalconfigfrom">K0sControlPlane.spec.k0sConfigSpec.ignition.additionalConfigFrom<a class="headerlink" href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfrom" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrolplanespeck0sconfigspecignition">↩ Parent</a></sup></sup></p>
+<p>AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+It cannot be set together with additionalConfig.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfromconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfromsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0scontrolplanespeck0sconfigspecignitionadditionalconfigfromconfigmapref">K0sControlPlane.spec.k0sConfigSpec.ignition.additionalConfigFrom.configMapRef<a class="headerlink" href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfromconfigmapref" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfrom">↩ Parent</a></sup></sup></p>
+<p>ConfigMapRef is a reference to a configmap that contains the content.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0scontrolplanespeck0sconfigspecignitionadditionalconfigfromsecretref">K0sControlPlane.spec.k0sConfigSpec.ignition.additionalConfigFrom.secretRef<a class="headerlink" href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfromsecretref" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrolplanespeck0sconfigspecignitionadditionalconfigfrom">↩ Parent</a></sup></sup></p>
+<p>SecretRef is a reference to a secret that contains the content.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -4425,6 +4521,102 @@ https://coreos.github.io/butane/specs/#butane-specifications-and-ignition-specif
 with the generated one. The format follows Butane spec: https://coreos.github.io/butane/<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfrom">additionalConfigFrom</a></b></td>
+        <td>object</td>
+        <td>
+          AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+It cannot be set together with additionalConfig.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfrom">K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.ignition.additionalConfigFrom<a class="headerlink" href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfrom" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignition">↩ Parent</a></sup></sup></p>
+<p>AdditionalConfigFrom is a reference to a secret or a configmap holding the additional config.
+It cannot be set together with additionalConfig.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfromconfigmapref">configMapRef</a></b></td>
+        <td>object</td>
+        <td>
+          ConfigMapRef is a reference to a configmap that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfromsecretref">secretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SecretRef is a reference to a secret that contains the content.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfromconfigmapref">K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.ignition.additionalConfigFrom.configMapRef<a class="headerlink" href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfromconfigmapref" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfrom">↩ Parent</a></sup></sup></p>
+<p>ConfigMapRef is a reference to a configmap that contains the content.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfromsecretref">K0sControlPlaneTemplate.spec.template.spec.k0sConfigSpec.ignition.additionalConfigFrom.secretRef<a class="headerlink" href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfromsecretref" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrolplanetemplatespectemplatespeck0sconfigspecignitionadditionalconfigfrom">↩ Parent</a></sup></sup></p>
+<p>SecretRef is a reference to a secret that contains the content.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key is the key in the source that contains the content<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name is the name of the source<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

@@ -2857,7 +2857,7 @@ You are not currently viewing the documentation for the current stable release o
 <td><code>--bootstrap-token-ttl</code></td>
 <td>duration</td>
 <td><code>24h</code></td>
-<td>Validity of the bootstrap tokens used by machines to join a cluster. The token is refreshed until the machine joins. Same as CAPI kubeadm bootstrap provider <code>--bootstrap-token-ttl</code>.</td>
+<td>Validity of the bootstrap tokens used by machines to join a cluster. The token is refreshed until the machine joins. A MachinePool token is refreshed until all replicas have joined. After that it is not refreshed, and the MachinePool gets bootstrap data with a new token when a periodic check finds less than half the TTL left. A MachinePool also gets a new token if its token Secret is gone from the workload cluster. Same as CAPI kubeadm bootstrap provider <code>--bootstrap-token-ttl</code>.</td>
 </tr>
 </tbody>
 </table>
