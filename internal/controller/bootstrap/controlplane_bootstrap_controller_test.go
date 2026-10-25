@@ -26,10 +26,12 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -200,9 +202,19 @@ func TestController_genK0sCommands(t *testing.T) {
 }
 
 func TestControlPlaneController_detectJoinHost(t *testing.T) {
-	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	var openConns atomic.Int64
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
+	server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		switch state {
+		case http.StateNew:
+			openConns.Add(1)
+		case http.StateClosed, http.StateHijacked:
+			openConns.Add(-1)
+		}
+	}
+	server.StartTLS()
 	defer server.Close()
 
 	serverURL, err := url.Parse(server.URL)
@@ -252,6 +264,26 @@ func TestControlPlaneController_detectJoinHost(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, server.URL, host)
+	})
+
+	t.Run("probe connection is closed", func(t *testing.T) {
+		ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: trustedCACert}}
+
+		_, err := c.detectJoinHost(context.Background(), scope, ca)
+
+		require.NoError(t, err)
+		require.Eventually(t, func() bool { return openConns.Load() == 0 }, 500*time.Millisecond, 10*time.Millisecond)
+	})
+
+	t.Run("canceled context falls back to the first controller", func(t *testing.T) {
+		ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: trustedCACert}}
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		host, err := c.detectJoinHost(ctx, scope, ca)
+
+		require.NoError(t, err)
+		require.Equal(t, "https://203.0.113.10:"+serverURL.Port(), host)
 	})
 
 	t.Run("CA that did not sign the endpoint falls back to the first controller", func(t *testing.T) {
