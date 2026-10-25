@@ -878,6 +878,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		// trust it explicitly instead of skipping verification.
 		RootCAs: caCertPool,
 	}
+	transport.DisableKeepAlives = true
 	httpClient := &http.Client{
 		Transport: transport,
 		Timeout:   time.Second,
@@ -900,8 +901,12 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 	}
 	host := fmt.Sprintf("https://%s:%s", scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
 
-	_, err = httpClient.Get(fmt.Sprintf("%s/v1beta1/ca", host))
-	if err == nil {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, host+"/v1beta1/ca", nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create join host probe request: %w", err)
+	}
+	if resp, err := httpClient.Do(req); err == nil {
+		_ = resp.Body.Close()
 		return host, nil
 	}
 
