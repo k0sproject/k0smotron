@@ -106,6 +106,14 @@ K0sControlPlaneSpec defines the desired state of K0sControlPlane
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
+just the Kubernetes version (e.g. v1.27.1).<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b><a href="#k0scontrolplanespeckubeconfigsecretmetadata">kubeconfigSecretMetadata</a></b></td>
         <td>object</td>
         <td>
@@ -139,14 +147,6 @@ Note: This metadata will have precedence over default labels/annotations on the 
           <br/>
             <i>Enum</i>: InPlace, Recreate, RecreateDeleteFirst<br/>
             <i>Default</i>: InPlace<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
-just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
