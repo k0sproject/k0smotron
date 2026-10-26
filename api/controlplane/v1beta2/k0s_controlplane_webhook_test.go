@@ -318,3 +318,8 @@ func TestValidateK0sControlPlaneRejectsConflictingUserDataRef(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestValidateCreateRequiresAVersion(t *testing.T) {
+	_, err := (&K0sControlPlaneValidator{}).ValidateCreate(t.Context(), &K0sControlPlane{})
+	require.ErrorContains(t, err, "spec.version: Required value")
+}
