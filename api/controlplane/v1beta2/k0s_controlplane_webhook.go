@@ -229,6 +229,9 @@ func denyIncompatibleK0sVersions(kcp *K0sControlPlane, prefix *field.Path) *fiel
 	}
 
 	versionPath := prefix.Child("version")
+	if kcp.Spec.Version == "" {
+		return field.Required(versionPath, "")
+	}
 
 	v, err := version.NewVersion(kcp.Spec.Version)
 	if err != nil {

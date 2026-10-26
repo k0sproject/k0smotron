@@ -124,8 +124,8 @@ type K0sControlPlaneSpec struct {
 	//+kubebuilder:default=InPlace
 	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty"`
 	// Version defines the k0s version to be deployed. You can use a specific k0s version (e.g. v1.27.1+k0s.0) or
-	// just the Kubernetes version (e.g. v1.27.1). If left empty, k0smotron will select one automatically.
-	//+kubebuilder:validation:Optional
+	// just the Kubernetes version (e.g. v1.27.1).
+	// +kubebuilder:validation:Required
 	Version string `json:"version,omitempty"`
 	// KubeconfigSecretMetadata specifies metadata (labels and annotations) to be propagated to the kubeconfig Secret
 	// created for the workload cluster.
