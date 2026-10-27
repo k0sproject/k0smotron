@@ -13,13 +13,8 @@ jobs:
     name: DCO check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout k0s
+      - name: Checkout k0smotron
         uses: actions/checkout@v4
-
-      - name: Set up Python 3.13.1
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.13.1
 
       - name: Download DCO check script
         env:
@@ -34,4 +29,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DCO_CHECK_VERBOSE: "true"
           DCO_CHECK_EXCLUDE_PATTERN: dependabot\[bot\]@users\.noreply\.github\.com
-        run: python3 dco_check.py
+        run: |
+          python3 --version
+          python3 dco_check.py
