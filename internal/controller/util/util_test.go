@@ -87,3 +87,42 @@ func TestLabelsForEtcdK0smotronCluster(t *testing.T) {
 	_, hasAppComponent := got[ComponentLabel]
 	assert.False(t, hasAppComponent, "selector does not include app.kubernetes.io/component")
 }
+
+func TestAnnotationsForK0smotronCluster_ReturnsCopy(t *testing.T) {
+	kmc := &km.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "mycluster",
+			Annotations: map[string]string{km.AnnotationKeyClusterSpecHash: "abc123", "own": "cluster"},
+		},
+		Spec: km.ClusterSpec{
+			KubeconfigSecretMetadata: km.SecretMetadata{
+				Annotations: map[string]string{"from": "kubeconfig-secret"},
+			},
+		},
+	}
+
+	got := AnnotationsForK0smotronCluster(kmc)
+
+	want := map[string]string{
+		km.AnnotationKeyClusterSpecHash: "abc123",
+		"own":                           "cluster",
+		"from":                          "kubeconfig-secret",
+	}
+	assert.Equal(t, want, got)
+
+	// Callers edit the returned map; the Cluster object must not see those edits,
+	// nor the kubeconfig secret annotations merged in above.
+	delete(got, km.AnnotationKeyClusterSpecHash)
+	got["added"] = "by-caller"
+	assert.Equal(t, map[string]string{km.AnnotationKeyClusterSpecHash: "abc123", "own": "cluster"}, kmc.Annotations)
+}
+
+func TestAnnotationsForK0smotronCluster_NilAnnotations(t *testing.T) {
+	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "mycluster"}}
+
+	got := AnnotationsForK0smotronCluster(kmc)
+
+	assert.NotNil(t, got)
+	assert.Empty(t, got)
+	assert.Nil(t, kmc.Annotations, "the helper must not allocate annotations on the Cluster object")
+}

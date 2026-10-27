@@ -19,10 +19,19 @@ limitations under the License.
 package k0smotronio
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	apps "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 )
 
 func Test_pathToVolumeName(t *testing.T) {
@@ -107,4 +116,38 @@ func Test_pathToVolumeName(t *testing.T) {
 		assert.LessOrEqual(t, len(got), 63)
 		assert.Regexp(t, `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`, got)
 	})
+}
+
+// TestGenerateStatefulSet_doesNotEditClusterAnnotations is the regression test
+// for the K0smotronControlPlane sync loop: generateStatefulSet drops the cluster
+// spec hash from the StatefulSet annotations. When that map was the Cluster's
+// own annotations, the delete was persisted on the Cluster by the deferred
+// patch, the control plane controller lost its sync marker and rewrote the
+// spec on every reconcile.
+func TestGenerateStatefulSet_doesNotEditClusterAnnotations(t *testing.T) {
+	kmc := &km.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "kmc",
+			Namespace:   "default",
+			Annotations: map[string]string{km.AnnotationKeyClusterSpecHash: "abc123", "own": "cluster"},
+		},
+		Spec: km.ClusterSpec{
+			Replicas:                 1,
+			KubeconfigSecretMetadata: km.SecretMetadata{Annotations: map[string]string{"from": "kubeconfig-secret"}},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+	require.NoError(t, apps.AddToScheme(scheme))
+	scope := &kmcScope{client: fake.NewClientBuilder().WithScheme(scheme).Build()}
+
+	sts, _, err := scope.generateStatefulSet(context.Background(), kmc)
+	require.NoError(t, err)
+
+	assert.Equal(t, map[string]string{km.AnnotationKeyClusterSpecHash: "abc123", "own": "cluster"}, kmc.Annotations,
+		"generateStatefulSet must not edit the Cluster's own annotations")
+	assert.NotContains(t, sts.Annotations, km.AnnotationKeyClusterSpecHash)
+	assert.Equal(t, "cluster", sts.Annotations["own"])
+	assert.Equal(t, "kubeconfig-secret", sts.Annotations["from"])
 }

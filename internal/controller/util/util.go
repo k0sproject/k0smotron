@@ -85,14 +85,14 @@ func LabelsForEtcdK0smotronCluster(kmc *km.Cluster) map[string]string {
 	return labels
 }
 
-// AnnotationsForK0smotronCluster returns annotations for K0smotron cluster resources,
-// including user-defined annotations from the cluster spec.
+// AnnotationsForK0smotronCluster returns annotations for K0smotron cluster resources:
+// the Cluster's own annotations merged with the user-defined annotations from the
+// cluster spec.
 func AnnotationsForK0smotronCluster(kmc *km.Cluster) map[string]string {
-	if kmc.Annotations == nil {
-		kmc.Annotations = make(map[string]string)
-	}
-	maps.Copy(kmc.Annotations, kmc.Spec.KubeconfigSecretMetadata.Annotations)
-	return kmc.Annotations
+	annotations := make(map[string]string, len(kmc.Annotations)+len(kmc.Spec.KubeconfigSecretMetadata.Annotations))
+	maps.Copy(annotations, kmc.Annotations)
+	maps.Copy(annotations, kmc.Spec.KubeconfigSecretMetadata.Annotations)
+	return annotations
 }
 
 // AddToExistingSans merges original sans list with a new sans slice avoiding duplicated values.
