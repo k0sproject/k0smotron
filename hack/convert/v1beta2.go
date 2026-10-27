@@ -202,6 +202,10 @@ func convert(group, kind string, raw []byte) ([]byte, error) {
 	}
 	dst.GetObjectKind().SetGroupVersionKind(dstGVK)
 
+	if kcp, ok := dst.(*cpv1beta2.K0sControlPlane); ok {
+		kcp.MigrateDeprecatedInfrastructureRef()
+	}
+
 	u := &unstructured.Unstructured{}
 	if err := scheme.Convert(dst, u, nil); err != nil {
 		return nil, fmt.Errorf("converting to unstructured: %w", err)

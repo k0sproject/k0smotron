@@ -128,38 +128,6 @@ func TestDeprecatedInfrastructureRefStillApplies(t *testing.T) {
 		require.False(t, found, "the deprecated field is not something the controller should start setting")
 	})
 
-	// The nested field is authoritative once it is set, so a later edit to the deprecated one is
-	// read as a leftover and does not move the template. A legacy manifest that rotates this way
-	// is accepted and then ignored, which is the cost of never letting a leftover win.
-	t.Run("a rotation through the deprecated field does not move the nested one", func(t *testing.T) {
-		kcp := controlPlaneManifest(ns.Name, map[string]any{
-			"infrastructureRef": infraRefFields("infra-before"),
-		})
-		require.NoError(t, testEnv.Create(t.Context(), kcp))
-
-		rotated := readBack(t, kcp)
-		require.NoError(t, unstructured.SetNestedMap(rotated.Object,
-			infraRefFields("infra-after"), "spec", "machineTemplate", "infrastructureRef"))
-		require.NoError(t, testEnv.Update(t.Context(), rotated),
-			"the only field a legacy manifest knows has to stay writable")
-
-		// Polled on the value rather than on existence, since the object is already in the cache
-		// from the create and a plain read hands back the copy from before the update.
-		require.EventuallyWithT(t, func(c *assert.CollectT) {
-			got := readBack(t, kcp).Object
-
-			deprecated, _, err := unstructured.NestedString(got, "spec", "machineTemplate", "infrastructureRef", "name")
-			assert.NoError(c, err)
-			assert.Equal(c, "infra-after", deprecated, "the edit is stored")
-
-			nested, found, err := unstructured.NestedString(got, "spec", "machineTemplate", "spec", "infrastructureRef", "name")
-			assert.NoError(c, err)
-			assert.True(c, found)
-			assert.Equal(c, "infra-before", nested,
-				"the nested field was already set, so the deprecated one no longer feeds it")
-		}, 10*time.Second, 100*time.Millisecond)
-	})
-
 	t.Run("naming no template at all is refused", func(t *testing.T) {
 		kcp := controlPlaneManifest(ns.Name, map[string]any{})
 

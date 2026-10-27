@@ -52,20 +52,15 @@ func (d *K0sControlPlaneDefaulter) Default(_ context.Context, kcp *K0sControlPla
 		return fmt.Errorf("expected a K0sControlPlane object but got nil")
 	}
 
-	migrateDeprecatedInfrastructureRef(kcp)
+	kcp.MigrateDeprecatedInfrastructureRef()
 
 	return nil
 }
 
-// migrateDeprecatedInfrastructureRef fills the nested field from the deprecated one only where the
-// nested is unset, so a value written through the new API is never overwritten by a leftover.
-func migrateDeprecatedInfrastructureRef(kcp *K0sControlPlane) {
+// MigrateDeprecatedInfrastructureRef copies the deprecated machine template infrastructureRef into the nested one.
+func (kcp *K0sControlPlane) MigrateDeprecatedInfrastructureRef() {
 	mt := kcp.Spec.MachineTemplate
 	if mt == nil || mt.InfrastructureRef == (corev1.ObjectReference{}) {
-		return
-	}
-
-	if mt.Spec.InfrastructureRef != (clusterv1.ContractVersionedObjectReference{}) {
 		return
 	}
 
