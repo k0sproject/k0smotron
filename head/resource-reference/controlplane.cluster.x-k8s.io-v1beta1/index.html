@@ -3550,6 +3550,23 @@ This field can be used e.g. to instruct the machine controller to include in the
 computation a condition, managed by an external controllers, reporting the status of special software/hardware installed on the Machine.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanespecmachinetemplatespectaintsindex">taints</a></b></td>
+        <td>[]object</td>
+        <td>
+          taints are the node taints that Cluster API will manage.
+This list is not necessarily complete: other Kubernetes components may add or remove other taints from nodes,
+e.g. the node controller might add the node.kubernetes.io/not-ready taint.
+Only those taints defined in this list will be added or removed by core Cluster API controllers.
+Cluster API refuses Machines carrying taints unless its MachineTaintPropagation feature gate is enabled.
+Taints reach a Node only when the controllers run with --enable-worker, since otherwise they register no Node.
+
+There can be at most 64 taints.
+A pod would have to tolerate all existing taints to run on the corresponding node.
+
+NOTE: This list is implemented as a "map" type, meaning that individual elements can be managed by different owners.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -3677,6 +3694,60 @@ A positive polarity means that the condition should report a true status under n
 A negative polarity means that the condition should report a false status under normal conditions.<br/>
           <br/>
             <i>Enum</i>: Positive, Negative<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+<h3 id="k0scontrolplanespecmachinetemplatespectaintsindex">K0sControlPlane.spec.machineTemplate.spec.taints[index]<a class="headerlink" href="#k0scontrolplanespecmachinetemplatespectaintsindex" title="Permanent link">#</a></h3>
+<p><sup><sup><a href="#k0scontrolplanespecmachinetemplatespec">↩ Parent</a></sup></sup></p>
+<p>MachineTaint defines a taint equivalent to corev1.Taint, but additionally having a propagation field.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>effect</b></td>
+        <td>enum</td>
+        <td>
+          effect is the effect for the taint. Valid values are NoSchedule, PreferNoSchedule and NoExecute.<br/>
+          <br/>
+            <i>Enum</i>: NoSchedule, PreferNoSchedule, NoExecute<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the taint key to be applied to a node.
+Must be a valid qualified name of maximum size 63 characters
+with an optional subdomain prefix of maximum size 253 characters,
+separated by a `/`.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>propagation</b></td>
+        <td>enum</td>
+        <td>
+          propagation defines how this taint should be propagated to nodes.
+Valid values are 'Always' and 'OnInitialization'.
+Always: The taint will be continuously reconciled. If it is not set for a node, it will be added during reconciliation.
+OnInitialization: The taint will be added during node initialization. If it gets removed from the node later on it will not get added again.<br/>
+          <br/>
+            <i>Enum</i>: Always, OnInitialization<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>
+          value is the taint value corresponding to the taint key.
+It must be a valid label value of maximum size 63 characters.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

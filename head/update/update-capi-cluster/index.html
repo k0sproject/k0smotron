@@ -2970,6 +2970,7 @@ You are not currently viewing the documentation for the current stable release o
 <h3 id="machine-template-change">Machine template change<a class="headerlink" href="#machine-template-change" title="Permanent link">#</a></h3>
 <p>When <code>spec.machineTemplate.infrastructureRef</code> points to a new or changed infrastructure template, machines that were cloned from an older template revision are marked for replacement. k0smotron detects this by inspecting the <code>cluster.x-k8s.io/cloned-from-name</code> and <code>cluster.x-k8s.io/cloned-from-groupkind</code> annotations on each infrastructure machine.</p>
 <p>Like configuration changes, template changes always trigger machine recreation.</p>
+<p>Changes to <code>spec.machineTemplate.metadata</code>, <code>spec.machineTemplate.spec.readinessGates</code>, <code>spec.machineTemplate.spec.deletion</code> and <code>spec.machineTemplate.spec.taints</code> do not replace machines. k0smotron applies them to the existing <code>Machine</code> objects. A <code>Machine</code> that is already being deleted only gets the new deletion timeouts and taints.</p>
 <h2 id="update-strategies">Update strategies<a class="headerlink" href="#update-strategies" title="Permanent link">#</a></h2>
 <p>k0smotron supports three update strategies, configured via <code>spec.updateStrategy</code>:</p>
 <table>
@@ -3004,7 +3005,7 @@ You are not currently viewing the documentation for the current stable release o
 </div>
 <h3 id="use-inplace-strategy">Use InPlace strategy<a class="headerlink" href="#use-inplace-strategy" title="Permanent link">#</a></h3>
 <p>Under the <code>InPlace</code> strategy, control plane nodes are always updated the same way under the hood: k0smotron creates a k0s <a href="https://docs.k0sproject.io/stable/autopilot/">autopilot</a> <code>Plan</code> in the workload cluster, and autopilot rolls the new k0s version onto each control plane node without replacing the machine.</p>
-<p>This in-place mechanism only updates <strong>the k0s version</strong> running on a node. It does not apply configuration or machine template changes, those are always handled by recreating machines regardless of <code>spec.updateStrategy</code>, as described above.</p>
+<p>This in-place mechanism only updates <strong>the k0s version</strong> running on a node. It does not apply configuration or infrastructure template changes, those are always handled by recreating machines regardless of <code>spec.updateStrategy</code>, as described above.</p>
 <h4 id="standalone-default">Standalone (default)<a class="headerlink" href="#standalone-default" title="Permanent link">#</a></h4>
 <p>k0smotron's <code>K0sControlPlane</code> controller manages the autopilot <code>Plan</code> itself, independently of Cluster API's machine lifecycle. No webhook server or extra component is required.</p>
 <h4 id="cluster-api-in-place-updates-experimental">Cluster API in-place updates (experimental)<a class="headerlink" href="#cluster-api-in-place-updates-experimental" title="Permanent link">#</a></h4>

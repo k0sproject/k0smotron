@@ -103,7 +103,7 @@ kind: K0sControlPlane
 metadata:
   name: '${CLUSTER_NAME}'
 spec:
-  k0sVersion: '${K0S_VERSION}'
+  version: '${K0S_VERSION}'
   replicas: 3
   k0sConfigSpec:
     # Those args are mandatory since kube-vip should be running on controllers
