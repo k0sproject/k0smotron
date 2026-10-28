@@ -334,7 +334,8 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 }
 
 // reconcileBootstrapToken refreshes the bootstrap token embedded in already generated bootstrap data until
-// the node joins the cluster, and reports when a MachinePool needs bootstrap data with a new token.
+// the node joins the cluster and revokes it afterwards, and reports when a MachinePool needs bootstrap data
+// with a new token.
 func (r *Controller) reconcileBootstrapToken(ctx context.Context, cluster *clusterv1.Cluster, config *bootstrapv2.K0sWorkerConfig, configOwner *bsutil.ConfigOwner) (_ ctrl.Result, rotate bool, _ error) {
 	log := ctrl.LoggerFrom(ctx)
 	tokenID := config.GetAnnotations()[bootstrapTokenIDAnnotation]
@@ -342,15 +343,20 @@ func (r *Controller) reconcileBootstrapToken(ctx context.Context, cluster *clust
 		log.Info("No bootstrap token tracked for this config, skipping refresh")
 		return ctrl.Result{}, false, nil
 	}
-	if configOwner.HasNodeRefs() && !configOwner.IsMachinePool() {
-		// The node has already joined, the token will expire on its own.
-		log.Info("Node has already joined, skipping bootstrap token refresh")
-		return ctrl.Result{}, false, nil
-	}
 
 	wcClient, err := r.getWorkloadClusterClient(ctx, cluster)
 	if err != nil {
 		return ctrl.Result{}, false, err
+	}
+
+	if configOwner.HasNodeRefs() && !configOwner.IsMachinePool() {
+		// The node has joined and no longer needs the token, so revoke it instead of leaving it valid until it
+		// expires. A MachinePool keeps its token, since instances it adds later join with the same bootstrap data.
+		if err := revokeBootstrapToken(ctx, wcClient, config, tokenID); err != nil {
+			return ctrl.Result{}, false, err
+		}
+		log.Info("Node has joined, bootstrap token revoked")
+		return ctrl.Result{}, false, nil
 	}
 
 	if configOwner.HasNodeRefs() {

@@ -380,17 +380,12 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 // reconcileBootstrapToken refreshes the bootstrap token embedded in already generated bootstrap data until
-// the controller joins the cluster.
+// the controller joins the cluster and revokes it afterwards.
 func (c *ControlPlaneController) reconcileBootstrapToken(ctx context.Context, scope *ControllerScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	tokenID := scope.Config.GetAnnotations()[bootstrapTokenIDAnnotation]
 	if tokenID == "" {
 		log.Info("No bootstrap token tracked for this config, skipping refresh")
-		return ctrl.Result{}, nil
-	}
-	if scope.ConfigOwner.HasNodeRefs() {
-		// The node has already joined, the token will expire on its own.
-		log.Info("Node has already joined, skipping bootstrap token refresh")
 		return ctrl.Result{}, nil
 	}
 
@@ -399,17 +394,26 @@ func (c *ControlPlaneController) reconcileBootstrapToken(ctx context.Context, sc
 		return ctrl.Result{}, err
 	}
 
-	// Controllers without a worker never get a nodeRef, so rely on the k0s ControlNode to know if it has joined.
-	cn := &unstructured.Unstructured{}
-	cn.SetAPIVersion("autopilot.k0sproject.io/v1beta2")
-	cn.SetKind("ControlNode")
-	err = wcClient.Get(ctx, client.ObjectKey{Name: scope.ConfigOwner.GetName()}, cn)
-	if err == nil {
-		log.Info("Controller has already joined, skipping bootstrap token refresh")
-		return ctrl.Result{}, nil
+	joined := scope.ConfigOwner.HasNodeRefs()
+	if !joined {
+		// Controllers without a worker never get a nodeRef, so rely on the k0s ControlNode to know if it has joined.
+		cn := &unstructured.Unstructured{}
+		cn.SetAPIVersion("autopilot.k0sproject.io/v1beta2")
+		cn.SetKind("ControlNode")
+		err = wcClient.Get(ctx, client.ObjectKey{Name: scope.ConfigOwner.GetName()}, cn)
+		if err != nil && !apierrors.IsNotFound(err) && !meta.IsNoMatchError(err) {
+			return ctrl.Result{}, fmt.Errorf("failed to get ControlNode: %w", err)
+		}
+		joined = err == nil
 	}
-	if !apierrors.IsNotFound(err) && !meta.IsNoMatchError(err) {
-		return ctrl.Result{}, fmt.Errorf("failed to get ControlNode: %w", err)
+	if joined {
+		// The controller has joined and no longer needs the token, so revoke it instead of leaving it valid until
+		// it expires.
+		if err := revokeBootstrapToken(ctx, wcClient, scope.Config, tokenID); err != nil {
+			return ctrl.Result{}, err
+		}
+		log.Info("Controller has joined, bootstrap token revoked")
+		return ctrl.Result{}, nil
 	}
 
 	refreshed, err := refreshBootstrapTokenIfNeeded(ctx, wcClient, tokenID, c.TokenTTL)
