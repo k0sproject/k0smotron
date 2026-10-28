@@ -24,6 +24,7 @@ import (
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/featuregate"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -271,8 +272,16 @@ func isNeededScaleUp(scope *controlplane) bool {
 	return scope.upToDateMachines.Len() < int(scope.kcp.Spec.Replicas)
 }
 
+// isDeleteFirstStrategyEnabled returns true if the delete-first strategy is enabled for the given control plane.
+func isDeleteFirstStrategyEnabled(kcp *cpv1beta2.K0sControlPlane) bool {
+	enabledBySpecStrategy := kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreateDeleteFirst
+	enabledByFeatureGate := kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace && featuregate.IsEnabled(featuregate.InPlaceVersionWithDeleteFirst)
+
+	return enabledBySpecStrategy || enabledByFeatureGate
+}
+
 func calculateMaxSurge(scope *controlplane) int {
-	if scope.kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreateDeleteFirst && scope.kcp.Spec.Replicas >= 3 {
+	if isDeleteFirstStrategyEnabled(scope.kcp) && scope.kcp.Spec.Replicas >= 3 {
 		// We cannot exceed desired replicas when UpdateRecreateDeleteFirst strategy is set. Consider this
 		// strategy when spec replicas >= 3.
 		return int(scope.kcp.Spec.Replicas)

@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/featuregate"
 	"github.com/stretchr/testify/require"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
@@ -507,6 +508,34 @@ func TestCarryRemediationLineage(t *testing.T) {
 			for k, v := range tt.machine {
 				require.Equal(t, v, machine.Annotations[k], "an existing annotation must survive")
 			}
+		})
+	}
+}
+
+func TestInPlaceVersionWithDeleteFirstGate(t *testing.T) {
+	tests := []struct {
+		strategy        cpv1beta2.UpdateStrategy
+		isGateEnabled   string
+		wantInPlace     bool
+		wantDeleteFirst bool
+	}{
+		{cpv1beta2.UpdateInPlace, "false", true, false},
+		{cpv1beta2.UpdateRecreateDeleteFirst, "false", false, true},
+		{cpv1beta2.UpdateRecreate, "false", false, false},
+		{cpv1beta2.UpdateInPlace, "true", true, true},
+		{cpv1beta2.UpdateRecreateDeleteFirst, "true", true, true},
+		{cpv1beta2.UpdateRecreate, "true", false, false},
+	}
+	for _, tc := range tests {
+		t.Run(string(tc.strategy), func(t *testing.T) {
+			if err := featuregate.Configure("InPlaceVersionWithDeleteFirst="+tc.isGateEnabled, ""); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = featuregate.Configure("InPlaceVersionWithDeleteFirst=false", "") })
+
+			kcp := &cpv1beta2.K0sControlPlane{Spec: cpv1beta2.K0sControlPlaneSpec{UpdateStrategy: tc.strategy}}
+			require.Equal(t, tc.wantInPlace, isVersionInPlaceEnabled(kcp))
+			require.Equal(t, tc.wantDeleteFirst, isDeleteFirstStrategyEnabled(kcp))
 		})
 	}
 }

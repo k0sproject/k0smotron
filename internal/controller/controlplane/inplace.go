@@ -46,8 +46,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// isVersionInPlaceEnabled returns true if the in-place version update strategy is enabled for the given control plane.
+func isVersionInPlaceEnabled(kcp *cpv1beta2.K0sControlPlane) bool {
+	enabledBySpecStrategy := kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace
+	enabledByFeatureGate := kcp.Spec.UpdateStrategy == cpv1beta2.UpdateRecreateDeleteFirst && featuregate.IsEnabled(featuregate.InPlaceVersionWithDeleteFirst)
+
+	return enabledBySpecStrategy || enabledByFeatureGate
+}
+
 func (c *K0sController) reconcileInplaceK0sVersionUpdate(ctx context.Context, scope *controlplane) (ctrl.Result, error) {
-	controlplaneRequiresUpdate := scope.hasMachinesWithOnlyVersionOutdated && scope.kcp.Spec.UpdateStrategy == cpv1beta2.UpdateInPlace
+	controlplaneRequiresUpdate := scope.hasMachinesWithOnlyVersionOutdated && isVersionInPlaceEnabled(scope.kcp)
 
 	// Ahead of every gate below, since a Machine whose trigger stopped short of the hook is not
 	// outdated in any way those gates look at, so they would return before reaching it.

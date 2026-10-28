@@ -21,11 +21,18 @@ const (
 	CloudInitVars Feature = "CloudInitVars"
 	// InPlaceUpdates enables in-place updates of the Kuebernetes nodes
 	InPlaceUpdates Feature = "InPlaceUpdates"
+	// InPlaceVersionWithDeleteFirst is an experimental feature that combines the InPlace and RecreateDeleteFirst
+	// update strategies of K0sControlPlane: k0s version-only changes are applied in place and any other change
+	// that replaces a machine is done following the current RecreateDeleteFirst strategy. It applies to both
+	// strategies and may be removed once the control plane API can express this combination.
+	// Ref: https://github.com/k0sproject/k0smotron/issues/1731
+	InPlaceVersionWithDeleteFirst Feature = "InPlaceVersionWithDeleteFirst"
 )
 
 var effectiveFeatureGates *FeatureGates
 
 var defaultFeatureMap = map[Feature]FeatureGate{
-	CloudInitVars:  {Enabled: false},
-	InPlaceUpdates: {Enabled: false},
+	CloudInitVars:                 {Enabled: false},
+	InPlaceUpdates:                {Enabled: false},
+	InPlaceVersionWithDeleteFirst: {Enabled: false},
 }
