@@ -68,7 +68,7 @@ K0sControlPlane describes a k0s control plane for a Cluster API managed cluster.
         <td>
           K0sControlPlaneStatus defines the observed state of K0sControlPlane<br/>
           <br/>
-            <i>Default</i>: map[initialization:map[controlPlaneInitialized:false] version:]<br/>
+            <i>Default</i>: map[initialization:map[controlPlaneInitialized:false]]<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1518,7 +1518,16 @@ More info about label selectors: http://kubernetes.io/docs/user-guide/labels#lab
         <td>string</td>
         <td>
           version represents the minimum Kubernetes version for the control plane machines
-in the cluster.<br/>
+in the cluster.
+
+Deprecated: This field is deprecated and is going to be removed in a future API version. Please use status.versions instead.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#k0scontrolplanestatusversionsindex">versions</a></b></td>
+        <td>[]object</td>
+        <td>
+          versions is the aggregated Kubernetes versions in this KubeadmControlPlane.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1673,6 +1682,43 @@ when a machine created to replace an unhealthy machine also fails.<br/>
             <i>Format</i>: date-time<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### K0sControlPlane.status.versions[index]
+<sup><sup>[↩ Parent](#k0scontrolplanestatus)</sup></sup>
+
+
+
+StatusVersion groups version-related status information.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>version</b></td>
+        <td>string</td>
+        <td>
+          version is the Kubernetes version.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>replicas</b></td>
+        <td>integer</td>
+        <td>
+          replicas is the number of replicas at this version.<br/>
+          <br/>
+            <i>Format</i>: int32<br/>
+            <i>Minimum</i>: 1<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -3372,7 +3418,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -3417,8 +3463,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5268,7 +5313,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -5581,8 +5626,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -7369,7 +7413,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -7414,8 +7458,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9272,7 +9315,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -9585,8 +9628,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -13840,7 +13882,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -13885,8 +13927,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15736,7 +15777,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -16049,8 +16090,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -17837,7 +17877,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -17882,8 +17922,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19740,7 +19779,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -20053,8 +20092,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
