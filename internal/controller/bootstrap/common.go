@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
@@ -33,6 +34,12 @@ var (
 	// errExtractingFileContent represents an error when extracting the file content from a source.
 	errExtractingFileContent = errors.New("failed to get file content from source")
 )
+
+// apiServerURL builds an HTTPS URL from a host and port, bracketing IPv6
+// literals as required by net.JoinHostPort so the URL stays valid.
+func apiServerURL(host, port string) string {
+	return "https://" + net.JoinHostPort(host, port)
+}
 
 func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clusterv1.Cluster, contentFrom *bootstrapv2.ContentSource) (string, error) {
 	switch {
